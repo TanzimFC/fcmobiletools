@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Mexico Beginner — A Nation's Story</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #050505;
+    color: #f5f5f5;
+    font-family: Inter, Arial, sans-serif;
+}
+
+nav {
+    height: 64px;
+    border-bottom: 1px solid #181818;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+}
+
+nav a {
+    color: #999;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+nav a:hover {
+    color: #b982ff;
+}
+
+.container {
+    max-width: 850px;
+    margin: auto;
+    padding: 55px 20px;
+}
+
+.back {
+    color: #999;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.header {
+    margin: 35px 0;
+}
+
+.header h1 {
+    margin: 0 0 8px;
+    font-size: 40px;
+}
+
+.header p {
+    color: #888;
+}
+
+.challenge {
+    margin-bottom: 70px;
+}
+
+.challenge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.challenge-title {
+    color: #bd8cff;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.question-count {
+    color: #777;
+    font-size: 13px;
+}
+
+.question {
+    border: 1px solid #242424;
+    background: #090909;
+    border-radius: 17px;
+    padding: 25px;
+    margin-bottom: 18px;
+}
+
+.question-number {
+    color: #8d5bc8;
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.question h2 {
+    margin: 0 0 20px;
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+.options {
+    display: grid;
+    gap: 9px;
+}
+
+.option {
+    width: 100%;
+    padding: 13px 15px;
+    background: #101010;
+    border: 1px solid #272727;
+    color: #ddd;
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    transition: .2s;
+}
+
+.option:hover {
+    border-color: #7950a8;
+}
+
+.option.selected {
+    border-color: #a96fff;
+    background: #17101f;
+}
+
+.answer {
+    display: none;
+    margin-top: 20px;
+    padding: 18px;
+    border-radius: 12px;
+    background: #100d13;
+    border-left: 3px solid #a96fff;
+}
+
+.answer.show {
+    display: block;
+}
+
+.answer strong {
+    color: #c697ff;
+}
+
+.answer p {
+    color: #aaa;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.reveal {
+    margin-top: 14px;
+    border: 1px solid #39274d;
+    background: transparent;
+    color: #c18dff;
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.progress {
+    height: 4px;
+    background: #191919;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+.progress span {
+    display: block;
+    height: 100%;
+    width: 33.33%;
+    background: #8c51d0;
+}
+
+@media(max-width:600px) {
+    nav {
+        justify-content: flex-start;
+        padding: 0 15px;
+        overflow-x: auto;
+    }
+
+    .header h1 {
+        font-size: 32px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+    <a href="/">Home</a>
+    <a href="/#tools">Tools</a>
+    <a href="/football-centre">Football Centre</a>
+    <a href="/creator.html">Creator</a>
+    <a href="/trivia/" style="color:#b982ff">Trivia</a>
+</nav>
+
+<main class="container">
+
+<a class="back" href="/trivia/mexico.html">← Mexico</a>
+
+<section class="header">
+    <h1>🇲🇽 Mexico — Beginner</h1>
+    <p>Three challenges · 3 questions each · 9 questions total</p>
+</section>
+
+<div class="progress"><span></span></div>
+
+<div id="quiz"></div>
+
+</main>
+
+<script>
+
+const challenges = [
+
+{
+    name: "Challenge I",
+    questions: [
+        {
+            q: "Mexico's first-ever World Cup match: what year?",
+            options: ["1930", "1934", "1938", "1950"],
+            answer: "1930",
+            explanation: "Mexico played its first FIFA World Cup match at the inaugural tournament in Uruguay in 1930."
+        },
+        {
+            q: "First player to appear in five World Cups; “El Cinco Copas”",
+            options: ["Antonio Carbajal", "Hugo Sánchez", "Rafael Márquez", "Jorge Campos"],
+            answer: "Antonio Carbajal",
+            explanation: "Antonio Carbajal became the first player to appear in five FIFA World Cup tournaments."
+        },
+        {
+            q: "Mexico's 1970 World Cup stage",
+            options: ["Group stage", "Round of 16", "Quarter-finals", "Semi-finals"],
+            answer: "Quarter-finals",
+            explanation: "Mexico reached the quarter-finals at the 1970 World Cup, hosted on home soil."
+        }
+    ]
+},
+
+{
+    name: "Challenge II",
+    questions: [
+        {
+            q: "1986 scissor-kick goal vs Bulgaria",
+            options: ["Manuel Negrete", "Hugo Sánchez", "Jared Borgetti", "Luis Hernández"],
+            answer: "Manuel Negrete",
+            explanation: "Manuel Negrete scored one of the most famous goals in Mexico's World Cup history against Bulgaria in 1986."
+        },
+        {
+            q: "Mexico's 1994–2018 “Curse of the Fifth Game” record",
+            options: [
+                "Seven consecutive Round-of-16 eliminations",
+                "Five consecutive group-stage eliminations",
+                "Six consecutive quarter-final defeats",
+                "Four consecutive final defeats"
+            ],
+            answer: "Seven consecutive Round-of-16 eliminations",
+            explanation: "Mexico reached the Round of 16 at seven consecutive World Cups from 1994 through 2018, but did not progress further."
+        },
+        {
+            q: "Mexico's opponent in its 1–0 opening win at the 2018 World Cup",
+            options: ["Germany", "Brazil", "Argentina", "Spain"],
+            answer: "Germany",
+            explanation: "Mexico opened the 2018 World Cup with a famous 1–0 victory over defending champions Germany."
+        }
+    ]
+},
+
+{
+    name: "Challenge III",
+    questions: [
+        {
+            q: "Player involved in the controversial 2014 “No era penal” incident",
+            options: ["Arjen Robben", "Wesley Sneijder", "Robin van Persie", "Klaas-Jan Huntelaar"],
+            answer: "Arjen Robben",
+            explanation: "Arjen Robben was involved in the controversial penalty incident during the Netherlands' 2014 Round-of-16 victory over Mexico."
+        },
+        {
+            q: "Team that eliminated Mexico in the 2002 Round of 16",
+            options: ["USA", "Brazil", "Germany", "Italy"],
+            answer: "USA",
+            explanation: "The United States defeated Mexico 2–0 in the 2002 World Cup Round of 16."
+        },
+        {
+            q: "1999 Confederations Cup final opponent",
+            options: ["Brazil", "Argentina", "France", "Germany"],
+            answer: "Brazil",
+            explanation: "Mexico defeated Brazil 4–3 in the 1999 FIFA Confederations Cup final."
+        }
+    ]
+}
+
+];
+
+function render() {
+
+    const quiz = document.getElementById("quiz");
+
+    challenges.forEach((challenge, ci) => {
+
+        const section = document.createElement("section");
+        section.className = "challenge";
+
+        section.innerHTML = `
+            <div class="challenge-header">
+                <div class="challenge-title">${challenge.name}</div>
+                <div class="question-count">${challenge.questions.length} Questions</div>
+            </div>
+        `;
+
+        challenge.questions.forEach((item, qi) => {
+
+            const box = document.createElement("article");
+            box.className = "question";
+
+            box.innerHTML = `
+                <div class="question-number">
+                    Question ${qi + 1} of ${challenge.questions.length}
+                </div>
+
+                <h2>${item.q}</h2>
+
+                <div class="options">
+                    ${item.options.map(option =>
+                        `<button class="option">${option}</button>`
+                    ).join("")}
+                </div>
+
+                <button class="reveal">
+                    Show answer
+                </button>
+
+                <div class="answer">
+                    <strong>Correct answer: ${item.answer}</strong>
+                    <p>${item.explanation}</p>
+                </div>
+            `;
+
+            const options = box.querySelectorAll(".option");
+
+            options.forEach(option => {
+                option.addEventListener("click", () => {
+
+                    options.forEach(o =>
+                        o.classList.remove("selected")
+                    );
+
+                    option.classList.add("selected");
+                });
+            });
+
+            const reveal = box.querySelector(".reveal");
+            const answer = box.querySelector(".answer");
+
+            reveal.addEventListener("click", () => {
+                answer.classList.add("show");
+                reveal.style.display = "none";
+            });
+
+            section.appendChild(box);
+        });
+
+        quiz.appendChild(section);
+    });
+}
+
+render();
+
+</script>
+
+</body>
+</html>
