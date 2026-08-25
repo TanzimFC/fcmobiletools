@@ -55,6 +55,8 @@ img{max-width:100%;display:block}
 .topnav{display:flex;align-items:center;gap:2px;border:1px solid var(--border);background:#0d0d10cc;padding:4px;border-radius:12px}
 .topnav a{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);transition:color .18s,background .18s}
 .topnav a:hover{color:var(--text);background:var(--surface-2)}
+.topnav a.beta-link{display:flex;align-items:center;gap:6px}
+.topnav a.beta-link .beta-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
 .topbar-cta{display:flex;gap:8px;flex:0 0 auto}
 .btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:9px 15px;border-radius:9px;font-size:12px;font-weight:700;transition:transform .16s,border-color .16s,background .16s}
 .btn:hover{transform:translateY(-1px);border-color:#3a3a42;background:#17171b}
@@ -106,6 +108,9 @@ img{max-width:100%;display:block}
 
 .hero-actions{display:flex;gap:12px;flex-wrap:wrap;opacity:0;animation:rise .8s ease forwards .28s}
 .hero-actions .btn{padding:13px 22px;font-size:13px}
+.hero-actions .btn.beta{background:var(--green-dim);border-color:#255d42;color:#9ff5c4}
+.hero-actions .btn.beta:hover{border-color:#3a7a56;background:#48d98a26}
+.hero-actions .btn.beta .beta-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
 
 /* live ticker strip */
 .ticker-shell{margin-top:56px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;opacity:0;animation:rise .8s ease forwards .4s}
@@ -174,6 +179,15 @@ section{padding:88px 0}
 .soon-dots span:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
 
+/* ---------- BETA STRIP ---------- */
+.beta-strip{position:relative;overflow:hidden;border-radius:20px;border:1px solid #255d42;background:linear-gradient(135deg,#0d1a14,#0d141c);padding:36px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.beta-strip-left{display:flex;align-items:center;gap:18px}
+.beta-strip-icon{width:52px;height:52px;border-radius:14px;background:var(--green-dim);border:1px solid #255d42;display:grid;place-items:center;font-size:22px;flex:0 0 auto}
+.beta-strip h3{font-size:19px;font-weight:850;margin:0 0 6px}
+.beta-strip p{font-size:13.5px;color:var(--muted);margin:0;max-width:44ch}
+.beta-strip .btn.primary.green{background:linear-gradient(135deg,#48d98a,#22b566);border-color:#48d98a;box-shadow:0 4px 20px #48d98a33;color:#04140c;padding:13px 22px;font-size:13px}
+.beta-strip .btn.primary.green:hover{box-shadow:0 6px 26px #48d98a4d}
+
 /* ---------- WHY STRIP ---------- */
 .strip{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface)}
 .strip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
@@ -208,6 +222,7 @@ footer{padding:56px 0 40px}
   .strip-grid{grid-template-columns:1fr}
   .strip-item{border-right:0;border-bottom:1px solid var(--border)}
   .strip-item:last-child{border-bottom:0}
+  .beta-strip{flex-direction:column;align-items:flex-start;text-align:left}
 }
 @media(max-width:560px){
   .wrap{width:calc(100% - 28px)}
@@ -221,6 +236,8 @@ footer{padding:56px 0 40px}
   .footer-cols{gap:32px}
   .hero-actions{flex-direction:column}
   .hero-actions .btn{width:100%;justify-content:center}
+  .beta-strip{padding:26px}
+  .beta-strip-left{flex-direction:column;align-items:flex-start}
 }
 </style>
 </head>
@@ -236,6 +253,7 @@ footer{padding:56px 0 40px}
       <a href="#tools">Tools</a>
       <a href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Football Centre</a>
       <a href="https://tanzimfc.fcmobiletools.workers.dev/trivia/">Trivia</a>
+      <a href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta/" class="beta-link"><span class="beta-dot"></span>Beta</a>
       <a href="creator">Creator</a>
     </nav>
     <div class="topbar-cta">
@@ -257,7 +275,7 @@ footer{padding:56px 0 40px}
         <div class="hero-actions">
           <a class="btn primary" href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Open Football Centre →</a>
           <a class="btn" href="https://tanzimfc.fcmobiletools.workers.dev/trivia/">Play Trivia</a>
-          <a class="btn" href="#creator">Follow TanzimFC</a>
+          <a class="btn beta" href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta/"><span class="beta-dot"></span>Get FC Mobile Beta</a>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">
@@ -336,6 +354,17 @@ footer{padding:56px 0 40px}
           <a class="bcard-link" href="https://discord.com/invite/B4a7AxuU69" target="_blank" rel="noopener">Get notified <span class="arrow">→</span></a>
         </div>
       </div>
+
+      <div class="beta-strip" style="margin-top:16px">
+        <div class="beta-strip-left">
+          <div class="beta-strip-icon">📲</div>
+          <div>
+            <h3>FC Mobile Beta is up for download</h3>
+            <p>Early access build, free, direct link. Play the newest FC Mobile update before it goes wide.</p>
+          </div>
+        </div>
+        <a class="btn primary green" href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta/">Get the beta →</a>
+      </div>
     </div>
   </section>
 
@@ -377,7 +406,7 @@ footer{padding:56px 0 40px}
           <h5>TOOLS</h5>
           <a href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Football Centre</a>
           <a href="https://tanzimfc.fcmobiletools.workers.dev/trivia/">Trivia</a>
-          <a href="#tools">More tools soon</a>
+          <a href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta/">FC Mobile Beta</a>
         </div>
         <div class="footer-col">
           <h5>CREATOR</h5>
