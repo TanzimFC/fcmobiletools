@@ -1,42 +1,24 @@
 ---
-import Navbar from "../components/Navbar.astro";
-import Footer from "../components/Footer.astro";
-import "../styles/global.css";
-
-export interface Props {
-  title: string;
-  description?: string;
-}
-
-const {
-  title,
-  description = "Trackers, calculators and companion tools for FC Mobile, built by TanzimFC.",
-} = Astro.props;
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import '../../styles.css';
+export interface Props { title: string; description?: string; }
+const { title, description = 'FC Mobile tools, trivia, guides and event resources from TanzimFC.' } = Astro.props;
 ---
-
 <!doctype html>
 <html lang="en">
 <head>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YY53FCHMLW"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-YY53FCHMLW');
-  </script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#050505" />
-  <title>{title} — FC Mobile Tools</title>
+  <meta name="theme-color" content="#07090d" />
   <meta name="description" content={description} />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <title>{title} — FC Mobile Tools</title>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YY53FCHMLW"></script>
+  <script is:inline>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-YY53FCHMLW');</script>
 </head>
 <body>
   <Navbar />
-  <main id="top">
-    <slot />
-  </main>
+  <main id="top"><slot /></main>
   <Footer />
 </body>
 </html>
