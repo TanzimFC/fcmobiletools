@@ -1,39 +1,49 @@
-import { cp, mkdir, rm } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { cp, mkdir, readdir, rm, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
+const exec = promisify(execFile);
 const root = process.cwd();
+const publicDir = path.join(root, 'public');
+
+// Keep the original working assets available to Astro without moving them by hand.
+await mkdir(path.join(publicDir, 'assets'), { recursive: true });
+await cp(path.join(root, 'assets'), path.join(publicDir, 'assets'), { recursive: true, force: true });
+
+await exec('astro', ['build'], { cwd: root, shell: process.platform === 'win32' });
+
 const dist = path.join(root, 'dist');
-await rm(dist, { recursive: true, force: true });
-await mkdir(dist, { recursive: true });
 
-// This project is intentionally kept as a static site. The existing FC Mobile
-// tools are standalone working documents and must be copied byte-for-byte.
-// Astro is retained for the newer content work, but is not allowed to replace
-// the legacy app routes with wrappers/iframes.
-const entries = [
-  'index.html',
-  'football-centre',
-  'football-centre-v1',
-  'fc-mobile-beta',
-  'creator.html',
-  'trivia',
-  'trivia.css',
-  'trivia.js',
-  'blog',
-  'styles.css',
-  'assets',
-  'google1354adde34ae5b2c.html',
-];
+// The standalone trivia library contains many existing HTML pages. Add the same
+// site shell to those pages while leaving their quiz markup and JS untouched.
+const triviaRoot = path.join(dist, 'trivia');
+const shellScript = '/assets/site-shell.js';
+const globalCss = '/styles.css';
 
-for (const entry of entries) {
-  const source = path.join(root, entry);
-  if (!existsSync(source)) continue;
-  await cp(source, path.join(dist, entry), { recursive: true, force: true });
+async function walk(dir) {
+  const out = [];
+  if (!exists(dir)) return out;
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...await walk(full));
+    else if (entry.name.toLowerCase().endsWith('.html')) out.push(full);
+  }
+  return out;
+}
+function exists(p) { try { return require('node:fs').existsSync(p); } catch { return false; } }
+
+for (const file of await walk(triviaRoot)) {
+  let html = await readFile(file, 'utf8');
+  if (!html.includes('data-site-nav')) {
+    html = html.replace('</head>', `  <link rel="stylesheet" href="${globalCss}">\n</head>`);
+    html = html.replace(/<header\\s+class=["']topbar["'][\\s\\S]*?<\\/header>/gi, '');
+    html = html.replace(/<footer\\s+class=["']site-footer["'][\\s\\S]*?<\\/footer>/gi, '');
+    html = html.replace(/<div\\s+data-site-nav-placeholder[^>]*>\\s*<\\/div>/gi, '');
+    html = html.replace(/<div\\s+data-site-footer-placeholder[^>]*>\\s*<\\/div>/gi, '');
+    html = html.replace('</body>', `  <script src="${shellScript}" defer></script>\n</body>`);
+    await writeFile(file, html);
+  }
 }
 
-// Cloudflare's static assets handler serves a directory named `football-centre`
-// as a file when it has no extension. Keep a conventional fallback 404 page.
-await cp(path.join(root, '404.html'), path.join(dist, '404.html'), { force: true }).catch(() => {});
-
-console.log(`Static site prepared in ${dist}`);
+console.log('Astro build complete; legacy trivia pages received the shared site shell.');
