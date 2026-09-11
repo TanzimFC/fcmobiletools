@@ -13,28 +13,8 @@ export const BASE_OVR_MIN = 40;
 export const BASE_OVR_MAX = 135;
 
 export const BADGES = [
-  {
-    id: 'numero',
-    name: 'Numero',
-    levels: {
-      1: { teamOVR: 0 },
-      2: { teamOVR: 0 },
-      3: { teamOVR: 0 },
-      4: { teamOVR: 0 },
-      5: { teamOVR: 1 },
-    },
-  },
-  {
-    id: 'champions',
-    name: 'Champions',
-    levels: {
-      1: { teamOVR: 0 },
-      2: { teamOVR: 0 },
-      3: { teamOVR: 0 },
-      4: { teamOVR: 0 },
-      5: { teamOVR: 1 },
-    },
-  },
+  { id: 'numero', name: 'Numero', levels: { 1: { teamOVR: 0 }, 2: { teamOVR: 0 }, 3: { teamOVR: 0 }, 4: { teamOVR: 0 }, 5: { teamOVR: 1 } } },
+  { id: 'champions', name: 'Champions', levels: { 1: { teamOVR: 0 }, 2: { teamOVR: 0 }, 3: { teamOVR: 0 }, 4: { teamOVR: 0 }, 5: { teamOVR: 1 } } },
 ];
 
 const BADGE_BY_ID = Object.fromEntries(BADGES.map((badge) => [badge.id, badge]));
@@ -55,38 +35,28 @@ export function getBadgeTeamOVRBonus(badgeId, level) {
   if (!badgeId) return 0;
   const badge = BADGE_BY_ID[badgeId];
   if (!badge) return 0;
-  const levelData = badge.levels[level];
-  return levelData ? levelData.teamOVR : 0;
+  return badge.levels[level]?.teamOVR || 0;
 }
 
 export function calculateBadgeBonus(selectedBadges = []) {
   const breakdown = [];
   let badgeBonus = 0;
-
   for (const slot of selectedBadges.slice(0, MAX_BADGE_SLOTS)) {
     if (!slot || !slot.badgeId || !slot.level) continue;
     const badge = BADGE_BY_ID[slot.badgeId];
     const bonus = getBadgeTeamOVRBonus(slot.badgeId, slot.level);
     badgeBonus += bonus;
-    breakdown.push({
-      badgeId: slot.badgeId,
-      name: badge ? badge.name : slot.badgeId,
-      level: slot.level,
-      bonus,
-    });
+    breakdown.push({ badgeId: slot.badgeId, name: badge ? badge.name : slot.badgeId, level: slot.level, bonus });
   }
-
   return { badgeBonus, breakdown };
 }
 
 export function calculateTeamOVR({ players = [], selectedBadges = [], requiredCount } = {}) {
   const filled = players.filter(isPlayerFilled);
   const required = requiredCount ?? players.length;
-  const complete = required > 0 && filled.length === required && players.length === required;
+  const complete = required >= STARTING_XI_SIZE && required <= MAX_SQUAD_SIZE && filled.length === required && players.length === required;
 
-  if (!complete) {
-    return { complete: false, filledCount: filled.length, requiredCount: required };
-  }
+  if (!complete) return { complete: false, filledCount: filled.length, requiredCount: required };
 
   const squadSize = players.length;
   const totalBase = players.reduce((sum, player) => sum + player.baseOVR, 0);
@@ -95,15 +65,5 @@ export function calculateTeamOVR({ players = [], selectedBadges = [], requiredCo
   const rankAverage = Math.ceil(totalRank / squadSize);
   const { badgeBonus, breakdown: badgeBreakdown } = calculateBadgeBonus(selectedBadges);
 
-  return {
-    complete: true,
-    squadSize,
-    totalBase,
-    totalRank,
-    baseAverage,
-    rankAverage,
-    badgeBonus,
-    badgeBreakdown,
-    teamOVR: baseAverage + rankAverage + badgeBonus,
-  };
+  return { complete: true, squadSize, totalBase, totalRank, baseAverage, rankAverage, badgeBonus, badgeBreakdown, teamOVR: baseAverage + rankAverage + badgeBonus };
 }
