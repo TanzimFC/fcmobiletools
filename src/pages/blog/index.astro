@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort((a,b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf());
+---
+<BaseLayout title="Blog & Guides" description="FC Mobile event guides, strategies, analysis and practical resources from TanzimFC.">
+  <section class="wrap page-hero"><p class="eyebrow">BLOG & GUIDES</p><h1>Know the game<br /><span>before it starts.</span></h1><p>Event explainers, strategies, analysis and practical FC Mobile guides — written to help you decide what to do next.</p></section>
+  <section class="wrap blog-list">
+    {posts.length ? posts.map((post) => <a class="blog-card" href={`/blog/${post.slug}/`}>
+      {post.data.image ? <img src={post.data.image} alt="" loading="lazy" /> : <div class="blog-placeholder"><span>FC</span></div>}
+      <div class="blog-card-body"><div class="blog-meta"><span>{post.data.category}</span><time datetime={post.data.publishedAt.toISOString()}>{post.data.publishedAt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</time></div><h2>{post.data.title}</h2><p>{post.data.description}</p><strong>Read guide →</strong></div>
+    </a>) : <div class="empty-state"><p class="eyebrow">COMING SOON</p><h2>The guide library is being rebuilt.</h2><p>New event and strategy articles will appear here as Markdown posts.</p></div>}
+  </section>
+</BaseLayout>
