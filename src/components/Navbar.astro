@@ -1,27 +1,49 @@
 ---
-const links = [
-  { label: 'Home', href: '/' },
-  { label: 'Team OVR', href: '/team-ovr' },
+const groups = [
+  { label: 'Tools', links: [
+    { label: 'Team OVR', href: '/team-ovr' },
+    { label: 'Training Calculator', href: '/training-calculator' },
+    { label: 'Rank Up Calculator', href: '/rank-up-calculator' },
+  ] },
+  { label: 'Explore', links: [
+    { label: 'Football Centre', href: '/football-centre' },
+    { label: 'Trivia', href: '/trivia' },
+    { label: 'Blog', href: '/blog' },
+    { label: 'Creator', href: '/creator' },
+  ] },
+];
+const directLinks = [
   { label: 'Redeem Codes', href: '/redeem-codes' },
-  { label: 'Football Centre', href: '/football-centre' },
-  { label: 'Trivia', href: '/trivia' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'Creator', href: '/creator' },
 ];
 const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href) => currentPath === href || (href !== '/' && currentPath.startsWith(href + '/'));
 ---
 <header class="site-nav" data-site-nav>
   <div class="site-nav-inner">
     <a class="site-brand" href="/" aria-label="TanzimFC home"><span>FC</span> TanzimFC</a>
-    <nav aria-label="Primary navigation">
-      {links.map((link) => <a href={link.href} class:list={{ active: currentPath === link.href.replace(/\/$/, '') || (link.href !== '/' && currentPath.startsWith(link.href + '/')) }}>{link.label}</a>)}
+    <nav class="site-primary" aria-label="Primary navigation">
+      <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
+      {groups.map((group) => <div class="site-nav-group" data-nav-group>
+        <button type="button" class="site-nav-trigger" aria-expanded="false">{group.label}<span>⌄</span></button>
+        <div class="site-nav-menu">
+          {group.links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}><span>{link.label}</span><small>↗</small></a>)}
+        </div>
+      </div>)}
+      {directLinks.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}
     </nav>
     <button class="site-menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav" aria-label="Open menu">☰</button>
   </div>
   <nav id="site-mobile-nav" class="site-mobile-nav" aria-label="Mobile navigation">
-    {links.map((link) => <a href={link.href}>{link.label}</a>)}
+    <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
+    {groups.map((group) => <div class="site-mobile-group"><span>{group.label}</span>{group.links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>)}
+    {directLinks.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}
   </nav>
 </header>
+
+<style>
+.site-nav-group{position:relative}.site-nav-trigger{display:flex;align-items:center;gap:6px;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:8px 9px}.site-nav-trigger span{font-size:11px;opacity:.55;transition:transform .18s}.site-nav-group:hover .site-nav-trigger span,.site-nav-group.open .site-nav-trigger span{transform:rotate(180deg)}.site-nav-menu{position:absolute;top:calc(100% + 10px);left:50%;width:210px;transform:translate(-50%,-5px);padding:7px;border:1px solid var(--border,#dbeaf0);border-radius:13px;background:var(--surface,#fff);box-shadow:0 18px 45px #16374618;opacity:0;pointer-events:none;transition:.18s;z-index:50}.site-nav-group:hover .site-nav-menu,.site-nav-group.open .site-nav-menu{opacity:1;transform:translate(-50%,0);pointer-events:auto}.site-nav-menu a{display:flex!important;align-items:center;justify-content:space-between!important;gap:12px;padding:10px 11px;border-radius:9px;color:var(--text,#10222c)!important;text-decoration:none}.site-nav-menu a:hover,.site-nav-menu a.active{background:#55c7f214;color:#087eae!important}.site-nav-menu small{font-size:11px;opacity:.45}.site-primary{display:flex;align-items:center;gap:2px}.site-primary>a,.site-nav-trigger{font-size:11px!important}.site-mobile-group{display:grid;gap:4px;padding:10px 0;border-top:1px solid var(--border,#dbeaf0)}.site-mobile-group>span{padding:5px 10px;color:var(--muted,#6c818b);font:900 8px var(--mono,monospace);letter-spacing:.13em;text-transform:uppercase}.site-mobile-group a{padding-left:18px!important}@media(max-width:900px){.site-primary{display:none}.site-menu{display:block}.site-nav-menu{display:none}}
+</style>
+
 <script>
   const nav = document.querySelector('[data-site-nav]');
   const button = nav?.querySelector('.site-menu');
@@ -29,5 +51,15 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
   button?.addEventListener('click', () => {
     const open = mobile?.classList.toggle('open') ?? false;
     button?.setAttribute('aria-expanded', String(open));
+  });
+  nav?.querySelectorAll('[data-nav-group]').forEach((group) => {
+    const trigger = group.querySelector('.site-nav-trigger');
+    trigger?.addEventListener('click', () => {
+      const open = group.classList.toggle('open');
+      trigger.setAttribute('aria-expanded', String(open));
+      nav.querySelectorAll('[data-nav-group].open').forEach((other) => {
+        if (other !== group) other.classList.remove('open');
+      });
+    });
   });
 </script>
