@@ -1,14 +1,36 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
-const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort((a,b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf());
+const posts = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft)).sort((a,b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0));
+const categories = [...new Set(posts.map((post) => post.data.category).filter(Boolean))];
+const readingTime = (post) => post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
 ---
 <BaseLayout title="Blog & Guides" description="FC Mobile event guides, strategies, analysis and practical resources from TanzimFC.">
-  <section class="wrap page-hero"><p class="eyebrow">BLOG & GUIDES</p><h1>Know the game<br /><span>before it starts.</span></h1><p>Event explainers, strategies, analysis and practical FC Mobile guides — written to help you decide what to do next.</p></section>
-  <section class="wrap blog-list">
-    {posts.length ? posts.map((post) => <a class="blog-card" href={`/blog/${post.slug}/`}>
-      {post.data.image ? <img src={post.data.image} alt="" loading="lazy" /> : <div class="blog-placeholder"><span>FC</span></div>}
-      <div class="blog-card-body"><div class="blog-meta"><span>{post.data.category}</span><time datetime={post.data.publishedAt.toISOString()}>{post.data.publishedAt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</time></div><h2>{post.data.title}</h2><p>{post.data.description}</p><strong>Read guide →</strong></div>
-    </a>) : <div class="empty-state"><p class="eyebrow">COMING SOON</p><h2>The guide library is being rebuilt.</h2><p>New event and strategy articles will appear here as Markdown posts.</p></div>}
+  <section class="wrap page-hero"><p class="eyebrow">FC MOBILE CONTENT</p><h1>Guides, analysis<br /><span>and the latest playbook.</span></h1><p>One article system for news, guides, reviews, rankings, events and strategy. Find what matters, then get back in game.</p></section>
+  <section class="wrap content-controls">
+    <label class="article-search"><span>⌕</span><input id="article-search" type="search" placeholder="Search articles, topics, tags..." autocomplete="off" /></label>
+    <div class="article-filters"><button type="button" class="article-filter active" data-category="all">All</button>{categories.map((category) => <button type="button" class="article-filter" data-category={category}>{category}</button>)}</div>
+    <div class="article-sort"><span>Sort</span><select id="article-sort"><option value="newest">Newest</option><option value="updated">Recently updated</option><option value="relevant">Most relevant</option></select></div>
   </section>
+  <section class="wrap blog-list" id="article-list">
+    {posts.length ? posts.map((post) => <a class="blog-card article-item" href={`/blog/${post.slug}/`} data-category={post.data.category} data-search={`${post.data.title} ${post.data.description} ${post.data.category} ${(post.data.tags ?? []).join(' ')}`.toLowerCase()} data-published={post.data.publishedAt?.valueOf() ?? 0} data-updated={post.data.updatedAt?.valueOf() ?? post.data.publishedAt?.valueOf() ?? 0}>
+      {post.data.image ? <img src={post.data.image} alt="" loading="lazy" /> : <div class="blog-placeholder"><span>{post.data.type === 'player-review' ? 'REV' : 'FC'}</span></div>}
+      <div class="blog-card-body"><div class="blog-meta"><span>{post.data.category}</span><time datetime={post.data.publishedAt.toISOString()}>{post.data.publishedAt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</time><span>{readingTime(post)} min read</span></div><h2>{post.data.title}</h2><p>{post.data.excerpt ?? post.data.description}</p><strong>Read article →</strong></div>
+    </a>) : <div class="empty-state"><p class="eyebrow">NO ARTICLES</p><h2>Nothing published yet.</h2><p>Create the first article with <code>npm run new:article -- "Your title"</code>.</p></div>}
+    <div class="article-no-results" id="article-no-results" hidden><p class="eyebrow">NO MATCH</p><h2>No articles found.</h2><p>Try another search or category.</p></div>
+  </section>
+</BaseLayout>
+<style>
+.content-controls{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;align-items:center;gap:12px;margin-bottom:28px}.article-search{height:44px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:0 12px}.article-search span{font-size:18px;color:var(--muted)}.article-search input{border:0;outline:0;background:transparent;color:var(--text);width:100%;font:700 10px var(--mono)}.article-filters{display:flex;gap:6px;flex-wrap:wrap}.article-filter{height:38px;padding:0 11px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);font:800 8px var(--mono);cursor:pointer}.article-filter.active,.article-filter:hover{color:var(--blue);border-color:var(--blue);background:var(--blue3)}.article-sort{display:flex;align-items:center;gap:7px}.article-sort span{font:800 8px var(--mono);color:var(--muted)}.article-sort select{height:38px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:800 8px var(--mono);padding:0 9px;outline:0}.article-no-results{text-align:center;padding:70px 20px}.article-no-results h2{margin:7px 0}.article-no-results p:last-child{color:var(--muted);font-size:11px}.blog-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.blog-meta span:last-child{color:var(--muted)}
+@media(max-width:900px){.content-controls{grid-template-columns:1fr}.article-sort{justify-content:space-between}}
+</style>
+<script>
+const articlePage=document.querySelector('#article-list');
+if(articlePage){
+ const items=[...articlePage.querySelectorAll('.article-item')], search=document.querySelector('#article-search'), filters=[...document.querySelectorAll('.article-filter')], sort=document.querySelector('#article-sort'), empty=document.querySelector('#article-no-results');
+ let category='all';
+ const render=()=>{const q=(search?.value||'').trim().toLowerCase();const visible=items.filter(item=>(category==='all'||item.dataset.category===category)&&(!q||item.dataset.search.includes(q)));visible.sort((a,b)=>{if(sort?.value==='updated')return Number(b.dataset.updated)-Number(a.dataset.updated);if(sort?.value==='relevant'){const score=(x)=>q?x.dataset.search.split(q).length-1:0;return score(b)-score(a);}return Number(b.dataset.published)-Number(a.dataset.published);});visible.forEach(item=>articlePage.appendChild(item));items.forEach(item=>item.hidden=!visible.includes(item));if(empty)empty.hidden=visible.length!==0;};
+ filters.forEach(button=>button.addEventListener('click',()=>{category=button.dataset.category;filters.forEach(x=>x.classList.toggle('active',x===button));render();}));search?.addEventListener('input',render);sort?.addEventListener('change',render);render();
+}
+</script>
 </BaseLayout>
