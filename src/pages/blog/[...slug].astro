@@ -2,15 +2,37 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection, render } from 'astro:content';
 export async function getStaticPaths() {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  const posts = await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft);
   return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
 }
 const { post } = Astro.props;
 const { Content } = await render(post);
+const words = post.body?.split(/\s+/).filter(Boolean).length ?? 0;
+const readingTime = post.data.readingTime ?? Math.max(1, Math.ceil(words / 220));
+const date = (value) => value?.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+const updated = post.data.updatedAt ?? post.data.publishedAt;
 ---
-<BaseLayout title={post.data.title} description={post.data.description}>
+<BaseLayout title={post.data.seoTitle ?? post.data.title} description={post.data.seoDescription ?? post.data.description}>
   <article class="wrap article-page">
-    <header class="article-header"><a class="back-link" href="/blog">← All guides</a><p class="eyebrow">{post.data.category}</p><h1>{post.data.title}</h1><p class="article-lede">{post.data.description}</p><div class="article-byline"><span>{post.data.author}</span><time datetime={post.data.publishedAt.toISOString()}>{post.data.publishedAt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</time></div></header>
-    <div class="article-content"><Content /></div>
+    <header class="article-header">
+      <a class="back-link" href="/blog">← All articles</a>
+      <div class="article-type"><span class="eyebrow">{post.data.category}</span>{post.data.factStatus ? <span class={`fact ${post.data.factStatus}`}>{post.data.factStatus.replaceAll('-', ' ')}</span> : null}</div>
+      <h1>{post.data.title}</h1>
+      {post.data.subtitle ? <p class="article-subtitle">{post.data.subtitle}</p> : null}
+      <p class="article-lede">{post.data.description}</p>
+      <div class="article-byline"><span>By {post.data.author}</span><span>Published {date(post.data.publishedAt)}</span><span>Updated {date(updated)}</span><span>{readingTime} min read</span></div>
+    </header>
+    {post.data.image ? <img class="article-cover" src={post.data.image} alt="" /> : null}
+    <div class="article-layout">
+      <div class="article-content"><Content /></div>
+      <aside class="article-aside">
+        {post.data.tags?.length ? <div class="aside-box"><small>TOPICS</small><div class="tags">{post.data.tags.map((tag) => <span>{tag}</span>)}</div></div> : null}
+        {post.data.lastReviewed ? <div class="aside-box"><small>LAST REVIEWED</small><strong>{date(post.data.lastReviewed)}</strong></div> : null}
+        {post.data.sources?.length ? <div class="aside-box"><small>SOURCES</small><ul>{post.data.sources.map((source) => <li>{source}</li>)}</ul></div> : null}
+      </aside>
+    </div>
   </article>
 </BaseLayout>
+<style>
+.article-type{display:flex;align-items:center;gap:9px;margin-top:12px}.article-header h1{margin-top:10px}.article-subtitle{font-size:17px;font-weight:700;margin:12px 0 0}.fact{font:800 7px var(--mono);text-transform:uppercase;padding:5px 7px;border-radius:6px;background:var(--surface2);color:var(--muted)}.fact.verified{color:var(--blue);background:var(--blue3)}.article-byline{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:17px;font:700 8px var(--mono);color:var(--muted)}.article-cover{display:block;width:100%;max-height:520px;object-fit:cover;border-radius:16px;margin:30px 0}.article-layout{display:grid;grid-template-columns:minmax(0,760px) 230px;gap:42px;justify-content:center}.article-content{min-width:0}.article-aside{display:flex;flex-direction:column;gap:12px}.aside-box{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:14px}.aside-box small{display:block;font:800 7px var(--mono);color:var(--muted);letter-spacing:.12em;margin-bottom:9px}.aside-box strong{font:800 9px var(--mono)}.tags{display:flex;flex-wrap:wrap;gap:5px}.tags span{padding:5px 7px;border-radius:6px;background:var(--blue3);color:var(--blue);font:800 7px var(--mono)}.aside-box ul{padding-left:15px;margin:0}.aside-box li{font-size:9px;line-height:1.5;color:var(--muted);margin:4px 0}@media(max-width:800px){.article-layout{display:block}.article-aside{margin-top:25px}.article-cover{max-height:350px}}
+</style>
