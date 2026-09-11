@@ -1,0 +1,528 @@
+/* ============================================================
+   FC Mobile Trivia — refined stylesheet
+   Same design tokens as the FC Mobile Tools system.
+   Layout unchanged; polish added to type, elevation, and motion.
+   ============================================================ */
+
+:root{
+  --bg:#050505;
+  --surface:#0d0d10;
+  --surface-2:#121216;
+  --border:#24242a;
+
+  --text:#f5f5f7;
+  --text-secondary:#bdbdc5;
+  --muted:#898991;
+  --faint:#62626b;
+
+  --purple:#8b5cf6;
+  --purple-light:#a78bfa;
+  --purple-dim:#8b5cf61a;
+
+  --success:#48d98a;
+  --error:#ef7180;
+
+  --ease: cubic-bezier(.16,.84,.44,1);
+  --ease-out: cubic-bezier(.22,1,.36,1);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+button{font:inherit}
+
+/* ---------------- Nav ---------------- */
+.nav{
+  height:68px;
+  position:sticky;top:0;z-index:20;
+  background:#050505e8;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.navin{max-width:1080px;height:100%;margin:auto;padding:0 18px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:850;font-size:14px;letter-spacing:-.01em}
+.brand span,.eyebrow,.level,.daynum{color:var(--purple-light)}
+.links{display:flex;gap:3px}
+.links a{padding:8px 10px;border-radius:8px;color:#92929a;font-size:12px;font-weight:700;transition:color .15s var(--ease),background-color .15s var(--ease)}
+.links a:hover{color:#fff;background:var(--purple-dim)}
+.links a.active{color:#fff;background:var(--purple-dim);box-shadow:inset 0 0 0 1px #8b5cf62e}
+
+/* ---------------- Page shell ---------------- */
+.page{max-width:1080px;margin:auto;padding:48px 18px 90px}
+.trivia{max-width:760px}
+
+.crumb{color:#777;font-size:11px;margin-bottom:24px;letter-spacing:.01em}
+.crumb a{color:var(--purple-light);transition:opacity .15s}
+.crumb a:hover{opacity:.75}
+
+/* ---------------- Hero (Mexico hub etc.) ---------------- */
+.hero{
+  min-height:330px;
+  border:1px solid var(--border);
+  border-radius:22px;
+  overflow:hidden;
+  padding:40px;
+  display:flex;align-items:end;
+  position:relative;
+  background:linear-gradient(90deg,#000000f5,#00000082),var(--hero-img,none) center/cover;
+  box-shadow:0 24px 60px -24px #000000cc, inset 0 0 0 1px #ffffff05;
+}
+.hero::after{
+  content:"";
+  position:absolute;inset:0;
+  background:radial-gradient(560px 260px at 12% 100%,#8b5cf61c,transparent 70%);
+  pointer-events:none;
+}
+.hero>*{position:relative}
+.hero h1{font-size:clamp(42px,7vw,70px);line-height:.98;margin:10px 0 14px;letter-spacing:-.055em;font-weight:850}
+.eyebrow,.level,.daynum{font-size:11px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}
+.hero p{max-width:680px;color:var(--text-secondary);font-size:14px}
+.pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:18px}
+.pill{border:1px solid #ffffff14;background:#00000073;padding:6px 10px;border-radius:999px;color:#c7c7cd;font-size:11px;backdrop-filter:blur(6px)}
+
+/* ---------------- Sections / day grid ---------------- */
+.section{margin-top:56px}
+.section h2{font-size:28px;letter-spacing:-.04em;margin:0 0 8px;font-weight:800}
+.section>p{color:var(--muted);font-size:13px;max-width:720px}
+
+.days{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.day{
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:15px;
+  padding:19px;
+  transition:transform .22s var(--ease-out), border-color .22s var(--ease-out), box-shadow .22s var(--ease-out), background-color .22s var(--ease-out);
+  position:relative;
+  overflow:hidden;
+}
+.day::before{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,#8b5cf610,transparent 55%);
+  opacity:0;
+  transition:opacity .22s var(--ease-out);
+}
+.day:hover{
+  border-color:#8b5cf65c;
+  transform:translateY(-3px);
+  background:var(--surface-2);
+  box-shadow:0 18px 34px -20px #8b5cf640, 0 2px 10px -4px #000c;
+}
+.day:hover::before{opacity:1}
+.day h3{margin:5px 0 2px;font-size:17px;font-weight:750;position:relative}
+.day p{margin:0;color:var(--muted);font-size:12px;position:relative}
+.day .count{display:block;margin-top:12px;color:#bbb;font-size:11px;position:relative}
+
+.guide{border:1px solid var(--border);background:var(--surface);border-radius:15px;padding:20px;color:var(--muted);font-size:13px}
+.guide strong{color:#eee}
+
+/* ---------------- Day page header ---------------- */
+.daytitle{font-size:38px;letter-spacing:-.05em;line-height:1.05;margin:5px 0 8px;font-weight:850}
+.subtitle{color:var(--muted);font-size:13px}
+
+/* ---------------- Progress ---------------- */
+.progress{margin:30px 0 22px}
+.progressrow{display:flex;justify-content:space-between;color:#aaa;font-size:12px;font-weight:700}
+.dots{display:flex;gap:7px;margin-top:10px}
+.dot{
+  height:4px;flex:1;border-radius:9px;
+  background:#29292f;
+  overflow:hidden;
+  position:relative;
+}
+.dot::after{
+  content:"";
+  position:absolute;inset:0;
+  border-radius:inherit;
+  background:linear-gradient(90deg,var(--purple),var(--purple-light));
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform .45s var(--ease);
+}
+.dot.done::after{transform:scaleX(1)}
+.dot.current{background:#3a3a42}
+.dot.current::after{transform:scaleX(1);box-shadow:0 0 10px 1px #8b5cf680}
+
+/* ---------------- Quiz card ---------------- */
+.qcard{
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:var(--surface);
+  overflow:hidden;
+  position:relative;
+  box-shadow:0 30px 60px -32px #000000e6, inset 0 0 0 1px #ffffff04;
+  animation:cardIn .4s var(--ease-out);
+}
+.qcard::before{
+  content:"";
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,#8b5cf699,transparent);
+}
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.qbody{padding:26px}
+.qnumber{color:#676771;font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
+.question{font-size:21px;line-height:1.5;margin-top:9px;font-weight:750;letter-spacing:-.01em}
+
+.options{display:grid;gap:8px;margin-top:23px}
+.option{
+  width:100%;text-align:left;
+  border:1px solid #ffffff0e;
+  background:#ffffff03;
+  color:#bfc0c7;
+  padding:13px 15px;
+  border-radius:11px;
+  cursor:pointer;
+  font-size:14px;
+  transition:border-color .16s var(--ease-out), background-color .16s var(--ease-out), color .16s var(--ease-out), transform .12s var(--ease-out);
+}
+.option:hover{border-color:#8b5cf655;background:#8b5cf60b}
+.option:active{transform:scale(.99)}
+.option:focus-visible{outline:2px solid var(--purple-light);outline-offset:2px}
+.option.selected{
+  border-color:var(--purple);
+  background:var(--purple-dim);
+  color:#fff;
+  box-shadow:0 0 0 1px #8b5cf633, 0 6px 18px -10px #8b5cf680;
+}
+.option.correct{
+  border-color:var(--success);
+  background:#48d98a12;
+  color:#eafff2;
+  box-shadow:0 0 0 1px #48d98a30;
+  animation:pop .28s var(--ease-out);
+}
+.option.wrong{
+  border-color:var(--error);
+  background:#ef718012;
+  color:#ffeef0;
+  box-shadow:0 0 0 1px #ef718030;
+}
+.option:disabled{cursor:default}
+@keyframes pop{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.015)}
+  100%{transform:scale(1)}
+}
+
+.answer{
+  display:none;
+  padding:18px 26px;
+  border-top:1px solid #ffffff0b;
+  background:#ffffff02;
+}
+.answer.show{display:block;animation:reveal .3s var(--ease-out)}
+@keyframes reveal{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.answer .label{color:var(--success);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
+.answer strong{display:block;margin-top:3px;font-size:16px;font-weight:800}
+.answer p{color:#a9a9b2;font-size:12.5px;margin:7px 0 0;line-height:1.65}
+
+.actions{display:flex;gap:8px;margin-top:17px}
+.btn{
+  border:1px solid var(--border);
+  background:#fff;
+  color:#080808;
+  padding:11px 16px;
+  border-radius:10px;
+  font-weight:800;
+  font-size:12px;
+  cursor:pointer;
+  transition:transform .12s var(--ease-out), box-shadow .12s var(--ease-out), opacity .12s var(--ease-out);
+}
+.btn:hover:not(:disabled){box-shadow:0 8px 20px -10px #ffffff40;transform:translateY(-1px)}
+.btn:active:not(:disabled){transform:translateY(0) scale(.98)}
+.btn:focus-visible{outline:2px solid var(--purple-light);outline-offset:2px}
+.btn.secondary{background:#ffffff05;color:#ddd;border-color:var(--border)}
+.btn.secondary:hover:not(:disabled){box-shadow:0 8px 20px -12px #00000080;background:#ffffff09}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ---------------- Result ---------------- */
+.result{
+  display:none;
+  text-align:center;
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:18px;
+  padding:35px;
+  position:relative;
+  overflow:hidden;
+}
+.result.show{display:block;animation:cardIn .4s var(--ease-out)}
+.result::before{
+  content:"";
+  position:absolute;inset:0;
+  background:radial-gradient(320px 160px at 50% 0%,#8b5cf61a,transparent 70%);
+  pointer-events:none;
+}
+.result>*{position:relative}
+.score{font-size:45px;font-weight:850;letter-spacing:-.05em}
+.result p{color:var(--muted);font-size:13px}
+
+.footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--border);color:var(--faint);font-size:11px}
+
+/* ============================================================
+   Country hub page (e.g. /trivia/mexico/)
+   ============================================================ */
+
+.hub-hero{
+  min-height:300px;
+  border:1px solid var(--border);
+  border-radius:22px;
+  overflow:hidden;
+  padding:40px;
+  display:flex;align-items:end;
+  position:relative;
+  background:
+    linear-gradient(180deg,#00000010,#050505 92%),
+    linear-gradient(90deg,#000000f5,#00000070),
+    var(--hero-img,none) center 30%/cover;
+  box-shadow:0 24px 60px -24px #000000cc, inset 0 0 0 1px #ffffff05;
+}
+.hub-hero::after{
+  content:"";
+  position:absolute;inset:0;
+  background:radial-gradient(620px 280px at 8% 100%,#8b5cf622,transparent 70%);
+  pointer-events:none;
+}
+.hub-hero>*{position:relative}
+.hub-hero h1{
+  font-size:clamp(40px,6.4vw,64px);
+  line-height:.96;
+  margin:10px 0 12px;
+  letter-spacing:-.055em;
+  font-weight:850;
+  display:flex;align-items:center;gap:14px;
+}
+.hub-hero .flag{font-size:.62em;filter:drop-shadow(0 6px 16px #000a)}
+.hub-hero p{max-width:640px;color:var(--text-secondary);font-size:14px}
+
+.hub-stats{display:flex;gap:22px;margin-top:20px;flex-wrap:wrap}
+.hub-stat{display:flex;flex-direction:column;gap:2px}
+.hub-stat b{font-size:22px;font-weight:850;letter-spacing:-.03em}
+.hub-stat span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:750}
+
+/* progress ring shown once localStorage has data */
+.hub-progress{
+  display:none;
+  align-items:center;gap:10px;
+  border:1px solid #ffffff17;
+  background:#00000073;
+  backdrop-filter:blur(6px);
+  padding:8px 14px 8px 8px;
+  border-radius:999px;
+  margin-top:22px;
+}
+.hub-progress.show{display:inline-flex}
+.hub-progress svg{transform:rotate(-90deg)}
+.hub-progress .ring-track{fill:none;stroke:#ffffff1c;stroke-width:4}
+.hub-progress .ring-fill{fill:none;stroke:var(--purple-light);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .5s var(--ease)}
+.hub-progress .ring-label{font-size:11.5px;font-weight:800;color:#eee}
+.hub-progress .ring-sub{font-size:10px;color:var(--muted)}
+
+/* ---- tier groups ---- */
+.tier{margin-top:44px}
+.tier:first-child{margin-top:32px}
+.tier-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.tier-dot{width:8px;height:8px;border-radius:50%;flex:none}
+.tier-dot.tier-beginner{background:var(--success);box-shadow:0 0 0 3px #48d98a1f}
+.tier-dot.tier-medium{background:var(--purple-light);box-shadow:0 0 0 3px #8b5cf61f}
+.tier-dot.tier-difficult{background:var(--error);box-shadow:0 0 0 3px #ef71801f}
+.tier-name{font-size:13px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.tier-beginner .tier-name{color:#8ce8b6}
+.tier-medium .tier-name{color:var(--purple-light)}
+.tier-difficult .tier-name{color:#f4a3ac}
+.tier-meta{color:var(--faint);font-size:11.5px}
+
+.days{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+.day{
+  position:relative;
+  border-left:3px solid transparent;
+}
+.day.tc-beginner{border-left-color:#48d98a55}
+.day.tc-medium{border-left-color:#8b5cf655}
+.day.tc-difficult{border-left-color:#ef718055}
+.day.tc-beginner:hover{border-left-color:var(--success)}
+.day.tc-medium:hover{border-left-color:var(--purple-light)}
+.day.tc-difficult:hover{border-left-color:var(--error)}
+
+.day .top-row{display:flex;justify-content:space-between;align-items:flex-start;position:relative}
+.day .check{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--success);color:#04241a;
+  display:none;align-items:center;justify-content:center;
+  font-size:12px;font-weight:900;flex:none;
+}
+.day.done .check{display:flex}
+.day.done .count{color:#8ce8b6}
+
+/* ---- guide / how it works ---- */
+.guide{display:flex;gap:14px;align-items:flex-start}
+.guide-icon{
+  width:34px;height:34px;border-radius:10px;flex:none;
+  background:var(--purple-dim);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;
+}
+
+/* ---------------- Responsive ---------------- */
+@media(max-width:700px){
+  .brand{display:none}
+  .links{margin:auto}
+  .links a{padding:7px 6px;font-size:10px}
+  .hero{padding:25px;min-height:390px}
+  .days{grid-template-columns:1fr}
+  .page{padding-top:28px}
+  .question{font-size:18px}
+  .qbody{padding:20px}
+  .hub-hero{padding:24px;min-height:280px}
+  .hub-hero h1{gap:10px}
+  .hub-stats{gap:16px}
+}
+
+
+/* =========================================================
+   ADD TO trivia.css
+   New classes only. Nothing below touches existing selectors.
+   Replaces the old photo-header treatment (.hub-hero with
+   --hero-img) with a compact, text-led hero: .hub-hero-v2
+   ========================================================= */
+
+.hub-hero-v2{
+  padding:36px 0 32px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:8px;
+}
+
+.hub-hero-top{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  margin-bottom:14px;
+}
+
+.hub-flag{
+  width:52px;
+  height:52px;
+  border-radius:14px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:26px;
+  background:#8b5cf61a;
+  border:1px solid #8b5cf640;
+}
+
+.hub-hero-titles .eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  margin-bottom:6px;
+  color:var(--purple-light);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+.hub-hero-titles h1{
+  font-size:clamp(28px,4.4vw,40px);
+  line-height:1;
+  letter-spacing:-.04em;
+  font-weight:850;
+  color:var(--text);
+}
+
+.hub-hero-lede{
+  color:var(--text-secondary);
+  font-size:14.5px;
+  line-height:1.7;
+  max-width:640px;
+  margin-bottom:22px;
+}
+
+.hub-hero-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:16px;
+}
+
+/* ---------- SEO content blocks (shared across all hub pages) ---------- */
+
+.about-block{
+  max-width:1080px;
+  margin:56px auto 0;
+  padding:0 20px;
+}
+.about-block h2{
+  font-size:18px;
+  font-weight:850;
+  letter-spacing:-.02em;
+  color:var(--text);
+  margin-bottom:12px;
+}
+.about-block p{
+  color:var(--text-secondary);
+  font-size:14px;
+  line-height:1.8;
+  max-width:720px;
+  margin-bottom:12px;
+}
+.about-block p:last-child{margin-bottom:0}
+
+.faq-block{
+  max-width:1080px;
+  margin:44px auto 0;
+  padding:0 20px;
+}
+.faq-block h2{
+  font-size:18px;
+  font-weight:850;
+  letter-spacing:-.02em;
+  color:var(--text);
+  margin-bottom:14px;
+}
+.faq-row{
+  border-top:1px solid var(--border);
+  padding:16px 0;
+}
+.faq-row:last-child{padding-bottom:0}
+.faq-row h3{
+  font-size:13.5px;
+  font-weight:750;
+  color:var(--text);
+  margin-bottom:6px;
+}
+.faq-row p{
+  color:var(--text-secondary);
+  font-size:13px;
+  line-height:1.7;
+  max-width:680px;
+}
+
+@media(max-width:600px){
+  .hub-hero-top{gap:12px}
+  .hub-flag{width:44px;height:44px;font-size:21px;border-radius:12px}
+  .hub-hero-row{align-items:flex-start}
+}
