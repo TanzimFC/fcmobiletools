@@ -30,6 +30,11 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
     const host = document.querySelector('[data-legacy-app]');
     if (!host) return;
 
+    if (kind === 'trivia') {
+      document.documentElement.classList.add('trivia-route-page');
+      document.body.classList.add('trivia-route-page');
+    }
+
     const syncFootballPage = () => {
       if (kind !== 'football-centre') return;
       const requested = initialPage || location.hash.replace(/^#/, '') || 'dashboard';
@@ -86,8 +91,15 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
   /* Football Centre alone uses .page as a panel switcher. */
   .legacy-app-football-centre .page{display:none!important;}
   .legacy-app-football-centre .page.active{display:block!important;}
+  .legacy-app-football-centre #settings .creator-card{display:none!important;}
+  .legacy-app-football-centre .hero{padding:18px 20px!important;margin-bottom:12px!important;}
+  .legacy-app-football-centre .hero:before{display:none!important;}
+  .legacy-app-football-centre .score{font-size:clamp(36px,5vw,52px)!important;}
+  .legacy-app-football-centre .scoreline{margin:2px 0 9px!important;}
+  .legacy-app-football-centre .progress{height:10px!important;}
 
   /* Trivia is a standalone black page. Never inherit the homepage hero/background. */
+  html.trivia-route-page, body.trivia-route-page{background:#050505!important;}
   .legacy-app-trivia{background:#050505;color:#f5f5f7;min-height:420px;}
   .legacy-app-trivia .page{display:block!important;background:#050505;}
   .legacy-app-trivia .hero,
