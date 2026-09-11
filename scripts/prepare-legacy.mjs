@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -8,9 +8,7 @@ const pages = ['legacy/football-centre.html','legacy/creator.html','trivia/index
 
 function safeName(file) { return file.replace(/\.html$/i, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(); }
 function extractStyles(source) { return [...source.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n'); }
-function extractScripts(source) {
-  return [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map((m) => m[1].trim()).filter(Boolean).join('\n\n');
-}
+function extractScripts(source) { return [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map((m) => m[1].trim()).filter(Boolean).join('\n\n'); }
 function cleanBody(source) {
   let body = source.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? source;
   body = body.replace(/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/gi, '').replace(/<style(?:\s[^>]*)?>[\s\S]*?<\/style>/gi, '');
@@ -34,4 +32,8 @@ for (const relative of pages) {
   await writeFile(path.join(outDir, `${name}.css`), scopeCss(extractStyles(source)));
   await writeFile(path.join(outDir, `${name}.js`), extractScripts(source));
 }
+
+// These old public copies occupy the exact same URLs as the Astro trivia routes.
+// Extract them first, then remove the collision before Astro writes the real routes.
+await rm(path.join(publicDir, 'trivia'), { recursive: true, force: true });
 console.log(`Prepared ${pages.length} legacy apps into public/_legacy.`);
