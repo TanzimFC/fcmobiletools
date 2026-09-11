@@ -14,16 +14,37 @@ const jsUrl = `/_legacy/${sourceName}.js`;
   <link rel="stylesheet" href={cssUrl} />
   <div class="legacy-app" set:html={body}></div>
 </div>
-{initialPage && <script is:inline define:vars={{ initialPage }}>history.replaceState(null, '', `${location.pathname}${location.search}#${initialPage}`);</script>}
-<script is:inline src={jsUrl}></script>
-{initialPage && <script is:inline define:vars={{ initialPage }}>history.replaceState(null, '', `${location.pathname}${location.search}`);</script>}
+
+{initialPage && <script is:inline define:vars={{ initialPage }}>
+  (() => {
+    const host = document.querySelector('[data-legacy-app]');
+    if (!host) return;
+    history.replaceState(null, '', `${location.pathname}${location.search}#${initialPage}`);
+  })();
+</script>}
+
+<script is:inline define:vars={{ jsUrl }}>
+  (() => {
+    const host = document.querySelector('[data-legacy-app]');
+    if (!host) return;
+    const script = document.createElement('script');
+    script.src = jsUrl;
+    script.onload = () => {
+      // The legacy Football Centre uses hashes internally. Keep that behavior
+      // while it initializes, then leave the clean Astro route in the address bar.
+      if (location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`);
+    };
+    host.appendChild(script);
+  })();
+</script>
+
 <script is:inline>
   (() => {
     const host = document.querySelector('[data-legacy-app]');
     if (!host) return;
     const routes = {
       dashboard: '/football-centre', matches: '/football-centre/matches', analysis: '/football-centre/analysis',
-      totw: '/football-centre/totw', history: '/football-centre/history', settings: '/football-centre/settings'
+      totw: '/football-centre/totw', rewards: '/football-centre/totw', history: '/football-centre/history', settings: '/football-centre/settings'
     };
     host.querySelectorAll('[data-page]').forEach((button) => button.addEventListener('click', (event) => {
       const route = routes[button.dataset.page];
@@ -34,11 +55,21 @@ const jsUrl = `/_legacy/${sourceName}.js`;
     }, true));
   })();
 </script>
+
 <style>
   .legacy-app-host{width:100%;display:block;position:relative;isolation:isolate;}
   .legacy-app{width:100%;min-width:0;}
-  .legacy-app-host .topbar,.legacy-app-host .site-nav,.legacy-app-host .tool-nav,.legacy-app-host .site-footer{display:none!important;}
+  .legacy-app-host .topbar,
+  .legacy-app-host .site-nav,
+  .legacy-app-host .tool-nav,
+  .legacy-app-host nav.nav,
+  .legacy-app-host .site-footer{display:none!important;}
   .legacy-app-host .app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 44px;}
   .legacy-app-host .app>.site-footer{display:none!important;}
+  /* Football Centre's app is a single view with hash-controlled .page panels. */
+  .legacy-app-host .page{display:none!important;}
+  .legacy-app-host .page.active{display:block!important;}
+  /* Trivia's main page is content, not a hash panel. */
+  .legacy-app-host .page.trivia{display:block!important;}
   @media(max-width:720px){.legacy-app-host .app{width:calc(100% - 18px);padding-top:16px;}}
 </style>
