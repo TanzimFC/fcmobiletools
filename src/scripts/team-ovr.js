@@ -31,9 +31,42 @@ if (formation && subsEl && addSub && reset) {
   const pitch = formation.closest('.pitch');
   if (pitch) pitch.style.aspectRatio = '2 / 3';
 
+  // Move optional squad inputs above the analysis tools on desktop and mobile.
+  const rightCol = document.querySelector('.right-col');
+  const subsBlock = document.querySelector('.subs-block');
+  const badgesBlock = subsBlock?.nextElementSibling;
+  const plannerBlock = rightCol?.querySelector('.planner');
+  if (rightCol && subsBlock && badgesBlock && plannerBlock) {
+    rightCol.insertBefore(subsBlock, plannerBlock);
+    rightCol.insertBefore(badgesBlock, plannerBlock);
+  }
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .pitch{aspect-ratio:2/3!important;height:auto!important}
+    .pitch>img{object-fit:fill!important}
+    .formation{overflow:visible}
+    .card{width:clamp(58px,14%,112px);padding:7px}
+    .card-top{gap:3px}.card-top span:last-child{white-space:nowrap;font-size:7px}
+    .card input{height:31px;font-size:11px}.card select{height:27px;font-size:8px}
+    .subs-block,.badges-block{margin-bottom:20px}
+    .subs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .sub{min-width:0}.sub-foot{display:flex;justify-content:space-between;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font:700 7px var(--mono);color:var(--muted)}
+    .sub-foot b{color:var(--blue);font:900 10px var(--mono)}
+    @media(max-width:900px){.subs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:760px){.card{width:58px;padding:5px}.card-top span:last-child{font-size:6px}.card input{height:26px;font-size:9px}.card select{height:23px;font-size:7px}.card-ovr{font-size:8px}.subs{grid-template-columns:1fr}.right-col .subs-block,.right-col .badges-block{margin-bottom:14px}}
+    @media(max-width:380px){.card{width:54px;padding:4px}.card-top{margin-bottom:3px}.card-top span:last-child{font-size:5.5px}.card input{height:24px;font-size:8px}.card select{height:21px;font-size:6.5px}.card-ovr{margin-top:3px}}
+  `;
+  document.head.appendChild(style);
+
   function playerLabel(index) {
     return `Player ${index + 1}`;
   }
+
+  formation.querySelectorAll('.card').forEach((card, index) => {
+    const number = card.querySelector('.card-top span:last-child');
+    if (number) number.textContent = playerLabel(index);
+  });
 
   function allocation(players, key, amount) {
     let remaining = amount;
@@ -79,15 +112,12 @@ if (formation && subsEl && addSub && reset) {
     const baseCapacity = players.reduce((total, player) => total + BASE_OVR_MAX - player.baseOVR, 0);
     const rankCapacity = players.reduce((total, player) => total + 5 - player.rank, 0);
     let best = null;
-
     for (let baseDelta = 0; baseDelta <= baseCapacity; baseDelta += 1) {
       const basePart = Math.ceil((baseTotal + baseDelta) / n);
       const neededRank = (target - badges - basePart - 1) * n + 1 - rankTotal;
       const rankDelta = Math.max(0, neededRank);
       if (rankDelta > rankCapacity) continue;
-      if (!best || baseDelta + rankDelta < best.baseDelta + best.rankDelta) {
-        best = { baseDelta, rankDelta };
-      }
+      if (!best || baseDelta + rankDelta < best.baseDelta + best.rankDelta) best = { baseDelta, rankDelta };
     }
     return best;
   }
@@ -95,11 +125,9 @@ if (formation && subsEl && addSub && reset) {
   function routeText(kind, delta, players) {
     if (delta === 0) return 'No upgrade is required for this route.';
     const key = kind === 'base' ? 'baseOVR' : 'rank';
-    return allocation(players, key, delta)
-      .map(({ player, index, add }) => kind === 'base'
-        ? `${playerLabel(index)}: ${player.baseOVR} → ${player.baseOVR + add} Base OVR`
-        : `${playerLabel(index)}: Rank ${player.rank} → Rank ${player.rank + add}`)
-      .join('\n');
+    return allocation(players, key, delta).map(({ player, index, add }) => kind === 'base'
+      ? `${playerLabel(index)}: ${player.baseOVR} → ${player.baseOVR + add} Base OVR`
+      : `${playerLabel(index)}: Rank ${player.rank} → Rank ${player.rank + add}`).join('\n');
   }
 
   function renderSubs() {
@@ -107,32 +135,16 @@ if (formation && subsEl && addSub && reset) {
     state.subs.forEach((player, index) => {
       const card = document.createElement('article');
       card.className = 'sub';
-      card.innerHTML = `
-        <div class="sub-top"><b>SUB ${index + 1}</b><button class="sub-remove" type="button" aria-label="Remove substitute">×</button></div>
-        <label>Base OVR<input data-base type="number" min="40" max="${BASE_OVR_MAX}" inputmode="numeric" placeholder="Base OVR"></label>
-        <label>Rank<select data-rank><option value="">Rank</option>${RANK_OPTIONS.map((rank) => `<option value="${rank}">Rank ${rank}</option>`).join('')}</select></label>
-        <div class="sub-foot"><span>Included in Team OVR</span><b data-sub-ovr>--</b></div>`;
+      card.innerHTML = `<div class="sub-top"><b>SUB ${index + 1}</b><button class="sub-remove" type="button" aria-label="Remove substitute">×</button></div><label>Base OVR<input data-base type="number" min="40" max="${BASE_OVR_MAX}" inputmode="numeric" placeholder="Base OVR"></label><label>Rank<select data-rank><option value="">Rank</option>${RANK_OPTIONS.map((rank) => `<option value="${rank}">Rank ${rank}</option>`).join('')}</select></label><div class="sub-foot"><span>Included in Team OVR</span><b data-sub-ovr>--</b></div>`;
       const base = card.querySelector('[data-base]');
       const rank = card.querySelector('[data-rank]');
       const subOvr = card.querySelector('[data-sub-ovr]');
       base.value = player.baseOVR ?? '';
       rank.value = player.rank ?? '';
       subOvr.textContent = valid(player) ? player.baseOVR + player.rank : '--';
-      base.addEventListener('input', () => {
-        player.baseOVR = base.value === '' ? null : Number(base.value);
-        subOvr.textContent = valid(player) ? player.baseOVR + player.rank : isValidBaseOVR(player.baseOVR) ? player.baseOVR : '--';
-        recompute();
-      });
-      rank.addEventListener('change', () => {
-        player.rank = rank.value === '' ? null : Number(rank.value);
-        subOvr.textContent = valid(player) ? player.baseOVR + player.rank : '--';
-        recompute();
-      });
-      card.querySelector('.sub-remove').addEventListener('click', () => {
-        state.subs.splice(index, 1);
-        renderSubs();
-        recompute();
-      });
+      base.addEventListener('input', () => { player.baseOVR = base.value === '' ? null : Number(base.value); subOvr.textContent = valid(player) ? player.baseOVR + player.rank : isValidBaseOVR(player.baseOVR) ? player.baseOVR : '--'; recompute(); });
+      rank.addEventListener('change', () => { player.rank = rank.value === '' ? null : Number(rank.value); subOvr.textContent = valid(player) ? player.baseOVR + player.rank : '--'; recompute(); });
+      card.querySelector('.sub-remove').addEventListener('click', () => { state.subs.splice(index, 1); renderSubs(); recompute(); });
       subsEl.appendChild(card);
     });
     addSub.disabled = state.subs.length >= maxSubs;
@@ -158,9 +170,7 @@ if (formation && subsEl && addSub && reset) {
     if (rankDelta !== null) routes.push({ name: 'Rank', cost: rankDelta, text: routeText('rank', rankDelta, players) });
     if (mixed) routes.push({ name: 'Mixed', cost: mixed.baseDelta + mixed.rankDelta, text: `${mixed.baseDelta ? `+${mixed.baseDelta} total Base OVR` : 'No Base OVR change'}\n${mixed.rankDelta ? `+${mixed.rankDelta} total Rank` : 'No Rank change'}` });
     routes.sort((a, b) => a.cost - b.cost);
-    box.innerHTML = routes.length
-      ? routes.map((route, index) => `<div class="route ${index === 0 ? 'best' : ''}"><div class="route-title"><span>${index === 0 ? 'BEST ROUTE · ' : ''}${route.name}</span><b>${route.cost} TOTAL</b></div><p>${route.text.replaceAll('\n', '<br>')}</p></div>`).join('')
-      : '<div class="planner-empty">No route is possible within the current Base OVR and Rank limits.</div>';
+    box.innerHTML = routes.length ? routes.map((route, index) => `<div class="route ${index === 0 ? 'best' : ''}"><div class="route-title"><span>${index === 0 ? 'BEST ROUTE · ' : ''}${route.name}</span><b>${route.cost} TOTAL</b></div><p>${route.text.replaceAll('\n', '<br>')}</p></div>`).join('') : '<div class="planner-empty">No route is possible within the current Base OVR and Rank limits.</div>';
   }
 
   function renderNext(players, current, badges) {
@@ -169,7 +179,6 @@ if (formation && subsEl && addSub && reset) {
     const routes = $('next-routes');
     const fill = $('meter-fill');
     if (!number || !needed || !routes || !fill) return;
-
     if (players.length < STARTING_XI_SIZE || players.length > MAX_SQUAD_SIZE || players.some((player) => !valid(player))) {
       number.textContent = '--';
       needed.textContent = 'Complete the squad';
@@ -183,7 +192,6 @@ if (formation && subsEl && addSub && reset) {
     const rankDelta = findRankDelta(players, target, badges);
     const mixed = findMixed(players, target, badges);
     const costs = [baseDelta, rankDelta, mixed ? mixed.baseDelta + mixed.rankDelta : null].filter((value) => value !== null);
-
     number.textContent = target;
     if (!costs.length) {
       needed.textContent = 'No route available';
@@ -191,7 +199,6 @@ if (formation && subsEl && addSub && reset) {
       fill.style.width = '100%';
       return;
     }
-
     const cheapest = Math.min(...costs);
     needed.textContent = `Minimum change: ${cheapest}`;
     const labels = [];
@@ -202,7 +209,7 @@ if (formation && subsEl && addSub && reset) {
     fill.style.width = `${Math.max(10, Math.min(100, 100 / Math.max(1, cheapest)))}%`;
   }
 
-  function renderBottleneck(players, current, badges) {
+  function renderBottleneck(players, current) {
     const box = $('bottleneck');
     if (!box) return;
     if (players.length < STARTING_XI_SIZE || players.length > MAX_SQUAD_SIZE || players.some((player) => !valid(player))) {
@@ -211,7 +218,7 @@ if (formation && subsEl && addSub && reset) {
     }
 
     const lowest = Math.min(...players.map((player) => player.baseOVR));
-    const lowestIndex = players.findIndex((player) => player.baseOVR === lowest);
+    const lowestPlayers = players.map((player, index) => ({ player, index })).filter(({ player }) => player.baseOVR === lowest);
     const n = players.length;
     const baseTotal = sum(players, 'baseOVR');
     const rankTotal = sum(players, 'rank');
@@ -219,13 +226,14 @@ if (formation && subsEl && addSub && reset) {
     const rankPart = Math.ceil(rankTotal / n);
     const baseGap = basePart * n - baseTotal;
     const rankGap = rankPart * n - rankTotal;
-
+    const testIndex = lowestPlayers[0].index;
     const oneStep = players.map((player) => ({ ...player }));
-    if (oneStep[lowestIndex].baseOVR < BASE_OVR_MAX) oneStep[lowestIndex].baseOVR += 1;
+    if (oneStep[testIndex].baseOVR < BASE_OVR_MAX) oneStep[testIndex].baseOVR += 1;
     const after = calculateTeamOVR({ players: oneStep, selectedBadges: badgeSelection(), requiredCount: n });
     const gain = after.complete ? after.teamOVR - current : 0;
+    const names = lowestPlayers.map(({ index }) => playerLabel(index)).join(', ');
 
-    box.innerHTML = `<div class="bottleneck-card"><div class="bottleneck-ovr">${lowest}</div><div><strong>Player ${lowestIndex + 1} · Lowest Base OVR</strong><p>Player ${lowestIndex + 1} is your lowest Base OVR at ${lowest}. A +1 Base OVR test gives ${gain > 0 ? `+${gain} Team OVR` : 'no immediate Team OVR increase'} at the current threshold. Base average gap: ${baseGap}. Rank average gap: ${rankGap}.</p></div></div>`;
+    box.innerHTML = `<div class="bottleneck-card"><div class="bottleneck-ovr">${lowest}</div><div><strong>${names}</strong><p>Lowest Base OVR: ${lowest}. A +1 Base OVR test gives ${gain > 0 ? `+${gain} Team OVR` : 'no immediate Team OVR increase'} at the current threshold. Base average gap: ${baseGap}. Rank average gap: ${rankGap}.</p></div></div>`;
   }
 
   function recompute() {
@@ -271,7 +279,7 @@ if (formation && subsEl && addSub && reset) {
     const target = Number($('target-ovr').value) || 120;
     renderPlanner(target, players, result?.teamOVR ?? estimate ?? 0, badgeBonus);
     renderNext(players, result?.teamOVR ?? 0, badgeBonus);
-    renderBottleneck(players, result?.teamOVR ?? 0, badgeBonus);
+    renderBottleneck(players, result?.teamOVR ?? 0);
   }
 
   formation.querySelectorAll('.card').forEach((card, index) => {
