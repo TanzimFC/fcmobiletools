@@ -1,12 +1,18 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.cwd();
 const publicDir = path.join(root, 'public');
 const outDir = path.join(publicDir, '_legacy');
-const pages = ['legacy/football-centre.html','legacy/creator.html','trivia/index.html','trivia/france/index.html','trivia/mexico/index.html','trivia/brazil/index.html'];
+const pages = [
+  ['football-centre', 'football-centre'],
+  ['creator.html', 'creator'],
+  ['trivia/index.html', 'trivia-index'],
+  ['trivia/france/index.html', 'trivia-france-index'],
+  ['trivia/mexico/index.html', 'trivia-mexico-index'],
+  ['trivia/brazil/index.html', 'trivia-brazil-index']
+];
 
-function safeName(file) { return file.replace(/\.html$/i, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(); }
 function extractStyles(source) { return [...source.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n'); }
 function extractScripts(source) { return [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map((m) => m[1].trim()).filter(Boolean).join('\n\n'); }
 function cleanBody(source) {
@@ -25,15 +31,10 @@ function scopeCss(css) {
 }
 
 await mkdir(outDir, { recursive: true });
-for (const relative of pages) {
-  const source = await readFile(path.join(publicDir, relative), 'utf8');
-  const name = safeName(relative);
-  await writeFile(path.join(outDir, `${name}.html`), cleanBody(source));
-  await writeFile(path.join(outDir, `${name}.css`), scopeCss(extractStyles(source)));
-  await writeFile(path.join(outDir, `${name}.js`), extractScripts(source));
+for (const [source, name] of pages) {
+  const input = await readFile(path.join(root, source), 'utf8');
+  await writeFile(path.join(outDir, `${name}.html`), cleanBody(input));
+  await writeFile(path.join(outDir, `${name}.css`), scopeCss(extractStyles(input)));
+  await writeFile(path.join(outDir, `${name}.js`), extractScripts(input));
 }
-
-// These old public copies occupy the exact same URLs as the Astro trivia routes.
-// Extract them first, then remove the collision before Astro writes the real routes.
-await rm(path.join(publicDir, 'trivia'), { recursive: true, force: true });
 console.log(`Prepared ${pages.length} legacy apps into public/_legacy.`);
