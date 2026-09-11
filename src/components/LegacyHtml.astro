@@ -30,22 +30,16 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
     const host = document.querySelector('[data-legacy-app]');
     if (!host) return;
 
-    if (kind === 'trivia') {
-      document.documentElement.classList.add('trivia-route-page');
-      document.body.classList.add('trivia-route-page');
-    }
-
     const syncFootballPage = () => {
       if (kind !== 'football-centre') return;
       const requested = initialPage || location.hash.replace(/^#/, '') || 'dashboard';
       const target = requested === 'rewards' ? 'totw' : requested;
-      const pages = [...host.querySelectorAll('main > section.page, section.page')];
+      const pages = [...host.querySelectorAll('section.page')];
       if (!pages.length) return;
       pages.forEach((page) => page.classList.toggle('active', page.id === target));
     };
 
     syncFootballPage();
-
     const script = document.createElement('script');
     script.src = jsUrl;
     script.onload = () => {
@@ -54,7 +48,6 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
     };
     script.onerror = () => host.setAttribute('data-legacy-error', 'script');
     host.appendChild(script);
-
     if (kind === 'football-centre') window.addEventListener('hashchange', syncFootballPage);
   })();
 </script>
@@ -77,44 +70,38 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
   })();
 </script>
 
-<style is:global>
+<style is="global">
   .legacy-app-host{width:100%;display:block;position:relative;isolation:isolate;}
   .legacy-app{width:100%;min-width:0;}
-  .legacy-app-host .topbar,
-  .legacy-app-host .site-nav,
-  .legacy-app-host .tool-nav,
-  .legacy-app-host nav.nav,
-  .legacy-app-host .site-footer{display:none!important;}
+  .legacy-app-host .topbar,.legacy-app-host .site-nav,.legacy-app-host .tool-nav,.legacy-app-host nav.nav,.legacy-app-host .site-footer{display:none!important;}
   .legacy-app-host .app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 44px;}
   .legacy-app-host .app>.site-footer{display:none!important;}
 
-  /* Football Centre alone uses .page as a panel switcher. */
   .legacy-app-football-centre .page{display:none!important;}
   .legacy-app-football-centre .page.active{display:block!important;}
-  .legacy-app-football-centre #settings .creator-card{display:none!important;}
-  .legacy-app-football-centre .hero{padding:18px 20px!important;margin-bottom:12px!important;}
-  .legacy-app-football-centre .hero:before{display:none!important;}
-  .legacy-app-football-centre .score{font-size:clamp(36px,5vw,52px)!important;}
-  .legacy-app-football-centre .scoreline{margin:2px 0 9px!important;}
-  .legacy-app-football-centre .progress{height:10px!important;}
+  .legacy-app-football-centre .page.active.card,.legacy-app-football-centre section.page.active{visibility:visible!important;opacity:1!important;}
 
-  /* Trivia is a standalone black page. Never inherit the homepage hero/background. */
-  html.trivia-route-page, body.trivia-route-page{background:#050505!important;}
+  /* Football Centre refresh: keep the dark UI but replace the old purple accent. */
+  .legacy-app-football-centre{--fc-accent:#63c7f3;--fc-accent-strong:#38aee7;--fc-accent-soft:#63c7f31f;}
+  .legacy-app-football-centre .eyebrow,.legacy-app-football-centre .tab.active,.legacy-app-football-centre .nav a.active{color:var(--fc-accent)!important;}
+  .legacy-app-football-centre .progress-fill,.legacy-app-football-centre .fill,.legacy-app-football-centre .progress-bar>span{background:linear-gradient(90deg,var(--fc-accent-strong),var(--fc-accent))!important;}
+  .legacy-app-football-centre .progress,.legacy-app-football-centre .progressbar{background:#18232b!important;}
+  .legacy-app-football-centre .card,.legacy-app-football-centre .coming,.legacy-app-football-centre .settings-card,.legacy-app-football-centre .stat{border-color:#22313a!important;}
+  .legacy-app-football-centre .card::before,.legacy-app-football-centre .card::after{border-color:var(--fc-accent-soft)!important;}
+  .legacy-app-football-centre button:hover,.legacy-app-football-centre .tab:hover{border-color:#63c7f355!important;}
+
+  /* Compact dashboard score: no oversized empty hero/token block. */
+  .legacy-app-football-centre #dashboard .hero{min-height:0!important;height:auto!important;padding:20px 22px!important;}
+  .legacy-app-football-centre #dashboard .scoreline{min-height:0!important;gap:8px!important;}
+  .legacy-app-football-centre #dashboard .score{font-size:34px!important;line-height:1!important;}
+  .legacy-app-football-centre #dashboard .score small{font-size:13px!important;}
+  .legacy-app-football-centre #dashboard .percent{font-size:11px!important;}
+  .legacy-app-football-centre #dashboard .progress{display:block!important;height:8px!important;margin:16px 0 10px!important;overflow:hidden!important;border-radius:99px!important;}
+  .legacy-app-football-centre #dashboard .progress-fill{display:block!important;height:100%!important;width:0;min-width:0;border-radius:inherit!important;}
+
   .legacy-app-trivia{background:#050505;color:#f5f5f7;min-height:420px;}
   .legacy-app-trivia .page{display:block!important;background:#050505;}
-  .legacy-app-trivia .hero,
-  .legacy-app-trivia .hub-hero,
-  .legacy-app-trivia .hub-hero-v2{background:#050505!important;background-image:none!important;}
-  .legacy-app-trivia .hero::before,
-  .legacy-app-trivia .hero::after,
-  .legacy-app-trivia .hub-hero::after,
-  .legacy-app-trivia .hub-hero-v2::after{display:none!important;}
-
-  /* Colourful nation accents without using the homepage artwork. */
-  .legacy-app-trivia .tc-beginner{--accent:#58a6ff;}
-  .legacy-app-trivia .tc-medium{--accent:#42d392;}
-  .legacy-app-trivia .tc-difficult{--accent:#f2c14e;}
-  .legacy-app-trivia .country-name{color:#fff;}
-
+  .legacy-app-trivia .hero,.legacy-app-trivia .hub-hero,.legacy-app-trivia .hub-hero-v2{background:#050505!important;background-image:none!important;}
+  .legacy-app-trivia .hero::before,.legacy-app-trivia .hero::after,.legacy-app-trivia .hub-hero::after,.legacy-app-trivia .hub-hero-v2::after{display:none!important;}
   @media(max-width:720px){.legacy-app-host .app{width:calc(100% - 18px);padding-top:16px;}}
 </style>
