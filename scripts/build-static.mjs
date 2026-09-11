@@ -1,5 +1,4 @@
-import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { cp, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -8,39 +7,10 @@ const exec = promisify(execFile);
 const root = process.cwd();
 const publicDir = path.join(root, 'public');
 
-// Keep the existing root assets available to Astro at /assets without changing
-// how the original HTML/CSS/JS files reference them.
 await mkdir(path.join(publicDir, 'assets'), { recursive: true });
 await cp(path.join(root, 'assets'), path.join(publicDir, 'assets'), { recursive: true, force: true });
 
+await exec('node', ['scripts/prepare-legacy.mjs'], { cwd: root });
 await exec('astro', ['build'], { cwd: root });
 
-const dist = path.join(root, 'dist');
-const triviaRoot = path.join(dist, 'trivia');
-const shellScript = '/assets/site-shell.js';
-const globalCss = '/styles.css';
-
-async function walk(dir) {
-  const out = [];
-  if (!existsSync(dir)) return out;
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...await walk(full));
-    else if (entry.name.toLowerCase().endsWith('.html')) out.push(full);
-  }
-  return out;
-}
-
-for (const file of await walk(triviaRoot)) {
-  let html = await readFile(file, 'utf8');
-  if (html.includes('data-site-nav') || html.includes('src="/assets/site-shell.js"')) continue;
-  html = html.replace('</head>', `  <link rel="stylesheet" href="${globalCss}">\n</head>`);
-  html = html.replace(/<header\s+class=["']topbar["'][\s\S]*?<\/header>/gi, '');
-  html = html.replace(/<footer\s+class=["']site-footer["'][\s\S]*?<\/footer>/gi, '');
-  html = html.replace(/<div\s+data-site-nav-placeholder[^>]*>\s*<\/div>/gi, '');
-  html = html.replace(/<div\s+data-site-footer-placeholder[^>]*>\s*<\/div>/gi, '');
-  html = html.replace('</body>', `  <script src="${shellScript}" defer></script>\n</body>`);
-  await writeFile(file, html);
-}
-
-console.log('Astro build complete; legacy trivia pages now use the shared site shell.');
+console.log('Astro build complete with isolated legacy app assets.');
