@@ -1,454 +1,52 @@
-
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-YY53FCHMLW"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-YY53FCHMLW');
-</script>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#050505">
-<title>FC Mobile Tools — TanzimFC</title>
-<meta name="description" content="Trackers, calculators and companion tools for FC Mobile, built by TanzimFC.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#050b12;--surface:#0d141c;--surface-2:#121b26;--border:#20303e;
-  --text:#f3f8fc;--muted:#8695a3;
-  --blue:#38bdf8;--blue-light:#7dd3fc;--blue-dim:#38bdf81a;
-  --green:#48d98a;--green-dim:#48d98a1a;
-  --mono:'JetBrains Mono',ui-monospace,monospace;
-  --sans:'Inter',system-ui,sans-serif;
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
-a{color:inherit;text-decoration:none}
-button{font-family:inherit;cursor:pointer}
-img{max-width:100%;display:block}
-::selection{background:var(--blue);color:#04121c}
-
-@media (prefers-reduced-motion: reduce){
-  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
-}
-
-:focus-visible{outline:2px solid var(--blue-light);outline-offset:3px;border-radius:4px}
-
-.wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}
-
-/* ---------- TOPBAR ---------- */
-.topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:#05050599;border-bottom:1px solid transparent;transition:border-color .3s ease}
-.topbar.scrolled{border-color:var(--border)}
-.topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 0}
-.brand{display:flex;align-items:center;gap:10px}
-.brand-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(145deg,var(--blue),#0ea5e9);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:14px;color:#fff;flex:0 0 auto}
-.brand-text{display:flex;flex-direction:column;line-height:1.1}
-.brand-text small{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--muted);font-weight:600}
-.brand-text strong{font-size:15px;font-weight:800;letter-spacing:-.01em}
-.topnav{display:flex;align-items:center;gap:2px;border:1px solid var(--border);background:#0d0d10cc;padding:4px;border-radius:12px}
-.topnav a{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);transition:color .18s,background .18s}
-.topnav a:hover{color:var(--text);background:var(--surface-2)}
-.topnav a.beta-link{display:flex;align-items:center;gap:6px}
-.topnav a.beta-link .beta-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
-.topbar-cta{display:flex;gap:8px;flex:0 0 auto}
-.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:9px 15px;border-radius:9px;font-size:12px;font-weight:700;transition:transform .16s,border-color .16s,background .16s}
-.btn:hover{transform:translateY(-1px);border-color:#3a3a42;background:#17171b}
-.btn.primary{background:linear-gradient(135deg,#38bdf8,#0ea5e9);border-color:#38bdf8;box-shadow:0 4px 20px #38bdf833}
-.btn.primary:hover{box-shadow:0 6px 26px #38bdf84d}
-.mobile-toggle{display:none}
-
-/* ---------- HERO ---------- */
-.hero{position:relative;overflow:hidden;padding:88px 0 76px;isolation:isolate}
-.hero-bg{position:absolute;inset:0;z-index:-2;background:
-  radial-gradient(ellipse 900px 500px at 18% 8%, #38bdf82e, transparent 60%),
-  radial-gradient(ellipse 800px 480px at 88% -6%, #48d98a1f, transparent 62%),
-  radial-gradient(ellipse 700px 400px at 50% 100%, #38bdf815, transparent 65%),
-  var(--bg);
-}
-.hero-grid{position:absolute;inset:0;z-index:-1;opacity:.35;
-  background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);
-  background-size:44px 44px;
-  mask-image:radial-gradient(ellipse 700px 420px at 50% 20%, black, transparent 75%);
-}
-.floodlight{position:absolute;top:-40%;left:50%;width:1400px;height:900px;transform:translateX(-50%);z-index:-1;pointer-events:none;
-  background:conic-gradient(from 200deg at 50% 0%, transparent 0deg, #38bdf829 8deg, transparent 20deg, transparent 340deg, #48d98a1c 352deg, transparent 360deg);
-  animation:sweep 9s ease-in-out infinite;
-  mix-blend-mode:screen;
-}
-@keyframes sweep{0%,100%{transform:translateX(-52%) rotate(-2deg)}50%{transform:translateX(-48%) rotate(2deg)}}
-
-.hero-inner{display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:32px}
-.hero-copy{max-width:560px}
-
-.hero-art{position:relative;display:flex;justify-content:center;align-items:center;min-height:420px}
-.hero-art-glow{position:absolute;width:480px;height:480px;border-radius:50%;
-  background:radial-gradient(circle, #38bdf84a, #38bdf81a 55%, transparent 72%);
-  filter:blur(6px);
-  animation:artglow 4.5s ease-in-out infinite;
-}
-@keyframes artglow{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.08);opacity:1}}
-.hero-art img{position:relative;z-index:1;width:100%;max-width:460px;filter:drop-shadow(0 30px 60px #000a);opacity:0;animation:art-rise 1s cubic-bezier(.2,.8,.2,1) forwards .25s}
-@keyframes art-rise{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:none}}
-
-.eyebrow-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:99px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);margin-bottom:22px;opacity:0;animation:rise .7s ease forwards .05s}
-.eyebrow-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px #48d98a;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-
-.hero h1{font-size:clamp(36px,5.4vw,68px);line-height:.98;letter-spacing:-.04em;font-weight:900;margin:0 0 20px;opacity:0;animation:rise .8s ease forwards .12s}
-.hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--blue-light),var(--green));-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p.lead{font-size:clamp(15px,1.6vw,18px);color:var(--muted);max-width:520px;margin:0 0 34px;opacity:0;animation:rise .8s ease forwards .2s}
-@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;opacity:0;animation:rise .8s ease forwards .28s}
-.hero-actions .btn{padding:13px 22px;font-size:13px}
-.hero-actions .btn.beta{background:var(--green-dim);border-color:#255d42;color:#9ff5c4}
-.hero-actions .btn.beta:hover{border-color:#3a7a56;background:#48d98a26}
-.hero-actions .btn.beta .beta-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
-
-/* live ticker strip */
-.ticker-shell{margin-top:56px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;opacity:0;animation:rise .8s ease forwards .4s}
-.ticker{display:flex;gap:0;width:max-content;animation:ticker 26s linear infinite}
-.ticker-shell:hover .ticker{animation-play-state:paused}
-@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.tick{display:flex;align-items:center;gap:9px;padding:14px 26px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;border-right:1px solid var(--border)}
-.tick b{color:var(--text);font-weight:700}
-.tick .tick-dot{width:5px;height:5px;border-radius:50%;background:var(--blue)}
-
-/* ---------- SECTION SHELL ---------- */
-section{padding:88px 0}
-.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:36px;flex-wrap:wrap}
-.section-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--blue-light);font-weight:700;margin-bottom:10px}
-.section-head h2{font-size:clamp(26px,3.4vw,38px);letter-spacing:-.03em;margin:0;font-weight:850}
-.section-head p{color:var(--muted);font-size:14px;max-width:440px;margin:8px 0 0}
-
-/* ---------- BENTO GRID ---------- */
-.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
-.bcard{position:relative;display:flex;flex-direction:column;grid-column:span 6;border-radius:20px;border:1px solid var(--border);background:linear-gradient(160deg,#101720,#0b1119);padding:28px;overflow:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .35s ease,box-shadow .35s ease;isolation:isolate}
-.bcard.trivia{justify-content:space-between}
-.bcard.trivia p{margin-bottom:0}
-.bcard.flagship{grid-column:span 4;grid-row:span 2;padding:34px}
-.bcard.trivia{grid-column:span 2;grid-row:span 2}
-.bcard.creator{grid-column:span 3}
-.bcard.soon{grid-column:span 3}
-.bcard::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .4s ease;
-  background:radial-gradient(420px 260px at var(--mx,50%) var(--my,0%), #38bdf82e, transparent 70%);}
-.bcard:hover::before{opacity:1}
-.bcard:hover{transform:translateY(-4px);border-color:#3a3a42;box-shadow:0 20px 50px #00000059}
-.bcard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:auto}
-.bcard-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:19px;flex:0 0 auto;border:1px solid var(--border)}
-.bcard.flagship .bcard-icon{background:linear-gradient(145deg,#38bdf833,#38bdf80d)}
-.bcard.trivia .bcard-icon{background:linear-gradient(145deg,#48d98a2e,#48d98a0d)}
-.bcard.creator .bcard-icon{background:linear-gradient(145deg,#38bdf82e,#38bdf80d)}
-.status-chip{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.1em;padding:5px 9px;border-radius:99px;border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;gap:6px}
-.status-chip.live{color:#9ff5c4;border-color:#255d42;background:#18432c33}
-.status-chip.live .dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
-.status-chip.soon{color:#bae6fd;border-color:#3a3a42}
-
-.bcard h3{font-size:22px;font-weight:850;letter-spacing:-.02em;margin:18px 0 8px}
-.bcard.flagship h3{font-size:30px;margin-top:26px}
-.bcard p{color:var(--muted);font-size:13.5px;margin:0 0 20px;max-width:34ch}
-.bcard-link{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:750;color:var(--text)}
-.bcard-link .arrow{transition:transform .25s ease}
-.bcard:hover .bcard-link .arrow{transform:translateX(4px)}
-
-/* flagship preview strip mimicking the tracker's own stat cards */
-.flagship-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:22px 0 24px}
-.fp-stat{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 12px}
-.fp-stat span{display:block;font-family:var(--mono);font-size:8.5px;color:var(--muted);letter-spacing:.05em;font-weight:600;text-transform:uppercase}
-.fp-stat b{display:block;margin-top:5px;font-size:17px;font-weight:800}
-.fp-stat b.green{color:var(--green)}
-
-
-.creator-row{display:flex;align-items:center;gap:14px;margin-top:18px}
-.creator-avatar{width:52px;height:52px;border-radius:14px;object-fit:cover;border:1px solid var(--border)}
-.creator-socials{display:flex;gap:8px;margin-top:16px}
-.csoc{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;transition:transform .18s,border-color .18s,color .18s;color:var(--muted)}
-.csoc:hover{transform:translateY(-2px);border-color:var(--blue);color:var(--blue-light)}
-.csoc svg{width:16px;height:16px;fill:currentColor}
-
-.soon-dots{display:flex;gap:6px;margin:18px 0}
-.soon-dots span{width:7px;height:7px;border-radius:50%;background:var(--border);animation:blink 1.4s ease-in-out infinite}
-.soon-dots span:nth-child(2){animation-delay:.2s}
-.soon-dots span:nth-child(3){animation-delay:.4s}
-@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
-
-/* ---------- BETA STRIP ---------- */
-.beta-strip{position:relative;overflow:hidden;border-radius:20px;border:1px solid #255d42;background:linear-gradient(135deg,#0d1a14,#0d141c);padding:36px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
-.beta-strip-left{display:flex;align-items:center;gap:18px}
-.beta-strip-icon{width:52px;height:52px;border-radius:14px;background:var(--green-dim);border:1px solid #255d42;display:grid;place-items:center;font-size:22px;flex:0 0 auto}
-.beta-strip h3{font-size:19px;font-weight:850;margin:0 0 6px}
-.beta-strip p{font-size:13.5px;color:var(--muted);margin:0;max-width:44ch}
-.beta-strip .btn.primary.green{background:linear-gradient(135deg,#48d98a,#22b566);border-color:#48d98a;box-shadow:0 4px 20px #48d98a33;color:#04140c;padding:13px 22px;font-size:13px}
-.beta-strip .btn.primary.green:hover{box-shadow:0 6px 26px #48d98a4d}
-
-/* ---------- WHY STRIP ---------- */
-.strip{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface)}
-.strip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
-.strip-item{padding:34px 30px;border-right:1px solid var(--border)}
-.strip-item:last-child{border-right:0}
-.strip-item .num{font-family:var(--mono);font-size:11px;color:var(--blue-light);font-weight:700;margin-bottom:10px}
-.strip-item h4{font-size:15px;margin:0 0 6px;font-weight:800}
-.strip-item p{font-size:12.5px;color:var(--muted);margin:0}
-
-/* ---------- FOOTER ---------- */
-footer{padding:56px 0 40px}
-.footer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;padding-bottom:32px;border-bottom:1px solid var(--border)}
-.footer-brand p{color:var(--muted);font-size:12.5px;max-width:280px;margin:12px 0 0}
-.footer-cols{display:flex;gap:56px;flex-wrap:wrap}
-.footer-col h5{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);margin:0 0 14px;font-weight:700}
-.footer-col a{display:block;font-size:13px;color:var(--text);margin-bottom:10px;opacity:.85;transition:opacity .16s}
-.footer-col a:hover{opacity:1;color:var(--blue-light)}
-.footer-bottom{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-top:22px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
-
-/* ---------- RESPONSIVE ---------- */
-@media(max-width:900px){
-  .topnav{display:none}
-  .mobile-toggle{display:flex}
-  .hero-inner{grid-template-columns:1fr;text-align:center}
-  .hero-copy{max-width:none;margin:0 auto}
-  .hero-actions{justify-content:center}
-  .hero-art{order:-1;min-height:280px}
-  .hero-art img{max-width:280px}
-  .hero-art-glow{width:320px;height:320px}
-  .bento{grid-template-columns:repeat(2,1fr)}
-  .bcard,.bcard.flagship,.bcard.trivia,.bcard.creator,.bcard.soon{grid-column:span 2;grid-row:auto}
-  .strip-grid{grid-template-columns:1fr}
-  .strip-item{border-right:0;border-bottom:1px solid var(--border)}
-  .strip-item:last-child{border-bottom:0}
-  .beta-strip{flex-direction:column;align-items:flex-start;text-align:left}
-}
-@media(max-width:560px){
-  .wrap{width:calc(100% - 28px)}
-  .hero{padding:56px 0 52px}
-  .hero-art{min-height:220px}
-  .hero-art img{max-width:220px}
-  .hero-art-glow{width:260px;height:260px}
-  .bento{grid-template-columns:1fr}
-  .bcard,.bcard.flagship,.bcard.trivia,.bcard.creator,.bcard.soon{grid-column:1}
-  .flagship-preview{grid-template-columns:1fr 1fr}
-  .footer-cols{gap:32px}
-  .hero-actions{flex-direction:column}
-  .hero-actions .btn{width:100%;justify-content:center}
-  .beta-strip{padding:26px}
-  .beta-strip-left{flex-direction:column;align-items:flex-start}
-}
-</style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4faff"><title>FC Mobile Tools — TanzimFC</title>
+<meta name="description" content="FC Mobile tools, trackers, guides, event resources and updates by TanzimFC.">
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-
-<header class="topbar" id="topbar">
-  <div class="wrap topbar-inner">
-    <a class="brand" href="#top">
-      <span class="brand-mark">FC</span>
-      <span class="brand-text"><small>FC MOBILE TOOLS</small><strong>TanzimFC</strong></span>
-    </a>
-    <nav class="topnav" aria-label="Primary">
-      <a href="#tools">Tools</a>
-      <a href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Football Centre</a>
-      <a href="https://tanzimfc.fcmobiletools.workers.dev/trivia/">Trivia</a>
-      <a href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta" class="beta-link"><span class="beta-dot"></span>Beta</a>
-      <a href="creator">Creator</a>
-    </nav>
-    <div class="topbar-cta">
-      <a class="btn primary" href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Open Football Centre</a>
+<div data-site-nav-placeholder></div>
+<main>
+<section class="hero">
+  <div class="hero__inner">
+    <div class="hero__copy">
+      <div class="eyebrow"><i></i>FC MOBILE TOOLS</div>
+      <h1>Play smarter.<br><span>Know what’s next.</span></h1>
+      <p>Track events, plan your progress, find useful tools and read practical FC Mobile guides — all in one place.</p>
+      <div class="hero__actions"><a class="btn primary" href="/football-centre">Open Football Centre →</a><a class="btn soft" href="/blog/">Read the guides</a></div>
     </div>
   </div>
-</header>
+</section>
 
-<main id="top">
-  <section class="hero">
-    <div class="hero-bg"></div>
-    <div class="hero-grid"></div>
-    <div class="floodlight"></div>
-    <div class="wrap hero-inner">
-      <div class="hero-copy">
-        <span class="eyebrow-pill"><span class="dot"></span>BUILT FOR FC MOBILE PLAYERS</span>
-        <h1>Track it. Predict it.<br><em>Win the cycle.</em></h1>
-        <p class="lead">TanzimFC builds the calculators and companion tools that turn every FC Mobile event into something you can actually plan for. starting with Football Centre, your live Showdown tracker.</p>
-        <div class="hero-actions">
-          <a class="btn primary" href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Open Football Centre →</a>
-          <a class="btn" href="https://tanzimfc.fcmobiletools.workers.dev/trivia/">Play Trivia</a>
-          <a class="btn beta" href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta"><span class="beta-dot"></span>Get FC Mobile Beta</a>
-        </div>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="hero-art-glow"></div>
-        <img src="https://tanzimfc.fcmobiletools.workers.dev/assets/images/herobeli.png" alt="" loading="eager">
-      </div>
-    </div>
-    <div class="ticker-shell">
-      <div class="ticker" id="ticker"></div>
-    </div>
-  </section>
-
-  <section id="tools">
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <div class="section-eyebrow">THE TOOLKIT</div>
-          <h2>Everything you need,<br>before kickoff.</h2>
-        </div>
-        <p>No guesswork. Every tool here is built to match FC Mobile's actual scoring and event structure.</p>
-      </div>
-
-      <div class="bento">
-        <a class="bcard flagship" href="https://tanzimfc.fcmobiletools.workers.dev/football-centre" onmousemove="tilt(event,this)">
-          <div class="bcard-top">
-            <div class="bcard-icon">⚽</div>
-            <span class="status-chip live"><span class="dot"></span>LIVE TRACKER</span>
-          </div>
-          <h3>Football Centre</h3>
-          <p>Pick your Showdown winners, log results as they happen, and see exactly how many points stand between you and the target — updated in real time as your cycle plays out.</p>
-          <div class="flagship-preview">
-            <div class="fp-stat"><span>Target</span><b>4,000</b></div>
-            <div class="fp-stat"><span>Per win</span><b class="green">+400</b></div>
-            <div class="fp-stat"><span>Showdowns</span><b>8</b></div>
-          </div>
-          <span class="bcard-link">Open the tracker <span class="arrow">→</span></span>
-        </a>
-
-        <a class="bcard trivia" href="https://tanzimfc.fcmobiletools.workers.dev/trivia/" onmousemove="tilt(event,this)">
-          <div class="bcard-top">
-            <div class="bcard-icon">🧠</div>
-            <span class="status-chip live"><span class="dot"></span>LIVE</span>
-          </div>
-          <h3>Trivia</h3>
-          <p>FC Mobile questions and answers — test what you actually know about the game.</p>
-          <span class="bcard-link">Play now <span class="arrow">→</span></span>
-        </a>
-
-        <div class="bcard creator" id="creator" onmousemove="tilt(event,this)">
-          <div class="bcard-top">
-            <div class="bcard-icon">👤</div>
-            <span class="status-chip">CREATOR</span>
-          </div>
-          <div class="creator-row">
-            <img class="creator-avatar" src="https://tanzimfc.fcmobiletools.workers.dev/assets/images/Annotation%202026-08-16%20121359.png" alt="TanzimFC">
-            <div>
-              <h3 style="margin:0;font-size:18px">TanzimFC</h3>
-              <p style="margin:4px 0 0">FC Mobile content &amp; tool builder.</p>
-            </div>
-          </div>
-          <div class="creator-socials">
-            <a class="csoc" href="https://www.youtube.com/@tanzimfc" target="_blank" rel="noopener" aria-label="YouTube"><svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.8V8.2L16 12l-6.4 3.8Z"/></svg></a>
-            <a class="csoc" href="https://discord.com/invite/B4a7AxuU69" target="_blank" rel="noopener" aria-label="Discord"><svg viewBox="0 0 24 24"><path d="M19.5 4.5A16.8 16.8 0 0 0 15.6 3l-.5 1a14.3 14.3 0 0 0-6.2 0l-.5-1a16.8 16.8 0 0 0-3.9 1.5C2 8.2 1.3 12 1.7 15.8a16.4 16.4 0 0 0 4.8 2.4l1.2-1.6c-.7-.3-1.3-.6-1.9-1 .2.2.4.3.6.4 2.8 1.3 5.9 1.3 8.7 0 .2-.1.4-.2.6-.4-.6.4-1.2.7-1.9 1l1.2 1.6a16.4 16.4 0 0 0 4.8-2.4c.4-3.8-.3-7.6-1.3-11.3ZM8.8 13.3c-.9 0-1.7-.8-1.7-1.8s.8-1.8 1.7-1.8 1.7.8 1.7 1.8-.8 1.8-1.7 1.8Zm6.4 0c-.9 0-1.7-.8-1.7-1.8s.8-1.8 1.7-1.8 1.7.8 1.7 1.8-.8 1.8-1.7 1.8Z"/></svg></a>
-            <a class="csoc" href="https://x.com/TanzimFC" target="_blank" rel="noopener" aria-label="X"><svg viewBox="0 0 24 24"><path d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.39L6.49 22H3.38l7.24-8.28L2.8 2h6.4l4.42 5.84L18.9 2Zm-1.1 17.5h1.73L8.25 4.37H6.39L17.8 19.5Z"/></svg></a>
-          </div>
-        </div>
-
-        <div class="bcard soon" onmousemove="tilt(event,this)">
-          <div class="bcard-top">
-            <div class="bcard-icon">🛠️</div>
-            <span class="status-chip soon">IN THE WORKS</span>
-          </div>
-          <h3>More tools soon</h3>
-          <p>New trackers and calculators are in development. Join the Discord to see them first.</p>
-          <div class="soon-dots"><span></span><span></span><span></span></div>
-          <a class="bcard-link" href="https://discord.com/invite/B4a7AxuU69" target="_blank" rel="noopener">Get notified <span class="arrow">→</span></a>
-        </div>
-      </div>
-
-      <div class="beta-strip" style="margin-top:16px">
-        <div class="beta-strip-left">
-          <div class="beta-strip-icon">📲</div>
-          <div>
-            <h3>FC Mobile Beta is up for download</h3>
-            <p>Early access build, free, direct link. Play the newest FC Mobile update before it goes wide.</p>
-          </div>
-        </div>
-        <a class="btn primary green" href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta">Get the beta →</a>
-      </div>
-    </div>
-  </section>
-
-  <div class="strip">
-    <div class="wrap">
-      <div class="strip-grid">
-        <div class="strip-item">
-          <div class="num">01</div>
-          <h4>Matches real scoring</h4>
-          <p>Every calculation mirrors FC Mobile's actual point values, not estimates.</p>
-        </div>
-        <div class="strip-item">
-          <div class="num">02</div>
-          <h4>Updates every cycle</h4>
-          <p>New Showdowns, teams and events are added as soon as they go live in-game.</p>
-        </div>
-        <div class="strip-item">
-          <div class="num">03</div>
-          <h4>Nothing to install</h4>
-          <p>Runs straight in your browser, saves your progress locally, no account needed.</p>
-        </div>
-      </div>
-    </div>
+<section class="section" id="tools"><div class="wrap">
+  <div class="section-head"><div><small>THE TOOLKIT</small><h2>Everything useful,<br>in one place.</h2></div><p>Tools built around the way FC Mobile players actually plan events, track progress and make decisions.</p></div>
+  <div class="cards">
+    <a class="card card--wide" href="/football-centre"><div class="card__icon">⚽</div><h3>Football Centre</h3><p>Track Showdowns, record results and follow your points progress through the event cycle.</p><span class="card__link">Open tracker →</span></a>
+    <a class="card card--wide" href="/trivia/"><div class="card__icon">🧠</div><h3>Trivia</h3><p>Test your FC Mobile knowledge with questions, answers and themed trivia.</p><span class="card__link">Play trivia →</span></a>
+    <a class="card" href="/fc-mobile-beta"><div class="card__icon">📱</div><h3>FC Mobile Beta</h3><p>Get information and access to the current beta build when available.</p><span class="card__link">View beta →</span></a>
+    <a class="card" href="/blog/"><div class="card__icon">📖</div><h3>Blog &amp; Guides</h3><p>Proper guides, event explainers, strategy, updates and useful FC Mobile resources.</p><span class="card__link">Explore articles →</span></a>
+    <div class="card"><div class="card__icon">🛠️</div><h3>More tools</h3><p>New calculators, trackers and companion tools are being built for future events.</p><span class="card__link">More coming soon</span></div>
   </div>
+</div></section>
+
+<section class="section section--white"><div class="wrap">
+  <div class="section-head"><div><small>FROM THE BLOG</small><h2>Guides that help<br>you make a plan.</h2></div><a class="btn" href="/blog/">View all articles →</a></div>
+  <div class="blog-grid">
+    <a class="post" href="/blog/"><div class="post__image"></div><div class="post__body"><div class="post__meta">Guides · Coming soon</div><h3>FC Mobile event guides</h3><p>Step-by-step breakdowns of what an event gives you, what to prioritize and how to plan resources.</p></div></a>
+    <a class="post" href="/blog/"><div class="post__image"></div><div class="post__body"><div class="post__meta">Events · Coming soon</div><h3>What to expect from new events</h3><p>Clear explanations of event structure, rewards, paths and the choices that actually matter.</p></div></a>
+    <a class="post" href="/blog/"><div class="post__image"></div><div class="post__body"><div class="post__meta">Strategy · Coming soon</div><h3>Better decisions in FC Mobile</h3><p>Practical analysis for spending resources, choosing rewards and getting more from each cycle.</p></div></a>
+  </div>
+</div></section>
+
+<section class="section"><div class="wrap"><div class="feature">
+  <div class="feature__main"><small>EVENT-FIRST</small><h3>Know the event before you spend.</h3><p>We’re building the site around one idea: useful information should arrive before the decision. Follow the latest event resources, trackers and guides as they become available.</p><a class="btn primary" href="/blog/">Explore guides →</a></div>
+  <div class="feature__side"><div class="mini"><b>Track progress</b><p>Use Football Centre to keep your event progress organized.</p></div><div class="mini"><b>Understand events</b><p>Read concise explanations instead of digging through scattered information.</p></div><div class="mini"><b>Keep learning</b><p>New guides and articles will be added as the site grows.</p></div></div>
+</div></div></section>
+
+<section class="section section--white" id="creator"><div class="wrap"><div class="creator"><img src="/assets/images/Annotation%202026-08-16%20121359.png" alt="TanzimFC"><div><h3>TanzimFC</h3><p>FC Mobile content creator and builder of FC Mobile Tools.</p></div></div></div></section>
 </main>
-
-<footer>
-  <div class="wrap">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <a class="brand" href="#top">
-          <span class="brand-mark">FC</span>
-          <span class="brand-text"><small>FC MOBILE TOOLS</small><strong>TanzimFC</strong></span>
-        </a>
-        <p>Trackers and calculators for FC Mobile, built and maintained by TanzimFC.</p>
-      </div>
-      <div class="footer-cols">
-        <div class="footer-col">
-          <h5>TOOLS</h5>
-          <a href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Football Centre</a>
-          <a href="https://tanzimfc.fcmobiletools.workers.dev/trivia/">Trivia</a>
-          <a href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta/">FC Mobile Beta</a>
-        </div>
-        <div class="footer-col">
-          <h5>CREATOR</h5>
-          <a href="https://www.youtube.com/@tanzimfc" target="_blank" rel="noopener">YouTube</a>
-          <a href="https://discord.com/invite/B4a7AxuU69" target="_blank" rel="noopener">Discord</a>
-          <a href="https://x.com/TanzimFC" target="_blank" rel="noopener">X / Twitter</a>
-        </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span>© 2026 TanzimFC — FC Mobile Tools</span>
-      <span>Not affiliated with EA or FC Mobile</span>
-    </div>
-  </div>
-</footer>
-
-<script>
-// sticky topbar border
-addEventListener('scroll',()=>{document.getElementById('topbar').classList.toggle('scrolled',scrollY>10)},{passive:true});
-
-// cursor-follow glow on bento cards
-function tilt(e,el){
-  const r=el.getBoundingClientRect();
-  el.style.setProperty('--mx',(e.clientX-r.left)+'px');
-  el.style.setProperty('--my',(e.clientY-r.top)+'px');
-}
-
-// live-feeling ticker content
-const TICKS=[
-  ['🎯','8/8','SHOWDOWNS TRACKED THIS CYCLE'],
-  ['⚡','4,000','POINT TARGET PER CYCLE'],
-  ['🧠','TRIVIA','NEW QUESTIONS EVERY WEEK'],
-  ['📈','LIVE','FOOTBALL CENTRE UPDATES IN REAL TIME'],
-  ['🏆','+400','POINTS PER CORRECT PREDICTION'],
-  ['🔔','DISCORD','JOIN FOR EARLY TOOL ACCESS'],
-];
-const tickerEl=document.getElementById('ticker');
-const build=()=>TICKS.map(([icon,b,label])=>`<div class="tick"><span class="tick-dot"></span>${icon} <b>${b}</b> ${label}</div>`).join('');
-tickerEl.innerHTML=build()+build();
-</script>
- <!-- Google tag  -->
-  google-site-verification: google1354adde34ae5b2c.html
-</body>
-</html>
+<div data-site-footer-placeholder></div>
+<script src="/assets/site-shell.js" defer></script>
+</body></html>
