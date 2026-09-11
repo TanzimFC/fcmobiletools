@@ -4,18 +4,26 @@ import fs from 'node:fs';
 export interface Props { file: string; initialPage?: string; }
 const { file, initialPage = '' } = Astro.props;
 const source = fs.readFileSync(new URL(`../../public/${file}`, import.meta.url), 'utf8');
-const styles = [...source.matchAll(/<style(?:\\s[^>]*)?>([\\s\\S]*?)<\\/style>/gi)].map(m => m[1]).join('\n');
-let body = source.match(/<body[^>]*>([\\s\\S]*?)<\\/body>/i)?.[1] ?? source;
-body = body.replace(/<header\\s+class=["']topbar["'][\\s\\S]*?<\\/header>/gi, '');
-body = body.replace(/<footer\\s+class=["']site-footer["'][\\s\\S]*?<\\/footer>/gi, '');
+let styles = [...source.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi)].map(m => m[1]).join('\n');
+styles = styles
+  .replace(/:root\s*\{/g, '.legacy-app-host{')
+  .replace(/\bbody\s*\{/g, '.legacy-app-host{')
+  .replace(/\.site-nav/g, '.legacy-app-host .site-nav')
+  .replace(/\.site-footer/g, '.legacy-app-host .site-footer');
+let body = source.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? source;
+body = body.replace(/<header\s+class=["']topbar["'][\s\S]*?<\/header>/gi, '');
+body = body.replace(/<footer\s+class=["']site-footer["'][\s\S]*?<\/footer>/gi, '');
 ---
-{styles && <style is:inline set:html={styles} />}
-<div class="legacy-app" data-initial-page={initialPage} set:html={body} />
+<div class="legacy-app-host">
+  {styles && <style is:inline set:html={styles} />}
+  <div class="legacy-app" data-initial-page={initialPage} set:html={body} />
+</div>
 <script is:inline>
   const initial = document.querySelector('.legacy-app')?.dataset.initialPage;
   if (initial && location.hash !== `#${initial}`) history.replaceState(null, '', `#${initial}`);
 </script>
 <style>
+  .legacy-app-host{width:100%;}
   .legacy-app{min-height:0;width:100%;}
   .legacy-app>.app{width:min(1180px,calc(100% - 28px));margin:auto;padding-top:22px;}
   .legacy-app .topbar{display:none!important}
