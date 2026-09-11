@@ -1,7 +1,324 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import TeamOVRCalculator from '../components/TeamOVRCalculator.astro';
+import {
+  BADGES,
+  RANK_OPTIONS,
+  STARTING_XI_SIZE,
+  MAX_SQUAD_SIZE,
+  MAX_BADGE_SLOTS,
+  BASE_OVR_MIN,
+  BASE_OVR_MAX,
+} from '../lib/teamOvr.js';
+
+const STARTING_POSITIONS = ['GK', 'RB', 'CB', 'CB', 'LB', 'CDM', 'CM', 'CM', 'RW', 'ST', 'LW'];
+const POSITION_OPTIONS = ['GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'CF', 'ST'];
+const MAX_SUBS = MAX_SQUAD_SIZE - STARTING_XI_SIZE;
 ---
-<BaseLayout title="FC Mobile Team OVR Calculator" description="Calculate FC Mobile Team OVR from Base OVR, Rank and eligible Team Badges.">
-  <TeamOVRCalculator />
+
+<BaseLayout
+  title="FC Mobile Team OVR Calculator"
+  description="Calculate your exact FC Mobile Team OVR using Base OVR, Rank and Team Badges."
+>
+  <section class="ovr-tool">
+    <div class="wrap">
+      <div class="tool-head">
+        <div class="tool-eyebrow">TEAM OVR CALCULATOR</div>
+        <h1>FC Mobile Team OVR Calculator</h1>
+        <p class="lead">Calculate your exact FC Mobile Team OVR using Base OVR, Rank and Team Badges.</p>
+      </div>
+
+      <details class="ovr-note">
+        <summary>Base OVR vs. displayed OVR — why they're different</summary>
+        <div class="ovr-note-body">
+          <p>Your player card can show a boosted displayed OVR after Training and Skill Points. Team OVR does not use that displayed number.</p>
+          <p>Enter the card's <strong>Base OVR</strong> and its <strong>Rank</strong> separately. For example, Base 117 + Rank 5 can display as 122, but the calculator uses 117 and 5.</p>
+        </div>
+      </details>
+
+      <div class="result-card" id="result-card">
+        <div class="result-main">
+          <span class="result-label" id="result-label">PREVIEW</span>
+          <span class="result-number" id="result-number">—</span>
+          <p class="result-progress" id="result-progress">Enter your Starting XI to calculate.</p>
+        </div>
+        <dl class="result-breakdown" id="result-breakdown" hidden>
+          <div class="rb-row"><dt>Base OVR</dt><dd id="rb-base">—</dd></div>
+          <div class="rb-row"><dt>Rank</dt><dd id="rb-rank">—</dd></div>
+          <div class="rb-row"><dt>Badges</dt><dd id="rb-badges">—</dd></div>
+          <div class="rb-row rb-total"><dt>Team OVR</dt><dd id="rb-total">—</dd></div>
+        </dl>
+      </div>
+
+      <div class="squad-block">
+        <div class="squad-block-head">
+          <h2>Starting XI</h2>
+          <span class="squad-count" id="starter-count">0 / {STARTING_XI_SIZE} entered</span>
+        </div>
+        <div class="pitch">
+          <div class="pitch-bg" aria-hidden="true"></div>
+          <div class="slot-grid" id="starter-grid">
+            {STARTING_POSITIONS.map((pos, i) => (
+              <div class="slot" data-role="starter" data-index={i}>
+                <div class="slot-head">
+                  <select class="slot-pos" data-field="position" aria-label={`Position for starter ${i + 1}`}>
+                    {POSITION_OPTIONS.map((p) => <option value={p} selected={p === pos}>{p}</option>)}
+                  </select>
+                  <span class="slot-number">{i + 1}</span>
+                </div>
+                <label class="slot-field">
+                  <span>Base OVR</span>
+                  <input type="number" inputmode="numeric" data-field="baseOVR" min={BASE_OVR_MIN} max={BASE_OVR_MAX} placeholder="—" />
+                </label>
+                <label class="slot-field">
+                  <span>Rank</span>
+                  <select data-field="rank">
+                    <option value="" selected>—</option>
+                    {RANK_OPTIONS.map((r) => <option value={r}>Rank {r}</option>)}
+                  </select>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div class="squad-block">
+        <div class="squad-block-head">
+          <h2>Substitutes</h2>
+          <span class="squad-count" id="sub-count">Not included</span>
+        </div>
+        <p class="squad-hint">Substitutes are optional. Add them only if you want them counted in your Team OVR.</p>
+        <div class="slot-grid sub-grid" id="sub-grid"></div>
+        <button type="button" class="btn add-sub" id="add-sub-btn">+ Add Substitute</button>
+      </div>
+
+      <div class="squad-block">
+        <div class="squad-block-head">
+          <h2>Team Badges</h2>
+          <span class="squad-count" id="badge-total">Badge Bonus: +0</span>
+        </div>
+        <div class="badge-rows" id="badge-rows">
+          {Array.from({ length: MAX_BADGE_SLOTS }).map((_, i) => (
+            <div class="badge-row" data-index={i}>
+              <span class="badge-slot-label">Badge {i + 1}</span>
+              <select class="badge-select" data-field="badgeId" aria-label={`Badge ${i + 1}`}>
+                <option value="">None</option>
+                {BADGES.map((b) => <option value={b.id}>{b.name}</option>)}
+              </select>
+              <select class="badge-level" data-field="level" aria-label={`Badge ${i + 1} level`} disabled>
+                <option value="">Lv.</option>
+                {[1, 2, 3, 4, 5].map((lvl) => <option value={lvl}>Lv.{lvl}</option>)}
+              </select>
+              <span class="badge-bonus" data-role="badge-bonus">+0</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <details class="explain">
+        <summary>How is my Team OVR calculated?</summary>
+        <pre class="explain-body" id="explain-body">Fill in your Starting XI to see the full breakdown.</pre>
+      </details>
+
+      <button type="button" class="btn reset-btn" id="reset-btn">Reset Squad</button>
+    </div>
+  </section>
 </BaseLayout>
+
+<style>
+  .ovr-tool { padding: 48px 0 80px; }
+  .wrap { width: min(920px, calc(100% - 32px)); margin: 0 auto; }
+  .tool-head { margin-bottom: 22px; }
+  .tool-eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: var(--blue); font-weight: 700; margin-bottom: 10px; }
+  .tool-head h1 { font-size: clamp(26px, 4.4vw, 38px); letter-spacing: -.03em; margin: 0 0 10px; font-weight: 850; line-height: 1.08; }
+  .tool-head .lead { color: var(--muted); font-size: 14.5px; margin: 0; max-width: 52ch; }
+  .ovr-note, .explain { border: 1px solid var(--border); background: var(--surface); border-radius: 14px; margin: 18px 0; overflow: hidden; }
+  .ovr-note summary, .explain summary { padding: 14px 18px; font-size: 13.5px; font-weight: 700; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+  .ovr-note summary::-webkit-details-marker, .explain summary::-webkit-details-marker { display: none; }
+  .ovr-note summary::after, .explain summary::after { content: '+'; color: var(--muted); font-size: 16px; font-weight: 400; }
+  .ovr-note[open] summary::after, .explain[open] summary::after { content: '–'; }
+  .ovr-note-body { padding: 0 18px 18px; color: var(--muted); font-size: 13.5px; }
+  .ovr-note-body p { margin: 0 0 10px; }
+  .ovr-note-body p:last-child { margin-bottom: 0; }
+  .ovr-note-body strong { color: var(--text); }
+  .explain-body { margin: 0; padding: 0 18px 18px; font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: pre-wrap; line-height: 1.6; }
+  .result-card { position: sticky; top: 12px; z-index: 5; border: 1px solid var(--border); border-radius: 18px; background: linear-gradient(160deg, var(--surface2), var(--surface)); padding: 22px; display: flex; flex-wrap: wrap; gap: 18px; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+  .result-main { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .result-label { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: var(--muted); font-weight: 700; }
+  .result-number { font-size: 52px; font-weight: 900; letter-spacing: -.03em; line-height: 1; color: var(--text); }
+  .result-progress { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); max-width: 40ch; }
+  .result-breakdown { display: grid; gap: 6px; margin: 0; min-width: 160px; }
+  .rb-row { display: flex; justify-content: space-between; gap: 20px; font-size: 13px; color: var(--muted); }
+  .rb-row dt { font-weight: 600; }
+  .rb-row dd { margin: 0; font-family: var(--mono); color: var(--text); }
+  .rb-total { border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; font-size: 14px; }
+  .rb-total dt, .rb-total dd { color: var(--text); font-weight: 800; }
+  .squad-block { margin: 30px 0; }
+  .squad-block-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+  .squad-block-head h2 { font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -.01em; }
+  .squad-count { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600; }
+  .squad-hint { color: var(--muted); font-size: 12.5px; margin: 4px 0 14px; }
+  .pitch { position: relative; border-radius: 18px; overflow: hidden; border: 1px solid var(--border); }
+  .pitch-bg { position: absolute; inset: 0; z-index: 0; background-image: linear-gradient(180deg, #07090dcc, #07090dee 60%, #07090d 100%), url('/assets/images/field.png'); background-size: cover; background-position: center; opacity: .9; }
+  .slot-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 16px; }
+  .sub-grid { z-index: 1; padding: 0; }
+  .sub-grid:not(:empty) { margin-bottom: 14px; }
+  .slot { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .slot-head { display: flex; align-items: center; justify-content: space-between; }
+  .slot-pos { background: var(--blue3); color: var(--blue); border: 1px solid var(--border); border-radius: 7px; font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 5px 6px; min-height: 30px; }
+  .slot-number { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .slot-remove { font-family: var(--mono); font-size: 10px; color: var(--muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; min-height: 30px; }
+  .slot-remove:hover { color: var(--text); border-color: var(--blue); }
+  .slot-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); font-weight: 600; }
+  .slot-field input, .slot-field select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 10px; font-size: 14px; font-family: var(--sans); min-height: 40px; width: 100%; }
+  .slot-field input:invalid { border-color: #e5484d; }
+  .slot-field input:focus, .slot-field select:focus, .slot-pos:focus { border-color: var(--blue); outline: none; }
+  .add-sub { width: 100%; justify-content: center; border: 1px dashed var(--border); background: transparent; color: var(--muted); padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 700; min-height: 46px; }
+  .add-sub:hover { color: var(--text); border-color: var(--blue); }
+  .add-sub:disabled { opacity: .55; cursor: not-allowed; }
+  .badge-rows { display: flex; flex-direction: column; gap: 10px; }
+  .badge-row { display: grid; grid-template-columns: 64px 1fr 72px 44px; gap: 8px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+  .badge-slot-label { font-size: 11px; color: var(--muted); font-weight: 700; }
+  .badge-select, .badge-level { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 8px; font-size: 13px; min-height: 40px; width: 100%; }
+  .badge-level:disabled { opacity: .45; }
+  .badge-bonus { font-family: var(--mono); font-size: 13px; font-weight: 800; color: var(--muted); text-align: right; }
+  .badge-bonus.active { color: var(--green); }
+  .reset-btn { margin-top: 8px; width: 100%; justify-content: center; background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 13px; border-radius: 12px; font-size: 13px; font-weight: 700; min-height: 46px; }
+  .reset-btn:hover { color: #f5a3a6; border-color: #5c2226; }
+  @media (max-width: 560px) { .result-card { flex-direction: column; align-items: stretch; position: static; } .result-breakdown { min-width: 0; } .badge-row { grid-template-columns: 1fr 1fr auto; } .badge-slot-label { display: none; } .slot-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
+</style>
+
+<script>
+  import { calculateTeamOVR, calculateBadgeBonus, getBadgeTeamOVRBonus, isValidBaseOVR } from '../lib/teamOvr.js';
+
+  const state = {
+    starters: Array.from({ length: STARTING_XI_SIZE }, (_, i) => ({ id: `xi-${i}`, position: STARTING_POSITIONS[i], baseOVR: null, rank: null })),
+    subs: [],
+    badges: Array.from({ length: MAX_BADGE_SLOTS }, () => ({ badgeId: null, level: null })),
+  };
+
+  const starterGrid = document.getElementById('starter-grid');
+  const subGrid = document.getElementById('sub-grid');
+  const addSubBtn = document.getElementById('add-sub-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const starterCountEl = document.getElementById('starter-count');
+  const subCountEl = document.getElementById('sub-count');
+  const badgeTotalEl = document.getElementById('badge-total');
+  const explainBody = document.getElementById('explain-body');
+  const resultNumber = document.getElementById('result-number');
+  const resultLabel = document.getElementById('result-label');
+  const resultProgress = document.getElementById('result-progress');
+  const resultBreakdown = document.getElementById('result-breakdown');
+  const rbBase = document.getElementById('rb-base');
+  const rbRank = document.getElementById('rb-rank');
+  const rbBadges = document.getElementById('rb-badges');
+  const rbTotal = document.getElementById('rb-total');
+
+  starterGrid.querySelectorAll('.slot').forEach((slotEl) => {
+    const index = Number(slotEl.dataset.index);
+    const posSelect = slotEl.querySelector('[data-field="position"]');
+    const baseInput = slotEl.querySelector('[data-field="baseOVR"]');
+    const rankSelect = slotEl.querySelector('[data-field="rank"]');
+    posSelect.addEventListener('change', () => { state.starters[index].position = posSelect.value; });
+    baseInput.addEventListener('input', () => { state.starters[index].baseOVR = baseInput.value.trim() === '' ? null : Number(baseInput.value); recompute(); });
+    rankSelect.addEventListener('change', () => { state.starters[index].rank = rankSelect.value === '' ? null : Number(rankSelect.value); recompute(); });
+  });
+
+  let subCounter = 0;
+  function buildSubSlotEl(subState) {
+    const el = document.createElement('div');
+    el.className = 'slot';
+    el.dataset.role = 'sub';
+    el.dataset.subId = subState.id;
+    el.innerHTML = `<div class="slot-head"><select class="slot-pos" data-field="position" aria-label="Substitute position"></select><button type="button" class="slot-remove" data-action="remove-sub">Remove</button></div><label class="slot-field"><span>Base OVR</span><input type="number" inputmode="numeric" data-field="baseOVR" min="${BASE_OVR_MIN}" max="${BASE_OVR_MAX}" placeholder="—" /></label><label class="slot-field"><span>Rank</span><select data-field="rank"><option value="" selected>—</option></select></label>`;
+    const posSelect = el.querySelector('[data-field="position"]');
+    POSITION_OPTIONS.forEach((p) => { const opt = document.createElement('option'); opt.value = p; opt.textContent = p; posSelect.appendChild(opt); });
+    posSelect.value = 'ST';
+    const rankSelect = el.querySelector('[data-field="rank"]');
+    RANK_OPTIONS.forEach((r) => { const opt = document.createElement('option'); opt.value = String(r); opt.textContent = `Rank ${r}`; rankSelect.appendChild(opt); });
+    const baseInput = el.querySelector('[data-field="baseOVR"]');
+    posSelect.addEventListener('change', () => { subState.position = posSelect.value; });
+    baseInput.addEventListener('input', () => { subState.baseOVR = baseInput.value.trim() === '' ? null : Number(baseInput.value); recompute(); });
+    rankSelect.addEventListener('change', () => { subState.rank = rankSelect.value === '' ? null : Number(rankSelect.value); recompute(); });
+    el.querySelector('[data-action="remove-sub"]').addEventListener('click', () => { state.subs = state.subs.filter((s) => s.id !== subState.id); el.remove(); updateAddSubAvailability(); recompute(); });
+    return el;
+  }
+
+  function updateAddSubAvailability() {
+    const atMax = state.subs.length >= MAX_SUBS;
+    addSubBtn.disabled = atMax;
+    addSubBtn.textContent = atMax ? 'Maximum substitutes reached' : '+ Add Substitute';
+  }
+
+  addSubBtn.addEventListener('click', () => {
+    if (state.subs.length >= MAX_SUBS) return;
+    subCounter += 1;
+    const subState = { id: `sub-${subCounter}`, position: 'ST', baseOVR: null, rank: null };
+    state.subs.push(subState);
+    subGrid.appendChild(buildSubSlotEl(subState));
+    updateAddSubAvailability();
+    recompute();
+  });
+
+  document.querySelectorAll('.badge-row').forEach((row) => {
+    const index = Number(row.dataset.index);
+    const badgeSelect = row.querySelector('[data-field="badgeId"]');
+    const levelSelect = row.querySelector('[data-field="level"]');
+    const bonusEl = row.querySelector('[data-role="badge-bonus"]');
+    const sync = () => { levelSelect.disabled = !badgeSelect.value; if (!badgeSelect.value) levelSelect.value = ''; };
+    const updateBonus = () => { const bonus = getBadgeTeamOVRBonus(state.badges[index].badgeId, state.badges[index].level); bonusEl.textContent = `+${bonus}`; bonusEl.classList.toggle('active', bonus > 0); };
+    badgeSelect.addEventListener('change', () => { state.badges[index].badgeId = badgeSelect.value || null; state.badges[index].level = null; levelSelect.value = ''; sync(); updateBonus(); recompute(); });
+    levelSelect.addEventListener('change', () => { state.badges[index].level = levelSelect.value ? Number(levelSelect.value) : null; updateBonus(); recompute(); });
+    row._updateBonus = updateBonus;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Reset your squad? This clears all Base OVR, Rank, substitutes and badge selections.')) return;
+    starterGrid.querySelectorAll('.slot').forEach((slotEl, i) => { slotEl.querySelector('[data-field="baseOVR"]').value = ''; slotEl.querySelector('[data-field="rank"]').value = ''; state.starters[i].baseOVR = null; state.starters[i].rank = null; });
+    state.subs = [];
+    subGrid.innerHTML = '';
+    document.querySelectorAll('.badge-row').forEach((row, i) => { row.querySelector('[data-field="badgeId"]').value = ''; row.querySelector('[data-field="level"]').value = ''; row.querySelector('[data-field="level"]').disabled = true; state.badges[i] = { badgeId: null, level: null }; row._updateBonus(); });
+    updateAddSubAvailability();
+    recompute();
+  });
+
+  const formatSigned = (n) => n >= 0 ? `+${n}` : `${n}`;
+
+  function recompute() {
+    const players = [...state.starters, ...state.subs];
+    const filledStarters = state.starters.filter((p) => isValidBaseOVR(p.baseOVR) && p.rank !== null).length;
+    starterCountEl.textContent = `${filledStarters} / ${STARTING_XI_SIZE} entered`;
+    subCountEl.textContent = state.subs.length === 0 ? 'Not included' : `${state.subs.length} included`;
+
+    const { badgeBonus } = calculateBadgeBonus(state.badges);
+    badgeTotalEl.textContent = `Badge Bonus: ${formatSigned(badgeBonus)}`;
+
+    const result = calculateTeamOVR({ players, selectedBadges: state.badges, requiredCount: players.length < STARTING_XI_SIZE ? STARTING_XI_SIZE : players.length });
+
+    if (!result.complete) {
+      resultLabel.textContent = 'PREVIEW';
+      resultNumber.textContent = '—';
+      resultBreakdown.hidden = true;
+      resultProgress.hidden = false;
+      const missing = Math.max(0, STARTING_XI_SIZE - filledStarters);
+      resultProgress.textContent = state.subs.length ? `${filledStarters} / ${STARTING_XI_SIZE} starters entered — complete all added substitutes to calculate Team OVR.` : `${filledStarters} / ${STARTING_XI_SIZE} starters entered — complete your Starting XI to calculate Team OVR.`;
+      explainBody.textContent = missing ? 'Fill in your Starting XI to see the full breakdown.' : 'Complete every added substitute to see the full breakdown.';
+      return;
+    }
+
+    resultLabel.textContent = 'YOUR TEAM OVR';
+    resultNumber.textContent = String(result.teamOVR);
+    resultBreakdown.hidden = false;
+    resultProgress.hidden = true;
+    rbBase.textContent = formatSigned(result.baseAverage);
+    rbRank.textContent = formatSigned(result.rankAverage);
+    rbBadges.textContent = formatSigned(result.badgeBonus);
+    rbTotal.textContent = String(result.teamOVR);
+
+    const badgeLines = result.badgeBreakdown.length ? result.badgeBreakdown.map((b) => `${b.name} Level ${b.level} = +${b.bonus}`).join('\n') : 'No badges equipped';
+    explainBody.textContent = `Base OVR\n\nTotal Base OVR: ${result.totalBase}\nSquad Size: ${result.squadSize}\n\n${result.totalBase} ÷ ${result.squadSize} = ${(result.totalBase / result.squadSize).toFixed(2)}\nRounded up = ${result.baseAverage}\n\n\nRank\n\nTotal Rank: ${result.totalRank}\nSquad Size: ${result.squadSize}\n\n${result.totalRank} ÷ ${result.squadSize} = ${(result.totalRank / result.squadSize).toFixed(2)}\nRounded up = ${result.rankAverage}\n\n\nBadges\n\n${badgeLines}\n\nBadge Bonus = ${formatSigned(result.badgeBonus)}\n\n\nFinal Team OVR\n\n${result.baseAverage} + ${result.rankAverage} + ${result.badgeBonus} = ${result.teamOVR}`;
+  }
+
+  updateAddSubAvailability();
+  recompute();
+</script>
