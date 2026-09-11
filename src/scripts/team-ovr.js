@@ -31,7 +31,6 @@ if (formation && subsEl && addSub && reset) {
   const pitch = formation.closest('.pitch');
   if (pitch) pitch.style.aspectRatio = '2 / 3';
 
-  // Move optional squad inputs above the analysis tools on desktop and mobile.
   const rightCol = document.querySelector('.right-col');
   const subsBlock = document.querySelector('.subs-block');
   const badgesBlock = subsBlock?.nextElementSibling;
@@ -53,7 +52,8 @@ if (formation && subsEl && addSub && reset) {
     .subs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
     .sub{min-width:0}.sub-foot{display:flex;justify-content:space-between;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font:700 7px var(--mono);color:var(--muted)}
     .sub-foot b{color:var(--blue);font:900 10px var(--mono)}
-    @media(max-width:900px){.subs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .badges{display:flex!important;flex-direction:column!important;gap:10px!important;width:100%}
+    .badge{width:100%!important;box-sizing:border-box!important;min-width:0!important}
     @media(max-width:760px){.card{width:58px;padding:5px}.card-top span:last-child{font-size:6px}.card input{height:26px;font-size:9px}.card select{height:23px;font-size:7px}.card-ovr{font-size:8px}.subs{grid-template-columns:1fr}.right-col .subs-block,.right-col .badges-block{margin-bottom:14px}}
     @media(max-width:380px){.card{width:54px;padding:4px}.card-top{margin-bottom:3px}.card-top span:last-child{font-size:5.5px}.card input{height:24px;font-size:8px}.card select{height:21px;font-size:6.5px}.card-ovr{margin-top:3px}}
   `;
@@ -89,6 +89,7 @@ if (formation && subsEl && addSub && reset) {
 
   function findBaseDelta(players, target, badges) {
     const n = players.length;
+    if (!n) return null;
     const baseTotal = sum(players, 'baseOVR');
     const rankPart = Math.ceil(sum(players, 'rank') / n);
     const needed = (target - badges - rankPart - 1) * n + 1 - baseTotal;
@@ -96,9 +97,10 @@ if (formation && subsEl && addSub && reset) {
     return needed <= 0 ? 0 : needed <= capacity ? needed : null;
   }
 
-  function findRankDelta(players, target, badges) {
+  function findRankDelta(players, target, badges, basePlayers = players) {
     const n = players.length;
-    const basePart = Math.ceil(sum(players, 'baseOVR') / n);
+    if (!n || !basePlayers.length) return null;
+    const basePart = Math.ceil(sum(basePlayers, 'baseOVR') / basePlayers.length);
     const rankTotal = sum(players, 'rank');
     const needed = (target - badges - basePart - 1) * n + 1 - rankTotal;
     const capacity = players.reduce((total, player) => total + 5 - player.rank, 0);
@@ -106,18 +108,31 @@ if (formation && subsEl && addSub && reset) {
   }
 
   function findMixed(players, target, badges) {
-    const n = players.length;
-    const baseTotal = sum(players, 'baseOVR');
-    const rankTotal = sum(players, 'rank');
-    const baseCapacity = players.reduce((total, player) => total + BASE_OVR_MAX - player.baseOVR, 0);
-    const rankCapacity = players.reduce((total, player) => total + 5 - player.rank, 0);
+    const basePlayers = players.filter((player) => isValidBaseOVR(player.baseOVR));
+    const rankPlayers = players.filter((player) => isValidRank(player.rank));
+    if (!basePlayers.length) return null;
+    const nBase = basePlayers.length;
+    const nRank = rankPlayers.length;
+    const baseTotal = sum(basePlayers, 'baseOVR');
+    const rankTotal = nRank ? sum(rankPlayers, 'rank') : 0;
+    const baseCapacity = basePlayers.reduce((total, player) => total + BASE_OVR_MAX - player.baseOVR, 0);
+    const rankCapacity = rankPlayers.reduce((total, player) => total + 5 - player.rank, 0);
     let best = null;
     for (let baseDelta = 0; baseDelta <= baseCapacity; baseDelta += 1) {
-      const basePart = Math.ceil((baseTotal + baseDelta) / n);
-      const neededRank = (target - badges - basePart - 1) * n + 1 - rankTotal;
+      const basePart = Math.ceil((baseTotal + baseDelta) / nBase);
+      if (!nRank) {
+        if (basePart + badges >= target) {
+          best = { baseDelta, rankDelta: 0 };
+          break;
+        }
+        continue;
+      }
+      const neededRank = (target - badges - basePart - 1) * nRank + 1 - rankTotal;
       const rankDelta = Math.max(0, neededRank);
       if (rankDelta > rankCapacity) continue;
-      if (!best || baseDelta + rankDelta < best.baseDelta + best.rankDelta) best = { baseDelta, rankDelta };
+      if (!best || baseDelta + rankDelta < best.baseDelta + best.rankDelta) {
+        best = { baseDelta, rankDelta };
+      }
     }
     return best;
   }
@@ -167,73 +182,84 @@ if (formation && subsEl && addSub && reset) {
     const mixed = findMixed(players, target, badges);
     const routes = [];
     if (baseDelta !== null) routes.push({ name: 'Base OVR', cost: baseDelta, text: routeText('base', baseDelta, players) });
-    if (rankDelta !== null) routes.push({ name: 'Rank', cost: rankDelta, text: routeText('rank', rankDelta, players) });
+    if (rankDelta !== null) routes.push({ name: 'Rank', cost: rankDelta, text: routeText('rank', rankDelta, players.filter((player) => isValidRank(player.rank))) });
     if (mixed) routes.push({ name: 'Mixed', cost: mixed.baseDelta + mixed.rankDelta, text: `${mixed.baseDelta ? `+${mixed.baseDelta} total Base OVR` : 'No Base OVR change'}\n${mixed.rankDelta ? `+${mixed.rankDelta} total Rank` : 'No Rank change'}` });
     routes.sort((a, b) => a.cost - b.cost);
     box.innerHTML = routes.length ? routes.map((route, index) => `<div class="route ${index === 0 ? 'best' : ''}"><div class="route-title"><span>${index === 0 ? 'BEST ROUTE · ' : ''}${route.name}</span><b>${route.cost} TOTAL</b></div><p>${route.text.replaceAll('\n', '<br>')}</p></div>`).join('') : '<div class="planner-empty">No route is possible within the current Base OVR and Rank limits.</div>';
   }
 
-  function renderNext(players, current, badges) {
+  // Rebuilt from scratch: this feature never waits for a complete squad.
+  // It uses whatever valid values have already been entered and updates on every input.
+  function renderNext() {
     const number = $('next-number');
     const needed = $('next-needed');
     const routes = $('next-routes');
     const fill = $('meter-fill');
     if (!number || !needed || !routes || !fill) return;
-    if (players.length < STARTING_XI_SIZE || players.length > MAX_SQUAD_SIZE || players.some((player) => !valid(player))) {
+
+    const players = allPlayers();
+    const basePlayers = players.filter((player) => isValidBaseOVR(player.baseOVR));
+    const rankPlayers = players.filter((player) => isValidRank(player.rank));
+    const badges = state.badges.filter(Boolean).length;
+
+    if (!basePlayers.length) {
       number.textContent = '--';
-      needed.textContent = 'Complete the squad';
-      routes.textContent = 'Enter Base OVR and Rank for every included player to calculate the next exact Team OVR.';
+      needed.textContent = 'Enter a Base OVR';
+      routes.textContent = 'The next OVR starts calculating as soon as the first Base OVR is entered.';
       fill.style.width = '0%';
       return;
     }
 
-    const target = current + 1;
-    const baseDelta = findBaseDelta(players, target, badges);
-    const rankDelta = findRankDelta(players, target, badges);
+    const basePart = Math.ceil(sum(basePlayers, 'baseOVR') / basePlayers.length);
+    const rankPart = rankPlayers.length ? Math.ceil(sum(rankPlayers, 'rank') / rankPlayers.length) : 0;
+    const currentLive = basePart + rankPart + badges;
+    const target = currentLive + 1;
+    const baseDelta = findBaseDelta(basePlayers, target, badges);
+    const rankDelta = findRankDelta(rankPlayers, target, badges, basePlayers);
     const mixed = findMixed(players, target, badges);
     const costs = [baseDelta, rankDelta, mixed ? mixed.baseDelta + mixed.rankDelta : null].filter((value) => value !== null);
+
     number.textContent = target;
     if (!costs.length) {
       needed.textContent = 'No route available';
-      routes.textContent = `Team OVR ${current} is at the current Base OVR and Rank ceiling.`;
+      routes.textContent = `The entered players are at the current Base OVR and Rank ceiling.`;
       fill.style.width = '100%';
       return;
     }
+
     const cheapest = Math.min(...costs);
     needed.textContent = `Minimum change: ${cheapest}`;
     const labels = [];
     if (baseDelta !== null) labels.push(`Base +${baseDelta}`);
     if (rankDelta !== null) labels.push(`Rank +${rankDelta}`);
     if (mixed) labels.push(`Mixed +${mixed.baseDelta + mixed.rankDelta}`);
-    routes.textContent = `Exact threshold for ${target} OVR: ${labels.join(' · ')}.`;
+    routes.textContent = `Next live OVR: ${target} · ${basePlayers.length} Base OVR entered${rankPlayers.length ? ` · ${rankPlayers.length} Rank values entered` : ''}. ${labels.join(' · ')}.`;
     fill.style.width = `${Math.max(10, Math.min(100, 100 / Math.max(1, cheapest)))}%`;
   }
 
-  function renderBottleneck(players, current) {
+  // Rebuilt from scratch: bottleneck is Base OVR only, so one player is enough.
+  // It immediately shows every player tied for the lowest entered Base OVR.
+  function renderBottleneck() {
     const box = $('bottleneck');
     if (!box) return;
-    if (players.length < STARTING_XI_SIZE || players.length > MAX_SQUAD_SIZE || players.some((player) => !valid(player))) {
-      box.innerHTML = '<div class="planner-empty">Complete every included player to find the lowest OVR bottleneck.</div>';
+
+    const players = allPlayers();
+    const entered = players
+      .map((player, index) => ({ player, index }))
+      .filter(({ player }) => isValidBaseOVR(player.baseOVR));
+
+    if (!entered.length) {
+      box.innerHTML = '<div class="planner-empty">Enter a Base OVR to find the lowest player. Rank is not required.</div>';
       return;
     }
 
-    const lowest = Math.min(...players.map((player) => player.baseOVR));
-    const lowestPlayers = players.map((player, index) => ({ player, index })).filter(({ player }) => player.baseOVR === lowest);
-    const n = players.length;
-    const baseTotal = sum(players, 'baseOVR');
-    const rankTotal = sum(players, 'rank');
-    const basePart = Math.ceil(baseTotal / n);
-    const rankPart = Math.ceil(rankTotal / n);
-    const baseGap = basePart * n - baseTotal;
-    const rankGap = rankPart * n - rankTotal;
-    const testIndex = lowestPlayers[0].index;
-    const oneStep = players.map((player) => ({ ...player }));
-    if (oneStep[testIndex].baseOVR < BASE_OVR_MAX) oneStep[testIndex].baseOVR += 1;
-    const after = calculateTeamOVR({ players: oneStep, selectedBadges: badgeSelection(), requiredCount: n });
-    const gain = after.complete ? after.teamOVR - current : 0;
+    const lowest = Math.min(...entered.map(({ player }) => player.baseOVR));
+    const lowestPlayers = entered.filter(({ player }) => player.baseOVR === lowest);
     const names = lowestPlayers.map(({ index }) => playerLabel(index)).join(', ');
+    const nextHigher = Math.min(...entered.filter(({ player }) => player.baseOVR > lowest).map(({ player }) => player.baseOVR).concat(BASE_OVR_MAX));
+    const gap = nextHigher > lowest && nextHigher < BASE_OVR_MAX ? nextHigher - lowest : 0;
 
-    box.innerHTML = `<div class="bottleneck-card"><div class="bottleneck-ovr">${lowest}</div><div><strong>${names}</strong><p>Lowest Base OVR: ${lowest}. A +1 Base OVR test gives ${gain > 0 ? `+${gain} Team OVR` : 'no immediate Team OVR increase'} at the current threshold. Base average gap: ${baseGap}. Rank average gap: ${rankGap}.</p></div></div>`;
+    box.innerHTML = `<div class="bottleneck-card"><div class="bottleneck-ovr">${lowest}</div><div><strong>${names}</strong><p>Lowest entered Base OVR. ${lowestPlayers.length === 1 ? 'This player is the current bottleneck.' : 'These players are tied for the current bottleneck.'}${gap ? ` Next entered Base OVR is ${nextHigher}, a ${gap}-point gap.` : ''}</p></div></div>`;
   }
 
   function recompute() {
@@ -278,8 +304,8 @@ if (formation && subsEl && addSub && reset) {
 
     const target = Number($('target-ovr').value) || 120;
     renderPlanner(target, players, result?.teamOVR ?? estimate ?? 0, badgeBonus);
-    renderNext(players, result?.teamOVR ?? 0, badgeBonus);
-    renderBottleneck(players, result?.teamOVR ?? 0);
+    renderNext();
+    renderBottleneck();
   }
 
   formation.querySelectorAll('.card').forEach((card, index) => {
