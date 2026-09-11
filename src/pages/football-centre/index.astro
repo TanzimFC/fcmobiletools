@@ -1,22 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import LegacyHtml from '../../components/LegacyHtml.astro';
 ---
 <BaseLayout title="Football Centre" description="Track FC Mobile Showdowns, predictions, results, points and progress.">
-  <section class="fc-shell">
-    <div class="fc-heading">
-      <div><p class="eyebrow">FC MOBILE TOOLS · FOOTBALL CENTRE</p><h1>Football Centre</h1><p>Your complete Showdown tracker, opened directly — no launch page.</p></div>
-      <a class="btn" href="/">Back home</a>
-    </div>
-    <nav class="fc-sections" aria-label="Football Centre sections">
-      <a class="active" href="/football-centre">Dashboard</a><a href="/football-centre/matches">Matches</a><a href="/football-centre/analysis">Analysis</a><a href="/football-centre/totw">TOTW</a><a href="/football-centre/history">History</a><a href="/football-centre/settings">Settings</a>
-    </nav>
-    <div class="fc-frame-wrap"><iframe class="fc-frame" src="/legacy/football-centre.html#dashboard" title="Football Centre app" loading="eager"></iframe></div>
-  </section>
+  <LegacyHtml file="football-centre.html" initialPage="dashboard" />
 </BaseLayout>
-<style>
-.fc-shell{width:min(1240px,calc(100% - 28px));margin:0 auto;padding:30px 0 70px}.fc-heading{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:18px}.fc-heading h1{margin:4px 0 5px;font-size:clamp(30px,5vw,48px);letter-spacing:-.055em}.fc-heading p:not(.eyebrow){margin:0;color:#7d8795;font-size:13px}.eyebrow{margin:0;color:#7c8b9c;font-size:10px;font-weight:900;letter-spacing:.14em}.btn{display:inline-flex;align-items:center;padding:10px 13px;border:1px solid #263747;border-radius:10px;background:#101a24;color:#f3f8fc;text-decoration:none;font-size:11px;font-weight:800}.btn:hover{border-color:#38bdf8;background:#122331}.fc-sections{display:flex;gap:6px;flex-wrap:wrap;padding:5px;border:1px solid #1e2d3b;background:#09131dcc;border-radius:14px;margin-bottom:12px}.fc-sections a{padding:9px 12px;border-radius:9px;color:#7e8d9c;text-decoration:none;font-size:11px;font-weight:850}.fc-sections a:hover,.fc-sections a.active{color:#f4f9fc;background:#153047;box-shadow:inset 0 0 0 1px #244b67}.fc-frame-wrap{overflow:hidden;border:1px solid #20303e;border-radius:18px;background:#050b12;box-shadow:0 24px 70px #0005}.fc-frame{display:block;width:100%;height:1900px;border:0;background:#050b12}@media(max-width:700px){.fc-shell{width:calc(100% - 18px);padding-top:20px}.fc-heading{align-items:flex-start;flex-direction:column}.fc-heading .btn{width:100%;justify-content:center}.fc-sections{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.fc-sections::-webkit-scrollbar{display:none}.fc-sections a{flex:0 0 auto}.fc-frame{height:2300px}}
-</style>
-<script>
-const frame=document.querySelector('.fc-frame');
-frame?.addEventListener('load',()=>{try{const doc=frame.contentDocument;doc?.querySelector('.topbar')?.remove();doc?.querySelector('.site-footer')?.remove();const app=doc?.querySelector('.app');if(app){app.style.paddingTop='10px';app.style.paddingBottom='28px'}}catch{}});
-</script>
