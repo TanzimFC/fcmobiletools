@@ -4,16 +4,16 @@ import { getCollection } from 'astro:content';
 const latestArticles = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft)).sort((a,b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0)).slice(0, 4);
 const readingTime = (post) => post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
 ---
-<BaseLayout title="FC Mobile Tools" description="A focused FC Mobile toolkit for Team OVR, redeem codes, Football Centre, trivia and guides.">
+<BaseLayout title="FC Mobile Tools" description="A focused FC Mobile toolkit for Team OVR, training, rank up, redeem codes, Football Centre, trivia and guides.">
   <main class="home">
     <section class="hero">
       <div class="wrap hero-copy">
         <p class="eyebrow">TANZIMFC / FC MOBILE TOOLS</p>
         <p class="kicker">THE FC MOBILE TOOLKIT</p>
         <h1>Everything useful.<br><span>One place.</span></h1>
-        <p class="lead">Build your squad, check redeem codes, track Football Centre progress and explore FC Mobile guides without digging through clutter.</p>
-        <div class="hero-buttons"><a class="btn primary" href="/team-ovr">Build my squad <b>↗</b></a><a class="btn" href="/redeem-codes">Find redeem codes <b>↗</b></a></div>
-        <div class="signals"><span><b>01</b> TEAM OVR</span><span><b>02</b> REDEEM CODES</span><span><b>03</b> FOOTBALL CENTRE</span></div>
+        <p class="lead">Build your squad, calculate training and rank ups, check redeem codes, track Football Centre progress and explore FC Mobile guides without digging through clutter.</p>
+        <div class="hero-buttons"><a class="btn primary" href="/team-ovr">Build my squad <b>↗</b></a><a class="btn" href="/rank-up-calculator">Calculate rank up <b>↗</b></a></div>
+        <div class="signals"><span><b>01</b> TEAM OVR</span><span><b>02</b> RANK UP</span><span><b>03</b> REDEEM CODES</span></div>
       </div>
     </section>
 
@@ -25,10 +25,11 @@ const readingTime = (post) => post.data.readingTime ?? Math.max(1, Math.ceil((po
         <a class="tool-card" href="/football-centre"><span>TRACKER / 03</span><h3>Football Centre</h3><p>Track matches, points, rewards and event progress.</p><strong>OPEN <b>↗</b></strong></a>
         <a class="tool-card" href="/trivia"><span>QUIZ / 04</span><h3>Trivia</h3><p>Test your FC Mobile knowledge across the available challenges.</p><strong>PLAY <b>↗</b></strong></a>
         <a class="tool-card" href="/blog"><span>GUIDES / 05</span><h3>Blog &amp; Guides</h3><p>Read practical FC Mobile explainers, strategies and analysis.</p><strong>READ <b>↗</b></strong></a>
+        <a class="tool-card rank-tool" href="/rank-up-calculator"><span>CALCULATOR / 06</span><div class="tool-number">06</div><h3>Rank Up Calculator</h3><p>Calculate Rank Up Points, OVR gain, Skill Points, rank-by-rank cost and whether you can afford the upgrade.</p><strong>CALCULATE RANK UP <b>↗</b></strong></a>
       </div>
     </section>
 
-    <section class="quick"><div class="wrap quick-inner"><div><p class="eyebrow">02 / QUICK START</p><h2>Need something right now?</h2><p>Use the fastest route to the most-used tools.</p></div><div class="quick-links"><a href="/team-ovr"><span>01</span><b>Calculate Team OVR</b><i>→</i></a><a href="/redeem-codes"><span>02</span><b>Check latest codes</b><i>→</i></a><a href="/football-centre"><span>03</span><b>Open Football Centre</b><i>→</i></a></div></div></section>
+    <section class="quick"><div class="wrap quick-inner"><div><p class="eyebrow">02 / QUICK START</p><h2>Need something right now?</h2><p>Use the fastest route to the most-used tools.</p></div><div class="quick-links"><a href="/team-ovr"><span>01</span><b>Calculate Team OVR</b><i>→</i></a><a href="/rank-up-calculator"><span>02</span><b>Calculate Rank Up</b><i>→</i></a><a href="/redeem-codes"><span>03</span><b>Check latest codes</b><i>→</i></a><a href="/football-centre"><span>04</span><b>Open Football Centre</b><i>→</i></a></div></div></section>
 
     <section class="wrap section latest-articles"><div class="section-title"><div><p class="eyebrow">03 / LATEST CONTENT</p><h2>Fresh from the<br><span>FC Mobile desk.</span></h2></div><a class="text-link" href="/blog">View all articles →</a></div>
       {latestArticles.length ? <div class="article-grid">{latestArticles.map((post) => <a class="home-article" href={`/blog/${post.slug}/`}>{post.data.image ? <img src={post.data.image} alt="" loading="lazy" /> : <div class="home-article-placeholder"><span>{post.data.type === 'player-review' ? 'REV' : 'FC'}</span></div>}<div class="home-article-body"><div class="home-article-meta"><span>{post.data.category}</span><span>{readingTime(post)} min read</span></div><h3>{post.data.title}</h3><p>{post.data.excerpt ?? post.data.description}</p><strong>Read article →</strong></div></a>)}</div> : <div class="content-empty"><p>No published articles yet.</p><span>New Markdown articles will appear here automatically when published.</span></div>}
