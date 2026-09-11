@@ -1,14 +1,9 @@
 ---
 import fs from 'node:fs';
 
-export interface Props {
-  file: string;
-  initialPage?: string;
-}
-
+export interface Props { file: string; initialPage?: string; }
 const { file, initialPage = '' } = Astro.props;
-const source = fs.readFileSync(new URL(`../../public/legacy/${file}`, import.meta.url), 'utf8');
-
+const source = fs.readFileSync(new URL(`../../public/${file}`, import.meta.url), 'utf8');
 const styles = [...source.matchAll(/<style(?:\\s[^>]*)?>([\\s\\S]*?)<\\/style>/gi)].map(m => m[1]).join('\n');
 let body = source.match(/<body[^>]*>([\\s\\S]*?)<\\/body>/i)?.[1] ?? source;
 body = body.replace(/<header\\s+class=["']topbar["'][\\s\\S]*?<\\/header>/gi, '');
