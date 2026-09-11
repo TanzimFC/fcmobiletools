@@ -1,0 +1,199 @@
+---
+const page = Astro.props.page ?? 'dashboard';
+const pageTitles = {
+  dashboard: 'Dashboard',
+  matches: 'Matches',
+  analysis: 'Analysis',
+  totw: 'Team of the Week',
+  history: 'History',
+  settings: 'Settings'
+};
+const currentTitle = pageTitles[page] ?? pageTitles.dashboard;
+const nav = [
+  ['dashboard', 'Dashboard', '/football-centre'],
+  ['matches', 'Matches', '/football-centre/matches'],
+  ['analysis', 'Analysis', '/football-centre/analysis'],
+  ['totw', 'TOTW', '/football-centre/totw'],
+  ['history', 'History', '/football-centre/history'],
+  ['settings', 'Settings', '/football-centre/settings']
+];
+---
+
+<div class="fcx" data-fcx data-page={page}>
+  <div class="fcx-shell">
+    <header class="fcx-header">
+      <div>
+        <div class="fcx-kicker">FOOTBALL CENTRE · FC MOBILE</div>
+        <h1>{currentTitle}</h1>
+        <p>Showdown tracker, match intelligence and progress control.</p>
+      </div>
+      <div class="fcx-live"><i></i> LIVE TRACKER</div>
+    </header>
+
+    <nav class="fcx-tabs" aria-label="Football Centre navigation">
+      {nav.map(([key, label, href]) => <a class:active={page === key} href={href}>{label}</a>)}
+    </nav>
+
+    {page === 'dashboard' && (
+      <main class="fcx-page">
+        <section class="fcx-hero">
+          <div class="fcx-hero-top">
+            <div>
+              <span class="fcx-label">SHOWDOWN PROGRESS</span>
+              <div class="fcx-score"><strong data-score>0</strong><span>/ 4,000</span></div>
+            </div>
+            <div class="fcx-percent"><strong data-percent>0%</strong><span>complete</span></div>
+          </div>
+          <div class="fcx-progress"><span data-progress></span></div>
+          <div class="fcx-hero-meta"><span><b data-played>0</b> / 8 SHOWDOWNS PLAYED</span><span><b data-needed>4,000</b> POINTS NEEDED</span></div>
+        </section>
+
+        <section class="fcx-grid fcx-grid-3">
+          <article class="fcx-card fcx-stat"><span>POINTS</span><strong data-score-card>0</strong><small>current total</small></article>
+          <article class="fcx-card fcx-stat"><span>PLAYED</span><strong data-played-card>0</strong><small>showdowns completed</small></article>
+          <article class="fcx-card fcx-stat"><span>ACCURACY</span><strong data-accuracy>0%</strong><small>prediction accuracy</small></article>
+        </section>
+
+        <section class="fcx-section-head"><div><span class="fcx-label">CURRENT CYCLE</span><h2>Matchday 1</h2></div><span class="fcx-badge">2 SHOWDOWNS</span></section>
+        <section class="fcx-grid fcx-grid-2">
+          <article class="fcx-match" data-match="fulham-palace">
+            <div class="fcx-match-head"><span>SHOWDOWN 01</span><b data-match-status>UPCOMING</b></div>
+            <div class="fcx-teams"><div class="fcx-team"><div class="crest crest-f">FUL</div><strong>Fulham</strong><small>Craven Cottage</small></div><div class="fcx-vs">VS</div><div class="fcx-team"><div class="crest crest-cp">CRY</div><strong>Crystal Palace</strong><small>Selhurst Park</small></div></div>
+            <div class="fcx-match-foot"><span>Premier League</span><span>+500 correct</span></div>
+          </article>
+          <article class="fcx-match" data-match="arsenal-chelsea">
+            <div class="fcx-match-head"><span>SHOWDOWN 02</span><b data-match-status>UPCOMING</b></div>
+            <div class="fcx-teams"><div class="fcx-team"><div class="crest crest-a">ARS</div><strong>Arsenal</strong><small>Emirates Stadium</small></div><div class="fcx-vs">VS</div><div class="fcx-team"><div class="crest crest-ch">CHE</div><strong>Chelsea</strong><small>Stamford Bridge</small></div></div>
+            <div class="fcx-match-foot"><span>Premier League</span><span>+500 correct</span></div>
+          </article>
+        </section>
+
+        <section class="fcx-section-head"><div><span class="fcx-label">QUICK INTELLIGENCE</span><h2>What matters now</h2></div></section>
+        <section class="fcx-grid fcx-grid-3">
+          <a class="fcx-card fcx-feature" href="/football-centre/analysis"><span class="fcx-icon">↗</span><strong>Player Analysis</strong><small>Form, ratings and matchup picks.</small></a>
+          <a class="fcx-card fcx-feature" href="/football-centre/totw"><span class="fcx-icon">XI</span><strong>Team of the Week</strong><small>Latest standout performers.</small></a>
+          <a class="fcx-card fcx-feature" href="/football-centre/history"><span class="fcx-icon">◷</span><strong>History</strong><small>Your saved showdown results.</small></a>
+        </section>
+      </main>
+    )}
+
+    {page === 'matches' && (
+      <main class="fcx-page">
+        <section class="fcx-section-head"><div><span class="fcx-label">MATCH CENTRE</span><h2>Showdown fixtures</h2><p>Pick a result for each game. Your choices are stored in this browser.</p></div></section>
+        <div class="fcx-match-list">
+          <article class="fcx-match fcx-match-large" data-interactive-match="fulham-palace">
+            <div class="fcx-match-head"><span>MATCHDAY 1 · SHOWDOWN 01</span><b data-match-status>UPCOMING</b></div>
+            <div class="fcx-teams"><div class="fcx-team"><div class="crest crest-f">FUL</div><strong>Fulham</strong></div><div class="fcx-vs">VS</div><div class="fcx-team"><div class="crest crest-cp">CRY</div><strong>Crystal Palace</strong></div></div>
+            <div class="fcx-picks" role="group" aria-label="Fulham Crystal Palace prediction"><button data-pick="home">Fulham win</button><button data-pick="draw">Draw</button><button data-pick="away">Crystal Palace win</button></div>
+            <div class="fcx-match-note"><span>Correct prediction: +500</span><span>Draw/lost prediction: +100</span></div>
+          </article>
+          <article class="fcx-match fcx-match-large" data-interactive-match="arsenal-chelsea">
+            <div class="fcx-match-head"><span>MATCHDAY 1 · SHOWDOWN 02</span><b data-match-status>UPCOMING</b></div>
+            <div class="fcx-teams"><div class="fcx-team"><div class="crest crest-a">ARS</div><strong>Arsenal</strong></div><div class="fcx-vs">VS</div><div class="fcx-team"><div class="crest crest-ch">CHE</div><strong>Chelsea</strong></div></div>
+            <div class="fcx-picks" role="group" aria-label="Arsenal Chelsea prediction"><button data-pick="home">Arsenal win</button><button data-pick="draw">Draw</button><button data-pick="away">Chelsea win</button></div>
+            <div class="fcx-match-note"><span>Correct prediction: +500</span><span>Draw/lost prediction: +100</span></div>
+          </article>
+        </div>
+        <section class="fcx-info-row"><div><strong>Matchday 2</strong><span>Next fixtures unlock when added to the cycle.</span></div><div><strong>Matchday 3</strong><span>Next fixtures unlock when added to the cycle.</span></div></section>
+      </main>
+    )}
+
+    {page === 'analysis' && (
+      <main class="fcx-page">
+        <section class="fcx-section-head"><div><span class="fcx-label">MATCH INTELLIGENCE</span><h2>Players to watch</h2><p>A fresh player board for the current Showdown cycle.</p></div><span class="fcx-badge">4 PLAYERS</span></section>
+        <section class="fcx-player-grid">
+          {[
+            ['Harry Wilson','Fulham','CAM','89','Creator','FWD'],
+            ['Jean-Philippe Mateta','Crystal Palace','ST','88','Target man','ST'],
+            ['Bukayo Saka','Arsenal','RW','91','Match winner','RW'],
+            ['Cole Palmer','Chelsea','CAM','90','Chance creator','CAM'],
+            ['Martin Ødegaard','Arsenal','CM','89','Tempo control','MID'],
+            ['Eberechi Eze','Crystal Palace','CAM','87','Progressor','MID']
+          ].map(([name, club, pos, rating, trait, tag]) => (
+            <article class="fcx-player">
+              <div class="fcx-player-top"><span>{tag}</span><b>{rating}</b></div>
+              <div class="fcx-player-avatar">{name.split(' ').map(n => n[0]).join('').slice(0,2)}</div>
+              <strong>{name}</strong><small>{club} · {pos}</small>
+              <div class="fcx-player-bar"><span style={`width:${Math.min(96, Number(rating)-78)}%`}></span></div>
+              <div class="fcx-player-bottom"><span>Impact</span><b>{trait}</b></div>
+            </article>
+          ))}
+        </section>
+        <section class="fcx-analysis-grid"><article class="fcx-card fcx-copy"><span class="fcx-label">READ THE GAME</span><h3>Who can swing the matchup?</h3><p>Saka and Palmer lead the attacking ceiling, while Wilson and Eze offer creative routes between the lines. Mateta is the direct focal point for Palace and Ødegaard controls Arsenal's tempo.</p></article><article class="fcx-card fcx-copy"><span class="fcx-label">PICK GUIDE</span><h3>Build your prediction</h3><p>Use player availability, recent form and matchup role as your decision layer instead of relying only on overall rating.</p></article></section>
+      </main>
+    )}
+
+    {page === 'totw' && (
+      <main class="fcx-page">
+        <section class="fcx-totw-hero"><div><span class="fcx-label">FC MOBILE · WEEKLY WATCH</span><h2>Team of the Week</h2><p>Standout performances, creator picks and the latest FC Mobile community watch.</p></div><span class="fcx-badge">UPDATED WEEKLY</span></section>
+        <section class="fcx-totw-grid">
+          <article class="fcx-video"><iframe src="https://www.youtube.com/embed/KvgulT3RtFE" title="FC Mobile Team of the Week video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></article>
+          <article class="fcx-card fcx-totw-copy"><span class="fcx-label">SPOTLIGHT</span><h3>Featured XI</h3><p>The weekly board is designed around form, match impact and FC Mobile relevance.</p><div class="fcx-mini-list"><div><b>ATT</b><span>Saka · Palmer · Mateta</span></div><div><b>MID</b><span>Ødegaard · Eze · Wilson</span></div><div><b>WATCH</b><span>New performers added each cycle</span></div></div></article>
+        </section>
+        <section class="fcx-grid fcx-grid-3"><article class="fcx-card fcx-feature"><span class="fcx-icon">★</span><strong>Performance watch</strong><small>Track players whose real-world impact deserves attention.</small></article><article class="fcx-card fcx-feature"><span class="fcx-icon">26</span><strong>FC Mobile update</strong><small>Keep the weekly conversation tied to the game.</small></article><article class="fcx-card fcx-feature"><span class="fcx-icon">◎</span><strong>Community notes</strong><small>Make the shortlist useful before you enter a Showdown.</small></article></section>
+      </main>
+    )}
+
+    {page === 'history' && (
+      <main class="fcx-page">
+        <section class="fcx-section-head"><div><span class="fcx-label">YOUR RECORD</span><h2>Showdown history</h2><p>Every saved prediction appears here.</p></div></section>
+        <section class="fcx-history" data-history></section>
+        <article class="fcx-empty fcx-card" data-empty-history><span>◷</span><h3>No results yet</h3><p>Make a prediction from Matches and it will appear here automatically.</p></article>
+      </main>
+    )}
+
+    {page === 'settings' && (
+      <main class="fcx-page">
+        <section class="fcx-section-head"><div><span class="fcx-label">CONTROL CENTRE</span><h2>Settings</h2><p>Scoring rules, cycle structure and local backup.</p></div></section>
+        <section class="fcx-settings-grid">
+          <article class="fcx-card fcx-setting"><div class="fcx-setting-head"><div><span class="fcx-label">SCORING</span><h3>Event rules</h3></div><span class="fcx-badge">ACTIVE</span></div><div class="fcx-rules"><div><b>+100</b><span>Played Showdown</span></div><div><b>+500</b><span>Correct prediction</span></div><div><b>+100</b><span>Draw / lost prediction</span></div><div><b>+20</b><span>World Class play</span></div></div><p class="fcx-note">Points are calculated locally from your saved match choices. No account is required.</p></article>
+          <article class="fcx-card fcx-setting"><div class="fcx-setting-head"><div><span class="fcx-label">CYCLE</span><h3>Matchdays & games</h3></div><span class="fcx-badge">8 SLOTS</span></div><div class="fcx-cycle"><div><strong>Matchday 1</strong><span>Fulham vs Crystal Palace</span></div><div><strong>Matchday 1</strong><span>Arsenal vs Chelsea</span></div><div class="muted"><strong>Matchday 2</strong><span>Awaiting fixture</span></div><div class="muted"><strong>Matchday 3</strong><span>Awaiting fixture</span></div></div></article>
+          <article class="fcx-card fcx-setting"><div class="fcx-setting-head"><div><span class="fcx-label">DATA</span><h3>Saved progress</h3></div></div><div class="fcx-data-actions"><button data-export>Export backup</button><button data-reset class="danger">Reset progress</button></div><p class="fcx-note">Your predictions live only in this browser. Export a JSON backup before changing devices.</p></article>
+        </section>
+      </main>
+    )}
+  </div>
+</div>
+
+<style>
+.fcx{--bg:#070b10;--panel:#0c1219;--panel2:#101923;--line:#1d2a37;--line2:#263848;--text:#f2f8fc;--muted:#8393a3;--blue:#55c7f8;--blue2:#0ea5e9;--green:#55e39a;--red:#ff7185;color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,sans-serif;background:radial-gradient(900px 420px at 15% -10%,#55c7f812,transparent 62%),radial-gradient(700px 360px at 100% 0,#0ea5e90d,transparent 60%);min-height:700px}
+.fcx *{box-sizing:border-box}.fcx button,.fcx a{font:inherit}.fcx-shell{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:22px 0 65px}.fcx-header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding:10px 2px 18px}.fcx-kicker,.fcx-label{font-size:9px;letter-spacing:.14em;font-weight:900;color:#7590a5}.fcx-header h1{margin:3px 0;font-size:30px;letter-spacing:-.045em}.fcx-header p,.fcx-section-head p{margin:0;color:var(--muted);font-size:11px}.fcx-live{display:flex;align-items:center;gap:7px;color:#8ba2b5;font-size:9px;font-weight:900;letter-spacing:.1em}.fcx-live i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 13px #55e39a99}.fcx-tabs{display:flex;gap:4px;overflow:auto;padding:4px;margin-bottom:16px;border:1px solid var(--line);background:#091017dd;border-radius:14px;scrollbar-width:none}.fcx-tabs::-webkit-scrollbar{display:none}.fcx-tabs a{flex:0 0 auto;text-decoration:none;color:#8395a5;padding:10px 13px;border-radius:10px;font-size:10px;font-weight:900;transition:.18s}.fcx-tabs a:hover{color:#fff;background:#12212d;box-shadow:0 0 0 1px #55c7f82b}.fcx-tabs a.active{color:#eefdff;background:#12384d;box-shadow:inset 0 0 0 1px #55c7f866,0 0 20px #55c7f812}.fcx-hero,.fcx-card,.fcx-match,.fcx-totw-hero{border:1px solid var(--line);background:linear-gradient(145deg,#0d151d,#0a1016);border-radius:18px;box-shadow:0 15px 45px #0000002b}.fcx-hero{padding:24px;margin-bottom:12px;position:relative;overflow:hidden}.fcx-hero:after{content:"";position:absolute;right:-120px;top:-160px;width:390px;height:390px;border-radius:50%;background:radial-gradient(circle,#55c7f81c,transparent 67%);pointer-events:none}.fcx-hero-top{display:flex;justify-content:space-between;align-items:end;gap:20px}.fcx-score{display:flex;align-items:baseline;gap:7px;margin-top:4px}.fcx-score strong{font-size:clamp(52px,8vw,82px);line-height:.9;letter-spacing:-.07em}.fcx-score span{color:#647889;font-weight:800}.fcx-percent{text-align:right}.fcx-percent strong{display:block;font-size:24px;color:var(--blue)}.fcx-percent span{font-size:9px;color:var(--muted);font-weight:800}.fcx-progress{height:9px;border:1px solid var(--line2);background:#071017;border-radius:999px;overflow:hidden;margin:20px 0 9px}.fcx-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue2),var(--blue));border-radius:inherit;box-shadow:0 0 20px #55c7f877;transition:width .35s}.fcx-hero-meta{display:flex;justify-content:space-between;color:#718698;font-size:9px;font-weight:850}.fcx-hero-meta b{color:#c5d5df}.fcx-grid{display:grid;gap:12px}.fcx-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.fcx-grid-3{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px}.fcx-stat{padding:15px}.fcx-stat span{display:block;color:#728697;font-size:8px;font-weight:900;letter-spacing:.12em}.fcx-stat strong{display:block;font-size:27px;letter-spacing:-.04em;margin:4px 0}.fcx-stat small{color:#687b8b;font-size:9px}.fcx-section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin:22px 2px 11px}.fcx-section-head h2{margin:3px 0 0;font-size:20px;letter-spacing:-.035em}.fcx-badge{display:inline-flex;align-items:center;padding:6px 9px;border-radius:99px;border:1px solid #2b4657;background:#0e202c;color:#8ec9e7;font-size:8px;font-weight:950;letter-spacing:.08em}.fcx-match{padding:15px;transition:.2s}.fcx-match:hover{border-color:#355466;transform:translateY(-2px);box-shadow:0 18px 50px #0000003d}.fcx-match-head{display:flex;justify-content:space-between;gap:10px;color:#718698;font-size:8px;font-weight:950;letter-spacing:.12em}.fcx-match-head b{color:#86a2b4}.fcx-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:25px 10px}.fcx-team{text-align:center;min-width:0}.fcx-team strong{display:block;font-size:14px;margin-top:8px}.fcx-team small{display:block;color:#627687;font-size:8px;margin-top:2px}.crest{width:58px;height:58px;margin:auto;border-radius:17px;display:grid;place-items:center;font-size:12px;font-weight:950;letter-spacing:.06em;color:#dff7ff;background:linear-gradient(145deg,#173344,#0c1c27);border:1px solid #31576b;box-shadow:inset 0 0 20px #55c7f80b}.crest-f{border-radius:50%;background:linear-gradient(145deg,#151c23,#0b1016)}.crest-cp{border-radius:50%;background:linear-gradient(145deg,#173f70,#101a2b)}.crest-a{border-radius:50%;background:linear-gradient(145deg,#6b1827,#241017)}.crest-ch{border-radius:50%;background:linear-gradient(145deg,#123f78,#0b1c32)}.fcx-vs{font-size:10px;color:#5e7383;font-weight:950;letter-spacing:.12em}.fcx-match-foot,.fcx-match-note{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:10px;color:#718595;font-size:9px}.fcx-match-foot span:last-child{color:#7ed9a7;font-weight:900}.fcx-feature{display:block;padding:17px;text-decoration:none;transition:.18s}.fcx-feature:hover{border-color:#55c7f866;transform:translateY(-2px);box-shadow:0 15px 40px #0004}.fcx-icon{display:grid;place-items:center;width:34px;height:34px;margin-bottom:13px;border:1px solid #2a4556;border-radius:10px;color:var(--blue);background:#10212c;font-size:11px;font-weight:950}.fcx-feature strong{display:block;font-size:13px}.fcx-feature small{display:block;color:#718697;font-size:9px;margin-top:4px}.fcx-match-list{display:grid;gap:12px}.fcx-match-large{padding:18px}.fcx-match-large .fcx-teams{padding:32px 15px}.fcx-picks{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.fcx-picks button,.fcx-data-actions button{border:1px solid var(--line2);background:#0c141b;color:#8da1b0;border-radius:10px;padding:10px 8px;font-size:9px;font-weight:900;cursor:pointer;transition:.16s}.fcx-picks button:hover,.fcx-data-actions button:hover{color:#fff;border-color:#55c7f866;background:#10232f;box-shadow:0 0 22px #55c7f814}.fcx-picks button.selected{color:#eefdff;background:#123b50;border-color:#55c7f899;box-shadow:0 0 22px #55c7f820}.fcx-match-note{margin-top:11px}.fcx-info-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.fcx-info-row>div{padding:14px;border:1px dashed #263847;border-radius:13px}.fcx-info-row strong,.fcx-info-row span{display:block}.fcx-info-row strong{font-size:11px}.fcx-info-row span{font-size:9px;color:#687d8d;margin-top:3px}.fcx-player-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.fcx-player{padding:15px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,#101923,#0b1118);transition:.18s}.fcx-player:hover{border-color:#55c7f866;transform:translateY(-2px)}.fcx-player-top,.fcx-player-bottom{display:flex;justify-content:space-between;align-items:center}.fcx-player-top span{font-size:8px;color:#6f8494;font-weight:900;letter-spacing:.1em}.fcx-player-top b{font-size:20px;color:var(--blue)}.fcx-player-avatar{width:64px;height:64px;margin:12px 0;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#18384a,#0c1720);border:1px solid #31576b;color:#bdeeff;font-size:17px;font-weight:950}.fcx-player>strong{display:block;font-size:14px}.fcx-player>small{display:block;color:#6d8191;font-size:9px;margin-top:2px}.fcx-player-bar{height:5px;background:#071017;border-radius:99px;margin:13px 0 9px;overflow:hidden}.fcx-player-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--blue2),var(--blue));border-radius:inherit}.fcx-player-bottom{font-size:8px;color:#617788}.fcx-player-bottom b{color:#9fb2c0}.fcx-analysis-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}.fcx-copy{padding:18px}.fcx-copy h3{margin:5px 0 7px;font-size:17px}.fcx-copy p{margin:0;color:#788b9a;font-size:10px;line-height:1.7}.fcx-totw-hero{padding:22px;display:flex;justify-content:space-between;align-items:end;gap:20px}.fcx-totw-hero h2{font-size:29px;letter-spacing:-.045em;margin:4px 0}.fcx-totw-hero p{margin:0;color:#758999;font-size:10px}.fcx-totw-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:12px;margin-top:12px}.fcx-video{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#000;aspect-ratio:16/9}.fcx-video iframe{width:100%;height:100%;border:0;display:block}.fcx-totw-copy{padding:20px}.fcx-totw-copy h3{margin:5px 0 7px;font-size:19px}.fcx-totw-copy p{font-size:10px;color:#758999}.fcx-mini-list{display:grid;gap:7px;margin-top:17px}.fcx-mini-list div{padding:9px;border:1px solid var(--line);border-radius:10px;background:#0a1117}.fcx-mini-list b{display:block;color:var(--blue);font-size:8px}.fcx-mini-list span{display:block;color:#8799a7;font-size:9px;margin-top:2px}.fcx-history{display:grid;gap:8px}.fcx-history:empty+.fcx-empty{display:grid}.fcx-empty{display:none;text-align:center;padding:50px 20px}.fcx-empty span{font-size:30px;color:#55c7f8}.fcx-empty h3{margin:8px 0 3px}.fcx-empty p{margin:0;color:#748896;font-size:10px}.fcx-settings-grid{display:grid;gap:12px}.fcx-setting{padding:18px}.fcx-setting-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.fcx-setting h3{margin:3px 0 0;font-size:17px}.fcx-rules{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.fcx-rules div{padding:13px;border:1px solid var(--line);background:#0a1117;border-radius:11px}.fcx-rules b{display:block;font-size:19px;color:var(--blue)}.fcx-rules span{display:block;color:#6f8494;font-size:8px;margin-top:3px}.fcx-note{margin:11px 0 0;padding:10px;border:1px solid var(--line);border-radius:10px;background:#0a1117;color:#758896;font-size:9px}.fcx-cycle{display:grid;gap:7px;margin-top:14px}.fcx-cycle div{display:flex;justify-content:space-between;gap:15px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#0a1117}.fcx-cycle strong{font-size:9px}.fcx-cycle span{font-size:9px;color:#788d9d}.fcx-cycle .muted{opacity:.55}.fcx-data-actions{display:flex;gap:8px;margin-top:14px}.fcx-data-actions .danger{border-color:#5c2935;color:#ff9daa;background:#1a0d12}
+@media(max-width:850px){.fcx-player-grid{grid-template-columns:repeat(2,1fr)}.fcx-totw-grid,.fcx-analysis-grid{grid-template-columns:1fr}.fcx-grid-3{grid-template-columns:1fr}.fcx-rules{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.fcx-shell{width:calc(100% - 20px);padding-top:12px}.fcx-header{align-items:start}.fcx-header h1{font-size:25px}.fcx-live{display:none}.fcx-grid-2,.fcx-info-row,.fcx-player-grid{grid-template-columns:1fr}.fcx-score strong{font-size:54px}.fcx-hero-meta{font-size:8px}.fcx-teams{padding:22px 2px}.fcx-team strong{font-size:12px}.fcx-team small{display:none}.crest{width:50px;height:50px}.fcx-picks{grid-template-columns:1fr}.fcx-rules{grid-template-columns:1fr 1fr}.fcx-totw-hero{align-items:start;flex-direction:column}.fcx-cycle div{flex-direction:column;gap:2px}}
+</style>
+
+<script>
+const root = document.querySelector('[data-fcx]');
+if (root) {
+  const KEY = 'tanzimfc-football-centre-v2';
+  const defaults = { score: 0, matches: {}, history: [] };
+  const load = () => { try { return { ...defaults, ...(JSON.parse(localStorage.getItem(KEY) || '{}')) }; } catch { return { ...defaults }; } };
+  let state = load();
+  const save = () => localStorage.setItem(KEY, JSON.stringify(state));
+  const render = () => {
+    const values = root.querySelectorAll('[data-score],[data-score-card]'); values.forEach(el => el.textContent = state.score.toLocaleString());
+    const played = Object.keys(state.matches).length;
+    root.querySelectorAll('[data-played],[data-played-card]').forEach(el => el.textContent = played);
+    const pct = Math.min(100, Math.round(state.score / 40));
+    root.querySelectorAll('[data-percent]').forEach(el => el.textContent = pct + '%');
+    root.querySelectorAll('[data-progress]').forEach(el => el.style.width = pct + '%');
+    root.querySelectorAll('[data-needed]').forEach(el => el.textContent = Math.max(0, 4000 - state.score).toLocaleString());
+    const picks = Object.values(state.matches);
+    const accuracy = picks.length ? Math.round((picks.filter(x => x === 'correct').length / picks.length) * 100) : 0;
+    root.querySelectorAll('[data-accuracy]').forEach(el => el.textContent = accuracy + '%');
+    root.querySelectorAll('[data-interactive-match]').forEach(card => { const value = state.matches[card.dataset.interactiveMatch]; card.querySelectorAll('[data-pick]').forEach(b => b.classList.toggle('selected', b.dataset.pick === value)); });
+    if (root.dataset.page === 'history') {
+      const list = root.querySelector('[data-history]'); const empty = root.querySelector('[data-empty-history]');
+      list.innerHTML = state.history.map(item => `<div class="fcx-card fcx-copy" style="padding:13px"><div style="display:flex;justify-content:space-between;gap:10px"><strong>${item.fixture}</strong><b style="color:#55c7f8">${item.points > 0 ? '+' : ''}${item.points}</b></div><small style="color:#718697">Prediction: ${item.pick} · ${item.date}</small></div>`).join(''); empty.style.display = state.history.length ? 'none' : 'grid';
+    }
+  };
+  root.querySelectorAll('[data-interactive-match]').forEach(card => card.querySelectorAll('[data-pick]').forEach(button => button.addEventListener('click', () => {
+    const id = card.dataset.interactiveMatch; const pick = button.dataset.pick; const previous = state.matches[id];
+    if (!previous) { state.score += 100; state.history.unshift({ fixture: id === 'fulham-palace' ? 'Fulham vs Crystal Palace' : 'Arsenal vs Chelsea', pick, points: 100, date: new Date().toLocaleDateString() }); }
+    state.matches[id] = pick; save(); render();
+  })));
+  root.querySelector('[data-export]')?.addEventListener('click', () => { const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'football-centre-backup.json'; a.click(); URL.revokeObjectURL(a.href); });
+  root.querySelector('[data-reset]')?.addEventListener('click', () => { if (confirm('Reset Football Centre progress?')) { state = { ...defaults, matches:{}, history:[] }; save(); render(); } });
+  render();
+}
+</script>
