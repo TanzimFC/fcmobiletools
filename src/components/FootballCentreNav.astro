@@ -1,0 +1,17 @@
+---
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const links = [
+  ['Dashboard','/football-centre'],
+  ['Matches','/football-centre/matches'],
+  ['Analysis','/football-centre/analysis'],
+  ['TOTW','/football-centre/totw'],
+  ['History','/football-centre/history'],
+  ['Settings','/football-centre/settings']
+];
+---
+<nav class="fc-route-nav" aria-label="Football Centre sections">
+  {links.map(([label, href]) => <a class:list={{ active: path === href }} href={href}>{label}</a>)}
+</nav>
+<style>
+.fc-route-nav{width:min(1180px,calc(100% - 40px));margin:18px auto 0;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:5px;border:1px solid #202a38;border-radius:14px;background:#0d1118cc;position:relative;z-index:5}.fc-route-nav::-webkit-scrollbar{display:none}.fc-route-nav a{flex:0 0 auto;padding:9px 13px;border-radius:9px;color:#8e9bad;font-size:11px;font-weight:850;transition:.18s}.fc-route-nav a:hover,.fc-route-nav a.active{color:#fff;background:#12354a;box-shadow:inset 0 0 0 1px #55c7f233}@media(max-width:560px){.fc-route-nav{width:calc(100% - 28px)}}
+</style>
