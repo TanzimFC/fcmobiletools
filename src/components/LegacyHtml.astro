@@ -1,33 +1,72 @@
 ---
 import fs from 'node:fs';
+import path from 'node:path';
 
-export interface Props { file: string; initialPage?: string; }
-const { file, initialPage = '' } = Astro.props;
-const source = fs.readFileSync(new URL(`../../public/${file}`, import.meta.url), 'utf8');
-let styles = [...source.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi)].map(m => m[1]).join('\n');
-styles = styles
-  .replace(/:root\s*\{/g, '.legacy-app-host{')
-  .replace(/\bbody\s*\{/g, '.legacy-app-host{')
-  .replace(/\.site-nav/g, '.legacy-app-host .site-nav')
-  .replace(/\.site-footer/g, '.legacy-app-host .site-footer');
-let body = source.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? source;
-body = body.replace(/<header\s+class=["']topbar["'][\s\S]*?<\/header>/gi, '');
-body = body.replace(/<footer\s+class=["']site-footer["'][\s\S]*?<\/footer>/gi, '');
+export interface Props {
+  file: string;
+  initialPage?: string;
+  className?: string;
+}
+
+const { file, initialPage = '', className = '' } = Astro.props;
+const sourceName = file.replace(/\.html$/i, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+const base = path.join(process.cwd(), 'public', '_legacy', sourceName);
+const body = fs.readFileSync(`${base}.html`, 'utf8');
+const cssUrl = `/_legacy/${sourceName}.css`;
+const jsUrl = `/_legacy/${sourceName}.js`;
 ---
-<div class="legacy-app-host">
-  {styles && <style is:inline set:html={styles} />}
-  <div class="legacy-app" data-initial-page={initialPage} set:html={body} />
+<div class:list={['legacy-app-host', className]} data-legacy-app data-initial-page={initialPage}>
+  <link rel="stylesheet" href={cssUrl} />
+  <div class="legacy-app" set:html={body}></div>
 </div>
-<script is:inline>
-  const initial = document.querySelector('.legacy-app')?.dataset.initialPage;
-  if (initial && location.hash !== `#${initial}`) history.replaceState(null, '', `#${initial}`);
+
+<script is:inline define:vars={{ initialPage }}>
+  (() => {
+    const host = document.currentScript?.previousElementSibling;
+    const page = initialPage || host?.dataset.initialPage || '';
+    if (!host) return;
+
+    if (page) {
+      host.dataset.initialPage = page;
+      const wanted = `${location.pathname}${location.search}#${page}`;
+      history.replaceState(null, '', wanted);
+    }
+
+    const script = document.createElement('script');
+    script.src = `${location.origin}${'/_legacy/' + sourceName + '.js'}`;
+    script.defer = false;
+    script.onload = () => {
+      if (page) history.replaceState(null, '', `${location.pathname}${location.search}`);
+    };
+    host.appendChild(script);
+
+    host.querySelectorAll('[data-page]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        const target = button.dataset.page;
+        if (!target) return;
+        event.preventDefault();
+        const routes = {
+          dashboard: '/football-centre',
+          matches: '/football-centre/matches',
+          analysis: '/football-centre/analysis',
+          totw: '/football-centre/totw',
+          history: '/football-centre/history',
+          settings: '/football-centre/settings'
+        };
+        if (routes[target]) location.assign(routes[target]);
+      }, true);
+    });
+  })();
 </script>
+
 <style>
-  .legacy-app-host{width:100%;}
-  .legacy-app{min-height:0;width:100%;}
-  .legacy-app>.app{width:min(1180px,calc(100% - 28px));margin:auto;padding-top:22px;}
-  .legacy-app .topbar{display:none!important}
-  .legacy-app .site-footer{display:none!important}
-  .legacy-app .tool-nav{display:none!important}
-  @media(max-width:720px){.legacy-app>.app{width:calc(100% - 18px);padding-top:14px}}
+  .legacy-app-host{width:100%;display:block;position:relative;isolation:isolate;}
+  .legacy-app{width:100%;min-width:0;}
+  .legacy-app-host .topbar,
+  .legacy-app-host .site-nav,
+  .legacy-app-host .tool-nav,
+  .legacy-app-host .site-footer{display:none!important;}
+  .legacy-app-host .app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 44px;}
+  .legacy-app-host .app>.site-footer{display:none!important;}
+  @media(max-width:720px){.legacy-app-host .app{width:calc(100% - 18px);padding-top:16px;}}
 </style>
