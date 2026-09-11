@@ -1,0 +1,66 @@
+---
+export interface NavLink {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+// Update these once, and every page that renders <Navbar /> picks up the change.
+const navLinks: NavLink[] = [
+  { label: "Home", href: "/" },
+  { label: "Football Centre", href: "/football-centre" },
+  { label: "Trivia", href: "/trivia" },
+  { label: "Blog", href: "/blog" },
+  { label: "Beta", href: "/fc-mobile-beta" },
+  { label: "Creator", href: "/#creator" },
+];
+
+const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+---
+
+<header class="topbar" id="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark">FC</span>
+      <span class="brand-text"><small>FC MOBILE TOOLS</small><strong>TanzimFC</strong></span>
+    </a>
+
+    <nav class="topnav" aria-label="Primary">
+      {navLinks.map((link) => (
+        <a
+          href={link.href}
+          aria-current={currentPath === link.href.replace(/\/$/, "") ? "page" : undefined}
+        >
+          {link.label}
+        </a>
+      ))}
+    </nav>
+
+    <div class="topbar-cta">
+      <a class="btn primary" href="/football-centre">Open Football Centre</a>
+      <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobileNav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-nav" id="mobileNav">
+    <div class="wrap">
+      {navLinks.map((link) => (
+        <a href={link.href}>{link.label}</a>
+      ))}
+    </div>
+  </div>
+</header>
+
+<script>
+  const topbar = document.getElementById("topbar");
+  addEventListener("scroll", () => topbar?.classList.toggle("scrolled", scrollY > 10), { passive: true });
+
+  const toggle = document.getElementById("mobileToggle");
+  const mobileNav = document.getElementById("mobileNav");
+  toggle?.addEventListener("click", () => {
+    const isOpen = mobileNav?.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", String(!!isOpen));
+  });
+</script>
