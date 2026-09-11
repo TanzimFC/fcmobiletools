@@ -6,7 +6,6 @@ export const TEAM_OVR_BASE_MAX = 122;
 
 export const STARTING_POSITIONS = ['GK', 'LB', 'CB', 'CB', 'RB', 'CM', 'CM', 'CM', 'LW', 'ST', 'RW'];
 
-// Keep Team Badge data centralized. Only explicit Team OVR bonuses are included.
 export const TEAM_BADGES = [
   { id: 'numero', name: 'Numero', status: 'active', levels: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 } },
   { id: 'champions', name: 'Champions', status: 'active', levels: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 } },
@@ -33,6 +32,7 @@ export function calculateTeamOVR({ players = [], badges = [] } = {}) {
     const rank = Number(player?.rank ?? 0);
     return Number.isFinite(baseOVR) && baseOVR >= TEAM_OVR_BASE_MIN && baseOVR <= TEAM_OVR_BASE_MAX && Number.isInteger(rank) && rank >= 0 && rank <= TEAM_OVR_RANK_MAX;
   });
+
   const squadSize = validPlayers.length;
   const baseTotal = validPlayers.reduce((sum, player) => sum + Number(player.baseOVR), 0);
   const rankTotal = validPlayers.reduce((sum, player) => sum + Number(player.rank ?? 0), 0);
