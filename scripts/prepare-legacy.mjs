@@ -13,8 +13,16 @@ const pages = [
   ['trivia/brazil/index.html', 'trivia-brazil-index']
 ];
 
-function extractStyles(source) { return [...source.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n'); }
-function extractScripts(source) { return [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map((m) => m[1].trim()).filter(Boolean).join('\n\n'); }
+function extractStyles(source) {
+  return [...source.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n');
+}
+function extractScripts(source) {
+  return [...source.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)]
+    .filter(([, attrs]) => !/\bsrc\s*=|\btype\s*=\s*["'](?:application\/(?:ld\+json|json)|text\/json)["']/i.test(attrs))
+    .map(([, , body]) => body.trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
 function cleanBody(source) {
   let body = source.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? source;
   body = body.replace(/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/gi, '').replace(/<style(?:\s[^>]*)?>[\s\S]*?<\/style>/gi, '');
