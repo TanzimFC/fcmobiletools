@@ -30,16 +30,13 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
     const host = document.querySelector('[data-legacy-app]');
     if (!host) return;
 
-    // Football Centre is a single legacy application with internal panels.
-    // Trivia hub pages are ordinary content pages and must never inherit this panel hiding.
     const syncFootballPage = () => {
       if (kind !== 'football-centre') return;
       const requested = initialPage || location.hash.replace(/^#/, '') || 'dashboard';
-      const aliases = { rewards: 'totw' };
-      const target = aliases[requested] || requested;
-      const pages = [...host.querySelectorAll('.page[data-page]')];
+      const target = requested === 'rewards' ? 'totw' : requested;
+      const pages = [...host.querySelectorAll('main > section.page, section.page')];
       if (!pages.length) return;
-      pages.forEach((page) => page.classList.toggle('active', page.dataset.page === target));
+      pages.forEach((page) => page.classList.toggle('active', page.id === target));
     };
 
     syncFootballPage();
@@ -48,21 +45,19 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
     script.src = jsUrl;
     script.onload = () => {
       syncFootballPage();
-      if (location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`);
+      if (kind === 'football-centre' && location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`);
     };
     script.onerror = () => host.setAttribute('data-legacy-error', 'script');
     host.appendChild(script);
 
-    if (kind === 'football-centre') {
-      window.addEventListener('hashchange', syncFootballPage);
-    }
+    if (kind === 'football-centre') window.addEventListener('hashchange', syncFootballPage);
   })();
 </script>
 
 <script is:inline>
   (() => {
     const host = document.querySelector('[data-legacy-app]');
-    if (!host) return;
+    if (!host || host.dataset.legacyKind !== 'football-centre') return;
     const routes = {
       dashboard: '/football-centre', matches: '/football-centre/matches', analysis: '/football-centre/analysis',
       totw: '/football-centre/totw', rewards: '/football-centre/totw', history: '/football-centre/history', settings: '/football-centre/settings'
@@ -88,17 +83,26 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
   .legacy-app-host .app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 44px;}
   .legacy-app-host .app>.site-footer{display:none!important;}
 
-  /* Only Football Centre uses .page as a panel switcher. */
+  /* Football Centre alone uses .page as a panel switcher. */
   .legacy-app-football-centre .page{display:none!important;}
   .legacy-app-football-centre .page.active{display:block!important;}
 
-  /* Trivia must stay on its own black surface and must not inherit the homepage hero. */
+  /* Trivia is a standalone black page. Never inherit the homepage hero/background. */
   .legacy-app-trivia{background:#050505;color:#f5f5f7;min-height:420px;}
   .legacy-app-trivia .page{display:block!important;background:#050505;}
-  .legacy-app-trivia .hero{background:#050505!important;background-image:none!important;}
+  .legacy-app-trivia .hero,
   .legacy-app-trivia .hub-hero,
   .legacy-app-trivia .hub-hero-v2{background:#050505!important;background-image:none!important;}
-  .legacy-app-trivia .card-media{background:#0d0d10!important;background-image:none!important;}
+  .legacy-app-trivia .hero::before,
+  .legacy-app-trivia .hero::after,
+  .legacy-app-trivia .hub-hero::after,
+  .legacy-app-trivia .hub-hero-v2::after{display:none!important;}
+
+  /* Colourful nation accents without using the homepage artwork. */
+  .legacy-app-trivia .tc-beginner{--accent:#58a6ff;}
+  .legacy-app-trivia .tc-medium{--accent:#42d392;}
+  .legacy-app-trivia .tc-difficult{--accent:#f2c14e;}
+  .legacy-app-trivia .country-name{color:#fff;}
 
   @media(max-width:720px){.legacy-app-host .app{width:calc(100% - 18px);padding-top:16px;}}
 </style>
