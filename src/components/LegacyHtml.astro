@@ -20,43 +20,37 @@ const jsUrl = `/_legacy/${sourceName}.js`;
   <div class="legacy-app" set:html={body}></div>
 </div>
 
+{initialPage && <script is:inline define:vars={{ initialPage }}>
+  history.replaceState(null, '', `${location.pathname}${location.search}#${initialPage}`);
+</script>}
+
+<script is:inline src={jsUrl}></script>
+
+{initialPage && <script is:inline define:vars={{ initialPage }}>
+  history.replaceState(null, '', `${location.pathname}${location.search}`);
+</script>}
+
 <script is:inline define:vars={{ initialPage }}>
-  (() => {
-    const host = document.currentScript?.previousElementSibling;
-    const page = initialPage || host?.dataset.initialPage || '';
-    if (!host) return;
-
-    if (page) {
-      host.dataset.initialPage = page;
-      const wanted = `${location.pathname}${location.search}#${page}`;
-      history.replaceState(null, '', wanted);
-    }
-
-    const script = document.createElement('script');
-    script.src = `${location.origin}${'/_legacy/' + sourceName + '.js'}`;
-    script.defer = false;
-    script.onload = () => {
-      if (page) history.replaceState(null, '', `${location.pathname}${location.search}`);
-    };
-    host.appendChild(script);
-
-    host.querySelectorAll('[data-page]').forEach((button) => {
-      button.addEventListener('click', (event) => {
-        const target = button.dataset.page;
-        if (!target) return;
+  const host = document.querySelector('[data-legacy-app]');
+  if (!host) return;
+  host.querySelectorAll('[data-page]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const target = button.dataset.page;
+      const routes = {
+        dashboard: '/football-centre',
+        matches: '/football-centre/matches',
+        analysis: '/football-centre/analysis',
+        totw: '/football-centre/totw',
+        history: '/football-centre/history',
+        settings: '/football-centre/settings'
+      };
+      if (routes[target]) {
         event.preventDefault();
-        const routes = {
-          dashboard: '/football-centre',
-          matches: '/football-centre/matches',
-          analysis: '/football-centre/analysis',
-          totw: '/football-centre/totw',
-          history: '/football-centre/history',
-          settings: '/football-centre/settings'
-        };
-        if (routes[target]) location.assign(routes[target]);
-      }, true);
-    });
-  })();
+        event.stopImmediatePropagation();
+        location.assign(routes[target]);
+      }
+    }, true);
+  });
 </script>
 
 <style>
