@@ -2,12 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export interface Props {
-  file: string;
-  initialPage?: string;
-  className?: string;
-}
-
+export interface Props { file: string; initialPage?: string; className?: string; }
 const { file, initialPage = '', className = '' } = Astro.props;
 const sourceName = file.replace(/\.html$/i, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
 const base = path.join(process.cwd(), 'public', '_legacy', sourceName);
@@ -19,47 +14,30 @@ const jsUrl = `/_legacy/${sourceName}.js`;
   <link rel="stylesheet" href={cssUrl} />
   <div class="legacy-app" set:html={body}></div>
 </div>
-
-{initialPage && <script is:inline define:vars={{ initialPage }}>
-  history.replaceState(null, '', `${location.pathname}${location.search}#${initialPage}`);
-</script>}
-
+{initialPage && <script is:inline define:vars={{ initialPage }}>history.replaceState(null, '', `${location.pathname}${location.search}#${initialPage}`);</script>}
 <script is:inline src={jsUrl}></script>
-
-{initialPage && <script is:inline define:vars={{ initialPage }}>
-  history.replaceState(null, '', `${location.pathname}${location.search}`);
-</script>}
-
-<script is:inline define:vars={{ initialPage }}>
-  const host = document.querySelector('[data-legacy-app]');
-  if (!host) return;
-  host.querySelectorAll('[data-page]').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      const target = button.dataset.page;
-      const routes = {
-        dashboard: '/football-centre',
-        matches: '/football-centre/matches',
-        analysis: '/football-centre/analysis',
-        totw: '/football-centre/totw',
-        history: '/football-centre/history',
-        settings: '/football-centre/settings'
-      };
-      if (routes[target]) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        location.assign(routes[target]);
-      }
-    }, true);
-  });
+{initialPage && <script is:inline define:vars={{ initialPage }}>history.replaceState(null, '', `${location.pathname}${location.search}`);</script>}
+<script is:inline>
+  (() => {
+    const host = document.querySelector('[data-legacy-app]');
+    if (!host) return;
+    const routes = {
+      dashboard: '/football-centre', matches: '/football-centre/matches', analysis: '/football-centre/analysis',
+      totw: '/football-centre/totw', history: '/football-centre/history', settings: '/football-centre/settings'
+    };
+    host.querySelectorAll('[data-page]').forEach((button) => button.addEventListener('click', (event) => {
+      const route = routes[button.dataset.page];
+      if (!route) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      location.assign(route);
+    }, true));
+  })();
 </script>
-
 <style>
   .legacy-app-host{width:100%;display:block;position:relative;isolation:isolate;}
   .legacy-app{width:100%;min-width:0;}
-  .legacy-app-host .topbar,
-  .legacy-app-host .site-nav,
-  .legacy-app-host .tool-nav,
-  .legacy-app-host .site-footer{display:none!important;}
+  .legacy-app-host .topbar,.legacy-app-host .site-nav,.legacy-app-host .tool-nav,.legacy-app-host .site-footer{display:none!important;}
   .legacy-app-host .app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 44px;}
   .legacy-app-host .app>.site-footer{display:none!important;}
   @media(max-width:720px){.legacy-app-host .app{width:calc(100% - 18px);padding-top:16px;}}
