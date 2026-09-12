@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { NATIONS_STORY, getNation } from '../../../data/aNationsStory.js';
+
+export function getStaticPaths() {
+  return NATIONS_STORY.map((nation) => ({ params: { country: nation.slug }, props: { nation } }));
+}
+const { nation } = Astro.props;
+const count = nation.days.reduce((sum, d) => sum + d.questions.length, 0);
+const title = `FC Mobile ${nation.name} A Nation's Story Answers | All Challenges`;
+const description = `FC Mobile A Nation's Story ${nation.name} answers. Find every challenge, question and correct answer for the ${nation.name} chapter in one fast guide.`;
+---
+<BaseLayout title={title} description={description}>
+  <main class="country-page">
+    <div class="crumb"><a href="/a-nations-story/">A Nation's Story</a> <span>/</span> {nation.name}</div>
+    <section class="hero">
+      <div class="flag">{nation.flag}</div>
+      <div class="eyebrow">FC MOBILE · A NATION'S STORY · {nation.part.toUpperCase()}</div>
+      <h1>{nation.name} <span>answers.</span></h1>
+      <p>{nation.description} If you are stuck on a question, jump to the challenge below or search the exact wording from the game.</p>
+      <div class="stats"><span><b>{count}</b> answers</span><span><b>{nation.days.length}</b> challenges</span><span>answer-first guide</span></div>
+    </section>
+
+    <section class="days">
+      <div class="section-head"><div><span class="eyebrow">ALL CHALLENGES</span><h2>Jump straight to the answer.</h2></div><p>No forced quiz flow. Every question and answer is visible in the page source so search engines and players can find the exact information they need.</p></div>
+      <div class="day-grid">
+        {nation.days.map((day) => <a href={`/a-nations-story/${nation.slug}/${day.id}/`} class="day-card"><span>{day.level || 'DAILY'}</span><strong>{day.id.replace('day-','Day ')}</strong><h3>{day.title}</h3><p>{day.questions.length} {day.questions.length === 1 ? 'question' : 'questions'} · answers included</p><b class="go">OPEN ANSWERS ↗</b></a>)}
+      </div>
+    </section>
+
+    <section class="seo"><span class="eyebrow">{nation.name.toUpperCase()} TRIVIA ANSWERS</span><h2>FC Mobile A Nation's Story {nation.name} answers</h2><p>Looking for the answer to an FC Mobile A Nation's Story {nation.name} question? This page organizes the chapter by challenge so you can get to the correct answer without replaying the trivia or scrolling through unrelated event information.</p><p>Questions cover {nation.name} football history, World Cup moments, famous players and major tournament facts. Use the challenge pages for exact question text and quick answer lookup.</p><p class="source">Content cross-checked against <a href={nation.sourceUrl} target="_blank" rel="nofollow noopener">{nation.source}</a>. This is an independent FC Mobile fan reference and is not affiliated with EA.</p></section>
+  </main>
+</BaseLayout>
+<style>
+.country-page{max-width:1120px;margin:auto;padding:0 20px 100px}.crumb{padding-top:25px;color:var(--muted);font:800 8px var(--mono)}.crumb a{color:var(--text);text-decoration:none}.crumb span{padding:0 7px;color:var(--border)}.hero{padding:70px 0 65px;border-bottom:1px solid var(--border)}.flag{font-size:48px;margin-bottom:22px}.eyebrow{font:900 9px var(--mono);letter-spacing:.15em;color:var(--blue)}.hero h1{font-size:clamp(55px,8vw,96px);line-height:.88;letter-spacing:-.075em;margin:18px 0}.hero h1 span{color:var(--blue)}.hero p{max-width:720px;color:var(--muted);font-size:13px;line-height:1.8}.stats{display:flex;gap:7px;margin-top:25px;flex-wrap:wrap}.stats span{padding:9px 11px;border:1px solid var(--border);border-radius:8px;font:800 8px var(--mono);color:var(--muted)}.stats b{color:var(--text);margin-right:4px}.days{padding:65px 0}.section-head{display:flex;justify-content:space-between;align-items:end;gap:30px;margin-bottom:20px}.section-head h2{font-size:40px;letter-spacing:-.06em;margin:8px 0}.section-head p{max-width:430px;color:var(--muted);font-size:10px;line-height:1.7}.day-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.day-card{position:relative;min-height:205px;padding:17px;border:1px solid var(--border);border-radius:13px;background:var(--surface);text-decoration:none;color:var(--text);transition:.2s}.day-card:hover{transform:translateY(-3px);border-color:#55c7f255}.day-card>span{font:900 7px var(--mono);color:var(--blue);letter-spacing:.1em}.day-card strong{position:absolute;right:16px;top:16px;font:900 8px var(--mono);color:var(--muted)}.day-card h3{font-size:18px;letter-spacing:-.03em;margin:35px 0 7px}.day-card p{font-size:9px;color:var(--muted)}.go{position:absolute;left:17px;bottom:15px;font:900 7px var(--mono);color:var(--blue)}.seo{border-top:1px solid var(--border);padding:58px 0 0;max-width:850px}.seo h2{font-size:32px;letter-spacing:-.05em;margin:10px 0 14px}.seo p{color:var(--muted);font-size:12px;line-height:1.8}.seo .source{font-size:9px}.seo a{color:var(--text)}@media(max-width:700px){.country-page{padding:0 14px 70px}.day-grid{grid-template-columns:1fr}.section-head{display:block}.section-head p{margin-top:12px}}
+</style>
