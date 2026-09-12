@@ -3,14 +3,136 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { FODDER_XP, TRAINING_LEVEL_XP } from '../data/trainingCalculator.js';
 ---
 <BaseLayout title="FC Mobile Training Calculator" description="Calculate FC Mobile training XP and fodder cards needed for each training level">
-<div class="training-page"><section class="training-hero"><div><span class="eyebrow">FC MOBILE TOOLS</span><h1>Training Calculator</h1><p>See the XP gap, cards needed and training progress at a glance</p></div><div class="verified-badge"><span></span> Working data set</div></section><main class="training-shell"><section class="calculator-card"><div class="section-heading"><div><span class="step">01</span><h2>Training setup</h2></div><p>Choose your current level, target and fodder</p></div><div class="fields"><label>Current Training Level<select id="currentLevel">{TRAINING_LEVEL_XP.map(item=><option value={item.level}>{item.level}</option>)}</select></label><label>Target Training Level<select id="targetLevel">{TRAINING_LEVEL_XP.map(item=><option value={item.level} selected={item.level===30}>{item.level}</option>)}</select></label><label>Training Fodder<select id="fodder">{FODDER_XP.map(item=><option value={item.id} selected={item.id==='60-69'}>{item.label} · {item.xp} XP</option>)}</select></label><label>Price per Player <span class="optional">optional</span><input id="price" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 1000"></label></div><div class="shortcuts"><span>Quick target</span><button data-add="1">+1</button><button data-add="5">+5</button><button data-add="10">+10</button><button id="max">MAX</button></div></section><section id="result" class="result-card" aria-live="polite"></section><section class="calculator-card comparison-card"><div class="section-heading"><div><span class="step">02</span><h2>Fodder XP comparison</h2></div><p>Compare how many cards each bracket needs to supply the same XP</p></div><div class="comparison-intro"><div><strong id="comparison-target">160,000 XP</strong><span>target requirement</span></div><div><strong id="comparison-best">120 XP</strong><span>selected card XP</span></div></div><div id="comparison" class="fodder-visual"></div></section><section class="calculator-card info-card"><details><summary>How the calculator works</summary><p>Required XP is cumulative XP at the target level minus cumulative XP at the current level. Cards required are rounded up so the supplied XP reaches the target.</p><p>Price is not used for fodder comparison because reliable market prices are not configured</p><p class="notice">Rank training limits are not enforced yet because verified Rank → maximum Training Level values are not configured</p></details></section></main></div></BaseLayout>
+<div class="training-page">
+  <section class="training-hero">
+    <div>
+      <span class="eyebrow">FC MOBILE TOOLS</span>
+      <h1>Training Calculator</h1>
+      <p>Plan your training XP and see exactly how many fodder cards you need</p>
+    </div>
+    <div class="verified-badge"><span></span> Working data set</div>
+  </section>
+
+  <main class="training-shell">
+    <section class="calculator-card setup-card">
+      <div class="section-heading">
+        <div><span class="step">01</span><h2>Training setup</h2></div>
+        <p>Choose your current level, target and fodder</p>
+      </div>
+      <div class="fields">
+        <label>Current Training Level<select id="currentLevel">{TRAINING_LEVEL_XP.map(item=><option value={item.level}>{item.level}</option>)}</select></label>
+        <label>Target Training Level<select id="targetLevel">{TRAINING_LEVEL_XP.map(item=><option value={item.level} selected={item.level===30}>{item.level}</option>)}</select></label>
+        <label>Training Fodder<select id="fodder">{FODDER_XP.map(item=><option value={item.id} selected={item.id==='60-69'}>{item.label} · {item.xp} XP</option>)}</select></label>
+      </div>
+      <div class="shortcuts"><span>Quick target</span><button data-add="1">+1</button><button data-add="5">+5</button><button data-add="10">+10</button><button id="max">MAX</button></div>
+    </section>
+
+    <section id="result" class="result-card" aria-live="polite"></section>
+
+    <section class="calculator-card fodder-card">
+      <div class="section-heading">
+        <div><span class="step">02</span><h2>Fodder counter</h2></div>
+        <p>Every OVR range compared against your training requirement</p>
+      </div>
+      <div class="counter-summary">
+        <div><span>XP required</span><strong id="counter-target">160,000</strong><small>XP</small></div>
+        <div><span>Selected fodder</span><strong id="counter-selected">60–69 OVR</strong><small id="counter-selected-xp">120 XP / card</small></div>
+      </div>
+      <div class="fodder-table-wrap">
+        <table class="fodder-table">
+          <thead><tr><th>OVR range</th><th>XP / card</th><th>Cards needed</th><th>XP provided</th><th>Excess XP</th></tr></thead>
+          <tbody id="fodderCounter"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="calculator-card info-card">
+      <details>
+        <summary>How the calculator works</summary>
+        <p>Required XP is the cumulative XP at the target level minus the cumulative XP at the current level. Cards needed are rounded up so the supplied XP reaches the requirement.</p>
+        <p class="notice">Rank training limits are not enforced yet because verified Rank → maximum Training Level values are not configured</p>
+      </details>
+    </section>
+  </main>
+</div>
+</BaseLayout>
+
 <style>
-.training-page{min-height:100vh;background:radial-gradient(circle at 85% 0%,rgba(75,190,255,.16),transparent 35%),#07111a;color:#eaf7ff;padding:48px 20px 80px}.training-hero,.training-shell{max-width:1080px;margin:auto}.training-hero{display:flex;align-items:end;justify-content:space-between;gap:30px;padding:30px 0 38px}.eyebrow,.step{font-size:11px;letter-spacing:.16em;font-weight:800;color:#6ed8ff}.training-hero h1{font-size:clamp(38px,6vw,64px);line-height:1;margin:10px 0 12px}.training-hero p{margin:0;color:#91a9b8;font-size:16px}.verified-badge{border:1px solid #214052;background:#0c1c27;padding:10px 14px;border-radius:999px;color:#9eb6c4;font-size:12px}.verified-badge span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#62d5ff;margin-right:8px}.training-shell{display:grid;gap:18px}.calculator-card,.result-card{background:rgba(10,25,35,.9);border:1px solid #193746;border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.22)}.calculator-card{padding:26px}.section-heading{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}.section-heading>div{display:flex;align-items:center;gap:12px}.section-heading h2{font-size:20px;margin:0}.section-heading p{margin:0;color:#75909e;font-size:13px}.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}label{display:grid;gap:8px;font-size:12px;color:#a9c0cc;font-weight:700}select,input{width:100%;box-sizing:border-box;background:#081722;border:1px solid #244452;color:#effaff;border-radius:12px;padding:13px 12px;font:inherit;outline:none}select:focus,input:focus{border-color:#58cfff;box-shadow:0 0 0 3px rgba(88,207,255,.1)}.optional{font-weight:500;color:#59717e;margin-left:4px}.shortcuts{display:flex;align-items:center;gap:8px;margin-top:18px;color:#6f8b99;font-size:12px}.shortcuts button{border:1px solid #244452;background:#0b202d;color:#bceaff;border-radius:9px;padding:8px 12px;cursor:pointer}.result-card{padding:28px;background:linear-gradient(135deg,#0b2330,#08151e)}.result-top{display:flex;justify-content:space-between;gap:25px;align-items:center}.result-label{font-size:12px;color:#7595a4;text-transform:uppercase;letter-spacing:.13em;font-weight:800}.result-big{font-size:clamp(40px,6vw,62px);font-weight:900;margin:4px 0}.result-big small{font-size:16px;color:#78929f}.result-path{color:#84a0ae}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:25px}.metric{background:#081923;border:1px solid #193744;border-radius:14px;padding:15px}.metric span{display:block;color:#66818e;font-size:11px;margin-bottom:7px}.metric strong{font-size:18px}.progress{height:9px;background:#102733;border-radius:99px;overflow:hidden;margin-top:22px}.progress i{display:block;height:100%;background:#59cdf9;border-radius:inherit;transition:width .2s}.comparison-intro{display:flex;gap:12px;margin:0 0 18px}.comparison-intro div{flex:1;padding:14px 16px;border:1px solid #193744;border-radius:13px;background:#081923}.comparison-intro strong{display:block;font-size:20px}.comparison-intro span{display:block;margin-top:4px;color:#66818e;font-size:10px}.fodder-visual{display:grid;gap:8px}.fodder-row{display:grid;grid-template-columns:105px 1fr 70px;gap:12px;align-items:center;padding:10px 12px;border:1px solid #173541;border-radius:12px;background:#081923}.fodder-row.selected{border-color:#58cfff;background:#0a202b}.fodder-name{font-size:11px;font-weight:800}.fodder-bar{height:22px;background:#102733;border-radius:7px;overflow:hidden}.fodder-bar i{display:block;height:100%;min-width:3px;background:#347f9d;border-radius:7px}.fodder-row.selected .fodder-bar i{background:#59cdf9}.fodder-cards{text-align:right}.fodder-cards strong{display:block;font-size:14px}.fodder-cards span{font-size:8px;color:#66818e}.info-card summary{cursor:pointer;font-weight:800}.info-card p{color:#86a0ad;line-height:1.65}.notice{padding:12px 14px;background:#0c202b;border:1px solid #204250;border-radius:12px;color:#8fc9df!important}@media(max-width:760px){.training-page{padding:25px 14px 60px}.training-hero{display:block}.calculator-card,.result-card{padding:19px;border-radius:17px}.section-heading{display:block}.section-heading p{margin-top:8px}.fields{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.comparison-intro{display:grid;grid-template-columns:1fr 1fr}.fodder-row{grid-template-columns:82px 1fr 60px}.fodder-name{font-size:9px}}@media(max-width:460px){.fields{grid-template-columns:1fr}.comparison-intro{grid-template-columns:1fr}.fodder-row{grid-template-columns:78px 1fr 55px}.fodder-row{padding:9px 8px}}
+.training-page{min-height:100vh;background:radial-gradient(circle at 85% 0%,rgba(75,190,255,.16),transparent 35%),#07111a;color:#eaf7ff;padding:48px 20px 80px}.training-hero,.training-shell{max-width:1080px;margin:auto}.training-hero{display:flex;align-items:end;justify-content:space-between;gap:30px;padding:30px 0 38px}.eyebrow,.step{font-size:11px;letter-spacing:.16em;font-weight:800;color:#6ed8ff}.training-hero h1{font-size:clamp(38px,6vw,64px);line-height:1;margin:10px 0 12px}.training-hero p{margin:0;color:#91a9b8;font-size:16px}.verified-badge{border:1px solid #214052;background:#0c1c27;padding:10px 14px;border-radius:999px;color:#9eb6c4;font-size:12px}.verified-badge span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#62d5ff;margin-right:8px}.training-shell{display:grid;gap:18px}.calculator-card,.result-card{background:rgba(10,25,35,.9);border:1px solid #193746;border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.22)}.calculator-card{padding:26px}.section-heading{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}.section-heading>div{display:flex;align-items:center;gap:12px}.section-heading h2{font-size:20px;margin:0}.section-heading p{margin:0;color:#75909e;font-size:13px}.fields{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}label{display:grid;gap:8px;font-size:12px;color:#a9c0cc;font-weight:700}select{width:100%;box-sizing:border-box;background:#081722;border:1px solid #244452;color:#effaff;border-radius:12px;padding:13px 12px;font:inherit;outline:none}select:focus{border-color:#58cfff;box-shadow:0 0 0 3px rgba(88,207,255,.1)}.shortcuts{display:flex;align-items:center;gap:8px;margin-top:18px;color:#6f8b99;font-size:12px}.shortcuts button{border:1px solid #244452;background:#0b202d;color:#bceaff;border-radius:9px;padding:8px 12px;cursor:pointer}.result-card{padding:26px;background:linear-gradient(135deg,#0b2330,#08151e)}.result-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}.result-label{font-size:11px;color:#7595a4;text-transform:uppercase;letter-spacing:.13em;font-weight:800}.result-big{font-size:clamp(40px,6vw,62px);line-height:1;font-weight:900;margin:8px 0 10px}.result-big small{font-size:16px;color:#78929f}.result-path{color:#84a0ae;font-size:13px}.selected-fodder{display:flex;align-items:center;gap:9px;border:1px solid #214858;background:#0a202b;border-radius:14px;padding:12px 14px;color:#bceaff;font-size:12px;font-weight:800}.selected-fodder i{width:8px;height:8px;border-radius:50%;background:#59cdf9;box-shadow:0 0 14px rgba(89,205,249,.65)}.progress{height:9px;background:#102733;border-radius:99px;overflow:hidden;margin-top:24px}.progress i{display:block;height:100%;background:#59cdf9;border-radius:inherit;transition:width .2s}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.metric{background:#081923;border:1px solid #193744;border-radius:14px;padding:16px}.metric span{display:block;color:#66818e;font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}.metric strong{font-size:20px}.counter-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}.counter-summary>div{position:relative;background:#081923;border:1px solid #193744;border-radius:15px;padding:15px 16px}.counter-summary span{display:block;color:#66818e;font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}.counter-summary strong{display:block;font-size:20px}.counter-summary small{color:#73909e;font-size:10px}.fodder-table-wrap{overflow-x:auto;border:1px solid #193744;border-radius:16px}.fodder-table{width:100%;border-collapse:collapse;min-width:690px}.fodder-table th{padding:12px 14px;background:#0b202b;color:#6f8b99;font-size:10px;text-transform:uppercase;letter-spacing:.08em;text-align:left}.fodder-table td{padding:13px 14px;border-top:1px solid #173541;color:#c8dbe3;font-size:12px}.fodder-table tbody tr{background:#081923;transition:background .15s}.fodder-table tbody tr:hover{background:#0b202b}.fodder-table tbody tr.selected-row{background:#0a2632}.fodder-table tbody tr.selected-row td:first-child{box-shadow:inset 3px 0 #59cdf9}.fodder-table td strong{font-size:14px;color:#f0fbff}.xp-cell{color:#8fdcff!important;font-weight:800}.cards-cell{font-weight:900;color:#f0fbff!important}.table-bar{height:5px;width:100%;margin-top:6px;background:#102733;border-radius:99px;overflow:hidden}.table-bar i{display:block;height:100%;background:#347f9d;border-radius:inherit}.selected-row .table-bar i{background:#59cdf9}.info-card summary{cursor:pointer;font-weight:800}.info-card p{color:#86a0ad;line-height:1.65}.notice{padding:12px 14px;background:#0c202b;border:1px solid #204250;border-radius:12px;color:#8fc9df!important}@media(max-width:760px){.training-page{padding:25px 14px 60px}.training-hero{display:block}.calculator-card,.result-card{padding:19px;border-radius:17px}.section-heading{display:block}.section-heading p{margin-top:8px}.fields{grid-template-columns:1fr 1fr}.result-heading{display:block}.selected-fodder{margin-top:14px}.metrics{grid-template-columns:1fr 1fr}.counter-summary{grid-template-columns:1fr 1fr}}@media(max-width:460px){.fields{grid-template-columns:1fr}.metrics{grid-template-columns:1fr}.counter-summary{grid-template-columns:1fr}}
 </style>
+
 <script>
-import { calculateTraining, compareFodder } from '../lib/trainingCalculator.js';
-const current=document.querySelector('#currentLevel'),target=document.querySelector('#targetLevel'),fodder=document.querySelector('#fodder'),price=document.querySelector('#price'),result=document.querySelector('#result'),comparison=document.querySelector('#comparison'),comparisonTarget=document.querySelector('#comparison-target'),comparisonBest=document.querySelector('#comparison-best');
-const format=n=>new Intl.NumberFormat('en-US').format(n),money=n=>`${format(n)} coins`;
-function render(){const data=calculateTraining({currentLevel:current.value,targetLevel:target.value,fodderId:fodder.value,pricePerCard:price.value});if(!data.valid){result.innerHTML=`<div class="result-label">Check your setup</div><div class="result-big">${data.error}</div>`;comparison.innerHTML='';return}result.innerHTML=`<div class="result-top"><div><div class="result-label">Training requirement</div><div class="result-big">${format(data.requiredXP)} <small>XP</small></div><div class="result-path">Level ${data.currentLevel} → Level ${data.targetLevel}</div></div><div class="result-label">${data.fodder.label}<br>${format(data.fodder.xp)} XP / player</div></div><div class="progress"><i style="width:${Math.min(100,data.progress)}%"></i></div><div class="metrics"><div class="metric"><span>Players required</span><strong>${format(data.playersRequired)}</strong></div><div class="metric"><span>XP provided</span><strong>${format(data.xpProvided)}</strong></div><div class="metric"><span>Excess XP</span><strong>${format(data.excessXP)}</strong></div></div>`;const rows=compareFodder({currentLevel:current.value,targetLevel:target.value,prices:{}});comparisonTarget.textContent=`${format(data.requiredXP)} XP`;comparisonBest.textContent=`${format(data.fodder.xp)} XP`;const max=Math.max(...rows.map(r=>r.playersRequired));comparison.innerHTML=rows.map(row=>`<div class="fodder-row ${row.id===fodder.value?'selected':''}"><div class="fodder-name">${row.label}${row.id===fodder.value?' · Selected':''}</div><div class="fodder-bar" title="${format(row.playersRequired)} cards"><i style="width:${Math.max(1,(row.playersRequired/max)*100)}%"></i></div><div class="fodder-cards"><strong>${format(row.playersRequired)}</strong><span>cards</span></div></div>`).join('')}
-[current,target,fodder,price].forEach(el=>el.addEventListener('input',render));document.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>{target.value=String(Math.min(30,Number(current.value)+Number(b.dataset.add)));render()}));document.querySelector('#max').addEventListener('click',()=>{target.value='30';render()});render();
+import { calculateTraining } from '../lib/trainingCalculator.js';
+import { FODDER_XP } from '../data/trainingCalculator.js';
+
+const current = document.querySelector('#currentLevel');
+const target = document.querySelector('#targetLevel');
+const fodder = document.querySelector('#fodder');
+const result = document.querySelector('#result');
+const counter = document.querySelector('#fodderCounter');
+const counterTarget = document.querySelector('#counter-target');
+const counterSelected = document.querySelector('#counter-selected');
+const counterSelectedXp = document.querySelector('#counter-selected-xp');
+const format = n => new Intl.NumberFormat('en-US').format(n);
+
+function render() {
+  const data = calculateTraining({
+    currentLevel: current.value,
+    targetLevel: target.value,
+    fodderId: fodder.value,
+    pricePerCard: 0
+  });
+
+  if (!data.valid) {
+    result.innerHTML = `<div class="result-label">Check your setup</div><div class="result-big">${data.error}</div>`;
+    counter.innerHTML = '';
+    return;
+  }
+
+  result.innerHTML = `
+    <div class="result-heading">
+      <div>
+        <div class="result-label">Training requirement</div>
+        <div class="result-big">${format(data.requiredXP)} <small>XP</small></div>
+        <div class="result-path">Level ${data.currentLevel} → Level ${data.targetLevel}</div>
+      </div>
+      <div class="selected-fodder"><i></i>${data.fodder.label} · ${format(data.fodder.xp)} XP / card</div>
+    </div>
+    <div class="progress"><i style="width:${Math.min(100, data.progress)}%"></i></div>
+    <div class="metrics">
+      <div class="metric"><span>Players needed</span><strong>${format(data.playersRequired)}</strong></div>
+      <div class="metric"><span>XP provided</span><strong>${format(data.xpProvided)}</strong></div>
+      <div class="metric"><span>Excess XP</span><strong>${format(data.excessXP)}</strong></div>
+    </div>`;
+
+  counterTarget.textContent = format(data.requiredXP);
+  counterSelected.textContent = data.fodder.label;
+  counterSelectedXp.textContent = `${format(data.fodder.xp)} XP / card`;
+
+  const maxCards = Math.max(...FODDER_XP.map(item => Math.ceil(data.requiredXP / item.xp)));
+  counter.innerHTML = FODDER_XP.map(item => {
+    const players = Math.ceil(data.requiredXP / item.xp);
+    const provided = players * item.xp;
+    const excess = provided - data.requiredXP;
+    const selected = item.id === fodder.value;
+    return `<tr class="${selected ? 'selected-row' : ''}">
+      <td><strong>${item.label}</strong>${selected ? '<div class="xp-cell">Selected</div>' : ''}</td>
+      <td class="xp-cell">${format(item.xp)} XP</td>
+      <td class="cards-cell">${format(players)}<div class="table-bar"><i style="width:${Math.max(2, (players / maxCards) * 100)}%"></i></div></td>
+      <td>${format(provided)} XP</td>
+      <td>${format(excess)} XP</td>
+    </tr>`;
+  }).join('');
+}
+
+[current, target, fodder].forEach(el => el.addEventListener('input', render));
+document.querySelectorAll('[data-add]').forEach(button => button.addEventListener('click', () => {
+  target.value = String(Math.min(30, Number(current.value) + Number(button.dataset.add)));
+  render();
+}));
+document.querySelector('#max').addEventListener('click', () => {
+  target.value = '30';
+  render();
+});
+render();
 </script>
