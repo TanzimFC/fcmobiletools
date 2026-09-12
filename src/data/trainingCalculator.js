@@ -29,7 +29,7 @@ export const TRAINING_LEVEL_XP = [
   { level: 27, xp: 13000, cumulativeXP: 115000 },
   { level: 28, xp: 14000, cumulativeXP: 129000 },
   { level: 29, xp: 15000, cumulativeXP: 144000 },
-  { level: 30, xp: 16000, cumulativeXP: 160000 }
+  { level: 30, xp: 16000, cumulativeXP: 160000 },
 ];
 
 export const FODDER_XP = [
@@ -44,12 +44,8 @@ export const FODDER_XP = [
   { id: '92', label: '92 OVR', xp: 600 },
   { id: '93', label: '93 OVR', xp: 700 },
   { id: '94', label: '94 OVR', xp: 800 },
-  { id: '95', label: '95 OVR', xp: 1000 }
+  { id: '95+', label: '95+ OVR', xp: 1000 },
 ];
-
-// Rank limits and transfer rules are intentionally unconfigured until verified current in-game values are available.
-export const RANK_TRAINING_LIMITS = {};
-export const TRAINING_TRANSFER_RULES = { verified: false, transferPercent: null };
 
 export function getCumulativeXP(level) {
   return TRAINING_LEVEL_XP.find((item) => item.level === Number(level))?.cumulativeXP ?? null;
