@@ -27,7 +27,7 @@ export function calculateRankUp({ baseOVR, currentRank, targetRank, availableRP 
     bracket,
     currentRank: current,
     targetRank: target,
-    targetOVR: base + ranksGained,
+    targetOVR: base + target,
     ranksGained,
     skillPoints: ranksGained,
     requiredRP: total,
