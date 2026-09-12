@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import LegacyHtml from '../../../components/LegacyHtml.astro';
+
+export function getStaticPaths() {
+  return Array.from({ length: 9 }, (_, i) => ({ params: { day: String(i + 1) } }));
+}
+
+const { day } = Astro.params;
+const title = `FC Mobile Brazil Trivia Day ${day} Answers`;
+const description = `FC Mobile Brazil A Nation's Story trivia Day ${day}: questions, correct answers, hints and explanations.`;
+---
+<BaseLayout title={title} description={description}>
+  <LegacyHtml file={`trivia/brazil/day-${day}.html`} />
+</BaseLayout>
