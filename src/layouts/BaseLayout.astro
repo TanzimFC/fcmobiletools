@@ -4,6 +4,7 @@ import Footer from '../components/Footer.astro';
 import '../../styles.css';
 export interface Props { title: string; description?: string; }
 const { title, description = 'FC Mobile tools, trivia, guides and event resources from TanzimFC.' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev');
 ---
 <!doctype html>
 <html lang="en">
@@ -12,6 +13,11 @@ const { title, description = 'FC Mobile tools, trivia, guides and event resource
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#07090d" />
   <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonical} />
   <title>{title} — FC Mobile Tools</title>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-YY53FCHMLW"></script>
   <script is:inline>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-YY53FCHMLW');</script>
@@ -20,5 +26,10 @@ const { title, description = 'FC Mobile tools, trivia, guides and event resource
   <Navbar />
   <main id="top"><slot /></main>
   <Footer />
+  <style is="global">
+    .legacy-app-host .nav,.legacy-app-host nav.nav{display:none!important}
+    .legacy-app-host{isolation:isolate}
+    .site-nav{position:sticky!important;z-index:1000!important}
+  </style>
 </body>
 </html>
