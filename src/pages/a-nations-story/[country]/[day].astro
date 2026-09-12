@@ -31,7 +31,7 @@ const imageMap = {
         <div class="hero-media"><img src={imageMap[nation.slug]} alt={`${nation.name} A Nation's Story`} /></div>
         <div><span class="eyebrow">{nation.flag} {nation.name.toUpperCase()} · DAY {dayNumber} · {day.level ? day.level.toUpperCase() : 'DAILY'}</span><h1>Day {dayNumber}<br><span>answers.</span></h1><p>{day.questions.length} {day.questions.length === 1 ? 'question' : 'questions'} with every A-D option from the published answer set. The correct answer is highlighted so you can get back to FC Mobile fast.</p></div>
       </div>
-      <div class="hero-action"><button id="copy-all" type="button">COPY ANSWER KEY</button><button id="toggle-answers" class="ghost" type="button">HIDE ANSWERS</button><small>{day.challenge || 'Daily challenge'} · answer-first mode</small></div>
+      <div class="hero-action"><button id="copy-all" type="button">COPY ANSWER KEY</button><button id="toggle-answers" class="ghost" type="button">HIDE ANSWERS</button><small>{day.title} · answer-first mode</small></div>
     </header>
 
     <nav class="day-nav" aria-label="Day navigation">
@@ -44,7 +44,7 @@ const imageMap = {
       {day.questions.map((question, index) => {
         const options = getQuestionOptions(nation.slug, day.id, index);
         return <article class="question-card" id={`q-${index + 1}`} data-question={index + 1}>
-          <div class="q-head"><span>DAY {dayNumber} · QUESTION {String(index + 1).padStart(2,'0')}</span><div class="q-actions"><button class="copy" type="button" data-answer={question.answer}>COPY</button><button class="solve" type="button" aria-label={`Mark question ${index + 1} solved">✓</button></div></div>
+          <div class="q-head"><span>DAY {dayNumber} · QUESTION {String(index + 1).padStart(2,'0')}</span><div class="q-actions"><button class="copy" type="button" data-answer={question.answer}>COPY</button><button class="solve" type="button" aria-label={`Mark question ${index + 1} solved`}>✓</button></div></div>
           <h2>{question.question}</h2>
           {question.hint && <p class="hint"><b>HINT</b> {question.hint}</p>}
           <div class="options" role="list">
