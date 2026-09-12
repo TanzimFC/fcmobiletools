@@ -6,21 +6,8 @@ const publicDir = path.join(root, 'public');
 const outDir = path.join(publicDir, '_legacy');
 const pages = [
   ['football-centre', 'legacy-football-centre'],
-  ['creator.html', 'legacy-creator'],
-  ['trivia/index.html', 'trivia-index'],
-  ['trivia/france/index.html', 'trivia-france-index'],
-  ['trivia/mexico/index.html', 'trivia-mexico-index'],
-  ['trivia/brazil/index.html', 'trivia-brazil-index']
+  ['creator.html', 'legacy-creator']
 ];
-
-// Trivia day pages are real legacy documents too. Prepare every day into the
-// same isolated bundle used by LegacyHtml so the Astro dynamic routes render
-// the original quiz instead of trying to read a non-existent _legacy file.
-for (let day = 1; day <= 9; day += 1) {
-  pages.push([`trivia/france/day-${day}.html`, `trivia-france-day-${day}`]);
-  pages.push([`trivia/mexico/day-${day}/index.html`, `trivia-mexico-day-${day}-index`]);
-  pages.push([`trivia/brazil/day-${day}.html`, `trivia-brazil-day-${day}`]);
-}
 
 function extractStyles(source) {
   return [...source.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n');
