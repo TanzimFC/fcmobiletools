@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { NATIONS_STORY, getNation, getDay } from '../../../data/aNationsStory.js';
+
+export function getStaticPaths() {
+  return NATIONS_STORY.flatMap((nation) => nation.days.map((day) => ({
+    params: { country: nation.slug, day: day.id },
+    props: { nation, day }
+  })));
+}
+const { nation, day } = Astro.props;
+const title = `FC Mobile ${nation.name} A Nation's Story ${day.title} Answers`;
+const description = `FC Mobile A Nation's Story ${nation.name} ${day.id.replace('day-','Day ')} answers. See every question and the correct answer instantly.`;
+const allDays = nation.days;
+---
+<BaseLayout title={title} description={description}>
+  <main class="answer-page">
+    <div class="crumb"><a href="/a-nations-story/">A Nation's Story</a><span>/</span><a href={`/a-nations-story/${nation.slug}/`}>{nation.name}</a><span>/</span>{day.id.replace('day-','Day ')}</div>
+    <header class="hero">
+      <div><span class="eyebrow">{nation.flag} {nation.name.toUpperCase()} · {day.level ? day.level.toUpperCase() : 'DAILY'}</span><h1>{day.title}<br><span>answers.</span></h1><p>{day.questions.length} {day.questions.length === 1 ? 'question' : 'questions'} from FC Mobile A Nation's Story. The correct answer is shown immediately for fast lookup.</p></div>
+      <div class="hero-action"><button id="copy-all" type="button">COPY ALL ANSWERS</button><small>Fast mode · no quiz required</small></div>
+    </header>
+
+    <nav class="day-nav" aria-label="Challenge navigation">
+      {allDays.map((item) => <a class:list-active={item.id === day.id} href={`/a-nations-story/${nation.slug}/${item.id}/`}>{item.id.replace('day-','Day ')}</a>)}
+    </nav>
+
+    <section class="questions">
+      {day.questions.map((question, index) => <article class="question-card" id={`q-${index + 1}`}>
+        <div class="q-head"><span>QUESTION {String(index + 1).padStart(2,'0')}</span><button class="copy" type="button" data-answer={question.answer}>COPY ANSWER</button></div>
+        <h2>{question.question}</h2>
+        {question.hint && <p class="hint"><b>HINT</b> {question.hint}</p>}
+        <div class="answer"><span>CORRECT ANSWER</span><strong>{question.answer}</strong></div>
+      </article>)}
+    </section>
+
+    <section class="after">
+      <div><span class="eyebrow">DONE?</span><h2>Need another challenge?</h2></div>
+      <div class="links"><a href={`/a-nations-story/${nation.slug}/`}>← All {nation.name} answers</a><a href="/a-nations-story/">All nations →</a></div>
+    </section>
+
+    <section class="seo"><span class="eyebrow">FC MOBILE {nation.name.toUpperCase()} ANSWERS</span><h2>FC Mobile A Nation's Story {nation.name} {day.id.replace('day-','Day ')} answers</h2><p>This page is an answer-first reference for the {nation.name} chapter in FC Mobile A Nation's Story. If you searched for one of these questions, the correct answer is displayed directly beside it so you can get back to the game quickly.</p><p>Source cross-check: <a href={nation.sourceUrl} target="_blank" rel="nofollow noopener">{nation.source}</a>. TanzimFC is an independent fan reference and is not affiliated with EA.</p></section>
+  </main>
+</BaseLayout>
+
+<script>
+  const copy = async (text) => { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } };
+  document.querySelectorAll('.copy').forEach((button) => button.addEventListener('click', async () => { const ok = await copy(button.dataset.answer || ''); const old = button.textContent; button.textContent = ok ? 'COPIED ✓' : 'SELECT & COPY'; setTimeout(() => button.textContent = old, 1200); }));
+  document.querySelector('#copy-all')?.addEventListener('click', async () => { const answers = [...document.querySelectorAll('.answer strong')].map((el, i) => `${i + 1}. ${el.textContent}`).join('\n'); const ok = await copy(answers); const button = document.querySelector('#copy-all'); if (button) { button.textContent = ok ? 'COPIED ALL ✓' : 'SELECT & COPY'; setTimeout(() => button.textContent = 'COPY ALL ANSWERS', 1400); } });
+</script>
+
+<style>
+.answer-page{max-width:980px;margin:auto;padding:0 20px 100px}.crumb{padding-top:25px;color:var(--muted);font:800 8px var(--mono)}.crumb a{color:var(--text);text-decoration:none}.crumb span{padding:0 7px;color:var(--border)}.hero{padding:65px 0 45px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:40px;align-items:end}.eyebrow{font:900 9px var(--mono);letter-spacing:.15em;color:var(--blue)}.hero h1{font-size:clamp(48px,7vw,80px);line-height:.9;letter-spacing:-.075em;margin:17px 0}.hero h1 span{color:var(--blue)}.hero p{max-width:650px;color:var(--muted);font-size:11px;line-height:1.8}.hero-action{text-align:right;min-width:180px}.hero-action button,.copy{border:1px solid var(--blue);background:var(--blue);color:#06131a;border-radius:8px;padding:10px 12px;font:900 7px var(--mono);cursor:pointer}.hero-action small{display:block;margin-top:8px;color:var(--muted);font:700 7px var(--mono)}.day-nav{display:flex;gap:5px;overflow:auto;padding:13px 0;border-bottom:1px solid var(--border)}.day-nav a{flex:0 0 auto;padding:8px 10px;border:1px solid var(--border);border-radius:7px;color:var(--muted);text-decoration:none;font:900 7px var(--mono)}.day-nav a:hover,.day-nav a.list-active{background:var(--blue);border-color:var(--blue);color:#06131a}.questions{padding:28px 0;display:grid;gap:9px}.question-card{padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface);scroll-margin-top:100px}.q-head{display:flex;justify-content:space-between;gap:15px;align-items:center}.q-head>span{font:900 8px var(--mono);color:var(--blue);letter-spacing:.12em}.copy{padding:7px 8px;background:transparent;color:var(--blue)}.question-card h2{font-size:19px;line-height:1.35;letter-spacing:-.025em;margin:19px 0}.hint{font-size:10px;line-height:1.6;color:var(--muted);padding:10px;border-left:2px solid var(--border)}.hint b{font:900 7px var(--mono);color:var(--blue);margin-right:6px}.answer{padding:14px;border-radius:10px;background:#55c7f20a;border:1px solid #55c7f21f}.answer span{display:block;font:900 7px var(--mono);letter-spacing:.12em;color:var(--muted)}.answer strong{display:block;margin-top:5px;color:var(--blue);font-size:20px;line-height:1.25}.after{border-top:1px solid var(--border);padding:55px 0;display:flex;justify-content:space-between;gap:30px;align-items:end}.after h2{font-size:35px;letter-spacing:-.06em;margin:9px 0}.links{display:flex;gap:7px;flex-wrap:wrap}.links a{padding:10px 12px;border:1px solid var(--border);border-radius:8px;color:var(--text);text-decoration:none;font:900 8px var(--mono)}.links a:hover{border-color:#55c7f255}.seo{border-top:1px solid var(--border);padding:55px 0 0;max-width:800px}.seo h2{font-size:29px;letter-spacing:-.05em;margin:9px 0 14px}.seo p{font-size:11px;line-height:1.8;color:var(--muted)}.seo a{color:var(--text)}@media(max-width:650px){.answer-page{padding:0 14px 75px}.hero{display:block;padding-top:55px}.hero-action{text-align:left;margin-top:22px}.hero h1{font-size:52px}.question-card{padding:16px}.question-card h2{font-size:17px}.after{display:block}.links{margin-top:18px}}
+</style>
