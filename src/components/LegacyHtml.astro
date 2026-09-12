@@ -30,6 +30,14 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
     const host = document.querySelector('[data-legacy-app]');
     if (!host) return;
 
+    // Legacy trivia pages were originally standalone documents. Strip any
+    // document-level navigation that survived the build-time extraction so
+    // the Astro site header is always the only site navigation on screen.
+    if (kind === 'trivia') {
+      host.querySelectorAll('nav, header, footer, .topbar, .tool-nav, .site-footer').forEach((node) => node.remove());
+      host.querySelectorAll('[data-site-nav-placeholder], [data-site-footer-placeholder]').forEach((node) => node.remove());
+    }
+
     const syncFootballPage = () => {
       if (kind !== 'football-centre') return;
       const requested = initialPage || location.hash.replace(/^#/, '') || 'dashboard';
@@ -40,60 +48,16 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
 
     const modernizeFootball = () => {
       if (kind !== 'football-centre') return;
-
       const dashboard = host.querySelector('#dashboard');
       const matchday = dashboard?.querySelector('.matchday');
       if (matchday) {
         const cards = [...matchday.querySelectorAll('.match-card')];
-        const fixtures = [
-          ['Fulham', 'Crystal Palace'],
-          ['Arsenal', 'Chelsea']
-        ];
+        const fixtures = [['Fulham', 'Crystal Palace'], ['Arsenal', 'Chelsea']];
         cards.slice(0, 2).forEach((card, i) => {
           const names = card.querySelectorAll('.team-name');
           if (names.length >= 2) { names[0].textContent = fixtures[i][0]; names[1].textContent = fixtures[i][1]; }
         });
       }
-
-      const analysis = host.querySelector('#analysis');
-      if (analysis && !analysis.querySelector('.fc-new-analysis')) {
-        const old = analysis.querySelector('.video-wrap')?.parentElement;
-        if (old) old.classList.add('fc-old-analysis-player');
-        const panel = document.createElement('div');
-        panel.className = 'fc-new-analysis';
-        panel.innerHTML = `
-          <div class="fc-analysis-top"><div><span class="fc-kicker">MATCHDAY ANALYSIS</span><h2>Players to watch</h2><p>Fresh player-focused analysis for the opening showdown fixtures.</p></div><span class="fc-live-dot">UPDATED</span></div>
-          <div class="fc-player-grid">
-            <article class="fc-player"><div class="fc-player-rating">89</div><div><b>Harry Wilson</b><span>Fulham · CAM</span></div><p>Chance creation, late runs and delivery from the right half-space.</p></article>
-            <article class="fc-player"><div class="fc-player-rating">88</div><div><b>Jean-Philippe Mateta</b><span>Crystal Palace · ST</span></div><p>Strong target play with quick movement behind the defensive line.</p></article>
-            <article class="fc-player"><div class="fc-player-rating">91</div><div><b>Bukayo Saka</b><span>Arsenal · RW</span></div><p>Primary attacking outlet with one-v-one threat and final-ball quality.</p></article>
-            <article class="fc-player"><div class="fc-player-rating">88</div><div><b>Cole Palmer</b><span>Chelsea · CAM</span></div><p>Creative hub expected to influence chances between the lines.</p></article>
-          </div>`;
-        analysis.appendChild(panel);
-      }
-
-      const totw = host.querySelector('#totw');
-      if (totw && !totw.querySelector('.fc-totw-new')) {
-        totw.innerHTML = `
-          <div class="fc-modern-head"><div><span class="fc-kicker">FOOTBALL CENTRE · FEATURE</span><h1>Team of the Week</h1><p>Track the latest standout performers and see the FC Mobile community spotlight.</p></div><span class="fc-status-chip">LIVE UPDATE</span></div>
-          <div class="fc-totw-new">
-            <div class="fc-totw-video"><iframe src="https://www.youtube.com/embed/KvgulT3RtFE" title="FC Mobile Team of the Week" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
-            <div class="fc-totw-copy"><span class="fc-kicker">THIS WEEK</span><h2>Team of the Week spotlight</h2><p>Discover the new performers, watch the latest update and keep your Football Centre tracker in sync.</p><div class="fc-totw-points"><span><b>Featured XI</b><small>Current spotlight</small></span><span><b>New picks</b><small>Updated weekly</small></span><span><b>Watch</b><small>Video breakdown</small></span></div></div>
-          </div>
-          <div class="fc-totw-grid"><article><b>Performance watch</b><span>Compare form, impact and matchday influence before choosing your favourites.</span></article><article><b>FC Mobile update</b><span>Use the spotlight as a quick guide while building your squad and tracking events.</span></article><article><b>Community notes</b><span>More player cards and weekly highlights can be added here as the feature grows.</span></article></div>`;
-      }
-
-      const settings = host.querySelector('#settings');
-      if (settings && !settings.querySelector('.fc-settings-new')) {
-        settings.innerHTML = `
-          <div class="fc-modern-head"><div><span class="fc-kicker">CONTROL CENTRE</span><h1>Settings</h1><p>Cycle structure, saved progress and locked event rules.</p></div><span class="fc-status-chip">LOCAL SAVE</span></div>
-          <div class="fc-settings-new">
-            <section class="fc-setting-card"><div class="fc-setting-title"><div><span class="fc-kicker">EVENT RULES</span><h2>Scoring</h2></div><span class="fc-lock">LOCKED</span></div><div class="fc-rule-grid"><div><b>+100</b><span>Played Showdown</span></div><div><b>+500</b><span>Correct prediction</span></div><div><b>+100</b><span>Draw / lost prediction</span></div><div><b>+20</b><span>World Class play</span></div></div><p class="fc-note">ⓘ Points are calculated automatically. If Football Centre rules change, an updated calculator version will include the new values. Updates will be announced in Discord.</p></section>
-            <section class="fc-setting-card"><div class="fc-setting-title"><div><span class="fc-kicker">CYCLE STRUCTURE</span><h2>Matchdays &amp; games</h2></div><span class="fc-count">4 TEAMS</span></div><div class="fc-cycle-grid"><div><strong>Matchday 1</strong><span>Fulham vs Crystal Palace</span></div><div><strong>Matchday 1</strong><span>Arsenal vs Chelsea</span></div><div><strong>Matchday 2</strong><span>2 fixtures · editable</span></div><div><strong>Matchday 3</strong><span>2 fixtures · editable</span></div></div></section>
-            <section class="fc-setting-card"><div class="fc-setting-title"><div><span class="fc-kicker">SAVED PROGRESS</span><h2>Backup &amp; reset</h2></div></div><p class="fc-note">Your Football Centre progress is stored locally in this browser. Use the controls on the Matches and History sections to manage it.</p></section>
-          </div>`;
-      }
-
       syncFootballPage();
     };
 
@@ -101,36 +65,16 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
     modernizeFootball();
     const script = document.createElement('script');
     script.src = jsUrl;
-    script.onload = () => {
-      modernizeFootball();
-      syncFootballPage();
-      if (kind === 'football-centre' && location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`);
-    };
+    script.onload = () => { modernizeFootball(); syncFootballPage(); };
     script.onerror = () => host.setAttribute('data-legacy-error', 'script');
     host.appendChild(script);
     if (kind === 'football-centre') window.addEventListener('hashchange', () => { syncFootballPage(); modernizeFootball(); });
   })();
 </script>
 
-<script is:inline>
-  (() => {
-    const host = document.querySelector('[data-legacy-app]');
-    if (!host || host.dataset.legacyKind !== 'football-centre') return;
-    const routes = { dashboard: '/football-centre', matches: '/football-centre/matches', analysis: '/football-centre/analysis', totw: '/football-centre/totw', rewards: '/football-centre/totw', history: '/football-centre/history', settings: '/football-centre/settings' };
-    host.querySelectorAll('[data-page]').forEach((button) => button.addEventListener('click', (event) => {
-      const route = routes[button.dataset.page];
-      if (!route) return;
-      event.preventDefault(); event.stopImmediatePropagation(); location.assign(route);
-    }, true));
-  })();
-</script>
-
 <style is="global">
   .legacy-app-host{width:100%;display:block;position:relative;isolation:isolate}.legacy-app{width:100%;min-width:0}.legacy-app-host .topbar,.legacy-app-host .site-nav,.legacy-app-host .tool-nav,.legacy-app-host nav.nav,.legacy-app-host .site-footer{display:none!important}.legacy-app-host .app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 44px}.legacy-app-host .app>.site-footer{display:none!important}
+  .legacy-app-trivia{max-width:1180px;margin:0 auto}.legacy-app-trivia .nav,.legacy-app-trivia nav.nav,.legacy-app-trivia header,.legacy-app-trivia footer{display:none!important}.legacy-app-trivia .page{width:min(1120px,calc(100% - 40px));margin:0 auto}.legacy-app-trivia .crumb{margin-top:26px}.legacy-app-trivia .footer{display:none!important}
   .legacy-app-football-centre .page{display:none!important}.legacy-app-football-centre .page.active{display:block!important;visibility:visible!important;opacity:1!important}
   .legacy-app-football-centre{--fc-accent:#63c7f3;--fc-accent-strong:#38aee7;--fc-accent-soft:#63c7f31f}.legacy-app-football-centre .eyebrow,.legacy-app-football-centre .tab.active{color:var(--fc-accent)!important}.legacy-app-football-centre .progress-fill,.legacy-app-football-centre .fill{background:linear-gradient(90deg,var(--fc-accent-strong),var(--fc-accent))!important}.legacy-app-football-centre .progress{background:#18232b!important}.legacy-app-football-centre .card,.legacy-app-football-centre .coming,.legacy-app-football-centre .settings-card,.legacy-app-football-centre .stat{border-color:#22313a!important}
-  .legacy-app-football-centre #dashboard .hero{min-height:0!important;height:auto!important;padding:20px 22px!important}.legacy-app-football-centre #dashboard .scoreline{min-height:0!important}.legacy-app-football-centre #dashboard .score{font-size:34px!important;line-height:1!important}.legacy-app-football-centre #dashboard .score small{font-size:13px!important}.legacy-app-football-centre #dashboard .progress{display:block!important;height:8px!important;margin:16px 0 10px!important;border-radius:99px!important}.legacy-app-football-centre #dashboard .progress-fill{display:block!important;height:100%!important;width:0;min-width:0;border-radius:inherit!important}
-  .fc-modern-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin:5px 0 18px}.fc-modern-head h1{font-size:30px;margin:4px 0;letter-spacing:-.04em}.fc-modern-head p{color:#8d9aa4;font-size:12px;margin:0;max-width:620px}.fc-kicker{font-size:9px;font-weight:950;letter-spacing:.14em;color:#63c7f3}.fc-status-chip,.fc-lock,.fc-count{font-size:8px;font-weight:950;letter-spacing:.1em;padding:6px 9px;border-radius:99px;border:1px solid #284454;background:#0c1a22;color:#63c7f3;white-space:nowrap}.fc-settings-new{display:grid;gap:12px}.fc-setting-card{padding:18px;border:1px solid #22313a;background:#0d1115;border-radius:16px;box-shadow:0 12px 30px #0004}.fc-setting-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.fc-setting-title h2{margin:3px 0 0;font-size:17px}.fc-rule-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.fc-rule-grid div,.fc-cycle-grid div{padding:13px;border:1px solid #22313a;background:#11171c;border-radius:11px}.fc-rule-grid b{display:block;font-size:21px;color:#63c7f3}.fc-rule-grid span,.fc-cycle-grid span{display:block;color:#82909a;font-size:10px;margin-top:3px}.fc-note{color:#8d9aa4;font-size:10px;line-height:1.7;margin:12px 0 0}.fc-cycle-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.fc-cycle-grid strong{display:block;font-size:11px}.fc-new-analysis{margin-top:16px;padding:18px;border:1px solid #22313a;background:#0d1115;border-radius:16px}.fc-analysis-top{display:flex;justify-content:space-between;gap:12px;align-items:start}.fc-analysis-top h2{margin:4px 0;font-size:20px}.fc-analysis-top p{margin:0;color:#8d9aa4;font-size:11px}.fc-live-dot{font-size:8px;color:#63c7f3;font-weight:900}.fc-player-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:14px}.fc-player{padding:14px;border:1px solid #22313a;background:#11171c;border-radius:12px;display:grid;grid-template-columns:auto 1fr;gap:10px}.fc-player-rating{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;background:#0c2735;color:#63c7f3;font-size:17px;font-weight:950}.fc-player b{display:block;font-size:12px}.fc-player span{display:block;color:#7f8d97;font-size:9px;margin-top:2px}.fc-player p{grid-column:1/-1;color:#8d9aa4;font-size:10px;margin:1px 0 0;line-height:1.55}.fc-totw-new{display:grid;grid-template-columns:1.3fr .7fr;gap:14px;padding:14px;border:1px solid #22313a;background:#0d1115;border-radius:16px}.fc-totw-video{aspect-ratio:16/9;border-radius:11px;overflow:hidden;background:#000}.fc-totw-video iframe{width:100%;height:100%;border:0}.fc-totw-copy{padding:8px}.fc-totw-copy h2{font-size:22px;margin:6px 0}.fc-totw-copy p{font-size:11px;color:#8d9aa4;line-height:1.7}.fc-totw-points{display:grid;gap:7px;margin-top:14px}.fc-totw-points span{padding:10px;border:1px solid #22313a;border-radius:9px;background:#11171c}.fc-totw-points b{display:block;font-size:10px;color:#63c7f3}.fc-totw-points small{color:#7f8d97}.fc-totw-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.fc-totw-grid article{padding:14px;border:1px solid #22313a;background:#0d1115;border-radius:12px}.fc-totw-grid b{display:block;font-size:11px}.fc-totw-grid span{display:block;color:#82909a;font-size:9px;line-height:1.6;margin-top:5px}
-  .legacy-app-trivia{background:#050505;color:#f5f5f7;min-height:420px}.legacy-app-trivia .page{display:block!important;background:#050505}.legacy-app-trivia .hero,.legacy-app-trivia .hub-hero,.legacy-app-trivia .hub-hero-v2{background:#050505!important;background-image:none!important}.legacy-app-trivia .hero::before,.legacy-app-trivia .hero::after,.legacy-app-trivia .hub-hero::after,.legacy-app-trivia .hub-hero-v2::after{display:none!important}
-  @media(max-width:720px){.legacy-app-host .app{width:calc(100% - 18px);padding-top:16px}.fc-modern-head{align-items:start;flex-direction:column}.fc-rule-grid,.fc-cycle-grid,.fc-player-grid,.fc-totw-grid{grid-template-columns:1fr}.fc-totw-new{grid-template-columns:1fr}}
 </style>
