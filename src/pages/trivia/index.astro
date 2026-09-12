@@ -1,14 +1,57 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import LegacyHtml from '../../components/LegacyHtml.astro';
+
+const countries = [
+  { name: 'France', slug: 'france', flag: '🇫🇷', questions: 36, description: 'World Cup history, legendary players and France moments across 9 daily challenges.' },
+  { name: 'Mexico', slug: 'mexico', flag: '🇲🇽', questions: 27, description: 'Mexico football history and A Nation\'s Story questions across 9 daily challenges.' },
+  { name: 'Brazil', slug: 'brazil', flag: '🇧🇷', questions: 9, description: 'Brazil football history and daily Samba Moments trivia across 9 challenges.' },
+];
 ---
-<BaseLayout title="FC Mobile Trivia Answers, France, Mexico & Brazil" description="FC Mobile trivia answers for France, Mexico and Brazil, with daily questions, explanations and a player finder for Who Am I clues.">
-  <section class="trivia-tools-banner">
-    <div><small>NEW · TRIVIA PLAYER FINDER</small><h1>Stuck on a player clue?</h1><p>Search by nation, position, shirt number or player name and get to the answer faster.</p></div>
-    <a href="/trivia/player-search">Open Player Finder <b>↗</b></a>
-  </section>
-  <LegacyHtml file="trivia/index.html" />
+<BaseLayout title="FC Mobile Trivia Answers | A Nation's Story" description="FC Mobile trivia answers and daily guides for A Nation's Story. Find France, Mexico and Brazil trivia questions, correct answers, hints and explanations for every day.">
+  <main class="trivia-hub">
+    <section class="trivia-hero">
+      <div class="eyebrow">FC MOBILE · TRIVIA</div>
+      <div class="hero-grid">
+        <div>
+          <h1>Know the game.<br><span>Know the answer.</span></h1>
+          <p>Daily FC Mobile trivia answers, questions and explanations for A Nation's Story. Pick a nation, open today's challenge and use the guide when you get stuck.</p>
+          <div class="hero-actions"><a class="primary" href="#nations">Browse trivia <b>↓</b></a><a href="/blog">FC Mobile guides <b>↗</b></a></div>
+        </div>
+        <div class="hero-score"><span>TRIVIA HUB</span><strong>03</strong><small>nations currently indexed</small><div class="mini-line"><i></i><i></i><i></i></div></div>
+      </div>
+    </section>
+
+    <section id="nations" class="nation-section">
+      <div class="section-head"><div><span class="eyebrow">A NATION'S STORY</span><h2>Choose your trivia.</h2></div><p>Open a country to see all available days, difficulty levels and answers.</p></div>
+      <div class="nation-grid">
+        {countries.map((country) => <a class="nation-card" href={`/trivia/${country.slug}/`}>
+          <div class="nation-top"><span class="flag">{country.flag}</span><span class="arrow">↗</span></div>
+          <div class="nation-number">{String(country.questions).padStart(2, '0')}</div>
+          <h3>{country.name}</h3>
+          <p>{country.description}</p>
+          <div class="nation-meta"><span>9 DAYS</span><span>{country.questions} QUESTIONS</span></div>
+        </a>)}
+      </div>
+    </section>
+
+    <section class="how-section">
+      <div><span class="eyebrow">HOW IT WORKS</span><h2>Fast answers.<br>Clear explanations.</h2></div>
+      <div class="steps">
+        <article><b>01</b><h3>Pick a nation</h3><p>Open France, Mexico or Brazil and jump straight into the daily challenge you need.</p></article>
+        <article><b>02</b><h3>Test yourself</h3><p>Answer first if you want to play honestly, or reveal the answer when you are using this as a guide.</p></article>
+        <article><b>03</b><h3>Learn the why</h3><p>Each question includes an explanation so the page is useful beyond simply copying an answer.</p></article>
+      </div>
+    </section>
+
+    <section class="seo-section">
+      <div class="seo-label">FC MOBILE TRIVIA ANSWERS</div>
+      <h2>FC Mobile A Nation's Story trivia guide</h2>
+      <p>Looking for FC Mobile trivia answers? This hub collects the current A Nation's Story country guides on TanzimFC. Use the daily pages to find questions, multiple-choice options, correct answers and explanations without digging through old posts.</p>
+      <p>The trivia section is built for players who want a quick answer during an event, but it also works as a football-history reference. New country chapters and daily challenges can be added without changing the structure of the site.</p>
+    </section>
+  </main>
 </BaseLayout>
+
 <style>
-.trivia-tools-banner{width:min(1120px,calc(100% - 40px));margin:24px auto 0;padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:25px;border:1px solid #55c7f244;border-radius:16px;background:linear-gradient(135deg,#0d202a,#0d1118);color:#eef8fc}.trivia-tools-banner small{font:900 8px var(--mono);letter-spacing:.14em;color:var(--blue)}.trivia-tools-banner h1{font-size:24px;margin:7px 0 3px;letter-spacing:-.04em}.trivia-tools-banner p{margin:0;color:var(--muted);font-size:11px}.trivia-tools-banner a{flex:0 0 auto;padding:11px 14px;border:1px solid var(--blue);border-radius:9px;color:#06131a;background:var(--blue);font:900 9px var(--mono)}.trivia-tools-banner b{font-size:12px}@media(max-width:650px){.trivia-tools-banner{width:calc(100% - 28px);align-items:flex-start;flex-direction:column}.trivia-tools-banner a{width:100%;text-align:center}}
+.trivia-hub{max-width:1180px;margin:auto;padding:0 20px 100px}.trivia-hero{padding:82px 0 70px;border-bottom:1px solid var(--border)}.eyebrow{font:900 9px var(--mono);letter-spacing:.15em;color:var(--blue)}.hero-grid{display:grid;grid-template-columns:1fr 270px;gap:70px;align-items:end}.trivia-hero h1{font-size:clamp(58px,8vw,100px);line-height:.86;letter-spacing:-.075em;margin:22px 0}.trivia-hero h1 span{color:var(--blue)}.trivia-hero p{max-width:690px;color:var(--muted);font-size:14px;line-height:1.8}.hero-actions{display:flex;gap:9px;margin-top:27px}.hero-actions a{padding:11px 15px;border:1px solid var(--border);border-radius:9px;color:var(--text);font:900 9px var(--mono);text-decoration:none}.hero-actions a.primary{background:var(--blue);border-color:var(--blue);color:#06131a}.hero-score{padding:22px;border:1px solid var(--border);border-radius:17px;background:var(--surface);box-shadow:0 20px 60px #55c7f20b}.hero-score span{font:900 8px var(--mono);color:var(--blue)}.hero-score strong{display:block;font-size:82px;line-height:.9;letter-spacing:-.08em;margin:18px 0 7px}.hero-score small{color:var(--muted);font-size:9px}.mini-line{display:flex;gap:4px;margin-top:22px}.mini-line i{height:3px;flex:1;background:var(--blue);border-radius:9px}.nation-section{padding:65px 0}.section-head{display:flex;justify-content:space-between;align-items:end;gap:30px;margin-bottom:22px}.section-head h2{font-size:42px;letter-spacing:-.06em;margin:8px 0 0}.section-head p{max-width:400px;color:var(--muted);font-size:11px;line-height:1.7}.nation-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.nation-card{position:relative;min-height:315px;padding:19px;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text);text-decoration:none;overflow:hidden;transition:.2s}.nation-card:hover{transform:translateY(-4px);border-color:#55c7f266;box-shadow:0 20px 50px #55c7f20d}.nation-top{display:flex;justify-content:space-between}.flag{font-size:29px}.arrow{color:var(--blue);font-size:18px}.nation-number{font:900 80px/1 var(--mono);letter-spacing:-.09em;color:#55c7f20f;margin-top:20px}.nation-card h3{font-size:25px;letter-spacing:-.04em;margin:3px 0}.nation-card p{color:var(--muted);font-size:10px;line-height:1.7;max-width:300px}.nation-meta{position:absolute;bottom:17px;left:19px;right:19px;padding-top:11px;border-top:1px solid var(--border);display:flex;justify-content:space-between;color:var(--muted);font:800 7px var(--mono)}.how-section{border-top:1px solid var(--border);padding:70px 0;display:grid;grid-template-columns:.75fr 1.25fr;gap:70px}.how-section h2{font-size:clamp(35px,4vw,54px);line-height:.95;letter-spacing:-.06em;margin:9px 0}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.steps article{padding:18px;border:1px solid var(--border);border-radius:13px;background:var(--surface)}.steps b{font:900 8px var(--mono);color:var(--blue)}.steps h3{font-size:13px;margin:25px 0 7px}.steps p{font-size:10px;color:var(--muted);line-height:1.7}.seo-section{max-width:850px;border-top:1px solid var(--border);padding:60px 0 0}.seo-label{font:900 8px var(--mono);color:var(--blue);letter-spacing:.15em}.seo-section h2{font-size:32px;letter-spacing:-.05em;margin:9px 0 16px}.seo-section p{color:var(--muted);font-size:12px;line-height:1.8}@media(max-width:850px){.hero-grid,.how-section{grid-template-columns:1fr}.hero-score{display:none}.nation-grid{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr}}@media(max-width:550px){.trivia-hub{padding:0 14px 70px}.trivia-hero{padding-top:60px}.trivia-hero h1{font-size:55px}.hero-actions{flex-direction:column}.hero-actions a{text-align:center}.nation-grid{grid-template-columns:1fr}.section-head{display:block}}
 </style>
