@@ -1,0 +1,57 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { triviaPlayers, triviaPlayerCountries } from '../../data/triviaPlayers.js';
+const json = JSON.stringify(triviaPlayers);
+const countries = triviaPlayerCountries;
+---
+<BaseLayout title="FC Mobile Trivia Player Finder | Who Am I Answers" description="Search FC Mobile trivia players by name, nation, position and shirt number. Use the player finder to solve Who Am I and World Cup trivia clues quickly.">
+  <main class="finder">
+    <section class="finder-hero">
+      <div class="finder-kicker">FC MOBILE TRIVIA · PLAYER FINDER</div>
+      <h1>Who am I?<br><span>Find the player.</span></h1>
+      <p>Search a player's name, country, position or shirt number to match the clues used in FC Mobile trivia. Built for fast answers while you are in-game.</p>
+      <div class="finder-search"><span>⌕</span><input id="playerSearch" type="search" placeholder="Try “Mbappé”, “France”, “#10” or “FW”" autocomplete="off" /><kbd>⌘ K</kbd></div>
+      <div class="finder-stats"><b>120+</b><span>players indexed</span><b>{countries.length}</b><span>nations</span><b>4</b><span>clue filters</span></div>
+    </section>
+
+    <section class="finder-workspace">
+      <aside class="finder-filters">
+        <div><small>FILTER BY NATION</small><select id="country"><option value="">All nations</option>{countries.map((country) => <option value={country}>{country}</option>)}</select></div>
+        <div><small>POSITION</small><div class="filter-pills"><button data-pos="" class="active">All</button><button data-pos="GK">GK</button><button data-pos="DF">DEF</button><button data-pos="MF">MID</button><button data-pos="FW">ATT</button></div></div>
+        <div class="clue-card"><span>QUICK CLUE</span><strong>Know the shirt number?</strong><p>Search <b>#7</b>, <b>#10</b> or any number to narrow a Who Am I clue instantly.</p></div>
+      </aside>
+      <div class="finder-results"><div class="result-head"><div><small>PLAYER MATCHES</small><h2 id="resultTitle">Start typing to search</h2></div><span id="resultCount">120+</span></div><div id="results" class="results-grid"></div></div>
+    </section>
+
+    <section class="seo-help"><div><small>HOW TO USE IT</small><h2>Turn a trivia clue into an answer.</h2></div><div class="help-grid"><article><b>01</b><strong>Read the clue</strong><p>Note the nation, position or shirt number shown in the FC Mobile question.</p></article><article><b>02</b><strong>Stack filters</strong><p>Combine a country with a position or number to shrink the player list.</p></article><article><b>03</b><strong>Match the name</strong><p>Use the matching player card as your quick in-game answer reference.</p></article></div></section>
+
+    <section class="seo-copy"><h2>FC Mobile trivia player answers</h2><p>This player finder is designed for FC Mobile trivia formats that ask you to identify footballers from nationality, position and shirt-number clues. It is especially useful for Who Am I style rounds and World Cup themed trivia. The current starter index focuses on major nations and commonly surfaced players, and can be expanded as new trivia squads are published.</p><p>For the latest full squad reference, compare this tool with the current FC Mobile trivia squad lists. Player squads can change as events update, so use the event-specific question and current in-game clues as the final source of truth.</p></section>
+  </main>
+</BaseLayout>
+<script is:inline define:vars={{ players: json }}>
+  const data = JSON.parse(players);
+  const input = document.querySelector('#playerSearch');
+  const country = document.querySelector('#country');
+  const results = document.querySelector('#results');
+  const resultTitle = document.querySelector('#resultTitle');
+  const resultCount = document.querySelector('#resultCount');
+  let pos = '';
+  const norm = (v) => v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const render = () => {
+    const q = norm(input.value.trim().replace(/^#/,'#'));
+    const list = data.filter((p) => {
+      const text = norm(`${p.name} ${p.country} ${p.position} #${p.number} ${p.number}`);
+      return (!q || text.includes(q)) && (!country.value || p.country === country.value) && (!pos || p.position === pos);
+    });
+    resultTitle.textContent = q || country.value || pos ? `${list.length} player${list.length === 1 ? '' : 's'} found` : 'Popular trivia players';
+    resultCount.textContent = list.length;
+    results.innerHTML = list.slice(0, 80).map((p) => `<article class="player-card"><div class="shirt">${p.number}</div><div><small>${p.country} · ${p.position}</small><h3>${p.name}</h3><span>Search clue: #${p.number} · ${p.position}</span></div></article>`).join('') || `<div class="empty">No player matches yet.<br><span>Try a nation, name, position or shirt number.</span></div>`;
+  };
+  input.addEventListener('input', render); country.addEventListener('change', render);
+  document.querySelectorAll('[data-pos]').forEach((b) => b.addEventListener('click', () => { pos = b.dataset.pos; document.querySelectorAll('[data-pos]').forEach(x => x.classList.toggle('active', x === b)); render(); }));
+  document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); input.focus(); } });
+  render();
+</script>
+<style>
+.finder{max-width:1180px;margin:auto;padding:0 20px 100px}.finder-hero{padding:90px 0 70px;border-bottom:1px solid var(--border)}.finder-kicker,.finder small{font:900 9px var(--mono);letter-spacing:.14em;color:var(--blue)}.finder h1{font-size:clamp(58px,8vw,100px);line-height:.86;letter-spacing:-.07em;margin:22px 0}.finder h1 span{color:var(--blue)}.finder-hero>p{max-width:650px;color:var(--muted);font-size:15px;line-height:1.8}.finder-search{max-width:760px;margin-top:32px;display:flex;align-items:center;gap:12px;padding:16px 18px;border:1px solid #55c7f255;border-radius:15px;background:var(--surface);box-shadow:0 20px 55px #55c7f20b}.finder-search span{font-size:23px;color:var(--blue)}.finder-search input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font:600 15px var(--sans)}.finder-search input::placeholder{color:#657787}.finder-search kbd{font:800 8px var(--mono);padding:6px 8px;border:1px solid var(--border);border-radius:6px;color:var(--muted)}.finder-stats{display:flex;gap:10px;align-items:baseline;margin-top:26px;color:var(--muted);font:800 8px var(--mono);text-transform:uppercase}.finder-stats b{font-size:18px;color:var(--blue);margin-left:12px}.finder-workspace{display:grid;grid-template-columns:260px 1fr;gap:24px;padding:45px 0}.finder-filters{display:grid;align-content:start;gap:18px}.finder-filters>div{padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}.finder-filters small{display:block;margin-bottom:10px}.finder select{width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--text)}.filter-pills{display:flex;gap:5px;flex-wrap:wrap}.filter-pills button{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:8px;padding:7px 10px;font:800 8px var(--mono);cursor:pointer}.filter-pills button.active,.filter-pills button:hover{color:#06131a;background:var(--blue);border-color:var(--blue)}.clue-card{background:linear-gradient(145deg,#10232d,var(--surface))!important}.clue-card span{font:900 8px var(--mono);color:var(--blue)}.clue-card strong{display:block;margin:12px 0 6px;font-size:15px}.clue-card p{margin:0;color:var(--muted);font-size:10px;line-height:1.7}.finder-results{min-width:0}.result-head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:12px}.result-head h2{margin:4px 0 0;font-size:25px;letter-spacing:-.04em}.result-head>span{font:900 11px var(--mono);color:var(--blue)}.results-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.player-card{display:grid;grid-template-columns:55px 1fr;gap:13px;align-items:center;padding:14px;border:1px solid var(--border);border-radius:13px;background:var(--surface);transition:.18s}.player-card:hover{transform:translateY(-2px);border-color:#55c7f255}.shirt{width:50px;height:58px;display:grid;place-items:center;border:1px solid #55c7f244;border-radius:13px;background:#55c7f20c;color:var(--blue);font:900 18px var(--mono)}.player-card small{font:800 7px var(--mono);color:var(--blue);text-transform:uppercase}.player-card h3{margin:4px 0;font-size:15px}.player-card span{font-size:9px;color:var(--muted)}.empty{grid-column:1/-1;padding:45px;border:1px dashed var(--border);border-radius:14px;text-align:center;color:var(--text);font-weight:800}.empty span{font-size:10px;color:var(--muted);font-weight:500}.seo-help{border-top:1px solid var(--border);padding:70px 0;display:grid;grid-template-columns:.8fr 1.2fr;gap:60px}.seo-help h2{font-size:clamp(30px,4vw,46px);line-height:.95;letter-spacing:-.055em;margin:10px 0}.help-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.help-grid article{padding:18px;border:1px solid var(--border);border-radius:13px;background:var(--surface)}.help-grid b{color:var(--blue);font:900 8px var(--mono)}.help-grid strong{display:block;margin-top:25px;font-size:13px}.help-grid p{color:var(--muted);font-size:10px;line-height:1.65}.seo-copy{max-width:850px;border-top:1px solid var(--border);padding-top:60px}.seo-copy h2{font-size:30px;letter-spacing:-.04em}.seo-copy p{color:var(--muted);font-size:12px;line-height:1.8}@media(max-width:800px){.finder-workspace,.seo-help{grid-template-columns:1fr}.results-grid{grid-template-columns:1fr}.finder-hero{padding-top:65px}.help-grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.finder{padding:0 14px 70px}.finder h1{font-size:55px}.finder-search kbd{display:none}.finder-stats{flex-wrap:wrap}.help-grid{grid-template-columns:1fr}}
+</style>
