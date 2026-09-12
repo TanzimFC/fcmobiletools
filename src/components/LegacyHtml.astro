@@ -12,51 +12,45 @@ const jsUrl = `/_legacy/${sourceName}.js`;
 const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legacy-football-centre' ? 'football-centre' : 'legacy';
 ---
 <style is:global set:html={css}></style>
-
 <div class:list={['legacy-app-host', `legacy-app-${kind}`, className]} data-legacy-app data-legacy-kind={kind} data-initial-page={initialPage}>
   <div class="legacy-app" set:html={body}></div>
 </div>
-
-{initialPage && <script is:inline define:vars={{ initialPage }}>
-  (() => {
-    const host = document.querySelector('[data-legacy-app]');
-    if (!host) return;
-    history.replaceState(null, '', `${location.pathname}${location.search}#${initialPage}`);
-  })();
-</script>}
 
 <script is:inline define:vars={{ jsUrl, initialPage, kind }}>
   (() => {
     const host = document.querySelector('[data-legacy-app]');
     if (!host) return;
 
-    // Legacy trivia pages were originally standalone documents. Strip any
-    // document-level navigation that survived the build-time extraction so
-    // the Astro site header is always the only site navigation on screen.
     if (kind === 'trivia') {
-      host.querySelectorAll('nav, header, footer, .topbar, .tool-nav, .site-footer').forEach((node) => node.remove());
-      host.querySelectorAll('[data-site-nav-placeholder], [data-site-footer-placeholder]').forEach((node) => node.remove());
+      // The old trivia documents contained their own site chrome. Never let it
+      // compete with the Astro navbar, even if an old HTML file is cached.
+      host.querySelectorAll('nav, header, footer, .topbar, .tool-nav, .site-footer, [data-site-nav-placeholder], [data-site-footer-placeholder]').forEach((node) => node.remove());
     }
 
     const syncFootballPage = () => {
       if (kind !== 'football-centre') return;
       const requested = initialPage || location.hash.replace(/^#/, '') || 'dashboard';
       const target = requested === 'rewards' ? 'totw' : requested;
-      const pages = [...host.querySelectorAll('section.page')];
-      pages.forEach((page) => page.classList.toggle('active', page.id === target));
+      host.querySelectorAll('section.page').forEach((page) => page.classList.toggle('active', page.id === target));
     };
 
     const modernizeFootball = () => {
       if (kind !== 'football-centre') return;
-      const dashboard = host.querySelector('#dashboard');
-      const matchday = dashboard?.querySelector('.matchday');
-      if (matchday) {
-        const cards = [...matchday.querySelectorAll('.match-card')];
-        const fixtures = [['Fulham', 'Crystal Palace'], ['Arsenal', 'Chelsea']];
-        cards.slice(0, 2).forEach((card, i) => {
-          const names = card.querySelectorAll('.team-name');
-          if (names.length >= 2) { names[0].textContent = fixtures[i][0]; names[1].textContent = fixtures[i][1]; }
-        });
+      const cards = [...(host.querySelector('#dashboard')?.querySelectorAll('.match-card') || [])];
+      [['Fulham', 'Crystal Palace'], ['Arsenal', 'Chelsea']].forEach(([home, away], i) => {
+        const names = cards[i]?.querySelectorAll('.team-name');
+        if (names?.length >= 2) { names[0].textContent = home; names[1].textContent = away; }
+      });
+      const analysis = host.querySelector('#analysis');
+      if (analysis && !analysis.querySelector('.fc-new-analysis')) {
+        const panel = document.createElement('div');
+        panel.className = 'fc-new-analysis';
+        panel.innerHTML = '<div class="fc-kicker">MATCHDAY ANALYSIS</div><h2>Players to watch</h2><p>Quick player-focused notes for the current Football Centre fixtures.</p><div class="fc-player-grid"><article><b>Harry Wilson</b><span>Fulham · CAM</span></article><article><b>Jean-Philippe Mateta</b><span>Crystal Palace · ST</span></article><article><b>Bukayo Saka</b><span>Arsenal · RW</span></article><article><b>Cole Palmer</b><span>Chelsea · CAM</span></article></div>';
+        analysis.appendChild(panel);
+      }
+      const totw = host.querySelector('#totw');
+      if (totw && !totw.querySelector('.fc-totw-new')) {
+        totw.innerHTML = '<div class="fc-modern-head"><div><span class="fc-kicker">FOOTBALL CENTRE</span><h1>Team of the Week</h1><p>Watch the latest FC Mobile Team of the Week update.</p></div></div><div class="fc-totw-new"><div class="fc-totw-video"><iframe src="https://www.youtube.com/embed/KvgulT3RtFE" title="FC Mobile Team of the Week" loading="lazy" allowfullscreen></iframe></div><div><h2>Weekly spotlight</h2><p>Keep up with the latest standout performers and community discussion.</p></div></div>';
       }
       syncFootballPage();
     };
@@ -73,8 +67,5 @@ const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legac
 </script>
 
 <style is="global">
-  .legacy-app-host{width:100%;display:block;position:relative;isolation:isolate}.legacy-app{width:100%;min-width:0}.legacy-app-host .topbar,.legacy-app-host .site-nav,.legacy-app-host .tool-nav,.legacy-app-host nav.nav,.legacy-app-host .site-footer{display:none!important}.legacy-app-host .app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 44px}.legacy-app-host .app>.site-footer{display:none!important}
-  .legacy-app-trivia{max-width:1180px;margin:0 auto}.legacy-app-trivia .nav,.legacy-app-trivia nav.nav,.legacy-app-trivia header,.legacy-app-trivia footer{display:none!important}.legacy-app-trivia .page{width:min(1120px,calc(100% - 40px));margin:0 auto}.legacy-app-trivia .crumb{margin-top:26px}.legacy-app-trivia .footer{display:none!important}
-  .legacy-app-football-centre .page{display:none!important}.legacy-app-football-centre .page.active{display:block!important;visibility:visible!important;opacity:1!important}
-  .legacy-app-football-centre{--fc-accent:#63c7f3;--fc-accent-strong:#38aee7;--fc-accent-soft:#63c7f31f}.legacy-app-football-centre .eyebrow,.legacy-app-football-centre .tab.active{color:var(--fc-accent)!important}.legacy-app-football-centre .progress-fill,.legacy-app-football-centre .fill{background:linear-gradient(90deg,var(--fc-accent-strong),var(--fc-accent))!important}.legacy-app-football-centre .progress{background:#18232b!important}.legacy-app-football-centre .card,.legacy-app-football-centre .coming,.legacy-app-football-centre .settings-card,.legacy-app-football-centre .stat{border-color:#22313a!important}
+.legacy-app-host{width:100%;display:block;position:relative;isolation:isolate}.legacy-app{width:100%;min-width:0}.legacy-app-host .topbar,.legacy-app-host .site-nav,.legacy-app-host .tool-nav,.legacy-app-host nav.nav,.legacy-app-host .site-footer{display:none!important}.legacy-app-host .app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 44px}.legacy-app-trivia{max-width:1180px;margin:0 auto}.legacy-app-trivia .nav,.legacy-app-trivia nav.nav,.legacy-app-trivia header,.legacy-app-trivia footer{display:none!important}.legacy-app-trivia .page{width:min(1120px,calc(100% - 40px));margin:0 auto}.legacy-app-trivia .crumb{margin-top:26px}.legacy-app-trivia .footer{display:none!important}.legacy-app-football-centre .page{display:none!important}.legacy-app-football-centre .page.active{display:block!important;visibility:visible!important;opacity:1!important}.legacy-app-football-centre{--fc-accent:#63c7f3;--fc-accent-strong:#38aee7;--fc-accent-soft:#63c7f31f}.legacy-app-football-centre .eyebrow,.legacy-app-football-centre .tab.active{color:var(--fc-accent)!important}.legacy-app-football-centre .progress-fill,.legacy-app-football-centre .fill{background:linear-gradient(90deg,var(--fc-accent-strong),var(--fc-accent))!important}.legacy-app-football-centre .card,.legacy-app-football-centre .coming,.legacy-app-football-centre .settings-card,.legacy-app-football-centre .stat{border-color:#22313a!important}.fc-modern-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin:5px 0 18px}.fc-modern-head h1{font-size:30px;margin:4px 0}.fc-kicker{font-size:9px;font-weight:950;letter-spacing:.14em;color:#63c7f3}.fc-new-analysis{margin-top:16px;padding:18px;border:1px solid #22313a;background:#0d1115;border-radius:16px}.fc-new-analysis h2{margin:5px 0}.fc-new-analysis p{color:#8d9aa4;font-size:11px}.fc-player-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:14px}.fc-player-grid article{padding:13px;border:1px solid #22313a;background:#11171c;border-radius:11px}.fc-player-grid b{display:block}.fc-player-grid span{color:#82909a;font-size:9px}.fc-totw-new{display:grid;grid-template-columns:1.35fr .65fr;gap:14px;padding:14px;border:1px solid #22313a;background:#0d1115;border-radius:16px}.fc-totw-video{aspect-ratio:16/9;overflow:hidden;border-radius:11px;background:#000}.fc-totw-video iframe{width:100%;height:100%;border:0}@media(max-width:720px){.legacy-app-host .app{width:calc(100% - 18px)}.legacy-app-trivia .page{width:calc(100% - 28px)}.fc-player-grid,.fc-totw-new{grid-template-columns:1fr}}
 </style>
