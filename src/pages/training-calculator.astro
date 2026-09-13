@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#050505">
+
+<title>FC Mobile Training Calculator — TXP Needed Per Level | TanzimFC</title>
+<meta name="description" content="Free FC Mobile Training Calculator. Enter your player's current and target Training Level to see the exact TXP needed and how many cards it costs — matches the real Season 26 training table.">
+<meta name="keywords" content="fc mobile training calculator, fc mobile txp calculator, fc mobile training xp, how to train players fc mobile, fc mobile training level cost">
+<link rel="canonical" href="https://tanzimfc.fcmobiletools.workers.dev/training-calculator">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TanzimFC — FC Mobile Tools">
+<meta property="og:title" content="FC Mobile Training Calculator — TXP Needed Per Level">
+<meta property="og:description" content="Work out exactly how much Training XP and how many cards you need to level up any FC Mobile player, level by level.">
+<meta property="og:url" content="https://tanzimfc.fcmobiletools.workers.dev/training-calculator">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FC Mobile Training Calculator">
+<meta name="twitter:description" content="Enter your current and target Training Level and get the exact TXP and card count you need.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type":"ListItem","position":1,"name":"FC Mobile Tools","item":"https://tanzimfc.fcmobiletools.workers.dev/"},
+    {"@type":"ListItem","position":2,"name":"Training Calculator","item":"https://tanzimfc.fcmobiletools.workers.dev/training-calculator"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "FC Mobile Training Calculator",
+  "url": "https://tanzimfc.fcmobiletools.workers.dev/training-calculator",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any",
+  "description": "Calculates the Training XP (TXP) and number of cards required to train an FC Mobile player from one Training Level to another.",
+  "offers": {"@type":"Offer","price":"0","priceCurrency":"USD"},
+  "publisher": {"@type":"Organization","name":"TanzimFC"}
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does training increase a player's OVR in FC Mobile?",
+      "acceptedAnswer": {"@type":"Answer","text":"No. Training only improves a player's individual stats and gameplay. To raise a player's OVR (and Team OVR), you need to Rank Up the player using Rank Up Points instead."}
+    },
+    {
+      "@type": "Question",
+      "name": "What is the maximum Training Level in FC Mobile?",
+      "acceptedAnswer": {"@type":"Answer","text":"The current Training Level cap is 30. Reaching level 30 no longer requires ranking up every 5 levels like in older seasons — you can train straight through to the cap."}
+    },
+    {
+      "@type": "Question",
+      "name": "What gives the best value when training a player?",
+      "acceptedAnswer": {"@type":"Answer","text":"Bronze and Silver OVR cards (roughly 47-69 OVR) give the best coin-to-XP ratio, since XP value per card rises much slower than the coin cost of higher OVR cards. Most experienced players keep a stock of low OVR cards specifically for training."}
+    },
+    {
+      "@type": "Question",
+      "name": "Do TOTY or event cards cost more to train?",
+      "acceptedAnswer": {"@type":"Answer","text":"No. TOTY or event status does not by itself make a player cost more TXP to train. The required TXP is based on the applicable training requirement for the player and level."}
+    },
+    {
+      "@type": "Question",
+      "name": "Can I move Training XP from one player to another?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes, using Training Transfer. It moves the XP stored on one player onto another, but a 10% transfer loss applies, so the receiving player only gets 90% of the XP that was moved."}
+    }
+  ]
+}
+</script>
+
+<style>
+:root{
+  --bg:#050b12;--surface:#0d141c;--surface-2:#121b26;--border:#20303e;
+  --text:#f3f8fc;--muted:#8695a3;
+  --blue:#38bdf8;--blue-light:#7dd3fc;--blue-dim:#38bdf81a;
+  --green:#48d98a;--green-dim:#48d98a1a;
+  --amber:#f5b942;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+::selection{background:var(--blue);color:#04121c}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}}
+:focus-visible{outline:2px solid var(--blue-light);outline-offset:3px;border-radius:4px}
+.wrap{width:min(1100px,calc(100% - 40px));margin:0 auto}
+.wrap-narrow{width:min(820px,calc(100% - 40px));margin:0 auto}
+
+/* ---------- TOPBAR ---------- */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:#05050599;border-bottom:1px solid var(--border)}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 0}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(145deg,var(--blue),#0ea5e9);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:14px;color:#fff;flex:0 0 auto}
+.brand-text{display:flex;flex-direction:column;line-height:1.1}
+.brand-text small{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--muted);font-weight:600}
+.brand-text strong{font-size:15px;font-weight:800;letter-spacing:-.01em}
+.topnav{display:flex;align-items:center;gap:2px;border:1px solid var(--border);background:#0d0d10cc;padding:4px;border-radius:12px}
+.topnav a{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);transition:color .18s,background .18s}
+.topnav a:hover{color:var(--text);background:var(--surface-2)}
+.topnav a.active{color:var(--text);background:var(--surface-2)}
+.topbar-cta{display:flex;gap:8px;flex:0 0 auto}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:9px 15px;border-radius:9px;font-size:12px;font-weight:700;transition:transform .16s,border-color .16s,background .16s}
+.btn:hover{transform:translateY(-1px);border-color:#3a3a42;background:#17171b}
+.btn.primary{background:linear-gradient(135deg,#38bdf8,#0ea5e9);border-color:#38bdf8;box-shadow:0 4px 20px #38bdf833}
+.btn.primary:hover{box-shadow:0 6px 26px #38bdf84d}
+@media(max-width:900px){.topnav{display:none}}
+
+/* ---------- PAGE HEAD ---------- */
+.pagehead{position:relative;overflow:hidden;padding:48px 0 36px;isolation:isolate}
+.pagehead-bg{position:absolute;inset:0;z-index:-2;background:
+  radial-gradient(ellipse 900px 460px at 14% 0%, #38bdf82a, transparent 60%),
+  radial-gradient(ellipse 700px 420px at 92% 10%, #48d98a1c, transparent 62%),
+  var(--bg);
+}
+.pagehead-grid{position:absolute;inset:0;z-index:-1;opacity:.3;
+  background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(ellipse 700px 340px at 20% 0%, black, transparent 75%);
+}
+nav.crumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:16px}
+nav.crumb a{color:var(--blue-light)}
+nav.crumb .sep{margin:0 6px;opacity:.5}
+.pagehead h1{font-size:clamp(28px,4.2vw,44px);line-height:1.05;letter-spacing:-.03em;font-weight:900;margin:0 0 12px}
+.pagehead p.lead{font-size:15px;color:var(--muted);max-width:640px;margin:0}
+
+/* ---------- STEPPER CALCULATOR ---------- */
+.calc-shell{padding:8px 0 72px}
+.calc-card{border-radius:22px;border:1px solid var(--border);background:linear-gradient(160deg,#101720,#0b1119);padding:8px;overflow:hidden}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:22px 22px 0}
+@media(max-width:760px){.steps{grid-template-columns:1fr}}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--blue-dim);color:var(--blue-light);font-family:var(--mono);font-size:10.5px;font-weight:700;margin-right:8px}
+.step label{display:flex;align-items:center;font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px}
+.step select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 12px;font-size:14px;font-family:var(--sans);font-weight:700;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238695a3'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:32px}
+.step select:focus{border-color:var(--blue)}
+.step small.help{display:block;margin-top:8px;font-size:11px;color:var(--muted);line-height:1.5}
+
+.warn{display:none;align-items:center;gap:9px;padding:11px 14px;border-radius:10px;border:1px solid #6b3a1f;background:#3a220f66;color:#ffd7a8;font-size:12px;font-weight:600;margin:14px 22px 0}
+.warn.show{display:flex}
+
+.summary{margin:20px 22px 0;padding:20px 22px;border-radius:16px;border:1px solid #255d42;background:linear-gradient(135deg,#0d1a14,#0d141c)}
+.summary .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:#9ff5c4;font-weight:700;margin-bottom:10px}
+.summary p{margin:0;font-size:17px;line-height:1.55;font-weight:600}
+.summary p b{color:var(--blue-light);font-weight:800}
+.summary p b.green{color:var(--green)}
+
+.result-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 22px 0}
+@media(max-width:760px){.result-stats{grid-template-columns:1fr 1fr}}
+.rstat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+.rstat span{display:block;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.05em;font-weight:600;text-transform:uppercase}
+.rstat b{display:block;margin-top:6px;font-size:18px;font-weight:800}
+.rstat b.blue{color:var(--blue-light)}
+.rstat b.amber{color:var(--amber)}
+
+.progress-track{height:8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden;margin:16px 22px 6px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width .3s ease;width:0%}
+.progress-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin:0 22px 20px}
+
+.toggle-advanced{margin:4px 22px 0}
+.toggle-advanced summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--blue-light);list-style:none;display:inline-flex;align-items:center;gap:7px;padding:10px 0}
+.toggle-advanced summary::-webkit-details-marker{display:none}
+.toggle-advanced summary .chev{transition:transform .2s ease;font-size:10px}
+.toggle-advanced[open] summary .chev{transform:rotate(90deg)}
+.advanced-body{padding:4px 0 22px}
+.bd-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px}
+.bd-table th{text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:7px 8px;border-bottom:1px solid var(--border);text-transform:uppercase}
+.bd-table td{padding:7px 8px;border-bottom:1px solid #ffffff0d;font-weight:600}
+.bd-table td.cur{color:var(--green)}
+.bd-table tr:last-child td{border-bottom:0}
+.bd-scroll{max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px}
+.reverse-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:560px){.reverse-row{grid-template-columns:1fr}}
+.reverse-row .field label{font-size:12px;font-weight:700;margin-bottom:8px;display:block}
+.reverse-row select, .reverse-row input{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700}
+.reverse-out{margin-top:14px;font-size:13px;color:var(--muted)}
+.reverse-out b{color:var(--text)}
+
+/* ---------- SEO EXPLAINER CONTENT ---------- */
+.content-section{padding:8px 0 64px}
+.content-section .wrap-narrow{display:flex;flex-direction:column;gap:44px}
+.csec h2{font-size:clamp(20px,2.6vw,26px);letter-spacing:-.02em;margin:0 0 12px;font-weight:850}
+.csec p{color:#c3ccd4;font-size:14.5px;line-height:1.75;margin:0 0 12px}
+.csec p:last-child{margin-bottom:0}
+.csec ul{margin:0 0 12px;padding-left:20px;color:#c3ccd4;font-size:14.5px;line-height:1.8}
+.compare-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13.5px;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.compare-table th{text-align:left;background:var(--surface);font-size:11px;letter-spacing:.04em;color:var(--blue-light);font-weight:800;padding:12px 14px;text-transform:uppercase;font-family:var(--mono)}
+.compare-table td{padding:12px 14px;border-top:1px solid var(--border);color:#c3ccd4;font-weight:600}
+.compare-table tr td:first-child{color:var(--text);font-weight:800}
+
+.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:760px){.ref-grid{grid-template-columns:1fr}}
+.ref-panel{border-radius:16px;border:1px solid var(--border);background:var(--surface);padding:20px}
+.ref-panel h3{font-size:14px;font-weight:800;margin:0 0 4px}
+.ref-panel p.sub{font-size:12px;color:var(--muted);margin:0 0 14px}
+.ref-table-scroll{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ref-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.ref-table th{position:sticky;top:0;background:#0d141c;text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border);text-transform:uppercase}
+.ref-table td{padding:8px 12px;border-bottom:1px solid #ffffff0d;font-weight:600}
+.ref-table tr:last-child td{border-bottom:0}
+.ref-table td.xp{color:var(--blue-light);font-family:var(--mono)}
+
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-item:first-child{border-top:1px solid var(--border)}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;background:none;border:0;color:var(--text);text-align:left;padding:18px 2px;font-size:14.5px;font-weight:750}
+.faq-q .plus{font-family:var(--mono);color:var(--blue-light);font-size:16px;flex:0 0 auto;transition:transform .2s ease}
+.faq-item.open .faq-q .plus{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .25s ease}
+.faq-a p{color:#c3ccd4;font-size:13.5px;line-height:1.7;padding:0 2px 18px;margin:0}
+
+/* ---------- FOOTER ---------- */
+footer{padding:56px 0 40px;border-top:1px solid var(--border);margin-top:20px}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;padding-bottom:32px;border-bottom:1px solid var(--border)}
+.footer-brand p{color:var(--muted);font-size:12.5px;max-width:280px;margin:12px 0 0}
+.footer-cols{display:flex;gap:56px;flex-wrap:wrap}
+.footer-col h5{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);margin:0 0 14px;font-weight:700}
+.footer-col a{display:block;font-size:13px;color:var(--text);margin-bottom:10px;opacity:.85;transition:opacity .16s}
+.footer-col a:hover{opacity:1;color:var(--blue-light)}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-top:22px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+
+@media(max-width:560px){
+  .wrap,.wrap-narrow{width:calc(100% - 28px)}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">FC</span>
+      <span class="brand-text"><small>FC MOBILE TOOLS</small><strong>TanzimFC</strong></span>
+    </a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="index.html#tools">Tools</a>
+      <a href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Football Centre</a>
+      <a href="training-calculator.html" class="active">Training Calculator</a>
+      <a href="https://tanzimfc.fcmobiletools.workers.dev/trivia/">Trivia</a>
+      <a href="creator">Creator</a>
+    </nav>
+    <div class="topbar-cta">
+      <a class="btn primary" href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Open Football Centre</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="pagehead">
+    <div class="pagehead-bg"></div>
+    <div class="pagehead-grid"></div>
+    <div class="wrap">
+      <nav class="crumb" aria-label="Breadcrumb"><a href="index.html">FC Mobile Tools</a><span class="sep">/</span>Training Calculator</nav>
+      <h1>FC Mobile Training Calculator</h1>
+      <p class="lead">Pick where your player is now and where you want them to be. We'll tell you the exact Training XP and card count it takes — no guessing, no melting cards you didn't need to.</p>
+    </div>
+  </section>
+
+  <section class="calc-shell">
+    <div class="wrap">
+      <div class="calc-card">
+
+        <div class="steps">
+          <div class="step">
+            <label for="curLevel"><span class="step-num">1</span>Current Training Level</label>
+            <select id="curLevel"></select>
+            <small class="help">Check the player's card in your club — the Training Level is shown under their stats.</small>
+          </div>
+          <div class="step">
+            <label for="tgtLevel"><span class="step-num">2</span>Target Training Level</label>
+            <select id="tgtLevel"></select>
+            <small class="help">Training caps out at Level 30 for every player, regardless of Rank.</small>
+          </div>
+          <div class="step">
+            <label for="sourceCard"><span class="step-num">3</span>Card you're using as XP</label>
+            <select id="sourceCard">
+              <option value="100">47–59 OVR (Bronze) — 100 XP</option>
+              <option value="120">60–69 OVR (Silver) — 120 XP</option>
+              <option value="160">70–74 OVR — 160 XP</option>
+              <option value="200">75–79 OVR — 200 XP</option>
+              <option value="250" selected>80–84 OVR — 250 XP</option>
+              <option value="300">85–89 OVR — 300 XP</option>
+              <option value="400">90 OVR — 400 XP</option>
+              <option value="500">91 OVR — 500 XP</option>
+              <option value="600">92 OVR — 600 XP</option>
+              <option value="700">93 OVR — 700 XP</option>
+              <option value="800">94 OVR — 800 XP</option>
+              <option value="1000">95+ OVR — 1,000 XP</option>
+            </select>
+            <small class="help">Bronze and Silver cards give the best coin-to-XP value if you're stocking up.</small>
+          </div>
+        </div>
+
+        <div class="warn" id="rangeWarn">⚠ Target level needs to be higher than the current level — pick a higher Step 2 value.</div>
+
+        <div class="summary">
+          <div class="eyebrow">YOUR ANSWER</div>
+          <p id="summarySentence">Choose your levels above to see the result.</p>
+        </div>
+
+        <div class="result-stats">
+          <div class="rstat"><span>Total TXP needed</span><b class="blue" id="statTotalXp">0</b></div>
+          <div class="rstat"><span>Cards needed</span><b id="statCards">0</b></div>
+          <div class="rstat"><span>Levels gained</span><b id="statLevels">0</b></div>
+          <div class="rstat"><span>Leftover XP</span><b class="amber" id="statLeftover">0</b></div>
+        </div>
+
+        <div class="progress-label"><span id="progLabelLeft">0 XP</span><span id="progLabelRight">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+
+        <details class="toggle-advanced" id="advWrap">
+          <summary><span class="chev">▶</span> Advanced: see the per-level breakdown, or work backwards from XP you already have</summary>
+          <div class="advanced-body">
+            <div class="bd-scroll">
+              <table class="bd-table">
+                <thead><tr><th>Level</th><th>TXP required</th><th>Running total</th></tr></thead>
+                <tbody id="breakdownBody"></tbody>
+              </table>
+            </div>
+
+            <div class="reverse-row">
+              <div class="field">
+                <label for="haveXp">I already have this much TXP</label>
+                <input type="number" id="haveXp" min="0" step="100" placeholder="e.g. 10000">
+              </div>
+              <div class="field">
+                <label for="haveFrom">Starting from level</label>
+                <select id="haveFrom"></select>
+              </div>
+            </div>
+            <p class="reverse-out" id="reverseOut">Enter an XP amount to see the highest level it reaches.</p>
+          </div>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="wrap-narrow">
+
+      <div class="csec">
+        <h2>What Training actually does in FC Mobile</h2>
+        <p>Training is the system that improves an individual player's in-game stats and gameplay — things like pace, shooting, or passing attributes. It's separate from Rank Up, which is the only thing that raises a player's OVR and Team OVR. Mixing these two up is the single most common reason first-time players feel like their coins or cards "disappeared" with nothing to show for it.</p>
+        <p>To train a player, you feed other player cards into them as Training XP (TXP). Each training level requires a set amount of TXP, and the cost climbs steeply as the level gets higher — level 1 only needs 100 TXP, but level 30 alone needs 16,000. That's why the calculator above adds up every level in between rather than just the start and end points.</p>
+      </div>
+
+      <div class="csec">
+        <h2>Training vs. Rank Up: what's the difference?</h2>
+        <table class="compare-table">
+          <thead><tr><th></th><th>Training</th><th>Rank Up</th></tr></thead>
+          <tbody>
+            <tr><td>Currency used</td><td>Other player cards (TXP)</td><td>Rank Up Points</td></tr>
+            <tr><td>Affects OVR?</td><td>No</td><td>Yes, +1 OVR per rank</td></tr>
+            <tr><td>Affects stats?</td><td>Yes — this is its whole job</td><td>Indirectly, via Skill Points</td></tr>
+            <tr><td>Cap</td><td>Training Level 30</td><td>5 ranks per player</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="csec">
+        <h2>How to get the most out of every card you spend</h2>
+        <ul>
+          <li>Bronze (47–59 OVR) and Silver (60–69 OVR) cards give the cheapest XP per coin — keep a stash instead of buying them one at a time mid-training.</li>
+          <li>Higher OVR cards give more XP per card but cost far more in coins, so they're rarely worth using purely as training fodder.</li>
+          <li>If you've already trained a player and want to move that progress elsewhere, use Training Transfer — just remember it only passes on 90% of the XP, a 10% loss applies automatically.</li>
+          <li>TOTY, Icon, and some promo cards can need more TXP per level than a standard card at the same OVR — always check the exact cost shown on the training screen before committing.</li>
+        </ul>
+      </div>
+
+      <div class="csec">
+        <h2>TXP required per level</h2>
+        <p>The full Season 26 table the calculator above pulls from — useful if you'd rather plan by hand or double-check a specific level.</p>
+        <div class="ref-grid">
+          <div class="ref-panel">
+            <h3>TXP per training level</h3>
+            <p class="sub">Level 1 through the level 30 cap.</p>
+            <div class="ref-table-scroll">
+              <table class="ref-table">
+                <thead><tr><th>Level</th><th>TXP</th></tr></thead>
+                <tbody id="fullTxpTable"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="ref-panel">
+            <h3>Card XP value by OVR</h3>
+            <p class="sub">What a card is worth when melted for training.</p>
+            <div class="ref-table-scroll">
+              <table class="ref-table">
+                <thead><tr><th>OVR band</th><th>XP value</th></tr></thead>
+                <tbody id="xpValueTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="csec">
+        <h2>Frequently asked questions</h2>
+        <div id="faqList"></div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a class="brand" href="index.html">
+          <span class="brand-mark">FC</span>
+          <span class="brand-text"><small>FC MOBILE TOOLS</small><strong>TanzimFC</strong></span>
+        </a>
+        <p>Trackers and calculators for FC Mobile, built and maintained by TanzimFC.</p>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h5>TOOLS</h5>
+          <a href="https://tanzimfc.fcmobiletools.workers.dev/football-centre">Football Centre</a>
+          <a href="training-calculator.html">Training Calculator</a>
+          <a href="https://tanzimfc.fcmobiletools.workers.dev/trivia/">Trivia</a>
+          <a href="https://tanzimfc.fcmobiletools.workers.dev/fc-mobile-beta/">FC Mobile Beta</a>
+        </div>
+        <div class="footer-col">
+          <h5>CREATOR</h5>
+          <a href="https://www.youtube.com/@tanzimfc" target="_blank" rel="noopener">YouTube</a>
+          <a href="https://discord.com/invite/B4a7AxuU69" target="_blank" rel="noopener">Discord</a>
+          <a href="https://x.com/TanzimFC" target="_blank" rel="noopener">X / Twitter</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 TanzimFC — FC Mobile Tools</span>
+      <span>Not affiliated with EA or FC Mobile</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const TXP = {1:100,2:150,3:200,4:250,5:300,6:600,7:800,8:1000,9:1200,10:1400,
+  11:1800,12:2200,13:2600,14:3000,15:3400,16:4000,17:4600,18:5200,19:5800,20:6400,
+  21:7000,22:8000,23:9000,24:10000,25:11000,26:12000,27:13000,28:14000,29:15000,30:16000};
+const MAX_LEVEL = 30;
+const CUM = {0:0};
+for(let i=1;i<=MAX_LEVEL;i++){ CUM[i] = CUM[i-1] + TXP[i]; }
+
+function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
+function xpForRange(from,to){ let s=0; for(let i=from+1;i<=to;i++) s+=TXP[i]; return s; }
+function maxLevelFromXp(from, xp){
+  let level=from, remaining=xp;
+  while(level<MAX_LEVEL && remaining>=TXP[level+1]){ remaining-=TXP[level+1]; level++; }
+  return {level, remaining};
+}
+
+const curLevel=document.getElementById('curLevel'), tgtLevel=document.getElementById('tgtLevel');
+const sourceCard=document.getElementById('sourceCard');
+const rangeWarn=document.getElementById('rangeWarn');
+const summarySentence=document.getElementById('summarySentence');
+const statTotalXp=document.getElementById('statTotalXp'), statCards=document.getElementById('statCards');
+const statLevels=document.getElementById('statLevels'), statLeftover=document.getElementById('statLeftover');
+const progFill=document.getElementById('progFill'), progLabelLeft=document.getElementById('progLabelLeft'), progLabelRight=document.getElementById('progLabelRight');
+const breakdownBody=document.getElementById('breakdownBody');
+const haveXp=document.getElementById('haveXp'), haveFrom=document.getElementById('haveFrom'), reverseOut=document.getElementById('reverseOut');
+
+for(let i=0;i<=MAX_LEVEL-1;i++){
+  const o=document.createElement('option'); o.value=i; o.textContent='Level '+i; curLevel.appendChild(o);
+}
+curLevel.value = 0;
+for(let i=1;i<=MAX_LEVEL;i++){
+  const o=document.createElement('option'); o.value=i; o.textContent='Level '+i; tgtLevel.appendChild(o);
+}
+tgtLevel.value = MAX_LEVEL;
+for(let i=0;i<MAX_LEVEL;i++){
+  const o=document.createElement('option'); o.value=i; o.textContent='Level '+i; haveFrom.appendChild(o);
+}
+
+const fullTxpTable=document.getElementById('fullTxpTable');
+for(let i=1;i<=MAX_LEVEL;i++){
+  const tr=document.createElement('tr'); tr.innerHTML=`<td>${i}</td><td class="xp">${fmt(TXP[i])}</td>`; fullTxpTable.appendChild(tr);
+}
+const XP_BANDS=[['47–59 (Bronze)',100],['60–69 (Silver)',120],['70–74',160],['75–79',200],['80–84',250],['85–89',300],['90',400],['91',500],['92',600],['93',700],['94',800],['95+',1000]];
+const xpValueTable=document.getElementById('xpValueTable');
+XP_BANDS.forEach(([band,xp])=>{
+  const tr=document.createElement('tr'); tr.innerHTML=`<td>${band} OVR</td><td class="xp">${fmt(xp)} XP</td>`; xpValueTable.appendChild(tr);
+});
+
+function render(){
+  const cardXp = Number(sourceCard.value);
+  let from = Number(curLevel.value), to = Number(tgtLevel.value);
+
+  if(to<=from){
+    rangeWarn.classList.add('show');
+    summarySentence.textContent = 'Pick a target level higher than your current level to see the result.';
+    statTotalXp.textContent='0'; statCards.textContent='0'; statLevels.textContent='0'; statLeftover.textContent='0';
+    progFill.style.width='0%'; progLabelLeft.textContent='0 XP'; progLabelRight.textContent='0%';
+    breakdownBody.innerHTML = '<tr><td colspan="3" style="color:var(--muted)">Set a valid range to see the breakdown.</td></tr>';
+    return;
+  }
+  rangeWarn.classList.remove('show');
+
+  const totalXp = xpForRange(from,to);
+  const cards = cardXp>0 ? Math.ceil(totalXp/cardXp) : 0;
+  const suppliedXp = cards*cardXp;
+  const leftover = Math.max(0, suppliedXp-totalXp);
+
+  summarySentence.innerHTML = `To go from <b>Level ${from}</b> to <b>Level ${to}</b>, you need <b class="green">${fmt(totalXp)} TXP</b> — about <b>${fmt(cards)} cards</b> at ${fmt(cardXp)} XP each.`;
+  statTotalXp.textContent = fmt(totalXp);
+  statCards.textContent = fmt(cards);
+  statLevels.textContent = (to-from);
+  statLeftover.textContent = fmt(leftover);
+
+  progFill.style.width='100%';
+  progLabelLeft.textContent = `${fmt(totalXp)} XP required`;
+  progLabelRight.textContent = '100%';
+
+  breakdownBody.innerHTML='';
+  for(let i=from+1;i<=to;i++){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="cur">${i}</td><td>${fmt(TXP[i])}</td><td>${fmt(CUM[i]-CUM[from])}</td>`;
+    breakdownBody.appendChild(tr);
+  }
+}
+
+function renderReverse(){
+  const from = Number(haveFrom.value);
+  const xp = Math.max(0, Number(haveXp.value)||0);
+  if(!haveXp.value){ reverseOut.textContent='Enter an XP amount to see the highest level it reaches.'; return; }
+  const {level, remaining} = maxLevelFromXp(from, xp);
+  if(level>=MAX_LEVEL){
+    reverseOut.innerHTML = `<b>${fmt(xp)} TXP</b> from Level ${from} gets you to the <b>Level 30 cap</b>, with ${fmt(remaining)} XP spare.`;
+  } else {
+    reverseOut.innerHTML = `<b>${fmt(xp)} TXP</b> from Level ${from} gets you to <b>Level ${level}</b>, with ${fmt(remaining)} XP left toward Level ${level+1} (needs ${fmt(TXP[level+1])}).`;
+  }
+}
+
+curLevel.addEventListener('change',()=>{
+  if(Number(tgtLevel.value)<=Number(curLevel.value)){
+    const next = Math.min(MAX_LEVEL, Number(curLevel.value)+1);
+    tgtLevel.value = next;
+  }
+  render();
+});
+tgtLevel.addEventListener('change', render);
+sourceCard.addEventListener('change', render);
+haveXp.addEventListener('input', renderReverse);
+haveFrom.addEventListener('change', renderReverse);
+
+render();
+renderReverse();
+
+const FAQS = [
+  ["Does training increase a player's OVR in FC Mobile?", "No. Training only improves a player's individual stats and gameplay. To raise a player's OVR (and Team OVR), you need to Rank Up the player using Rank Up Points instead."],
+  ["What is the maximum Training Level in FC Mobile?", "The current Training Level cap is 30. Reaching level 30 no longer requires ranking up every 5 levels like in older seasons — you can train straight through to the cap."],
+  ["What gives the best value when training a player?", "Bronze and Silver OVR cards (roughly 47–69 OVR) give the best coin-to-XP ratio, since XP value per card rises much slower than the coin cost of higher OVR cards. Most experienced players keep a stock of low OVR cards specifically for training."],
+  ["Do TOTY or event cards cost more to train?", "No. TOTY or event status does not by itself make a player cost more TXP to train. The required TXP is based on the applicable training requirement for the player and level."],
+  ["Can I move Training XP from one player to another?", "Yes, using Training Transfer. It moves the XP stored on one player onto another, but a 10% transfer loss applies, so the receiving player only gets 90% of the XP that was moved."]
+];
+const faqList=document.getElementById('faqList');
+FAQS.forEach(([q,a])=>{
+  const item=document.createElement('div'); item.className='faq-item';
+  item.innerHTML = `<button class="faq-q" type="button"><span>${q}</span><span class="plus">+</span></button><div class="faq-a"><p>${a}</p></div>`;
+  faqList.appendChild(item);
+});
+faqList.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.faq-q');
+  if(!btn) return;
+  const item = btn.closest('.faq-item');
+  const ans = item.querySelector('.faq-a');
+  const isOpen = item.classList.contains('open');
+  faqList.querySelectorAll('.faq-item.open').forEach(el=>{ el.classList.remove('open'); el.querySelector('.faq-a').style.maxHeight=null; });
+  if(!isOpen){ item.classList.add('open'); ans.style.maxHeight = ans.scrollHeight+'px'; }
+});
+</script>
+</body>
+</html>
