@@ -2,7 +2,7 @@
 // Dev workflow: add a record here, then change only `status` when its state changes.
 // Keep expiryDate null when no reliable expiry is known. Do not invent dates.
 export const REDEEM_CODES = [
-  { code:'ZlATANWORLDPREMIERE', reward:'Reward details not confirmed', status:'active', releaseDate:'2026-09-16', expiryDate:null, region:'Global', lastVerified:'2026-09-16', notes:'New code supplied for verification.' },
+  { code:'ZlATANWORLDPREMIERE', reward:'117 Zlatan Player Item', status:'active', releaseDate:'2026-09-16', expiryDate:null, region:'Global', lastVerified:'2026-09-16', notes:'' },
   { code:'ONEMOREDRAFT', reward:'FC Draft Voucher', status:'expired', releaseDate:'2026-09-07', expiryDate:null, region:'Global', lastVerified:'2026-09-16', notes:'Previously active; now expired.' },
   { code:'BOMBAGOL', reward:'114–117 OVR Super Lig Player', status:'expired', releaseDate:'2026-09-05', expiryDate:null, region:'Global', lastVerified:'2026-09-12', notes:'' },
   { code:'AUFGEHTS', reward:'FC Draft Voucher', status:'expired', releaseDate:'2026-08-28', expiryDate:null, region:'Global', lastVerified:'2026-09-12', notes:'' },
