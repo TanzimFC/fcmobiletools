@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 
 const nationRedirects = Object.fromEntries(
   ['japan', 'netherlands', 'mexico', 'france', 'brazil'].flatMap((country) => [
@@ -14,6 +15,7 @@ export default defineConfig({
   site: 'https://tanzimfc.fcmobiletools.workers.dev',
   output: 'static',
   build: { format: 'directory' },
+  integrations: [sitemap()],
   redirects: {
     '/trivia': '/a-nations-story/',
     '/trivia/': '/a-nations-story/',
