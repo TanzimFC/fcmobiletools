@@ -9,18 +9,14 @@ const publicDir = path.join(root, 'public');
 
 await mkdir(path.join(publicDir, 'assets'), { recursive: true });
 await cp(path.join(root, 'assets'), path.join(publicDir, 'assets'), { recursive: true, force: true });
-
-// Old copied legacy Trivia assets are intentionally removed. A Nation's Story is now
-// generated entirely by Astro from src/data/aNationsStory.js.
 await rm(path.join(publicDir, 'trivia'), { recursive: true, force: true });
 
-// The public redeem page historically imports redeemCodes.js. Keep that compatibility
-// module synchronized from the CMS-managed JSON file immediately before every build.
 const redeemJson = path.join(root, 'src', 'data', 'redeem-codes.json');
 const redeemModule = path.join(root, 'src', 'data', 'redeemCodes.js');
 try {
   const codes = JSON.parse(await readFile(redeemJson, 'utf8'));
-  const moduleText = `// Generated compatibility module. Source of truth: redeem-codes.json.\nexport const REDEEM_CODES = ${JSON.stringify(codes, null, 2)};\nexport const REDEEM_STATUS = { active:{label:'Active',className:'active'}, expired:{label:'Expired',className:'expired'}, reported:{label:'Reported',className:'reported'}, unknown:{label:'Unknown',className:'unknown'} };\n`;
+  const publicCodes = Array.isArray(codes) ? codes.filter(x => !x.deleted) : [];
+  const moduleText = `// Generated compatibility module. Source of truth: redeem-codes.json.\nexport const REDEEM_CODES = ${JSON.stringify(publicCodes, null, 2)};\nexport const REDEEM_STATUS = { active:{label:'Active',className:'active'}, expired:{label:'Expired',className:'expired'}, reported:{label:'Reported',className:'reported'}, unknown:{label:'Unknown',className:'unknown'} };\n`;
   await writeFile(redeemModule, moduleText, 'utf8');
 } catch (error) {
   console.warn('Redeem-code compatibility sync skipped:', error?.message || error);
@@ -28,5 +24,4 @@ try {
 
 await exec('node', ['scripts/prepare-legacy.mjs'], { cwd: root });
 await exec('astro', ['build'], { cwd: root });
-
 console.log('Astro build complete. A Nation\'s Story is served by the new Astro architecture.');
