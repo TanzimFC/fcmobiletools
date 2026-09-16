@@ -18,7 +18,22 @@ if (html.indexOf(bridge) === -1 || html.indexOf(bridge) > html.indexOf(enhancer)
   throw new Error('CMS admin runtime bridge is not placed before the enhancement script');
 }
 
-const scripts = [...html.matchAll(/<script(?:[^>]*)>([\\s\\S]*?)<\\/script>/gi)].map((m) => m[1]);
+// Avoid a regex here: this test itself runs before the application build and
+// must remain parser-safe on Cloudflare's Node/Bun build environment.
+const scripts = [];
+const scriptOpen = '<script';
+const scriptClose = '</script>';
+let cursor = 0;
+while (true) {
+  const open = html.indexOf(scriptOpen, cursor);
+  if (open === -1) break;
+  const bodyStart = html.indexOf('>', open);
+  if (bodyStart === -1) throw new Error('CMS admin HTML contains an unterminated script tag');
+  const close = html.indexOf(scriptClose, bodyStart + 1);
+  if (close === -1) throw new Error('CMS admin HTML contains an unterminated browser script');
+  scripts.push(html.slice(bodyStart + 1, close));
+  cursor = close + scriptClose.length;
+}
 if (!scripts.length) throw new Error('CMS admin HTML contains no browser script');
 for (let i = 0; i < scripts.length; i += 1) {
   try {
