@@ -13,7 +13,7 @@ for (const marker of required) {
 }
 
 // The final article editor is intentionally a single self-contained browser script.
-// Keep this gate structural and do not reintroduce the removed editor-era bridge checks.
+// This comment intentionally retriggers the connected worker build from the current main tree.
 const scriptCount = html.split('<script').length - 1;
 if (scriptCount < 1) throw new Error(`CMS admin HTML contains too few scripts: ${scriptCount}`);
 
