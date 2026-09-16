@@ -1,7 +1,13 @@
-import { articleEditorHtml } from './article-editor-v2.mjs';
+import { articleEditorHtml } from './admin-rebuild.mjs';
 import { adminHtml as legacyAdminHtml } from './admin-hub.mjs';
 
-// The stable v2 article editor is the primary /admin surface. /admin/articles
-// is an alias to the same editor; legacy CMS sections remain available for
-// settings, redeem codes, and audit.
-export const adminHtml=(section='posts')=>section==='posts'||section==='articles'?articleEditorHtml():legacyAdminHtml(section);
+// The rebuilt Worker-backed admin is the primary CMS surface. /admin and
+// /admin/articles open the same application; /admin/redeem-codes opens the
+// same application on its owner-only redeem-code workspace. Settings and
+// audit remain on their dedicated pages until their UI is folded into the
+// common shell.
+export const adminHtml=(section='posts')=>{
+  if(section==='posts'||section==='articles') return articleEditorHtml('articles');
+  if(section==='redeem') return articleEditorHtml('redeem');
+  return legacyAdminHtml(section);
+};
