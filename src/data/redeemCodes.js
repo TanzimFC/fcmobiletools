@@ -15,7 +15,7 @@ export const REDEEM_CODES = [
   {
     "code": "ONEMOREDRAFT",
     "reward": "FC Draft Voucher",
-    "status": "active",
+    "status": "expired",
     "releaseDate": "2026-09-06",
     "expiryDate": null,
     "region": "Global",
