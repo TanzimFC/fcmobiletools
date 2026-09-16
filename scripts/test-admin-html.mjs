@@ -1,10 +1,10 @@
 import { adminHtml } from '../src/cms/admin-runtime.mjs';
 
-for (const section of ['posts','articles']) {
+for (const section of ['posts', 'articles']) {
   const html = adminHtml(section);
   const required = [
     '<div id="app"></div>',
-    'const S=',
+    'S={',
     '/api/auth/me',
     '/api/posts',
     'Workspace pulse',
