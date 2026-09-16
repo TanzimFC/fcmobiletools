@@ -7,10 +7,10 @@ excerpt: "A practical look at possession, territory and the numbers that actuall
 type: guide
 category: "Analysis"
 author: "TanzimFC"
-status: review
+status: draft
 createdBy: "test"
 createdAt: "2026-09-16T04:09:16.732Z"
-updatedAt: "2026-09-16T07:03:22.836Z"
+updatedAt: "2026-09-16T07:03:35.049Z"
 image: ""
 imageAlt: ""
 imageCaption: ""
@@ -18,9 +18,10 @@ tags: []
 featured: false
 seoTitle: ""
 seoDescription: ""
-reviewNotes: ""
+reviewNotes: "Returned for revision"
 draft: true
 ---
+
 
 
 Possession looks impressive on a scoreboard, but it does not automatically mean you controlled the match.
