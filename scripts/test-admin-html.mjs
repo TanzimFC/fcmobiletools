@@ -12,10 +12,9 @@ for (const marker of required) {
   if (!html.includes(marker)) throw new Error(`CMS admin HTML missing marker: ${marker}`);
 }
 
-// The stable CMS runtime embeds the enhancement script inside adminHtml.
-// The old editor-era bridge ordering assertion is intentionally removed:
-// article-editor layers are no longer part of the admin runtime.
+// The final article editor is intentionally a single self-contained browser script.
+// Keep this gate structural and do not reintroduce the removed editor-era bridge checks.
 const scriptCount = html.split('<script').length - 1;
-if (scriptCount < 2) throw new Error(`CMS admin HTML contains too few scripts: ${scriptCount}`);
+if (scriptCount < 1) throw new Error(`CMS admin HTML contains too few scripts: ${scriptCount}`);
 
 console.log(`CMS admin HTML test passed (${scriptCount} script tag(s)).`);
