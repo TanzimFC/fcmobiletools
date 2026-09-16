@@ -1,4 +1,4 @@
-import { adminHtml } from './cms/admin-final.mjs';
+import { adminHtml } from './cms/admin-polish.mjs';
 import { settingsHtml } from './cms/settings.mjs';
 import { auditHtml } from './cms/audit-ui.mjs';
 import { redeemHtml } from './cms/redeem-ui-v3.mjs';
