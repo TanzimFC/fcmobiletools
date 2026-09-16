@@ -4,7 +4,7 @@ for (const section of ['posts','articles','redeem']) {
   const html = adminHtml(section);
   const required = [
     '<div id="app"></div>',
-    'const S={',
+    'var S={',
     '/api/auth/me',
     '/api/posts',
     '/api/redeem-codes',
