@@ -24,10 +24,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fc
   <script is:inline>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-YY53FCHMLW');</script>
 </head>
 <body>
+  <a class="skip-link" href="#content">Skip to content</a>
   <Navbar />
-  <main id="top"><slot /></main>
+  <div id="content"><slot /></div>
   <Footer />
   <style is="global">
+    .skip-link{position:fixed;left:14px;top:14px;z-index:2000;transform:translateY(-180%);padding:10px 14px;border:1px solid var(--blue);border-radius:9px;background:var(--surface2);color:var(--text);font:800 10px var(--mono);text-decoration:none;transition:transform .18s}
+    .skip-link:focus{transform:translateY(0)}
+    #content{scroll-margin-top:90px}
     .legacy-app-host .nav,.legacy-app-host nav.nav{display:none!important}
     .legacy-app-host{isolation:isolate}
     .site-nav{position:sticky!important;z-index:1000!important}
