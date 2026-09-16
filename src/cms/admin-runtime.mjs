@@ -1,3 +1,4 @@
-import { adminHtml as enhancedAdminHtml } from './admin-enhancements.mjs';
+import { articleEditorHtml } from './article-editor.mjs';
+import { adminHtml as legacyAdminHtml } from './admin-hub.mjs';
 
-export const adminHtml=(section='posts')=>enhancedAdminHtml(section).replace('</body>','<script>try{window.S=S}catch(e){}</script></body>');
+export const adminHtml=(section='posts')=>section==='posts'?articleEditorHtml():legacyAdminHtml(section);
