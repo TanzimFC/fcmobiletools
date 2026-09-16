@@ -1,6 +1,7 @@
 const MAX=10*1024*1024;
+const JSON_HEADERS={'content-type':'application/json; charset=utf-8'};
 export async function upload(req,env,user){
- if(!env.CLOUDINARY_CLOUD_NAME||!env.CLOUDINARY_API_KEY||!env.CLOUDINARY_API_SECRET)return new Response(JSON.stringify({error:'Cloudinary secrets are not configured'}),{status:500,headers:{'content-type':'application/json'}});
+ if(!env.CLOUDINARY_CLOUD_NAME||!env.CLOUDINARY_API_KEY||!env.CLOUDINARY_API_SECRET)return new Response(JSON.stringify({error:'Cloudinary secrets are not configured'}),{status:500,headers:JSON_HEADERS});
  const f=await req.formData(),file=f.get('file');
  if(!(file instanceof File))return err('Image file is required');
  if(file.size>MAX)return err('Image is larger than 10 MB');
@@ -10,7 +11,14 @@ export async function upload(req,env,user){
  const signature=[...dig].map(x=>x.toString(16).padStart(2,'0')).join('');
  const body=new FormData();body.set('file',file);body.set('api_key',env.CLOUDINARY_API_KEY);body.set('timestamp',String(timestamp));body.set('folder',folder);body.set('signature',signature);
  const r=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)}/image/upload`,{method:'POST',body}),x=await r.json().catch(()=>({}));
- if(!r.ok)return new Response(JSON.stringify({error:x?.error?.message||'Cloudinary upload failed'}),{status:502,headers:{'content-type':'application/json'}});
- return new Response(JSON.stringify({ok:true,image:{secureUrl:x.secure_url,publicId:x.public_id,width:x.width,height:x.height,format:x.format,uploadedBy:user.username}}),{status:201,headers:{'content-type':'application/json'}})
+ if(!r.ok)return new Response(JSON.stringify({error:x?.error?.message||'Cloudinary upload failed'}),{status:502,headers:JSON_HEADERS});
+ return new Response(JSON.stringify({ok:true,image:{secureUrl:x.secure_url,publicId:x.public_id,width:x.width,height:x.height,format:x.format,uploadedBy:user.username}}),{status:201,headers:JSON_HEADERS})
 }
-const err=m=>new Response(JSON.stringify({error:m}),{status:400,headers:{'content-type':'application/json'}});
+export async function listMedia(env,opts={}){
+ if(!env.CLOUDINARY_CLOUD_NAME||!env.CLOUDINARY_API_KEY||!env.CLOUDINARY_API_SECRET)throw new Error('Cloudinary secrets are not configured');
+ const n=Math.min(Math.max(Number(opts.maxResults)||48,1),100),q=new URLSearchParams({prefix:'tanzimfc/articles',max_results:String(n)});if(opts.nextCursor)q.set('next_cursor',opts.nextCursor);
+ const token=btoa(`${env.CLOUDINARY_API_KEY}:${env.CLOUDINARY_API_SECRET}`),r=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)}/resources/image/upload?${q}`,{headers:{authorization:`Basic ${token}`}}),x=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(x?.error?.message||'Cloudinary media library failed');
+ return {resources:(x.resources||[]).map(a=>({secureUrl:a.secure_url,publicId:a.public_id,width:a.width,height:a.height,format:a.format,bytes:a.bytes,createdAt:a.created_at,type:a.type,resourceType:a.resource_type})),nextCursor:x.next_cursor||''};
+}
+const err=m=>new Response(JSON.stringify({error:m}),{status:400,headers:JSON_HEADERS});
