@@ -1,7 +1,7 @@
 ---
 id: "article-title"
 slug: "article-title"
-title: "Article title"
+title: "yeah"
 description: "A short summary used on article cards and search results."
 excerpt: "A short summary used on article cards and search results."
 type: guide
@@ -10,7 +10,7 @@ author: "TanzimFC"
 status: draft
 createdBy: "test"
 createdAt: "2026-09-16T04:08:25.733Z"
-updatedAt: "2026-09-16T10:52:51.888Z"
+updatedAt: "2026-09-16T10:53:20.668Z"
 image: ""
 imageAlt: ""
 imageCaption: ""
