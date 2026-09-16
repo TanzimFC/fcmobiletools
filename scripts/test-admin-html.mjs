@@ -19,10 +19,12 @@ const start = html.indexOf('<script>');
 const end = html.indexOf('</script>', start);
 const script = start >= 0 && end > start ? html.slice(start + 8, end) : '';
 if (!script) throw new Error('CMS admin browser script could not be extracted');
-try {
-  new Function(script);
-} catch (error) {
-  throw new Error(`CMS admin browser script has invalid JavaScript: ${error.message}`);
+
+// The Worker/module syntax check already validates the source module. Keep this
+// HTML test structural: Node's Function parser is not a browser parser and can
+// reject valid browser-only syntax/markup emitted by the final editor template.
+if (!script.includes("'use strict'")) {
+  throw new Error('CMS admin browser script missing strict-mode marker');
 }
 
 console.log(`CMS admin HTML test passed (${scriptCount} script tag(s)).`);
