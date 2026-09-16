@@ -1,5 +1,5 @@
 import { adminHtml } from './cms/admin.mjs';
-import { read, login, logout, requireUser, users, verifyPassword } from './cms/auth.mjs';
+import { read, login, logout, requireUser } from './cms/auth.mjs';
 import { listPosts, readPost, writePost, cleanSlug } from './cms/content.mjs';
 import { upload } from './cms/cloudinary.mjs';
 
@@ -9,7 +9,6 @@ async function api(req,env,u){try{
  if(req.method==='POST'&&u.pathname==='/api/auth/login')return login(req,env);
  if(req.method==='POST'&&u.pathname==='/api/auth/logout')return logout();
  if(req.method==='GET'&&u.pathname==='/api/auth/me'){const user=await read(req,env);return user?json({user}):no('Authentication required',401)}
- if(req.method==='GET'&&u.pathname==='/api/auth/runtime-check'){let configured=Boolean(String(env.CMS_USERS_JSON||'').trim()),count=0,hasTest=false,hashShape=false,testPasswordMatches=false,error=null;try{const list=users(env);count=list.length;hasTest=list.some(x=>x.username==='test');hashShape=list.every(x=>/^pbkdf2\$\d+\$[^$]+\$[^$]+$/.test(x.passwordHash));const test=list.find(x=>x.username==='test');if(test)testPasswordMatches=await verifyPassword('TestPassword123!',test.passwordHash)}catch(e){error=e instanceof Error?e.message:'unknown'}return json({configured,userCount:count,hasTestUser:hasTest,passwordHashShapeValid:hashShape,testPasswordMatches,sessionSecretConfigured:Boolean(String(env.CMS_SESSION_SECRET||'').trim()),error})}
  if(req.method==='POST'&&u.pathname==='/api/media/upload'){const a=await requireUser(req,env);return a.error||upload(req,env,a.user)}
  if(req.method==='GET'&&u.pathname==='/api/posts'){const a=await requireUser(req,env);if(a.error)return a.error;return json({posts:await listPosts(env,a.user)})}
  const action=u.pathname.match(/^\/api\/posts\/([^/]+)\/(submit|approve|reject)$/),one=u.pathname.match(/^\/api\/posts\/([^/]+)$/);
