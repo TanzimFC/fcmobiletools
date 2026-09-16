@@ -13,8 +13,14 @@ for (const marker of required) {
 }
 
 // The final article editor is intentionally a single self-contained browser script.
-// This comment intentionally retriggers the connected worker build from the current main tree.
 const scriptCount = html.split('<script').length - 1;
 if (scriptCount < 1) throw new Error(`CMS admin HTML contains too few scripts: ${scriptCount}`);
+const script = html.match(/<script>([\\s\\S]*?)<\\/script>/)?.[1];
+if (!script) throw new Error('CMS admin browser script could not be extracted');
+try {
+  new Function(script);
+} catch (error) {
+  throw new Error(`CMS admin browser script has invalid JavaScript: ${error.message}`);
+}
 
 console.log(`CMS admin HTML test passed (${scriptCount} script tag(s)).`);
