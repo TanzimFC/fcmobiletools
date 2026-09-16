@@ -1,4 +1,4 @@
-import { adminHtml } from './cms/admin-hub.mjs';
+import { adminHtml } from './cms/admin-cloudinary.mjs';
 import { settingsHtml } from './cms/settings.mjs';
 import { auditHtml } from './cms/audit-ui.mjs';
 import { read, login, logout, issue, requireUser, sameOrigin } from './cms/auth.mjs';
