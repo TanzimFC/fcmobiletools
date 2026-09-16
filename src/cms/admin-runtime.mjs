@@ -1,5 +1,6 @@
 import { adminHtml as enhancedAdminHtml } from './admin-enhancements.mjs';
 import { editorUpgradeHtml } from './editor-upgrade.mjs';
+import { editor33RescueHtml } from './editor-33-rescue.mjs';
 
 const layoutCss = `
 .editorArea{min-width:0}.editorView{min-width:0}.editorView #postForm{max-width:1540px;margin:0 auto;padding-bottom:32px}
@@ -15,9 +16,9 @@ export const adminHtml = (section = 'posts') => {
   const bridge = '<script>try{window.S=S}catch(e){}</script>';
   const marker = '</style><script>(function(){';
   if (html.includes(marker)) {
-    html = html.replace(marker, `</style><style>${layoutCss}</style>${bridge}${editorUpgradeHtml}<script>(function(){`);
+    html = html.replace(marker, `</style><style>${layoutCss}</style>${bridge}${editorUpgradeHtml}${editor33RescueHtml}<script>(function(){`);
   } else {
-    html = html.replace('</body>', `<style>${layoutCss}</style>${bridge}${editorUpgradeHtml}</body>`);
+    html = html.replace('</body>', `<style>${layoutCss}</style>${bridge}${editorUpgradeHtml}${editor33RescueHtml}</body>`);
   }
   return html;
 };
