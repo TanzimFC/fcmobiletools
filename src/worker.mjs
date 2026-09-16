@@ -1,4 +1,4 @@
-import { adminHtml } from './cms/admin-enhancements.mjs';
+import { adminHtml } from './cms/admin-runtime.mjs';
 import { settingsHtml } from './cms/settings.mjs';
 import { auditHtml } from './cms/audit-ui.mjs';
 import { read, login, logout, issue, requireUser, sameOrigin } from './cms/auth.mjs';
