@@ -7,10 +7,10 @@ excerpt: "A short summary used on article cards and search results."
 type: guide
 category: "Guides"
 author: "TanzimFC"
-status: draft
+status: review
 createdBy: "test"
 createdAt: "2026-09-16T04:08:25.733Z"
-updatedAt: "2026-09-16T10:53:20.668Z"
+updatedAt: "2026-09-16T11:02:55.734Z"
 image: ""
 imageAlt: ""
 imageCaption: ""
@@ -18,9 +18,10 @@ tags: []
 featured: false
 seoTitle: ""
 seoDescription: ""
-reviewNotes: "Returned for revision"
+reviewNotes: ""
 draft: true
 ---
+
 
 
 
