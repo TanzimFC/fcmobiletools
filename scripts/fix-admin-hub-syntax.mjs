@@ -29,3 +29,5 @@ if (start !== -1 && end !== -1) {
 }
 
 await writeFile(file, source);
+
+// Deployment trigger: intentionally create a fresh connected Cloudflare/Deno build.
