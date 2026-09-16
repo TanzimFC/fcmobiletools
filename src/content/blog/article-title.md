@@ -11,7 +11,6 @@ status: draft
 createdBy: "test"
 createdAt: "2026-09-16T04:08:25.733Z"
 updatedAt: "2026-09-16T04:08:25.733Z"
-publishedAt: ""
 image: ""
 imageAlt: ""
 imageCaption: ""
