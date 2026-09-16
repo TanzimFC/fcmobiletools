@@ -2,15 +2,17 @@ import { Octokit } from 'octokit';
 const OWNER='TanzimFC',REPO='fcmobiletools',BRANCH='main',PATH='src/data/cms-users.json';
 const PBKDF2_ITERATIONS=100000;
 const ROLES=['writer','editor','owner'];
+const CACHE_MS=15000;
 const api=env=>new Octokit({auth:env.GITHUB_TOKEN});
 const b64=s=>{let x='';for(const b of new TextEncoder().encode(s))x+=String.fromCharCode(b);return btoa(x)};
 const dec=s=>{const x=atob(String(s).replace(/\n/g,''));return new TextDecoder().decode(Uint8Array.from(x,c=>c.charCodeAt(0)))};
 const cleanRole=v=>ROLES.includes(String(v))?String(v):'writer';
 function clean(u){return{username:String(u.username||'').trim().toLowerCase(),displayName:String(u.displayName||u.username||'').trim(),role:cleanRole(u.role),active:u.active!==false,passwordHash:String(u.passwordHash||''),sessionVersion:Number.isSafeInteger(Number(u.sessionVersion))&&Number(u.sessionVersion)>0?Number(u.sessionVersion):1,createdAt:String(u.createdAt||''),updatedAt:String(u.updatedAt||'')}}
-async function getFile(env){const r=await api(env).request('GET /repos/{owner}/{repo}/contents/{path}',{owner:OWNER,repo:REPO,path:PATH,ref:BRANCH,headers:{'x-github-api-version':'2022-11-28'}});return{sha:r.data.sha,users:JSON.parse(dec(r.data.content))}}
+let cache={at:0,sha:'',users:null};
+async function getFile(env){const now=Date.now();if(cache.users&&now-cache.at<CACHE_MS)return{sha:cache.sha,users:cache.users.map(x=>({...x}))};const r=await api(env).request('GET /repos/{owner}/{repo}/contents/{path}',{owner:OWNER,repo:REPO,path:PATH,ref:BRANCH,headers:{'x-github-api-version':'2022-11-28'}});const users=JSON.parse(dec(r.data.content)).map(clean);cache={at:now,sha:r.data.sha,users};return{sha:r.data.sha,users:users.map(x=>({...x}))}}
 export async function listUsers(env){return(await getFile(env)).users.map(clean)}
 export async function findUser(env,username){return(await listUsers(env)).find(u=>u.username===String(username).trim().toLowerCase()&&u.active)}
-export async function saveUsers(env,users,sha,message){return(await api(env).rest.repos.createOrUpdateFileContents({owner:OWNER,repo:REPO,path:PATH,message,content:b64(JSON.stringify(users.map(clean),null,2)+'\n'),branch:BRANCH,sha})).data}
+export async function saveUsers(env,users,sha,message){const data=(await api(env).rest.repos.createOrUpdateFileContents({owner:OWNER,repo:REPO,path:PATH,message,content:b64(JSON.stringify(users.map(clean),null,2)+'\n'),branch:BRANCH,sha})).data;cache={at:Date.now(),sha:data.content?.sha||sha,users:users.map(clean)};return data}
 export async function mutateUsers(env,mutator,message){const x=await getFile(env),users=x.users.map(clean);const next=await mutator(users);return{users:next,result:await saveUsers(env,next,x.sha,message)}}
 function enc(v){const b=typeof v==='string'?new TextEncoder().encode(v):v;let s='';for(const x of b)s+=String.fromCharCode(x);return btoa(s).replaceAll('+','-').replaceAll('/','_').replaceAll('=','')}
 function dec64(v){v=v.replaceAll('-','+').replaceAll('_','/');v+='='.repeat((4-v.length%4)%4);const s=atob(v);return Uint8Array.from(s,c=>c.charCodeAt(0))}
