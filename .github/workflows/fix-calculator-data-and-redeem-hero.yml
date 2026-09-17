@@ -1,0 +1,78 @@
+name: Fix calculator data and redeem hero
+on:
+  push:
+    branches: [main]
+jobs:
+  fix:
+    if: github.event.head_commit.message == 'fix calculator data and redeem hero containers'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch calculator browser data imports
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/pages/training-calculator.astro')
+          s=p.read_text()
+          old="import { calculateTraining, calculateTransfer } from '../lib/fcMobileTraining.js';"
+          new="import { calculateTraining, calculateTransfer } from '../lib/fcMobileTraining.js';\nimport { TRAINING_LEVELS, FODDER, MAX_TRAINING_LEVEL, TRAINING_TRANSFER_RATE } from '../data/fcMobileTraining.js';"
+          if old in s and new not in s:
+              s=s.replace(old,new,1)
+          p.write_text(s)
+
+          p=Path('src/pages/rank-up-calculator.astro')
+          s=p.read_text()
+          old="import { calculateRankUp } from '../lib/fcMobileRankUp.js';"
+          new="import { calculateRankUp } from '../lib/fcMobileRankUp.js';\nimport { RANKS, RANK_COSTS } from '../data/fcMobileRankUp.js';"
+          if old in s and new not in s:
+              s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Remove redeem hero wrapper containers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/pages/redeem-codes.astro')
+          s=p.read_text()
+          pattern=r'<div class="hero-showcase" aria-label="FC Mobile redeem code artwork">\s*<div class="hero-stage">\s*(?:<div class="hero-stage-glow"></div>\s*)?(?:<div class="hero-ring hero-ring-one"></div>\s*)?(?:<div class="hero-ring hero-ring-two"></div>\s*)?<div class="hero-object-main">(<img[^>]+>)</div>\s*</div>\s*</div>'
+          repl=r'<div class="hero-showcase" aria-label="FC Mobile redeem code artwork"><div class="hero-object-main">\1</div></div>'
+          s2,n=re.subn(pattern,repl,s,count=1,flags=re.S)
+          if n:
+              s=s2
+          marker='/* Desktop-safe hero alignment:'
+          css="""
+/* Final redeem hero: artwork and title sit directly on the page background */
+.codes-page .hero-stage,.codes-page .hero-stage-glow,.codes-page .hero-ring-one,.codes-page .hero-ring-two{display:none!important}
+.codes-page .hero-showcase{background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}
+.codes-page .hero-object-main{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+.codes-page .hero-object-main img{filter:drop-shadow(0 28px 55px rgba(0,0,0,.45));}
+.codes-page .hero{background:radial-gradient(circle at 72% 30%,#36c9ff12,transparent 34%),radial-gradient(circle at 12% 0,#4b7dff0c,transparent 30%)!important}
+"""
+          if 'Final redeem hero: artwork and title sit directly on the page background' not in s:
+              idx=s.find('<style>')
+              if idx>=0:
+                  s=s[:idx+7]+css+s[idx+7:]
+          p.write_text(s)
+          print('hero wrapper replacements:', n)
+          PY
+      - name: Commit permanent fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pages/training-calculator.astro src/pages/rank-up-calculator.astro src/pages/redeem-codes.astro
+          git diff --cached --quiet && exit 0
+          git commit -m 'apply calculator data and redeem hero fixes'
+          git push origin main
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          git fetch origin main
+          git checkout main
+          git rm -f .github/workflows/fix-calculator-data-and-redeem-hero.yml || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'remove temporary calculator fix workflow' || true
+          git push origin main || true
