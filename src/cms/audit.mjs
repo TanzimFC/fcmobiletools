@@ -1,8 +1,0 @@
-import { Octokit } from 'octokit';
-const OWNER='TanzimFC',REPO='fcmobiletools',BRANCH='main',PATH='src/data/cms-audit-log.json',MAX=500;
-const api=env=>new Octokit({auth:env.GITHUB_TOKEN});
-const b64=s=>{let x='';for(const b of new TextEncoder().encode(s))x+=String.fromCharCode(b);return btoa(x)};
-const dec=s=>{const x=atob(String(s).replace(/\n/g,''));return new TextDecoder().decode(Uint8Array.from(x,c=>c.charCodeAt(0)))};
-async function getFile(env){try{const r=await api(env).request('GET /repos/{owner}/{repo}/contents/{path}',{owner:OWNER,repo:REPO,path:PATH,ref:BRANCH,headers:{'x-github-api-version':'2022-11-28'}});return{sha:r.data.sha,items:JSON.parse(dec(r.data.content))}}catch(e){if(e?.status===404)return{sha:null,items:[]};throw e}}
-export async function listAudit(env,limit=200){const x=await getFile(env);return x.items.slice(-Math.min(Math.max(Number(limit)||200,1),MAX)).reverse()}
-export async function audit(env,{actor,action,target='',detail=''}){const x=await getFile(env);const entry={id:crypto.randomUUID(),at:new Date().toISOString(),actor:String(actor?.username||actor||'system'),role:String(actor?.role||''),action:String(action),target:String(target),detail:String(detail).slice(0,500)};const items=[...x.items,entry].slice(-MAX);const body=b64(JSON.stringify(items,null,2)+'\n');const data=x.sha?await api(env).rest.repos.createOrUpdateFileContents({owner:OWNER,repo:REPO,path:PATH,message:`CMS audit: ${entry.action}`,content:body,branch:BRANCH,sha:x.sha}):await api(env).rest.repos.createOrUpdateFileContents({owner:OWNER,repo:REPO,path:PATH,message:`CMS audit: ${entry.action}`,content:body,branch:BRANCH});return{entry,commit:data.data.commit?.sha||null}}
