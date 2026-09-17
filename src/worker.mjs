@@ -6,6 +6,8 @@ const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(dat
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...extra },
 });
 
+const ADMIN_LOGIN_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>FC Mobile Tools Admin</title><style>body{margin:0;background:#0b1020;color:#fff;font:16px system-ui;display:grid;place-items:center;min-height:100vh}form{width:min(380px,90vw);padding:28px;background:#151c30;border:1px solid #2a3550;border-radius:16px}input,button{width:100%;box-sizing:border-box;padding:12px;margin-top:8px;border-radius:9px;border:1px solid #394764;background:#0d1426;color:#fff}button{margin-top:18px;background:#fff;color:#111;font-weight:700;cursor:pointer}.error{color:#ff8585;min-height:20px;margin-top:10px}</style></head><body><form id="login"><h1>Admin sign in</h1><label>Username<input name="username" autocomplete="username" required></label><br><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button id="submit">Sign in</button><div class="error" id="error"></div></form><script>login.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';submit.disabled=true;try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify(Object.fromEntries(new FormData(login)))});const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||'Sign-in failed.');location.replace('/admin/')}catch(x){error.textContent=x.message;submit.disabled=false}})</script></body></html>`;
+
 const b64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const unb64 = value => Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/') + '='.repeat((4-value.length%4)%4)), c => c.charCodeAt(0));
 
@@ -96,10 +98,11 @@ async function api(request,env,path) {
 
 export default { async fetch(request,env) {
   const url=new URL(request.url);
+  const isLoginPath = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
   if(url.pathname.startsWith('/api/admin/')) return api(request,env,url.pathname.slice('/api/admin'.length));
-  if(url.pathname === '/admin' || url.pathname === '/admin/') {
-    const file=await authenticated(request,env)?'/admin/index.html':'/admin/login.html';
-    return env.ASSETS.fetch(new Request(new URL(file,url),request));
+  if(isLoginPath) {
+    if(await authenticated(request,env)) return env.ASSETS.fetch(new Request(new URL('/admin/index.html',url),request));
+    return new Response(ADMIN_LOGIN_HTML,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }
   if(url.pathname.startsWith('/admin/')) {
     if(!(await authenticated(request,env))) return new Response('Not found',{status:404});
