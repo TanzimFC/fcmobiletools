@@ -1,15 +1,13 @@
 // FC Mobile redeem-code database.
-// This file is generated automatically by the CMS when redeem codes change.
-// Do not edit manually; use the Redeem Codes section in /admin.
 export const REDEEM_CODES = [
   {
-    "code": "ZlATANWORLDPREMIERE",
+    "code": "ZLATANWORLDPREMIERE",
     "reward": "117 Zlatan Player Item",
-    "status": "active",
+    "status": "expired",
     "releaseDate": "2026-09-15",
     "expiryDate": null,
     "region": "Global",
-    "lastVerified": "2026-09-16",
+    "lastVerified": "2026-09-17",
     "notes": ""
   },
   {
@@ -1596,6 +1594,7 @@ export const REDEEM_CODES = [
 
 export const REDEEM_STATUS = {
   active: { label: 'Active', className: 'active' },
+  scheduled: { label: 'Scheduled', className: 'scheduled' },
   expired: { label: 'Expired', className: 'expired' },
   unknown: { label: 'Unknown', className: 'unknown' },
 };
