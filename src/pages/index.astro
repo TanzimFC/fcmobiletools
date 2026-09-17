@@ -1,28 +1,79 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const latestArticles = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft))
+  .sort((a, b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0))
+  .slice(0, 4);
+
+const readingTime = (post) => post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
 ---
-<BaseLayout title="FC Mobile Tools" description="FC Mobile tools, Football Centre, calculators and answers from TanzimFC.">
-  <main class="home-clean">
-    <section class="hero">
-      <div class="wrap">
-        <p class="eyebrow">FC MOBILE TOOLS · BY TANZIMFC</p>
-        <h1>Play smarter.<br /><span>Find it faster.</span></h1>
-        <p class="lead">Practical FC Mobile tools, event resources, calculators and answers in one place.</p>
+
+<BaseLayout title="FC Mobile Tools" description="FC Mobile tools, redeem codes, Football Centre, calculators, answers and guides from TanzimFC.">
+  <main class="home">
+    <section class="home-hero">
+      <div class="home-hero-bg" aria-hidden="true"></div>
+      <div class="home-hero-shade" aria-hidden="true"></div>
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">FC MOBILE TOOLS <span>·</span> BY TANZIMFC</p>
+          <h1>Play smarter<br /><em>Find it faster</em></h1>
+          <p class="hero-lead">Redeem codes, event resources, calculators, answers and guides — built for FC Mobile players who want the useful part without the digging.</p>
+          <div class="hero-actions">
+            <a class="home-btn primary" href="/redeem-codes">Redeem Codes <span>↗</span></a>
+            <a class="home-btn" href="/football-centre">Football Centre <span>↗</span></a>
+          </div>
+        </div>
+        <div class="hero-bottom">
+          <span><b>01</b> TOOLS</span><span><b>02</b> EVENTS</span><span><b>03</b> GUIDES</span><span><b>04</b> ANSWERS</span>
+        </div>
       </div>
     </section>
-    <section class="wrap tools">
-      <div class="head"><p class="eyebrow">TOOLS &amp; RESOURCES</p><h2>Useful tools, without the clutter.</h2></div>
-      <div class="grid">
-        <a href="/football-centre"><b>01 / TRACKER</b><h3>Football Centre</h3><p>Matches, points, rewards and event resources.</p><span>OPEN →</span></a>
-        <a href="/team-ovr"><b>02 / CALCULATOR</b><h3>Team OVR</h3><p>Work out Team OVR from your squad and upgrades.</p><span>OPEN →</span></a>
-        <a href="/a-nations-story"><b>03 / ANSWERS</b><h3>A Nation's Story</h3><p>Find event questions and their answers.</p><span>SEARCH →</span></a>
-        <a href="/training-calculator"><b>04 / CALCULATOR</b><h3>Training Calculator</h3><p>Calculate XP, fodder, excess XP and estimated cost.</p><span>CALCULATE →</span></a>
-        <a href="/rank-up-calculator"><b>05 / CALCULATOR</b><h3>Rank Up Calculator</h3><p>Calculate Rank Up Points, OVR gain, Skill Points and cost.</p><span>CALCULATE →</span></a>
-        <a href="/creator"><b>06 / TOOL</b><h3>Creator</h3><p>Open the FC Mobile creator resource.</p><span>OPEN →</span></a>
+
+    <section class="home-section wrap tools-section">
+      <div class="section-head">
+        <div><p class="eyebrow">01 / TOOLS &amp; RESOURCES</p><h2>Everything you actually <span>need.</span></h2></div>
+        <p class="section-note">One place for the everyday FC Mobile jobs: codes, events, calculations and answers.</p>
+      </div>
+      <div class="tool-grid">
+        <a class="tool-card tool-featured" href="/redeem-codes"><div class="tool-top"><span>REDEEM / 01</span><i>↗</i></div><h3>Redeem Codes</h3><p>Check current codes, search the archive and get to the redemption page quickly.</p><strong>CHECK CODES <b>→</b></strong></a>
+        <a class="tool-card tool-featured green" href="/football-centre"><div class="tool-top"><span>TRACKER / 02</span><i>↗</i></div><h3>Football Centre</h3><p>Keep up with matches, points, rewards and the event resources that matter.</p><strong>OPEN CENTRE <b>→</b></strong></a>
+        <a class="tool-card" href="/team-ovr"><span>CALCULATOR / 03</span><h3>Team OVR</h3><p>Work out Team OVR from your squad and upgrades.</p><strong>OPEN →</strong></a>
+        <a class="tool-card" href="/a-nations-story"><span>ANSWERS / 04</span><h3>A Nation's Story</h3><p>Find event questions and their answers without searching around.</p><strong>SEARCH →</strong></a>
+        <a class="tool-card" href="/training-calculator"><span>CALCULATOR / 05</span><h3>Training Calculator</h3><p>Calculate XP, fodder, excess XP and estimated cost.</p><strong>CALCULATE →</strong></a>
+        <a class="tool-card" href="/rank-up-calculator"><span>CALCULATOR / 06</span><h3>Rank Up Calculator</h3><p>Calculate Rank Up Points, OVR gain, Skill Points and cost.</p><strong>CALCULATE →</strong></a>
       </div>
     </section>
+
+    <section class="quick-strip"><div class="wrap quick-grid"><div><p class="eyebrow">02 / QUICK ACCESS</p><h2>Need something <span>now?</span></h2><p>Jump straight to the resource instead of hunting through menus.</p></div><div class="quick-links"><a href="/redeem-codes"><small>01</small><b>Latest redeem codes</b><span>→</span></a><a href="/football-centre"><small>02</small><b>Football Centre</b><span>→</span></a><a href="/team-ovr"><small>03</small><b>Team OVR calculator</b><span>→</span></a><a href="/a-nations-story"><small>04</small><b>A Nation's Story answers</b><span>→</span></a></div></div></section>
+
+    <section class="home-section wrap latest-section">
+      <div class="section-head"><div><p class="eyebrow">03 / LATEST GUIDES</p><h2>Fresh from the <span>desk.</span></h2></div><a class="section-link" href="/blog">View all articles →</a></div>
+      {latestArticles.length ? <div class="article-grid">{latestArticles.map((post) => <a class="article-card" href={`/blog/${post.slug}/`}>{post.data.image ? <img src={post.data.image} alt="" loading="lazy" /> : <div class="article-placeholder">FC</div>}<div class="article-body"><div class="article-meta"><span>{post.data.category}</span><span>{readingTime(post)} MIN</span></div><h3>{post.data.title}</h3><p>{post.data.excerpt ?? post.data.description}</p><strong>READ ARTICLE <b>→</b></strong></div></a>)}</div> : <div class="empty-state"><b>No published articles yet.</b><span>Published Markdown articles will appear here automatically.</span></div>}
+    </section>
+
+    <section class="home-section wrap principles-section"><div class="principles-title"><p class="eyebrow">04 / BUILT FOR PLAYERS</p><h2>Less searching.<br /><span>More playing.</span></h2></div><div class="principles-copy"><p class="principles-lead">FC Mobile Tools focuses on practical resources that answer a specific question quickly. No clutter between you and the thing you came for.</p><div class="principles-grid"><div><b>01</b><strong>USEFUL FIRST</strong><p>Tools and answers stay at the centre.</p></div><div><b>02</b><strong>EASY TO REACH</strong><p>Important resources are never buried.</p></div><div><b>03</b><strong>PLAYER FOCUSED</strong><p>Designed around real FC Mobile workflows.</p></div></div></div></section>
   </main>
 </BaseLayout>
+
 <style>
-.home-clean{min-height:70vh}.wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}.eyebrow{margin:0;color:var(--blue);font:900 9px var(--mono);letter-spacing:.16em}.hero{padding:110px 0 90px;background:linear-gradient(135deg,var(--surface2),var(--bg));border-bottom:1px solid var(--border)}h1{margin:18px 0;font-size:clamp(52px,8vw,92px);line-height:.9;letter-spacing:-.06em}h1 span{color:var(--blue)}.lead{max-width:600px;color:var(--muted);font-size:14px;line-height:1.8}.tools{padding:70px 0}.head{margin-bottom:28px}.head h2{margin:10px 0 0;font-size:clamp(30px,4vw,48px);letter-spacing:-.05em}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.grid a{position:relative;min-height:190px;padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);text-decoration:none;transition:.2s}.grid a:hover{transform:translateY(-3px);border-color:var(--blue)}.grid b,.grid span{font:900 8px var(--mono);color:var(--blue)}.grid h3{margin:38px 0 8px;font-size:21px}.grid p{margin:0;color:var(--muted);font-size:11px;line-height:1.7}.grid span{position:absolute;left:22px;bottom:20px}@media(max-width:760px){.grid{grid-template-columns:1fr}.hero{padding:80px 0 65px}}
+.home{overflow:hidden;background:var(--bg);color:var(--text)}
+.home .wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}
+.home .eyebrow{margin:0;color:var(--blue);font:900 9px var(--mono);letter-spacing:.16em}
+.home-hero{position:relative;min-height:690px;display:flex;align-items:stretch;overflow:hidden;border-bottom:1px solid var(--border);background:#071018}
+.home-hero-bg{position:absolute;inset:0;background-image:url('/assets/images/herobeli.png');background-position:center center;background-size:cover;background-repeat:no-repeat;transform:scale(1.015)}
+.home-hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,9,13,.96) 0%,rgba(7,9,13,.82) 35%,rgba(7,9,13,.38) 67%,rgba(7,9,13,.7) 100%),linear-gradient(0deg,rgba(7,9,13,.88) 0%,transparent 40%,rgba(7,9,13,.35) 100%)}
+.hero-inner{position:relative;z-index:2;min-height:690px;display:flex;flex-direction:column;justify-content:center;padding:92px 0 26px}
+.hero-copy{max-width:720px}.hero-copy .eyebrow span{color:var(--muted);margin:0 4px}
+.hero-copy h1{margin:20px 0 18px;font-size:clamp(56px,7.5vw,94px);line-height:.88;letter-spacing:-.065em;color:#fff}.hero-copy h1 em{font-style:normal;color:var(--blue)}
+.hero-lead{max-width:610px;margin:0;color:#b5c3ce;font-size:14px;line-height:1.8}
+.hero-actions{display:flex;gap:10px;margin-top:30px}.home-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 18px;border:1px solid #30404e;border-radius:9px;background:rgba(10,15,21,.72);backdrop-filter:blur(8px);color:#edf5f8;text-decoration:none;font:900 9px var(--mono);transition:.2s}.home-btn.primary{background:var(--blue);border-color:var(--blue);color:#061018}.home-btn:hover{transform:translateY(-2px);border-color:var(--blue)}.home-btn span{font-size:13px}
+.hero-bottom{display:flex;gap:26px;flex-wrap:wrap;margin-top:auto;padding-top:20px;border-top:1px solid #ffffff1a}.hero-bottom span{font:800 8px var(--mono);letter-spacing:.1em;color:#82919d}.hero-bottom b{color:var(--blue);margin-right:5px}
+.home-section{padding:86px 0}.section-head{display:flex;align-items:end;justify-content:space-between;gap:35px;margin-bottom:25px}.section-head h2{margin:9px 0 0;font-size:clamp(31px,4vw,49px);line-height:.98;letter-spacing:-.055em}.section-head h2 span{color:var(--blue)}.section-note{max-width:390px;margin:0;color:var(--muted);font-size:11px;line-height:1.7}
+.tool-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px}.tool-card{grid-column:span 2;position:relative;min-height:210px;padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);text-decoration:none;transition:.2s}.tool-card.tool-featured{grid-column:span 3;min-height:255px;background:linear-gradient(145deg,var(--surface2),#0c1b25)}.tool-card.green{background:linear-gradient(145deg,var(--surface2),#0d211b)}.tool-card:hover{transform:translateY(-4px);border-color:#356176;box-shadow:0 18px 42px #00000035}.tool-card>span,.tool-top>span{font:900 8px var(--mono);letter-spacing:.13em;color:var(--blue)}.tool-card.green>span,.green .tool-top>span{color:var(--green)}.tool-top{display:flex;justify-content:space-between;align-items:start}.tool-top i{width:32px;height:32px;display:grid;place-items:center;border:1px solid #ffffff10;border-radius:8px;background:#ffffff06;color:var(--blue);font-style:normal;font-weight:900}.green .tool-top i{color:var(--green)}.tool-card h3{margin:36px 0 8px;font-size:21px;letter-spacing:-.03em}.tool-featured h3{font-size:27px;margin-top:43px}.tool-card p{max-width:470px;margin:0;color:var(--muted);font-size:11px;line-height:1.7}.tool-card strong{position:absolute;left:22px;bottom:20px;color:var(--blue);font:900 8px var(--mono)}.tool-card.green strong{color:var(--green)}.tool-card strong b{margin-left:5px}
+.quick-strip{background:#0b1c25;border-top:1px solid var(--border);border-bottom:1px solid var(--border);color:#edf5f8}.quick-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:70px;align-items:center;padding:70px 0}.quick-grid h2{margin:9px 0;font-size:clamp(37px,5vw,59px);line-height:.93;letter-spacing:-.06em}.quick-grid h2 span{color:var(--blue)}.quick-grid>div:first-child>p:last-child{margin:18px 0 0;color:#849eaa;font-size:11px}.quick-links{border-top:1px solid #ffffff12}.quick-links a{display:grid;grid-template-columns:42px 1fr 20px;gap:10px;align-items:center;padding:16px 0;border-bottom:1px solid #ffffff12;color:#e8f1f4;text-decoration:none}.quick-links small{font:800 8px var(--mono);color:var(--blue)}.quick-links b{font-size:13px}.quick-links span{color:#718a96;transition:.2s}.quick-links a:hover b,.quick-links a:hover span{color:var(--blue)}
+.section-link{color:var(--blue);font:900 8px var(--mono);text-decoration:none;white-space:nowrap}.latest-section{border-bottom:1px solid var(--border)}.article-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.article-card{display:grid;grid-template-columns:180px 1fr;min-height:180px;overflow:hidden;border:1px solid var(--border);border-radius:13px;background:var(--surface);color:var(--text);text-decoration:none;transition:.2s}.article-card:hover{transform:translateY(-3px);border-color:#356176}.article-card img,.article-placeholder{width:100%;height:100%;min-height:180px;object-fit:cover}.article-placeholder{display:grid;place-items:center;background:#0b1d27;color:var(--blue);font:900 34px var(--mono)}.article-body{padding:18px}.article-meta{display:flex;gap:10px;font:800 7px var(--mono);text-transform:uppercase;color:var(--blue)}.article-meta span:last-child{color:#718391}.article-body h3{margin:10px 0 7px;font-size:18px;line-height:1.08}.article-body p{margin:0;color:var(--muted);font-size:10px;line-height:1.6}.article-body strong{display:block;margin-top:13px;color:var(--blue);font:900 7px var(--mono)}.article-body strong b{margin-left:4px}.empty-state{display:grid;gap:5px;padding:28px;border:1px dashed #263744;border-radius:12px;color:var(--text)}.empty-state span{font-size:10px;color:var(--muted)}
+.principles-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:80px}.principles-title h2{margin:10px 0 0;font-size:clamp(41px,5vw,63px);line-height:.92;letter-spacing:-.06em}.principles-title h2 span{color:var(--blue)}.principles-lead{max-width:580px;margin:0;color:#a0b0ba;font-size:14px;line-height:1.8}.principles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:34px}.principles-grid div{padding:17px;border:1px solid var(--border);border-radius:11px;background:var(--surface)}.principles-grid b{font:900 8px var(--mono);color:var(--blue)}.principles-grid strong{display:block;margin-top:19px;font:900 8px var(--mono);letter-spacing:.06em}.principles-grid p{margin:9px 0 0;color:var(--muted);font-size:9px;line-height:1.6}
+@media(max-width:850px){.home-hero,.hero-inner{min-height:650px}.home-hero-bg{background-image:url('/assets/images/herobeli.png');background-size:auto 100%;background-position:center center;background-repeat:no-repeat;transform:none}.home-hero-shade{background:linear-gradient(90deg,rgba(7,9,13,.88),rgba(7,9,13,.62)),linear-gradient(0deg,rgba(7,9,13,.92),transparent)}.hero-copy{max-width:620px}.tool-grid{grid-template-columns:1fr 1fr}.tool-card,.tool-card.tool-featured{grid-column:span 1}.tool-card.tool-featured{min-height:235px}.quick-grid,.principles-section{grid-template-columns:1fr;gap:42px}.article-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.home .wrap{width:calc(100% - 28px)}.home-hero,.hero-inner{min-height:650px}.home-hero-bg{background-size:auto 100%;background-position:center center}.home-section{padding:65px 0}.hero-inner{padding-top:80px}.hero-copy h1{font-size:51px}.hero-lead{font-size:13px}.hero-actions{flex-direction:column}.home-btn{width:100%}.hero-bottom{gap:13px}.section-head{align-items:start;flex-direction:column;gap:14px}.tool-grid{grid-template-columns:1fr}.tool-card,.tool-card.tool-featured{grid-column:span 1}.tool-card{min-height:195px}.tool-card.tool-featured{min-height:225px}.quick-grid{padding:58px 0}.article-card{grid-template-columns:1fr}.article-card img,.article-placeholder{min-height:150px;max-height:190px}.principles-grid{grid-template-columns:1fr}.principles-title h2{font-size:48px}}
 </style>
