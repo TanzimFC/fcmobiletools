@@ -1,35 +1,69 @@
 name: Finalize redeem page
+
 on:
   push:
     branches: [main]
-    paths: [scripts/finalize-redeem.cjs]
+    paths:
+      - .github/workflows/finalize-redeem.yml
+
 permissions:
   contents: write
+
 jobs:
   finalize:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: node scripts/finalize-redeem.cjs
-      - run: |
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Final public brand cleanup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          page = Path('src/pages/redeem-codes.astro')
+          text = page.read_text()
+          text = text.replace('Codes currently marked active in the TanzimFC database', 'Codes currently marked active in the FCMOBILETOOLS database')
+          text = text.replace('TANZIMFC / FC MOBILE TOOLS', 'FCMOBILETOOLS / FC MOBILE TOOLS')
+          page.write_text(text)
+
+          layout = Path('src/layouts/BaseLayout.astro')
+          ltext = layout.read_text()
+          marker = '<meta property="og:title" content={title} />'
+          if 'og:site_name' not in ltext:
+              ltext = ltext.replace(marker, marker + '\n  <meta property="og:site_name" content="FCMOBILETOOLS" />')
+          layout.write_text(ltext)
+          PY
+
+      - name: Commit page and SEO metadata
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/pages/redeem-codes.astro
-          git commit -m "design: final redeem page polish"
+          git add src/pages/redeem-codes.astro src/layouts/BaseLayout.astro
+          git commit -m "polish: finalize FCMOBILETOOLS branding"
           git push
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
-      - run: npm run build
-      - uses: cloudflare/wrangler-action@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
-      - run: |
-          rm -f scripts/finalize-redeem.cjs
-          git rm -f .github/workflows/finalize-redeem.yml .github/workflows/redeem-assets-fix.yml scripts/redeem-assets-fix.cjs 2>/dev/null || true
+
+      - name: Remove temporary tooling
+        run: |
+          rm -f scripts/finalize-redeem.cjs scripts/redeem-assets-fix.cjs
+          git rm -f .github/workflows/finalize-redeem.yml .github/workflows/redeem-assets-fix.yml 2>/dev/null || true
           git add -A
           git commit -m "chore: remove temporary redeem tooling" || true
           git push || true
