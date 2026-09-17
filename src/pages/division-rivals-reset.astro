@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
+
+const reset = FOOTBALL_CENTRE_CONTENT.divisionRivalsReset;
+const pageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'FC Mobile Division Rivals Reset | FCMOBILETOOLS',
+  description: 'Live FC Mobile Division Rivals weekly reset countdown shown in your local time.',
+  url: new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.com').href,
+  publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
+};
+---
+<BaseLayout title="FC Mobile Division Rivals Reset | FCMOBILETOOLS" description="Live FC Mobile Division Rivals weekly reset countdown shown in your local time">
+  <script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
+  <main class="dr-page">
+    <div class="glow one"></div><div class="glow two"></div>
+    <section class="dr-hero">
+      <span class="eyebrow">FC MOBILE / DIVISION RIVALS</span>
+      <h1>Division Rivals <em>Reset</em></h1>
+      <p>{reset.label}. The timer automatically moves to the next weekly reset after it reaches zero.</p>
+      <div class="counter">
+        <div class="counter-top"><span>NEXT RESET IN</span><i><b></b> LIVE</i></div>
+        <div class="timer"><div><strong id="days">--</strong><span>DAYS</span></div><b>:</b><div><strong id="hours">--</strong><span>HOURS</span></div><b>:</b><div><strong id="minutes">--</strong><span>MINUTES</span></div><b>:</b><div><strong id="seconds">--</strong><span>SECONDS</span></div></div>
+        <div class="meta"><div><span>NEXT RESET</span><strong id="next">Loading…</strong></div><div><span>LOCAL CLOCK</span><strong id="local">Loading…</strong></div></div>
+      </div>
+      <div class="facts"><div><span>RESET DAY</span><strong id="day-label">—</strong></div><div><span>UTC TIME</span><strong id="utc-label">—</strong></div><div><span>SCHEDULE</span><strong>Weekly</strong></div></div>
+    </section>
+    <section class="note"><span>IMPORTANT</span><p>{reset.note}. If EA changes the schedule, the admin panel can update the weekday and UTC time without changing the page code.</p></section>
+  </main>
+</BaseLayout>
+<script define:vars={{ weekdayUtc: reset.weekdayUtc, hourUtc: reset.hourUtc, minuteUtc: reset.minuteUtc, enabled: reset.enabled }}>
+  const ids=['days','hours','minutes','seconds'];const els=Object.fromEntries(ids.map(id=>[id,document.getElementById(id)]));const nextEl=document.getElementById('next'),localEl=document.getElementById('local'),dayEl=document.getElementById('day-label'),utcEl=document.getElementById('utc-label');
+  const dateFmt=new Intl.DateTimeFormat(undefined,{weekday:'long',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});const localFmt=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});const dayFmt=new Intl.DateTimeFormat(undefined,{weekday:'long',timeZone:'UTC'});const pad=n=>String(n).padStart(2,'0');
+  const getNext=(now)=>{const t=new Date(now);t.setUTCHours(Number(hourUtc)||0,Number(minuteUtc)||0,0,0);const delta=(Number(weekdayUtc)||0)-t.getUTCDay();t.setUTCDate(t.getUTCDate()+delta);if(t.getTime()<=now.getTime())t.setUTCDate(t.getUTCDate()+7);return t};
+  const update=()=>{if(!enabled){nextEl.textContent='Disabled';localEl.textContent='—';ids.forEach(id=>els[id].textContent='--');return}const now=new Date(),next=getNext(now),diff=Math.max(0,next-now),total=Math.floor(diff/1000);els.days.textContent=String(Math.floor(total/86400)).padStart(2,'0');els.hours.textContent=pad(Math.floor(total%86400/3600));els.minutes.textContent=pad(Math.floor(total%3600/60));els.seconds.textContent=pad(total%60);nextEl.textContent=dateFmt.format(next);localEl.textContent=localFmt.format(now);dayEl.textContent=dayFmt.format(next);utcEl.textContent=`${pad(next.getUTCHours())}:${pad(next.getUTCMinutes())} UTC`};
+  update();const timer=setInterval(update,250);document.addEventListener('visibilitychange',()=>{if(!document.hidden)update()});window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
+</script>
+<style>
+.dr-page{min-height:calc(100vh - 70px);position:relative;overflow:hidden;background:#06090e;color:#f5f8fc;padding:clamp(60px,9vw,110px) 18px 90px}.glow{position:absolute;width:540px;height:540px;border-radius:50%;filter:blur(110px);opacity:.13}.one{left:-300px;top:20px;background:#3ac5ff}.two{right:-300px;top:330px;background:#566fff}.dr-hero{position:relative;z-index:1;max-width:960px;margin:auto;text-align:center}.eyebrow{color:#55c7f2;font:800 9px var(--mono,monospace);letter-spacing:.17em}.dr-hero h1{margin:19px 0 13px;font-size:clamp(45px,7vw,82px);line-height:.93;letter-spacing:-.06em}.dr-hero h1 em{font-style:normal;color:#55c7f2}.dr-hero>p{max-width:650px;margin:auto;color:#8996a9;font-size:14px;line-height:1.75}.counter{max-width:900px;margin:46px auto 0;padding:28px clamp(16px,4vw,44px) 30px;border:1px solid #1b2938;border-radius:22px;background:linear-gradient(145deg,#0b1119,#080d13);box-shadow:0 35px 100px #0008}.counter-top{display:flex;justify-content:space-between;color:#69778a;font:800 8px var(--mono,monospace);letter-spacing:.15em}.counter-top i{font-style:normal;color:#6bd59c}.counter-top i b{display:inline-block;width:6px;height:6px;border-radius:50%;background:#63d49a;margin-right:6px}.timer{display:flex;justify-content:center;align-items:flex-start;gap:clamp(8px,2vw,20px);margin:28px 0}.timer div{min-width:120px}.timer strong{display:block;font:800 clamp(42px,8vw,82px)/.9 var(--mono,monospace);letter-spacing:-.08em}.timer span{display:block;margin-top:11px;color:#536276;font:800 8px var(--mono,monospace);letter-spacing:.15em}.timer>b{color:#2f3c4e;font:700 48px var(--mono,monospace)}.meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left}.meta div{padding:13px 15px;border-left:1px solid #263646;background:#ffffff02}.meta span,.facts span,.note>span{display:block;color:#56667b;font:800 8px var(--mono,monospace);letter-spacing:.13em}.meta strong{display:block;margin-top:6px;color:#dce5ef;font-size:12px}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:900px;margin:13px auto 0;text-align:left}.facts div{padding:16px;border:1px solid #172331;border-radius:13px;background:#080d14}.facts strong{display:block;margin-top:6px;color:#dfe7f0;font-size:12px}.note{position:relative;z-index:1;max-width:900px;margin:58px auto 0;padding:18px 20px;border:1px solid #172432;border-radius:13px;background:#091018}.note p{margin:8px 0 0;color:#758398;font-size:11px;line-height:1.7}@media(max-width:720px){.timer div{min-width:0;flex:1}.timer>b{font-size:28px}.facts{grid-template-columns:1fr}.meta{grid-template-columns:1fr}}@media(max-width:480px){.dr-page{padding-inline:13px}.timer{gap:4px}.timer strong{font-size:34px}.timer>b{font-size:20px}.timer span{font-size:6px}.counter{padding-inline:13px}}
+</style>
