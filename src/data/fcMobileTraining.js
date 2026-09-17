@@ -1,3 +1,4 @@
+// Calculator redesign deployment marker — keep training data as the source of truth
 export const TRAINING_LEVELS = [
   0, 100, 250, 450, 700, 1000, 1600, 2400, 3400, 4600, 6000,
   7800, 10000, 12600, 15600, 19000, 23000, 27600, 32800, 38600, 45000,
