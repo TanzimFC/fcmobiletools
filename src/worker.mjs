@@ -98,10 +98,10 @@ async function api(request,env,path) {
 
 export default { async fetch(request,env) {
   const url=new URL(request.url);
-  const isLoginPath = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
+  const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
   if(url.pathname.startsWith('/api/admin/')) return api(request,env,url.pathname.slice('/api/admin'.length));
-  if(isLoginPath) {
-    if(await authenticated(request,env)) return env.ASSETS.fetch(new Request(new URL('/admin/index.html',url),request));
+  if(isAdminEntry) {
+    if(await authenticated(request,env)) return env.ASSETS.fetch(new Request(new URL('/admin/dashboard.html',url),{method:'GET',headers:request.headers}));
     return new Response(ADMIN_LOGIN_HTML,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }
   if(url.pathname.startsWith('/admin/')) {
