@@ -2,24 +2,47 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { REDEEM_CODES, REDEEM_STATUS } from '../data/redeemCodes.js';
 
-const pageSize = 30;
+const pageSize = 24;
 const url = Astro.url;
 const query = (url.searchParams.get('q') || '').trim();
-const filter = ['all', 'active', 'expired', 'scheduled'].includes(url.searchParams.get('status')) ? url.searchParams.get('status') : 'all';
+const filter = ['all', 'active', 'scheduled', 'expired'].includes(url.searchParams.get('status'))
+  ? url.searchParams.get('status')
+  : 'all';
+
 const matches = REDEEM_CODES.filter((item) => {
   const text = `${item.code} ${item.reward} ${item.region || ''} ${item.notes || ''}`.toLowerCase();
-  return (!query || text.includes(query.toLowerCase())) && (filter === 'all' || item.status === filter);
+  const queryMatch = !query || text.includes(query.toLowerCase());
+  const statusMatch = filter === 'all' || item.status === filter;
+  return queryMatch && statusMatch;
 });
+
 const totalPages = Math.max(1, Math.ceil(matches.length / pageSize));
 const requestedPage = Number(url.searchParams.get('page') || 1);
-const currentPage = Math.min(Math.max(Number.isFinite(requestedPage) ? requestedPage : 1, 1), totalPages);
+const currentPage = Math.min(
+  Math.max(Number.isFinite(requestedPage) ? requestedPage : 1, 1),
+  totalPages
+);
 const pageItems = matches.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
 const activeCodes = REDEEM_CODES.filter((item) => item.status === 'active');
-const expiredCodes = REDEEM_CODES.filter((item) => item.status === 'expired');
 const scheduledCodes = REDEEM_CODES.filter((item) => item.status === 'scheduled');
-const lastUpdated = REDEEM_CODES.reduce((latest, item) => item.lastVerified > latest ? item.lastVerified : latest, '');
-const fmtDate = (value) => value ? new Date(`${value}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown';
+const expiredCodes = REDEEM_CODES.filter((item) => item.status === 'expired');
+const lastUpdated = REDEEM_CODES.reduce(
+  (latest, item) => item.lastVerified > latest ? item.lastVerified : latest,
+  '',
+);
+
+const fmtDate = (value) =>
+  value
+    ? new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : 'Unknown';
+
 const statusInfo = (status) => REDEEM_STATUS[status] ?? REDEEM_STATUS.unknown;
+
 const pageUrl = (page) => {
   const params = new URLSearchParams();
   if (query) params.set('q', query);
@@ -28,101 +51,493 @@ const pageUrl = (page) => {
   const qs = params.toString();
   return `/redeem-codes${qs ? `?${qs}` : ''}`;
 };
-const activeCodesJson = JSON.stringify(activeCodes.map((item) => item.code));
+
+const heroImage =
+  'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1200/v1789653531/fc-mobile-tools/o6ocwktktmw5yml9n8km.png';
+
+const pageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'FC Mobile Redeem Codes',
+  description:
+    'Working FC Mobile redeem codes with status checks, fast copy actions and the official EA redemption destination.',
+  url: new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
+  primaryImageOfPage: {
+    '@type': 'ImageObject',
+    contentUrl: heroImage,
+    caption: 'FC Mobile redeem codes and rewards',
+  },
+  about: [
+    { '@type': 'Thing', name: 'FC Mobile redeem codes' },
+    { '@type': 'Thing', name: 'EA FC Mobile rewards' },
+  ],
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'FC Mobile Tools',
+      item: new URL('/', Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'FC Mobile Redeem Codes',
+      item: new URL('/redeem-codes', Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
+    },
+  ],
+};
 ---
-<BaseLayout title="FC Mobile Redeem Codes" description="Find, search, copy and redeem FC Mobile codes with a fast live archive.">
-<section class="redeem-page">
-  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div><div class="ambient ambient-c"></div>
-  <div class="redeem-wrap">
-    <header class="hero-shell">
-      <div class="hero-copy">
-        <div class="eyebrow"><span class="eyebrow-line"></span> TANZIMFC CODE VAULT <span class="live-pill"><i></i> LIVE TRACKING</span></div>
-        <h1>Codes worth <span>checking</span><br />rewards worth claiming</h1>
-        <p class="hero-lede">A polished place to find the latest FC Mobile redeem codes, verify their status, copy them instantly, and jump straight into the official EA redemption flow.</p>
-        <div class="hero-actions">
-          <button class="hero-btn hero-btn-main" type="button" id="copyActive">Copy active codes <span>↗</span></button>
-          <a class="hero-btn hero-btn-soft" href="https://redeem.fcm.ea.com/" target="_blank" rel="noopener noreferrer">Open EA redemption</a>
+<BaseLayout
+  title="FC Mobile Redeem Codes"
+  description="Find working FC Mobile redeem codes, check active and expired status, copy codes instantly and open the official EA redemption page."
+  image={heroImage}
+>
+  <section class="codes-page">
+    <div class="aurora aurora-one"></div>
+    <div class="aurora aurora-two"></div>
+    <div class="aurora aurora-three"></div>
+
+    <div class="codes-wrap">
+      <header class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span></span>
+            TANZIMFC / FC MOBILE TOOLS
+            <b><i></i> LIVE CODE DATABASE</b>
+          </div>
+
+          <h1>FC Mobile <em>Redeem Codes</em></h1>
+
+          <p class="hero-lede">
+            Find working FC Mobile redeem codes, check whether a code is active,
+            copy it in one tap, and continue straight to the official EA redemption page.
+          </p>
+
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#live">View active codes <span>↓</span></a>
+            <a class="btn btn-ghost" href="https://redeem.fcm.ea.com/" target="_blank" rel="noopener noreferrer">
+              Open EA redemption <span>↗</span>
+            </a>
+          </div>
+
+          <div class="hero-points">
+            <span><i></i> Updated code archive</span>
+            <span><i></i> Copy ready</span>
+            <span><i></i> Official EA destination</span>
+          </div>
         </div>
-        <div class="hero-metrics"><div><strong>{activeCodes.length}</strong><span>active now</span></div><div><strong>{REDEEM_CODES.length}</strong><span>codes tracked</span></div><div><strong>{scheduledCodes.length}</strong><span>scheduled</span></div></div>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="hero-grid"></div><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-        <div class="hero-card-main">
-          <div class="mini-top"><span>DROP STATUS</span><span class="mini-live"><i></i> ACTIVE</span></div>
-          <div class="hero-symbol">FC</div><div class="hero-symbol-copy"><b>CODE VAULT</b><small>{activeCodes.length ? 'Live records ready' : 'No active codes right now'}</small></div>
-          <div class="hero-scan"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+        <div class="hero-art">
+          <div class="art-glow"></div>
+          <div class="art-grid"></div>
+          <div class="art-frame">
+            <div class="art-top">
+              <span>REDEEM CODE VAULT</span>
+              <b><i></i> ONLINE</b>
+            </div>
+            <div class="art-image-wrap">
+              <img
+                src={heroImage}
+                alt="FC Mobile redeem codes and rewards"
+                width="1200"
+                height="900"
+                fetchpriority="high"
+                decoding="async"
+              />
+            </div>
+            <div class="art-bottom">
+              <div><small>ACTIVE</small><strong>{activeCodes.length}</strong></div>
+              <div><small>TRACKED</small><strong>{REDEEM_CODES.length}</strong></div>
+              <div><small>UPDATED</small><strong>{fmtDate(lastUpdated)}</strong></div>
+            </div>
+          </div>
+          <div class="orb orb-one"></div>
+          <div class="orb orb-two"></div>
+          <div class="badge badge-one">XP <span>DROP</span></div>
+          <div class="badge badge-two">GEMS <span>READY</span></div>
         </div>
-        <div class="float-card float-one"><span>XP</span><b>+1K</b></div><div class="float-card float-two"><span>GEMS</span><b>FREE</b></div><div class="float-card float-three"><span>DROP</span><b>LIVE</b></div>
-      </div>
-    </header>
+      </header>
 
-    <section class="feature-strip">
-      <article class="feature-tile feature-violet"><span class="feature-no">01</span><div><b>Verified status</b><p>See what is active before you copy</p></div></article>
-      <article class="feature-tile feature-lime"><span class="feature-no">02</span><div><b>One tap copy</b><p>Grab a code without touching the keyboard</p></div></article>
-      <article class="feature-tile feature-coral"><span class="feature-no">03</span><div><b>Official route</b><p>Go directly to EA after copying</p></div></article>
-      <article class="feature-tile feature-amber"><span class="feature-no">04</span><div><b>Search history</b><p>Keep expired records easy to find</p></div></article>
-    </section>
+      <section class="stats-strip" aria-label="Redeem code overview">
+        <article><span>01</span><div><strong>{activeCodes.length}</strong><b>Active codes</b><small>Ready to check and redeem</small></div></article>
+        <article><span>02</span><div><strong>{scheduledCodes.length}</strong><b>Scheduled codes</b><small>Upcoming records in the vault</small></div></article>
+        <article><span>03</span><div><strong>{expiredCodes.length}</strong><b>Expired codes</b><small>Archived for reference</small></div></article>
+        <article><span>04</span><div><strong>{REDEEM_CODES.length}</strong><b>Total tracked</b><small>Current database records</small></div></article>
+      </section>
 
-    <section class="live-section" id="live">
-      <div class="section-head"><div><div class="section-kicker">NOW ACTIVE</div><h2>Ready to redeem</h2><p>These records are currently marked active in the TanzimFC database</p></div><div class="verified-card"><span class="verified-dot"></span><div><b>Last verified</b><small>{fmtDate(lastUpdated)}</small></div></div></div>
-      <div class="live-grid">
-        {activeCodes.length ? activeCodes.map((item, index) => { const status = statusInfo(item.status); return <article class={`live-card ${index % 3 === 1 ? 'tone-purple' : index % 3 === 2 ? 'tone-orange' : ''}`}>
-          <div class="live-card-glow"></div><div class="live-card-top"><span class="live-index">{String(index + 1).padStart(2, '0')}</span><span class={`status ${status.className}`}><i></i>{status.label}</span></div>
-          <code>{item.code}</code><h3>{item.reward}</h3><p>Released {fmtDate(item.releaseDate)} <span>•</span> {item.region || 'Global'} <span>•</span> checked {fmtDate(item.lastVerified)}</p>
-          <div class="live-card-actions"><button type="button" class="copy-btn" data-copy={item.code}>Copy code <b>⌘</b></button><a href={`https://redeem.fcm.ea.com/?redeemCode=${encodeURIComponent(item.code)}`} target="_blank" rel="noopener noreferrer">Redeem <span>↗</span></a></div>
-        </article>; }) : <div class="empty-state"><strong>No active codes right now</strong><span>Check the archive below for scheduled or historical records</span></div>}
-      </div>
-    </section>
+      <section class="live-section" id="live">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">LIVE NOW</span>
+            <h2>Working FC Mobile codes</h2>
+            <p>Codes currently marked active in the TanzimFC database</p>
+          </div>
+          <div class="verified">
+            <i></i>
+            <div><b>Last verified</b><span>{fmtDate(lastUpdated)}</span></div>
+          </div>
+        </div>
 
-    <section class="archive-shell" id="archive">
-      <div class="archive-topline"><div><div class="section-kicker">THE ARCHIVE</div><h2>Every code in one place</h2><p>{matches.length} matching records · {pageSize} per page</p></div><div class="archive-count"><strong>{expiredCodes.length}</strong><span>historical codes kept searchable</span></div></div>
-      <form class="control-bar" method="get" action="/redeem-codes">
-        <label class="search-box"><span>⌕</span><input name="q" value={query} placeholder="Search code, reward, region or note" autocomplete="off" /></label>
-        <div class="filter-group">{[['all','All'],['active','Active'],['scheduled','Scheduled'],['expired','Expired']].map(([value,label]) => <button class:chosen={filter === value} name="status" value={value} type="submit">{label}</button>)}</div>
-      </form>
-      <div class="archive-table">
-        <div class="table-head"><span>CODE</span><span>REWARD</span><span>RELEASED</span><span>UPDATED</span><span>STATUS</span><span></span></div>
-        {pageItems.length ? pageItems.map((item) => { const status = statusInfo(item.status); return <article class="table-row">
-          <div class="table-code"><code>{item.code}</code><button type="button" data-copy={item.code} aria-label={`Copy ${item.code}`}>Copy</button></div>
-          <div class="table-reward"><strong>{item.reward}</strong><span>{item.region || 'Global'}</span></div><div>{fmtDate(item.releaseDate)}</div><div>{fmtDate(item.lastVerified)}</div>
-          <div><span class={`status ${status.className}`}><i></i>{status.label}</span></div><div><a href={`https://redeem.fcm.ea.com/?redeemCode=${encodeURIComponent(item.code)}`} target="_blank" rel="noopener noreferrer">Open ↗</a></div>
-        </article>; }) : <div class="empty-state"><strong>No codes match this view</strong><span>Try a different search or status filter</span></div>}
-      </div>
-      <div class="pagination"><a class:disabled={currentPage===1} href={currentPage>1?pageUrl(currentPage-1):'#'}>← Previous</a><span>{String(currentPage).padStart(2, '0')} / {String(totalPages).padStart(2, '0')}</span><a class:disabled={currentPage===totalPages} href={currentPage<totalPages?pageUrl(currentPage+1):'#'}>Next →</a></div>
-    </section>
+        <div class="live-grid">
+          {activeCodes.length ? activeCodes.map((item, index) => {
+            const status = statusInfo(item.status);
+            return (
+              <article class={`live-card tone-${index % 3}`}>
+                <div class="live-top">
+                  <span class="card-number">{String(index + 1).padStart(2, '0')}</span>
+                  <span class={`status ${status.className}`}><i></i>{status.label}</span>
+                </div>
+                <code>{item.code}</code>
+                <h3>{item.reward}</h3>
+                <p>
+                  Released {fmtDate(item.releaseDate)}
+                  <span>•</span>
+                  {item.region || 'Global'}
+                  <span>•</span>
+                  Checked {fmtDate(item.lastVerified)}
+                </p>
+                <div class="card-actions">
+                  <button type="button" class="copy-code" data-copy={item.code}>Copy code <span>⌘</span></button>
+                  <a
+                    href={`https://redeem.fcm.ea.com/?redeemCode=${encodeURIComponent(item.code)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Redeem <span>↗</span>
+                  </a>
+                </div>
+              </article>
+            );
+          }) : (
+            <div class="empty">
+              <strong>No active redeem codes right now</strong>
+              <span>Use the archive to browse scheduled and historical records</span>
+            </div>
+          )}
+        </div>
+      </section>
 
-    <section class="bottom-grid">
-      <article class="local-card"><div class="card-kicker">LOCAL MEMORY</div><h2>Recently copied</h2><p>Your browser can keep a tiny local list of the last codes you copied</p><div class="recent-list" id="recentList"><span class="recent-empty">Nothing copied yet</span></div></article>
-      <article class="how-card"><div class="how-icon">✦</div><div><div class="card-kicker">HOW IT WORKS</div><h2>Copy → open EA → redeem</h2><p>Use a live code, sign in on the official EA destination, paste the code, and submit it there</p><a href="https://redeem.fcm.ea.com/" target="_blank" rel="noopener noreferrer">Open official redemption <span>↗</span></a></div></article>
-    </section>
-    <footer class="page-foot"><span>TANZIMFC / FC MOBILE TOOLS</span><span>DATA IS BASED ON THE CURRENT CODE DATABASE</span><span>{fmtDate(lastUpdated)}</span></footer>
-  </div>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-</section>
-<script define:vars={{ activeCodesJson }}>
-const activeCodes = JSON.parse(activeCodesJson);
-const toast = document.getElementById('toast');
-const recentList = document.getElementById('recentList');
-const recentKey = 'tanzimfc-redeem-recent-v2';
-const showToast = (message, tone = 'ok') => { toast.textContent = message; toast.dataset.tone = tone; toast.classList.add('show'); window.clearTimeout(window.__redeemToast); window.__redeemToast = window.setTimeout(() => toast.classList.remove('show'), 2200); };
-const readRecent = () => { try { return JSON.parse(localStorage.getItem(recentKey) || '[]').slice(0, 5); } catch { return []; } };
-const renderRecent = () => { const items = readRecent(); recentList.innerHTML = items.length ? items.map(code => `<button type="button" data-recent="${code}">${code}<span>↗</span></button>`).join('') : '<span class="recent-empty">Nothing copied yet</span>'; recentList.querySelectorAll('[data-recent]').forEach(btn => btn.addEventListener('click', () => copyCode(btn.dataset.recent))); };
-const saveRecent = code => { const items = [code, ...readRecent().filter(item => item !== code)].slice(0, 5); try { localStorage.setItem(recentKey, JSON.stringify(items)); } catch {} renderRecent(); };
-const copyCode = async code => { try { await navigator.clipboard.writeText(code); saveRecent(code); showToast(`${code} copied to clipboard`); } catch { showToast('Clipboard access is unavailable', 'bad'); } };
-document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', () => copyCode(button.dataset.copy)));
-document.getElementById('copyActive')?.addEventListener('click', () => activeCodes.length ? copyCode(activeCodes.join('\n')) : showToast('No active codes to copy', 'bad'));
-renderRecent();
-</script>
+      <section class="archive" id="archive">
+        <div class="archive-heading">
+          <div>
+            <span class="section-kicker">SEARCH THE DATABASE</span>
+            <h2>FC Mobile code archive</h2>
+            <p>{matches.length} matching records across active, scheduled and expired codes</p>
+          </div>
+          <a class="archive-link" href="#how-it-works">How redemption works <span>↓</span></a>
+        </div>
+
+        <form class="controls" method="get" action="/redeem-codes">
+          <label class="search">
+            <span>⌕</span>
+            <input name="q" value={query} placeholder="Search code, reward, region or note" autocomplete="off" />
+          </label>
+          <div class="filters">
+            {[
+              ['all', 'All'],
+              ['active', 'Active'],
+              ['scheduled', 'Scheduled'],
+              ['expired', 'Expired'],
+            ].map(([value, label]) => (
+              <button class:chosen={filter === value} name="status" value={value} type="submit">{label}</button>
+            ))}
+          </div>
+        </form>
+
+        <div class="archive-table">
+          <div class="table-head">
+            <span>Code</span><span>Reward</span><span>Released</span><span>Updated</span><span>Status</span><span></span>
+          </div>
+
+          {pageItems.length ? pageItems.map((item) => {
+            const status = statusInfo(item.status);
+            return (
+              <article class="table-row">
+                <div class="table-code">
+                  <code>{item.code}</code>
+                  <button type="button" data-copy={item.code} aria-label={`Copy ${item.code}`}>Copy</button>
+                </div>
+                <div class="table-reward"><strong>{item.reward}</strong><span>{item.region || 'Global'}</span></div>
+                <time datetime={item.releaseDate}>{fmtDate(item.releaseDate)}</time>
+                <time datetime={item.lastVerified}>{fmtDate(item.lastVerified)}</time>
+                <span class={`status ${status.className}`}><i></i>{status.label}</span>
+                <a
+                  class="row-open"
+                  href={`https://redeem.fcm.ea.com/?redeemCode=${encodeURIComponent(item.code)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open ↗
+                </a>
+              </article>
+            );
+          }) : (
+            <div class="empty"><strong>No codes match this search</strong><span>Try another term or change the status filter</span></div>
+          )}
+        </div>
+
+        <nav class="pagination" aria-label="Redeem code pages">
+          <a class:disabled={currentPage === 1} href={currentPage > 1 ? pageUrl(currentPage - 1) : '#'}>← Previous</a>
+          <span>Page {currentPage} of {totalPages}</span>
+          <a class:disabled={currentPage === totalPages} href={currentPage < totalPages ? pageUrl(currentPage + 1) : '#'}>Next →</a>
+        </nav>
+      </section>
+
+      <section class="content-grid" id="how-it-works">
+        <article class="info-card">
+          <span class="section-kicker">HOW IT WORKS</span>
+          <h2>How to redeem an FC Mobile code</h2>
+          <div class="steps">
+            <div><strong>01</strong><p>Choose an active code from the live section</p></div>
+            <div><strong>02</strong><p>Copy the code and open the official EA redemption page</p></div>
+            <div><strong>03</strong><p>Sign in, paste the code and submit it through EA</p></div>
+          </div>
+        </article>
+
+        <article class="info-card accent-card">
+          <span class="section-kicker">EXPLORE MORE</span>
+          <h2>More FC Mobile tools</h2>
+          <p>Use the rest of the site for Showdown tracking, match analysis and other FC Mobile resources</p>
+          <div class="link-grid">
+            <a href="/football-centre/"><b>Football Centre</b><span>Track Showdowns and progress ↗</span></a>
+            <a href="/"><b>FC Mobile Tools</b><span>Browse the main toolset ↗</span></a>
+          </div>
+        </article>
+      </section>
+
+      <section class="seo-copy">
+        <span class="section-kicker">FC MOBILE REDEEM CODES</span>
+        <h2>Find working codes without the clutter</h2>
+        <p>
+          This page keeps FC Mobile redeem codes in one searchable place, with active,
+          scheduled and expired records separated clearly. Each code includes its reward,
+          release details and last verified date so you can quickly decide what to check.
+        </p>
+        <p>
+          When a code is active, use the copy action and continue to the official EA redemption
+          page. The archive stays useful for checking older FC Mobile code records and searching
+          by code, reward, region or notes.
+        </p>
+      </section>
+
+      <footer class="footer-line">
+        <span>TANZIMFC / FC MOBILE TOOLS</span>
+        <span>LAST DATABASE UPDATE {fmtDate(lastUpdated)}</span>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </section>
+
+  <script define:vars={{ pageSchema, breadcrumbSchema }}>
+    const toast = document.getElementById('toast');
+    const notify = (message) => {
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.clearTimeout(window.__redeemToast);
+      window.__redeemToast = window.setTimeout(() => toast.classList.remove('show'), 1900);
+    };
+
+    const copyCode = async (code, button) => {
+      try {
+        await navigator.clipboard.writeText(code);
+        if (button) {
+          const original = button.innerHTML;
+          button.innerHTML = 'Copied <span>✓</span>';
+          window.setTimeout(() => { button.innerHTML = original; }, 1500);
+        }
+        notify(`${code} copied to clipboard`);
+      } catch {
+        notify('Clipboard access is unavailable');
+      }
+    };
+
+    document.querySelectorAll('[data-copy]').forEach((button) => {
+      button.addEventListener('click', () => copyCode(button.dataset.copy, button));
+    });
+
+    const ld = document.createElement('script');
+    ld.type = 'application/ld+json';
+    ld.textContent = JSON.stringify(pageSchema);
+    document.head.appendChild(ld);
+
+    const crumbs = document.createElement('script');
+    crumbs.type = 'application/ld+json';
+    crumbs.textContent = JSON.stringify(breadcrumbSchema);
+    document.head.appendChild(crumbs);
+  </script>
 </BaseLayout>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
-.redeem-page{--bg:#090b0d;--panel:#0f1316;--panel-2:#13181c;--text:#f6f4ec;--muted:#9ba29f;--line:#242b2e;--lime:#c9f56a;--lime-2:#efffb7;--lav:#aa91ff;--coral:#ff7e6d;--amber:#ffc66c;--pink:#f48fc9;--teal:#72e5d0;--sans:'Manrope',system-ui,sans-serif;--display:'Sora',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(800px 520px at 2% -5%,#aa91ff1d,transparent 58%),radial-gradient(760px 520px at 98% 10%,#c9f56a16,transparent 55%),radial-gradient(740px 500px at 56% 55%,#ff7e6d09,transparent 63%),#090b0d;color:var(--text);font-family:var(--sans);min-height:100vh}.redeem-page:before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(#ffffff03 1px,transparent 1px),linear-gradient(90deg,#ffffff03 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(to bottom,black,transparent 86%)}.ambient{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;opacity:.18}.ambient-a{width:260px;height:260px;background:var(--lav);top:320px;left:-140px}.ambient-b{width:230px;height:230px;background:var(--coral);top:1150px;right:-120px}.ambient-c{width:200px;height:200px;background:var(--lime);bottom:350px;left:38%}.redeem-wrap{position:relative;z-index:1;width:min(1180px,calc(100% - 34px));margin:auto;padding:36px 0 88px}.hero-shell{min-height:610px;display:grid;grid-template-columns:1.05fr .95fr;gap:30px;align-items:center;padding:24px 0 34px}.eyebrow,.section-kicker,.card-kicker{font:700 9px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--lime)}.eyebrow{display:flex;align-items:center;gap:10px;color:#c5ccc7}.eyebrow-line{width:28px;height:1px;background:linear-gradient(90deg,var(--lime),transparent)}.live-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 8px;border-radius:999px;border:1px solid #ffffff10;background:#ffffff05;color:#d7ddd8;font-size:7px;letter-spacing:.1em}.live-pill i,.mini-live i{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 4px #c9f56a14}.hero-copy h1{font:800 clamp(50px,6vw,83px)/.96 var(--display);letter-spacing:-.06em;margin:18px 0 22px;max-width:800px}.hero-copy h1 span{font:inherit;background:linear-gradient(110deg,var(--lime),#f5ffa7 36%,var(--lav) 71%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}.hero-lede{font-size:14px;line-height:1.85;color:#b3bbb6;max-width:650px;margin:0}.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}.hero-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 15px;border-radius:12px;font:700 9px var(--mono);text-decoration:none;cursor:pointer;transition:.18s}.hero-btn:hover{transform:translateY(-2px)}.hero-btn-main{border:1px solid var(--lime);background:linear-gradient(135deg,var(--lime),var(--lime-2));color:#10140b;box-shadow:0 16px 40px #c9f56a12}.hero-btn-main span{margin-left:8px}.hero-btn-soft{border:1px solid #2b3234;background:#101518;color:#d4d9d5}.hero-btn-soft:hover{border-color:#495054}.hero-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px}.hero-metrics>div{min-width:116px;padding:12px 13px;border:1px solid var(--line);border-radius:13px;background:#0d1114c7}.hero-metrics strong{display:block;font:700 23px var(--display);letter-spacing:-.04em}.hero-metrics span{display:block;margin-top:2px;color:#78817e;font-size:9px}.hero-art{position:relative;min-height:500px;display:grid;place-items:center}.hero-grid{position:absolute;inset:18px 0;background-image:linear-gradient(#ffffff06 1px,transparent 1px),linear-gradient(90deg,#ffffff06 1px,transparent 1px);background-size:34px 34px;mask-image:radial-gradient(circle at center,black,transparent 72%);border-radius:50%}.orbit{position:absolute;border:1px solid #ffffff12;border-radius:50%;transform:rotate(-14deg)}.orbit-one{width:410px;height:300px;border-style:dashed;animation:spin 24s linear infinite}.orbit-two{width:310px;height:310px;border-color:#c9f56a24;box-shadow:0 0 80px #aa91ff0e inset}.hero-card-main{width:300px;min-height:270px;position:relative;display:grid;grid-template-columns:86px 1fr;grid-template-rows:auto 1fr auto;gap:8px 12px;padding:20px;border:1px solid #3a433d;border-radius:28px;background:linear-gradient(145deg,#171d19,#0d1112);box-shadow:0 32px 90px #0009,0 0 80px #aa91ff12;transform:rotate(-4deg)}.mini-top{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;color:#74807a;font:700 7px var(--mono);letter-spacing:.1em}.mini-live{display:inline-flex;align-items:center;gap:6px;color:var(--lime);font-size:7px}.hero-symbol{width:78px;height:92px;border-radius:20px;display:grid;place-items:center;background:radial-gradient(circle at 38% 25%,#f0ffb53a,transparent 36%),linear-gradient(145deg,#c9f56a,#6f8a38);color:#10140c;font:800 43px var(--display);letter-spacing:-.08em;box-shadow:0 16px 34px #c9f56a18}.hero-symbol-copy{align-self:center}.hero-symbol-copy b{display:block;font:700 15px var(--display);letter-spacing:-.03em}.hero-symbol-copy small{display:block;margin-top:5px;color:#8e9892;font-size:9px;line-height:1.5}.hero-scan{grid-column:1/-1;display:flex;align-items:end;gap:5px;height:30px}.hero-scan span{flex:1;height:100%;border-radius:4px;background:linear-gradient(180deg,var(--lav),#4d4574);opacity:.8}.hero-scan span:nth-child(2){height:58%}.hero-scan span:nth-child(3){height:83%;background:linear-gradient(180deg,var(--coral),#6c4038)}.hero-scan span:nth-child(4){height:42%;background:linear-gradient(180deg,var(--amber),#66502d)}.hero-scan span:nth-child(5){height:70%;background:linear-gradient(180deg,var(--teal),#356e63)}.hero-scan span:nth-child(6){height:92%;background:linear-gradient(180deg,var(--lime),#58702a)}.float-card{position:absolute;display:flex;flex-direction:column;gap:2px;padding:10px 12px;min-width:72px;border:1px solid #ffffff12;border-radius:13px;background:#101417e8;backdrop-filter:blur(12px);box-shadow:0 18px 40px #0006}.float-card span{font:700 7px var(--mono);color:#76817c}.float-card b{font:700 13px var(--display)}.float-one{top:20%;right:3%;color:var(--lav);transform:rotate(6deg)}.float-two{bottom:21%;left:4%;color:var(--coral);transform:rotate(-7deg)}.float-three{bottom:9%;right:12%;color:var(--amber);transform:rotate(4deg)}
-.feature-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 22px}.feature-tile{min-height:96px;padding:17px;border:1px solid var(--line);border-radius:17px;background:#0e1215;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden}.feature-tile:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;right:-35px;top:-40px;filter:blur(22px);opacity:.16;background:currentColor}.feature-no{font:700 9px var(--mono);color:currentColor}.feature-tile b{font:700 12px var(--display)}.feature-tile p{margin:4px 0 0;color:#77807c;font-size:9px;line-height:1.6}.feature-violet{color:var(--lav)}.feature-lime{color:var(--lime)}.feature-coral{color:var(--coral)}.feature-amber{color:var(--amber)}
-.live-section,.archive-shell{padding:24px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,#0f1315e8,#0c1012e8);box-shadow:0 28px 70px #0005;margin-top:18px}.section-head,.archive-topline{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:18px}.section-head h2,.archive-topline h2,.bottom-grid h2{font:700 28px var(--display);letter-spacing:-.045em;margin:7px 0 4px}.section-head p,.archive-topline p,.bottom-grid p{margin:0;color:#78817e;font-size:10px}.verified-card{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid #27302d;border-radius:13px;background:#0b0f11}.verified-dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 5px #c9f56a12}.verified-card b,.verified-card small{display:block}.verified-card b{font:700 8px var(--mono);color:#e2e8e3}.verified-card small{font:700 8px var(--mono);color:#737e79;margin-top:2px}.live-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.live-card{position:relative;overflow:hidden;padding:17px;border:1px solid #39452f;border-radius:18px;background:linear-gradient(145deg,#161d14,#101514);min-height:225px;box-shadow:0 18px 45px #0005}.live-card.tone-purple{border-color:#41374f;background:linear-gradient(145deg,#17141f,#101316)}.live-card.tone-orange{border-color:#50402c;background:linear-gradient(145deg,#1d1810,#101514)}.live-card-glow{position:absolute;right:-20px;top:-35px;width:130px;height:130px;border-radius:50%;filter:blur(35px);background:var(--lime);opacity:.1}.tone-purple .live-card-glow{background:var(--lav)}.tone-orange .live-card-glow{background:var(--amber)}.live-card-top{display:flex;justify-content:space-between;align-items:center}.live-index{font:700 8px var(--mono);color:#65716b}.status{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;font:700 7px var(--mono);text-transform:uppercase}.status i{width:5px;height:5px;border-radius:50%;background:currentColor}.status.active{color:var(--lime);background:#c9f56a12}.status.scheduled{color:var(--amber);background:#ffc66c12}.status.expired,.status.unknown{color:#7e8883;background:#ffffff06}.live-card code{display:block;margin-top:21px;font:700 21px var(--mono);letter-spacing:.035em}.live-card h3{font:700 14px var(--display);margin:8px 0 7px}.live-card p{font:700 8px var(--mono);color:#69746f;margin:0;line-height:1.6}.live-card p span{color:#34403a}.live-card-actions{display:flex;gap:8px;margin-top:18px}.live-card-actions button,.live-card-actions a{min-height:37px;display:inline-flex;align-items:center;justify-content:center;padding:0 12px;border-radius:10px;font:700 8px var(--mono);text-decoration:none;cursor:pointer}.copy-btn{border:1px solid #344039;background:#101511;color:#d9dfda}.copy-btn b{margin-left:8px;color:#7e8983}.live-card-actions a{border:1px solid var(--lime);background:var(--lime);color:#10140b}.live-card-actions a span{margin-left:5px}.empty-state{grid-column:1/-1;min-height:160px;display:grid;place-items:center;align-content:center;gap:4px;border:1px dashed #333c39;border-radius:16px;color:#75807a}.empty-state strong{font:700 13px var(--display);color:#c9cfcb}.empty-state span{font-size:9px}
-.archive-count{display:flex;gap:8px;align-items:center;padding:9px 11px;border:1px solid #322d47;border-radius:12px;background:#120f1a}.archive-count strong{font:700 20px var(--display);color:var(--lav)}.archive-count span{max-width:120px;color:#8a8298;font-size:8px;line-height:1.4}.control-bar{display:flex;gap:10px;align-items:center;margin-bottom:15px}.search-box{flex:1;min-width:0;height:42px;display:flex;align-items:center;gap:9px;padding:0 12px;border:1px solid #2a3235;border-radius:11px;background:#0b0f11}.search-box span{color:#73807a;font-size:16px}.search-box input{width:100%;border:0;outline:0;background:transparent;color:#f1f4f1;font:600 10px var(--sans)}.search-box input::placeholder{color:#65706c}.filter-group{display:flex;gap:4px;padding:4px;border:1px solid #252d30;border-radius:11px;background:#0b0f11;overflow:auto}.filter-group button{border:0;background:transparent;color:#727d78;padding:8px 10px;border-radius:8px;font:700 8px var(--mono);cursor:pointer;white-space:nowrap}.filter-group button.chosen{background:#d8f77f10;color:#e8f5d0;box-shadow:inset 0 0 0 1px #566d32}.archive-table{display:grid;gap:6px}.table-head,.table-row{display:grid;grid-template-columns:1.35fr 1.8fr .95fr .95fr .8fr .5fr;gap:14px;align-items:center}.table-head{padding:2px 13px 7px;color:#68736e;font:700 7px var(--mono);letter-spacing:.1em}.table-row{padding:12px 13px;border:1px solid #252d30;border-radius:12px;background:#0b0f11;color:#8d9692;font-size:9px;transition:.16s}.table-row:hover{border-color:#364039;transform:translateY(-1px)}.table-code{display:flex;align-items:center;gap:10px;min-width:0}.table-code code{font:700 12px var(--mono);color:#ecf1ed;white-space:nowrap}.table-code button{border:1px solid #303a35;border-radius:8px;background:#131815;color:#85908a;padding:6px 8px;font:700 7px var(--mono);cursor:pointer}.table-reward strong,.table-reward span{display:block}.table-reward strong{color:#dfe5e0;font-weight:700}.table-reward span{color:#68736d;font:700 7px var(--mono);margin-top:2px}.table-row a{color:var(--lime);font:700 8px var(--mono);text-decoration:none}.pagination{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:17px}.pagination a,.pagination span{font:700 8px var(--mono);color:#737e79;text-decoration:none}.pagination a{padding:8px 10px;border:1px solid #2a3235;border-radius:9px;background:#0c1112}.pagination a:not(.disabled):hover{border-color:#4f5a55;color:#e9eee9}.pagination a.disabled{opacity:.35;pointer-events:none}.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.local-card,.how-card{min-height:220px;padding:20px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#111518,#0b0f11)}.local-card h2,.how-card h2{font-size:22px;margin-top:7px}.recent-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:18px}.recent-list button{display:inline-flex;align-items:center;gap:8px;border:1px solid #2c3436;border-radius:10px;background:#0c1113;color:#d9dfdb;padding:9px 10px;font:700 8px var(--mono);cursor:pointer}.recent-list button span{color:var(--lime)}.recent-empty{color:#66716c;font-size:9px}.how-card{display:flex;gap:14px}.how-icon{flex:0 0 44px;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,var(--lav),#6a56b5);color:#fff;font-size:18px;box-shadow:0 12px 28px #aa91ff17}.how-card a{display:inline-flex;margin-top:15px;color:var(--lime);font:700 8px var(--mono);text-decoration:none}.how-card a span{margin-left:6px}.page-foot{display:flex;justify-content:space-between;gap:10px;margin-top:22px;padding:0 2px;color:#59635f;font:700 7px var(--mono);letter-spacing:.08em}.toast{position:fixed;left:50%;bottom:28px;z-index:2000;transform:translate(-50%,14px);opacity:0;pointer-events:none;padding:11px 14px;border-radius:12px;border:1px solid #3b443e;background:#101612eb;color:#eef3ee;font:700 8px var(--mono);box-shadow:0 18px 50px #0009;transition:.2s}.toast.show{transform:translate(-50%,0);opacity:1}.toast[data-tone="bad"]{border-color:#63403a;color:#ffc0b5}@keyframes spin{to{transform:rotate(346deg)}}
-@media(max-width:950px){.hero-shell{grid-template-columns:1fr}.hero-art{min-height:420px}.live-grid{grid-template-columns:1fr 1fr}.feature-strip{grid-template-columns:1fr 1fr}.table-head{display:none}.table-row{grid-template-columns:1.35fr 1.6fr .9fr;gap:10px}.table-row>div:nth-child(3),.table-row>div:nth-child(4){display:none}.table-row>div:nth-child(5),.table-row>div:nth-child(6){justify-self:end}.archive-count{display:none}}
-@media(max-width:700px){.redeem-wrap{width:min(100% - 22px,1180px);padding-top:22px}.hero-copy h1{font-size:clamp(43px,12vw,64px)}.hero-shell{min-height:auto;padding-bottom:22px}.hero-art{min-height:360px}.orbit-one{width:300px;height:250px}.orbit-two{width:235px;height:235px}.hero-card-main{width:270px;min-height:240px}.float-one{right:1%}.float-two{left:1%}.float-three{right:3%}.live-section,.archive-shell{padding:17px;border-radius:19px}.section-head,.archive-topline{align-items:flex-start;flex-direction:column}.verified-card{align-self:flex-start}.live-grid,.bottom-grid{grid-template-columns:1fr}.control-bar{flex-direction:column;align-items:stretch}.filter-group{width:100%;justify-content:flex-start}.search-box{flex:auto}.table-row{grid-template-columns:1fr auto}.table-row>div:nth-child(5){grid-column:2;grid-row:1}.table-row>div:nth-child(6){grid-column:2;grid-row:2}.table-row>div:nth-child(2){grid-column:1;grid-row:2}.page-foot{flex-direction:column;line-height:1.7}}
-@media(max-width:460px){.feature-strip{grid-template-columns:1fr}.hero-actions{flex-direction:column}.hero-btn{width:100%}.hero-metrics{display:grid;grid-template-columns:repeat(3,1fr)}.hero-metrics>div{min-width:0;padding:10px 8px}.hero-metrics strong{font-size:18px}.hero-card-main{width:245px;transform:rotate(-3deg)}.float-card{transform:none}.live-card code{font-size:18px}.table-code button{display:none}.table-row{padding:11px}.pagination{gap:7px}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.codes-page{
+  --bg:#070b10;
+  --panel:#0d1319;
+  --panel-2:#111a22;
+  --text:#f4f8fb;
+  --muted:#91a1af;
+  --line:#1f2c37;
+  --line-strong:#2b4658;
+  --cyan:#56d6ff;
+  --cyan-2:#1da7e7;
+  --cyan-soft:#56d6ff16;
+  --blue:#4f7dff;
+  --blue-soft:#4f7dff14;
+  --violet:#9f86ff;
+  --amber:#ffbd68;
+  --coral:#ff7d72;
+  --pink:#ef82c4;
+  --good:#67e7a6;
+  --sans:'Manrope',system-ui,sans-serif;
+  --display:'Sora',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  min-height:100vh;
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  color:var(--text);
+  background:
+    radial-gradient(900px 600px at 0% 0%, #0f5f7a2a, transparent 62%),
+    radial-gradient(760px 580px at 100% 8%, #204ca72a, transparent 58%),
+    radial-gradient(700px 520px at 55% 45%, #2b80a80f, transparent 60%),
+    var(--bg);
+  font-family:var(--sans);
+}
+
+.codes-page::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-image:
+    linear-gradient(#ffffff03 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff03 1px, transparent 1px);
+  background-size:48px 48px;
+  mask-image:linear-gradient(to bottom, black, transparent 82%);
+}
+
+.aurora{position:absolute;border-radius:50%;filter:blur(85px);pointer-events:none;opacity:.22}
+.aurora-one{width:340px;height:340px;background:#36cfff;top:500px;left:-220px}
+.aurora-two{width:300px;height:300px;background:#486eff;top:1250px;right:-160px}
+.aurora-three{width:260px;height:260px;background:#22b8ff;bottom:400px;left:42%}
+
+.codes-wrap{width:min(1180px,calc(100% - 34px));margin:auto;position:relative;z-index:1;padding:26px 0 78px}
+
+.hero{
+  min-height:670px;
+  display:grid;
+  grid-template-columns:1.02fr .98fr;
+  gap:32px;
+  align-items:center;
+  padding:34px 0 28px;
+}
+
+.eyebrow,.section-kicker{font:700 9px var(--mono);letter-spacing:.16em;text-transform:uppercase}
+.eyebrow{display:flex;align-items:center;gap:9px;color:#a9b9c6}
+.eyebrow>span{width:27px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
+.eyebrow b{display:inline-flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid #ffffff0f;border-radius:999px;background:#ffffff04;color:var(--cyan);font-size:7px;letter-spacing:.11em}
+.eyebrow b i,.art-top b i,.verified i{width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px #67e7a610}
+.hero-copy h1{max-width:720px;margin:22px 0 20px;color:#f8fbfd;font:800 clamp(50px,6.2vw,88px)/.94 var(--display);letter-spacing:-.065em}
+.hero-copy h1 em{font-style:normal;color:transparent;background:linear-gradient(105deg,#e9fbff 0%,var(--cyan) 45%,#5b85ff 100%);-webkit-background-clip:text;background-clip:text}
+.hero-lede{max-width:610px;margin:0;color:#9eacb8;font-size:14px;line-height:1.85}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:25px}
+.btn{min-height:43px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 15px;border-radius:11px;text-decoration:none;font:800 9px var(--mono);transition:.18s ease}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{color:#051119;border:1px solid #74ddff;background:linear-gradient(135deg,#6be0ff,var(--cyan));box-shadow:0 12px 35px #56d6ff16}
+.btn-ghost{color:#d4e5ee;border:1px solid #2a414f;background:#0c1319cc}
+.btn-ghost:hover{border-color:#4c7187;background:#111c25}
+.hero-points{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+.hero-points span{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border-radius:999px;border:1px solid #20303a;background:#0b1218a8;color:#7f93a2;font:600 8px var(--mono)}
+.hero-points i{width:5px;height:5px;border-radius:50%;background:var(--cyan)}
+
+.hero-art{position:relative;min-height:565px;display:grid;place-items:center}
+.art-glow{position:absolute;width:74%;height:56%;border-radius:50%;background:#38d6ff18;filter:blur(50px)}
+.art-grid{position:absolute;inset:10% 0;background-image:linear-gradient(#56d6ff0a 1px,transparent 1px),linear-gradient(90deg,#56d6ff0a 1px,transparent 1px);background-size:34px 34px;mask-image:radial-gradient(circle at center,black,transparent 71%)}
+.art-frame{position:relative;width:min(500px,92%);overflow:hidden;padding:14px;border:1px solid #2a4d62;border-radius:30px;background:linear-gradient(145deg,#0f1921f5,#091017f7);box-shadow:0 35px 100px #0009,0 0 55px #46cfff12;transform:rotate(1deg)}
+.art-frame::before{content:"";position:absolute;inset:0;background:linear-gradient(145deg,#56d6ff12,transparent 45%,#4f7dff0a);pointer-events:none}
+.art-top{display:flex;justify-content:space-between;align-items:center;padding:3px 5px 11px;color:#7690a0;font:700 8px var(--mono);letter-spacing:.11em}
+.art-top b{display:inline-flex;align-items:center;gap:6px;color:#9ce5ff}
+.art-image-wrap{aspect-ratio:4/3;overflow:hidden;border-radius:21px;background:radial-gradient(circle at 50% 20%,#56d6ff16,transparent 50%),#080f15;border:1px solid #1b384a}
+.art-image-wrap img{width:100%;height:100%;object-fit:contain}
+.art-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:11px 5px 2px}
+.art-bottom div{padding:9px 10px;border-radius:12px;border:1px solid #1a2d39;background:#0a1218}
+.art-bottom small{display:block;color:#6f8796;font:700 7px var(--mono);letter-spacing:.12em}
+.art-bottom strong{display:block;margin-top:4px;color:#e5f5fc;font:800 12px var(--display)}
+.orb{position:absolute;border-radius:50%;border:1px solid #56d6ff25}
+.orb-one{width:470px;height:470px;border-style:dashed;animation:spin 26s linear infinite}
+.orb-two{width:340px;height:340px;border-color:#5c7eff23}
+.badge{position:absolute;padding:9px 10px;border-radius:11px;border:1px solid #2c4656;background:#0b1319ef;box-shadow:0 15px 40px #0007;color:#7f9aaa;font:700 8px var(--mono);letter-spacing:.08em}
+.badge span{display:block;margin-top:4px;color:#e6f5fb;font:800 11px var(--display)}
+.badge-one{top:15%;right:0;color:var(--cyan)}
+.badge-two{bottom:13%;left:2%;color:#98a7ff}
+
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 36px}
+.stats-strip article{display:flex;gap:11px;align-items:flex-start;padding:16px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#0d151bde,#0b1015d9);box-shadow:0 18px 45px #0004}
+.stats-strip article:nth-child(2){border-color:#263b53}.stats-strip article:nth-child(3){border-color:#3e354a}.stats-strip article:nth-child(4){border-color:#3f3430}
+.stats-strip article>span{color:#4f7387;font:700 8px var(--mono)}
+.stats-strip strong{display:block;color:#eaf7fc;font:800 25px var(--display);letter-spacing:-.05em}
+.stats-strip b{display:block;margin-top:2px;color:#d4e0e5;font-size:10px}.stats-strip small{display:block;margin-top:3px;color:#647b8b;font-size:9px;line-height:1.45}
+
+.live-section,.archive{margin-top:18px;padding:25px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,#0d151bdc,#091016dc);box-shadow:0 24px 70px #0006}
+.section-heading,.archive-heading{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:20px}
+.section-heading h2,.archive-heading h2,.content-grid h2,.seo-copy h2{margin:6px 0 5px;font:700 clamp(25px,3vw,34px)/1.1 var(--display);letter-spacing:-.045em}
+.section-heading p,.archive-heading p,.info-card>p,.seo-copy p{margin:0;color:var(--muted);font-size:11px;line-height:1.75}
+.verified{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #1f3542;border-radius:13px;background:#091319}
+.verified i{display:block}.verified b,.verified span{display:block}.verified b{color:#dceaf0;font:700 8px var(--mono)}.verified span{margin-top:2px;color:#738d9c;font:700 8px var(--mono)}
+.live-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.live-card{position:relative;overflow:hidden;min-height:270px;display:flex;flex-direction:column;padding:18px;border:1px solid #204355;border-radius:19px;background:radial-gradient(250px 170px at 100% 0,#56d6ff0d,transparent 60%),linear-gradient(180deg,#0f1a22,#0a1116)}
+.live-card::after{content:"";position:absolute;inset:auto -50px -80px auto;width:150px;height:150px;border-radius:50%;background:#56d6ff0d;filter:blur(30px)}
+.live-card.tone-1{border-color:#33466b;background:linear-gradient(180deg,#111a26,#0b1018)}
+.live-card.tone-2{border-color:#4d3e32;background:linear-gradient(180deg,#181512,#0e1112)}
+.live-top{display:flex;justify-content:space-between;align-items:center}
+.card-number{color:#4e7387;font:700 8px var(--mono)}
+.status{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border-radius:999px;font:700 7px var(--mono);text-transform:uppercase;letter-spacing:.05em}
+.status i{width:5px;height:5px;border-radius:50%;background:currentColor}.status.active{color:var(--good);background:#67e7a60e}.status.scheduled{color:var(--amber);background:#ffbd680f}.status.expired,.status.unknown{color:#7f909c;background:#ffffff05}
+.live-card code{margin-top:31px;color:#edfbff;font:700 22px var(--mono);letter-spacing:.02em}
+.live-card h3{margin:9px 0 5px;color:#daeaf0;font:700 16px var(--display)}
+.live-card p{margin:0;color:#6f8593;font:600 8px var(--mono);line-height:1.7}.live-card p span{color:#355565;padding:0 2px}
+.card-actions{display:flex;gap:7px;margin-top:auto;padding-top:18px}.card-actions button,.card-actions a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 11px;border-radius:10px;font:700 8px var(--mono);text-decoration:none}
+.card-actions button{border:1px solid #2b4656;background:#0b151c;color:#bfd5df;cursor:pointer}.card-actions button:hover{border-color:#56d6ff66;background:#0e1b24}.card-actions button span{color:var(--cyan)}
+.card-actions a{border:1px solid #5ad5ff;background:var(--cyan);color:#06131b}.card-actions a span{font-size:11px}
+
+.archive{margin-top:22px}.archive-count,.archive-link{padding:10px 12px;border:1px solid #1f3541;border-radius:12px;background:#0a1218}.archive-count strong{display:block;color:var(--cyan);font:800 17px var(--display)}.archive-count span{display:block;margin-top:2px;color:#718795;font-size:8px}.archive-link{color:#b9d9e7;font:700 8px var(--mono);text-decoration:none}.archive-link span{color:var(--cyan)}
+.controls{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:15px}
+.search{position:relative;display:block;flex:1;max-width:420px}.search>span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#5d7788;font-size:20px}
+.search input{width:100%;height:43px;padding:0 13px 0 34px;color:#eef8fc;border:1px solid #203441;border-radius:11px;background:#081118;outline:0;font:600 10px var(--sans)}.search input:focus{border-color:#4dbddd;box-shadow:0 0 0 3px #56d6ff0c}
+.filters{display:flex;gap:4px;flex-wrap:wrap}.filters button{min-height:38px;padding:0 11px;border-radius:9px;border:1px solid #1c2d38;background:#0b141a;color:#7c909d;font:700 8px var(--mono);cursor:pointer}.filters button:hover,.filters button.chosen{border-color:#3c7189;color:#d8f4ff;background:#0d1a22}
+.archive-table{display:grid;gap:7px}.table-head{display:grid;grid-template-columns:1.25fr 1.5fr .8fr .8fr .85fr .5fr;gap:10px;padding:0 13px 5px;color:#58707e;font:700 7px var(--mono);letter-spacing:.12em}
+.table-row{display:grid;grid-template-columns:1.25fr 1.5fr .8fr .8fr .85fr .5fr;gap:10px;align-items:center;min-height:63px;padding:10px 13px;border:1px solid #172832;border-radius:13px;background:#0a1116;color:#92a3ae;font:600 9px var(--mono)}.table-row:hover{border-color:#274352;background:#0c151b}
+.table-code{display:flex;align-items:center;gap:8px;min-width:0}.table-code code{overflow:hidden;text-overflow:ellipsis;color:#e9f8fd;font:700 11px var(--mono)}.table-code button{padding:5px 6px;border:1px solid #223845;border-radius:7px;background:#0b151b;color:#83a0ad;font:700 7px var(--mono);cursor:pointer}.table-code button:hover{color:#d8f6ff;border-color:#3b7187}
+.table-reward strong{display:block;color:#d4e1e7;font:700 9px var(--sans)}.table-reward span{display:block;margin-top:2px;color:#607887;font-size:8px}.row-open{color:var(--cyan);font:700 8px var(--mono);text-decoration:none}.row-open:hover{text-decoration:underline;text-underline-offset:3px}
+.pagination{display:flex;justify-content:space-between;align-items:center;margin-top:17px}.pagination a{color:#93acb8;font:700 8px var(--mono);text-decoration:none}.pagination a:hover{color:#def8ff}.pagination a.disabled{pointer-events:none;opacity:.3}.pagination span{color:#5f7786;font:700 8px var(--mono)}
+
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.info-card{padding:24px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,#0f171ddf,#0a1015dc);box-shadow:0 20px 55px #0005}.accent-card{background:linear-gradient(145deg,#0d1720,#0b1219 60%,#0f1d2a);border-color:#244659}
+.steps{display:grid;gap:9px;margin-top:19px}.steps div{display:grid;grid-template-columns:42px 1fr;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #1d2b34}.steps div:first-child{border-top:0;padding-top:0}.steps strong{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:1px solid #255066;background:#0b1a22;color:var(--cyan);font:700 8px var(--mono)}.steps p{margin:0;color:#9aabb5;font-size:10px;line-height:1.6}
+.link-grid{display:grid;gap:8px;margin-top:18px}.link-grid a{padding:12px;border:1px solid #203847;border-radius:12px;background:#091319;text-decoration:none}.link-grid a:hover{border-color:#3d6e83;background:#0b1920}.link-grid b{display:block;color:#d9eef5;font-size:10px}.link-grid span{display:block;margin-top:3px;color:#68818e;font-size:8px}
+
+.seo-copy{max-width:860px;margin:20px 0 0;padding:27px;border:1px solid #1a2932;border-radius:22px;background:linear-gradient(180deg,#0b1319cc,#080e13aa)}
+.seo-copy h2{max-width:650px}.seo-copy p{max-width:760px;margin-top:11px}
+.empty{grid-column:1/-1;padding:35px;text-align:center;border:1px dashed #2a3d48;border-radius:15px;background:#09111899}.empty strong{display:block;color:#d8eaf1;font:700 13px var(--display)}.empty span{display:block;margin-top:5px;color:#718692;font-size:10px}
+.footer-line{display:flex;justify-content:space-between;gap:15px;margin-top:21px;color:#4f6572;font:700 7px var(--mono);letter-spacing:.12em}
+.toast{position:fixed;left:50%;bottom:22px;z-index:100;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:10px 13px;border:1px solid #2d5669;border-radius:11px;background:#0b171ef2;color:#dff7ff;box-shadow:0 20px 50px #0008;font:700 8px var(--mono);transition:.2s ease}.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:1050px){
+  .hero{grid-template-columns:1fr;min-height:auto;padding-top:50px}.hero-copy{max-width:820px}.hero-art{min-height:530px}.stats-strip{grid-template-columns:repeat(2,1fr)}.live-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .codes-wrap{width:calc(100% - 24px)}.hero-copy h1{font-size:48px}.hero-art{min-height:430px}.art-frame{width:94%}.orb-one{width:390px;height:390px}.orb-two{width:285px;height:285px}.badge-one{right:-3px}.badge-two{left:-4px}.stats-strip{grid-template-columns:1fr 1fr}.section-heading,.archive-heading{align-items:flex-start;flex-direction:column}.controls{align-items:stretch;flex-direction:column}.search{max-width:none}.filters{width:100%}.filters button{flex:1}.table-head{display:none}.table-row{grid-template-columns:1fr 1fr;gap:9px;padding:13px}.table-row>*:nth-child(2){grid-column:2}.table-row>*:nth-child(3),.table-row>*:nth-child(4){font-size:8px}.table-row>*:nth-child(5){justify-self:start}.table-row>*:nth-child(6){justify-self:end}.content-grid{grid-template-columns:1fr}.footer-line{flex-direction:column;gap:6px}
+}
+@media(max-width:480px){
+  .hero{padding-top:34px}.hero-copy h1{font-size:42px}.hero-lede{font-size:13px}.hero-actions{flex-direction:column}.btn{width:100%}.hero-points{display:grid}.hero-points span{width:max-content}.hero-art{min-height:360px}.art-frame{padding:9px;border-radius:22px}.art-top{font-size:7px}.art-bottom{grid-template-columns:1fr 1fr 1fr}.art-bottom div{padding:7px}.art-bottom strong{font-size:10px}.stats-strip{grid-template-columns:1fr}.stats-strip article{padding:14px}.live-grid{grid-template-columns:1fr}.live-section,.archive,.info-card,.seo-copy{padding:18px;border-radius:18px}.live-card{min-height:245px}.archive-count,.archive-link{width:100%}.pagination{gap:12px}.pagination span{white-space:nowrap}
+}
+@media(prefers-reduced-motion:reduce){.orb-one{animation:none}}
 </style>
