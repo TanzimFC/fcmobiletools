@@ -1,6 +1,13 @@
 // Football Centre content managed by the admin panel.
-// Keep presentation/interaction logic in FootballCentre.astro; this file holds editable content only.
+// Presentation and interaction stay in FootballCentre.astro; this file stores editable public content.
 export const FOOTBALL_CENTRE_CONTENT = {
+  cycle: {
+    id: '2026-09',
+    label: 'SEPTEMBER 2026 · ACTIVE CYCLE',
+    title: 'Football Centre progress',
+    description: 'Eight Showdowns across four weeks. Earn 80 points for each played match, +20 for World Class and +400 for a correct team prediction.',
+    matchesPerWeek: 2
+  },
   clubs: {
     mu: { name: 'Manchester United', short: 'Man United', logo: 'https://media.api-sports.io/football/teams/33.png' },
     mc: { name: 'Manchester City', short: 'Man City', logo: 'https://media.api-sports.io/football/teams/50.png' },
@@ -29,6 +36,37 @@ export const FOOTBALL_CENTRE_CONTENT = {
     { id: 'showdown-07', week: 4, home: 'inter', away: 'milan' },
     { id: 'showdown-08', week: 4, home: 'juve', away: 'nap' }
   ],
+  analysis: {
+    label: 'MATCH ANALYSIS',
+    title: 'Think before you pick',
+    warning: '⚠ Pick at your own risk. Analysis is informational only and is not a guarantee. Football is unpredictable. No prediction here is certain.',
+    videoEmbedUrl: 'https://www.youtube.com/embed/KvgulT3RtFE',
+    videoWatchUrl: 'https://www.youtube.com/watch?v=KvgulT3RtFE',
+    videoTitle: 'Release timing video',
+    videoBody: 'This video contains information about the expected timing of the TOTW release. The content shown may not be in the game yet.',
+    videoWarning: 'Do not treat timing as a confirmed in-game release until the content is actually available.'
+  },
+  totw: {
+    label: 'TEAM OF THE WEEK',
+    title: 'TOTW release tracker',
+    description: 'Use the analysis video for timing context. This page does not claim a TOTW is live until the content is actually available.',
+    chip: 'LIVE CHECK',
+    statusLabel: 'RELEASE STATUS',
+    statusTitle: 'Check before claiming',
+    statusBody: 'There is no fake player list here. When the official TOTW content is confirmed, this section can be populated without changing the Football Centre scoring system.',
+    safetyLabel: 'SAFETY NOTE',
+    safetyTitle: 'No guaranteed predictions',
+    safetyBody: 'Analysis and timing information are informational only. Football Centre rewards are based on your recorded match outcomes.'
+  },
+  settings: {
+    cycleId: '2026-09',
+    startingBalance: 0,
+    scoring: {
+      played: 80,
+      worldClass: 20,
+      correctPrediction: 400
+    }
+  },
   videoEmbedUrl: 'https://www.youtube.com/embed/KvgulT3RtFE',
   videoWatchUrl: 'https://www.youtube.com/watch?v=KvgulT3RtFE'
 };
