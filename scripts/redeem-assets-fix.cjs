@@ -3,47 +3,151 @@ const fs = require('node:fs');
 const path = 'src/pages/redeem-codes.astro';
 let text = fs.readFileSync(path, 'utf8');
 
-const replacements = [
-  [
-    /const heroImage =\s*'[^']*';/,
-    `const heroBanner = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_2000/v1789654488/fc-mobile-tools/wsaga0c3xdaqq3yggrme.png';\nconst heroVisual = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1000/v1789653531/fc-mobile-tools/o6ocwktktmw5yml9n8km.png';\nconst heroRewardVisual = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_700/v1789655014/fc-mobile-tools/clmgprc6viqdrp4zhdfj.png';`,
+const assetBlock = /const (?:heroBanner|heroImage)\s*=\s*['\"][\s\S]*?const heroRewardVisual\s*=\s*['\"][^'\"]*['\"];?/;
+const assets = `const heroObject = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1000/v1789655014/fc-mobile-tools/clmgprc6viqdrp4zhdfj.png';
+const heroSupport = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_900/v1789653531/fc-mobile-tools/o6ocwktktmw5yml9n8km.png';
+const heroStrip = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1400/v1789654488/fc-mobile-tools/wsaga0c3xdaqq3yggrme.png';`;
+if (!assetBlock.test(text)) throw new Error('Hero asset block not found');
+text = text.replace(assetBlock, assets);
+
+const pageSchemaPattern = /const pageSchema = \{[\s\S]*?\n\};\n\nconst breadcrumbSchema =/;
+const pageSchema = `const pageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'FC Mobile Redeem Codes | Working Codes, Rewards & EA Redemption | FCMOBILETOOLS',
+  description: 'Find working FC Mobile redeem codes, active codes, rewards and official EA redemption steps on FCMOBILETOOLS.',
+  url: new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
+  dateModified: lastUpdated || undefined,
+  primaryImageOfPage: {
+    '@type': 'ImageObject',
+    contentUrl: heroObject,
+    caption: 'FC Mobile redeem codes and rewards on FCMOBILETOOLS',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'FCMOBILETOOLS',
+  },
+  about: [
+    { '@type': 'Thing', name: 'FC Mobile redeem codes' },
+    { '@type': 'Thing', name: 'EA FC Mobile codes' },
+    { '@type': 'Thing', name: 'FC Mobile rewards' },
   ],
-  [/contentUrl: heroImage,/g, 'contentUrl: heroBanner,'],
-  [/  image=\{heroImage\}/g, '  image={heroBanner}'],
-];
+  mainEntity: {
+    '@type': 'ItemList',
+    name: 'Working FC Mobile redeem codes',
+    numberOfItems: activeCodes.length,
+    itemListElement: activeCodes.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.code,
+      description: item.reward,
+    })),
+  },
+};
 
-for (const [pattern, replacement] of replacements) {
-  const next = text.replace(pattern, replacement);
-  if (next === text) throw new Error(`Patch pattern not found: ${pattern}`);
-  text = next;
-}
+const breadcrumbSchema =`;
+if (!pageSchemaPattern.test(text)) throw new Error('Page schema block not found');
+text = text.replace(pageSchemaPattern, pageSchema);
 
-const newHeader = `      <header class="hero">
-        <div class="hero-banner" aria-hidden="true">
-          <img
-            class="hero-banner-image"
-            src={heroBanner}
-            alt=""
-            width="2000"
-            height="900"
-            fetchpriority="high"
-            decoding="async"
-          />
-          <div class="hero-banner-shade"></div>
-        </div>
+const faqInsertPattern = /const breadcrumbSchema = \{[\s\S]*?\n\};\n---/;
+const faqTail = `const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'FCMOBILETOOLS',
+      item: new URL('/', Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'FC Mobile Redeem Codes',
+      item: new URL('/redeem-codes', Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
+    },
+  ],
+};
 
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'What are FC Mobile redeem codes?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'FC Mobile redeem codes are promotional codes redeemed through EA\'s official FC Mobile redemption website for in-game rewards such as Gems, Coins, Player Items or Packs.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'How do I redeem an FC Mobile code?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Open the official EA FC Mobile redemption page, sign in with the EA Account linked to your FC Mobile game, enter the valid code and select Redeem. Successful rewards are delivered to the in-game inbox.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Why is my FC Mobile redeem code not working?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Check that the code is entered exactly, has not expired or reached its usage limit, and that the EA Account you use is the same account linked to your FC Mobile game.',
+      },
+    },
+  ],
+};
+---`;
+if (!faqInsertPattern.test(text)) throw new Error('Breadcrumb schema block not found');
+text = text.replace(faqInsertPattern, faqTail);
+
+text = text
+  .replace(/  title="[^"]*FC Mobile Redeem Codes[^"]*"/, '  title="FC Mobile Redeem Codes | Working Codes, Rewards & EA Redemption | FCMOBILETOOLS"')
+  .replace(/  description="[^"]*"/, '  description="Find working FC Mobile redeem codes, active codes, rewards and official EA redemption steps on FCMOBILETOOLS. Check status, copy codes and redeem through EA."')
+  .replace(/  image=\{heroBanner\}/, '  image={heroObject}')
+  .replace(/TANZIMFC \/ FC MOBILE TOOLS/g, 'FCMOBILETOOLS / FC MOBILE TOOLS')
+  .replace(/contentUrl: heroBanner/g, 'contentUrl: heroObject')
+  .replace(/<section class="seo-expanded" aria-labelledby="redeem-guide-heading">[\s\S]*?<\/section>/, `<section class="seo-expanded" aria-labelledby="redeem-guide-heading">
+  <span class="section-kicker">FC MOBILE REDEEM CODE GUIDE</span>
+  <h2 id="redeem-guide-heading">FC Mobile redeem codes, rewards and redemption guide</h2>
+  <p>FCMOBILETOOLS keeps FC Mobile redeem codes in one searchable place with active, scheduled and expired records, reward details, release dates and verification dates. Use the working-code section for current entries, then continue to EA\'s official redemption page.</p>
+  <p>FC Mobile redeem codes can unlock rewards such as Coins, Gems, Player Items and Packs when an official promotion is available. Codes can expire or have usage limits, so check the status shown here before redeeming.</p>
+  <p>When a code fails, copy it exactly, confirm it has not expired, and use the same EA Account linked to your FC Mobile game. Successful redemptions are delivered through the in-game inbox.</p>
+</section>
+
+<section class="faq-section" aria-labelledby="redeem-faq-heading">
+  <span class="section-kicker">FC MOBILE REDEEM CODE FAQ</span>
+  <h2 id="redeem-faq-heading">Common FC Mobile code questions</h2>
+  <div class="faq-list">
+    <details open>
+      <summary>What are FC Mobile redeem codes?</summary>
+      <p>They are promotional codes redeemed through EA\'s official FC Mobile redemption website for rewards such as Gems, Coins, Player Items or Packs.</p>
+    </details>
+    <details>
+      <summary>How do I redeem an FC Mobile code?</summary>
+      <p>Open the official EA redemption page, sign in with the EA Account linked to your FC Mobile game, enter the code and select Redeem. Successful rewards arrive in your in-game inbox.</p>
+    </details>
+    <details>
+      <summary>Why is my FC Mobile code not working?</summary>
+      <p>Check the code exactly, confirm it has not expired or reached its usage limit, and make sure you are using the same EA Account linked to FC Mobile.</p>
+    </details>
+  </div>
+</section>`)
+  .replace(/<header class="hero">[\s\S]*?<\/header>\n\n/, `      <header class="hero">
         <div class="hero-copy">
           <div class="eyebrow">
-            <span></span>
-            TANZIMFC / FC MOBILE TOOLS
-            <b><i></i> LIVE CODE DATABASE</b>
+            <span class="eyebrow-line"></span>
+            FCMOBILETOOLS / FC MOBILE TOOLS
+            <b class="live-status"><i></i> LIVE CODE DATABASE</b>
           </div>
 
           <h1>FC Mobile <em>Redeem Codes</em></h1>
 
           <p class="hero-lede">
-            Find working FC Mobile redeem codes, check whether a code is active,
-            copy it in one tap, and continue straight to the official EA redemption page.
+            Find working FC Mobile redeem codes, check active status, copy a code in one tap,
+            and continue straight to the official EA redemption page.
           </p>
 
           <div class="hero-actions">
@@ -52,64 +156,174 @@ const newHeader = `      <header class="hero">
               Open EA redemption <span>↗</span>
             </a>
           </div>
+
+          <div class="hero-trust" aria-label="FCMOBILETOOLS redeem code features">
+            <span><i></i> Active + archived tracking</span>
+            <span><i></i> Copy ready</span>
+            <span><i></i> Official EA destination</span>
+          </div>
         </div>
 
         <div class="hero-showcase" aria-label="FC Mobile redeem code artwork">
-          <div class="hero-visual-main">
-            <img
-              src={heroVisual}
-              alt="FC Mobile redeem code artwork"
-              width="1000"
-              height="1000"
-              decoding="async"
-            />
-          </div>
-          <div class="hero-visual-secondary">
-            <img
-              src={heroRewardVisual}
-              alt="FC Mobile reward artwork"
-              width="700"
-              height="700"
-              loading="lazy"
-              decoding="async"
-            />
+          <div class="hero-stage">
+            <div class="hero-stage-glow"></div>
+            <div class="hero-ring hero-ring-one"></div>
+            <div class="hero-ring hero-ring-two"></div>
+
+            <div class="hero-object-main">
+              <img
+                src={heroObject}
+                alt="FC Mobile redeem codes artwork"
+                width="1000"
+                height="1000"
+                fetchpriority="high"
+                decoding="async"
+              />
+            </div>
+
+            <div class="hero-object-secondary">
+              <img
+                src={heroSupport}
+                alt="FC Mobile rewards artwork"
+                width="900"
+                height="900"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <div class="hero-strip-card">
+              <img src={heroStrip} alt="" width="1400" height="900" loading="lazy" decoding="async" aria-hidden="true" />
+              <div class="hero-strip-overlay">
+                <span>FC MOBILE CODES</span>
+                <b><i></i> LIVE</b>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-`;
-
-const headerPattern = /      <header class="hero">[\s\S]*?      <\/header>\n\n/;
-if (!headerPattern.test(text)) throw new Error('Redeem hero block not found');
-text = text.replace(headerPattern, newHeader);
-
-const stylePattern = /  <style is:global>[\s\S]*?<\/style>\n\n<script define:vars=/;
-if (!stylePattern.test(text)) throw new Error('Redeem global hero style block not found');
-
-const newStyle = `  <style is:global>
-.codes-page .hero{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr);align-items:center;min-height:clamp(560px,58vw,720px);margin-bottom:8px;overflow:hidden;border:1px solid #21465c;border-radius:30px;background:#06131d;box-shadow:0 35px 100px #0009,inset 0 0 0 1px #56d6ff12}
-.codes-page .hero:after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#031019f5 0%,#06131dcc 30%,#06131d80 55%,#06131d18 78%,transparent 100%),linear-gradient(0deg,#02080dcc 0%,transparent 45%,#02080d33 100%)}
-.codes-page .hero-banner{position:absolute;inset:0;z-index:0;overflow:hidden}
-.codes-page .hero-banner-image{width:100%;height:100%;display:block;object-fit:cover;object-position:center center;filter:saturate(1.03) contrast(1.02);transform:scale(1.015)}
-.codes-page .hero-banner-shade{position:absolute;inset:0;background:radial-gradient(circle at 74% 48%,#56d6ff10,transparent 34%),linear-gradient(180deg,transparent 60%,#02070bbf 100%)}
-.codes-page .hero-copy{position:relative;z-index:3;max-width:720px;min-height:clamp(560px,58vw,720px);display:flex;flex-direction:column;justify-content:center;padding:clamp(42px,6vw,82px)}
-.codes-page .hero-copy h1{max-width:650px;font-size:clamp(48px,6.5vw,86px);line-height:.94;letter-spacing:-.065em;text-shadow:0 8px 40px #0009}
-.codes-page .hero-copy .hero-lede{max-width:590px;color:#d1e3ef}
-.codes-page .hero-showcase{position:relative;z-index:3;min-height:clamp(430px,50vw,620px);display:flex;align-items:center;justify-content:center;padding:36px 52px 36px 0}
-.codes-page .hero-visual-main{position:relative;width:min(470px,100%);transform:translate(6%,2%) rotate(1.2deg);filter:drop-shadow(0 32px 42px #000a)}
-.codes-page .hero-visual-main img{display:block;width:100%;height:auto;max-height:560px;object-fit:contain}
-.codes-page .hero-visual-secondary{position:absolute;right:2%;bottom:8%;width:min(210px,31%);transform:rotate(-4deg);filter:drop-shadow(0 24px 32px #000b);transition:transform .22s ease}
-.codes-page .hero-visual-secondary:hover{transform:translateY(-5px) rotate(-2deg)}
-.codes-page .hero-visual-secondary img{display:block;width:100%;height:auto;object-fit:contain}
+`)
+  .replace(/  <style is:global>[\s\S]*?<\/style>\n\n<script define:vars=/, `  <style is:global>
+.codes-page .hero{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,.9fr) minmax(420px,1.1fr);align-items:center;min-height:clamp(600px,72vh,760px);margin-bottom:10px;padding:clamp(28px,4.2vw,58px) clamp(20px,4.4vw,58px);overflow:hidden;border:1px solid #1f4053;border-radius:30px;background:radial-gradient(circle at 78% 40%,#1cb8ef0b,transparent 26%),linear-gradient(145deg,#09131b,#071018 55%,#08131d);box-shadow:0 34px 90px #0009,inset 0 0 0 1px #56d6ff0c}
+.codes-page .hero:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#071018a8,transparent 48%,#56d6ff05 100%)}
+.codes-page .hero-copy{position:relative;z-index:4;min-width:0;max-width:700px;display:flex;flex-direction:column;justify-content:center}
+.codes-page .hero-copy h1{max-width:700px;margin:20px 0 18px;font-size:clamp(46px,6.2vw,84px);line-height:.95;letter-spacing:-.067em;text-shadow:0 8px 40px #0009}
+.codes-page .hero-copy .hero-lede{max-width:620px;color:#c4d6df}
+.codes-page .eyebrow{gap:10px}
+.codes-page .eyebrow-line{width:28px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
+.codes-page .live-status{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;border:1px solid #ff4d4d35;border-radius:999px;background:#ff3d3d08;color:#ff8d8d;font-size:7px;letter-spacing:.11em}
+.codes-page .live-status i,.codes-page .hero-strip-overlay b i{width:6px;height:6px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 0 0 #ff4d4d55;animation:live-beat 1.5s ease-in-out infinite}
+.codes-page .hero-trust{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+.codes-page .hero-trust span{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid #20343f;border-radius:999px;background:#09141b99;color:#86a0ad;font:600 8px var(--mono)}
+.codes-page .hero-trust i{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px #56d6ff0b}
+.codes-page .hero-showcase{position:relative;z-index:3;min-width:0;min-height:500px;display:grid;place-items:center}
+.codes-page .hero-stage{position:relative;width:min(100%,620px);aspect-ratio:1.08/1;margin-inline:auto}
+.codes-page .hero-stage-glow{position:absolute;inset:16% 13% 14%;border-radius:50%;background:radial-gradient(circle,#56d6ff18 0%,#56d6ff08 38%,transparent 72%);filter:blur(14px);animation:glow-breathe 5s ease-in-out infinite}
+.codes-page .hero-ring{position:absolute;border-radius:50%;border:1px solid #56d6ff14;pointer-events:none}
+.codes-page .hero-ring-one{inset:10% 8%;transform:rotate(14deg);animation:slow-spin 28s linear infinite}
+.codes-page .hero-ring-two{inset:20% 17%;border-color:#5c7eff12;transform:rotate(-14deg);animation:slow-spin-reverse 34s linear infinite}
+.codes-page .hero-object-main{position:absolute;left:50%;top:48%;width:min(72%,500px);transform:translate3d(-48%,-50%,0) rotate(calc(var(--tilt,0) * 1deg));filter:drop-shadow(0 34px 44px #000b);transition:transform .18s ease-out}
+.codes-page .hero-object-main img{display:block;width:100%;height:auto;object-fit:contain}
+.codes-page .hero-object-secondary{position:absolute;right:1%;top:12%;width:clamp(120px,23%,190px);transform:rotate(5deg);filter:drop-shadow(0 22px 34px #000a);animation:hero-float 6s ease-in-out infinite}
+.codes-page .hero-object-secondary img{display:block;width:100%;height:auto;object-fit:contain}
+.codes-page .hero-strip-card{position:absolute;left:4%;bottom:2%;width:min(76%,410px);aspect-ratio:2.35/1;overflow:hidden;border:1px solid #2b5268;border-radius:16px;background:#09131a;box-shadow:0 18px 45px #0008;transform:rotate(-2deg);transition:transform .2s ease,border-color .2s ease}
+.codes-page .hero-strip-card:hover{transform:translateY(-5px) rotate(-1deg);border-color:#4f89a5}
+.codes-page .hero-strip-card img{width:100%;height:100%;display:block;object-fit:cover;object-position:center;filter:saturate(.9) contrast(1.06);opacity:.8}
+.codes-page .hero-strip-card:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#061018e8 0%,#061018a0 45%,#06101810 100%)}
+.codes-page .hero-strip-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 13px;z-index:2;color:#cbe8f2;font:700 8px var(--mono);letter-spacing:.12em}
+.codes-page .hero-strip-overlay b{display:inline-flex;align-items:center;gap:6px;color:#ff9292}
 .codes-page .seo-expanded{margin-top:22px;padding:34px;border:1px solid #1d3343;border-radius:22px;background:linear-gradient(145deg,#0b151f,#071018)}
-.codes-page .seo-expanded h2{margin-bottom:14px}
+.codes-page .seo-expanded h2,.codes-page .faq-section h2{margin-bottom:14px}
 .codes-page .seo-expanded p{max-width:900px;color:#a9bac8;line-height:1.85}
-@media(max-width:1050px){.codes-page .hero{grid-template-columns:1fr;min-height:760px}.codes-page .hero-copy{min-height:430px;max-width:760px;justify-content:end;padding-bottom:8px}.codes-page .hero-showcase{min-height:360px;padding:0 50px 42px}.codes-page .hero-visual-main{width:min(390px,70vw);transform:translateX(-3%)}.codes-page .hero-visual-secondary{width:min(180px,25vw);right:8%;bottom:5%}}
-@media(max-width:700px){.codes-page .hero{min-height:720px;border-radius:22px}.codes-page .hero-copy{min-height:0;padding:38px 24px 0;justify-content:flex-start}.codes-page .hero-copy h1{font-size:clamp(42px,12vw,64px)}.codes-page .hero-actions{flex-direction:column}.codes-page .hero-actions .btn{width:100%}.codes-page .hero-showcase{min-height:355px;padding:14px 22px 34px}.codes-page .hero-visual-main{width:min(330px,78vw);transform:translateX(-6%)}.codes-page .hero-visual-secondary{width:min(145px,34vw);right:3%;bottom:4%}.codes-page .hero-banner-image{object-position:62% center}}
+.codes-page .faq-section{margin-top:22px;padding:34px;border:1px solid #1d3343;border-radius:22px;background:linear-gradient(145deg,#0a141d,#071017)}
+.codes-page .faq-list{display:grid;gap:9px;margin-top:18px}
+.codes-page .faq-list details{border:1px solid #1b303c;border-radius:14px;background:#09131a;overflow:hidden}
+.codes-page .faq-list summary{cursor:pointer;list-style:none;padding:15px 16px;color:#dff2f8;font:700 10px var(--sans)}
+.codes-page .faq-list summary::-webkit-details-marker{display:none}
+.codes-page .faq-list summary:after{content:"+";float:right;color:var(--cyan);font:700 16px var(--mono);line-height:1}
+.codes-page .faq-list details[open] summary:after{content:"−"}
+.codes-page .faq-list p{margin:0;padding:0 16px 16px;color:#91a8b4;font-size:10px;line-height:1.75}
+@keyframes live-beat{0%,100%{opacity:1;box-shadow:0 0 0 0 #ff4d4d55}50%{opacity:.65;box-shadow:0 0 0 7px #ff4d4d00}}
+@keyframes glow-breathe{0%,100%{opacity:.8;transform:scale(.98)}50%{opacity:1;transform:scale(1.03)}}
+@keyframes hero-float{0%,100%{transform:translateY(0) rotate(5deg)}50%{transform:translateY(-8px) rotate(3.5deg)}}
+@keyframes slow-spin{to{transform:rotate(374deg)}}
+@keyframes slow-spin-reverse{to{transform:rotate(-374deg)}}
+@media(max-width:1100px){.codes-page .hero{grid-template-columns:1fr;min-height:760px}.codes-page .hero-copy{max-width:820px}.codes-page .hero-showcase{min-height:410px}.codes-page .hero-stage{width:min(92vw,560px)}}
+@media(max-width:700px){.codes-page .hero{min-height:auto;padding:34px 20px 24px;border-radius:22px}.codes-page .hero-copy h1{font-size:clamp(42px,12vw,64px)}.codes-page .hero-actions{flex-direction:column}.codes-page .hero-actions .btn{width:100%}.codes-page .hero-trust{display:grid}.codes-page .hero-trust span{width:fit-content}.codes-page .hero-showcase{min-height:370px;margin-top:12px}.codes-page .hero-stage{width:100%;aspect-ratio:1/1}.codes-page .hero-object-main{width:min(78vw,360px);top:47%}.codes-page .hero-object-secondary{width:clamp(104px,29vw,145px);right:0;top:9%}.codes-page .hero-strip-card{left:1%;bottom:1%;width:min(82%,330px)}.codes-page .hero-strip-overlay{padding-inline:10px;font-size:7px}.codes-page .seo-expanded,.codes-page .faq-section{padding:22px;border-radius:18px}}
+@media(max-width:430px){.codes-page .hero-copy{padding-inline:0}.codes-page .hero-showcase{min-height:340px}.codes-page .hero-object-main{width:82vw}.codes-page .hero-object-secondary{right:-2%;width:118px}.codes-page .hero-strip-card{width:76%;bottom:0}}
+@media(prefers-reduced-motion:reduce){.codes-page .live-status i,.codes-page .hero-stage-glow,.codes-page .hero-object-secondary,.codes-page .hero-ring-one,.codes-page .hero-ring-two{animation:none}.codes-page .hero-object-main,.codes-page .hero-strip-card{transition:none}}
 </style>
 
-<script define:vars=`;
+<script define:vars=`)
+  .replace(/\bheroBanner\b/g, 'heroStrip')
+  .replace(/\bheroVisual\b/g, 'heroObject')
+  .replace(/\bheroRewardVisual\b/g, 'heroSupport');
 
-text = text.replace(stylePattern, newStyle);
+const scriptPattern = /<script define:vars=\{\{ pageSchema, breadcrumbSchema \}\}>[\s\S]*?<\/script>/;
+if (!scriptPattern.test(text)) throw new Error('Redeem page script block not found');
+const newScript = `<script define:vars={{ pageSchema, breadcrumbSchema, faqSchema }}>
+    const toast = document.getElementById('toast');
+    const notify = (message) => {
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.clearTimeout(window.__redeemToast);
+      window.__redeemToast = window.setTimeout(() => toast.classList.remove('show'), 1900);
+    };
+
+    const copyCode = async (code, button) => {
+      try {
+        await navigator.clipboard.writeText(code);
+        if (button) {
+          const original = button.innerHTML;
+          button.innerHTML = 'Copied <span>✓</span>';
+          window.setTimeout(() => { button.innerHTML = original; }, 1500);
+        }
+        notify(\`${'${code}'} copied to clipboard\`);
+      } catch {
+        notify('Clipboard access is unavailable');
+      }
+    };
+
+    document.querySelectorAll('[data-copy]').forEach((button) => {
+      button.addEventListener('click', () => copyCode(button.dataset.copy, button));
+    });
+
+    const showcase = document.querySelector('.hero-showcase');
+    const heroObject = document.querySelector('.hero-object-main');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (showcase && heroObject && !reducedMotion) {
+      showcase.addEventListener('pointermove', (event) => {
+        if (event.pointerType && event.pointerType !== 'mouse') return;
+        const rect = showcase.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+        const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+        heroObject.style.setProperty('--tilt', String((x * 2.2) - (y * 1.2)));
+        heroObject.style.transform = \`translate3d(-48%,-50%,0) rotate(${(x * 2.2) - (y * 1.2)}deg) translate3d(${x * 4}px, ${y * 3}px, 0)\`;
+      });
+      showcase.addEventListener('pointerleave', () => {
+        heroObject.style.setProperty('--tilt', '0');
+        heroObject.style.transform = 'translate3d(-48%,-50%,0) rotate(0deg)';
+      });
+    }
+
+    const ld = document.createElement('script');
+    ld.type = 'application/ld+json';
+    ld.textContent = JSON.stringify(pageSchema);
+    document.head.appendChild(ld);
+
+    const crumbs = document.createElement('script');
+    crumbs.type = 'application/ld+json';
+    crumbs.textContent = JSON.stringify(breadcrumbSchema);
+    document.head.appendChild(crumbs);
+
+    const faqLd = document.createElement('script');
+    faqLd.type = 'application/ld+json';
+    faqLd.textContent = JSON.stringify(faqSchema);
+    document.head.appendChild(faqLd);
+  </script>`;
+text = text.replace(scriptPattern, newScript);
+
 fs.writeFileSync(path, text);
-console.log('Redeem hero updated with three separate Cloudinary assets');
+console.log('Final FCMOBILETOOLS redeem hero and SEO polish applied');
