@@ -123,6 +123,33 @@ function validateFootball(content) {
   if(!content.videoEmbedUrl || !content.videoWatchUrl) { content.videoEmbedUrl=content.analysis.videoEmbedUrl; content.videoWatchUrl=content.analysis.videoWatchUrl; }
 }
 
+function parseRankUp(text) {
+  const m=text.match(/export const RANKS = (\[[\s\S]*?\]);\s*export const RANK_COSTS = (\[[\s\S]*?\]);/);
+  if(!m) throw new Error('Rank Up data file has an unexpected format.');
+  const ranks=JSON.parse(m[1]); const costs=JSON.parse(m[2].replace(/Infinity/g,'null'));
+  costs.forEach(x=>{if(x.max===null)x.max='Infinity';}); return {ranks,costs};
+}
+function rankUpText(data) {
+  const ranks=data.ranks.map((r,i)=>({value:i,name:String(r.name||'').trim()}));
+  const costs=data.costs.map(x=>({min:Number(x.min),max:x.max==='Infinity'||x.max===null?'Infinity':Number(x.max),label:String(x.label||'').trim(),costs:x.costs.map(Number)}));
+  return `export const RANKS = ${JSON.stringify(ranks,null,2)};\n\nexport const RANK_COSTS = ${JSON.stringify(costs,null,2).replace(/"Infinity"/g,'Infinity')};\n\nexport function getRankBracket(baseOVR) {\n  const value = Number(baseOVR);\n  if (!Number.isInteger(value) || value < 0) return null;\n  return RANK_COSTS.find((item) => value >= item.min && value <= item.max) ?? null;\n}\n`;
+}
+function validateRankUp(data) {
+  if(!data||!Array.isArray(data.ranks)||data.ranks.length!==6||!Array.isArray(data.costs)||!data.costs.length) throw new Error('Rank Up data is incomplete.');
+  data.ranks.forEach((r,i)=>{if(!String(r.name||'').trim()) throw new Error(`Rank R${i} needs a name.`);});
+  data.costs.forEach((x,i)=>{if(!String(x.label||'').trim()||!Number.isFinite(Number(x.min))||!Array.isArray(x.costs)||x.costs.length!==5) throw new Error(`Rank bracket ${i+1} is incomplete.`);x.costs.forEach(c=>{if(!Number.isFinite(Number(c))||Number(c)<0) throw new Error('Rank Up costs must be non-negative numbers.');});});
+}
+function parseTraining(text) {
+  const levels=text.match(/export const TRAINING_LEVELS = (\[[\s\S]*?\]);/)?.[1]; const fodder=text.match(/export const FODDER = (\[[\s\S]*?\]);/)?.[1];
+  if(!levels||!fodder) throw new Error('Training data file has an unexpected format.'); return {levels:JSON.parse(levels),fodder:JSON.parse(fodder)};
+}
+function trainingText(data) { return `// Training calculator data managed by the admin panel.\nexport const TRAINING_LEVELS = ${JSON.stringify(data.levels,null,2)};\n\nexport const FODDER = ${JSON.stringify(data.fodder,null,2)};\n\nexport const MAX_TRAINING_LEVEL = ${data.levels.length-1};\nexport const TRAINING_TRANSFER_RATE = 0.9;\n`; }
+function validateTraining(data) {
+  if(!data||!Array.isArray(data.levels)||data.levels.length<2||!Array.isArray(data.fodder)||!data.fodder.length) throw new Error('Training data is incomplete.');
+  data.levels.forEach((v,i)=>{if(!Number.isFinite(Number(v))||Number(v)<0||(i&&Number(v)<Number(data.levels[i-1]))) throw new Error('Training XP levels must be non-negative and ascending.');});
+  data.fodder.forEach((x,i)=>{if(!x?.id||!String(x.label||'').trim()||!Number.isFinite(Number(x.xp))||Number(x.xp)<0) throw new Error(`Fodder entry ${i+1} is invalid.`);});
+}
+
 async function api(request,env,path) {
   if(path === '/login' && request.method === 'POST') {
     if(!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD || !env.ADMIN_SESSION_SECRET) return json({error:'Admin authentication is not configured in the Worker.'},503);
@@ -147,6 +174,10 @@ async function api(request,env,path) {
       const commitSha=await writeRepoFile(env,'src/data/redeemCodes.js',redeemText(codes),file.sha,`admin: update redeem code ${code.code}`);
       return json({ok:true,commitSha,action:i>=0?'updated':'created'});
     }
+    if(path === '/rank-up' && request.method === 'GET') return json(parseRankUp((await repoFile(env,'src/data/fcMobileRankUp.js')).text));
+    if(path === '/rank-up' && request.method === 'POST') { const data=await request.json(); validateRankUp(data); const file=await repoFile(env,'src/data/fcMobileRankUp.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileRankUp.js',rankUpText(data),file.sha,'admin: update Rank Up Points data'); return json({ok:true,commitSha}); }
+    if(path === '/training' && request.method === 'GET') return json(parseTraining((await repoFile(env,'src/data/fcMobileTraining.js')).text));
+    if(path === '/training' && request.method === 'POST') { const data=await request.json(); validateTraining(data); const file=await repoFile(env,'src/data/fcMobileTraining.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileTraining.js',trainingText(data),file.sha,'admin: update Training XP data'); return json({ok:true,commitSha}); }
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
     if(path === '/football' && request.method === 'POST') {
       const {content}=await request.json();
