@@ -1,0 +1,73 @@
+name: Fix redeem hero object overflow
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.head_commit.message != 'Fix redeem hero object overflow implementation'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Constrain redeem hero on every viewport
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/pages/redeem-codes.astro')
+          s = p.read_text()
+          css = '''
+/* Hero overflow correction */
+.codes-page { overflow-x: clip; }
+.codes-page .codes-wrap { width: min(100%, 1180px); min-width: 0; margin-inline: auto; }
+.codes-page .hero {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.codes-page .hero-copy { min-width: 0; }
+.codes-page .hero-object-main {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: min(100%, 560px);
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  transform: none;
+}
+.codes-page .hero-object-main img { width: 100%; max-width: 100%; height: auto; }
+@media (max-width: 900px) {
+  .codes-page .hero { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .codes-page .hero-object-main { width: min(78vw, 520px); }
+}
+@media (max-width: 600px) {
+  .codes-page .hero { padding-inline: 16px; }
+  .codes-page .hero-object-main { width: min(88vw, 430px); }
+}
+'''
+          marker = '</style>'
+          idx = s.rfind(marker)
+          if idx < 0:
+              raise SystemExit('style block not found')
+          s = s[:idx] + css + s[idx:]
+          p.write_text(s)
+          PY
+      - name: Commit implementation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pages/redeem-codes.astro
+          git commit -m 'Fix redeem hero object overflow implementation'
+          git push
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          git rm .github/workflows/redeem-object-overflow-fix.yml || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Remove temporary redeem overflow workflow' || true
+          git push || true
