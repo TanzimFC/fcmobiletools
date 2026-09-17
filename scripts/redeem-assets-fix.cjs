@@ -299,8 +299,9 @@ const newScript = `<script define:vars={{ pageSchema, breadcrumbSchema, faqSchem
         const rect = showcase.getBoundingClientRect();
         const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
         const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-        heroObject.style.setProperty('--tilt', String((x * 2.2) - (y * 1.2)));
-        heroObject.style.transform = \`translate3d(-48%,-50%,0) rotate(${(x * 2.2) - (y * 1.2)}deg) translate3d(${x * 4}px, ${y * 3}px, 0)\`;
+        const tilt = (x * 2.2) - (y * 1.2);
+        heroObject.style.setProperty('--tilt', String(tilt));
+        heroObject.style.transform = \`translate3d(-48%,-50%,0) rotate(${tilt}deg) translate3d(${x * 4}px, ${y * 3}px, 0)\`;
       });
       showcase.addEventListener('pointerleave', () => {
         heroObject.style.setProperty('--tilt', '0');
@@ -326,4 +327,4 @@ const newScript = `<script define:vars={{ pageSchema, breadcrumbSchema, faqSchem
 text = text.replace(scriptPattern, newScript);
 
 fs.writeFileSync(path, text);
-console.log('Final FCMOBILETOOLS redeem hero and SEO polish applied');
+console.log('Final FCMOBILETOOLS redeem hero and SEO polish applied - trigger v2');
