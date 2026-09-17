@@ -1,0 +1,35 @@
+name: Finalize redeem page
+on:
+  push:
+    branches: [main]
+    paths: [scripts/finalize-redeem.cjs]
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/finalize-redeem.cjs
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/redeem-codes.astro
+          git commit -m "design: final redeem page polish"
+          git push
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run build
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+      - run: |
+          rm -f scripts/finalize-redeem.cjs
+          git rm -f .github/workflows/finalize-redeem.yml .github/workflows/redeem-assets-fix.yml scripts/redeem-assets-fix.cjs 2>/dev/null || true
+          git add -A
+          git commit -m "chore: remove temporary redeem tooling" || true
+          git push || true
