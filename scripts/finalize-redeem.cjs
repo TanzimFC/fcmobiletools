@@ -10,7 +10,7 @@ function replaceOnce(pattern, replacement, label) {
 }
 
 replaceOnce(/const heroBanner = '[^']*';\nconst heroVisual = '[^']*';\nconst heroRewardVisual = '[^']*';/, `const heroObject = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1000/v1789655014/fc-mobile-tools/clmgprc6viqdrp4zhdfj.png';
-const heroSupport = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_900/v1789653531/fc-mobile-tools/o6ocwktktmw5yml9n8km.png';
+const heroSupport = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_900/v1789653531/fc-mobile-tools/o6ocwktmw5yml9n8km.png';
 const heroStrip = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1400/v1789654488/fc-mobile-tools/wsaga0c3xdaqq3yggrme.png';`, 'hero assets');
 
 replaceOnce(/const pageSchema = \{[\s\S]*?\n\};\n\nconst breadcrumbSchema =/, `const pageSchema = {
@@ -20,11 +20,7 @@ replaceOnce(/const pageSchema = \{[\s\S]*?\n\};\n\nconst breadcrumbSchema =/, `c
   description: 'Find working FC Mobile redeem codes, active codes, rewards and official EA redemption steps on FCMOBILETOOLS.',
   url: new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
   dateModified: lastUpdated || undefined,
-  primaryImageOfPage: {
-    '@type': 'ImageObject',
-    contentUrl: heroObject,
-    caption: 'FC Mobile redeem codes and rewards on FCMOBILETOOLS',
-  },
+  primaryImageOfPage: { '@type': 'ImageObject', contentUrl: heroObject, caption: 'FC Mobile redeem codes and rewards on FCMOBILETOOLS' },
   publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
   about: [
     { '@type': 'Thing', name: 'FC Mobile redeem codes' },
@@ -35,9 +31,7 @@ replaceOnce(/const pageSchema = \{[\s\S]*?\n\};\n\nconst breadcrumbSchema =/, `c
     '@type': 'ItemList',
     name: 'Working FC Mobile redeem codes',
     numberOfItems: activeCodes.length,
-    itemListElement: activeCodes.map((item, index) => ({
-      '@type': 'ListItem', position: index + 1, name: item.code, description: item.reward,
-    })),
+    itemListElement: activeCodes.map((item, index) => ({ '@type': 'ListItem', position: index + 1, name: item.code, description: item.reward })),
   },
 };
 
@@ -75,40 +69,22 @@ const heroMarkup = `      <header class="hero">
             FCMOBILETOOLS / FC MOBILE TOOLS
             <b class="live-status"><i></i> LIVE CODE DATABASE</b>
           </div>
-
           <h1>FC Mobile <em>Redeem Codes</em></h1>
           <p class="hero-lede">Find working FC Mobile redeem codes, check active status, copy a code in one tap, and continue straight to the official EA redemption page.</p>
-
           <div class="hero-actions">
             <a class="btn btn-primary" href="#live">View active codes <span>↓</span></a>
             <a class="btn btn-ghost" href="https://redeem.fcm.ea.com/" target="_blank" rel="noopener noreferrer">Open EA redemption <span>↗</span></a>
           </div>
-
           <div class="hero-trust" aria-label="FCMOBILETOOLS redeem code features">
-            <span><i></i> Active + archived tracking</span>
-            <span><i></i> Copy ready</span>
-            <span><i></i> Official EA destination</span>
+            <span><i></i> Active + archived tracking</span><span><i></i> Copy ready</span><span><i></i> Official EA destination</span>
           </div>
         </div>
-
         <div class="hero-showcase" aria-label="FC Mobile redeem code artwork">
           <div class="hero-stage">
-            <div class="hero-stage-glow"></div>
-            <div class="hero-ring hero-ring-one"></div>
-            <div class="hero-ring hero-ring-two"></div>
-
-            <div class="hero-object-main">
-              <img src={heroObject} alt="FC Mobile redeem codes artwork" width="1000" height="1000" fetchpriority="high" decoding="async" />
-            </div>
-
-            <div class="hero-object-secondary">
-              <img src={heroSupport} alt="FC Mobile rewards artwork" width="900" height="900" loading="lazy" decoding="async" />
-            </div>
-
-            <div class="hero-strip-card">
-              <img src={heroStrip} alt="" width="1400" height="900" loading="lazy" decoding="async" aria-hidden="true" />
-              <div class="hero-strip-overlay"><span>FC MOBILE CODES</span><b><i></i> LIVE</b></div>
-            </div>
+            <div class="hero-stage-glow"></div><div class="hero-ring hero-ring-one"></div><div class="hero-ring hero-ring-two"></div>
+            <div class="hero-object-main"><img src={heroObject} alt="FC Mobile redeem codes artwork" width="1000" height="1000" fetchpriority="high" decoding="async" /></div>
+            <div class="hero-object-secondary"><img src={heroSupport} alt="FC Mobile rewards artwork" width="900" height="900" loading="lazy" decoding="async" /></div>
+            <div class="hero-strip-card"><img src={heroStrip} alt="" width="1400" height="900" loading="lazy" decoding="async" aria-hidden="true" /><div class="hero-strip-overlay"><span>FC MOBILE CODES</span><b><i></i> LIVE</b></div></div>
           </div>
         </div>
       </header>
@@ -123,7 +99,6 @@ const seoSection = `<section class="seo-expanded" aria-labelledby="redeem-guide-
   <p>FC Mobile redeem codes can unlock rewards such as Coins, Gems, Player Items and Packs when an official promotion is available. Codes can expire or have usage limits, so check the status shown here before redeeming.</p>
   <p>When a code fails, copy it exactly, confirm it has not expired, and use the same EA Account linked to your FC Mobile game. Successful redemptions are delivered through the in-game inbox.</p>
 </section>
-
 <section class="faq-section" aria-labelledby="redeem-faq-heading">
   <span class="section-kicker">FC MOBILE REDEEM CODE FAQ</span>
   <h2 id="redeem-faq-heading">Common FC Mobile code questions</h2>
@@ -138,10 +113,8 @@ replaceOnce(/<section class="seo-expanded" aria-labelledby="redeem-guide-heading
 const globalStyle = `  <style is:global>
 .codes-page .hero{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,.9fr) minmax(420px,1.1fr);align-items:center;min-height:clamp(600px,72vh,760px);margin-bottom:10px;padding:clamp(28px,4.2vw,58px) clamp(20px,4.4vw,58px);overflow:hidden;border:1px solid #1f4053;border-radius:30px;background:radial-gradient(circle at 78% 40%,#1cb8ef0b,transparent 26%),linear-gradient(145deg,#09131b,#071018 55%,#08131d);box-shadow:0 34px 90px #0009,inset 0 0 0 1px #56d6ff0c}
 .codes-page .hero:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#071018a8,transparent 48%,#56d6ff05 100%)}
-.codes-page .hero-copy{position:relative;z-index:4;min-width:0;max-width:700px;display:flex;flex-direction:column;justify-content:center}
-.codes-page .hero-copy h1{max-width:700px;margin:20px 0 18px;font-size:clamp(46px,6.2vw,84px);line-height:.95;letter-spacing:-.067em;text-shadow:0 8px 40px #0009}.codes-page .hero-copy .hero-lede{max-width:620px;color:#c4d6df}
-.codes-page .eyebrow{gap:10px}.codes-page .eyebrow-line{width:28px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
-.codes-page .live-status{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;border:1px solid #ff4d4d35;border-radius:999px;background:#ff3d3d08;color:#ff8d8d;font-size:7px;letter-spacing:.11em}.codes-page .live-status i,.codes-page .hero-strip-overlay b i{width:6px;height:6px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 0 0 #ff4d4d55;animation:live-beat 1.5s ease-in-out infinite}
+.codes-page .hero-copy{position:relative;z-index:4;min-width:0;max-width:700px;display:flex;flex-direction:column;justify-content:center}.codes-page .hero-copy h1{max-width:700px;margin:20px 0 18px;font-size:clamp(46px,6.2vw,84px);line-height:.95;letter-spacing:-.067em;text-shadow:0 8px 40px #0009}.codes-page .hero-copy .hero-lede{max-width:620px;color:#c4d6df}
+.codes-page .eyebrow{gap:10px}.codes-page .eyebrow-line{width:28px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}.codes-page .live-status{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;border:1px solid #ff4d4d35;border-radius:999px;background:#ff3d3d08;color:#ff8d8d;font-size:7px;letter-spacing:.11em}.codes-page .live-status i,.codes-page .hero-strip-overlay b i{width:6px;height:6px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 0 0 #ff4d4d55;animation:live-beat 1.5s ease-in-out infinite}
 .codes-page .hero-trust{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}.codes-page .hero-trust span{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid #20343f;border-radius:999px;background:#09141b99;color:#86a0ad;font:600 8px var(--mono)}.codes-page .hero-trust i{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px #56d6ff0b}
 .codes-page .hero-showcase{position:relative;z-index:3;min-width:0;min-height:500px;display:grid;place-items:center}.codes-page .hero-stage{position:relative;width:min(100%,620px);aspect-ratio:1.08/1;margin-inline:auto}.codes-page .hero-stage-glow{position:absolute;inset:16% 13% 14%;border-radius:50%;background:radial-gradient(circle,#56d6ff18 0%,#56d6ff08 38%,transparent 72%);filter:blur(14px);animation:glow-breathe 5s ease-in-out infinite}.codes-page .hero-ring{position:absolute;border-radius:50%;border:1px solid #56d6ff14;pointer-events:none}.codes-page .hero-ring-one{inset:10% 8%;transform:rotate(14deg);animation:slow-spin 28s linear infinite}.codes-page .hero-ring-two{inset:20% 17%;border-color:#5c7eff12;transform:rotate(-14deg);animation:slow-spin-reverse 34s linear infinite}
 .codes-page .hero-object-main{position:absolute;left:50%;top:48%;width:min(72%,500px);transform:translate3d(-48%,-50%,0);filter:drop-shadow(0 34px 44px #000b);transition:transform .18s ease-out}.codes-page .hero-showcase:hover .hero-object-main{transform:translate3d(-48%,-52%,0) rotate(-1deg) scale(1.012)}.codes-page .hero-object-main img,.codes-page .hero-object-secondary img{display:block;width:100%;height:auto;object-fit:contain}.codes-page .hero-object-secondary{position:absolute;right:1%;top:12%;width:clamp(120px,23%,190px);transform:rotate(5deg);filter:drop-shadow(0 22px 34px #000a);animation:hero-float 6s ease-in-out infinite}
@@ -163,7 +136,6 @@ const runtimeScript = `<script define:vars={{ pageSchema, breadcrumbSchema, faqS
       window.clearTimeout(window.__redeemToast);
       window.__redeemToast = window.setTimeout(() => toast.classList.remove('show'), 1900);
     };
-
     const copyCode = async (code, button) => {
       try {
         await navigator.clipboard.writeText(code);
@@ -177,15 +149,12 @@ const runtimeScript = `<script define:vars={{ pageSchema, breadcrumbSchema, faqS
         notify('Clipboard access is unavailable');
       }
     };
-
     document.querySelectorAll('[data-copy]').forEach((button) => {
       button.addEventListener('click', () => copyCode(button.dataset.copy, button));
     });
-
     const showcase = document.querySelector('.hero-showcase');
     const heroObject = document.querySelector('.hero-object-main');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
     if (showcase && heroObject && !reducedMotion) {
       showcase.addEventListener('pointermove', (event) => {
         if (event.pointerType && event.pointerType !== 'mouse') return;
@@ -195,21 +164,16 @@ const runtimeScript = `<script define:vars={{ pageSchema, breadcrumbSchema, faqS
         const tilt = (x * 2.2) - (y * 1.2);
         heroObject.style.transform = 'translate3d(-48%,-50%,0) rotate(' + tilt + 'deg) translate3d(' + (x * 4) + 'px, ' + (y * 3) + 'px, 0)';
       });
-      showcase.addEventListener('pointerleave', () => {
-        heroObject.style.transform = 'translate3d(-48%,-50%,0) rotate(0deg)';
-      });
+      showcase.addEventListener('pointerleave', () => { heroObject.style.transform = 'translate3d(-48%,-50%,0) rotate(0deg)'; });
     }
-
     const ld = document.createElement('script');
     ld.type = 'application/ld+json';
     ld.textContent = JSON.stringify(pageSchema);
     document.head.appendChild(ld);
-
     const crumbs = document.createElement('script');
     crumbs.type = 'application/ld+json';
     crumbs.textContent = JSON.stringify(breadcrumbSchema);
     document.head.appendChild(crumbs);
-
     const faqLd = document.createElement('script');
     faqLd.type = 'application/ld+json';
     faqLd.textContent = JSON.stringify(faqSchema);
