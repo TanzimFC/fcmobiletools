@@ -1,0 +1,35 @@
+name: Fix redeem hero object positioning
+on:
+  push:
+    branches: [main]
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, 'Fix redeem hero object positioning') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reposition hero object
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/pages/redeem-codes.astro')
+          s=p.read_text()
+          marker='/* Final hero object positioning fix */'
+          css='''\n<style is:global>\n/* Final hero object positioning fix */\n.codes-page .codes-wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }\n.codes-page .hero { position: relative !important; display: block !important; min-height: 620px !important; padding: 110px 46% 90px 0 !important; overflow: visible !important; }\n.codes-page .hero-copy { position: relative !important; z-index: 4 !important; width: min(650px, 100%) !important; max-width: 650px !important; }\n.codes-page .hero-object-main { position: absolute !important; z-index: 2 !important; top: 50% !important; right: -2% !important; left: auto !important; bottom: auto !important; width: min(48vw, 560px) !important; height: min(48vw, 560px) !important; max-width: 560px !important; margin: 0 !important; padding: 0 !important; display: block !important; transform: translateY(-50%) !important; overflow: visible !important; pointer-events: none !important; }\n.codes-page .hero-object-main img { display: block !important; width: 100% !important; height: 100% !important; max-width: none !important; object-fit: contain !important; object-position: center !important; margin: 0 !important; transform: none !important; }\n@media (max-width: 900px) {\n  .codes-page .hero { min-height: 0 !important; padding: 78px 0 30px !important; }\n  .codes-page .hero-copy { width: 100% !important; max-width: 720px !important; }\n  .codes-page .hero-object-main { position: relative !important; top: auto !important; right: auto !important; width: min(76vw, 500px) !important; height: min(76vw, 500px) !important; max-width: 500px !important; margin: 20px auto 0 !important; transform: none !important; }\n}\n@media (max-width: 600px) {\n  .codes-page .codes-wrap { width: min(100% - 28px, 560px); }\n  .codes-page .hero { padding-top: 52px !important; }\n  .codes-page .hero-object-main { width: min(92vw, 420px) !important; height: min(92vw, 420px) !important; margin-top: 12px !important; }\n}\n</style>\n'''
+          if marker not in s:
+              s += css
+              p.write_text(s)
+          PY
+      - name: Commit fix and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pages/redeem-codes.astro
+          git commit -m 'Fix redeem hero object positioning' || true
+          git push
+          rm .github/workflows/fix-redeem-object-position.yml
+          git add .github/workflows/fix-redeem-object-position.yml
+          git commit -m 'Remove temporary redeem object workflow'
+          git push
