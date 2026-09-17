@@ -4,14 +4,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const pageSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  name: 'FC Mobile Reset Time Countdown | FCMOBILETOOLS',
+  name: 'FC Mobile Daily Reset Time | FCMOBILETOOLS',
   description: 'Live FC Mobile daily reset countdown with the next reset shown in your local time.',
   url: new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
   publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
 };
 ---
 <BaseLayout
-  title="FC Mobile Reset Time Countdown | FCMOBILETOOLS"
+  title="FC Mobile Daily Reset Time | FCMOBILETOOLS"
   description="Live FC Mobile daily reset countdown with the next reset shown in your local time. The counter rolls into the next reset automatically."
 >
   <script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
@@ -22,7 +22,7 @@ const pageSchema = {
 
     <section class="reset-hero" aria-labelledby="reset-title">
       <div class="reset-eyebrow"><span></span> FC MOBILE / DAILY RESET</div>
-      <h1 id="reset-title">FC Mobile <em>Reset Time</em></h1>
+      <h1 id="reset-title">FC Mobile <em>Daily Reset Time</em></h1>
       <p class="reset-intro">A live countdown to the next daily reset, calculated from the game reset clock and displayed in your local time.</p>
 
       <div class="countdown-shell">
@@ -100,7 +100,7 @@ const pageSchema = {
   const update = () => {
     const now = new Date();
     const next = getNextReset(now);
-    let remaining = Math.max(0, next.getTime() - now.getTime());
+    const remaining = Math.max(0, next.getTime() - now.getTime());
     const totalSeconds = Math.floor(remaining / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
