@@ -6,6 +6,7 @@ const exec=promisify(execFile);const root=process.cwd();const publicDir=path.joi
 await mkdir(path.join(publicDir,'assets'),{recursive:true});
 await cp(path.join(root,'assets'),path.join(publicDir,'assets'),{recursive:true,force:true});
 await rm(path.join(publicDir,'trivia'),{recursive:true,force:true});
+await exec('node',['scripts/apply-admin-content.mjs'],{cwd:root});
 await exec('node',['scripts/prepare-legacy.mjs'],{cwd:root});
 await exec('astro',['build'],{cwd:root});
 await cp(path.join(root,'admin'),path.join(distDir,'admin'),{recursive:true,force:true});
