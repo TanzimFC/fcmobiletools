@@ -1,0 +1,68 @@
+name: Redeem hero final polish
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/redeem-hero-final.yml]
+permissions:
+  contents: write
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch redeem page
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const p='src/pages/redeem-codes.astro';
+          let s=fs.readFileSync(p,'utf8');
+          s=s.replace(/const heroObject = '[^']*';[\s\S]*?const heroStrip = '[^']*';/, "const heroObject = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1200/v1789655014/fc-mobile-tools/clmgprc6viqdrp4zhdfj.png';");
+          s=s.replace(/<div class=\"hero-showcase\"[\s\S]*?<\/div>\n        <\/div>\n      <\/header>/, `<div class="hero-showcase" aria-label="FC Mobile redeem code artwork"><div class="hero-stage"><div class="hero-stage-glow"></div><div class="hero-object-main"><img src={heroObject} alt="FC Mobile redeem codes artwork" width="1200" height="1200" fetchpriority="high" decoding="async" /></div></div></div></header>`);
+          s=s.replace(/<div class=\"verified\">[\s\S]*?<\/div>\n        <\/div>/, `<div class="verified"><span class="verified-beacon"><i></i></span><div><b>Last verified</b><strong>{fmtDate(lastUpdated)}</strong></div></div></div>`);
+          s=s.replace(/<section class=\"seo-copy\">[\s\S]*?<h2>Find working codes without the clutter<\/h2>/, `<section class="seo-copy"><span class="section-kicker">FC MOBILE REDEEM CODE GUIDE</span><h2>FC Mobile redeem codes and rewards</h2>`);
+          s=s.replace(/<\/BaseLayout>/, `<style is="global">
+          .codes-page .hero{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);min-height:clamp(560px,74vh,820px);overflow:visible}
+          .codes-page .hero-showcase{min-height:clamp(520px,68vh,760px);overflow:visible}
+          .codes-page .hero-stage{width:min(100%,760px);aspect-ratio:1/1}
+          .codes-page .hero-object-main{width:min(92%,720px);top:50%;left:50%;transform:translate(-50%,-50%);filter:drop-shadow(0 38px 55px #000d);animation:redeem-float 6s ease-in-out infinite;transition:transform .2s ease-out}
+          .codes-page .hero-showcase:hover .hero-object-main{transform:translate(-50%,-53%) scale(1.015)}
+          .codes-page .hero-object-main img{width:100%;height:auto;display:block}
+          .codes-page .hero-stage-glow{inset:10%;background:radial-gradient(circle,#56d6ff20 0,#56d6ff09 42%,transparent 72%);animation:redeem-glow 4s ease-in-out infinite}
+          .codes-page .live-status{border-radius:6px;padding:6px 9px}
+          .codes-page .live-status i,.codes-page .status i{animation:live-beep 1.35s ease-in-out infinite}
+          .codes-page .verified{border-radius:10px;border:1px solid #263c49;background:#09131a;padding:12px 15px;display:flex;align-items:center;gap:11px;box-shadow:inset 0 1px #ffffff06}
+          .codes-page .verified-beacon{display:grid;place-items:center;width:16px;height:16px;flex:none}
+          .codes-page .verified-beacon i{width:7px;height:7px;border-radius:50%;background:#ff4b4b;box-shadow:0 0 0 0 #ff4b4b66;animation:live-beep 1.35s ease-in-out infinite}
+          .codes-page .verified b{display:block;font:700 8px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#7893a1;margin-bottom:3px}
+          .codes-page .verified strong{display:block;font:800 13px var(--sans);color:#d9edf5;letter-spacing:-.02em}
+          @keyframes live-beep{0%,100%{box-shadow:0 0 0 0 #ff4b4b55;opacity:1}45%{box-shadow:0 0 0 5px #ff4b4b00;opacity:.72}60%{box-shadow:0 0 0 0 #ff4b4b00;opacity:1}}
+          @keyframes redeem-float{0%,100%{transform:translate(-50%,-50%)}50%{transform:translate(-50%,-53%)}}
+          @keyframes redeem-glow{0%,100%{opacity:.65;transform:scale(.96)}50%{opacity:1;transform:scale(1.03)}}
+          @media (max-width:900px){.codes-page .hero{grid-template-columns:1fr;min-height:auto;padding:30px 22px 18px}.codes-page .hero-showcase{min-height:clamp(380px,65vw,560px);margin-top:-8px}.codes-page .hero-stage{width:min(100%,560px)}.codes-page .hero-object-main{width:min(94%,540px)}}
+          @media (max-width:560px){.codes-page .hero{border-radius:22px}.codes-page .hero-copy h1{font-size:clamp(42px,13vw,60px)}.codes-page .hero-showcase{min-height:350px}.codes-page .hero-stage{width:110%;margin-left:-5%}.codes-page .hero-object-main{width:100%;}.codes-page .hero-trust{gap:5px}.codes-page .verified{width:max-content;max-width:100%}}
+          @media (prefers-reduced-motion:reduce){.codes-page .hero-object-main,.codes-page .hero-stage-glow,.codes-page .live-status i,.codes-page .status i,.codes-page .verified-beacon i{animation:none!important}}
+          </style></BaseLayout>`);
+          fs.writeFileSync(p,s);
+          NODE
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/redeem-codes.astro
+          git commit -m "design: simplify redeem hero and live status" || true
+          git push
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run build
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+      - name: Remove temporary workflow
+        run: |
+          git rm -f .github/workflows/redeem-hero-final.yml
+          git commit -m "chore: remove redeem hero patch workflow" || true
+          git push || true
