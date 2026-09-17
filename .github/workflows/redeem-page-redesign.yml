@@ -1,0 +1,42 @@
+name: Redeem page redesign
+on:
+  push:
+    branches: [main]
+jobs:
+  redesign:
+    if: github.event.head_commit.message != 'Redesign redeem page implementation'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Redesign redeem page
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/pages/redeem-codes.astro')
+          s=p.read_text()
+          old='''<header class="hero">\n        <div class="hero-copy">'''
+          new='''<header class="hero" aria-labelledby="redeem-page-title">\n        <div class="hero-copy">'''
+          s=s.replace(old,new)
+          s=s.replace('<h1>FC Mobile <em>Redeem Codes</em></h1>','<p class="hero-kicker">FC MOBILE / CODE DATABASE</p>\n          <h1 id="redeem-page-title">FC Mobile <em>Redeem Codes</em></h1>')
+          s=s.replace('''        <div class="hero-object-main"><img src={heroObject} alt="FC Mobile redeem codes artwork" width="1200" height="1200" fetchpriority="high" decoding="async" /></div></header>''','''        <div class="hero-object-main" aria-hidden="true"><img src={heroObject} alt="" width="1200" height="1200" fetchpriority="high" decoding="async" /></div>\n      </header>''')
+          marker='''\n/* Desktop-safe hero alignment: the title area may be full-bleed, but never overflow the viewport */'''
+          css='''\n/* Redeem page visual reset — full-bleed intro, no card wrapper */\n.codes-page .codes-wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}\n.codes-page .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.82fr);align-items:center;position:relative;min-height:clamp(560px,68vh,700px);margin:0 0 34px;padding:76px 0 52px;overflow:visible;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;isolation:isolate}\n.codes-page .hero:after{display:none!important}\n.codes-page .hero-copy{max-width:650px;padding:0;z-index:2}\n.codes-page .hero-kicker{margin:0 0 18px;color:#6fdcff;font:900 9px var(--mono);letter-spacing:.18em}\n.codes-page .hero-copy h1{max-width:650px;margin:0 0 20px;font-size:clamp(52px,7vw,88px);line-height:.9;letter-spacing:-.07em;text-wrap:balance}\n.codes-page .hero-copy h1 em{font-style:normal;color:var(--cyan)}\n.codes-page .hero-lede{max-width:590px;margin:0;color:#a9bcc7;font-size:14px;line-height:1.75}\n.codes-page .hero-actions{display:flex;gap:10px;margin-top:28px}\n.codes-page .hero-trust{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}\n.codes-page .hero-trust span{background:transparent!important;border-color:#1c303b!important;padding:7px 10px}\n.codes-page .hero-object-main{position:relative;left:auto;top:auto;width:min(100%,620px);margin:0 auto;transform:none!important;filter:drop-shadow(0 30px 55px #000b);z-index:1}\n.codes-page .hero-object-main img{display:block;width:100%;max-width:620px;height:auto;margin:auto}\n.codes-page .stats-strip{margin-top:0}\n.codes-page .live-section,.codes-page .archive,.codes-page .content-grid,.codes-page .seo-copy,.codes-page .seo-expanded,.codes-page .faq-section{position:relative}\n.codes-page .section-heading,.codes-page .archive-heading{gap:24px}\n.codes-page .verified{flex:0 0 auto}\n@media(max-width:900px){.codes-page .hero{grid-template-columns:1fr;min-height:auto;padding:54px 0 28px;text-align:left}.codes-page .hero-object-main{width:min(620px,100vw);margin:20px auto -10px}.codes-page .hero-copy{max-width:720px}.codes-page .hero-actions{flex-wrap:wrap}.codes-page .hero-actions .btn{min-width:180px}}\n@media(max-width:600px){.codes-page .codes-wrap{width:calc(100% - 28px)}.codes-page .hero{padding-top:36px;margin-bottom:24px}.codes-page .hero-kicker{margin-bottom:14px}.codes-page .hero-copy h1{font-size:clamp(43px,13vw,66px);line-height:.92}.codes-page .hero-lede{font-size:13px}.codes-page .hero-actions{flex-direction:column}.codes-page .hero-actions .btn{width:100%}.codes-page .hero-object-main{width:calc(100% + 24px);margin-left:-12px;margin-top:8px}.codes-page .hero-trust{display:flex}.codes-page .hero-trust span{font-size:7px}}\n'''
+          if marker in s:
+            s=s.replace(marker,css+marker)
+          p.write_text(s)
+          PY
+      - name: Commit implementation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pages/redeem-codes.astro
+          git diff --cached --quiet || git commit -m 'Redesign redeem page implementation'
+          git push
+      - name: Remove temporary workflow
+        if: success()
+        run: |
+          git rm .github/workflows/redeem-page-redesign.yml
+          git commit -m 'Remove temporary redeem redesign workflow'
+          git push
