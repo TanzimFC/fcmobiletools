@@ -1,0 +1,71 @@
+name: Fix calculator admin parser
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-calculator-admin-parser.yml
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make calculator data parser tolerant of JS source syntax
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/worker.mjs')
+          s = p.read_text()
+          old = """function parseRankUp(text) {
+  const m=text.match(/export const RANKS = (\\[[\\s\\S]*?\\]);\\s*export const RANK_COSTS = (\\[[\\s\\S]*?\\]);/);
+  if(!m) throw new Error('Rank Up data file has an unexpected format.');
+  const ranks=JSON.parse(m[1]); const costs=JSON.parse(m[2].replace(/Infinity/g,'null'));
+  return {ranks,costs};
+}
+function parseTraining(text) {
+  const levels=text.match(/export const TRAINING_LEVELS = (\\[[\\s\\S]*?\\]);/)?.[1]; const fodder=text.match(/export const FODDER = (\\[[\\s\\S]*?\\]);/)?.[1];
+  if(!levels||!fodder) throw new Error('Training data file has an unexpected format.'); return {levels:JSON.parse(levels),fodder:JSON.parse(fodder)};
+}"""
+          new = """function parseDataLiteral(value) {
+  return JSON.parse(value
+    .replace(/\\bInfinity\\b/g, 'null')
+    .replace(/,\\s*([}\\]])/g, '$1')
+    .replace(/'([^'\\n\\r]*)'/g, (_, text) => JSON.stringify(text))
+  );
+}
+function parseRankUp(text) {
+  const m=text.match(/export const RANKS = (\\[[\\s\\S]*?\\]);\\s*export const RANK_COSTS = (\\[[\\s\\S]*?\\]);/);
+  if(!m) throw new Error('Rank Up data file has an unexpected format.');
+  try { return {ranks:parseDataLiteral(m[1]),costs:parseDataLiteral(m[2])}; }
+  catch { throw new Error('Rank Up data file is not readable.'); }
+}
+function parseTraining(text) {
+  const levels=text.match(/export const TRAINING_LEVELS = (\\[[\\s\\S]*?\\]);/)?.[1];
+  const fodder=text.match(/export const FODDER = (\\[[\\s\\S]*?\\]);/)?.[1];
+  if(!levels||!fodder) throw new Error('Training data file has an unexpected format.');
+  try { return {levels:parseDataLiteral(levels),fodder:parseDataLiteral(fodder)}; }
+  catch { throw new Error('Training data file is not readable.'); }
+}"""
+          if old not in s:
+              raise SystemExit('Expected calculator parser block was not found')
+          p.write_text(s.replace(old, new, 1))
+      - name: Validate worker syntax
+        run: node --check src/worker.mjs
+      - name: Commit parser fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/worker.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m "fix calculator admin parser"
+          git push origin HEAD:main
+      - name: Remove temporary workflow
+        if: always()
+        shell: bash
+        run: |
+          git rm -f .github/workflows/fix-calculator-admin-parser.yml || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git diff --cached --quiet || (git commit -m "remove calculator parser workflow" && git push origin HEAD:main)
