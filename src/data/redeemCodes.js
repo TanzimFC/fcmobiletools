@@ -3,7 +3,7 @@ export const REDEEM_CODES = [
   {
     "code": "ZLATANWORLDPREMIERE",
     "reward": "117 Zlatan Player Item",
-    "status": "scheduled",
+    "status": "active",
     "releaseDate": "2026-09-15",
     "expiryDate": null,
     "region": "Global",
