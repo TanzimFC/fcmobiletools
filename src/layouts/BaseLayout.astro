@@ -2,9 +2,28 @@
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import '../../styles.css';
-export interface Props { title: string; description?: string; }
-const { title, description = 'FC Mobile tools, trivia, guides and event resources from TanzimFC.' } = Astro.props;
+
+export interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+const {
+  title,
+  description = 'FC Mobile tools, trivia, guides and event resources from TanzimFC.',
+  image = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1200/v1789653531/fc-mobile-tools/o6ocwktktmw5yml9n8km.png',
+} = Astro.props;
+
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev');
+const siteUrl = new URL('/', Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev');
+const siteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'FC Mobile Tools',
+  alternateName: 'TanzimFC',
+  url: siteUrl,
+};
 ---
 <!doctype html>
 <html lang="en">
@@ -13,13 +32,23 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fc
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#55c7f2" />
   <meta name="description" content={description} />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
   <link rel="canonical" href={canonical} />
   <link rel="sitemap" href="/sitemap-index.xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:type" content="website" />
   <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={image} />
+  <meta property="og:image:alt" content="FC Mobile Tools artwork" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={image} />
   <title>{title} — FC Mobile Tools</title>
+  <script type="application/ld+json" set:html={JSON.stringify(siteSchema)}></script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-YY53FCHMLW"></script>
   <script is:inline>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-YY53FCHMLW');</script>
 </head>
