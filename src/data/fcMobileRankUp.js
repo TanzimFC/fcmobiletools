@@ -1,10 +1,10 @@
 export const RANKS = [
-  { value: 0, name: 'Base' },
-  { value: 1, name: 'Green' },
-  { value: 2, name: 'Blue' },
-  { value: 3, name: 'Purple' },
-  { value: 4, name: 'Red' },
-  { value: 5, name: 'Orange' },
+  { "value": 0, "name": "Base" },
+  { "value": 1, "name": "Green" },
+  { "value": 2, "name": "Blue" },
+  { "value": 3, "name": "Purple" },
+  { "value": 4, "name": "Red" },
+  { "value": 5, "name": "Orange" }
 ];
 
 export const RANK_COSTS = [
