@@ -155,13 +155,23 @@ function validateFootball(content) {
 function parseRankUp(text) {
   const m=text.match(/export const RANKS = (\[[\s\S]*?\]);\s*export const RANK_COSTS = (\[[\s\S]*?\]);/);
   if(!m) throw new Error('Rank Up data file has an unexpected format.');
-  const ranks=JSON.parse(m[1]); const costs=JSON.parse(m[2].replace(/Infinity/g,'null'));
-  costs.forEach(x=>{if(x.max===null)x.max='Infinity';}); return {ranks,costs};
+  const ranks=JSON.parse(m[1]);
+  const costs=JSON.parse(m[2].replace(/\bInfinity\b/g,'null'));
+  return {ranks,costs};
 }
 function rankUpText(data) {
   const ranks=data.ranks.map((r,i)=>({value:i,name:String(r.name||'').trim()}));
-  const costs=data.costs.map(x=>({min:Number(x.min),max:x.max==='Infinity'||x.max===null?'Infinity':Number(x.max),label:String(x.label||'').trim(),costs:x.costs.map(Number)}));
-  return `export const RANKS = ${JSON.stringify(ranks,null,2)};\n\nexport const RANK_COSTS = ${JSON.stringify(costs,null,2).replace(/"Infinity"/g,'Infinity')};\n\nexport function getRankBracket(baseOVR) {\n  const value = Number(baseOVR);\n  if (!Number.isInteger(value) || value < 0) return null;\n  return RANK_COSTS.find((item) => value >= item.min && value <= item.max) ?? null;\n}\n`;
+  const costs=data.costs.map(x=>({min:Number(x.min),max:x.max==='Infinity'||x.max===null?null:Number(x.max),label:String(x.label||'').trim(),costs:x.costs.map(Number)}));
+  return `export const RANKS = ${JSON.stringify(ranks,null,2)};
+
+export const RANK_COSTS = ${JSON.stringify(costs,null,2)};
+
+export function getRankBracket(baseOVR) {
+  const value = Number(baseOVR);
+  if (!Number.isInteger(value) || value < 0) return null;
+  return RANK_COSTS.find((item) => value >= item.min && (item.max === null || value <= item.max)) ?? null;
+}
+`;
 }
 function validateRankUp(data) {
   if(!data||!Array.isArray(data.ranks)||data.ranks.length!==6||!Array.isArray(data.costs)||!data.costs.length) throw new Error('Rank Up data is incomplete.');
@@ -207,15 +217,6 @@ async function api(request,env,path) {
     if(path === '/rank-up' && request.method === 'POST') { const data=await request.json(); validateRankUp(data); const file=await repoFile(env,'src/data/fcMobileRankUp.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileRankUp.js',rankUpText(data),file.sha,'admin: update Rank Up Points data'); return json({ok:true,commitSha}); }
     if(path === '/training' && request.method === 'GET') return json(parseTraining((await repoFile(env,'src/data/fcMobileTraining.js')).text));
     if(path === '/training' && request.method === 'POST') { const data=await request.json(); validateTraining(data); const file=await repoFile(env,'src/data/fcMobileTraining.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileTraining.js',trainingText(data),file.sha,'admin: update Training XP data'); return json({ok:true,commitSha}); }
-
-    if(path === '/star-signings' && request.method === 'GET') return json(parseStarSignings((await repoFile(env,'src/data/fcMobileStarSignings.js')).text));
-    if(path === '/star-signings' && request.method === 'POST') {
-      const data=await request.json();
-      validateStarSignings(data);
-      const file=await repoFile(env,'src/data/fcMobileStarSignings.js');
-      const commitSha=await writeRepoFile(env,'src/data/fcMobileStarSignings.js',starSigningsText(data),file.sha,'admin: update Star Signings data');
-      return json({ok:true,commitSha});
-    }
 
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
     if(path === '/football' && request.method === 'POST') {
