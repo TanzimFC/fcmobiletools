@@ -155,6 +155,62 @@ function parseTraining(text) {
   if(!levels||!fodder) throw new Error('Training data file has an unexpected format.'); return {levels:JSON.parse(levels),fodder:JSON.parse(fodder)};
 }
 function trainingText(data) { return `// Training calculator data managed by the admin panel.\nexport const TRAINING_LEVELS = ${JSON.stringify(data.levels,null,2)};\n\nexport const FODDER = ${JSON.stringify(data.fodder,null,2)};\n\nexport const MAX_TRAINING_LEVEL = ${data.levels.length-1};\nexport const TRAINING_TRANSFER_RATE = 0.9;\n`; }
+function parseFrontmatter(text) {
+  const m=text.match(/^---\n([\\s\\S]*?)\n---\n([\\s\\S]*)$/);
+  if(!m) return {data:{},body:text};
+  const data={};
+  for(const line of m[1].split('\\n')) {
+    const hit=line.match(/^([A-Za-z0-9_]+):\\s*(.*)$/);
+    if(!hit) continue;
+    let value=hit[2].trim();
+    if((value.startsWith('"')&&value.endsWith('"'))||(value.startsWith("'")&&value.endsWith("'"))) value=value.slice(1,-1);
+    if(value==='true'||value==='false') data[hit[1]]=value==='true';
+    else if(value==='null') data[hit[1]]=null;
+    else if(/^\\d+$/.test(value)) data[hit[1]]=Number(value);
+    else if(value.startsWith('[')) { try { data[hit[1]]=JSON.parse(value); } catch { data[hit[1]]=value; } }
+    else data[hit[1]]=value;
+  }
+  return {data,body:m[2]};
+}
+function yamlValue(value) {
+  if(value === null || value === undefined) return 'null';
+  if(typeof value === 'boolean' || typeof value === 'number') return String(value);
+  if(Array.isArray(value)) return JSON.stringify(value);
+  return JSON.stringify(String(value));
+}
+function articleText(a) {
+  const tags=Array.isArray(a.tags)?a.tags:[];
+  return `---
+id: ${yamlValue(a.id)}
+slug: ${yamlValue(a.slug)}
+title: ${yamlValue(a.title)}
+subtitle: ${yamlValue(a.subtitle||'')}
+description: ${yamlValue(a.description||'')}
+type: ${yamlValue(a.type||'guide')}
+category: ${yamlValue(a.category||'Guides')}
+author: ${yamlValue(a.author||'TanzimFC')}
+status: ${yamlValue(a.status||'draft')}
+createdBy: ${yamlValue(a.createdBy||a.author||'TanzimFC')}
+createdAt: ${yamlValue(a.createdAt||new Date().toISOString())}
+updatedAt: ${yamlValue(new Date().toISOString())}
+publishedAt: ${yamlValue(a.status==='published'?(a.publishedAt||new Date().toISOString()):null)}
+image: ${yamlValue(a.image||'')}
+imageAlt: ${yamlValue(a.imageAlt||'')}
+excerpt: ${yamlValue(a.excerpt||a.description||'')}
+tags: ${JSON.stringify(tags)}
+featured: ${Boolean(a.featured)}
+readingTime: ${Number(a.readingTime)||Math.max(1,Math.ceil(String(a.body||'').split(/\\s+/).filter(Boolean).length/220))}
+seoTitle: ${yamlValue(a.seoTitle||a.title)}
+seoDescription: ${yamlValue(a.seoDescription||a.description||'')}
+factStatus: ${yamlValue(a.factStatus||'verified')}
+---
+
+${String(a.body||'').trim()}
+`;
+}
+function articleSlug(value) {
+  return String(value||'').toLowerCase().trim().replace(/[^a-z0-9\\s-]/g,'').replace(/\\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,90);
+}
 function validateTraining(data) {
   if(!data||!Array.isArray(data.levels)||data.levels.length<2||!Array.isArray(data.fodder)||!data.fodder.length) throw new Error('Training data is incomplete.');
   data.levels.forEach((v,i)=>{if(!Number.isFinite(Number(v))||Number(v)<0||(i&&Number(v)<Number(data.levels[i-1]))) throw new Error('Training XP levels must be non-negative and ascending.');});
