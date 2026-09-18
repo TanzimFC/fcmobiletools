@@ -14,7 +14,7 @@ export const RANK_COSTS = [
   { "min": 95, "max": 99, "label": "95–99", "costs": [80, 160, 240, 320, 400] },
   { "min": 90, "max": 94, "label": "90–94", "costs": [60, 120, 180, 240, 300] },
   { "min": 85, "max": 89, "label": "85–89", "costs": [40, 80, 120, 160, 200] },
-  { "min": 0, "max": 84, "label": "84 or lower", "costs": [20, 40, 60, 80, 100] },
+  { "min": 0, "max": 84, "label": "84 or lower", "costs": [20, 40, 60, 80, 100] }
 ];
 
 export function getRankBracket(baseOVR) {
