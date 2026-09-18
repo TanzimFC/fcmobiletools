@@ -1,24 +1,114 @@
 ---
-const groups=[{label:'Tools',links:[{label:'Team OVR',href:'/team-ovr'},{label:'Training Calculator',href:'/training-calculator'},{label:'Rank Up Calculator',href:'/rank-up-calculator'},{label:'Investment Calculator',href:'/investment-calculator'}]},{label:'Explore',links:[{label:'Football Centre',href:'/football-centre'},{label:"A Nation's Story",href:'/a-nations-story'},{label:'Blog',href:'/blog'}]}];
-const directLinks=[{label:'Redeem Codes',href:'/redeem-codes'},{label:'Events and Reset',href:'/reset-center'}];
-const currentPath=Astro.url.pathname.replace(/\/$/,'')||'/';
-const isActive=href=>currentPath===href||(href!=='/'&&currentPath.startsWith(href+'/'));
-const groupIsActive=group=>group.links.some(link=>isActive(link.href));
+const groups = [
+  { label: 'Tools', links: [
+    { label: 'Team OVR', href: '/team-ovr' },
+    { label: 'Training Calculator', href: '/training-calculator' },
+    { label: 'Rank Up Calculator', href: '/rank-up-calculator' },
+    { label: 'Investment Calculator', href: '/investment-calculator' }
+  ]},
+  { label: 'Live', links: [
+    { label: 'Events & Reset', href: '/reset-center' },
+    { label: 'Redeem Codes', href: '/redeem-codes' },
+    { label: 'Football Centre', href: '/football-centre' },
+    { label: "A Nation's Story", href: '/a-nations-story' }
+  ]}
+];
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href) => currentPath === href || (href !== '/' && currentPath.startsWith(href + '/'));
+const groupIsActive = (group) => group.links.some((link) => isActive(link.href));
 ---
 <header class="site-nav" data-site-nav>
-<div class="site-nav-inner">
-<a class="site-brand" href="/" aria-label="FCMOBILETOOLS home"><span>FC</span> FCMOBILETOOLS</a>
-<nav class="site-primary" aria-label="Primary navigation"><a href="/" class:list={{active:currentPath==='/'}}>Home</a>{groups.map(group=><div class="site-nav-group" data-nav-group><button type="button" class:list={{'site-nav-trigger':true,active:groupIsActive(group)}} aria-expanded="false" aria-haspopup="true">{group.label}<span>⌄</span></button><div class="site-nav-menu">{group.links.map(link=><a href={link.href} class:list={{active:isActive(link.href)}}><span>{link.label}</span><small>↗</small></a>)}</div></div>)}{directLinks.map(link=><a href={link.href} class:list={{active:isActive(link.href)}}>{link.label}</a>)}</nav>
-<button class="site-menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav" aria-label="Open menu"><span></span><span></span><span></span></button>
-</div>
-<nav id="site-mobile-nav" class="site-mobile-nav" aria-label="Mobile navigation"><a href="/" class:list={{active:currentPath==='/'}}>Home</a>{groups.map(group=><div class="site-mobile-group"><span>{group.label}</span>{group.links.map(link=><a href={link.href} class:list={{active:isActive(link.href)}}>{link.label}</a>)}</div>)}{directLinks.map(link=><a href={link.href} class:list={{active:isActive(link.href)}}>{link.label}</a>)}</nav>
+  <div class="site-nav-inner">
+    <a class="site-logo" href="/" aria-label="FCMOBILETOOLS home">
+      <img src="/assets/images/logo.png" alt="FCMOBILETOOLS" />
+    </a>
+    <nav class="site-primary" aria-label="Primary navigation">
+      <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
+      {groups.map((group) => (
+        <div class="site-nav-group" data-nav-group>
+          <button type="button" class:list={{ 'site-nav-trigger': true, active: groupIsActive(group) }} aria-expanded="false" aria-haspopup="true">
+            {group.label}<span class="chevron">⌄</span>
+          </button>
+          <div class="site-nav-menu">
+            {group.links.map((link) => (
+              <a href={link.href} class:list={{ active: isActive(link.href) }}>
+                <span>{link.label}</span><small>↗</small>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+      <a href="/blog" class:list={{ active: isActive('/blog') }}>Articles</a>
+      <a href="/creator" class:list={{ active: isActive('/creator') }}>Creator</a>
+      <a class="nav-code" href="/redeem-codes" class:list={{ active: isActive('/redeem-codes') }}>Redeem Codes</a>
+    </nav>
+    <button class="site-menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <nav id="site-mobile-nav" class="site-mobile-nav" aria-label="Mobile navigation">
+    <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
+    <div class="site-mobile-group"><span>Tools</span>{groups[0].links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>
+    <div class="site-mobile-group"><span>Live</span>{groups[1].links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>
+    <a href="/blog" class:list={{ active: isActive('/blog') }}>Articles</a>
+    <a href="/creator" class:list={{ active: isActive('/creator') }}>Creator</a>
+    <a class="mobile-code" href="/redeem-codes" class:list={{ active: isActive('/redeem-codes') }}>Redeem Codes</a>
+  </nav>
 </header>
 <style>
-.site-nav-group{position:relative}.site-nav-trigger{display:flex;align-items:center;gap:7px;border:1px solid transparent;background:transparent;color:var(--muted,#8e9bad);font:inherit;cursor:pointer;padding:8px 10px;border-radius:8px;transition:.18s}.site-nav-trigger span{font-size:11px;opacity:.55;transition:transform .18s}.site-nav-group:hover .site-nav-trigger,.site-nav-trigger:focus-visible,.site-nav-trigger.active{color:var(--text,#f5f7fb);background:var(--surface2,#121925);border-color:var(--border,#202a38)}.site-nav-group:hover .site-nav-menu,.site-nav-group.open .site-nav-menu{opacity:1;transform:translate(-50%,0);pointer-events:auto}.site-nav-group:hover .site-nav-trigger span,.site-nav-group.open .site-nav-trigger span{transform:rotate(180deg)}.site-nav-trigger.active{color:var(--blue,#55c7f2)}.site-nav-menu{position:absolute;top:calc(100% + 9px);left:50%;width:240px;transform:translate(-50%,-5px);padding:7px;border:1px solid var(--border,#202a38);border-radius:12px;background:var(--surface,#0d1118);box-shadow:0 18px 45px #0008;opacity:0;pointer-events:none;transition:.18s;z-index:50}.site-nav-menu a{display:flex!important;align-items:center;justify-content:space-between!important;gap:12px;padding:10px 11px;border-radius:8px;color:var(--muted,#8e9bad)!important;text-decoration:none}.site-nav-menu a:hover,.site-nav-menu a.active{background:#55c7f214;color:var(--blue,#55c7f2)!important}.site-nav-menu small{font-size:11px;opacity:.45}.site-primary{display:flex;align-items:center;gap:2px}.site-primary>a,.site-nav-trigger{font-size:11px!important}.site-mobile-group{display:grid;gap:3px;padding:11px 0;border-top:1px solid var(--border,#202a38)}.site-mobile-group>span{padding:5px 10px;color:var(--muted,#8e9bad);font:900 8px var(--mono,monospace);letter-spacing:.13em;text-transform:uppercase}.site-mobile-group a{padding-left:18px!important}.site-menu{display:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;width:38px;height:38px;padding:0;border:1px solid var(--border,#202a38);border-radius:9px;background:var(--surface2,#121925);color:var(--text,#f5f7fb);cursor:pointer}.site-menu span{display:block;width:15px;height:1.5px;background:currentColor;border-radius:2px;transition:.18s}.site-mobile-nav{display:none}.site-mobile-nav.open{display:grid}.site-mobile-nav>a{padding:12px 10px;border-top:1px solid var(--border,#202a38);color:var(--muted,#8e9bad);text-decoration:none;font-size:12px;font-weight:700}.site-mobile-nav>a.active,.site-mobile-group a.active{color:var(--blue,#55c7f2)}.site-mobile-group a{color:var(--muted,#8e9bad);text-decoration:none;font-size:12px}.site-mobile-nav>a:hover,.site-mobile-group a:hover{color:var(--text,#f5f7fb)}@media(max-width:900px){.site-primary{display:none}.site-menu{display:flex}}@media(min-width:901px){.site-mobile-nav{display:none!important}}@media(max-width:520px){.site-nav-inner{padding-inline:14px}.site-brand{font-size:12px}.site-mobile-nav{margin-inline:14px}.site-menu{width:36px;height:36px}}
+.site-nav{position:sticky;top:0;z-index:1000;padding:12px 0;border-bottom:1px solid transparent;transition:.25s}
+.site-nav:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#071018f2,#071018d9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:-1}
+.site-nav.is-scrolled{border-color:var(--border,#1d2b36)}
+.site-nav-inner{width:min(1200px,calc(100% - 28px));margin:auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.site-logo{display:flex;align-items:center;min-width:150px;transition:.25s}
+.site-logo img{display:block;width:166px;height:auto;max-height:45px;object-fit:contain;object-position:left center;filter:drop-shadow(0 10px 25px #0007)}
+.site-logo:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.site-primary{display:flex;align-items:center;gap:3px}
+.site-primary>a,.site-nav-trigger{position:relative;border:1px solid transparent;background:transparent;color:var(--muted,#8e9bad);padding:10px 11px;border-radius:10px;font:800 10px var(--mono,monospace);text-decoration:none;transition:.2s;white-space:nowrap}
+.site-primary>a:hover,.site-nav-trigger:hover,.site-nav-trigger.active,.site-primary>a.active{color:var(--text,#f6fbff);background:#ffffff06;border-color:#ffffff0b}
+.site-primary>a:after{content:"";position:absolute;left:12px;right:12px;bottom:4px;height:2px;border-radius:99px;background:var(--blue,#55c7f2);transform:scaleX(0);transition:.2s;transform-origin:center}
+.site-primary>a:hover:after,.site-primary>a.active:after{transform:scaleX(1)}
+.site-nav-group{position:relative}.site-nav-trigger{display:flex;align-items:center;gap:7px;cursor:pointer}
+.chevron{opacity:.5;transition:.2s;font-size:12px}.site-nav-group:hover .chevron,.site-nav-group.open .chevron{transform:rotate(180deg)}
+.site-nav-menu{position:absolute;top:calc(100% + 10px);left:50%;width:238px;padding:8px;transform:translate(-50%,8px);border:1px solid #233642;border-radius:15px;background:#0b141bef;box-shadow:0 25px 70px #000b;opacity:0;pointer-events:none;transition:.2s;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.site-nav-group:hover .site-nav-menu,.site-nav-group.open .site-nav-menu{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.site-nav-menu a{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px;border-radius:10px;color:#8194a2;text-decoration:none;font:800 9px var(--mono);transition:.18s}
+.site-nav-menu a:hover,.site-nav-menu a.active{color:#e9f9ff;background:#55c7f20d}.site-nav-menu small{opacity:.4}
+.nav-code{background:linear-gradient(135deg,#55c7f21a,#55c7f208)!important;border-color:#55c7f22a!important;color:#8fdfff!important}
+.nav-code:after{display:none!important}
+.site-menu{display:none;width:40px;height:40px;padding:0;border:1px solid #223340;border-radius:11px;background:#0b141b;color:var(--text);align-items:center;justify-content:center;flex-direction:column;gap:4px;cursor:pointer}
+.site-menu span{width:16px;height:1.5px;border-radius:99px;background:currentColor;transition:.2s}
+.site-mobile-nav{display:none}.site-mobile-group{display:grid;gap:3px;padding:10px 0;border-top:1px solid #1c2a34}
+.site-mobile-group>span{padding:7px 9px 4px;color:#607584;font:900 8px var(--mono);letter-spacing:.14em}
+.site-mobile-nav>a{padding:12px 9px;border-top:1px solid #1c2a34;color:#8fa1ae;text-decoration:none;font:800 11px var(--mono)}
+.site-mobile-nav a.active{color:#62d5ff}.site-mobile-nav .mobile-code{color:#9edfff}
+@media(max-width:980px){.site-primary{display:none}.site-menu{display:flex}.site-mobile-nav.open{display:block;width:min(1200px,calc(100% - 28px));margin:10px auto 0;padding-bottom:5px;background:#0a131af7;border:1px solid #20323d;border-radius:16px;box-shadow:0 25px 70px #0009;overflow:hidden;animation:navIn .22s ease}@keyframes navIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}}
+@media(max-width:540px){.site-nav{padding:8px 0}.site-logo{min-width:0}.site-logo img{width:145px;max-height:38px}.site-nav-inner{width:calc(100% - 18px)}.site-menu{width:38px;height:38px}}
+@media(prefers-reduced-motion:reduce){.site-nav *{transition:none!important}.site-mobile-nav.open{animation:none}}
 </style>
 <script>
-const nav=document.querySelector('[data-site-nav]'),button=nav?.querySelector('.site-menu'),mobile=nav?.querySelector('.site-mobile-nav');
-button?.addEventListener('click',()=>{const open=mobile?.classList.toggle('open')??false;button?.setAttribute('aria-expanded',String(open));button?.setAttribute('aria-label',open?'Close menu':'Open menu')});
-nav?.querySelectorAll('[data-nav-group]').forEach(group=>{const trigger=group.querySelector('.site-nav-trigger');trigger?.addEventListener('click',()=>{const open=group.classList.toggle('open');trigger.setAttribute('aria-expanded',String(open));nav.querySelectorAll('[data-nav-group].open').forEach(other=>{if(other!==group){other.classList.remove('open');other.querySelector('.site-nav-trigger')?.setAttribute('aria-expanded','false')}})})});
-document.addEventListener('click',event=>{if(!nav?.contains(event.target))nav?.querySelectorAll('[data-nav-group].open').forEach(group=>group.classList.remove('open'))});
+const nav = document.querySelector('[data-site-nav]');
+const menuButton = nav?.querySelector('.site-menu');
+const mobile = nav?.querySelector('.site-mobile-nav');
+const setGroupState = (group, open) => {
+  const trigger = group.querySelector('.site-nav-trigger');
+  group.classList.toggle('open', open);
+  trigger?.setAttribute('aria-expanded', String(open));
+};
+nav?.querySelectorAll('[data-nav-group]').forEach((group) => {
+  const trigger = group.querySelector('.site-nav-trigger');
+  trigger?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const open = !group.classList.contains('open');
+    nav.querySelectorAll('[data-nav-group]').forEach((other) => { if (other !== group) setGroupState(other, false); });
+    setGroupState(group, open);
+  });
+});
+document.addEventListener('click', (event) => { if (!nav?.contains(event.target)) nav?.querySelectorAll('[data-nav-group]').forEach((group) => setGroupState(group, false)); });
+menuButton?.addEventListener('click', () => {
+  const open = mobile?.classList.toggle('open') ?? false;
+  menuButton.setAttribute('aria-expanded', String(open));
+  menuButton.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+});
+window.addEventListener('scroll', () => nav?.classList.toggle('is-scrolled', window.scrollY > 8), { passive: true });
 </script>
