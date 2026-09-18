@@ -560,6 +560,34 @@ if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'
       else await database.prepare('UPDATE articles SET deleted_at=?, deleted_by=NULL, updated_at=? WHERE id=?').bind(new Date().toISOString(),new Date().toISOString(),id).run();
       return json({ok:true,action});
     }
+    if(path === '/inbox' && request.method === 'GET') {
+      await ensureEditorialTables(env); const database=await d1(env);
+      const rows=await database.prepare("SELECT r.id,r.article_id,r.revision_no,r.note,r.created_at,a.title,a.slug,a.status,c.display_name AS author_name FROM article_revisions r JOIN articles a ON a.id=r.article_id LEFT JOIN creators c ON c.id=a.author_id WHERE r.review_status='pending' AND r.superseded_at IS NULL ORDER BY r.created_at ASC LIMIT 50").all();
+      return json({items:rows.results||[]});
+    }
+    if(path.match(/^\/articles\/\d+\/revisions$/) && request.method === 'GET') {
+      await ensureEditorialTables(env); const id=Number(path.split('/')[2]); if(!Number.isInteger(id)||id<1) return json({error:'Invalid article ID.'},400);
+      const database=await d1(env); const rows=await database.prepare('SELECT id,article_id,revision_no,editor_id,editor_role,action,review_status,note,snapshot,created_at,superseded_at FROM article_revisions WHERE article_id=? ORDER BY revision_no DESC').bind(id).all();
+      return json({revisions:rows.results||[]});
+    }
+    if(path.match(/^\/articles\/\d+\/(approve|request-changes)$/) && request.method === 'POST') {
+      await ensureEditorialTables(env); const parts=path.split('/'); const id=Number(parts[2]); const action=parts[3]; const database=await d1(env);
+      const row=await database.prepare('SELECT a.*,c.display_name AS author_name FROM articles a LEFT JOIN creators c ON c.id=a.author_id WHERE a.id=? LIMIT 1').bind(id).first();
+      if(!row) return json({error:'Article not found.'},404);
+      const body=await request.json().catch(()=>({})); const note=String(body.note||'').trim(); const now=new Date().toISOString();
+      const pending=await database.prepare("SELECT id FROM article_revisions WHERE article_id=? AND review_status='pending' AND superseded_at IS NULL ORDER BY revision_no DESC LIMIT 1").bind(id).first();
+      if(!pending) return json({error:'No pending review exists for this article.'},409);
+      if(action==='approve'){
+        await database.prepare('UPDATE articles SET status=\'published\',published_at=COALESCE(published_at,?),updated_at=?,deleted_at=NULL WHERE id=?').bind(now,now,id).run();
+        await database.prepare('UPDATE article_revisions SET review_status=\'approved\',note=?,superseded_at=NULL WHERE id=?').bind(note,pending.id).run();
+        const fresh=await database.prepare('SELECT a.*,c.display_name AS author_name FROM articles a LEFT JOIN creators c ON c.id=a.author_id WHERE a.id=? LIMIT 1').bind(id).first();
+        await syncPublishedArticle(env,{id:fresh.id,slug:fresh.slug,title:fresh.title,subtitle:fresh.subtitle,description:fresh.description,excerpt:fresh.excerpt,type:fresh.type,category:fresh.category,author:fresh.author_name||'TanzimFC',status:fresh.status,createdBy:fresh.author_name||'TanzimFC',createdAt:fresh.created_at,updatedAt:fresh.updated_at,publishedAt:fresh.published_at,image:fresh.feature_image,imageAlt:fresh.image_alt,imageCaption:fresh.image_caption,thumbnail:fresh.thumbnail,tags:JSON.parse(fresh.tags||'[]'),relatedPlayers:JSON.parse(fresh.related_players||'[]'),relatedEvents:JSON.parse(fresh.related_events||'[]'),relatedArticles:JSON.parse(fresh.related_articles||'[]'),relatedTools:JSON.parse(fresh.related_tools||'[]'),relatedCodes:JSON.parse(fresh.related_codes||'[]'),featured:Boolean(fresh.featured),readingTime:fresh.reading_time,seoTitle:fresh.seo_title,seoDescription:fresh.seo_description,canonicalUrl:fresh.canonical_url,sources:JSON.parse(fresh.sources||'[]'),factStatus:fresh.fact_status,lastReviewed:fresh.last_reviewed,series:fresh.series,body:fresh.content});
+        return json({ok:true,action:'approved'});
+      }
+      await database.prepare("UPDATE articles SET status='draft',updated_at=? WHERE id=?").bind(now,id).run();
+      await database.prepare("UPDATE article_revisions SET review_status='changes_requested',note=? WHERE id=?").bind(note,pending.id).run();
+      return json({ok:true,action:'changes_requested'});
+    }
     if(path === '/articles' && request.method === 'GET') {
       const database=await d1(env);
       const rows=await database.prepare(`SELECT a.*, c.display_name AS author_name
@@ -592,6 +620,8 @@ if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'
           const row=await database.prepare('SELECT a.*, c.display_name AS author_name FROM articles a LEFT JOIN creators c ON c.id=a.author_id WHERE a.id=? LIMIT 1').bind(current.id).first();
           await syncPublishedArticle(env,{id:row.id,slug:row.slug,title:row.title,subtitle:row.subtitle,description:row.description,excerpt:row.excerpt,type:row.type,category:row.category,author:row.author_name||'TanzimFC',status:row.status,createdBy:row.author_name||'TanzimFC',createdAt:row.created_at,updatedAt:row.updated_at,publishedAt:row.published_at,image:row.feature_image,imageAlt:row.image_alt,imageCaption:row.image_caption,thumbnail:row.thumbnail,tags:JSON.parse(row.tags||'[]'),relatedPlayers:JSON.parse(row.related_players||'[]'),relatedEvents:JSON.parse(row.related_events||'[]'),relatedArticles:JSON.parse(row.related_articles||'[]'),relatedTools:JSON.parse(row.related_tools||'[]'),relatedCodes:JSON.parse(row.related_codes||'[]'),featured:Boolean(row.featured),readingTime:row.reading_time,seoTitle:row.seo_title,seoDescription:row.seo_description,canonicalUrl:row.canonical_url,sources:JSON.parse(row.sources||'[]'),factStatus:row.fact_status,lastReviewed:row.last_reviewed,series:row.series,body:row.content});
         }
+        const savedRow=await database.prepare('SELECT * FROM articles WHERE id=? LIMIT 1').bind(current.id).first();
+        await createRevision(env,savedRow,{editorRole:'admin',action:status==='published'?'publish':status==='review'?'submit':'save',reviewStatus:status==='review'?'pending':status==='published'?'approved':'draft'});
         return json({ok:true,articleId:current.id,slug,action:'updated'});
       }
       const result=await database.prepare(`INSERT INTO articles (slug,title,subtitle,description,excerpt,content,type,category,author_id,status,feature_image,image_alt,image_caption,thumbnail,featured,reading_time,related_players,related_events,related_articles,related_tools,related_codes,tags,sources,fact_status,last_reviewed,seo_title,seo_description,canonical_url,series,published_at,owner_id,created_at,updated_at)
@@ -602,6 +632,8 @@ if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'
         const row=await database.prepare('SELECT a.*, c.display_name AS author_name FROM articles a LEFT JOIN creators c ON c.id=a.author_id WHERE a.id=? LIMIT 1').bind(id).first();
         await syncPublishedArticle(env,{id:row.id,slug:row.slug,title:row.title,subtitle:row.subtitle,description:row.description,excerpt:row.excerpt,type:row.type,category:row.category,author:row.author_name||'TanzimFC',status:row.status,createdBy:row.author_name||'TanzimFC',createdAt:row.created_at,updatedAt:row.updated_at,publishedAt:row.published_at,image:row.feature_image,imageAlt:row.image_alt,imageCaption:row.image_caption,thumbnail:row.thumbnail,tags:JSON.parse(row.tags||'[]'),relatedPlayers:JSON.parse(row.related_players||'[]'),relatedEvents:JSON.parse(row.related_events||'[]'),relatedArticles:JSON.parse(row.related_articles||'[]'),relatedTools:JSON.parse(row.related_tools||'[]'),relatedCodes:JSON.parse(row.related_codes||'[]'),featured:Boolean(row.featured),readingTime:row.reading_time,seoTitle:row.seo_title,seoDescription:row.seo_description,canonicalUrl:row.canonical_url,sources:JSON.parse(row.sources||'[]'),factStatus:row.fact_status,lastReviewed:row.last_reviewed,series:row.series,body:row.content});
       }
+      const createdRow=await database.prepare('SELECT * FROM articles WHERE id=? LIMIT 1').bind(result.meta?.last_row_id).first();
+      await createRevision(env,createdRow,{editorRole:'admin',action:status==='published'?'publish':status==='review'?'submit':'save',reviewStatus:status==='review'?'pending':status==='published'?'approved':'draft'});
       return json({ok:true,articleId:result.meta?.last_row_id,slug,action:'created'});
     }
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
