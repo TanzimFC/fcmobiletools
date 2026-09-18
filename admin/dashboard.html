@@ -152,13 +152,18 @@ async function articleMediaPicker(callback) {
 async function loadTipTap(editorEl, initialHTML){
   if(tiptapEditor) return tiptapEditor;
   try{
-    const [{Editor,StarterKit,Link,Image,Placeholder}]=await Promise.all([
+    const [core,starter,link,image,placeholder]=await Promise.all([
       import('https://esm.sh/@tiptap/core@2.11.5'),
       import('https://esm.sh/@tiptap/starter-kit@2.11.5'),
       import('https://esm.sh/@tiptap/extension-link@2.11.5'),
       import('https://esm.sh/@tiptap/extension-image@2.11.5'),
       import('https://esm.sh/@tiptap/extension-placeholder@2.11.5')
     ]);
+    const {Editor}=core;
+    const StarterKit=starter.default||starter;
+    const Link=link.default||link;
+    const Image=image.default||image;
+    const Placeholder=placeholder.default||placeholder;
     tiptapEditor=new Editor({element:editorEl,content:initialHTML||'',extensions:[
       StarterKit.configure({heading:{levels:[2,3]},link:false}),
       Link.configure({openOnClick:false,autolink:true}),
