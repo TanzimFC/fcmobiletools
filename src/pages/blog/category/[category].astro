@@ -4,8 +4,12 @@ import { getCollection } from 'astro:content';
 
 const labels={updates:'Updates',leaks:'Leaks',guides:'Guides','event-guides':'Event Guides',analysis:'Analysis',reviews:'Reviews',tactics:'Tactics',rankings:'Rankings'};
 const typeMap={updates:'news',leaks:'leaks',guides:'guide','event-guides':'event-guide',analysis:'analysis',reviews:'player-review',tactics:'opinion',rankings:'ranking'};
+export async function getStaticPaths(){
+  const postsForPaths=await getCollection('blog',({data})=>data.status==='published'&&!data.draft);
+  const categories=[...new Set(postsForPaths.map((post)=>post.data.category).filter(Boolean))];
+  return categories.map((category)=>({params:{category:String(category).toLowerCase().replace(/\\s+/g,'-')},props:{category}}));
+}
 const posts=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft)).sort((a,b)=>(b.data.publishedAt?.valueOf()??0)-(a.data.publishedAt?.valueOf()??0));
-export async function getStaticPaths(){return Object.keys(labels).map((category)=>({params:{category},props:{category}}))}
 const {category}=Astro.props;
 const label=labels[category]??category;
 const type=typeMap[category];
