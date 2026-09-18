@@ -435,29 +435,39 @@ async function api(request,env,path) {
       return json({ok:true,action});
     }
     if(path === '/articles' && request.method === 'GET') {
-      const body=await github(env,'contents/src/content/blog?ref=main');
-      const files=Array.isArray(body)?body.filter(x=>x.name.endsWith('.md')&&x.name!=='_template.md'):[];
-      const articles=[];
-      for(const file of files) {
-        const item=await repoFile(env,file.path);
-        const parsed=parseFrontmatter(item.text);
-        articles.push({path:file.path,sha:item.sha,...parsed});
-      }
-      articles.sort((a,b)=>String(b.data.updatedAt||b.data.publishedAt||'').localeCompare(String(a.data.updatedAt||a.data.publishedAt||'')));
-      return json({articles});
+      const database=await d1(env);
+      const rows=await database.prepare(`SELECT a.*, c.display_name AS author_name
+        FROM articles a LEFT JOIN creators c ON c.id=a.author_id
+        WHERE a.deleted_at IS NULL
+        ORDER BY COALESCE(a.updated_at,a.created_at) DESC`).all();
+      return json({articles:(rows.results||[]).map(articleRow)});
     }
     if(path === '/articles' && request.method === 'POST') {
       const input=await request.json();
       const title=String(input.title||'').trim();
       const slug=articleSlug(input.slug||title);
       if(!title||!slug) throw new Error('Article title is required.');
-      const filename=`src/content/blog/${slug}.md`;
-      let sha;
-      try { sha=(await repoFile(env,filename)).sha; } catch {}
-      if(sha && input.createOnly) throw new Error('An article with this slug already exists.');
-      const data={...input,title,slug,id:String(input.id||slug),author:String(input.author||'TanzimFC'),status:['draft','review','published','archived'].includes(input.status)?input.status:'draft',body:String(input.body||'')};
-      const commitSha=await writeRepoFile(env,filename,articleText(data),sha,`admin: ${sha?'update':'create'} article ${slug}`);
-      return json({ok:true,commitSha,slug,action:sha?'updated':'created'});
+      const database=await d1(env);
+      const now=new Date().toISOString();
+      const status=['draft','review','published','archived'].includes(input.status)?input.status:'draft';
+      const tags=JSON.stringify(Array.isArray(input.tags)?input.tags:[]);
+      const body=String(input.body||'');
+      const description=String(input.description||input.excerpt||'');
+      let current=null;
+      if(input.id && Number.isInteger(Number(input.id))) current=await database.prepare('SELECT * FROM articles WHERE id=? LIMIT 1').bind(Number(input.id)).first();
+      if(!current) current=await database.prepare('SELECT * FROM articles WHERE slug=? LIMIT 1').bind(slug).first();
+      const authorId=input.authorId && Number.isInteger(Number(input.authorId)) ? Number(input.authorId) : (current?.author_id||null);
+      if(current) {
+        const conflict=await database.prepare('SELECT id FROM articles WHERE slug=? AND id!=? LIMIT 1').bind(slug,current.id).first();
+        if(conflict) throw new Error('An article with this slug already exists.');
+        await database.prepare(`UPDATE articles SET slug=?,title=?,subtitle=?,description=?,excerpt=?,content=?,type=?,category=?,author_id=?,status=?,feature_image=?,image_alt=?,image_caption=?,thumbnail=?,featured=?,reading_time=?,related_players=?,related_events=?,related_articles=?,related_tools=?,related_codes=?,tags=?,sources=?,fact_status=?,last_reviewed=?,seo_title=?,seo_description=?,canonical_url=?,series=?,published_at=?,deleted_at=NULL,updated_at=? WHERE id=?`)
+          .bind(slug,title,String(input.subtitle||''),description,description,body,String(input.type||current.type||'guide'),String(input.category||current.category||'Guides'),authorId,status,String(input.image||current.feature_image||''),String(input.imageAlt||current.image_alt||''),String(input.imageCaption||current.image_caption||''),String(input.thumbnail||current.thumbnail||''),input.featured?1:0,Number(input.readingTime||current.reading_time||1),JSON.stringify(input.relatedPlayers||JSON.parse(current.related_players||'[]')),JSON.stringify(input.relatedEvents||JSON.parse(current.related_events||'[]')),JSON.stringify(input.relatedArticles||JSON.parse(current.related_articles||'[]')),JSON.stringify(input.relatedTools||JSON.parse(current.related_tools||'[]')),JSON.stringify(input.relatedCodes||JSON.parse(current.related_codes||'[]')),tags,JSON.stringify(input.sources||JSON.parse(current.sources||'[]')),String(input.factStatus||current.fact_status||'verified'),String(input.lastReviewed||current.last_reviewed||''),String(input.seoTitle||title),String(input.seoDescription||description),String(input.canonicalUrl||current.canonical_url||''),String(input.series||current.series||''),status==='published'?(current.published_at||now):null,now,current.id).run();
+        return json({ok:true,articleId:current.id,slug,action:'updated'});
+      }
+      const result=await database.prepare(`INSERT INTO articles (slug,title,subtitle,description,excerpt,content,type,category,author_id,status,feature_image,image_alt,image_caption,thumbnail,featured,reading_time,related_players,related_events,related_articles,related_tools,related_codes,tags,sources,fact_status,last_reviewed,seo_title,seo_description,canonical_url,series,published_at,owner_id,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+        .bind(slug,title,String(input.subtitle||''),description,description,body,String(input.type||'guide'),String(input.category||'Guides'),authorId,status,String(input.image||''),String(input.imageAlt||''),String(input.imageCaption||''),String(input.thumbnail||''),input.featured?1:0,Number(input.readingTime||1),JSON.stringify(input.relatedPlayers||[]),JSON.stringify(input.relatedEvents||[]),JSON.stringify(input.relatedArticles||[]),JSON.stringify(input.relatedTools||[]),JSON.stringify(input.relatedCodes||[]),tags,JSON.stringify(input.sources||[]),String(input.factStatus||'verified'),String(input.lastReviewed||''),String(input.seoTitle||title),String(input.seoDescription||description),String(input.canonicalUrl||''),String(input.series||''),status==='published'?now:null,null,now,now).run();
+      return json({ok:true,articleId:result.meta?.last_row_id,slug,action:'created'});
     }
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
     if(path === '/football' && request.method === 'POST') {
