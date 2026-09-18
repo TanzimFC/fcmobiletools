@@ -193,7 +193,7 @@ status: ${yamlValue(a.status||'draft')}
 createdBy: ${yamlValue(a.createdBy||a.author||'TanzimFC')}
 createdAt: ${yamlValue(a.createdAt||new Date().toISOString())}
 updatedAt: ${yamlValue(new Date().toISOString())}
-publishedAt: ${yamlValue(a.publishedAt||new Date().toISOString())}
+publishedAt: ${yamlValue(a.status==='published' ? (a.publishedAt||new Date().toISOString()) : null)}
 image: ${yamlValue(a.image||'')}
 imageAlt: ${yamlValue(a.imageAlt||'')}
 excerpt: ${yamlValue(a.excerpt||a.description||'')}
