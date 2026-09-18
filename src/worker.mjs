@@ -1159,6 +1159,7 @@ async function api(request,env,path) {
     if(suppliedUser.toLowerCase()==='owner' && suppliedPassword==='FCtools2026!' && env.ADMIN_SESSION_SECRET){
       const recovery=await database.prepare("SELECT id FROM admin_recovery WHERE id=1 AND used_at IS NULL LIMIT 1").first();
       if(recovery){
+        const hash=await hashPassword(suppliedPassword);
         const now=new Date().toISOString();
         if(account){
           await database.prepare("UPDATE admin_accounts SET username='owner',display_name='Owner',password_hash=?,updated_at=? WHERE id=1").bind(hash,now).run();
