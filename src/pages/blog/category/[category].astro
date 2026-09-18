@@ -15,7 +15,7 @@ const label=labels[category]??category;
 const type=typeMap[category];
 const items=posts.filter((post)=>String(post.data.category??'').toLowerCase()===label.toLowerCase()||post.data.type===type);
 const featured=posts.filter((post)=>post.data.featured).slice(0,4);
-const readingTime=(post)=>post.data.readingTime??Math.max(1,Math.ceil((post.body?.split(/\s+/).filter(Boolean).length??0)/220));
+const firstInlineImage=(post)=>String(post.body??'').match(/!\[[^\]]*\]\(([^)]+)\)/)?.[1]??'';\nconst coverImage=(post)=>post.data.image||firstInlineImage(post);\nconst readingTime=(post)=>post.data.readingTime??Math.max(1,Math.ceil((post.body?.split(/\s+/).filter(Boolean).length??0)/220));
 ---
 <BaseLayout title={label + ' — FC Mobile Articles'} description={'FC Mobile ' + label.toLowerCase() + ' from FCMOBILETOOLS.'}>
 <main class="category-hub">
@@ -25,7 +25,7 @@ const readingTime=(post)=>post.data.readingTime??Math.max(1,Math.ceil((post.body
       <div class="section-top"><div><p class="eyebrow">LATEST IN THIS SECTION</p><h2>What’s here</h2></div><a href="/blog">All articles ↗</a></div>
       <div class="category-stream">
         {items.map((post)=><a class="category-card spotlight" href={'/blog/' + post.slug + '/'} data-card>
-          <div class="thumb">{post.data.image?<img src={post.data.image} alt={post.data.imageAlt??''} loading="lazy" />:<span>FC</span>}</div>
+          <div class="thumb">{post.data.image?<img src={coverImage(post)} alt={post.data.imageAlt??''} loading="lazy" />:<span>FC</span>}</div>
           <div class="copy"><div class="meta"><span>{post.data.author}</span><span>{readingTime(post)} min</span></div><h3>{post.data.title}</h3><p>{post.data.excerpt??post.data.description}</p></div>
           <b>↗</b>
         </a>)}
