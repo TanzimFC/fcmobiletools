@@ -8,7 +8,7 @@ const stringArray = z.array(z.string()).default([]);
 const blog = defineCollection({
   type: 'content',
   schema: z.object({
-    id: z.string().optional(),
+    id: z.coerce.string().optional(),
     slug: z.string().optional(),
     title: z.string(),
     subtitle: z.string().optional(),
@@ -37,8 +37,8 @@ const blog = defineCollection({
     readingTime: z.number().optional(),
     seoTitle: z.string().optional(),
     seoDescription: z.string().optional(),
-    canonicalUrl: z.string().url().optional(),
-    lastReviewed: z.coerce.date().optional(),
+    canonicalUrl: z.preprocess((v)=>typeof v==='string' && !v.trim() ? undefined : v, z.string().url().optional()),
+    lastReviewed: z.preprocess((v)=>typeof v==='string' && !v.trim() ? undefined : v, z.coerce.date().optional()),
     sources: stringArray,
     factStatus: z.enum(FACT_STATUSES).optional(),
     series: z.string().optional(),
