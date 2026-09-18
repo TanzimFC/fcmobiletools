@@ -420,10 +420,15 @@ async function api(request,env,path) {
   if(path === '/login' && request.method === 'POST') {
     if(!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD || !env.ADMIN_SESSION_SECRET) return json({error:'Admin authentication is not configured in the Worker.'},503);
     const body=await request.json().catch(()=>({}));
-    if(body.username !== env.ADMIN_USERNAME || body.password !== env.ADMIN_PASSWORD) return json({error:'Invalid username or password.'},401);
-    return json({ok:true},200,{ 'set-cookie':`${SESSION_COOKIE}=${await session(env.ADMIN_USERNAME,env.ADMIN_SESSION_SECRET)}; Path=/; Max-Age=${SESSION_MAX_AGE}; HttpOnly; Secure; SameSite=Strict` });
+    const suppliedUser=String(body.username||'').trim();
+    const suppliedPassword=String(body.password||'');
+    const account=await getAdminAccount(env);
+    const validUser=account?.username||env.ADMIN_USERNAME;
+    const valid= suppliedUser===validUser && (account ? await verifyPassword(suppliedPassword,account.password_hash) : suppliedPassword===env.ADMIN_PASSWORD);
+    if(!valid) return json({error:'Invalid username or password.'},401);
+    return json({ok:true},200,{'set-cookie':SESSION_COOKIE+'='+await session(validUser,env.ADMIN_SESSION_SECRET)+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
   }
-  if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
+if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
     if(path === '/me') return json({username:env.ADMIN_USERNAME,role:'admin'});
