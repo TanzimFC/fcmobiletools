@@ -95,6 +95,32 @@ function parseRedeem(text) {
 
 function redeemText(codes) { return `// FC Mobile redeem-code database.\nexport const REDEEM_CODES = ${JSON.stringify(codes,null,2)};\n\nexport const REDEEM_STATUS = {\n  active: { label: 'Active', className: 'active' },\n  scheduled: { label: 'Scheduled', className: 'scheduled' },\n  expired: { label: 'Expired', className: 'expired' },\n  unknown: { label: 'Unknown', className: 'unknown' },\n};\n`; }
 
+
+function parseShards(text) {
+  const match=text.match(/export const SHARDS_COUNTER_DATA = ([\\s\\S]+);\\s*$/);
+  if(!match) throw new Error('Shards Counter data file has an unexpected format.');
+  try { return JSON.parse(match[1]); } catch { throw new Error('Shards Counter data file is not JSON-compatible.'); }
+}
+function shardsText(data) {
+  return '// FC Mobile Shards Counter data managed by the admin panel.\\nexport const SHARDS_COUNTER_DATA = ' + JSON.stringify(data,null,2) + ';\\n';
+}
+function validateShards(data) {
+  if(!data || typeof data !== 'object' || !Array.isArray(data.targets)) throw new Error('Shards Counter data is incomplete.');
+  if(!String(data.title||'').trim() || !String(data.eyebrow||'').trim() || !String(data.description||'').trim() || !String(data.currencyLabel||'').trim()) throw new Error('Title, eyebrow, description and currency label are required.');
+  const ids=new Set();
+  for(const [i,target] of data.targets.entries()) {
+    const id=String(target?.id||'').trim();
+    const label=String(target?.label||'').trim();
+    const cost=Number(target?.cost);
+    if(!id || !label || !/^[-a-z0-9]{2,64}$/i.test(id)) throw new Error('Target ' + (i+1) + ' needs a valid ID and label.');
+    if(ids.has(id)) throw new Error('Duplicate target ID: ' + id + '.');
+    if(!Number.isInteger(cost) || cost <= 0) throw new Error('Target ' + (i+1) + ' cost must be a positive whole number.');
+    if(String(target?.note||'').length>180) throw new Error('Target ' + id + ' note is too long.');
+    ids.add(id);
+  }
+  if(data.defaultTargetId && !ids.has(String(data.defaultTargetId))) throw new Error('Default target must match one of the configured target IDs.');
+}
+
 function parseFootball(text) {
   const match=text.match(/export const FOOTBALL_CENTRE_CONTENT = ([\s\S]+);\s*$/);
   if(!match) throw new Error('Football Centre data file has an unexpected format.');
@@ -178,6 +204,15 @@ async function api(request,env,path) {
     if(path === '/rank-up' && request.method === 'POST') { const data=await request.json(); validateRankUp(data); const file=await repoFile(env,'src/data/fcMobileRankUp.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileRankUp.js',rankUpText(data),file.sha,'admin: update Rank Up Points data'); return json({ok:true,commitSha}); }
     if(path === '/training' && request.method === 'GET') return json(parseTraining((await repoFile(env,'src/data/fcMobileTraining.js')).text));
     if(path === '/training' && request.method === 'POST') { const data=await request.json(); validateTraining(data); const file=await repoFile(env,'src/data/fcMobileTraining.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileTraining.js',trainingText(data),file.sha,'admin: update Training XP data'); return json({ok:true,commitSha}); }
+
+    if(path === '/shards' && request.method === 'GET') return json(parseShards((await repoFile(env,'src/data/fcMobileShards.js')).text));
+    if(path === '/shards' && request.method === 'POST') {
+      const data=await request.json();
+      validateShards(data);
+      const file=await repoFile(env,'src/data/fcMobileShards.js');
+      const commitSha=await writeRepoFile(env,'src/data/fcMobileShards.js',shardsText(data),file.sha,'admin: update Shards Counter data');
+      return json({ok:true,commitSha});
+    }
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
     if(path === '/football' && request.method === 'POST') {
       const {content}=await request.json();
