@@ -41,6 +41,8 @@ const blog = defineCollection({
     lastReviewed: z.coerce.date().optional(),
     sources: stringArray,
     factStatus: z.enum(FACT_STATUSES).optional(),
+    series: z.string().optional(),
+    seriesOrder: z.number().int().optional(),
     playerReview: z.object({
       playerId: z.string(),
       overallRating: z.number().min(0).max(10),
