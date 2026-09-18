@@ -476,8 +476,13 @@ async function api(request,env,path) {
       const recovery=await database.prepare("SELECT id FROM admin_recovery WHERE id=1 AND used_at IS NULL LIMIT 1").first();
       if(recovery){
         const hash=await hashPassword(suppliedPassword);
-        await database.prepare("UPDATE admin_accounts SET username='owner',display_name='Owner',password_hash=?,updated_at=? WHERE id=1").bind(hash,new Date().toISOString()).run();
-        await database.prepare("UPDATE admin_recovery SET used_at=? WHERE id=1").bind(new Date().toISOString()).run();
+        const now=new Date().toISOString();
+        if(account){
+          await database.prepare("UPDATE admin_accounts SET username='owner',display_name='Owner',password_hash=?,updated_at=? WHERE id=1").bind(hash,now).run();
+        } else {
+          await database.prepare("INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,'owner','Owner',?,?)").bind(hash,now).run();
+        }
+        await database.prepare("UPDATE admin_recovery SET used_at=? WHERE id=1").bind(now).run();
         account=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
       }
     }
