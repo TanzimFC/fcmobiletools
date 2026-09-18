@@ -1,5 +1,9 @@
+import { argon2id, argon2Verify } from 'hash-wasm';
+
 const SESSION_COOKIE = 'fcm_admin_session';
+const CREATOR_SESSION_COOKIE = 'fcm_creator_session';
 const SESSION_MAX_AGE = 60 * 60 * 8;
+const ARGON2_OPTIONS = { iterations: 3, memorySize: 65536, parallelism: 1, hashLength: 32, outputType: 'encoded' };
 
 const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
   status,
@@ -37,6 +41,36 @@ body:before{background-image:linear-gradient(#56d6ff04 1px,transparent 1px),line
 const b64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const unb64 = value => Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/') + '='.repeat((4-value.length%4)%4)), c => c.charCodeAt(0));
 
+async function hashPassword(password) {
+  if(typeof password !== 'string' || password.length < 10) throw new Error('Password must be at least 10 characters.');
+  const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
+  return argon2id({ password, salt, ...ARGON2_OPTIONS });
+}
+
+async function verifyPassword(password, encodedHash) {
+  if(typeof password !== 'string' || !encodedHash) return false;
+  try { return await argon2Verify({ password, hash: encodedHash }); } catch { return false; }
+}
+
+async function creatorSession(creator, secret) {
+  const payload = JSON.stringify({ id:creator.id, username:creator.username, role:creator.role, exp:Date.now()+SESSION_MAX_AGE*1000 });
+  const encoded = b64(new TextEncoder().encode(payload));
+  return encoded + '.' + await sign(secret,payload);
+}
+
+async function creatorAuthenticated(request, env) {
+  if(!env.CREATOR_SESSION_SECRET) return null;
+  const match=(request.headers.get('cookie')||'').match(new RegExp(CREATOR_SESSION_COOKIE + '=([^;]+)'));
+  if(!match) return null;
+  try {
+    const [payload64,signature]=match[1].split('.');
+    const payload=new TextDecoder().decode(unb64(payload64));
+    if((await sign(env.CREATOR_SESSION_SECRET,payload))!==signature) return null;
+    const data=JSON.parse(payload);
+    if(!data?.id || !data?.username || data.exp<=Date.now()) return null;
+    return data;
+  } catch { return null; }
+}
 async function sign(secret, value) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
   return b64(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value)));
@@ -225,6 +259,24 @@ async function d1(env) {
 }
 
 async function api(request,env,path) {
+  if(path === '/creator/login' && request.method === 'POST') {
+    if(!env.CREATOR_SESSION_SECRET) return json({error:'Creator authentication is not configured in the Worker.'},503);
+    const body=await request.json().catch(()=>({}));
+    const username=String(body.username||'').trim().toLowerCase();
+    const password=String(body.password||'');
+    if(!username || !password) return json({error:'Username and password are required.'},400);
+    const database=await d1(env);
+    const creator=await database.prepare('SELECT id, username, display_name, password_hash, role, active FROM creators WHERE username=? LIMIT 1').bind(username).first();
+    if(!creator || creator.active!==1 || !(await verifyPassword(password,creator.password_hash))) return json({error:'Invalid username or password.'},401);
+    const token=await creatorSession(creator,env.CREATOR_SESSION_SECRET);
+    return json({ok:true,creator:{id:creator.id,username:creator.username,displayName:creator.display_name,role:creator.role}},200,{'set-cookie':CREATOR_SESSION_COOKIE+'='+token+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
+  }
+  if(path === '/creator/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':CREATOR_SESSION_COOKIE+'=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict'});
+  if(path === '/creator/me' && request.method === 'GET') {
+    const creator=await creatorAuthenticated(request,env);
+    if(!creator) return json({error:'Authentication required.'},401);
+    return json({creator});
+  }
   if(path === '/login' && request.method === 'POST') {
     if(!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD || !env.ADMIN_SESSION_SECRET) return json({error:'Admin authentication is not configured in the Worker.'},503);
     const body=await request.json().catch(()=>({}));
@@ -235,6 +287,29 @@ async function api(request,env,path) {
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
     if(path === '/me') return json({username:env.ADMIN_USERNAME,role:'admin'});
+    if(path === '/creators' && request.method === 'GET') {
+      const database=await d1(env);
+      const rows=await database.prepare('SELECT id, username, display_name, bio, avatar_url, website_url, role, active, created_at, joined_at FROM creators ORDER BY id DESC').all();
+      return json({creators:rows.results||[]});
+    }
+    if(path === '/creators' && request.method === 'POST') {
+      const input=await request.json();
+      const username=String(input.username||'').trim().toLowerCase();
+      const displayName=String(input.displayName||input.display_name||'').trim();
+      const password=String(input.password||'');
+      if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)) throw new Error('Username must be 3–32 characters using letters, numbers, dots, underscores, or hyphens.');
+      if(!displayName) throw new Error('Display name is required.');
+      const passwordHash=await hashPassword(password);
+      const database=await d1(env);
+      const now=new Date().toISOString();
+      try {
+        const result=await database.prepare('INSERT INTO creators (username, display_name, password_hash, bio, avatar_url, website_url, role, active, joined_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)').bind(username,displayName,passwordHash,String(input.bio||''),String(input.avatarUrl||''),String(input.websiteUrl||''),'creator',now,now).run();
+        return json({ok:true,id:result.meta?.last_row_id,username,displayName});
+      } catch(error) {
+        if(String(error?.message||'').toLowerCase().includes('unique')) throw new Error('That creator username already exists.');
+        throw error;
+      }
+    }
     if(path === '/db-status' && request.method === 'GET') {
       const database=await d1(env);
       const row=await database.prepare('SELECT 1 AS ok').first();
