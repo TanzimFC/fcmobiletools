@@ -490,7 +490,8 @@ async function api(request,env,path) {
     const valid= suppliedUser===account.username && await verifyPassword(suppliedPassword,account.password_hash);
     if(!valid) return json({error:'Invalid username or password.'},401);
     return json({ok:true},200,{'set-cookie':SESSION_COOKIE+'='+await session(account.username,env.ADMIN_SESSION_SECRET)+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
-if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
+  }
+  if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
     if(path === '/me') {
