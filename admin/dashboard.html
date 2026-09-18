@@ -71,6 +71,7 @@ function articleHTMLToMarkdown(html) {
   return [...root.childNodes].map(walk).join('').replace(/\n{3,}/g,'\n\n').trim();
 }
 async function creatorsSection(){
+  let bootstrap=null; if(workspaceRole==='admin'){bootstrap=await api('/creators/bootstrap-self',{method:'POST'}).catch(()=>null);}
   const out=await api('/creators'); const list=out.creators||[];
   app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> CREATOR CONTROL</div><h2>Creators</h2><p>Manage editorial accounts and access without leaving the admin workspace.</p></div><button class="btn primary" id="creatorNew">＋ New creator</button></div>'
     +'<div class="card section"><div class="head"><div><h3>Creator accounts</h3><p>'+list.length+' account'+(list.length===1?'':'s')+'</p></div></div><div class="article-admin-list">'
@@ -78,6 +79,8 @@ async function creatorsSection(){
     +'</div></div>';
   $('#creatorNew').onclick=()=>creatorDialog();
   document.querySelectorAll('[data-creator-edit]').forEach(b=>b.onclick=()=>creatorDialog(list.find(c=>String(c.id)===b.dataset.creatorEdit)));
+  if(bootstrap?.created){openModal('<div class="dialoghead"><div><h3>Creator account created</h3><div class="muted">Save this temporary password now. It is not stored in plain text.</div></div></div><div class="dialogbody"><div class="notice"><b>Username</b><br>tanzimfc<br><br><b>Temporary password</b><br><code style="font-size:15px;color:#dff8ff;user-select:all">'+esc(bootstrap.temporaryPassword)+'</code></div><p class="muted" style="margin-top:12px">Log in from the Creator page, then change the password from Account.</p></div><div class="dialogfoot"><button class="btn primary" data-close>Done</button></div>');}
+  refreshInboxBadge();
 }
 function creatorDialog(c){
   openModal('<div class="dialoghead"><div><h3>'+(c?'Edit creator':'Create creator')+'</h3><div class="muted">'+(c?'Update profile, access or password':'Create the account and share its temporary password privately')+'</div></div><button class="close" data-close>×</button></div>'
