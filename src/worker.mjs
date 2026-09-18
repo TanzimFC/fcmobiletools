@@ -16,8 +16,8 @@ body:before{background-image:linear-gradient(#56d6ff04 1px,transparent 1px),line
 .side{background:#071016ed!important;border-right-color:#20323d!important}
 .mark{background:linear-gradient(145deg,#70e1ff,#4f7dff)!important;color:#04131c!important;box-shadow:0 0 35px #56d6ff20!important}
 .top{background:#070d12eb!important;border-bottom-color:#20323d!important}
-.nav button.active{background:linear-gradient(90deg,#56d6ff10,#4f7dff08)!important;border-color:#2b5a72!important;box-shadow:inset 3px 0 var(--cyan),0 8px 24px #0004!important}
-.nav button.active:before{color:var(--cyan)!important}
+.nav button.active{background:linear-gradient(90deg,#56d6ff10,#4f7dff08)!important;border-color:#2b5a72!important;box-shadow:inset 3px 0 #56d6ff,0 8px 24px #0004!important}
+.nav button.active:before{color:#56d6ff!important}
 .btn.primary,.primary{border-color:#69dcff!important;background:linear-gradient(135deg,#69e0ff,#2aa8e8)!important;color:#04131c!important;box-shadow:0 12px 32px #56d6ff10!important}
 .btn:hover{border-color:#3d6377!important}.input:focus,select:focus,textarea:focus{border-color:#56d6ff!important;box-shadow:0 0 0 3px #56d6ff10!important}
 .tabs button.active{background:#56d6ff0d!important;color:#dff8ff!important;box-shadow:inset 0 0 0 1px #3f738b!important}
