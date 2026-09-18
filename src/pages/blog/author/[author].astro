@@ -6,9 +6,10 @@ const slugify=(value)=>String(value??'').toLowerCase().trim().replace(/[^a-z0-9\
 const posts=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft)).sort((a,b)=>(b.data.publishedAt?.valueOf()??0)-(a.data.publishedAt?.valueOf()??0));
 const authors=[...new Set(posts.map((post)=>post.data.author).filter(Boolean))];
 export async function getStaticPaths(){
+  const slugifyPath=(value)=>String(value??'').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
   const postsForPaths=await getCollection('blog',({data})=>data.status==='published'&&!data.draft);
   const authorsForPaths=[...new Set(postsForPaths.map((post)=>post.data.author).filter(Boolean))];
-  return authorsForPaths.map((author)=>({params:{author:slugify(author)},props:{author}}));
+  return authorsForPaths.map((author)=>({params:{author:slugifyPath(author)},props:{author}}));
 }
 const {author}=Astro.props;
 const authorPosts=posts.filter((post)=>slugify(post.data.author)===slugify(author));

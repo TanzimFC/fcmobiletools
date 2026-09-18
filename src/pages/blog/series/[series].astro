@@ -4,7 +4,12 @@ import { getCollection } from 'astro:content';
 const slugify=(value)=>String(value??'').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
 const posts=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft));
 const series=[...new Set(posts.map((post)=>post.data.series).filter(Boolean))];
-export async function getStaticPaths(){return series.map((name)=>({params:{series:slugify(name)},props:{name}}))}
+export async function getStaticPaths(){
+  const slugifyPath=(value)=>String(value??'').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
+  const seriesForPaths=await getCollection('blog',({data})=>data.status==='published'&&!data.draft);
+  const seriesNames=[...new Set(seriesForPaths.map((post)=>post.data.series).filter(Boolean))];
+  return seriesNames.map((name)=>({params:{series:slugifyPath(name)},props:{name}}));
+}
 const {name}=Astro.props;
 const seriesPosts=posts.filter((post)=>post.data.series===name).sort((a,b)=>(a.data.seriesOrder??0)-(b.data.seriesOrder??0));
 ---

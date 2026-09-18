@@ -7,7 +7,7 @@ const { file, initialPage = '', className = '' } = Astro.props;
 const sourceName = file.replace(/\.html$/i, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
 const base = path.join(process.cwd(), 'public', '_legacy', sourceName);
 const body = fs.readFileSync(`${base}.html`, 'utf8');
-const css = fs.readFileSync(`${base}.css`, 'utf8');
+const css = fs.readFileSync(`${base}.css`, 'utf8').replace(/<\/?style[^>]*>/gi, '');
 const jsUrl = `/_legacy/${sourceName}.js`;
 const kind = sourceName.startsWith('trivia-') ? 'trivia' : sourceName === 'legacy-football-centre' ? 'football-centre' : 'legacy';
 ---

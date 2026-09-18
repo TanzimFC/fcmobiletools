@@ -18,7 +18,6 @@ export default defineConfig({
   integrations: [sitemap()],
   redirects: {
     '/trivia': '/a-nations-story/',
-    '/trivia/': '/a-nations-story/',
     ...nationRedirects
   },
   experimental: {
