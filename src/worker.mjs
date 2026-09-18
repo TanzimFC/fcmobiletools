@@ -246,6 +246,31 @@ async function api(request,env,path) {
     if(path === '/training' && request.method === 'GET') return json(parseTraining((await repoFile(env,'src/data/fcMobileTraining.js')).text));
     if(path === '/training' && request.method === 'POST') { const data=await request.json(); validateTraining(data); const file=await repoFile(env,'src/data/fcMobileTraining.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileTraining.js',trainingText(data),file.sha,'admin: update Training XP data'); return json({ok:true,commitSha}); }
 
+    if(path === '/articles' && request.method === 'GET') {
+      const body=await github(env,'contents/src/content/blog?ref=main');
+      const files=Array.isArray(body)?body.filter(x=>x.name.endsWith('.md')&&x.name!=='_template.md'):[];
+      const articles=[];
+      for(const file of files) {
+        const item=await repoFile(env,file.path);
+        const parsed=parseFrontmatter(item.text);
+        articles.push({path:file.path,sha:item.sha,...parsed});
+      }
+      articles.sort((a,b)=>String(b.data.updatedAt||b.data.publishedAt||'').localeCompare(String(a.data.updatedAt||a.data.publishedAt||'')));
+      return json({articles});
+    }
+    if(path === '/articles' && request.method === 'POST') {
+      const input=await request.json();
+      const title=String(input.title||'').trim();
+      const slug=articleSlug(input.slug||title);
+      if(!title||!slug) throw new Error('Article title is required.');
+      const filename=`src/content/blog/${slug}.md`;
+      let sha;
+      try { sha=(await repoFile(env,filename)).sha; } catch {}
+      if(sha && input.createOnly) throw new Error('An article with this slug already exists.');
+      const data={...input,title,slug,id:String(input.id||slug),author:String(input.author||'TanzimFC'),status:['draft','review','published','archived'].includes(input.status)?input.status:'draft',body:String(input.body||'')};
+      const commitSha=await writeRepoFile(env,filename,articleText(data),sha,`admin: ${sha?'update':'create'} article ${slug}`);
+      return json({ok:true,commitSha,slug,action:sha?'updated':'created'});
+    }
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
     if(path === '/football' && request.method === 'POST') {
       const {content}=await request.json();
