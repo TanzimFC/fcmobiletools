@@ -1,7 +1,7 @@
 import { defineCollection, z } from 'astro:content';
 
 const ARTICLE_TYPES = ['news','guide','player-review','ranking','analysis','event-guide','explanation','opinion','leaks'] as const;
-const ARTICLE_STATUSES = ['draft','review','scheduled','published','archived'] as const;
+const ARTICLE_STATUSES = ['draft','review','published','archived'] as const;
 const FACT_STATUSES = ['verified','partially-verified','community-reported'] as const;
 const stringArray = z.array(z.string()).default([]);
 
