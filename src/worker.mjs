@@ -82,15 +82,18 @@ async function session(username, secret) {
 }
 
 async function authenticated(request, env) {
-  if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD || !env.ADMIN_SESSION_SECRET) return false;
+  if (!env.ADMIN_SESSION_SECRET) return false;
   const match = (request.headers.get('cookie') || '').match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
   if (!match) return false;
   try {
     const [payload64, signature] = match[1].split('.');
     const payload = new TextDecoder().decode(unb64(payload64));
     const [username, expiry] = payload.split('|');
-    if (username !== env.ADMIN_USERNAME || Number(expiry) <= Date.now()) return false;
-    return (await sign(env.ADMIN_SESSION_SECRET,payload)) === signature;
+    if (!username || Number(expiry) <= Date.now()) return false;
+    if ((await sign(env.ADMIN_SESSION_SECRET,payload)) !== signature) return false;
+    const database=await d1(env);
+    const account=await database.prepare('SELECT id FROM admin_accounts WHERE username=? LIMIT 1').bind(username).first();
+    return Boolean(account?.id);
   } catch { return false; }
 }
 
@@ -475,7 +478,6 @@ async function api(request,env,path) {
     if(suppliedUser.toLowerCase()==='owner' && suppliedPassword==='FCtools2026!' && env.ADMIN_SESSION_SECRET){
       const recovery=await database.prepare("SELECT id FROM admin_recovery WHERE id=1 AND used_at IS NULL LIMIT 1").first();
       if(recovery){
-        const hash=await hashPassword(suppliedPassword);
         const now=new Date().toISOString();
         if(account){
           await database.prepare("UPDATE admin_accounts SET username='owner',display_name='Owner',password_hash=?,updated_at=? WHERE id=1").bind(hash,now).run();
@@ -483,7 +485,7 @@ async function api(request,env,path) {
           await database.prepare("INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,'owner','Owner',?,?)").bind(hash,now).run();
         }
         await database.prepare("UPDATE admin_recovery SET used_at=? WHERE id=1").bind(now).run();
-        account=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
+        return json({ok:true,recovery:true},200,{'set-cookie':SESSION_COOKIE+'='+await session('owner',env.ADMIN_SESSION_SECRET)+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
       }
     }
     if(!account) return json({error:'Admin account is not configured.'},503);
