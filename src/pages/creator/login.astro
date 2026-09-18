@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Creator Login — FCMOBILETOOLS" description="Private creator workspace sign in.">
+<main class="creator-login">
+  <div class="login-grid">
+    <section class="copy">
+      <p class="eyebrow">CREATOR WORKSPACE</p>
+      <h1>Write. Review.<br><em>Get published.</em></h1>
+      <p>Use your creator account to manage drafts, redeem-code updates, approval feedback and your profile.</p>
+      <a href="/creator/" class="back">← Back to creators</a>
+    </section>
+    <form class="card" id="creatorLogin">
+      <div class="mark">FC</div>
+      <h2>Sign in</h2>
+      <label><span>Username</span><input name="username" autocomplete="username" required></label>
+      <label><span>Password</span><input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit" id="submit">Open workspace</button>
+      <p id="error" role="alert"></p>
+    </form>
+  </div>
+</main>
+<script is:inline>
+const form=document.querySelector('#creatorLogin'), error=document.querySelector('#error'), submit=document.querySelector('#submit');
+form?.addEventListener('submit',async e=>{
+  e.preventDefault(); error.textContent=''; submit.disabled=true; submit.textContent='Opening…';
+  try{
+    const r=await fetch('/api/creator/login',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify(Object.fromEntries(new FormData(form)))});
+    const body=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(body.error||'Sign in failed.');
+    location.replace('/admin/');
+  }catch(err){error.textContent=err.message;submit.disabled=false;submit.textContent='Open workspace';}
+});
+</script>
+<style>
+.creator-login{min-height:72vh;padding:80px 20px;background:radial-gradient(circle at 20% 0,#55c7f218,transparent 35%),var(--bg)}
+.login-grid{width:min(980px,100%);margin:auto;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:65px;align-items:center}
+.eyebrow{margin:0;color:var(--blue);font:900 8px var(--mono);letter-spacing:.16em}
+.copy h1{font-size:clamp(54px,7vw,88px);line-height:.88;letter-spacing:-.075em;margin:17px 0}
+.copy h1 em{font-style:normal;color:var(--blue)}
+.copy>p{max-width:580px;color:#879ca8;font-size:12px;line-height:1.8}
+.back{display:inline-block;margin-top:22px;color:#8edffc;text-decoration:none;font:800 8px var(--mono)}
+.card{padding:24px;border:1px solid #294454;border-radius:21px;background:#09141b;box-shadow:0 28px 80px #0008}
+.mark{width:45px;height:45px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#70e1ff,#4f7dff);color:#04131c;font:900 11px var(--mono)}
+.card h2{font-size:28px;letter-spacing:-.04em;margin:17px 0 20px}
+.card label{display:block;margin-top:14px}.card label span{display:block;margin-bottom:7px;color:#c7d6dd;font:800 8px var(--mono)}
+.card input{width:100%;padding:12px 13px;border:1px solid #29404c;border-radius:10px;background:#071016;color:#eef8fb;outline:0}.card input:focus{border-color:#55c7f2;box-shadow:0 0 0 3px #55c7f210}
+.card button{width:100%;margin-top:18px;padding:12px;border:1px solid #69dcff;border-radius:10px;background:linear-gradient(135deg,#69e0ff,#2aa8e8);color:#04131c;font:900 8px var(--mono)}
+.card p#error{min-height:18px;margin:12px 0 0;color:#ff9f95;font:700 8px var(--mono)}
+@media(max-width:760px){.login-grid{grid-template-columns:1fr;gap:35px}.creator-login{padding-top:55px}.copy h1{font-size:clamp(46px,13vw,68px)}}
+</style>
+</BaseLayout>
