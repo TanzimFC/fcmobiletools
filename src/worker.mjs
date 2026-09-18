@@ -339,7 +339,7 @@ async function getAdminAccount(env) {
   let row=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
   if(!row && env.ADMIN_USERNAME && env.ADMIN_PASSWORD) {
     const hash=await hashPassword(env.ADMIN_PASSWORD);
-    await database.prepare('INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,?,?,?,?,?)').bind(env.ADMIN_USERNAME,env.ADMIN_USERNAME,hash,new Date().toISOString()).run();
+    await database.prepare('INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,?,?,?,?)').bind(env.ADMIN_USERNAME,env.ADMIN_USERNAME,hash,new Date().toISOString()).run();
     row=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
   }
   return row;
