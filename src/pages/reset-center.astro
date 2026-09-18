@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
+const event=FOOTBALL_CENTRE_CONTENT.eventCountdown;
+const reset=FOOTBALL_CENTRE_CONTENT.divisionRivalsReset;
+const pageSchema={'@context':'https://schema.org','@type':'WebPage',name:'FC Mobile Live Reset Center | FCMOBILETOOLS',description:'Live FC Mobile daily reset, Anniversary Event and Division Rivals season countdowns with UTC reference and automatic local-time conversion.',url:new URL(Astro.url.pathname,Astro.site??'https://fcmobiletools.com').href,publisher:{'@type':'Organization',name:'FCMOBILETOOLS'}};
+---
+<BaseLayout title="FC Mobile Live Reset Center | FCMOBILETOOLS" description="Live FC Mobile daily reset, Anniversary Event and Division Rivals season countdowns with UTC reference and automatic local-time conversion">
+<script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
+<main class="center">
+  <div class="orb orb-a"></div><div class="orb orb-b"></div>
+  <section class="intro">
+    <span class="eyebrow">FC MOBILE / LIVE CENTER</span>
+    <h1>Every important reset<br /><em>in one place</em></h1>
+    <p>One live clock powers every card. UTC is the fixed reference, while each visitor sees the same instant in their own local time.</p>
+    <div class="clockline"><span class="pulse-dot"></span><strong id="localNow">Local time</strong><span class="divider">·</span><strong id="utcNow">UTC</strong></div>
+  </section>
+
+  <section class="feature event-card" id="eventCard">
+    {event.banner && <img src={event.banner} alt={event.title} loading="eager" />}
+    <div class="feature-body">
+      <div class="feature-top"><span class="tag">{event.accent}</span><span class="live-badge" id="eventStatus"><i></i> WAITING</span></div>
+      <h2>{event.title}</h2>
+      <p>{event.subtitle}</p>
+      <div class="event-timer" id="eventTimer"><div><b id="ed">--</b><small>DAYS</small></div><span>:</span><div><b id="eh">--</b><small>HOURS</small></div><span>:</span><div><b id="em">--</b><small>MINUTES</small></div><span>:</span><div><b id="es">--</b><small>SECONDS</small></div></div>
+      <div class="feature-meta"><div><small>UTC REFERENCE</small><strong id="eventUtc">—</strong></div><div><small>LOCAL TIME</small><strong id="eventLocal">—</strong></div></div>
+      <button class="sound" id="sound" type="button" aria-pressed="false"><span>◉</span> Enable live beep</button>
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="utility-card">
+      <div class="utility-head"><div><span class="tag">DAILY RESET</span><h2>Daily Reset</h2></div><span class="live-badge"><i></i> LIVE</span></div>
+      <div class="big-time"><b id="dh">--</b><span>:</span><b id="dm">--</b><span>:</span><b id="ds">--</b></div>
+      <div class="bar"><div id="dailyBar"></div><span id="dailyPct">0%</span></div>
+      <div class="utility-meta"><div><small>UTC</small><strong id="dailyUtc">—</strong></div><div><small>LOCAL</small><strong id="dailyLocal">—</strong></div></div>
+      <a class="utility-link" href="/daily-reset-time">Open full daily reset view <b>↗</b></a>
+    </article>
+    <article class="utility-card">
+      <div class="utility-head"><div><span class="tag">DIVISION RIVALS</span><h2>Season Reset</h2></div><span class="live-badge"><i></i> 28 DAYS</span></div>
+      <div class="big-time"><b id="rh">--</b><span>:</span><b id="rm">--</b><span>:</span><b id="rs">--</b></div>
+      <div class="bar"><div id="rivalsBar"></div><span id="rivalsPct">0%</span></div>
+      <div class="utility-meta"><div><small>UTC</small><strong id="rivalsUtc">—</strong></div><div><small>LOCAL</small><strong id="rivalsLocal">—</strong></div></div>
+      <a class="utility-link" href="/division-rivals-reset">Open full Division Rivals view <b>↗</b></a>
+    </article>
+  </section>
+
+  <section class="reference">
+    <div><span class="eyebrow">REFERENCE</span><h2>One timestamp, every timezone</h2><p>The browser calculates local display from the exact UTC timestamp. No server timezone is used, so visitors in different regions get different local clock values for the same reset moment.</p></div>
+    <div class="reference-grid"><div><b>01:00 UTC</b><span>Daily reset reference</span></div><div><b>28 DAYS</b><span>Division Rivals cycle</span></div><div><b>LIVE</b><span>Event changes automatically</span></div></div>
+  </section>
+</main>
+<script define:vars={{startUtc:event.startUtc,endUtc:event.endUtc,anchorUtc:reset.anchorUtc,cycleDays:reset.cycleDays}}>
+const $=id=>document.getElementById(id),day=86400000,pad=n=>String(n).padStart(2,'0');
+const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+const fmt=(options,timeZone)=>new Intl.DateTimeFormat(undefined,{...options,timeZone});
+const localDate=fmt({weekday:'long',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'},zone);
+const utcDate=fmt({weekday:'long',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'},'UTC');
+const localShort=fmt({hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'},zone);
+const sound=$('sound');let soundOn=false,wasLive=false,audio;
+const beep=()=>{if(!soundOn)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=740;g.gain.setValueAtTime(.0001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.09,audio.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.24);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.25)}catch{}};
+sound.addEventListener('click',()=>{soundOn=!soundOn;sound.setAttribute('aria-pressed',String(soundOn));sound.innerHTML=soundOn?'<span>●</span> Live beep enabled':'<span>◉</span> Enable live beep';if(soundOn){audio??=new(window.AudioContext||window.webkitAudioContext)();beep()}});
+const dailyNext=now=>{const base=Date.UTC(new Date(now).getUTCFullYear(),new Date(now).getUTCMonth(),new Date(now).getUTCDate(),1);return now<base?base:base+day};
+const rivalsNext=now=>{const anchor=Date.parse(anchorUtc),cycle=(Number(cycleDays)||28)*day;if(!Number.isFinite(anchor))return NaN;const n=Math.floor((now-anchor)/cycle)+1;return now<anchor?anchor:anchor+n*cycle};
+const timer=(prefix,ms)=>{const total=Math.max(0,Math.floor((ms-Date.now())/1000));$(prefix+'h').textContent=String(Math.floor(total/3600)).padStart(2,'0');$(prefix+'m').textContent=pad(Math.floor(total%3600/60));$(prefix+'s').textContent=pad(total%60)};
+const update=()=>{
+ const now=Date.now(),n=new Date(now);
+ $('localNow').textContent=localShort.format(n);$('utcNow').textContent=utcDate.format(n);
+ const dn=dailyNext(now),dp=Math.min(100,Math.max(0,((now-(dn-day))/day)*100));timer('d',dn);$('dailyBar').style.width=dp+'%';$('dailyPct').textContent=dp.toFixed(1)+'%';$('dailyUtc').textContent=utcDate.format(new Date(dn));$('dailyLocal').textContent=localDate.format(new Date(dn));
+ const rn=rivalsNext(now),rc=(Number(cycleDays)||28)*day,rs=rn-rc,rp=Number.isFinite(rn)?Math.min(100,Math.max(0,((now-rs)/rc)*100)):0;timer('r',rn);$('rivalsBar').style.width=rp+'%';$('rivalsPct').textContent=rp.toFixed(1)+'%';$('rivalsUtc').textContent=Number.isFinite(rn)?utcDate.format(new Date(rn)):'—';$('rivalsLocal').textContent=Number.isFinite(rn)?localDate.format(new Date(rn)):'—';
+ const start=Date.parse(startUtc),end=endUtc?Date.parse(endUtc):NaN,card=$('eventCard');
+ if(now<start){const total=Math.max(0,Math.floor((start-now)/1000));$('ed').textContent=String(Math.floor(total/86400)).padStart(2,'0');$('eh').textContent=pad(Math.floor(total%86400/3600));$('em').textContent=pad(Math.floor(total%3600/60));$('es').textContent=pad(total%60);$('eventStatus').innerHTML='<i></i> STARTING SOON';card.classList.remove('is-live');wasLive=false;$('eventUtc').textContent=utcDate.format(new Date(start));$('eventLocal').textContent=localDate.format(new Date(start))}
+ else if(!Number.isFinite(end)||now<end){$('ed').textContent='00';$('eh').textContent='00';$('em').textContent='00';$('es').textContent='00';$('eventStatus').innerHTML='<i></i> LIVE';if(!wasLive)beep();wasLive=true;card.classList.add('is-live');$('eventUtc').textContent=utcDate.format(new Date(start));$('eventLocal').textContent=localDate.format(new Date(start))}
+ else{$('eventStatus').innerHTML='<i></i> ENDED';card.classList.remove('is-live');$('eventUtc').textContent=utcDate.format(new Date(end));$('eventLocal').textContent=localDate.format(new Date(end))}
+};
+update();const interval=setInterval(update,250);document.addEventListener('visibilitychange',()=>{if(!document.hidden)update()});window.addEventListener('pagehide',()=>clearInterval(interval),{once:true});
+</script>
+<style>
+.center{min-height:calc(100vh - 70px);position:relative;overflow:hidden;background:#05080d;color:#f5f8fc;padding:clamp(55px,7vw,90px) 18px 100px}.orb{position:absolute;width:560px;height:560px;border-radius:50%;filter:blur(120px);opacity:.12;pointer-events:none}.orb-a{left:-300px;top:0;background:#35caff}.orb-b{right:-320px;top:420px;background:#546cff}.intro,.feature,.grid,.reference{position:relative;z-index:1;max-width:1120px;margin-inline:auto}.intro{text-align:center}.eyebrow,.tag{color:#55c7f2;font:900 8px var(--mono,monospace);letter-spacing:.16em}.intro h1{font-size:clamp(48px,7vw,82px);line-height:.9;letter-spacing:-.07em;margin:18px 0 14px}.intro h1 em{font-style:normal;color:#55c7f2}.intro>p{max-width:700px;margin:auto;color:#8998aa;font-size:14px;line-height:1.8}.clockline{display:flex;justify-content:center;align-items:center;gap:9px;margin-top:20px;color:#dbe6ef;font:800 9px var(--mono)}.clockline strong:last-child{color:#6d8191}.divider{color:#334454}.pulse-dot{width:7px;height:7px;border-radius:50%;background:#62e3a2;box-shadow:0 0 0 6px #62e3a211;animation:blink 1.6s infinite}@keyframes blink{50%{opacity:.35;transform:scale(.75)}}.feature{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(330px,.92fr);margin-top:48px;border:1px solid #1d3140;border-radius:25px;overflow:hidden;background:linear-gradient(145deg,#0a141c,#071016);box-shadow:0 35px 100px #0009}.feature>img{width:100%;height:100%;min-height:420px;object-fit:cover}.feature-body{padding:32px}.feature-top,.utility-head{display:flex;justify-content:space-between;gap:15px;align-items:start}.feature h2{font-size:clamp(34px,4.5vw,58px);line-height:.95;letter-spacing:-.06em;margin:18px 0 10px}.feature p{color:#8b9aac;font-size:12px;line-height:1.7;margin:0}.live-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid #304352;border-radius:999px;color:#89a0af;font:900 7px var(--mono);letter-spacing:.08em;white-space:nowrap}.live-badge i{width:6px;height:6px;border-radius:50%;background:#63e3a1;box-shadow:0 0 0 4px #63e3a114}.event-card.is-live{border-color:#7c2830;box-shadow:0 35px 100px #0009,0 0 55px #ff344322}.is-live .live-badge{color:#ffb0b5;border-color:#8c3038;background:#270d11}.is-live .live-badge i{background:#ff3d49;box-shadow:0 0 0 4px #ff3d4918,0 0 15px #ff3d49;animation:liveBlink .75s infinite}@keyframes liveBlink{50%{opacity:.3;transform:scale(.7)}}.is-live>img{animation:imagePulse 2.5s ease-in-out infinite}@keyframes imagePulse{50%{filter:saturate(1.08) brightness(1.05)}}.event-timer{display:flex;align-items:flex-start;gap:8px;margin:28px 0}.event-timer div{min-width:68px}.event-timer b{display:block;font:900 clamp(32px,4vw,54px)/.9 var(--mono);letter-spacing:-.08em}.event-timer small{display:block;margin-top:8px;color:#516476;font:800 7px var(--mono);letter-spacing:.12em}.event-timer>span{color:#304252;font:700 25px var(--mono)}.feature-meta,.utility-meta{display:grid;grid-template-columns:1fr 1fr;gap:9px}.feature-meta div,.utility-meta div{padding:12px;border-left:1px solid #294052;background:#ffffff02}.feature-meta small,.utility-meta small{display:block;color:#53677a;font:800 7px var(--mono);letter-spacing:.12em}.feature-meta strong,.utility-meta strong{display:block;color:#dbe6ef;font-size:10px;line-height:1.5;margin-top:5px}.sound{margin-top:11px;padding:9px 11px;border:1px solid #2a4557;border-radius:9px;background:#091720;color:#8fd5eb;font:800 8px var(--mono);cursor:pointer}.sound span{margin-right:5px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.utility-card{padding:23px;border:1px solid #192c3a;border-radius:18px;background:#080f15;transition:transform .2s,border-color .2s,box-shadow .2s}.utility-card:hover{transform:translateY(-4px);border-color:#2b5065;box-shadow:0 22px 55px #0007}.utility-head h2{margin:8px 0 0;font-size:22px;letter-spacing:-.04em}.big-time{display:flex;align-items:flex-start;gap:6px;margin:26px 0 18px}.big-time b{font:900 clamp(30px,4vw,48px)/.9 var(--mono);letter-spacing:-.08em}.big-time>span{color:#304252;font:700 25px var(--mono)}.bar{position:relative;height:11px;border-radius:999px;background:#101b24;overflow:hidden}.bar>div{height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#4d6fff,#55c7f2);box-shadow:0 0 18px #55c7f266;transition:width .25s linear}.bar>span{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font:900 7px var(--mono);text-shadow:0 1px 3px #000}.utility-meta{margin-top:16px}.utility-link{display:flex;justify-content:space-between;margin-top:14px;color:#62ccef;text-decoration:none;font:800 8px var(--mono)}.reference{display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:70px;padding:25px 0;border-top:1px solid #182633}.reference h2{font-size:30px;line-height:1;letter-spacing:-.05em;margin:10px 0}.reference p{color:#748497;font-size:11px;line-height:1.7;max-width:540px}.reference-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.reference-grid div{padding:15px;border:1px solid #182633;border-radius:12px;background:#080e14}.reference-grid b{display:block;color:#dbe6ef;font:900 12px var(--mono)}.reference-grid span{display:block;margin-top:7px;color:#66788a;font-size:9px;line-height:1.4}@media(max-width:850px){.feature{grid-template-columns:1fr}.feature>img{min-height:300px;max-height:440px}.grid,.reference{grid-template-columns:1fr}}@media(max-width:560px){.center{padding-inline:13px}.feature-body{padding:22px}.event-timer{gap:4px}.event-timer div{min-width:0;flex:1}.event-timer b{font-size:28px}.event-timer>span{font-size:19px}.feature-meta,.utility-meta,.reference-grid{grid-template-columns:1fr}.intro h1{font-size:50px}.clockline{font-size:8px}}
+</style>
