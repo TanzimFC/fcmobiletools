@@ -415,7 +415,52 @@ async function api(request,env,path) {
   if(path === '/creator/me' && request.method === 'GET') {
     const creator=await creatorAuthenticated(request,env);
     if(!creator) return json({error:'Authentication required.'},401);
-    return json({creator});
+    const record=await creatorRecord(request,env);
+    return json({creator:record||creator});
+  }
+  if(path === '/creator/account' && (request.method === 'GET' || request.method === 'PUT')) {
+    const creator=await creatorRecord(request,env);
+    if(!creator) return json({error:'Authentication required.'},401);
+    const database=await d1(env);
+    if(request.method==='GET') return json({account:{id:creator.id,username:creator.username,displayName:creator.display_name,bio:creator.bio||'',avatarUrl:creator.avatar_url||'',websiteUrl:creator.website_url||''}});
+    const input=await request.json(); const updates=[]; const values=[];
+    if(input.displayName!==undefined){updates.push('display_name=?');values.push(String(input.displayName).trim());}
+    if(input.bio!==undefined){updates.push('bio=?');values.push(String(input.bio));}
+    if(input.avatarUrl!==undefined){updates.push('avatar_url=?');values.push(String(input.avatarUrl));}
+    if(input.websiteUrl!==undefined){updates.push('website_url=?');values.push(String(input.websiteUrl));}
+    if(input.currentPassword||input.newPassword){
+      if(!input.currentPassword||!input.newPassword) return json({error:'Current and new passwords are required together.'},400);
+      const row=await database.prepare('SELECT password_hash FROM creators WHERE id=? LIMIT 1').bind(creator.id).first();
+      if(!row||!(await verifyPassword(String(input.currentPassword),row.password_hash))) return json({error:'Current password is incorrect.'},400);
+      updates.push('password_hash=?');values.push(await hashPassword(String(input.newPassword)));
+    }
+    if(updates.length){updates.push('updated_at=?');values.push(new Date().toISOString());values.push(creator.id);await database.prepare('UPDATE creators SET '+updates.join(', ')+' WHERE id=?').bind(...values).run();}
+    return json({ok:true});
+  }
+  if(path === '/creator/inbox' && request.method === 'GET') {
+    const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
+    await ensureEditorialTables(env); const database=await d1(env);
+    const rows=await database.prepare("SELECT r.id,r.article_id,r.revision_no,r.review_status,r.action,r.note,r.created_at,a.title,a.slug,a.status FROM article_revisions r JOIN articles a ON a.id=r.article_id WHERE r.editor_id=? AND r.review_status IN ('changes_requested','approved') AND r.superseded_at IS NULL ORDER BY r.created_at DESC LIMIT 40").bind(creator.id).all();
+    return json({items:rows.results||[]});
+  }
+  if(path === '/overview' && request.method === 'GET') {
+    const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
+    const database=await d1(env); const codes=parseRedeem((await repoFile(env,'src/data/redeemCodes.js')).text);
+    const articleCount=await database.prepare('SELECT COUNT(*) AS n FROM articles WHERE owner_id=? AND deleted_at IS NULL').bind(creator.id).first();
+    const reviewCount=await database.prepare("SELECT COUNT(*) AS n FROM articles WHERE owner_id=? AND status='review' AND deleted_at IS NULL").bind(creator.id).first();
+    return json({codes:{total:codes.length,active:codes.filter(x=>x.status==='active').length,scheduled:codes.filter(x=>x.status==='scheduled').length,expired:codes.filter(x=>x.status==='expired').length},articles:{total:Number(articleCount?.n||0),review:Number(reviewCount?.n||0)},user:{displayName:creator.display_name}});
+  }
+  if(path === '/redeem' && (request.method === 'GET' || request.method === 'POST')) {
+    const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
+    if(request.method==='GET') return json({codes:parseRedeem((await repoFile(env,'src/data/redeemCodes.js')).text)});
+    return json(await saveRedeemCode(env,await request.json(),'creator'));
+  }
+  if(path === '/media' && request.method === 'GET') {
+    const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
+    if(!env.CLOUDINARY_CLOUD_NAME||!env.CLOUDINARY_API_KEY||!env.CLOUDINARY_API_SECRET) throw new Error('Cloudinary is not fully configured in the Worker.');
+    const auth=btoa(env.CLOUDINARY_API_KEY+':'+env.CLOUDINARY_API_SECRET), r=await fetch('https://api.cloudinary.com/v1_1/'+env.CLOUDINARY_CLOUD_NAME+'/resources/image/upload?max_results=100',{headers:{authorization:'Basic '+auth}}), body=await r.json();
+    if(!r.ok) throw new Error(body?.error?.message||'Cloudinary request failed ('+r.status+').');
+    return json({resources:(body.resources||[]).map(x=>({publicId:x.public_id,url:x.secure_url,width:x.width,height:x.height,bytes:x.bytes,format:x.format,createdAt:x.created_at}))});
   }
   if(path === '/login' && request.method === 'POST') {
     if(!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD || !env.ADMIN_SESSION_SECRET) return json({error:'Admin authentication is not configured in the Worker.'},503);
