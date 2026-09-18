@@ -71,7 +71,6 @@ function articleHTMLToMarkdown(html) {
   return [...root.childNodes].map(walk).join('').replace(/\n{3,}/g,'\n\n').trim();
 }
 async function creatorsSection(){
-  let bootstrap=null; if(workspaceRole==='admin'){bootstrap=await api('/creators/bootstrap-self',{method:'POST'}).catch(()=>null);}
   const out=await api('/creators'); const list=out.creators||[];
   app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> CREATOR CONTROL</div><h2>Creators</h2><p>Manage editorial accounts and access without leaving the admin workspace.</p></div><button class="btn primary" id="creatorNew">＋ New creator</button></div>'
     +'<div class="card section"><div class="head"><div><h3>Creator accounts</h3><p>'+list.length+' account'+(list.length===1?'':'s')+'</p></div></div><div class="article-admin-list">'
@@ -79,7 +78,6 @@ async function creatorsSection(){
     +'</div></div>';
   $('#creatorNew').onclick=()=>creatorDialog();
   document.querySelectorAll('[data-creator-edit]').forEach(b=>b.onclick=()=>creatorDialog(list.find(c=>String(c.id)===b.dataset.creatorEdit)));
-  if(bootstrap?.created){openModal('<div class="dialoghead"><div><h3>Creator account created</h3><div class="muted">Save this temporary password now. It is not stored in plain text.</div></div></div><div class="dialogbody"><div class="notice"><b>Username</b><br>tanzimfc<br><br><b>Temporary password</b><br><code style="font-size:15px;color:#dff8ff;user-select:all">'+esc(bootstrap.temporaryPassword)+'</code></div><p class="muted" style="margin-top:12px">Log in from the Creator page, then change the password from Account.</p></div><div class="dialogfoot"><button class="btn primary" data-close>Done</button></div>');}
   refreshInboxBadge();
 }
 function creatorDialog(c){
@@ -304,6 +302,8 @@ async function load(s){nav(s);try{if(s==='overview')await overview();else if(s==
   const admin=await fetch('/api/admin/me',{credentials:'same-origin'}).then(async r=>r.ok?await r.json():null).catch(()=>null);
   if(admin?.role==='admin'){
     workspaceRole='admin'; workspaceUser=admin;
+    const boot=await api('/creators/bootstrap-self',{method:'POST'}).catch(()=>null);
+    if(boot?.created){openModal('<div class="dialoghead"><div><h3>Creator account created</h3><div class="muted">Save this temporary password now. It is not stored in plain text.</div></div></div><div class="dialogbody"><div class="notice"><b>Username</b><br>tanzimfc<br><br><b>Temporary password</b><br><code style="font-size:15px;color:#dff8ff;user-select:all">'+esc(boot.temporaryPassword)+'</code></div><p class="muted" style="margin-top:12px">Creator login: /creator/login — change the password from Account after signing in.</p></div><div class="dialogfoot"><button class="btn primary" data-close>Done</button></div>');}
   }else{
     const creator=await fetch('/api/creator/me',{credentials:'same-origin'}).then(async r=>r.ok?await r.json():null).catch(()=>null);
     if(!creator?.creator){location.replace('/admin/');return}
