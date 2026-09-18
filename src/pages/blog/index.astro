@@ -5,7 +5,9 @@ import { getCollection } from 'astro:content';
 const posts = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft))
   .sort((a,b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0));
 
-const firstInlineImage = (post) => String(post.body ?? '').match(/!\[[^\]]*\]\(([^)]+)\)/)?.[1] ?? '';\nconst coverImage = (post) => post.data.image || firstInlineImage(post);\nconst readingTime = (post) => post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
+const firstInlineImage = (post) => String(post.body ?? '').match(/!\[[^\]]*\]\(([^)]+)\)/)?.[1] ?? '';
+const coverImage = (post) => post.data.image || firstInlineImage(post);
+const readingTime = (post) => post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
 const categoryOf = (post) => {
   if (post.data.type === 'leaks') return 'Leaks';
   if (post.data.type === 'news') return 'Updates';
@@ -58,7 +60,7 @@ const categoryLinks = [
     <div class="hub-grid">
       <div class="hub-main">
         {lead ? <a class="lead-story spotlight-card" href={'/blog/' + lead.slug + '/'} data-card data-category={categoryOf(lead).toLowerCase()}>
-          <div class="lead-media">{coverImage(lead) ? <img src={lead.data.image} alt={lead.data.imageAlt ?? ''} /> : <span>FC</span>}<i>FEATURED</i></div>
+          <div class="lead-media">{coverImage(lead) ? <img src={coverImage(lead)} alt={lead.data.imageAlt ?? ''} /> : <span>FC</span>}<i>FEATURED</i></div>
           <div class="lead-copy">
             <div class="story-meta"><span>{categoryOf(lead)}</span><time>{lead.data.publishedAt?.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</time><span>{readingTime(lead)} min read</span></div>
             <h2>{lead.data.title}</h2>
