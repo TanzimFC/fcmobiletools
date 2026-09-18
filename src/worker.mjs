@@ -298,6 +298,52 @@ async function d1(env) {
   return env.DB;
 }
 
+async function ensureEditorialTables(env) {
+  const database=await d1(env);
+  await database.prepare('CREATE TABLE IF NOT EXISTS article_revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, article_id INTEGER NOT NULL, revision_no INTEGER NOT NULL, editor_id INTEGER, editor_role TEXT NOT NULL, action TEXT NOT NULL DEFAULT \'save\', review_status TEXT NOT NULL DEFAULT \'draft\', note TEXT DEFAULT \'\', snapshot TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, superseded_at TEXT)').run();
+  await database.prepare('CREATE INDEX IF NOT EXISTS idx_article_revisions_article ON article_revisions(article_id, revision_no DESC)').run();
+  await database.prepare('CREATE INDEX IF NOT EXISTS idx_article_revisions_review ON article_revisions(review_status, superseded_at)').run();
+  await database.prepare('CREATE TABLE IF NOT EXISTS admin_accounts (id INTEGER PRIMARY KEY CHECK (id=1), username TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL DEFAULT \'Admin\', password_hash TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)').run();
+}
+
+function revisionSnapshot(row) {
+  return {id:row.id,slug:row.slug,title:row.title,subtitle:row.subtitle||'',description:row.description||'',excerpt:row.excerpt||'',content:row.content||'',type:row.type,category:row.category||'Guides',authorId:row.author_id||null,status:row.status,featureImage:row.feature_image||'',imageAlt:row.image_alt||'',imageCaption:row.image_caption||'',thumbnail:row.thumbnail||'',featured:Boolean(row.featured),readingTime:Number(row.reading_time||1),tags:JSON.parse(row.tags||'[]'),relatedPlayers:JSON.parse(row.related_players||'[]'),relatedEvents:JSON.parse(row.related_events||'[]'),relatedArticles:JSON.parse(row.related_articles||'[]'),relatedTools:JSON.parse(row.related_tools||'[]'),relatedCodes:JSON.parse(row.related_codes||'[]'),sources:JSON.parse(row.sources||'[]'),factStatus:row.fact_status||'verified',lastReviewed:row.last_reviewed||'',seoTitle:row.seo_title||'',seoDescription:row.seo_description||'',canonicalUrl:row.canonical_url||'',series:row.series||'',publishedAt:row.published_at||null};
+}
+
+async function createRevision(env,row,options={}) {
+  await ensureEditorialTables(env);
+  const database=await d1(env);
+  const next=await database.prepare('SELECT COALESCE(MAX(revision_no),0)+1 AS next_no FROM article_revisions WHERE article_id=?').bind(row.id).first();
+  if(options.reviewStatus==='pending') await database.prepare("UPDATE article_revisions SET superseded_at=? WHERE article_id=? AND review_status='pending' AND superseded_at IS NULL").bind(new Date().toISOString(),row.id).run();
+  await database.prepare('INSERT INTO article_revisions (article_id,revision_no,editor_id,editor_role,action,review_status,note,snapshot,created_at) VALUES (?,?,?,?,?,?,?,?,?)').bind(row.id,Number(next?.next_no||1),options.editorId||null,options.editorRole||'admin',options.action||'save',options.reviewStatus||'draft',String(options.note||''),JSON.stringify(revisionSnapshot(row)),new Date().toISOString()).run();
+}
+
+function tempPassword() { const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%'; const bytes=crypto.getRandomValues(new Uint8Array(18)); return Array.from(bytes,b=>chars[b%chars.length]).join(''); }
+
+async function getAdminAccount(env) {
+  await ensureEditorialTables(env);
+  const database=await d1(env);
+  let row=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
+  if(!row && env.ADMIN_USERNAME && env.ADMIN_PASSWORD) {
+    const hash=await hashPassword(env.ADMIN_PASSWORD);
+    await database.prepare('INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,?,?,?,?,?)').bind(env.ADMIN_USERNAME,env.ADMIN_USERNAME,hash,new Date().toISOString()).run();
+    row=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
+  }
+  return row;
+}
+
+async function saveRedeemCode(env,input,actor='admin') {
+  if(!input.code || !input.reward || !input.releaseDate || !['active','scheduled','expired'].includes(input.status)) throw new Error('Code, reward, status, and release date are required.');
+  if(input.expiryDate && input.releaseDate > input.expiryDate) throw new Error('Expiry date cannot be before release date.');
+  const code={code:String(input.code).trim().toUpperCase(),reward:String(input.reward).trim(),status:input.status,releaseDate:input.releaseDate,expiryDate:input.expiryDate||null,region:String(input.region||'Global').trim(),lastVerified:input.lastVerified||new Date().toISOString().slice(0,10),notes:String(input.notes||'').trim()};
+  const file=await repoFile(env,'src/data/redeemCodes.js');
+  const codes=parseRedeem(file.text);
+  const i=codes.findIndex(x=>String(x.code).toUpperCase()===code.code);
+  if(i>=0) codes[i]=code; else codes.unshift(code);
+  const commitSha=await writeRepoFile(env,'src/data/redeemCodes.js',redeemText(codes),file.sha,(actor==='creator'?'creator':'admin')+': update redeem code '+code.code);
+  return {ok:true,commitSha,action:i>=0?'updated':'created'};
+}
+
 async function api(request,env,path) {
   if(path === '/creator/articles' && request.method === 'GET') {
     const creator=await creatorRecord(request,env);
