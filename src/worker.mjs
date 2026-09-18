@@ -353,49 +353,37 @@ async function api(request,env,path) {
     return json({creator:{id:creator.id,username:creator.username,displayName:creator.display_name},articles:(rows.results||[]).map(articleRow)});
   }
   if(path === '/creator/articles' && request.method === 'POST') {
-    const creator=await creatorRecord(request,env);
-    if(!creator) return json({error:'Authentication required.'},401);
-    const input=await request.json();
-    const title=String(input.title||'').trim();
-    const slug=articleSlug(input.slug||title);
+    const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
+    const input=await request.json(); const title=String(input.title||'').trim(); const slug=articleSlug(input.slug||title);
     if(!title||!slug) throw new Error('Article title is required.');
-    const status=['draft','review'].includes(input.status)?input.status:'draft';
-    const database=await d1(env);
-    const now=new Date().toISOString();
-    const tags=JSON.stringify(Array.isArray(input.tags)?input.tags:[]);
-    const existing=await database.prepare('SELECT id FROM articles WHERE slug=? LIMIT 1').bind(slug).first();
+    const status=['draft','review'].includes(input.status)?input.status:'draft'; const database=await d1(env); const now=new Date().toISOString();
+    const tags=JSON.stringify(Array.isArray(input.tags)?input.tags:[]); const existing=await database.prepare('SELECT id FROM articles WHERE slug=? LIMIT 1').bind(slug).first();
     if(existing) throw new Error('An article with this slug already exists.');
-    const result=await database.prepare(`INSERT INTO articles (slug,title,subtitle,description,content,type,category,author_id,status,feature_image,tags,created_at,updated_at,seo_title,seo_description,owner_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(slug,title,String(input.subtitle||''),String(input.description||''),String(input.body||''),String(input.type||'guide'),String(input.category||'Guides'),creator.id,status,String(input.image||''),tags,now,now,String(input.seoTitle||title),String(input.seoDescription||input.description||''),creator.id).run();
+    const result=await database.prepare('INSERT INTO articles (slug,title,subtitle,description,excerpt,content,type,category,author_id,status,feature_image,image_alt,image_caption,thumbnail,featured,reading_time,tags,created_at,updated_at,seo_title,seo_description,owner_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(slug,title,String(input.subtitle||''),String(input.description||''),String(input.description||''),String(input.body||''),String(input.type||'guide'),String(input.category||'Guides'),creator.id,status,String(input.image||''),String(input.imageAlt||''),String(input.imageCaption||''),String(input.thumbnail||''),0,Math.max(1,Number(input.readingTime||1)),tags,now,now,String(input.seoTitle||title),String(input.seoDescription||input.description||''),creator.id).run();
+    const row=await database.prepare('SELECT * FROM articles WHERE id=? LIMIT 1').bind(result.meta?.last_row_id).first();
+    await createRevision(env,row,{editorId:creator.id,editorRole:'creator',action:status==='review'?'submit':'save',reviewStatus:status==='review'?'pending':'draft'});
     return json({ok:true,articleId:result.meta?.last_row_id,slug});
   }
   if((path.startsWith('/creator/articles/') || path.startsWith('/creator/article/')) && (request.method === 'PUT' || request.method === 'DELETE' || request.method === 'POST')) {
-    const creator=await creatorRecord(request,env);
-    if(!creator) return json({error:'Authentication required.'},401);
-    const parts=path.split('/').filter(Boolean);
-    const id=Number(parts[2]);
+    const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
+    const parts=path.split('/').filter(Boolean); const id=Number(parts[2]);
     if(!Number.isInteger(id)||id<1) return json({error:'Invalid article ID.'},400);
-    const database=await d1(env);
-    const current=await database.prepare('SELECT * FROM articles WHERE id=? AND owner_id=? LIMIT 1').bind(id,creator.id).first();
+    const database=await d1(env); const current=await database.prepare('SELECT * FROM articles WHERE id=? AND owner_id=? LIMIT 1').bind(id,creator.id).first();
     if(!current) return json({error:'Article not found.'},404);
-    if(parts[3]==='restore' && request.method==='POST') {
-      await database.prepare('UPDATE articles SET deleted_at=NULL, deleted_by=NULL, updated_at=? WHERE id=? AND owner_id=?').bind(new Date().toISOString(),id,creator.id).run();
-      return json({ok:true,action:'restored'});
-    }
-    if(request.method==='DELETE') {
-      await database.prepare('UPDATE articles SET deleted_at=?, deleted_by=?, updated_at=? WHERE id=? AND owner_id=?').bind(new Date().toISOString(),creator.id,new Date().toISOString(),id,creator.id).run();
-      return json({ok:true,action:'trashed'});
-    }
-    if(request.method==='PUT') {
+    if(parts[3]==='restore' && request.method==='POST'){await database.prepare('UPDATE articles SET deleted_at=NULL,deleted_by=NULL,updated_at=? WHERE id=? AND owner_id=?').bind(new Date().toISOString(),id,creator.id).run();return json({ok:true,action:'restored'});}
+    if(request.method==='DELETE'){const now=new Date().toISOString();await database.prepare('UPDATE articles SET deleted_at=?,deleted_by=?,updated_at=? WHERE id=? AND owner_id=?').bind(now,creator.id,now,id,creator.id).run();return json({ok:true,action:'trashed'});}
+    if(request.method==='PUT'){
       if(current.status==='published') return json({error:'Published articles require admin editing.'},403);
-      const input=await request.json();
-      const title=String(input.title||current.title).trim();
-      const slug=articleSlug(input.slug||current.slug);
+      const input=await request.json(); const title=String(input.title||current.title).trim(); const slug=articleSlug(input.slug||current.slug);
       if(!title||!slug) throw new Error('Article title is required.');
       const status=['draft','review'].includes(input.status)?input.status:current.status;
-      const conflict=await database.prepare('SELECT id FROM articles WHERE slug=? AND id!=? LIMIT 1').bind(slug,id).first();
-      if(conflict) throw new Error('An article with this slug already exists.');
-      const tags=JSON.stringify(Array.isArray(input.tags)?input.tags:JSON.parse(current.tags||'[]'));
-      await database.prepare(`UPDATE articles SET slug=?,title=?,subtitle=?,description=?,content=?,type=?,category=?,status=?,feature_image=?,tags=?,updated_at=?,seo_title=?,seo_description=? WHERE id=? AND owner_id=?`).bind(slug,title,String(input.subtitle||''),String(input.description||''),String(input.body||''),String(input.type||current.type),String(input.category||current.category||'Guides'),status,String(input.image||current.feature_image||''),tags,new Date().toISOString(),String(input.seoTitle||title),String(input.seoDescription||input.description||''),id,creator.id).run();
+      const conflict=await database.prepare('SELECT id FROM articles WHERE slug=? AND id!=? LIMIT 1').bind(slug,id).first(); if(conflict) throw new Error('An article with this slug already exists.');
+      const tags=JSON.stringify(Array.isArray(input.tags)?input.tags:JSON.parse(current.tags||'[]')); const now=new Date().toISOString();
+      await database.prepare('UPDATE articles SET slug=?,title=?,subtitle=?,description=?,excerpt=?,content=?,type=?,category=?,status=?,feature_image=?,image_alt=?,image_caption=?,thumbnail=?,tags=?,reading_time=?,updated_at=?,seo_title=?,seo_description=? WHERE id=? AND owner_id=?')
+        .bind(slug,title,String(input.subtitle||''),String(input.description||''),String(input.description||''),String(input.body||''),String(input.type||current.type),String(input.category||current.category||'Guides'),status,String(input.image||current.feature_image||''),String(input.imageAlt||current.image_alt||''),String(input.imageCaption||current.image_caption||''),String(input.thumbnail||current.thumbnail||''),tags,Math.max(1,Number(input.readingTime||current.reading_time||1)),now,String(input.seoTitle||title),String(input.seoDescription||input.description||''),id,creator.id).run();
+      const row=await database.prepare('SELECT * FROM articles WHERE id=? LIMIT 1').bind(id).first();
+      await createRevision(env,row,{editorId:creator.id,editorRole:'creator',action:status==='review'?'submit':'save',reviewStatus:status==='review'?'pending':'draft'});
       return json({ok:true,action:'updated',articleId:id,slug});
     }
   }
