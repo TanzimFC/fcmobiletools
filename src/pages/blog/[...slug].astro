@@ -20,7 +20,8 @@ const related=others.filter((item)=>{
   return item.data.type===post.data.type || item.data.category===post.data.category || tags.some((tag)=>own.includes(tag));
 }).slice(0,5);
 const featured=others.filter((item)=>item.data.featured).slice(0,4);
-const firstInlineImage=String(post.body??'').match(/!\[[^\]]*\]\(([^)]+)\)/)?.[1]??'';
+const firstImageMatch=String(post.body||'').match(/!\[[^\]]*\]\(([^)]+)\)/);
+const firstInlineImage=firstImageMatch ? firstImageMatch[1] : '';
 const coverImage=post.data.image||firstInlineImage;
 const readingTime=post.data.readingTime??Math.max(1,Math.ceil((post.body?.split(/\s+/).filter(Boolean).length??0)/220));
 const date=(value)=>value?value.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'';
