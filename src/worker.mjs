@@ -194,7 +194,7 @@ createdBy: ${yamlValue(a.createdBy||a.author||'TanzimFC')}
 createdAt: ${yamlValue(a.createdAt||new Date().toISOString())}
 updatedAt: ${yamlValue(new Date().toISOString())}
 publishedAt: ${yamlValue(a.status==='published' ? (a.publishedAt||new Date().toISOString()) : null)}
-image: ${yamlValue(a.image||'')}
+image: ${yamlValue(effectiveImage)}
 imageAlt: ${yamlValue(a.imageAlt||'')}
 excerpt: ${yamlValue(a.excerpt||a.description||'')}
 tags: ${JSON.stringify(tags)}
