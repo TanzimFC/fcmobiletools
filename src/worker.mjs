@@ -214,6 +214,7 @@ function yamlValue(value) {
 }
 function articleText(a) {
   const tags=Array.isArray(a.tags)?a.tags:[];
+  const jsonArray=(value)=>JSON.stringify(Array.isArray(value)?value:[]);
   const firstInlineImage=String(a.body||'').match(/!\[[^\]]*\]\(([^)]+)\)/)?.[1] || '';
   const effectiveImage=a.image||firstInlineImage;
   return `---
@@ -228,21 +229,46 @@ author: ${yamlValue(a.author||'TanzimFC')}
 status: ${yamlValue(a.status||'draft')}
 createdBy: ${yamlValue(a.createdBy||a.author||'TanzimFC')}
 createdAt: ${yamlValue(a.createdAt||new Date().toISOString())}
-updatedAt: ${yamlValue(new Date().toISOString())}
+updatedAt: ${yamlValue(a.updatedAt||new Date().toISOString())}
 publishedAt: ${yamlValue(a.status==='published' ? (a.publishedAt||new Date().toISOString()) : null)}
 image: ${yamlValue(effectiveImage)}
 imageAlt: ${yamlValue(a.imageAlt||'')}
+imageCaption: ${yamlValue(a.imageCaption||'')}
+thumbnail: ${yamlValue(a.thumbnail||'')}
 excerpt: ${yamlValue(a.excerpt||a.description||'')}
-tags: ${JSON.stringify(tags)}
+tags: ${jsonArray(tags)}
+relatedPlayers: ${jsonArray(a.relatedPlayers)}
+relatedEvents: ${jsonArray(a.relatedEvents)}
+relatedArticles: ${jsonArray(a.relatedArticles)}
+relatedTools: ${jsonArray(a.relatedTools)}
+relatedCodes: ${jsonArray(a.relatedCodes)}
 featured: ${Boolean(a.featured)}
 readingTime: ${Number(a.readingTime)||Math.max(1,Math.ceil(String(a.body||'').split(/\s+/).filter(Boolean).length/220))}
 seoTitle: ${yamlValue(a.seoTitle||a.title)}
 seoDescription: ${yamlValue(a.seoDescription||a.description||'')}
+canonicalUrl: ${yamlValue(a.canonicalUrl||'')}
+sources: ${jsonArray(a.sources)}
 factStatus: ${yamlValue(a.factStatus||'verified')}
+lastReviewed: ${yamlValue(a.lastReviewed||'')}
+series: ${yamlValue(a.series||'')}
 ---
 
 ${String(a.body||'').trim()}
 `;
+}
+
+async function syncPublishedArticle(env, article) {
+  if(!env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN is not configured; cannot publish the article.');
+  const path=`src/content/blog/${article.slug}.md`;
+  let existing=null;
+  try { existing=await repoFile(env,path); } catch {}
+  const text=articleText(article);
+  if(existing) return writeRepoFile(env,path,text,existing.sha,'content: publish article');
+  return github(env,`contents/${path}`,{
+    method:'PUT',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({message:'content: publish article',content:encodeGithub(text),branch:'main'})
+  }).then(body=>body.commit?.sha);
 }
 function articleSlug(value) {
   return String(value||'').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,90);
@@ -462,11 +488,20 @@ async function api(request,env,path) {
         if(conflict) throw new Error('An article with this slug already exists.');
         await database.prepare(`UPDATE articles SET slug=?,title=?,subtitle=?,description=?,excerpt=?,content=?,type=?,category=?,author_id=?,status=?,feature_image=?,image_alt=?,image_caption=?,thumbnail=?,featured=?,reading_time=?,related_players=?,related_events=?,related_articles=?,related_tools=?,related_codes=?,tags=?,sources=?,fact_status=?,last_reviewed=?,seo_title=?,seo_description=?,canonical_url=?,series=?,published_at=?,deleted_at=NULL,updated_at=? WHERE id=?`)
           .bind(slug,title,String(input.subtitle||''),description,description,body,String(input.type||current.type||'guide'),String(input.category||current.category||'Guides'),authorId,status,String(input.image||current.feature_image||''),String(input.imageAlt||current.image_alt||''),String(input.imageCaption||current.image_caption||''),String(input.thumbnail||current.thumbnail||''),input.featured?1:0,Number(input.readingTime||current.reading_time||1),JSON.stringify(input.relatedPlayers||JSON.parse(current.related_players||'[]')),JSON.stringify(input.relatedEvents||JSON.parse(current.related_events||'[]')),JSON.stringify(input.relatedArticles||JSON.parse(current.related_articles||'[]')),JSON.stringify(input.relatedTools||JSON.parse(current.related_tools||'[]')),JSON.stringify(input.relatedCodes||JSON.parse(current.related_codes||'[]')),tags,JSON.stringify(input.sources||JSON.parse(current.sources||'[]')),String(input.factStatus||current.fact_status||'verified'),String(input.lastReviewed||current.last_reviewed||''),String(input.seoTitle||title),String(input.seoDescription||description),String(input.canonicalUrl||current.canonical_url||''),String(input.series||current.series||''),status==='published'?(current.published_at||now):null,now,current.id).run();
+        if(status==='published') {
+          const row=await database.prepare('SELECT a.*, c.display_name AS author_name FROM articles a LEFT JOIN creators c ON c.id=a.author_id WHERE a.id=? LIMIT 1').bind(current.id).first();
+          await syncPublishedArticle(env,{id:row.id,slug:row.slug,title:row.title,subtitle:row.subtitle,description:row.description,excerpt:row.excerpt,type:row.type,category:row.category,author:row.author_name||'TanzimFC',status:row.status,createdBy:row.author_name||'TanzimFC',createdAt:row.created_at,updatedAt:row.updated_at,publishedAt:row.published_at,image:row.feature_image,imageAlt:row.image_alt,imageCaption:row.image_caption,thumbnail:row.thumbnail,tags:JSON.parse(row.tags||'[]'),relatedPlayers:JSON.parse(row.related_players||'[]'),relatedEvents:JSON.parse(row.related_events||'[]'),relatedArticles:JSON.parse(row.related_articles||'[]'),relatedTools:JSON.parse(row.related_tools||'[]'),relatedCodes:JSON.parse(row.related_codes||'[]'),featured:Boolean(row.featured),readingTime:row.reading_time,seoTitle:row.seo_title,seoDescription:row.seo_description,canonicalUrl:row.canonical_url,sources:JSON.parse(row.sources||'[]'),factStatus:row.fact_status,lastReviewed:row.last_reviewed,series:row.series,body:row.content});
+        }
         return json({ok:true,articleId:current.id,slug,action:'updated'});
       }
       const result=await database.prepare(`INSERT INTO articles (slug,title,subtitle,description,excerpt,content,type,category,author_id,status,feature_image,image_alt,image_caption,thumbnail,featured,reading_time,related_players,related_events,related_articles,related_tools,related_codes,tags,sources,fact_status,last_reviewed,seo_title,seo_description,canonical_url,series,published_at,owner_id,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
         .bind(slug,title,String(input.subtitle||''),description,description,body,String(input.type||'guide'),String(input.category||'Guides'),authorId,status,String(input.image||''),String(input.imageAlt||''),String(input.imageCaption||''),String(input.thumbnail||''),input.featured?1:0,Number(input.readingTime||1),JSON.stringify(input.relatedPlayers||[]),JSON.stringify(input.relatedEvents||[]),JSON.stringify(input.relatedArticles||[]),JSON.stringify(input.relatedTools||[]),JSON.stringify(input.relatedCodes||[]),tags,JSON.stringify(input.sources||[]),String(input.factStatus||'verified'),String(input.lastReviewed||''),String(input.seoTitle||title),String(input.seoDescription||description),String(input.canonicalUrl||''),String(input.series||''),status==='published'?now:null,null,now,now).run();
+      if(status==='published') {
+        const id=result.meta?.last_row_id;
+        const row=await database.prepare('SELECT a.*, c.display_name AS author_name FROM articles a LEFT JOIN creators c ON c.id=a.author_id WHERE a.id=? LIMIT 1').bind(id).first();
+        await syncPublishedArticle(env,{id:row.id,slug:row.slug,title:row.title,subtitle:row.subtitle,description:row.description,excerpt:row.excerpt,type:row.type,category:row.category,author:row.author_name||'TanzimFC',status:row.status,createdBy:row.author_name||'TanzimFC',createdAt:row.created_at,updatedAt:row.updated_at,publishedAt:row.published_at,image:row.feature_image,imageAlt:row.image_alt,imageCaption:row.image_caption,thumbnail:row.thumbnail,tags:JSON.parse(row.tags||'[]'),relatedPlayers:JSON.parse(row.related_players||'[]'),relatedEvents:JSON.parse(row.related_events||'[]'),relatedArticles:JSON.parse(row.related_articles||'[]'),relatedTools:JSON.parse(row.related_tools||'[]'),relatedCodes:JSON.parse(row.related_codes||'[]'),featured:Boolean(row.featured),readingTime:row.reading_time,seoTitle:row.seo_title,seoDescription:row.seo_description,canonicalUrl:row.canonical_url,sources:JSON.parse(row.sources||'[]'),factStatus:row.fact_status,lastReviewed:row.last_reviewed,series:row.series,body:row.content});
+      }
       return json({ok:true,articleId:result.meta?.last_row_id,slug,action:'created'});
     }
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
