@@ -465,7 +465,7 @@ async function api(request,env,path) {
         return json({ok:true,articleId:current.id,slug,action:'updated'});
       }
       const result=await database.prepare(`INSERT INTO articles (slug,title,subtitle,description,excerpt,content,type,category,author_id,status,feature_image,image_alt,image_caption,thumbnail,featured,reading_time,related_players,related_events,related_articles,related_tools,related_codes,tags,sources,fact_status,last_reviewed,seo_title,seo_description,canonical_url,series,published_at,owner_id,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
         .bind(slug,title,String(input.subtitle||''),description,description,body,String(input.type||'guide'),String(input.category||'Guides'),authorId,status,String(input.image||''),String(input.imageAlt||''),String(input.imageCaption||''),String(input.thumbnail||''),input.featured?1:0,Number(input.readingTime||1),JSON.stringify(input.relatedPlayers||[]),JSON.stringify(input.relatedEvents||[]),JSON.stringify(input.relatedArticles||[]),JSON.stringify(input.relatedTools||[]),JSON.stringify(input.relatedCodes||[]),tags,JSON.stringify(input.sources||[]),String(input.factStatus||'verified'),String(input.lastReviewed||''),String(input.seoTitle||title),String(input.seoDescription||description),String(input.canonicalUrl||''),String(input.series||''),status==='published'?now:null,null,now,now).run();
       return json({ok:true,articleId:result.meta?.last_row_id,slug,action:'created'});
     }
