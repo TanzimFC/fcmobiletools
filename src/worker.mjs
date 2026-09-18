@@ -234,7 +234,12 @@ async function api(request,env,path) {
   if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
-    if(path === '/me') return json({username:env.ADMIN_USERNAME,role:'admin'});\n    if(path === '/db-status' && request.method === 'GET') {\n      const database=await d1(env);\n      const row=await database.prepare('SELECT 1 AS ok').first();\n      return json({ok:row?.ok===1, database:'connected'});\n    }
+    if(path === '/me') return json({username:env.ADMIN_USERNAME,role:'admin'});
+    if(path === '/db-status' && request.method === 'GET') {
+      const database=await d1(env);
+      const row=await database.prepare('SELECT 1 AS ok').first();
+      return json({ok:row?.ok===1, database:'connected'});
+    }
     if(path === '/redeem' && request.method === 'GET') return json({codes:parseRedeem((await repoFile(env,'src/data/redeemCodes.js')).text)});
     if(path === '/redeem' && request.method === 'POST') {
       const input=await request.json();
