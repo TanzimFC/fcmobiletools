@@ -21,11 +21,18 @@ const featured = published.filter((item) => item.data.featured && item.slug !== 
 const readingTime = post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
 const date = (value) => value ? value.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '';
 const authorHref = '/blog/author/' + slugify(post.data.author) + '/';
-const categoryKey = String(post.data.category ?? 'guides').toLowerCase().replace(/&/g,'and').replace(/\s+/g,'-');
-const categoryHref = '/blog/category/' + (categoryKey === 'leaks-and-intel' ? 'leaks' : categoryKey) + '/';
+const categoryKey = post.data.type === 'news' ? 'updates' : post.data.type === 'leaks' ? 'leaks' : post.data.type === 'event-guide' ? 'event-guides' : post.data.type === 'player-review' ? 'reviews' : post.data.type === 'analysis' ? 'analysis' : post.data.type === 'ranking' ? 'rankings' : post.data.type === 'opinion' ? 'tactics' : 'guides';
+const categoryHref = '/blog/category/' + categoryKey + '/';
+const articleSchema = {
+  '@context':'https://schema.org', '@type':'Article', headline:post.data.title, description:post.data.description,
+  datePublished:post.data.publishedAt?.toISOString(), dateModified:(post.data.updatedAt ?? post.data.publishedAt)?.toISOString(),
+  author:{'@type':'Person',name:post.data.author,url:new URL(authorHref,'https://tanzimfc.fcmobiletools.workers.dev').toString()},
+  image:post.data.image ? [post.data.image] : undefined,
+  mainEntityOfPage:new URL('/blog/'+post.slug+'/', 'https://tanzimfc.fcmobiletools.workers.dev').toString()
+};
 ---
 <BaseLayout title={post.data.seoTitle ?? post.data.title} description={post.data.seoDescription ?? post.data.description} image={post.data.image}>
-<main class="article-page">
+<script type="application/ld+json" set:html={JSON.stringify(articleSchema)}></script>\n<main class="article-page">
   <div class="wrap">
     <nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="/blog">Articles</a><span>›</span><a href={categoryHref}>{post.data.category}</a><span>›</span><span>{post.data.title}</span></nav>
 
