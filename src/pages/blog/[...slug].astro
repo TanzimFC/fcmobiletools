@@ -1,39 +1,80 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection, render } from 'astro:content';
+
+const slugify = (value) => String(value ?? '').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
+
 export async function getStaticPaths() {
   const posts = await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft);
   return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
 }
+
 const { post } = Astro.props;
 const { Content } = await render(post);
-const words = post.body?.split(/\s+/).filter(Boolean).length ?? 0;
-const readingTime = post.data.readingTime ?? Math.max(1, Math.ceil(words / 220));
-const date = (value) => value?.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
-const updated = post.data.updatedAt ?? post.data.publishedAt;
+const allPosts = await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft);
+const published = [...allPosts].sort((a,b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0));
+const related = published.filter((item) => item.slug !== post.slug && (
+  item.data.category === post.data.category ||
+  (item.data.tags ?? []).some((tag) => (post.data.tags ?? []).includes(tag))
+)).slice(0,4);
+const featured = published.filter((item) => item.data.featured && item.slug !== post.slug).slice(0,4);
+const readingTime = post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
+const date = (value) => value ? value.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '';
+const authorHref = '/blog/author/' + slugify(post.data.author) + '/';
+const categoryKey = String(post.data.category ?? 'guides').toLowerCase().replace(/&/g,'and').replace(/\s+/g,'-');
+const categoryHref = '/blog/category/' + (categoryKey === 'leaks-and-intel' ? 'leaks' : categoryKey) + '/';
 ---
-<BaseLayout title={post.data.seoTitle ?? post.data.title} description={post.data.seoDescription ?? post.data.description}>
-  <article class="wrap article-page">
-    <header class="article-header">
-      <a class="back-link" href="/blog">← All articles</a>
-      <div class="article-type"><span class="eyebrow">{post.data.category}</span>{post.data.factStatus ? <span class={`fact ${post.data.factStatus}`}>{post.data.factStatus.replaceAll('-', ' ')}</span> : null}</div>
+<BaseLayout title={post.data.seoTitle ?? post.data.title} description={post.data.seoDescription ?? post.data.description} image={post.data.image}>
+<main class="article-page">
+  <div class="wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="/blog">Articles</a><span>›</span><a href={categoryHref}>{post.data.category}</a><span>›</span><span>{post.data.title}</span></nav>
+
+    <header class="article-head">
+      <div class="type-line">
+        <a href={categoryHref}>{post.data.category}</a>
+        {post.data.factStatus ? <span class:list={{fact:true, verified:post.data.factStatus==='verified', warning:post.data.factStatus!=='verified'}}>{post.data.factStatus==='community-reported' ? 'UNCONFIRMED' : post.data.factStatus.replaceAll('-',' ')}</span> : null}
+      </div>
       <h1>{post.data.title}</h1>
-      {post.data.subtitle ? <p class="article-subtitle">{post.data.subtitle}</p> : null}
-      <p class="article-lede">{post.data.description}</p>
-      <div class="article-byline"><span>By {post.data.author}</span><span>Published {date(post.data.publishedAt)}</span><span>Updated {date(updated)}</span><span>{readingTime} min read</span></div>
+      {post.data.subtitle ? <p class="subtitle">{post.data.subtitle}</p> : null}
+      <p class="lede">{post.data.description}</p>
+      <div class="byline"><a href={authorHref}>By {post.data.author}</a><span>{date(post.data.publishedAt)}</span><span>{readingTime} min read</span>{post.data.updatedAt ? <span>Updated {date(post.data.updatedAt)}</span> : null}</div>
     </header>
-    {post.data.image ? <img class="article-cover" src={post.data.image} alt={post.data.imageAlt ?? ''} /> : null}
-    {post.data.imageCaption ? <p class="article-caption">{post.data.imageCaption}</p> : null}
+
+    {post.data.image ? <figure class="cover"><img src={post.data.image} alt={post.data.imageAlt ?? post.data.title} />{post.data.imageCaption ? <figcaption>{post.data.imageCaption}</figcaption> : null}</figure> : null}
+
+    {post.data.factStatus === 'community-reported' ? <div class="article-notice"><strong>Unconfirmed information</strong><span>This article is based on community reports, footage or screenshots and is not presented as confirmed game information.</span></div> : null}
+
     <div class="article-layout">
-      <div class="article-content"><Content /></div>
-      <aside class="article-aside">
-        {post.data.tags?.length ? <div class="aside-box"><small>TOPICS</small><div class="tags">{post.data.tags.map((tag) => <span>{tag}</span>)}</div></div> : null}
-        {post.data.lastReviewed ? <div class="aside-box"><small>LAST REVIEWED</small><strong>{date(post.data.lastReviewed)}</strong></div> : null}
-        {post.data.sources?.length ? <div class="aside-box"><small>SOURCES</small><ul>{post.data.sources.map((source) => <li>{source}</li>)}</ul></div> : null}
+      <article class="article-content"><Content /></article>
+
+      <aside class="article-sidebar">
+        <section class="author-card">
+          <div class="avatar">{post.data.author.slice(0,1).toUpperCase()}</div>
+          <div><small>WRITTEN BY</small><a href={authorHref}><strong>{post.data.author}</strong></a><p>FC Mobile creator and contributor</p></div>
+        </section>
+
+        {post.data.series ? <section class="side-card"><small>SERIES</small><a class="series-link" href={'/blog/series/' + slugify(post.data.series) + '/'}>{post.data.series}</a>{post.data.seriesOrder ? <span>Part {post.data.seriesOrder}</span> : null}</section> : null}
+
+        {post.data.relatedTools?.length ? <section class="tool-module"><small>USEFUL WITH THIS ARTICLE</small>{post.data.relatedTools.map((tool) => <a href={tool.startsWith('/') ? tool : '/' + tool}>{tool.replaceAll('-',' ')} <span>↗</span></a>)}</section> : null}
+
+        {related.length ? <section class="side-card"><small>RELATED ARTICLES</small>{related.map((item)=><a class="side-article" href={'/blog/' + item.slug + '/'}><span>{item.data.category}</span><strong>{item.data.title}</strong></a>)}</section> : null}
+
+        {featured.length ? <section class="side-card"><small>FEATURED READS</small>{featured.map((item)=><a class="side-article" href={'/blog/' + item.slug + '/'}><span>{item.data.category}</span><strong>{item.data.title}</strong></a>)}</section> : null}
+
+        {post.data.tags?.length ? <section class="side-card"><small>TOPICS</small><div class="tags">{post.data.tags.map((tag)=><span>{tag}</span>)}</div></section> : null}
+
+        {post.data.sources?.length ? <section class="side-card"><small>SOURCES</small><div class="sources">{post.data.sources.map((source)=><a href={source} target="_blank" rel="noopener">{source}</a>)}</div></section> : null}
       </aside>
     </div>
-  </article>
+
+    <section class="after-article">
+      <div class="after-head"><div><p class="eyebrow">KEEP READING</p><h2>More from FCMOBILETOOLS</h2></div><a href="/blog">View all articles ↗</a></div>
+      <div class="after-grid">{related.slice(0,3).map((item)=><a class="after-card" href={'/blog/' + item.slug + '/'}><span>{item.data.category}</span><h3>{item.data.title}</h3><p>{item.data.excerpt ?? item.data.description}</p></a>)}</div>
+    </section>
+  </div>
+</main>
 </BaseLayout>
 <style>
-.article-type{display:flex;align-items:center;gap:9px;margin-top:12px}.article-header h1{margin-top:10px}.article-subtitle{font-size:17px;font-weight:700;margin:12px 0 0}.fact{font:800 7px var(--mono);text-transform:uppercase;padding:5px 7px;border-radius:6px;background:var(--surface2);color:var(--muted)}.fact.verified{color:var(--blue);background:var(--blue3)}.article-byline{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:17px;font:700 8px var(--mono);color:var(--muted)}.article-cover{display:block;width:100%;max-height:520px;object-fit:cover;border-radius:16px;margin:30px 0 10px}.article-caption{font:700 8px var(--mono);color:var(--muted);margin:-2px 0 26px}.article-layout{display:grid;grid-template-columns:minmax(0,760px) 230px;gap:42px;justify-content:center}.article-content{min-width:0}.article-aside{display:flex;flex-direction:column;gap:12px}.aside-box{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:14px}.aside-box small{display:block;font:800 7px var(--mono);color:var(--muted);letter-spacing:.12em;margin-bottom:9px}.aside-box strong{font:800 9px var(--mono)}.tags{display:flex;flex-wrap:wrap;gap:5px}.tags span{padding:5px 7px;border-radius:6px;background:var(--blue3);color:var(--blue);font:800 7px var(--mono)}.aside-box ul{padding-left:15px;margin:0}.aside-box li{font-size:9px;line-height:1.5;color:var(--muted);margin:4px 0}@media(max-width:800px){.article-layout{display:block}.article-aside{margin-top:25px}.article-cover{max-height:350px}}
+.article-page{background:var(--bg);overflow:hidden}.wrap{width:min(1180px,calc(100% - 30px));margin:auto}.breadcrumbs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:28px 0 0;color:#617985;font:700 7px var(--mono)}.breadcrumbs a{color:#7f9aa7;text-decoration:none}.breadcrumbs a:hover{color:#b9ecff}.article-head{max-width:960px;padding:40px 0 0}.type-line{display:flex;gap:8px;align-items:center}.type-line>a{color:var(--blue);text-decoration:none;font:900 8px var(--mono);letter-spacing:.13em;text-transform:uppercase}.fact{padding:5px 7px;border-radius:6px;border:1px solid #29404d;background:#0a151c;color:#7f96a2;font:800 7px var(--mono);text-transform:uppercase}.fact.verified{color:#72e4a6;border-color:#245c43;background:#10241b}.fact.warning{color:#f1c767;border-color:#6b5525;background:#211a0b}.article-head h1{max-width:980px;font-size:clamp(52px,7vw,92px);line-height:.9;letter-spacing:-.078em;margin:16px 0 14px}.subtitle{font-size:20px;line-height:1.35;font-weight:700;margin:0 0 8px;max-width:850px}.lede{max-width:800px;color:#879ca8;font-size:13px;line-height:1.8;margin:0}.byline{display:flex;flex-wrap:wrap;gap:7px 16px;margin-top:18px;color:#637a87;font:700 7px var(--mono)}.byline a{color:#9cdfff;text-decoration:none}.cover{margin:34px 0 20px}.cover img{display:block;width:100%;max-height:580px;object-fit:cover;border-radius:18px;border:1px solid #28404c;box-shadow:0 28px 90px #0009}.cover figcaption{margin-top:8px;color:#5f7784;font:700 7px var(--mono)}.article-notice{display:flex;gap:14px;align-items:center;padding:14px 16px;margin:0 0 28px;border:1px solid #6b5525;border-radius:11px;background:#171207;color:#bda66e;font-size:10px}.article-notice strong{color:#f0cc79;font:900 7px var(--mono);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}.article-layout{display:grid;grid-template-columns:minmax(0,790px) 270px;gap:45px;align-items:start}.article-content{min-width:0;color:#d7e4e9;font-size:16px;line-height:1.88}.article-content :global(h2){font-size:31px;line-height:1.12;letter-spacing:-.045em;margin:44px 0 14px}.article-content :global(h3){font-size:22px;line-height:1.2;margin:30px 0 10px}.article-content :global(p){margin:0 0 19px}.article-content :global(ul),.article-content :global(ol){padding-left:24px;margin:0 0 21px}.article-content :global(li){margin:6px 0}.article-content :global(a){color:#7fdfff}.article-content :global(strong){color:#f6fcff}.article-content :global(blockquote){margin:25px 0;padding:16px 18px;border-left:3px solid var(--blue);border-radius:0 10px 10px 0;background:#091720;color:#a9bdc8}.article-content :global(img){display:block;max-width:100%;height:auto;border-radius:13px;border:1px solid #29404d;margin:25px 0;box-shadow:0 18px 55px #0007}.article-content :global(table){width:100%;border-collapse:collapse;margin:20px 0;font-size:12px}.article-content :global(th),.article-content :global(td){padding:10px;border-bottom:1px solid #21343f;text-align:left}.article-content :global(th){color:#6f8794;font:800 8px var(--mono)}.article-sidebar{position:sticky;top:92px;display:grid;gap:11px}.author-card,.side-card,.tool-module{border:1px solid var(--border);border-radius:13px;background:#09131a;padding:14px}.author-card{display:grid;grid-template-columns:42px 1fr;gap:10px}.avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:11px;background:#0d202a;border:1px solid #2b4e60;color:#8de0ff;font:900 14px var(--mono)}.author-card small,.side-card>small,.tool-module>small{display:block;color:#5e7684;font:900 7px var(--mono);letter-spacing:.12em;margin-bottom:7px}.author-card a{color:#dff8ff;text-decoration:none}.author-card strong{font-size:11px}.author-card p{margin:3px 0 0;color:#718793;font-size:8px;line-height:1.5}.side-card{display:grid;gap:7px}.series-link{color:#9de5ff;text-decoration:none;font-size:11px;font-weight:800}.side-card>span{color:#647e8b;font:700 7px var(--mono)}.tool-module{background:linear-gradient(145deg,#0b1b24,#08131a);border-color:#2a5164}.tool-module>a{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid #1c333e;color:#a1dff2;text-decoration:none;text-transform:capitalize;font-size:10px}.tool-module>a span{color:#58cfff}.side-article{display:grid;gap:4px;border-top:1px solid #1b2d37;padding:10px 0;text-decoration:none}.side-article span{color:var(--blue);font:800 6px var(--mono);text-transform:uppercase}.side-article strong{color:#d5e4e9;font-size:10px;line-height:1.25}.tags{display:flex;flex-wrap:wrap;gap:5px}.tags span{padding:5px 7px;border:1px solid #29414d;border-radius:6px;color:#7f9aa6;font:700 7px var(--mono)}.sources{display:grid;gap:6px}.sources a{color:#78909d;text-decoration:none;font-size:8px;word-break:break-word}.after-article{margin:70px 0 20px;padding-top:35px;border-top:1px solid var(--border)}.after-head{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:15px}.after-head h2{font-size:27px;letter-spacing:-.045em;margin:7px 0 0}.after-head>a{color:#89ddff;text-decoration:none;font:800 7px var(--mono)}.after-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.after-card{padding:17px;border:1px solid var(--border);border-radius:13px;background:#09141b;color:var(--text);text-decoration:none;transition:.2s}.after-card:hover{transform:translateY(-3px);border-color:#2d566b}.after-card>span{color:var(--blue);font:900 7px var(--mono);text-transform:uppercase}.after-card h3{font-size:15px;line-height:1.1;margin:10px 0 6px}.after-card p{margin:0;color:#7d929e;font-size:9px;line-height:1.6}
+@media(max-width:900px){.article-layout{grid-template-columns:1fr}.article-sidebar{position:static;display:grid;grid-template-columns:1fr 1fr}.after-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.article-head h1{font-size:clamp(43px,12vw,68px)}.article-content{font-size:14px}.article-sidebar{grid-template-columns:1fr}.after-grid{grid-template-columns:1fr}.article-notice{align-items:flex-start;flex-direction:column;gap:5px}}
 </style>
