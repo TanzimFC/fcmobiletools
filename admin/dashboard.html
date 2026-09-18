@@ -308,7 +308,7 @@ async function load(s){nav(s);try{if(s==='overview')await overview();else if(s==
     const creator=await fetch('/api/creator/me',{credentials:'same-origin'}).then(async r=>r.ok?await r.json():null).catch(()=>null);
     if(!creator?.creator){location.replace('/admin/');return}
     workspaceRole='creator'; workspaceUser=creator.creator;
-    document.querySelectorAll('[data-admin-only]').forEach(x=>x.remove());
+    document.querySelectorAll('[data-admin-only]').forEach(x=>x.remove());    document.querySelectorAll('.nav-external').forEach(x=>x.remove());
     document.querySelectorAll('[data-section]').forEach(x=>{if(!['overview','redeem','articles','inbox','account'].includes(x.dataset.section))x.remove();});
     document.querySelector('.side-card').innerHTML='<span>WORKSPACE MODE</span><strong>Creator workspace</strong><p>Write, save and submit your own articles for review</p>';
     document.querySelector('.navlabel').textContent='Creator';
