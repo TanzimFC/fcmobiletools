@@ -549,18 +549,9 @@ if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'
       const row=await database.prepare('SELECT 1 AS ok').first();
       return json({ok:row?.ok===1, database:'connected'});
     }
-    if(path === '/redeem' && request.method === 'GET') return json({codes:parseRedeem((await repoFile(env,'src/data/redeemCodes.js')).text)});
-    if(path === '/redeem' && request.method === 'POST') {
-      const input=await request.json();
-      if(!input.code || !input.reward || !input.releaseDate || !['active','scheduled','expired'].includes(input.status)) throw new Error('Code, reward, status, and release date are required.');
-      if(input.expiryDate && input.releaseDate > input.expiryDate) throw new Error('Expiry date cannot be before release date.');
-      const code={code:String(input.code).trim().toUpperCase(),reward:String(input.reward).trim(),status:input.status,releaseDate:input.releaseDate,expiryDate:input.expiryDate||null,region:String(input.region||'Global').trim(),lastVerified:input.lastVerified||new Date().toISOString().slice(0,10),notes:String(input.notes||'').trim()};
-      const file=await repoFile(env,'src/data/redeemCodes.js');
-      const codes=parseRedeem(file.text);
-      const i=codes.findIndex(x=>String(x.code).toUpperCase()===code.code);
-      if(i>=0) codes[i]=code; else codes.unshift(code);
-      const commitSha=await writeRepoFile(env,'src/data/redeemCodes.js',redeemText(codes),file.sha,`admin: update redeem code ${code.code}`);
-      return json({ok:true,commitSha,action:i>=0?'updated':'created'});
+    if(path === '/redeem' && (request.method === 'GET' || request.method === 'POST')) {
+      const input=request.method==='POST'?await request.json():null;
+      return json(request.method==='POST'?await saveRedeemCode(env,input,'admin'):{codes:parseRedeem((await repoFile(env,'src/data/redeemCodes.js')).text)});
     }
     if(path === '/rank-up' && request.method === 'GET') return json(parseRankUp((await repoFile(env,'src/data/fcMobileRankUp.js')).text));
     if(path === '/rank-up' && request.method === 'POST') { const data=await request.json(); validateRankUp(data); const file=await repoFile(env,'src/data/fcMobileRankUp.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileRankUp.js',rankUpText(data),file.sha,'admin: update Rank Up Points data'); return json({ok:true,commitSha}); }
