@@ -47,7 +47,7 @@ async function hashPassword(password) {
   return argon2id({ password, salt, ...ARGON2_OPTIONS });
 }
 
-async function creatorSession(creator, secret) {
+async function verifyPassword(password, encodedHash) {\n  if(typeof password !== 'string' || typeof encodedHash !== 'string' || !encodedHash) return false;\n  try { return await argon2Verify({ password, hash: encodedHash }); } catch { return false; }\n}\n\nasync function creatorSession(creator, secret) {
   const payload = JSON.stringify({ id:creator.id, username:creator.username, role:creator.role, exp:Date.now()+SESSION_MAX_AGE*1000 });
   const encoded = b64(new TextEncoder().encode(payload));
   return encoded + '.' + await sign(secret,payload);
