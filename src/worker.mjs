@@ -514,8 +514,10 @@ export default { async fetch(request,env) {
     return new Response(ADMIN_LOGIN_HTML,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }
   if(url.pathname.startsWith('/admin/')) {
-    if(!(await authenticated(request,env)) && !(await creatorAuthenticated(request,env))) return new Response('Not found',{status:404});
-    return env.ASSETS.fetch(request);
+    if(await authenticated(request,env)) return env.ASSETS.fetch(request);
+    const creator=await creatorAuthenticated(request,env);
+    if(creator && url.pathname === '/admin/dashboard.html') return env.ASSETS.fetch(request);
+    return new Response('Not found',{status:404});
   }
   return env.ASSETS.fetch(request);
 } };
