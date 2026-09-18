@@ -5,8 +5,7 @@ const root = process.cwd();
 const publicDir = path.join(root, 'public');
 const outDir = path.join(publicDir, '_legacy');
 const pages = [
-  ['football-centre', 'legacy-football-centre'],
-  ['creator.html', 'legacy-creator']
+  ['football-centre', 'legacy-football-centre']
 ];
 
 function extractStyles(source) {
