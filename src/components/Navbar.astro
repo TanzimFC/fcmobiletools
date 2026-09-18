@@ -11,6 +11,16 @@ const groups = [
     { label: 'Redeem Codes', href: '/redeem-codes' },
     { label: 'Football Centre', href: '/football-centre' },
     { label: "A Nation's Story", href: '/a-nations-story' }
+  ]},
+  { label: 'Articles', links: [
+    { label: 'Updates', href: '/blog/category/updates/' },
+    { label: 'Leaks & Intel', href: '/blog/category/leaks/' },
+    { label: 'Guides', href: '/blog/category/guides/' },
+    { label: 'Event Guides', href: '/blog/category/event-guides/' },
+    { label: 'Analysis', href: '/blog/category/analysis/' },
+    { label: 'Reviews', href: '/blog/category/reviews/' },
+    { label: 'Tactics', href: '/blog/category/tactics/' },
+    { label: 'Rankings', href: '/blog/category/rankings/' }
   ]}
 ];
 const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
@@ -38,7 +48,6 @@ const groupIsActive = (group) => group.links.some((link) => isActive(link.href))
           </div>
         </div>
       ))}
-      <a href="/blog" class:list={{ active: isActive('/blog') }}>Articles</a>
       <a href="/creator" class:list={{ active: isActive('/creator') }}>Creator</a>
       <a class="nav-code" href="/redeem-codes" class:list={{ active: isActive('/redeem-codes') }}>Redeem Codes</a>
     </nav>
@@ -50,7 +59,7 @@ const groupIsActive = (group) => group.links.some((link) => isActive(link.href))
     <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
     <div class="site-mobile-group"><span>Tools</span>{groups[0].links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>
     <div class="site-mobile-group"><span>Live</span>{groups[1].links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>
-    <a href="/blog" class:list={{ active: isActive('/blog') }}>Articles</a>
+    <div class="site-mobile-group"><span>Articles</span>{groups[2].links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>
     <a href="/creator" class:list={{ active: isActive('/creator') }}>Creator</a>
     <a class="mobile-code" href="/redeem-codes" class:list={{ active: isActive('/redeem-codes') }}>Redeem Codes</a>
   </nav>
@@ -60,8 +69,8 @@ const groupIsActive = (group) => group.links.some((link) => isActive(link.href))
 .site-nav:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#071018f2,#071018d9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:-1}
 .site-nav.is-scrolled{border-color:var(--border,#1d2b36)}
 .site-nav-inner{width:min(1200px,calc(100% - 28px));margin:auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
-.site-logo{display:flex;align-items:center;min-width:150px;transition:.25s}
-.site-logo img{display:block;width:166px;height:auto;max-height:45px;object-fit:contain;object-position:left center;filter:drop-shadow(0 10px 25px #0007)}
+.site-logo{display:flex;align-items:center;min-width:210px;transition:.25s}
+.site-logo img{display:block;width:224px;height:auto;max-height:54px;object-fit:contain;object-position:left center;filter:drop-shadow(0 10px 25px #0007)}
 .site-logo:hover{transform:translateY(-1px);filter:brightness(1.08)}
 .site-primary{display:flex;align-items:center;gap:3px}
 .site-primary>a,.site-nav-trigger{position:relative;border:1px solid transparent;background:transparent;color:var(--muted,#8e9bad);padding:10px 11px;border-radius:10px;font:800 10px var(--mono,monospace);text-decoration:none;transition:.2s;white-space:nowrap}
@@ -83,7 +92,7 @@ const groupIsActive = (group) => group.links.some((link) => isActive(link.href))
 .site-mobile-nav>a{padding:12px 9px;border-top:1px solid #1c2a34;color:#8fa1ae;text-decoration:none;font:800 11px var(--mono)}
 .site-mobile-nav a.active{color:#62d5ff}.site-mobile-nav .mobile-code{color:#9edfff}
 @media(max-width:980px){.site-primary{display:none}.site-menu{display:flex}.site-mobile-nav.open{display:block;width:min(1200px,calc(100% - 28px));margin:10px auto 0;padding-bottom:5px;background:#0a131af7;border:1px solid #20323d;border-radius:16px;box-shadow:0 25px 70px #0009;overflow:hidden;animation:navIn .22s ease}@keyframes navIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}}
-@media(max-width:540px){.site-nav{padding:8px 0}.site-logo{min-width:0}.site-logo img{width:145px;max-height:38px}.site-nav-inner{width:calc(100% - 18px)}.site-menu{width:38px;height:38px}}
+@media(max-width:540px){.site-nav{padding:8px 0}.site-logo{min-width:0}.site-logo img{width:184px;max-height:44px}.site-nav-inner{width:calc(100% - 18px)}.site-menu{width:38px;height:38px}}
 @media(prefers-reduced-motion:reduce){.site-nav *{transition:none!important}.site-mobile-nav.open{animation:none}}
 </style>
 <script>
