@@ -378,6 +378,25 @@ async function api(request,env,path) {
         throw error;
       }
     }
+    if(path.match(/^\/creators\/\\d+$/) && request.method === 'PUT') {
+      const id=Number(path.split('/')[2]);
+      if(!Number.isInteger(id)||id<1) return json({error:'Invalid creator ID.'},400);
+      const input=await request.json();
+      const database=await d1(env);
+      const current=await database.prepare('SELECT id, username FROM creators WHERE id=? LIMIT 1').bind(id).first();
+      if(!current) return json({error:'Creator not found.'},404);
+      const fields=[], values=[];
+      if(input.displayName!==undefined){fields.push('display_name=?');values.push(String(input.displayName).trim());}
+      if(input.bio!==undefined){fields.push('bio=?');values.push(String(input.bio));}
+      if(input.avatarUrl!==undefined){fields.push('avatar_url=?');values.push(String(input.avatarUrl));}
+      if(input.websiteUrl!==undefined){fields.push('website_url=?');values.push(String(input.websiteUrl));}
+      if(input.active!==undefined){fields.push('active=?');values.push(input.active?1:0);}
+      if(input.password){fields.push('password_hash=?');values.push(await hashPassword(String(input.password)));}
+      if(!fields.length) return json({ok:true});
+      fields.push('updated_at=?');values.push(new Date().toISOString());values.push(id);
+      await database.prepare('UPDATE creators SET '+fields.join(', ')+' WHERE id=?').bind(...values).run();
+      return json({ok:true,id});
+    }
     if(path === '/db-status' && request.method === 'GET') {
       const database=await d1(env);
       const row=await database.prepare('SELECT 1 AS ok').first();
