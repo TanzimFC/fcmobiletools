@@ -47,12 +47,6 @@ async function hashPassword(password) {
   return argon2id({ password, salt, ...ARGON2_OPTIONS });
 }
 
-async function hashRecoveryPassword(password) {
-  const salt=crypto.getRandomValues(new Uint8Array(16));
-  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
-  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},key,256);
-  return 'pbkdf2$310000
-
 async function creatorSession(creator, secret) {
   const payload = JSON.stringify({ id:creator.id, username:creator.username, role:creator.role, exp:Date.now()+SESSION_MAX_AGE*1000 });
   const encoded = b64(new TextEncoder().encode(payload));
@@ -480,7 +474,7 @@ async function api(request,env,path) {
       const recovery=await database.prepare("SELECT id FROM admin_recovery WHERE id=1 AND used_at IS NULL LIMIT 1").first();
       if(recovery){
         const now=new Date().toISOString();
-        const recoveryHash=await hashRecoveryPassword(suppliedPassword);
+        const recoveryHash=await hashPassword(suppliedPassword);
         if(account){
           await database.prepare("UPDATE admin_accounts SET username='owner',display_name='Owner',password_hash=?,updated_at=? WHERE id=1").bind(recoveryHash,now).run();
         } else {
