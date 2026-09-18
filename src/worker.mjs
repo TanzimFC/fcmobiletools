@@ -3,7 +3,7 @@ import { argon2id, argon2Verify } from 'hash-wasm';
 const SESSION_COOKIE = 'fcm_admin_session';
 const CREATOR_SESSION_COOKIE = 'fcm_creator_session';
 const SESSION_MAX_AGE = 60 * 60 * 8;
-const ARGON2_OPTIONS = { iterations: 3, memorySize: 65536, parallelism: 1, hashLength: 32, outputType: 'encoded' };
+const ARGON2_OPTIONS = { iterations: 3, memorySize: 32768, parallelism: 1, hashLength: 32, outputType: 'encoded' };
 
 const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
   status,
@@ -43,7 +43,7 @@ const unb64 = value => Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g
 
 async function hashPassword(password) {
   if(typeof password !== 'string' || password.length < 10) throw new Error('Password must be at least 10 characters.');
-  const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
+  const salt = crypto.getRandomValues(new Uint8Array(16));
   return argon2id({ password, salt, ...ARGON2_OPTIONS });
 }
 
@@ -253,12 +253,80 @@ function validateTraining(data) {
   data.fodder.forEach((x,i)=>{if(!x?.id||!String(x.label||'').trim()||!Number.isFinite(Number(x.xp))||Number(x.xp)<0) throw new Error(`Fodder entry ${i+1} is invalid.`);});
 }
 
+function articleRow(row) {
+  const tags=Array.isArray(row.tags)?row.tags:JSON.parse(row.tags||'[]');
+  return {
+    id:row.id, path:'d1:'+row.id, sha:null, body:row.content||'',
+    data:{ id:row.id, slug:row.slug, title:row.title, subtitle:row.subtitle||'', description:row.description||row.excerpt||'', excerpt:row.excerpt||'', type:row.type, category:row.category||'', author:row.author_name||'', authorId:row.author_id, ownerId:row.owner_id, status:row.status, image:row.feature_image||'', imageAlt:row.image_alt||'', imageCaption:row.image_caption||'', thumbnail:row.thumbnail||'', tags, featured:Boolean(row.featured), readingTime:row.reading_time||1, publishedAt:row.published_at, createdAt:row.created_at, updatedAt:row.updated_at, deletedAt:row.deleted_at, factStatus:row.fact_status||'verified', lastReviewed:row.last_reviewed||'', seoTitle:row.seo_title||'', seoDescription:row.seo_description||'', canonicalUrl:row.canonical_url||'', series:row.series||'' }
+  };
+}
+
+async function creatorRecord(request, env) {
+  const session=await creatorAuthenticated(request,env);
+  if(!session) return null;
+  const database=await d1(env);
+  return database.prepare('SELECT id, username, display_name, bio, avatar_url, website_url, role, active FROM creators WHERE id=? AND active=1 LIMIT 1').bind(session.id).first();
+}
 async function d1(env) {
   if (!env.DB) throw new Error('D1 binding DB is not configured in the Worker.');
   return env.DB;
 }
 
 async function api(request,env,path) {
+  if(path === '/creator/articles' && request.method === 'GET') {
+    const creator=await creatorRecord(request,env);
+    if(!creator) return json({error:'Authentication required.'},401);
+    const database=await d1(env);
+    const rows=await database.prepare(`SELECT a.*, c.display_name AS author_name FROM articles a LEFT JOIN creators c ON c.id=a.author_id WHERE a.owner_id=? ORDER BY CASE WHEN a.deleted_at IS NULL THEN 0 ELSE 1 END, COALESCE(a.updated_at,a.created_at) DESC`).bind(creator.id).all();
+    return json({creator:{id:creator.id,username:creator.username,displayName:creator.display_name},articles:(rows.results||[]).map(articleRow)});
+  }
+  if(path === '/creator/articles' && request.method === 'POST') {
+    const creator=await creatorRecord(request,env);
+    if(!creator) return json({error:'Authentication required.'},401);
+    const input=await request.json();
+    const title=String(input.title||'').trim();
+    const slug=articleSlug(input.slug||title);
+    if(!title||!slug) throw new Error('Article title is required.');
+    const status=['draft','review'].includes(input.status)?input.status:'draft';
+    const database=await d1(env);
+    const now=new Date().toISOString();
+    const tags=JSON.stringify(Array.isArray(input.tags)?input.tags:[]);
+    const existing=await database.prepare('SELECT id FROM articles WHERE slug=? LIMIT 1').bind(slug).first();
+    if(existing) throw new Error('An article with this slug already exists.');
+    const result=await database.prepare(`INSERT INTO articles (slug,title,subtitle,description,content,type,category,author_id,status,feature_image,tags,created_at,updated_at,seo_title,seo_description,owner_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(slug,title,String(input.subtitle||''),String(input.description||''),String(input.body||''),String(input.type||'guide'),String(input.category||'Guides'),creator.id,status,String(input.image||''),tags,now,now,String(input.seoTitle||title),String(input.seoDescription||input.description||''),creator.id).run();
+    return json({ok:true,articleId:result.meta?.last_row_id,slug});
+  }
+  if((path.startsWith('/creator/articles/') || path.startsWith('/creator/article/')) && (request.method === 'PUT' || request.method === 'DELETE' || request.method === 'POST')) {
+    const creator=await creatorRecord(request,env);
+    if(!creator) return json({error:'Authentication required.'},401);
+    const parts=path.split('/').filter(Boolean);
+    const id=Number(parts[2]);
+    if(!Number.isInteger(id)||id<1) return json({error:'Invalid article ID.'},400);
+    const database=await d1(env);
+    const current=await database.prepare('SELECT * FROM articles WHERE id=? AND owner_id=? LIMIT 1').bind(id,creator.id).first();
+    if(!current) return json({error:'Article not found.'},404);
+    if(parts[3]==='restore' && request.method==='POST') {
+      await database.prepare('UPDATE articles SET deleted_at=NULL, deleted_by=NULL, updated_at=? WHERE id=? AND owner_id=?').bind(new Date().toISOString(),id,creator.id).run();
+      return json({ok:true,action:'restored'});
+    }
+    if(request.method==='DELETE') {
+      await database.prepare('UPDATE articles SET deleted_at=?, deleted_by=?, updated_at=? WHERE id=? AND owner_id=?').bind(new Date().toISOString(),creator.id,new Date().toISOString(),id,creator.id).run();
+      return json({ok:true,action:'trashed'});
+    }
+    if(request.method==='PUT') {
+      if(current.status==='published') return json({error:'Published articles require admin editing.'},403);
+      const input=await request.json();
+      const title=String(input.title||current.title).trim();
+      const slug=articleSlug(input.slug||current.slug);
+      if(!title||!slug) throw new Error('Article title is required.');
+      const status=['draft','review'].includes(input.status)?input.status:current.status;
+      const conflict=await database.prepare('SELECT id FROM articles WHERE slug=? AND id!=? LIMIT 1').bind(slug,id).first();
+      if(conflict) throw new Error('An article with this slug already exists.');
+      const tags=JSON.stringify(Array.isArray(input.tags)?input.tags:JSON.parse(current.tags||'[]'));
+      await database.prepare(`UPDATE articles SET slug=?,title=?,subtitle=?,description=?,content=?,type=?,category=?,status=?,feature_image=?,tags=?,updated_at=?,seo_title=?,seo_description=? WHERE id=? AND owner_id=?`).bind(slug,title,String(input.subtitle||''),String(input.description||''),String(input.body||''),String(input.type||current.type),String(input.category||current.category||'Guides'),status,String(input.image||current.feature_image||''),tags,new Date().toISOString(),String(input.seoTitle||title),String(input.seoDescription||input.description||''),id,creator.id).run();
+      return json({ok:true,action:'updated',articleId:id,slug});
+    }
+  }
   if(path === '/creator/login' && request.method === 'POST') {
     if(!env.CREATOR_SESSION_SECRET) return json({error:'Creator authentication is not configured in the Worker.'},503);
     const body=await request.json().catch(()=>({}));
@@ -333,6 +401,20 @@ async function api(request,env,path) {
     if(path === '/training' && request.method === 'GET') return json(parseTraining((await repoFile(env,'src/data/fcMobileTraining.js')).text));
     if(path === '/training' && request.method === 'POST') { const data=await request.json(); validateTraining(data); const file=await repoFile(env,'src/data/fcMobileTraining.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileTraining.js',trainingText(data),file.sha,'admin: update Training XP data'); return json({ok:true,commitSha}); }
 
+    if(path === '/articles/trash' && request.method === 'GET') {
+      const database=await d1(env);
+      const rows=await database.prepare(`SELECT a.*, c.display_name AS author_name FROM articles a LEFT JOIN creators c ON c.id=a.author_id WHERE a.deleted_at IS NOT NULL ORDER BY a.deleted_at DESC`).all();
+      return json({articles:(rows.results||[]).map(articleRow)});
+    }
+    const articleAction=path.match(/^\/articles\/(\d+)\/(restore|trash)$/);
+    if(articleAction) {
+      const id=Number(articleAction[1]), action=articleAction[2], database=await d1(env);
+      const row=await database.prepare('SELECT id FROM articles WHERE id=? LIMIT 1').bind(id).first();
+      if(!row) return json({error:'Article not found.'},404);
+      if(action==='restore') await database.prepare('UPDATE articles SET deleted_at=NULL, deleted_by=NULL, updated_at=? WHERE id=?').bind(new Date().toISOString(),id).run();
+      else await database.prepare('UPDATE articles SET deleted_at=?, deleted_by=NULL, updated_at=? WHERE id=?').bind(new Date().toISOString(),new Date().toISOString(),id).run();
+      return json({ok:true,action});
+    }
     if(path === '/articles' && request.method === 'GET') {
       const body=await github(env,'contents/src/content/blog?ref=main');
       const files=Array.isArray(body)?body.filter(x=>x.name.endsWith('.md')&&x.name!=='_template.md'):[];
