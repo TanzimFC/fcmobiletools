@@ -180,6 +180,8 @@ function yamlValue(value) {
 }
 function articleText(a) {
   const tags=Array.isArray(a.tags)?a.tags:[];
+  const firstInlineImage=String(a.body||'').match(/!\[[^\]]*\]\(([^)]+)\)/)?.[1] || '';
+  const effectiveImage=a.image||firstInlineImage;
   return `---
 id: ${yamlValue(a.id)}
 slug: ${yamlValue(a.slug)}
@@ -217,6 +219,11 @@ function validateTraining(data) {
   data.fodder.forEach((x,i)=>{if(!x?.id||!String(x.label||'').trim()||!Number.isFinite(Number(x.xp))||Number(x.xp)<0) throw new Error(`Fodder entry ${i+1} is invalid.`);});
 }
 
+async function d1(env) {
+  if (!env.DB) throw new Error('D1 binding DB is not configured in the Worker.');
+  return env.DB;
+}
+
 async function api(request,env,path) {
   if(path === '/login' && request.method === 'POST') {
     if(!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD || !env.ADMIN_SESSION_SECRET) return json({error:'Admin authentication is not configured in the Worker.'},503);
@@ -227,7 +234,7 @@ async function api(request,env,path) {
   if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
-    if(path === '/me') return json({username:env.ADMIN_USERNAME,role:'admin'});
+    if(path === '/me') return json({username:env.ADMIN_USERNAME,role:'admin'});\n    if(path === '/db-status' && request.method === 'GET') {\n      const database=await d1(env);\n      const row=await database.prepare('SELECT 1 AS ok').first();\n      return json({ok:row?.ok===1, database:'connected'});\n    }
     if(path === '/redeem' && request.method === 'GET') return json({codes:parseRedeem((await repoFile(env,'src/data/redeemCodes.js')).text)});
     if(path === '/redeem' && request.method === 'POST') {
       const input=await request.json();
