@@ -57,8 +57,8 @@ const heroObject = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_au
 const pageSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  name: 'FC Mobile Redeem Codes | Working Codes, Rewards & EA Redemption | FCMOBILETOOLS',
-  description: 'Find working FC Mobile redeem codes, active codes, rewards and official EA redemption steps on FCMOBILETOOLS.',
+  name: 'FC Mobile Redeem Codes | Working Codes & Rewards | FCMOBILETOOLS',
+  description: 'Check the latest FC Mobile redeem codes, working rewards, expiry status and official EA redemption steps. Copy codes fast and redeem safely on FCMOBILETOOLS.',
   url: new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
   dateModified: lastUpdated || undefined,
   primaryImageOfPage: { '@type': 'ImageObject', contentUrl: heroObject, caption: 'FC Mobile redeem codes and rewards on FCMOBILETOOLS' },
@@ -96,8 +96,8 @@ const faqSchema = {
 };
 ---
 <BaseLayout
-  title="FC Mobile Redeem Codes | Working Codes, Rewards & EA Redemption | FCMOBILETOOLS"
-  description="Find working FC Mobile redeem codes, active codes, rewards and official EA redemption steps on FCMOBILETOOLS. Check status, copy codes and redeem through EA."
+  title="FC Mobile Redeem Codes | Working Codes & Rewards"
+  description="Check the latest FC Mobile redeem codes, working rewards, expiry status and official EA redemption steps. Copy codes fast and redeem safely on FCMOBILETOOLS."
   image={heroObject}
 >
   <section class="codes-page">
@@ -391,6 +391,54 @@ const faqSchema = {
       });
       showcase.addEventListener('pointerleave', () => { heroObject.style.transform = 'translate3d(-48%,-50%,0) rotate(0deg)'; });
     }
+
+    const motionReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const liveCards = document.querySelectorAll('.live-card');
+    if (!motionReduced) {
+      liveCards.forEach((card, index) => {
+        card.style.setProperty('--delay', (index * 70) + 'ms');
+        card.addEventListener('pointermove', (event) => {
+          const rect = card.getBoundingClientRect();
+          const x = ((event.clientX - rect.left) / rect.width) * 100;
+          const y = ((event.clientY - rect.top) / rect.height) * 100;
+          card.style.setProperty('--mx', x + '%');
+          card.style.setProperty('--my', y + '%');
+          card.style.setProperty('--rx', (((y - 50) / 50) * -2.2).toFixed(2) + 'deg');
+          card.style.setProperty('--ry', (((x - 50) / 50) * 2.2).toFixed(2) + 'deg');
+        });
+        card.addEventListener('pointerleave', () => {
+          card.style.setProperty('--mx', '50%');
+          card.style.setProperty('--my', '50%');
+          card.style.setProperty('--rx', '0deg');
+          card.style.setProperty('--ry', '0deg');
+        });
+      });
+    }
+
+    document.querySelectorAll('.stats-strip strong').forEach((node) => {
+      const target = Number(node.textContent || 0);
+      if (!target || motionReduced) return;
+      node.textContent = '0';
+      const start = performance.now();
+      const duration = 850;
+      const tick = (now) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        node.textContent = String(Math.round(target * eased));
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+
+    document.querySelectorAll('.copy-code').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!motionReduced) {
+          button.classList.remove('pulse');
+          requestAnimationFrame(() => button.classList.add('pulse'));
+        }
+      });
+    });
+
     const ld = document.createElement('script');
     ld.type = 'application/ld+json';
     ld.textContent = JSON.stringify(pageSchema);
