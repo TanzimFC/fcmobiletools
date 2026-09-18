@@ -476,7 +476,32 @@ async function api(request,env,path) {
 if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
-    if(path === '/me') return json({username:env.ADMIN_USERNAME,role:'admin'});
+    if(path === '/me') {
+      const account=await getAdminAccount(env);
+      return json({username:account?.username||env.ADMIN_USERNAME,displayName:account?.display_name||account?.username||env.ADMIN_USERNAME,role:'admin',updatedAt:account?.updated_at||null});
+    }
+    if(path === '/account' && (request.method === 'GET' || request.method === 'PUT')) {
+      const account=await getAdminAccount(env); if(!account) return json({error:'Admin account is not configured.'},503);
+      const database=await d1(env);
+      if(request.method==='GET') return json({account:{username:account.username,displayName:account.display_name,updatedAt:account.updated_at}});
+      const input=await request.json(); const updates=[]; const values=[];
+      if(input.displayName!==undefined){updates.push('display_name=?');values.push(String(input.displayName).trim());}
+      if(input.currentPassword||input.newPassword){
+        if(!input.currentPassword||!input.newPassword) return json({error:'Current and new passwords are required together.'},400);
+        if(!(await verifyPassword(String(input.currentPassword),account.password_hash))) return json({error:'Current password is incorrect.'},400);
+        updates.push('password_hash=?');values.push(await hashPassword(String(input.newPassword)));
+      }
+      if(updates.length){updates.push('updated_at=?');values.push(new Date().toISOString());await database.prepare('UPDATE admin_accounts SET '+updates.join(', ')+' WHERE id=1').bind(...values).run();}
+      return json({ok:true});
+    }
+    if(path === '/creators/bootstrap-self' && request.method === 'POST') {
+      const database=await d1(env);
+      const existing=await database.prepare("SELECT id,username,display_name FROM creators WHERE username='tanzimfc' LIMIT 1").first();
+      if(existing) return json({ok:true,created:false,creator:{id:existing.id,username:existing.username,displayName:existing.display_name}});
+      const password=tempPassword(); const passwordHash=await hashPassword(password); const now=new Date().toISOString();
+      const result=await database.prepare('INSERT INTO creators (username,display_name,password_hash,bio,avatar_url,website_url,role,active,joined_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)').bind('tanzimfc','TanzimFC',passwordHash,'FC Mobile tools, guides, updates and analysis.','','','creator',1,now,now).run();
+      return json({ok:true,created:true,temporaryPassword:password,creator:{id:result.meta?.last_row_id,username:'tanzimfc',displayName:'TanzimFC'}});
+    }
     if(path === '/creators' && request.method === 'GET') {
       const database=await d1(env);
       const rows=await database.prepare('SELECT id, username, display_name, bio, avatar_url, website_url, role, active, created_at, joined_at FROM creators ORDER BY id DESC').all();
