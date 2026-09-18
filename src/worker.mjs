@@ -159,7 +159,7 @@ function parseFrontmatter(text) {
   const m=text.match(/^---\n([\\s\\S]*?)\n---\n([\\s\\S]*)$/);
   if(!m) return {data:{},body:text};
   const data={};
-  for(const line of m[1].split('\\n')) {
+  for(const line of m[1].split('\n')) {
     const hit=line.match(/^([A-Za-z0-9_]+):\\s*(.*)$/);
     if(!hit) continue;
     let value=hit[2].trim();
