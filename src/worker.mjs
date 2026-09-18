@@ -510,11 +510,11 @@ export default { async fetch(request,env) {
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
   if(url.pathname.startsWith('/api/admin/')) return api(request,env,url.pathname.slice('/api/admin'.length));
   if(isAdminEntry) {
-    if(await authenticated(request,env)) return adminDashboard(request,env,url);
+    if(await authenticated(request,env) || await creatorAuthenticated(request,env)) return adminDashboard(request,env,url);
     return new Response(ADMIN_LOGIN_HTML,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }
   if(url.pathname.startsWith('/admin/')) {
-    if(!(await authenticated(request,env))) return new Response('Not found',{status:404});
+    if(!(await authenticated(request,env)) && !(await creatorAuthenticated(request,env))) return new Response('Not found',{status:404});
     return env.ASSETS.fetch(request);
   }
   return env.ASSETS.fetch(request);
