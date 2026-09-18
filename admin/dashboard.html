@@ -94,7 +94,7 @@ function creatorDialog(c){
 async function articlesSection(filter='all') {
   const out=await api('/articles');
   const list=out.articles||[];
-  const trashOut=await api('/articles/trash').catch(()=>({articles:[]}));
+  const trashOut=workspaceRole==='admin'?await api('/articles/trash').catch(()=>({articles:[]})):{articles:list.filter(a=>a.data?.deletedAt)};
   const trash=trashOut.articles||[];
   const counts={
     all:list.length,
@@ -169,6 +169,7 @@ async function loadTipTap(editorEl, initialHTML){
   }catch(err){console.warn('TipTap unavailable; using basic editor.',err);return null}
 }
 function articleEditor(item) {
+  if(tiptapEditor){try{tiptapEditor.destroy()}catch{}tiptapEditor=null;}
   const a=item?.data||{};
   const statusOptions=workspaceRole==='creator'?['draft','review']:['draft','review','published','archived'];
   app.innerHTML='<div class="article-screen">'
@@ -206,7 +207,7 @@ function articleEditor(item) {
   };
   setStatusUI();
   document.querySelectorAll('[data-acmd]').forEach(b=>b.onclick=()=>{if(tiptapEditor){tiptapEditor.chain().focus()[b.dataset.acmd]().run();}else{editor.focus();document.execCommand(b.dataset.acmd,false,null);}});
-  document.querySelectorAll('[data-ablock]').forEach(b=>b.onclick=()=>{if(tiptapEditor){tiptapEditor.chain().focus().toggleHeading({level:Number(b.dataset.ablock==='h2'?2:3)}).run();}else{editor.focus();document.execCommand('formatBlock',false,b.dataset.ablock);}});
+  document.querySelectorAll('[data-ablock]').forEach(b=>b.onclick=()=>{if(tiptapEditor && b.dataset.ablock!=='blockquote'){tiptapEditor.chain().focus().toggleHeading({level:Number(b.dataset.ablock==='h2'?2:3)}).run();}else if(tiptapEditor){tiptapEditor.chain().focus().toggleBlockquote().run();}else{editor.focus();document.execCommand('formatBlock',false,b.dataset.ablock);}});
   document.querySelectorAll('[data-alist]').forEach(b=>b.onclick=()=>{if(tiptapEditor){const chain=tiptapEditor.chain().focus();b.dataset.alist==='ol'?chain.toggleOrderedList().run():chain.toggleBulletList().run();}else{editor.focus();document.execCommand(b.dataset.alist==='ol'?'insertOrderedList':'insertUnorderedList',false,null);}});
   $('#articleStatus').onchange=setStatusUI;
   $('#articleLink').onclick=()=>{const url=prompt('Link URL');if(url){if(tiptapEditor)tiptapEditor.chain().focus().setLink({href:url}).run();else{editor.focus();document.execCommand('createLink',false,url);}}};
