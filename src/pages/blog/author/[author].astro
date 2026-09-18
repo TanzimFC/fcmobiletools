@@ -5,7 +5,11 @@ import { getCollection } from 'astro:content';
 const slugify=(value)=>String(value??'').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
 const posts=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft)).sort((a,b)=>(b.data.publishedAt?.valueOf()??0)-(a.data.publishedAt?.valueOf()??0));
 const authors=[...new Set(posts.map((post)=>post.data.author).filter(Boolean))];
-export async function getStaticPaths(){return authors.map((author)=>({params:{author:slugify(author)},props:{author}}))}
+export async function getStaticPaths(){
+  const postsForPaths=await getCollection('blog',({data})=>data.status==='published'&&!data.draft);
+  const authorsForPaths=[...new Set(postsForPaths.map((post)=>post.data.author).filter(Boolean))];
+  return authorsForPaths.map((author)=>({params:{author:slugify(author)},props:{author}}));
+}
 const {author}=Astro.props;
 const authorPosts=posts.filter((post)=>slugify(post.data.author)===slugify(author));
 const readingTime=(post)=>post.data.readingTime??Math.max(1,Math.ceil((post.body?.split(/\s+/).filter(Boolean).length??0)/220));
