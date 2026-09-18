@@ -96,34 +96,6 @@ function parseRedeem(text) {
 function redeemText(codes) { return `// FC Mobile redeem-code database.\nexport const REDEEM_CODES = ${JSON.stringify(codes,null,2)};\n\nexport const REDEEM_STATUS = {\n  active: { label: 'Active', className: 'active' },\n  scheduled: { label: 'Scheduled', className: 'scheduled' },\n  expired: { label: 'Expired', className: 'expired' },\n  unknown: { label: 'Unknown', className: 'unknown' },\n};\n`; }
 
 
-function parseStarSignings(text) {
-  const match=text.match(/export const STAR_SIGNINGS_DATA = ([\\s\\S]+);\\s*$/);
-  if(!match) throw new Error('Star Signings data file has an unexpected format.');
-  try { return JSON.parse(match[1]); } catch { throw new Error('Star Signings data file is not valid JSON-compatible data.'); }
-}
-function starSigningsText(data) {
-  return '// FC Mobile Star Signings data managed by the admin panel.\nexport const STAR_SIGNINGS_DATA = ' + JSON.stringify(data,null,2) + ';\n';
-}
-function validateStarSignings(data) {
-  if(!data || typeof data !== 'object' || !Array.isArray(data.releaseValueRules) || !Array.isArray(data.players)) throw new Error('Star Signings data is incomplete.');
-  if(!String(data.title||'').trim() || !String(data.eyebrow||'').trim() || !String(data.description||'').trim()) throw new Error('Title, eyebrow and description are required.');
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(data.releaseCutoff||''))) throw new Error('Release cutoff must use YYYY-MM-DD.');
-  for(const [i,rule] of data.releaseValueRules.entries()) {
-    const min=Number(rule?.minOvr), max=Number(rule?.maxOvr);
-    if(!Number.isInteger(min)||!Number.isInteger(max)||min<1||max<min) throw new Error('Release rule ' + (i+1) + ' has an invalid OVR range.');
-    for(const key of ['beforeCutoff','afterCutoff']) {
-      if(rule[key]!==null && rule[key]!=='' && (!Number.isInteger(Number(rule[key])) || Number(rule[key])<0)) throw new Error('Release rule ' + (i+1) + ' has an invalid shard value.');
-    }
-  }
-  const ids=new Set();
-  for(const [i,player] of data.players.entries()) {
-    const id=String(player?.id||'').trim(), name=String(player?.name||'').trim(), ovr=Number(player?.ovr), cost=Number(player?.cost);
-    if(!id||ids.has(id)||!name) throw new Error('Signing target ' + (i+1) + ' needs a unique ID and name.');
-    if(!Number.isInteger(ovr)||ovr<1||ovr>150||!Number.isInteger(cost)||cost<1) throw new Error('Signing target ' + (i+1) + ' has invalid OVR or shard cost.');
-    ids.add(id);
-  }
-}
-
 function parseFootball(text) {
   const match=text.match(/export const FOOTBALL_CENTRE_CONTENT = ([\s\S]+);\s*$/);
   if(!match) throw new Error('Football Centre data file has an unexpected format.');
