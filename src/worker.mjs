@@ -96,29 +96,32 @@ function parseRedeem(text) {
 function redeemText(codes) { return `// FC Mobile redeem-code database.\nexport const REDEEM_CODES = ${JSON.stringify(codes,null,2)};\n\nexport const REDEEM_STATUS = {\n  active: { label: 'Active', className: 'active' },\n  scheduled: { label: 'Scheduled', className: 'scheduled' },\n  expired: { label: 'Expired', className: 'expired' },\n  unknown: { label: 'Unknown', className: 'unknown' },\n};\n`; }
 
 
-function parseShards(text) {
-  const match=text.match(/export const SHARDS_COUNTER_DATA = ([\\s\\S]+);\\s*$/);
-  if(!match) throw new Error('Shards Counter data file has an unexpected format.');
-  try { return JSON.parse(match[1]); } catch { throw new Error('Shards Counter data file is not JSON-compatible.'); }
+function parseStarSignings(text) {
+  const match=text.match(/export const STAR_SIGNINGS_DATA = ([\\s\\S]+);\\s*$/);
+  if(!match) throw new Error('Star Signings data file has an unexpected format.');
+  try { return JSON.parse(match[1]); } catch { throw new Error('Star Signings data file is not valid JSON-compatible data.'); }
 }
-function shardsText(data) {
-  return '// FC Mobile Shards Counter data managed by the admin panel.\\nexport const SHARDS_COUNTER_DATA = ' + JSON.stringify(data,null,2) + ';\\n';
+function starSigningsText(data) {
+  return '// FC Mobile Star Signings data managed by the admin panel.\nexport const STAR_SIGNINGS_DATA = ' + JSON.stringify(data,null,2) + ';\n';
 }
-function validateShards(data) {
-  if(!data || typeof data !== 'object' || !Array.isArray(data.targets)) throw new Error('Shards Counter data is incomplete.');
-  if(!String(data.title||'').trim() || !String(data.eyebrow||'').trim() || !String(data.description||'').trim() || !String(data.currencyLabel||'').trim()) throw new Error('Title, eyebrow, description and currency label are required.');
+function validateStarSignings(data) {
+  if(!data || typeof data !== 'object' || !Array.isArray(data.releaseValueRules) || !Array.isArray(data.players)) throw new Error('Star Signings data is incomplete.');
+  if(!String(data.title||'').trim() || !String(data.eyebrow||'').trim() || !String(data.description||'').trim()) throw new Error('Title, eyebrow and description are required.');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(data.releaseCutoff||''))) throw new Error('Release cutoff must use YYYY-MM-DD.');
+  for(const [i,rule] of data.releaseValueRules.entries()) {
+    const min=Number(rule?.minOvr), max=Number(rule?.maxOvr);
+    if(!Number.isInteger(min)||!Number.isInteger(max)||min<1||max<min) throw new Error('Release rule ' + (i+1) + ' has an invalid OVR range.');
+    for(const key of ['beforeCutoff','afterCutoff']) {
+      if(rule[key]!==null && rule[key]!=='' && (!Number.isInteger(Number(rule[key])) || Number(rule[key])<0)) throw new Error('Release rule ' + (i+1) + ' has an invalid shard value.');
+    }
+  }
   const ids=new Set();
-  for(const [i,target] of data.targets.entries()) {
-    const id=String(target?.id||'').trim();
-    const label=String(target?.label||'').trim();
-    const cost=Number(target?.cost);
-    if(!id || !label || !/^[-a-z0-9]{2,64}$/i.test(id)) throw new Error('Target ' + (i+1) + ' needs a valid ID and label.');
-    if(ids.has(id)) throw new Error('Duplicate target ID: ' + id + '.');
-    if(!Number.isInteger(cost) || cost <= 0) throw new Error('Target ' + (i+1) + ' cost must be a positive whole number.');
-    if(String(target?.note||'').length>180) throw new Error('Target ' + id + ' note is too long.');
+  for(const [i,player] of data.players.entries()) {
+    const id=String(player?.id||'').trim(), name=String(player?.name||'').trim(), ovr=Number(player?.ovr), cost=Number(player?.cost);
+    if(!id||ids.has(id)||!name) throw new Error('Signing target ' + (i+1) + ' needs a unique ID and name.');
+    if(!Number.isInteger(ovr)||ovr<1||ovr>150||!Number.isInteger(cost)||cost<1) throw new Error('Signing target ' + (i+1) + ' has invalid OVR or shard cost.');
     ids.add(id);
   }
-  if(data.defaultTargetId && !ids.has(String(data.defaultTargetId))) throw new Error('Default target must match one of the configured target IDs.');
 }
 
 function parseFootball(text) {
@@ -205,14 +208,15 @@ async function api(request,env,path) {
     if(path === '/training' && request.method === 'GET') return json(parseTraining((await repoFile(env,'src/data/fcMobileTraining.js')).text));
     if(path === '/training' && request.method === 'POST') { const data=await request.json(); validateTraining(data); const file=await repoFile(env,'src/data/fcMobileTraining.js'); const commitSha=await writeRepoFile(env,'src/data/fcMobileTraining.js',trainingText(data),file.sha,'admin: update Training XP data'); return json({ok:true,commitSha}); }
 
-    if(path === '/shards' && request.method === 'GET') return json(parseShards((await repoFile(env,'src/data/fcMobileShards.js')).text));
-    if(path === '/shards' && request.method === 'POST') {
+    if(path === '/star-signings' && request.method === 'GET') return json(parseStarSignings((await repoFile(env,'src/data/fcMobileStarSignings.js')).text));
+    if(path === '/star-signings' && request.method === 'POST') {
       const data=await request.json();
-      validateShards(data);
-      const file=await repoFile(env,'src/data/fcMobileShards.js');
-      const commitSha=await writeRepoFile(env,'src/data/fcMobileShards.js',shardsText(data),file.sha,'admin: update Shards Counter data');
+      validateStarSignings(data);
+      const file=await repoFile(env,'src/data/fcMobileStarSignings.js');
+      const commitSha=await writeRepoFile(env,'src/data/fcMobileStarSignings.js',starSigningsText(data),file.sha,'admin: update Star Signings data');
       return json({ok:true,commitSha});
     }
+
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
     if(path === '/football' && request.method === 'POST') {
       const {content}=await request.json();
