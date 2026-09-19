@@ -73,34 +73,36 @@ async function creatorAuthenticated(request, env) {
 }
 async function sign(secret, value) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
-  return b64(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value)));
+  const bytes=new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value)));
+  return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 }
 
 async function session(username, secret) {
-  const payload = `${username}|${Date.now() + SESSION_MAX_AGE * 1000}`;
-  return `${b64(new TextEncoder().encode(payload))}.${await sign(secret,payload)}`;
+  const payload = username+'|'+(Date.now() + SESSION_MAX_AGE * 1000);
+  return b64(new TextEncoder().encode(payload))+'.'+await sign(secret,payload);
 }
 
 async function authenticated(request, env) {
-  if (!env.ADMIN_SESSION_SECRET) {
-    adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'ADMIN_SESSION_SECRET_MISSING'});
-    return false;
-  }
-  const match=(request.headers.get('cookie')||'').match(new RegExp(SESSION_COOKIE+'=([^;]+)'));
+  if (!env.ADMIN_SESSION_SECRET) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'ADMIN_SESSION_SECRET_MISSING'}); return false; }
+  const cookieHeader=request.headers.get('cookie')||'';
+  const match=cookieHeader.split(';').map(x=>x.trim()).find(x=>x.startsWith(SESSION_COOKIE+'='));
   if(!match) return false;
   try {
-    const [payload64,signature]=match[1].split('.');
-    if(!payload64||!signature) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'MALFORMED_SESSION'}); return false; }
+    const token=match.slice(SESSION_COOKIE.length+1);
+    const dot=token.indexOf('.');
+    if(dot<1) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'MALFORMED_SESSION'}); return false; }
+    const payload64=token.slice(0,dot); const signature=token.slice(dot+1);
     const payload=new TextDecoder().decode(unb64(payload64));
-    const [username,expiry]=payload.split('|');
+    const separator=payload.lastIndexOf('|');
+    const username=separator>0?payload.slice(0,separator):''; const expiry=separator>0?payload.slice(separator+1):'';
     if(!username||!expiry||Number(expiry)<=Date.now()) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'EXPIRED_OR_INVALID_PAYLOAD'}); return false; }
-    if((await sign(env.ADMIN_SESSION_SECRET,payload))!==signature) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'SIGNATURE_MISMATCH'}); return false; }
+    const expected=await sign(env.ADMIN_SESSION_SECRET,payload);
+    if(expected!==signature) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'SIGNATURE_MISMATCH'}); return false; }
     const configuredUser=String(env.ADMIN_USERNAME||'').trim();
     if(!configuredUser || username!==configuredUser) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'ADMIN_USERNAME_MISMATCH'}); return false; }
     return true;
   } catch { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'VALIDATION_EXCEPTION'}); return false; }
 }
-
 async function github(env, path, options = {}) {
   const [owner, repo] = (env.GITHUB_REPO || 'TanzimFC/fcmobiletools').split('/');
   if (!env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN is not configured in the Worker.');
