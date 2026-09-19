@@ -174,12 +174,12 @@ async function loadTipTap(editorEl, initialHTML){
     const StarterKit=starter.default||starter;
     const Link=link.default||link;
     const Image=image.default||image;
-    const Placeholder=placeholder.default||placeholder; const Underline=underline.default||underline; const TextStyle=textStyle.default||textStyle; const Color=color.default||color; const Highlight=highlight.default||highlight; const TextAlign=textAlign.default||textAlign; const Typography=typography.default||typography;
+    const Placeholder=placeholder.default||placeholder; const Underline=underline.default||underline; const TextStyle=textStyle.default||textStyle; const Color=color.default||color; const Highlight=highlight.default||highlight; const TextAlign=textAlign.default||textAlign; const Typography=typography.default||typography; const FontFamily=core.Extension.create({name:'fontFamily',addGlobalAttributes(){return[{types:['textStyle'],attributes:{fontFamily:{default:null,parseHTML:el=>el.style.fontFamily||null,renderHTML:attrs=>attrs.fontFamily?{style:'font-family:'+attrs.fontFamily}:{} }}}]}}); const FontSize=core.Extension.create({name:'fontSize',addGlobalAttributes(){return[{types:['textStyle'],attributes:{fontSize:{default:null,parseHTML:el=>el.style.fontSize||null,renderHTML:attrs=>attrs.fontSize?{style:'font-size:'+attrs.fontSize}:{} }}}]}});
     tiptapEditor=new Editor({element:editorEl,content:initialHTML||'',extensions:[
       StarterKit.configure({heading:{levels:[1,2,3]},link:false}),
       Link.configure({openOnClick:false,autolink:true,HTMLAttributes:{class:'article-link'}}),
       Image.configure({allowBase64:false,HTMLAttributes:{class:'article-inline-image'}}),
-      Underline,TextStyle,Color,Highlight.configure({multicolor:true}),TextAlign.configure({types:['heading','paragraph']}),Typography,
+      Underline,TextStyle,FontFamily,FontSize,Color,Highlight.configure({multicolor:true}),TextAlign.configure({types:['heading','paragraph']}),Typography,
       Placeholder.configure({placeholder:'Start writing your article here…'})
     ],onUpdate:()=>{$('#saveHint').textContent='Unsaved changes';dirty=true;}});
     return tiptapEditor;
