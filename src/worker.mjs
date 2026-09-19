@@ -82,19 +82,24 @@ async function session(username, secret) {
 }
 
 async function authenticated(request, env) {
-  if (!env.ADMIN_SESSION_SECRET) return false;
-  const match = (request.headers.get('cookie') || '').match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
-  if (!match) return false;
+  if (!env.ADMIN_SESSION_SECRET) {
+    adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'ADMIN_SESSION_SECRET_MISSING'});
+    return false;
+  }
+  const match=(request.headers.get('cookie')||'').match(new RegExp(SESSION_COOKIE+'=([^;]+)'));
+  if(!match) return false;
   try {
-    const [payload64, signature] = match[1].split('.');
-    const payload = new TextDecoder().decode(unb64(payload64));
-    const [username, expiry] = payload.split('|');
-    if (!username || Number(expiry) <= Date.now()) return false;
-    if ((await sign(env.ADMIN_SESSION_SECRET,payload)) !== signature) return false;
+    const [payload64,signature]=match[1].split('.');
+    if(!payload64||!signature) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'MALFORMED_SESSION'}); return false; }
+    const payload=new TextDecoder().decode(unb64(payload64));
+    const [username,expiry]=payload.split('|');
+    if(!username||!expiry||Number(expiry)<=Date.now()) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'EXPIRED_OR_INVALID_PAYLOAD'}); return false; }
+    if((await sign(env.ADMIN_SESSION_SECRET,payload))!==signature) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'SIGNATURE_MISMATCH'}); return false; }
     const database=await d1(env);
     const account=await database.prepare('SELECT id FROM admin_accounts WHERE username=? LIMIT 1').bind(username).first();
-    return Boolean(account?.id);
-  } catch { return false; }
+    if(!account?.id) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'ACCOUNT_NOT_FOUND'}); return false; }
+    return true;
+  } catch { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'VALIDATION_EXCEPTION'}); return false; }
 }
 
 async function github(env, path, options = {}) {
@@ -349,6 +354,10 @@ async function getAdminAccount(env) {
   return row;
 }
 
+function adminAuthLog(stage, details={}) {
+  console.warn('[ADMIN_AUTH]', JSON.stringify({stage,...details}));
+}
+
 async function saveRedeemCode(env,input,actor='admin') {
   if(!input.code || !input.reward || !input.releaseDate || !['active','scheduled','expired'].includes(input.status)) throw new Error('Code, reward, status, and release date are required.');
   if(input.expiryDate && input.releaseDate > input.expiryDate) throw new Error('Expiry date cannot be before release date.');
@@ -472,28 +481,59 @@ async function api(request,env,path) {
     const suppliedUser=String(body.username||'').trim();
     const suppliedPassword=String(body.password||'');
     if(!suppliedUser || !suppliedPassword) return json({error:'Username and password are required.'},400);
-    const database=await d1(env);
-    await ensureEditorialTables(env);
-    let account=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
-    if(suppliedUser.toLowerCase()==='owner' && suppliedPassword==='FCtools2026!' && env.ADMIN_SESSION_SECRET){
-      const recovery=await database.prepare("SELECT id FROM admin_recovery WHERE id=1 AND used_at IS NULL LIMIT 1").first();
-      if(recovery){
-        const now=new Date().toISOString();
-        const recoveryHash=await hashPassword(suppliedPassword);
-        if(account){
-          await database.prepare("UPDATE admin_accounts SET username='owner',display_name='Owner',password_hash=?,updated_at=? WHERE id=1").bind(recoveryHash,now).run();
-        } else {
-          await database.prepare("INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,'owner','Owner',?,?)").bind(recoveryHash,now).run();
-        }
-        await database.prepare("UPDATE admin_recovery SET used_at=? WHERE id=1").bind(now).run();
-        return json({ok:true,recovery:true},200,{'set-cookie':SESSION_COOKIE+'='+await session('owner',env.ADMIN_SESSION_SECRET)+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
-      }
+    if(!env.ADMIN_SESSION_SECRET) {
+      adminAuthLog('SESSION_CREATION_FAILED',{reason:'ADMIN_SESSION_SECRET_MISSING'});
+      return json({error:'Signing failed.'},503);
     }
-    if(!account) return json({error:'Admin account is not configured.'},503);
-    const valid= suppliedUser===account.username && await verifyPassword(suppliedPassword,account.password_hash);
-    if(!valid) return json({error:'Invalid username or password.'},401);
-    return json({ok:true},200,{'set-cookie':SESSION_COOKIE+'='+await session(account.username,env.ADMIN_SESSION_SECRET)+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
+    let account;
+    try { account=await getAdminAccount(env); }
+    catch { adminAuthLog('ADMIN_NOT_FOUND',{reason:'ACCOUNT_LOOKUP_FAILED'}); return json({error:'Signing failed.'},503); }
+    if(!account) { adminAuthLog('ADMIN_NOT_FOUND'); return json({error:'Signing failed.'},503); }
+    const hashFormatOk=typeof account.password_hash==='string' && account.password_hash.startsWith('$argon2id$');
+    if(!account.password_hash || !hashFormatOk) {
+      adminAuthLog('ADMIN_HASH_MISSING',{hashPresent:Boolean(account.password_hash),argon2idFormat:hashFormatOk});
+      return json({error:'Signing failed.'},503);
+    }
+    const usernameMatch=suppliedUser===account.username;
+    if(!usernameMatch) {
+      adminAuthLog('PASSWORD_VERIFICATION_FAILED',{usernameMatch:false,verified:false});
+      return json({error:'Signing failed.'},401);
+    }
+    let verified=false;
+    try { verified=await verifyPassword(suppliedPassword,account.password_hash); } catch { verified=false; }
+    if(!verified) {
+      adminAuthLog('PASSWORD_VERIFICATION_FAILED',{usernameMatch:true,verified:false});
+      return json({error:'Signing failed.'},401);
+    }
+    adminAuthLog('PASSWORD_VERIFICATION_SUCCEEDED',{usernameMatch:true,verified:true});
+    let token;
+    try { token=await session(account.username,env.ADMIN_SESSION_SECRET); }
+    catch { adminAuthLog('SESSION_CREATION_FAILED'); return json({error:'Signing failed.'},500); }
+    if(!token) { adminAuthLog('SESSION_CREATION_FAILED'); return json({error:'Signing failed.'},500); }
+    adminAuthLog('SESSION_CREATION_SUCCEEDED');
+    return json({ok:true},200,{'set-cookie':SESSION_COOKIE+'='+token+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
   }
+
+  if(path === '/bootstrap' && request.method === 'POST') {
+    const token=String(env.ADMIN_BOOTSTRAP_TOKEN||'');
+    const suppliedToken=String(request.headers.get('x-admin-bootstrap-token')||'');
+    if(!token || !suppliedToken || suppliedToken!==token) return json({error:'Not found.'},404);
+    const body=await request.json().catch(()=>({}));
+    const username=String(body.username||'').trim();
+    const password=String(body.password||'');
+    if(!username || password.length<10) return json({error:'Username and a password of at least 10 characters are required.'},400);
+    if(!/^[A-Za-z0-9._-]{3,64}$/.test(username)) return json({error:'Invalid username.'},400);
+    await ensureEditorialTables(env);
+    const database=await d1(env);
+    const hash=await hashPassword(password);
+    const now=new Date().toISOString();
+    await database.prepare('INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,?,?,?,?) ON CONFLICT(id) DO UPDATE SET username=excluded.username,display_name=excluded.display_name,password_hash=excluded.password_hash,updated_at=excluded.updated_at')
+      .bind(username,username,hash,now).run();
+    await database.prepare('UPDATE admin_recovery SET used_at=? WHERE id=1').bind(now).run();
+    adminAuthLog('ADMIN_BOOTSTRAP_SUCCEEDED',{username});
+    return json({ok:true,username});
+  }
+
   if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
