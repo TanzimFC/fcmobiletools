@@ -496,7 +496,7 @@ async function api(request,env,path) {
     catch { adminAuthLog('SESSION_CREATION_FAILED'); return json({error:'Signing failed.'},500); }
     if(!token) { adminAuthLog('SESSION_CREATION_FAILED'); return json({error:'Signing failed.'},500); }
     adminAuthLog('PASSWORD_VERIFICATION_SUCCEEDED',{usernameMatch:true,verified:true});
-    return json({ok:true},200,{'set-cookie':SESSION_COOKIE+'='+token+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
+    return json({ok:true},200,{'set-cookie':SESSION_COOKIE+'='+token+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Lax'});
   }
 
   if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
