@@ -463,12 +463,15 @@ async function api(request,env,path) {
     return json({codes:{total:codes.length,active:codes.filter(x=>x.status==='active').length,scheduled:codes.filter(x=>x.status==='scheduled').length,expired:codes.filter(x=>x.status==='expired').length},articles:{total:Number(articleCount?.n||0),review:Number(reviewCount?.n||0)},user:{displayName:creator.display_name}});
   }
   if(path === '/redeem' && (request.method === 'GET' || request.method === 'POST')) {
-    const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
+    const admin=await authenticated(request,env);
+    const creator=admin?null:await creatorRecord(request,env);
+    if(!admin && !creator) return json({error:'Authentication required.'},401);
     if(request.method==='GET') return json({codes:parseRedeem((await repoFile(env,'src/data/redeemCodes.js')).text)});
-    return json(await saveRedeemCode(env,await request.json(),'creator'));
+    return json(await saveRedeemCode(env,await request.json(),admin?'admin':'creator'));
   }
   if(path === '/media' && request.method === 'GET') {
-    const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
+    const admin=await authenticated(request,env);
+    const creator=admin?null:await creatorRecord(request,env); if(!admin && !creator) return json({error:'Authentication required.'},401);
     if(!env.CLOUDINARY_CLOUD_NAME||!env.CLOUDINARY_API_KEY||!env.CLOUDINARY_API_SECRET) throw new Error('Cloudinary is not fully configured in the Worker.');
     const auth=btoa(env.CLOUDINARY_API_KEY+':'+env.CLOUDINARY_API_SECRET), r=await fetch('https://api.cloudinary.com/v1_1/'+env.CLOUDINARY_CLOUD_NAME+'/resources/image/upload?max_results=100',{headers:{authorization:'Basic '+auth}}), body=await r.json();
     if(!r.ok) throw new Error(body?.error?.message||'Cloudinary request failed ('+r.status+').');
