@@ -56,15 +56,19 @@ function articleHTMLToMarkdown(html) {
     if(node.nodeType!==1) return '';
     const tag=node.tagName.toLowerCase();
     const inner=[...node.childNodes].map(walk).join('');
+    if(tag==='h1') return '\n\n# '+inner+'\n\n';
     if(tag==='h2') return '\n\n## '+inner+'\n\n';
     if(tag==='h3') return '\n\n### '+inner+'\n\n';
-    if(tag==='p') return '\n\n'+inner+'\n\n';
+    if(tag==='p') { const align=node.style?.textAlign; return '\n\n'+(align&&align!=='left'?'\n<div style="text-align:'+align+'">\n':'')+inner+(align&&align!=='left'?'\n</div>\n':'')+'\n\n'; }
     if(tag==='strong'||tag==='b') return '**'+inner+'**';
     if(tag==='em'||tag==='i') return '*'+inner+'*';
-    if(tag==='blockquote') return '\n\n> '+inner+'\n\n';
+    if(tag==='u') return '<u>'+inner+'</u>';
+    if(tag==='s'||tag==='strike') return '~~'+inner+'~~';
+    if(tag==='blockquote') return '\n\n> '+inner.replace(/\n+/g,'\n> ')+'\n\n';
     if(tag==='a') return '['+inner+']('+node.getAttribute('href')+')';
     if(tag==='img') return '\n\n!['+(node.getAttribute('alt')||'Article image')+']('+node.getAttribute('src')+')\n\n';
     if(tag==='li') return '- '+inner+'\n';
+    if(tag==='hr') return '\n\n---\n\n';
     if(tag==='br') return '\n';
     return inner;
   };
