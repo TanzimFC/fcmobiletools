@@ -153,22 +153,29 @@ async function articleMediaPicker(callback) {
 async function loadTipTap(editorEl, initialHTML){
   if(tiptapEditor) return tiptapEditor;
   try{
-    const [core,starter,link,image,placeholder]=await Promise.all([
+    const [core,starter,link,image,placeholder,underline,textStyle,color,highlight,textAlign,typography]=await Promise.all([
       import('https://esm.sh/@tiptap/core@2.11.5'),
       import('https://esm.sh/@tiptap/starter-kit@2.11.5'),
       import('https://esm.sh/@tiptap/extension-link@2.11.5'),
       import('https://esm.sh/@tiptap/extension-image@2.11.5'),
-      import('https://esm.sh/@tiptap/extension-placeholder@2.11.5')
+      import('https://esm.sh/@tiptap/extension-placeholder@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-underline@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-text-style@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-color@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-highlight@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-text-align@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-typography@2.11.5')
     ]);
     const {Editor}=core;
     const StarterKit=starter.default||starter;
     const Link=link.default||link;
     const Image=image.default||image;
-    const Placeholder=placeholder.default||placeholder;
+    const Placeholder=placeholder.default||placeholder; const Underline=underline.default||underline; const TextStyle=textStyle.default||textStyle; const Color=color.default||color; const Highlight=highlight.default||highlight; const TextAlign=textAlign.default||textAlign; const Typography=typography.default||typography;
     tiptapEditor=new Editor({element:editorEl,content:initialHTML||'',extensions:[
-      StarterKit.configure({heading:{levels:[2,3]},link:false}),
-      Link.configure({openOnClick:false,autolink:true}),
-      Image.configure({allowBase64:false}),
+      StarterKit.configure({heading:{levels:[1,2,3]},link:false}),
+      Link.configure({openOnClick:false,autolink:true,HTMLAttributes:{class:'article-link'}}),
+      Image.configure({allowBase64:false,HTMLAttributes:{class:'article-inline-image'}}),
+      Underline,TextStyle,Color,Highlight.configure({multicolor:true}),TextAlign.configure({types:['heading','paragraph']}),Typography,
       Placeholder.configure({placeholder:'Start writing your article here…'})
     ],onUpdate:()=>{$('#saveHint').textContent='Unsaved changes';dirty=true;}});
     return tiptapEditor;
