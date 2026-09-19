@@ -518,13 +518,15 @@ async function api(request,env,path) {
     const token=String(env.ADMIN_BOOTSTRAP_TOKEN||'');
     const suppliedToken=String(request.headers.get('x-admin-bootstrap-token')||'');
     if(!token || !suppliedToken || suppliedToken!==token) return json({error:'Not found.'},404);
+    await ensureEditorialTables(env);
+    const database=await d1(env);
+    const recovery=await database.prepare("SELECT used_at FROM admin_recovery WHERE id=1 LIMIT 1").first();
+    if(recovery?.used_at) return json({error:'Not found.'},404);
     const body=await request.json().catch(()=>({}));
     const username=String(body.username||'').trim();
     const password=String(body.password||'');
     if(!username || password.length<10) return json({error:'Username and a password of at least 10 characters are required.'},400);
     if(!/^[A-Za-z0-9._-]{3,64}$/.test(username)) return json({error:'Invalid username.'},400);
-    await ensureEditorialTables(env);
-    const database=await d1(env);
     const hash=await hashPassword(password);
     const now=new Date().toISOString();
     await database.prepare('INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,?,?,?,?) ON CONFLICT(id) DO UPDATE SET username=excluded.username,display_name=excluded.display_name,password_hash=excluded.password_hash,updated_at=excluded.updated_at')
