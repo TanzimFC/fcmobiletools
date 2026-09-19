@@ -10,7 +10,7 @@ author: "TanzimFC"
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-09-19T07:33:23.201Z"
-updatedAt: "2026-09-19T07:34:28.139Z"
+updatedAt: "2026-09-19T07:35:21.275Z"
 publishedAt: "2026-09-19T07:34:13.230Z"
 image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1789803003/fc-mobile-tools/fezkwvxksloq9kgyi8ld.png"
 imageAlt: ""
@@ -33,6 +33,8 @@ factStatus: "verified"
 lastReviewed: ""
 series: ""
 ---
+
+![Article image](https://res.cloudinary.com/b0qikv7n/image/upload/v1789803003/fc-mobile-tools/fezkwvxksloq9kgyi8ld.png)
 
 FC Mobile 27 could be taking away one of the most unusual collections of player cards from the current game.
 
