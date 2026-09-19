@@ -95,9 +95,8 @@ async function authenticated(request, env) {
     const [username,expiry]=payload.split('|');
     if(!username||!expiry||Number(expiry)<=Date.now()) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'EXPIRED_OR_INVALID_PAYLOAD'}); return false; }
     if((await sign(env.ADMIN_SESSION_SECRET,payload))!==signature) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'SIGNATURE_MISMATCH'}); return false; }
-    const database=await d1(env);
-    const account=await database.prepare('SELECT id FROM admin_accounts WHERE username=? LIMIT 1').bind(username).first();
-    if(!account?.id) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'ACCOUNT_NOT_FOUND'}); return false; }
+    const configuredUser=String(env.ADMIN_USERNAME||'').trim();
+    if(!configuredUser || username!==configuredUser) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'ADMIN_USERNAME_MISMATCH'}); return false; }
     return true;
   } catch { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'VALIDATION_EXCEPTION'}); return false; }
 }
@@ -343,15 +342,9 @@ async function createRevision(env,row,options={}) {
 function tempPassword() { const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%'; const bytes=crypto.getRandomValues(new Uint8Array(18)); return Array.from(bytes,b=>chars[b%chars.length]).join(''); }
 
 async function getAdminAccount(env) {
-  await ensureEditorialTables(env);
-  const database=await d1(env);
-  let row=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
-  if(!row && env.ADMIN_USERNAME && env.ADMIN_PASSWORD) {
-    const hash=await hashPassword(env.ADMIN_PASSWORD);
-    await database.prepare('INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,?,?,?,?)').bind(env.ADMIN_USERNAME,env.ADMIN_USERNAME,hash,new Date().toISOString()).run();
-    row=await database.prepare('SELECT id,username,display_name,password_hash,updated_at FROM admin_accounts WHERE id=1 LIMIT 1').first();
-  }
-  return row;
+  const username=String(env.ADMIN_USERNAME||'').trim();
+  if(!username || !env.ADMIN_PASSWORD) return null;
+  return { id:1, username, display_name:String(env.ADMIN_DISPLAY_NAME||username), password_hash:'', updated_at:new Date().toISOString() };
 }
 
 function adminAuthLog(stage, details={}) {
@@ -480,60 +473,25 @@ async function api(request,env,path) {
     const body=await request.json().catch(()=>({}));
     const suppliedUser=String(body.username||'').trim();
     const suppliedPassword=String(body.password||'');
+    const configuredUser=String(env.ADMIN_USERNAME||'').trim();
+    const configuredPassword=String(env.ADMIN_PASSWORD||'');
     if(!suppliedUser || !suppliedPassword) return json({error:'Username and password are required.'},400);
-    if(!env.ADMIN_SESSION_SECRET) {
-      adminAuthLog('SESSION_CREATION_FAILED',{reason:'ADMIN_SESSION_SECRET_MISSING'});
-      return json({error:'Signing failed.'},503);
+    if(!env.ADMIN_SESSION_SECRET || !configuredUser || !configuredPassword) {
+      adminAuthLog('LOGIN_CONFIGURATION_FAILED',{sessionSecret:Boolean(env.ADMIN_SESSION_SECRET),username:Boolean(configuredUser),password:Boolean(configuredPassword)});
+      return json({error:'Admin login is not configured.'},503);
     }
-    let account;
-    try { account=await getAdminAccount(env); }
-    catch { adminAuthLog('ADMIN_NOT_FOUND',{reason:'ACCOUNT_LOOKUP_FAILED'}); return json({error:'Signing failed.'},503); }
-    if(!account) { adminAuthLog('ADMIN_NOT_FOUND'); return json({error:'Signing failed.'},503); }
-    const hashFormatOk=typeof account.password_hash==='string' && account.password_hash.startsWith('$argon2id$');
-    if(!account.password_hash || !hashFormatOk) {
-      adminAuthLog('ADMIN_HASH_MISSING',{hashPresent:Boolean(account.password_hash),argon2idFormat:hashFormatOk});
-      return json({error:'Signing failed.'},503);
+    const usernameMatch=suppliedUser===configuredUser;
+    const passwordMatch=suppliedPassword===configuredPassword;
+    if(!usernameMatch || !passwordMatch) {
+      adminAuthLog('PASSWORD_VERIFICATION_FAILED',{usernameMatch,verified:passwordMatch});
+      return json({error:'Invalid username or password.'},401);
     }
-    const usernameMatch=suppliedUser===account.username;
-    if(!usernameMatch) {
-      adminAuthLog('PASSWORD_VERIFICATION_FAILED',{usernameMatch:false,verified:false});
-      return json({error:'Signing failed.'},401);
-    }
-    let verified=false;
-    try { verified=await verifyPassword(suppliedPassword,account.password_hash); } catch { verified=false; }
-    if(!verified) {
-      adminAuthLog('PASSWORD_VERIFICATION_FAILED',{usernameMatch:true,verified:false});
-      return json({error:'Signing failed.'},401);
-    }
-    adminAuthLog('PASSWORD_VERIFICATION_SUCCEEDED',{usernameMatch:true,verified:true});
     let token;
-    try { token=await session(account.username,env.ADMIN_SESSION_SECRET); }
+    try { token=await session(configuredUser,env.ADMIN_SESSION_SECRET); }
     catch { adminAuthLog('SESSION_CREATION_FAILED'); return json({error:'Signing failed.'},500); }
     if(!token) { adminAuthLog('SESSION_CREATION_FAILED'); return json({error:'Signing failed.'},500); }
-    adminAuthLog('SESSION_CREATION_SUCCEEDED');
+    adminAuthLog('PASSWORD_VERIFICATION_SUCCEEDED',{usernameMatch:true,verified:true});
     return json({ok:true},200,{'set-cookie':SESSION_COOKIE+'='+token+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict'});
-  }
-
-  if(path === '/bootstrap' && request.method === 'POST') {
-    const token=String(env.ADMIN_BOOTSTRAP_TOKEN||'');
-    const suppliedToken=String(request.headers.get('x-admin-bootstrap-token')||'');
-    if(!token || !suppliedToken || suppliedToken!==token) return json({error:'Not found.'},404);
-    await ensureEditorialTables(env);
-    const database=await d1(env);
-    const recovery=await database.prepare("SELECT used_at FROM admin_recovery WHERE id=1 LIMIT 1").first();
-    if(recovery?.used_at) return json({error:'Not found.'},404);
-    const body=await request.json().catch(()=>({}));
-    const username=String(body.username||'').trim();
-    const password=String(body.password||'');
-    if(!username || password.length<10) return json({error:'Username and a password of at least 10 characters are required.'},400);
-    if(!/^[A-Za-z0-9._-]{3,64}$/.test(username)) return json({error:'Invalid username.'},400);
-    const hash=await hashPassword(password);
-    const now=new Date().toISOString();
-    await database.prepare('INSERT INTO admin_accounts (id,username,display_name,password_hash,updated_at) VALUES (1,?,?,?,?) ON CONFLICT(id) DO UPDATE SET username=excluded.username,display_name=excluded.display_name,password_hash=excluded.password_hash,updated_at=excluded.updated_at')
-      .bind(username,username,hash,now).run();
-    await database.prepare('UPDATE admin_recovery SET used_at=? WHERE id=1').bind(now).run();
-    adminAuthLog('ADMIN_BOOTSTRAP_SUCCEEDED',{username});
-    return json({ok:true,username});
   }
 
   if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
@@ -544,17 +502,10 @@ async function api(request,env,path) {
       return json({username:account?.username||env.ADMIN_USERNAME,displayName:account?.display_name||account?.username||env.ADMIN_USERNAME,role:'admin',updatedAt:account?.updated_at||null});
     }
     if(path === '/account' && (request.method === 'GET' || request.method === 'PUT')) {
-      const account=await getAdminAccount(env); if(!account) return json({error:'Admin account is not configured.'},503);
-      const database=await d1(env);
-      if(request.method==='GET') return json({account:{username:account.username,displayName:account.display_name,updatedAt:account.updated_at}});
-      const input=await request.json(); const updates=[]; const values=[];
-      if(input.displayName!==undefined){updates.push('display_name=?');values.push(String(input.displayName).trim());}
-      if(input.currentPassword||input.newPassword){
-        if(!input.currentPassword||!input.newPassword) return json({error:'Current and new passwords are required together.'},400);
-        if(!(await verifyPassword(String(input.currentPassword),account.password_hash))) return json({error:'Current password is incorrect.'},400);
-        updates.push('password_hash=?');values.push(await hashPassword(String(input.newPassword)));
-      }
-      if(updates.length){updates.push('updated_at=?');values.push(new Date().toISOString());await database.prepare('UPDATE admin_accounts SET '+updates.join(', ')+' WHERE id=1').bind(...values).run();}
+      const account=await getAdminAccount(env); if(!account) return json({error:'Admin login is not configured.'},503);
+      if(request.method==='GET') return json({account:{username:account.username,displayName:account.display_name,updatedAt:account.updated_at,passwordManagedBy:'Worker secret'}});
+      const input=await request.json().catch(()=>({}));
+      if(input.currentPassword||input.newPassword) return json({error:'Password is managed by the ADMIN_PASSWORD Worker secret.'},400);
       return json({ok:true});
     }
     if(path === '/creators/bootstrap-self' && request.method === 'POST') {
