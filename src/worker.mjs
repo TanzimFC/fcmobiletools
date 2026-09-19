@@ -342,9 +342,14 @@ function tempPassword() { const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqr
 async function getAdminAccount(env) {
   const username=String(env.ADMIN_USERNAME||'').trim();
   if(!username || !env.ADMIN_PASSWORD) return null;
-  return { id:1, username, display_name:String(env.ADMIN_DISPLAY_NAME||username), password_hash:'', updated_at:new Date().toISOString() };
+  return {
+    id:1,
+    username,
+    display_name:String(env.ADMIN_DISPLAY_NAME||username),
+    updated_at:null,
+    passwordManagedBy:'Worker secret'
+  };
 }
-
 function adminAuthLog(stage, details={}) {
   console.warn('[ADMIN_AUTH]', JSON.stringify({stage,...details}));
 }
