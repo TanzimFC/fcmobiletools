@@ -183,16 +183,16 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "title": "FC Mobile Anniversary Event",
     "subtitle": "The Anniversary Event starts with the September 24 season update",
     "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1789672979/fc-mobile-tools/wio7rwhdmnyawoa4j4zq.jpg",
-    "startUtc": "2026-09-24T01:00:00.000Z",
+    "startUtc": "2026-09-24T02:00:00.000Z",
     "endUtc": "",
     "accent": "ANNIVERSARY EVENT"
   },
   "divisionRivalsReset": {
     "enabled": true,
     "title": "Division Rivals Reset",
-    "anchorUtc": "2026-09-24T01:00:00.000Z",
+    "anchorUtc": "2026-09-24T02:00:00.000Z",
     "cycleDays": 28,
     "label": "28-day Division Rivals season reset",
-    "note": "The next reset is anchored to Thursday, September 24 at 01:00 UTC and repeats every 28 days. The schedule is configurable from the admin panel."
+    "note": "The next reset is anchored to Thursday, September 24 at 02:00 UTC and repeats every 28 days. The schedule is configurable from the admin panel."
   }
 };
