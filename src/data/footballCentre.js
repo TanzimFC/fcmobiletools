@@ -178,6 +178,11 @@ export const FOOTBALL_CENTRE_CONTENT = {
   "title": "Football Centre progress",
   "matchesPerWeek": 2,
   "description": "Eight Showdowns across four weeks. Earn 80 points for each played match, +20 for World Class and +400 for a correct team prediction.",
+  "schedule": {
+    "dailyResetUtc": "01:00",
+    "maintenanceOffsetMinutes": 270,
+    "maintenanceLabel": "Scheduled maintenance before the Anniversary / Season 27 update."
+  },
   "eventCountdown": {
     "enabled": true,
     "title": "FC Mobile Anniversary Event",
