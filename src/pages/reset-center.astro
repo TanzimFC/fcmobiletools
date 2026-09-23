@@ -122,7 +122,17 @@ const update=()=>{
  $('eventUtc').textContent=Number.isFinite(start)?utcFmt.format(new Date(start)):'—';$('eventLocal').textContent=Number.isFinite(start)?localFmt.format(new Date(start)):'—';$('eventTimelineUtc').textContent=Number.isFinite(start)?utcFmt.format(new Date(start)):'EVENT DATE';
  $('dailyMark').textContent='NEXT';$('eventMark').textContent=lastEventState==='live'?'LIVE':'EVENT';
 };
-const boot=()=>{try{update()}catch(error){console.error('Reset Center clock error',error)}};boot();const timer=setInterval(boot,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)update()});window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
+let timer=null;
+const startClocks=()=>{
+  if(timer)clearInterval(timer);
+  const boot=()=>{try{update()}catch(error){console.error('Reset Center clock error',error)}};
+  boot();
+  timer=setInterval(boot,1000);
+};
+startClocks();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)startClocks()});
+document.addEventListener('astro:page-load',startClocks);
+window.addEventListener('pagehide',()=>{if(timer)clearInterval(timer)},{once:true});
 </script>
 
 <style>
