@@ -33,6 +33,10 @@ sources:
   - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fcm27-game-plans-deep-dive"
   - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/limitedbeta-august2026"
   - "https://forums.ea.com/category/fc-mobile-en/blog/ea-sports-fc-mobile-game-info-hub-en"
+  - "https://www.sotwe.com/hashtag/FCMobile27"
+  - "https://xn--ngbj1b7a.twstalker.com/PhanMinhHauFFM"
+  - "https://telemetr.io/en/channels/1768389081-fc_mob_updates"
+  - "https://www.youtube.com/watch?v=clRRZSrcIBI"
 factStatus: "verified"
 lastReviewed: "2026-09-23"
 series: "FC Mobile 27"
@@ -298,6 +302,85 @@ Here is the confirmed FC Mobile 27 timeline:
 
 The beta and live Season 27 dates are separate. The beta was a testing environment and ended before the live Season 27 update.
 
+
+## The FC Mobile 27 leaks and community reports
+
+Official announcements are only part of the FC Mobile conversation. Before EA publishes a feature, player list or event screen, the FC Mobile community often finds information through game files, beta builds, database changes, screenshots and social posts.
+
+For this article, those reports are included because they can reveal what is likely to appear at launch. They are **not labelled as EA-confirmed unless EA has separately confirmed the information**.
+
+Also, one important correction to the common claim that FC Mobile leaks are "always true": leaks can be remarkably accurate when they come from game data or a near-final build, but they can still contain placeholders, wrong dates, incomplete rewards or content that EA changes before release. TanzimFC will therefore keep a separate **confirmed** and **reported leak** status.
+
+### Anniversary player leaks
+
+Community leak trackers have circulated lists of players expected to appear across the first weeks of the third-anniversary event.
+
+Reports have included names such as:
+
+- Patrick Vieira
+- Rudi Völler
+- David Beckham
+- Jairzinho
+- Emmanuel Petit
+- Mario Balotelli
+- Miguel Layún
+- Daniel Sturridge
+
+One FC Mobile community tracker has also published reports for Week 1 and Week 2 anniversary players and Icon/Hero lists, including claimed OVR values. These are community reports, not EA's final official player database. citeturn1search1
+
+Another community report has circulated Week 2 claims including Bellingham, Neuer, Riise, Cristiano Ronaldo, Pepe and Tonali. Those names should be treated as leaked information until the corresponding cards are actually released or EA confirms them. citeturn1youtube18
+
+### A leaked three-PlayStyle slot
+
+One of the more interesting recent reports claims that FC Mobile may eventually allow a third PlayStyle slot on some Player Items.
+
+The claim was shared by Phan Minh Hậu FFM, referencing leaked images attributed to MadridistaaFC. The same post explicitly says the third slot is **not confirmed by EA**. citeturn1search2
+
+This is exactly the kind of information that belongs in a leak section rather than the confirmed feature list.
+
+If the third slot appears in the live game, it could become one of the more significant squad-building changes around FC Mobile 27. Until then, it remains a report.
+
+### Yashin and database changes
+
+Another recent community report concerns Lev Yashin.
+
+Posts circulating on X claim that Yashin was removed from the FC 27 database and question whether that could affect his availability in FC Mobile. This is a database-related report rather than an EA announcement, so it should not be presented as a confirmed FC Mobile removal. citeturn1search4turn1search7
+
+This is also a good example of why a leak needs context. A player disappearing from one database does not automatically establish exactly what will happen to an existing FC Mobile Player Item.
+
+### Claims about anniversary OVR
+
+WolvieHD has posted on X that the Anniversary event would not increase the OVR ceiling. That is a community claim and should remain separate from EA's confirmed announcement until the live event proves it. citeturn1search5
+
+### Why we are including leaks
+
+FC Mobile players often make decisions before EA publishes the full event details. A useful Season 27 article therefore needs to show both sides:
+
+**Confirmed:** information published by EA or demonstrated in official EA material.
+
+**Beta-tested:** information shown in EA's Limited Beta.
+
+**Reported leak:** information found or reported by FC Mobile community accounts, database trackers or leaked images.
+
+**Prediction:** someone's interpretation of what might happen.
+
+Those categories are not interchangeable.
+
+A leaked player card can turn out to be correct. A leaked event structure can also change before launch. Keeping the labels visible makes the article more useful instead of simply putting every screenshot or social post into the same "confirmed" bucket.
+
+## FC Mobile 27 leak watchlist
+
+| Report | Current status | What to watch |
+|---|---|---|
+| Anniversary Week 1 player lists | Reported leak | Final live cards and OVRs |
+| Anniversary Week 2 player lists | Reported leak | Final player pool and card versions |
+| Third PlayStyle slot | Unconfirmed leak | Whether a third slot appears on live Player Items |
+| Yashin database removal | Reported database change | Whether FC Mobile availability is affected |
+| Anniversary OVR ceiling claims | Community report | Actual live OVR progression |
+| Future Anniversary rewards | Leak reports | Final reward paths and requirements |
+
+We will update this section when a leak becomes confirmed, disproven or materially changes.
+
 ## What FC Mobile 27 does not confirm yet
 
 There are still several areas where players should be careful with leaks, screenshots and social media claims.
@@ -417,7 +500,7 @@ FC Mobile 27 is a continuation of the existing FC Mobile experience rather than 
 
 The most clearly documented changes are the new **Game Plans system**, the expansion to **five mentalities**, **Gauntlet Mode**, **four new PlayStyles**, the arrival of the **Bernabéu as the first authentic stadium**, updated squads and kits, and the large third-anniversary celebration.
 
-The most important thing to remember is the date: **September 24, 2026**.
+The most important thing to remember is the date: **September 24, 2026**. Until then, the best way to read FC Mobile 27 information is to separate EA-confirmed details, beta-tested features and credible community leaks instead of treating every screenshot or social post as the same level of evidence.
 
 That is when the Season 27 update and third-anniversary content are scheduled to move from pre-launch information and beta testing into the live game.
 
