@@ -115,7 +115,7 @@ const refreshConfig=async()=>{
 };
 const secondaryStart=Date.parse('2026-10-08T00:00:00.000Z');
 const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
-const eventRuntime=Object.assign({},event); const rivalsRuntime=Object.assign({},rivals); window.__fcEvent=eventRuntime; window.__fcRivals=rivalsRuntime; window.__fcSecondary=Object.assign({},secondary);
+const eventRuntime={startUtc:startUtc,endUtc:endUtc,enabled:eventEnabled}; const rivalsRuntime={anchorUtc:anchorUtc,cycleDays:cycleDays,enabled:rivalsEnabled}; window.__fcEvent=eventRuntime; window.__fcRivals=rivalsRuntime;
 const eventStartMs=Date.parse(eventRuntime.startUtc),maintenanceEnd=Number.isFinite(eventStartMs)?eventStartMs:Date.parse('2026-09-24T02:00:00Z'),maintenanceStart=maintenanceEnd-(4.5*60*60*1000);
 const localFmt=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
 const utcFmt=new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZone:'UTC',timeZoneName:'short'});
