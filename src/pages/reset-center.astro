@@ -21,14 +21,14 @@ const pageSchema = {
 
   <header class="topbar">
     <div class="brand"><span class="pulse"></span><span>FCMOBILETOOLS</span><b>EVENTS & RESET</b></div>
-    <div class="live-clock"><span>BDT</span><strong id="bdClock">--:--:--</strong><i></i><span>UTC</span><strong id="utcClock">--:--:--</strong><em id="zoneLabel">LOCAL</em></div>
+    <div class="live-clock"><span>LOCAL</span><strong id="localClock">--:--:--</strong><i></i><span>UTC</span><strong id="utcClock">--:--:--</strong><em id="zoneLabel">LOCAL</em></div>
   </header>
 
   <section class="hero">
     <div class="hero-copy">
       <div class="eyebrow"><span>FC MOBILE 27</span><b>LIVE TIMING CENTER</b></div>
       <h1>Events <em>&amp;</em> Reset</h1>
-      <p>The FC Mobile timing board. Maintenance, events and resets stay live automatically — with Bangladesh time and UTC always visible.</p>
+      <p>The FC Mobile timing board. Maintenance, events and resets stay live automatically — with your browser local time as the primary clock and UTC as the universal reference.</p>
       <div class="hero-actions"><a href="#next">See what's next <span>↓</span></a><button id="notifyBtn">◉ Notify me at reset</button></div>
     </div>
     <div class="hero-dial" aria-hidden="true"><div class="dial-ring r1"></div><div class="dial-ring r2"></div><div class="dial-ring r3"></div><div class="dial-core"><small>SEASON</small><strong>27</strong><span>LIVE</span></div></div>
@@ -36,8 +36,8 @@ const pageSchema = {
 
   <section class="maintenance" id="maintenanceCard">
     <div class="maint-status"><span class="warning">!</span><div><small>SEASON UPDATE</small><strong id="maintState">MAINTENANCE WINDOW</strong></div></div>
-    <div class="maint-main"><h2>21:30 <span>UTC</span> <i>→</i> 02:00 <span>UTC</span></h2><p>Scheduled maintenance before the Anniversary / Season 27 update.</p></div>
-    <div class="maint-local"><small>BDT · DHAKA</small><strong id="maintenanceBd">—</strong><span id="maintCountdown">—</span></div>
+    <div class="maint-main"><h2 id="maintenanceUtcRange">—</h2><p id="maintenanceDescription">Scheduled maintenance before the Anniversary / Season 27 update.</p></div>
+    <div class="maint-local"><small>YOUR LOCAL TIME</small><strong id="maintenanceLocal">—</strong><span id="maintCountdown">—</span></div>
   </section>
 
   <section class="section-head" id="next"><div><small>01 · MAIN EVENT</small><h2>What's happening next</h2></div><span id="syncLabel">● LIVE · SYNCING</span></section>
@@ -79,29 +79,33 @@ const pageSchema = {
   </section>
 
   <footer class="trust"><div><small>TIMEZONE SAFE</small><h2>One schedule.<br><em>Every timezone.</em></h2></div><p>All scheduled moments are based on UTC. Your browser converts them automatically, so the countdown remains consistent wherever you are.</p><span id="footerSync">LIVE</span></footer>
-</main><script define:vars={{ startUtc:event.startUtc, endUtc:event.endUtc, eventEnabled:event.enabled, anchorUtc:rivals.anchorUtc, cycleDays:rivals.cycleDays, rivalsEnabled:rivals.enabled, secondaryStartUtc:secondary.startUtc }}>
+</main><script define:vars={{ startUtc:event.startUtc, endUtc:event.endUtc, eventEnabled:event.enabled, anchorUtc:rivals.anchorUtc, cycleDays:rivals.cycleDays, rivalsEnabled:rivals.enabled, secondaryStartUtc:secondary.startUtc, dailyResetUtc:FOOTBALL_CENTRE_CONTENT.schedule?.dailyResetUtc || "01:00", maintenanceOffsetMinutes:FOOTBALL_CENTRE_CONTENT.schedule?.maintenanceOffsetMinutes || 270, maintenanceLabel:FOOTBALL_CENTRE_CONTENT.schedule?.maintenanceLabel || "Scheduled maintenance before the Anniversary / Season 27 update." }}>
 (() => {
 const $=id=>document.getElementById(id),DAY=86400000,pad=n=>String(Math.max(0,Number(n)||0)).padStart(2,'0');
 const safeDate=v=>{const n=Date.parse(v||'');return Number.isFinite(n)?n:NaN};
 const fmt=zone=>new Intl.DateTimeFormat('en-GB',{timeZone:zone,weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZoneName:'short'});
 const short=zone=>new Intl.DateTimeFormat('en-GB',{timeZone:zone,day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
 const localZone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
-const localFull=fmt(localZone),localShort=short(localZone),bdFull=fmt('Asia/Dhaka'),bdShort=short('Asia/Dhaka'),utcFull=fmt('UTC');
+const localFull=fmt(localZone),localShort=short(localZone),utcFull=fmt('UTC');
 const set=(id,v)=>{const x=$(id);if(x)x.textContent=v};
 const eventFallback='2026-09-24T02:00:00.000Z';
+const dailyResetParts=String(dailyResetUtc||'01:00').split(':').map(Number);
+const dailyResetHour=Number.isFinite(dailyResetParts[0])?Math.max(0,Math.min(23,dailyResetParts[0])):1;
+const dailyResetMinute=Number.isFinite(dailyResetParts[1])?Math.max(0,Math.min(59,dailyResetParts[1])):0;
+const maintenanceOffset=Math.max(0,Number(maintenanceOffsetMinutes)||270);
 let eventCfg={startUtc:safeDate(startUtc)?startUtc:eventFallback,endUtc:endUtc||'',enabled:eventEnabled!==false};
 let rivalsCfg={anchorUtc:safeDate(anchorUtc)?anchorUtc:eventFallback,cycleDays:Number(cycleDays)||28,enabled:rivalsEnabled!==false};
 let secondaryCfg={startUtc:safeDate(secondaryStartUtc)?secondaryStartUtc:'2026-09-24T00:00:00.000Z'};
 set('zoneLabel',localZone);
 const duration=ms=>{let s=Math.max(0,Math.floor(ms/1000));return{d:Math.floor(s/86400),h:Math.floor(s%86400/3600),m:Math.floor(s%3600/60),s:s%60}};
 const write=(p,ms,days=true)=>{const t=duration(ms);if(days)set(p+'d',pad(t.d));set(p+'h',pad(t.h));set(p+'m',pad(t.m));set(p+'s',pad(t.s))};
-const dailyNext=now=>{const d=new Date(now),b=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),1);return now<b?b:b+DAY};
+const dailyNext=now=>{const d=new Date(now),b=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),dailyResetHour,dailyResetMinute);return now<b?b:b+DAY};
 const rivalsNext=now=>{const a=safeDate(rivalsCfg.anchorUtc),cy=Math.max(1,Number(rivalsCfg.cycleDays)||28)*DAY;if(!Number.isFinite(a))return NaN;if(now<a)return a;return a+(Math.floor((now-a)/cy)+1)*cy};
 const sync=async()=>{try{const r=await fetch('/api/football?live='+Date.now(),{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw Error();const c=(await r.json())?.content;if(c?.eventCountdown?.startUtc)eventCfg={...eventCfg,...c.eventCountdown};if(c?.divisionRivalsReset?.anchorUtc)rivalsCfg={...rivalsCfg,...c.divisionRivalsReset};if(c?.secondaryEvent?.startUtc)secondaryCfg={...secondaryCfg,...c.secondaryEvent};set('syncLabel','● LIVE · SYNCED');set('footerSync','LIVE · SYNCED')}catch{set('syncLabel','● LIVE · AUTO CLOCK');set('footerSync','CLOCK RUNNING')}};
 const render=()=>{
- const now=Date.now(),start=safeDate(eventCfg.startUtc),end=safeDate(eventCfg.endUtc),maintStart=Number.isFinite(start)?start-270*60000:NaN;
- set('localClock',localFull.format(new Date(now)));set('bdClock',bdFull.format(new Date(now)));set('utcClock',utcFull.format(new Date(now)));
- if(Number.isFinite(maintStart)&&Number.isFinite(start)){set('maintenanceBd',bdShort.format(new Date(maintStart))+' → '+bdShort.format(new Date(start)));set('maintCountdown',now<maintStart?'Maintenance starts '+bdShort.format(new Date(maintStart)):now<start?duration(start-now).h+'h '+pad(duration(start-now).m)+'m until update':'Update window reached');set('maintState',now<maintStart?'MAINTENANCE WINDOW':now<start?'MAINTENANCE SOON':'UPDATE WINDOW COMPLETE')}
+ const now=Date.now(),start=safeDate(eventCfg.startUtc),end=safeDate(eventCfg.endUtc),maintStart=Number.isFinite(start)?start-maintenanceOffset*60000:NaN;
+ set('localClock',localFull.format(new Date(now)));set('utcClock',utcFull.format(new Date(now)));set('zoneLabel',localZone);
+ if(Number.isFinite(maintStart)&&Number.isFinite(start)){set('maintenanceLocal',localShort.format(new Date(maintStart))+' → '+localShort.format(new Date(start)));set('maintenanceUtcRange',utcFull.format(new Date(maintStart))+' → '+utcFull.format(new Date(start)));set('maintenanceDescription',maintenanceLabel);set('maintCountdown',now<maintStart?'Maintenance starts '+localShort.format(new Date(maintStart)):now<start?duration(start-now).h+'h '+pad(duration(start-now).m)+'m until update':'Update window reached');set('maintState',now<maintStart?'MAINTENANCE WINDOW':now<start?'MAINTENANCE SOON':'UPDATE WINDOW COMPLETE')}
  const dn=dailyNext(now),ds=dn-DAY,dp=((now-ds)/DAY)*100;write('d',dn-now);set('dailyBar',null);const db=$('dailyBar');if(db)db.style.width=Math.min(100,Math.max(0,dp))+'%';set('dailyPct',Math.floor(dp)+'%');set('dailyLocal',localFull.format(new Date(dn)));set('dailyUtc',utcFull.format(new Date(dn)));set('momentDaily',localShort.format(new Date(dn)));
  const rn=rivalsCfg.enabled!==false?rivalsNext(now):NaN,cy=(Number(rivalsCfg.cycleDays)||28)*DAY;if(Number.isFinite(rn)){const rs=rn-cy,rp=((now-rs)/cy)*100;write('r',rn-now,false);const rb=$('rivalsBar');if(rb)rb.style.width=Math.min(100,Math.max(0,rp))+'%';set('rivalsPct',Math.floor(rp)+'%');set('rivalsLocal',localFull.format(new Date(rn)));set('rivalsUtc',utcFull.format(new Date(rn)));set('momentRivals',localShort.format(new Date(rn)))}
  if(eventCfg.enabled!==false&&Number.isFinite(start)){const before=now<start,live=!before&&(!Number.isFinite(end)||now<end);write('e',Math.max(0,start-now));set('eventLocal',localFull.format(new Date(start)));set('eventUtc',utcFull.format(new Date(start)));set('momentEvent',before?localShort.format(new Date(start)):(live?'LIVE NOW':'ENDED'));set('eventStatus',(before?'● STARTING SOON':live?'● LIVE NOW':'● ENDED'));set('eventBadge',before?'UP NEXT':live?'LIVE':'ENDED');set('eventArtState',before?'STARTING SOON':live?'LIVE NOW':'ENDED');set('eventNote',before?(now>=maintStart&&now<start?'Maintenance is active before the event start.':'Countdown is running automatically — no refresh needed.'):(live?'The event is live now.':'This event has ended.'));const dot=$('stateDot');if(dot)dot.className=live?'live':''}
