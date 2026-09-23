@@ -312,7 +312,7 @@ There is one more major piece of information for launch night that is easy to mi
 
 EA SPORTS FC MOBILE has announced that **maintenance for the FC Mobile 27 update starts at 21:30 UTC on September 23**, with an estimated duration of about **4.5 hours**. EA also announced a **full FC Mobile LIVE preview during the maintenance window**.
 
-That livestream is expected to be the final major pre-launch information drop before players enter the new season. EA's official account specifically promoted the stream alongside the maintenance announcement.
+That livestream is expected to be the final major pre-launch information drop before players enter the new season. EA's official FC Mobile account promoted the stream alongside the maintenance announcement. The official post says maintenance begins at **21:30 UTC on Wednesday, September 23**, with an estimated duration of **4.5 hours**, and directs players to the FC Mobile LIVE preview. citeturn0search3
 
 The preview is important because several things have not yet received their full live presentation, including:
 
@@ -327,7 +327,7 @@ The preview is important because several things have not yet received their full
 
 **FC Mobile LIVE:** https://youtube.com/live/_2H8_mAirBM
 
-The livestream should therefore be treated as part of the Season 27 launch information, not simply as community coverage.
+The livestream should therefore be treated as part of the Season 27 launch information, not simply as community coverage. The official announcement is also being discussed by the wider FC Mobile community, which is tracking the same 21:30 UTC maintenance window and stream link. citeturn0reddit24
 
 ## The launch-night timeline
 
@@ -341,13 +341,13 @@ Based on EA's current announcement and the official FC Mobile social post:
 
 **September 24:** Season 27 and the third-anniversary event go live.
 
-The exact moment the game becomes playable can still move if maintenance takes longer than estimated. The 21:30 UTC maintenance start and September 24 season launch are the useful fixed points currently announced.
+The exact moment the game becomes playable can still move if maintenance takes longer than estimated. EA has given an estimate, not a guaranteed end time. citeturn0search3 The 21:30 UTC maintenance start and September 24 season launch are the useful fixed points currently announced.
 
 ## What EA has already teased for the anniversary
 
 EA's official social channels have continued to tease the anniversary before launch.
 
-One recent post highlighted **Liga BBVA MX** and asked players to guess which Mexican-league players could receive an Anniversary boost. This is significant because Liga BBVA MX was officially announced as coming to FC Mobile earlier in 2026, and EA is now directly connecting the league to anniversary promotion.
+One recent official post highlighted **Liga BBVA MX** and asked players to guess which Mexican-league players could receive an Anniversary boost. That is an official anniversary tease, not a leak. citeturn0search3 This is significant because Liga BBVA MX was officially announced as coming to FC Mobile earlier in 2026, and EA is now directly connecting the league to anniversary promotion.
 
 That means the anniversary player pool is not limited to the names people have already seen in community leaks. EA is still teasing additional players and regions immediately before launch.
 
