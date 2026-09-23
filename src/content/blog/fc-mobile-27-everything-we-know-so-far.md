@@ -3,7 +3,7 @@ id: fc-mobile-27-everything-we-know-so-far
 slug: "fc-mobile-27-everything-we-know-so-far"
 title: "FC Mobile 27: Everything We Know So Far"
 subtitle: "Every confirmed FC Mobile 27 feature, change and anniversary detail ahead of the September 24 update"
-description: "A detailed FC Mobile 27 guide covering the September 24 season update, no season reset, Game Plans, five mentalities, Gauntlet Mode, new PlayStyles, the Bernabéu, anniversary content, player voting, soundtrack changes and what remains unconfirmed."
+description: "A deep FC Mobile 27 tracker covering every confirmed Season 27 feature, the launch livestream, anniversary plans, Game Plans, Gauntlet, PlayStyles, Bernabéu, event reports, player leaks, database changes and community findings."
 type: "news"
 category: "Updates"
 author: "TanzimFC"
@@ -16,7 +16,7 @@ image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1789672979/fc-mobile-t
 imageAlt: "FC Mobile 27 third anniversary and season update"
 imageCaption: "FC Mobile 27 arrives with the third anniversary celebration on September 24"
 thumbnail: ""
-excerpt: "FC Mobile 27 arrives on September 24. Here is everything EA has confirmed so far, including the no-reset season structure, Game Plans, five mentalities, Gauntlet Mode, four new PlayStyles, the Bernabéu, updated squads, anniversary content and the details that are still unknown."
+excerpt: "Everything known about FC Mobile 27 so far, including official announcements, the September 23 FC Mobile LIVE preview, Game Plans, Gauntlet, new PlayStyles, Bernabéu, anniversary content, event reports, player leaks and database findings."
 tags: ["FC Mobile 27", "Season 27", "FC Mobile Update", "Game Plans", "Gauntlet Mode", "PlayStyles", "Third Anniversary"]
 relatedPlayers: []
 relatedEvents: []
@@ -24,7 +24,7 @@ relatedArticles: []
 relatedTools: []
 relatedCodes: []
 featured: true
-readingTime: 12
+readingTime: 20
 seoTitle: "FC Mobile 27: Everything We Know So Far"
 seoDescription: "Everything confirmed for FC Mobile 27 as of September 23, 2026, including Game Plans, Gauntlet Mode, new PlayStyles, no season reset, the Bernabéu and third anniversary content."
 canonicalUrl: ""
@@ -37,6 +37,8 @@ sources:
   - "https://xn--ngbj1b7a.twstalker.com/PhanMinhHauFFM"
   - "https://telemetr.io/en/channels/1768389081-fc_mob_updates"
   - "https://www.youtube.com/watch?v=clRRZSrcIBI"
+  - "https://youtube.com/live/_2H8_mAirBM"
+  - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news"
 factStatus: "verified"
 lastReviewed: "2026-09-23"
 series: "FC Mobile 27"
@@ -301,6 +303,295 @@ Here is the confirmed FC Mobile 27 timeline:
 | October 12 | Selected FC 27 soundtrack tracks scheduled to arrive |
 
 The beta and live Season 27 dates are separate. The beta was a testing environment and ended before the live Season 27 update.
+
+
+
+## The FC Mobile LIVE preview is coming during maintenance
+
+There is one more major piece of information for launch night that is easy to miss.
+
+EA SPORTS FC MOBILE has announced that **maintenance for the FC Mobile 27 update starts at 21:30 UTC on September 23**, with an estimated duration of about **4.5 hours**. EA also announced a **full FC Mobile LIVE preview during the maintenance window**.
+
+That livestream is expected to be the final major pre-launch information drop before players enter the new season. EA's official account specifically promoted the stream alongside the maintenance announcement.
+
+The preview is important because several things have not yet received their full live presentation, including:
+
+- The complete Season 27 launch flow
+- Anniversary content
+- New Player Items
+- Game Plans in the live build
+- Gauntlet
+- The four new PlayStyles
+- Other launch-night details EA has not fully documented in text
+- Any last-minute changes between the Limited Beta and the live build
+
+**FC Mobile LIVE:** https://youtube.com/live/_2H8_mAirBM
+
+The livestream should therefore be treated as part of the Season 27 launch information, not simply as community coverage.
+
+## The launch-night timeline
+
+Based on EA's current announcement and the official FC Mobile social post:
+
+**September 23, 21:30 UTC:** maintenance begins.
+
+**During maintenance:** FC Mobile LIVE full preview.
+
+**Estimated maintenance:** around 4.5 hours.
+
+**September 24:** Season 27 and the third-anniversary event go live.
+
+The exact moment the game becomes playable can still move if maintenance takes longer than estimated. The 21:30 UTC maintenance start and September 24 season launch are the useful fixed points currently announced.
+
+## What EA has already teased for the anniversary
+
+EA's official social channels have continued to tease the anniversary before launch.
+
+One recent post highlighted **Liga BBVA MX** and asked players to guess which Mexican-league players could receive an Anniversary boost. This is significant because Liga BBVA MX was officially announced as coming to FC Mobile earlier in 2026, and EA is now directly connecting the league to anniversary promotion.
+
+That means the anniversary player pool is not limited to the names people have already seen in community leaks. EA is still teasing additional players and regions immediately before launch.
+
+## The anniversary player vote
+
+The anniversary player selection was not simply an EA-only list.
+
+EA opened a vote involving **more than 100 players**, asking the FC Mobile community to select five favorites across categories including:
+
+- World's best players
+- Breakthrough talents
+- Regional stars
+- Other featured categories
+
+EA's terms say the final Anniversary selection is determined through a combination of **EA and community votes**.
+
+The selected players are scheduled to appear when the Anniversary Event launches on September 24.
+
+This matters when reading leaked player lists. A leaked card can describe a card that was present in a build, while the final anniversary selection is also affected by EA's official event process.
+
+## Anniversary soundtrack
+
+The music side of the anniversary has its own schedule.
+
+### Retro soundtrack
+
+EA ran a vote for a retro FC soundtrack track. The winner announced by EA's community team was **"Love Me Again" by John Newman**, which is scheduled to return to FC Mobile on September 24.
+
+### FC 27 soundtrack
+
+A second vote selected from songs in the EA SPORTS FC 27 soundtrack.
+
+EA's anniversary announcement says the selected FC 27 soundtrack songs are scheduled to arrive on **October 12**.
+
+So the anniversary content does not end on launch day.
+
+## Other FC Mobile 27 event reports and leaks
+
+The community has been tracking event names and player pools well ahead of the live update.
+
+### Stellar Series
+
+A recurring **Stellar Series** has been reported for FC Mobile 27, with the first reported zodiac-themed chapter being **Libra**.
+
+The reported concept is a recurring mini-event built around zodiac signs, with player cards and rewards connected to each sign.
+
+This has appeared in recent FC Mobile event coverage and leak reporting, but EA has not published a full official Stellar Series announcement before launch. It belongs in the leak/report section until the live game confirms it.
+
+### Anniversary Week 1 and Week 2 player reports
+
+Community trackers have circulated claimed Anniversary Week 1 and Week 2 cards.
+
+One widely circulated Week 2 report lists:
+
+- Jude Bellingham, 122 OVR
+- Manuel Neuer, 121 OVR
+- John Arne Riise, 120 OVR
+- Cristiano Ronaldo, 122 OVR
+- Pepe, 121 OVR
+- Sandro Tonali, 120 OVR
+
+Other reports have circulated names such as Patrick Vieira, Rudi Völler, David Beckham, Jairzinho, Emmanuel Petit, Mario Balotelli, Miguel Layún and Daniel Sturridge.
+
+These lists are useful for tracking what may appear in the launch event, but the final card design, OVR, position, availability and acquisition method should be checked against the live game.
+
+### Future event reports
+
+Community leak coverage has also mentioned several event names around the Season 27 cycle, including:
+
+- Anniversary
+- Stellar Series
+- Ballon d'Or
+- Unbreakable
+- Game Changers
+- Numero
+
+Some of these names may refer to content that bridges the end of FC Mobile 26 and the start of FC Mobile 27. Others are reported as future Season 27 content.
+
+The important point is that an event name alone does not prove its exact dates, player pool or reward structure.
+
+## PlayStyle customization reports
+
+One of the more interesting community reports concerns PlayStyle customization.
+
+A pre-launch community report claimed that FC Mobile could allow players to change or customize a Player Item's PlayStyle, potentially through an additional player slot or upgrade system.
+
+The same reports discussed multiple PlayStyle levels and the possibility of obtaining a desired PlayStyle rather than being permanently locked to the original card configuration.
+
+This would be a major squad-building change if it reaches the live game.
+
+However, **EA's official FC Mobile 27 beta documentation confirms the four new PlayStyles, but does not confirm a full player-controlled PlayStyle replacement system**.
+
+For now, the four confirmed new abilities are:
+
+- Incisive Through Pass
+- Dead Ball
+- Driven Lob Through
+- Slide Tackle
+
+The customization reports are therefore included here as a leak to watch rather than as a confirmed Season 27 feature.
+
+## International-team database changes
+
+Another FC Mobile 27 report concerns national-team data.
+
+Community analysis of FC27 data has identified **16 national teams** that reportedly disappear or change in the relevant database compared with the previous setup:
+
+Côte d'Ivoire, Senegal, Cape Verde, Algeria, Ecuador, Canada, Bosnia & Herzegovina, Iran, Iraq, Tunisia, Panama, Curaçao, South Africa, Haiti, Uzbekistan and Jordan.
+
+This does **not** mean players from those countries are being removed from FC Mobile.
+
+The important distinction is between:
+
+**Nationality:** the player's country attribute.
+
+**National-team Player Item:** the specific international version of a card.
+
+The reported database change concerns national-team availability, so an existing international Player Item could potentially become harder to obtain even when the player's normal club cards remain in the game.
+
+This is particularly relevant for collectors and for The World's Game content.
+
+TanzimFC previously documented this database change in detail, including the distinction between a player's nationality and the national-team card.
+
+## What the beta tells us about the final game
+
+The Limited Beta ran from **August 25 through September 13**.
+
+EA used the beta to test:
+
+### Game Plans
+
+Up to four Game Plans, each combining a formation with one of five mentalities:
+
+- Ultra Attacking
+- Attacking
+- Balanced
+- Defensive
+- Ultra Defensive
+
+Game Plans were available across supported PvP and PvE experiences including H2H, Manager Mode, PvE matches and Custom Team matches.
+
+### Gauntlet
+
+Gauntlet uses rounds with individual objectives, Traits and House Rules.
+
+EA's beta materials specifically mention House Rules such as:
+
+- Hot Zone
+- Position Hero
+- No Rules
+
+Players earn Stars by progressing through matches, with rewards tied to progression. Player Items also have limited appearances, forcing players to manage squad depth.
+
+### Four new PlayStyles
+
+The beta confirmed:
+
+**Incisive Through Pass:** improved through-ball target selection and lead distance.
+
+**Dead Ball:** improved free-kick curl, pace, dip and control.
+
+**Driven Lob Through:** improved curve, control and lead distance on lobbed through balls.
+
+**Slide Tackle:** increased slide-tackle range and faster tackle animations.
+
+The beta is especially useful because these details came from EA's own testing build, not only from screenshots circulating online.
+
+## Things players are watching that EA has not fully detailed
+
+Even after the official announcements and beta, several launch questions remain open:
+
+### Final OVR structure
+
+The community has circulated 122+ and 130+ OVR claims for future content, but the complete final progression structure has not been presented in one official FC Mobile 27 document.
+
+### Anniversary reward paths
+
+The existence of the anniversary event is confirmed. The complete live reward tree, exchange requirements and every player acquisition route are best checked once the event is live.
+
+### Full event calendar
+
+Several future event names are circulating, but EA has not published a complete Season 27 calendar covering every event from September onward.
+
+### Market and economy details
+
+The no-reset announcement does not, by itself, document every change to market behavior, item supply, prices or currencies.
+
+### Every player rating
+
+Updated squads are confirmed, but a single official database containing every FC Mobile 27 Player Item and final rating has not been published in the announcements available before launch.
+
+## FC Mobile 27: confirmed, beta, leaked and live-preview status
+
+| Feature / information | Status |
+|---|---|
+| September 24 Season 27 update | **EA confirmed** |
+| No traditional season reset | **EA confirmed** |
+| Updated squads | **EA confirmed** |
+| New kits | **EA confirmed** |
+| Third anniversary | **EA confirmed** |
+| Month-long anniversary celebration | **EA confirmed** |
+| Community anniversary player vote | **EA confirmed** |
+| Retro soundtrack vote | **EA confirmed** |
+| FC 27 soundtrack vote | **EA confirmed** |
+| Bernabéu | **EA confirmed** |
+| Game Plans | **EA confirmed / beta tested** |
+| Five mentalities | **EA confirmed / beta tested** |
+| Four Game Plans | **EA beta documentation** |
+| Gauntlet | **EA beta tested** |
+| Limited player appearances in Gauntlet | **EA beta tested** |
+| Four new PlayStyles | **EA beta tested** |
+| FC Mobile LIVE launch preview | **EA announced** |
+| 21:30 UTC maintenance start | **EA announced** |
+| Anniversary Week 1 player lists | **Community leak/report** |
+| Anniversary Week 2 player lists | **Community leak/report** |
+| Stellar Series Libra | **Community report/leak** |
+| Ballon d'Or event | **Community report/leak** |
+| PlayStyle customization | **Community leak/report** |
+| 16 national-team database changes | **Community/database report** |
+| Exact final player ratings | **Not fully published** |
+| Complete Season 27 event calendar | **Not fully published** |
+| Complete Anniversary rewards | **Not fully published** |
+| Complete market changes | **Not fully published** |
+
+## What to expect from the FC Mobile LIVE preview
+
+The maintenance livestream is particularly important because it should connect the pre-launch information to the actual Season 27 build.
+
+The biggest things to watch are:
+
+1. **The opening screen and Season 27 hub**
+2. **Anniversary Event Hub**
+3. **Community-selected players**
+4. **Game Plans**
+5. **Gauntlet**
+6. **New PlayStyles**
+7. **New Player Items**
+8. **Bernabéu**
+9. **Updated kits and squads**
+10. **Any event or reward details shown for the first weeks**
+11. **Any last-minute feature changes from the beta**
+12. **Anything EA has not previously documented**
+
+That stream should be treated as the final pre-launch source for details shown directly by EA.
 
 
 ## The FC Mobile 27 leaks and community reports
