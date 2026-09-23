@@ -10,7 +10,7 @@ author: "TanzimFC"
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-09-23T14:05:00.000Z"
-updatedAt: "2026-09-23T14:05:00.000Z"
+updatedAt: "2026-09-23T15:30:00.000Z"
 publishedAt: "2026-09-23T14:10:00.000Z"
 image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1789672979/fc-mobile-tools/wio7rwhdmnyawoa4j4zq.jpg"
 imageAlt: "FC Mobile 27 third anniversary and season update"
@@ -37,6 +37,9 @@ sources:
   - "https://xn--ngbj1b7a.twstalker.com/PhanMinhHauFFM"
   - "https://telemetr.io/en/channels/1768389081-fc_mob_updates"
   - "https://www.youtube.com/watch?v=clRRZSrcIBI"
+  - "https://www.youtube.com/live/_2H8_mAir1Y"
+  - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-liga-bbva-mx"
+  - "https://sappurit.github.io/s8nag/"
   - "https://youtube.com/live/_2H8_mAirBM"
   - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news"
 factStatus: "verified"
@@ -593,6 +596,199 @@ The biggest things to watch are:
 
 That stream should be treated as the final pre-launch source for details shown directly by EA.
 
+
+
+## The final pre-launch announcement: FC Mobile LIVE
+
+EA has now announced a **full FC Mobile LIVE preview during the Season 27 maintenance window**.
+
+The official FC Mobile account says maintenance starts at **21:30 UTC on Wednesday, September 23**, with an estimated downtime of **4.5 hours**, and that the full preview will be shown on FC Mobile LIVE during maintenance. citeturn1search0
+
+That makes the livestream one of the most important remaining pieces of the Season 27 rollout. It should be watched alongside the live update rather than treated as another leak.
+
+For Bangladesh time, the maintenance start is **3:30 AM on September 24**, with the estimated maintenance window running for roughly four and a half hours.
+
+**FC Mobile LIVE preview:**  
+https://www.youtube.com/live/_2H8_mAir1Y
+
+The preview is particularly important because EA's public Season 27 information has not yet documented every live event reward, player item, store offer, market detail or final gameplay adjustment.
+
+## More official Season 27 information that matters
+
+### No Season Reset
+
+EA's official FC Mobile Game Info Hub lists **No Season Reset for 27** as one of the headline Season 27 changes. It also identifies the **Bernabéu as the first authentic stadium** and points to the third anniversary and the Season 27 update. citeturn5search0
+
+### Authentic Bernabéu
+
+The Bernabéu is officially described as FC Mobile's first authentic stadium. This is separate from the custom World's Game stadium already in FC Mobile.
+
+### Liga BBVA MX
+
+EA officially announced a renewed multi-year partnership with **Liga BBVA MX** in July 2026. The agreement brings authentic Mexican clubs, kits, crests and players into FC Mobile and opens the door to themed content, campaigns and live events. citeturn3search0
+
+The important distinction is that EA has confirmed the league's arrival to FC Mobile, while the exact Season 27 launch timing and every individual player item should be checked against the live release.
+
+### Updated squads and kits
+
+EA says Season 27 brings updated squads and new kits alongside gameplay innovations and the month-long third-anniversary celebration. citeturn0search2
+
+This is separate from the leaked anniversary player lists below. Updated real-world squads are an official season feature; leaked event cards are community-sourced information.
+
+## The Anniversary event: official information vs leaked player structure
+
+EA officially confirms that more than 100 players were put forward for the community vote, with users selecting five favorites across categories. The selected players are scheduled to enter the Anniversary Event on September 24. citeturn0search0turn0search2
+
+EA also confirms:
+
+- Retro soundtrack voting started September 1.
+- Selected retro tracks arrive September 24.
+- FC 27 soundtrack voting started September 10.
+- Selected FC 27 tracks arrive October 12.
+- The anniversary celebration lasts for a month. citeturn0search2
+
+The leaked event structure goes much further than EA's announcement.
+
+### Week 1 leaked drafts
+
+MadridistaaFC reported the following Week 1 draft structure:
+
+**Draft A**
+- 122 OVR Kylian Mbappé
+- 121 OVR Alphonso Davies
+- 120 OVR Alessandro Nesta
+
+**Draft B**
+- 122 OVR Laurent Blanc
+- 121 OVR Gilberto Silva
+- 120 OVR Ousmane Diomandé
+
+The same list has been independently circulated by other FC Mobile accounts. citeturn2search1turn2search5
+
+### Week 2 leaked drafts
+
+Sappurit reported:
+
+**Draft A**
+- 122 OVR Jude Bellingham
+- 121 OVR Manuel Neuer
+- 120 OVR John Arne Riise
+
+**Draft B**
+- 122 OVR Cristiano Ronaldo
+- 121 OVR Pepe
+- 120 OVR Sandro Tonali
+
+Madridistaa later retweeted the Week 2 report, providing another link between the two major leak sources. citeturn2search1turn2search4
+
+### Week 3 and Week 4 reported content
+
+Madridistaa's later reports point to further anniversary draft content.
+
+Week 4 was reported as:
+
+**Draft A**
+- 122 OVR David Beckham
+- 121 OVR Emmanuel Petit
+- 120 OVR Miguel Layún
+
+**Draft B**
+- 122 OVR Jairzinho
+- 121 OVR Mario Balotelli
+- 120 OVR Daniel Sturridge
+
+These reports come from Madridistaa's X feed and are part of the leaked event structure, not EA's pre-launch announcement. citeturn2search1
+
+### Anniversary box players
+
+Madridistaa also reported:
+
+- **Box A: 122 OVR Gianluca Zambrotta**
+- **Box B: 122 OVR David Ginola**
+- **Box C: 122 OVR Patrick Vieira**
+- **Box D: 122 OVR Rudi Völler**
+
+The Zambrotta/Ginola report was published by Madridistaa and subsequently circulated by other FC Mobile creators. The Vieira/Völler report appears in the same anniversary leak stream. citeturn2search1turn2search2
+
+This is particularly important because the leaked structure suggests that not every highly requested anniversary Icon or Hero is necessarily obtained through a normal draft.
+
+### Sappurit's wider Anniversary leak
+
+Sappurit's September reports also point toward a **122 OVR Anniversary ceiling**, a seven-day countdown reward sequence, Gauntlet Mode and additional content described around Throwback Ginga, TOTS and The World's Game. citeturn2search3turn2search7
+
+Sappurit also reported a September 24 selectable Signature Box containing **122 OVR Dirk Kuyt** and **122 OVR Yaya Touré**. citeturn2search3
+
+These details are useful for preparing for launch, but they remain leak information until the live game confirms the exact cards, OVRs and acquisition methods.
+
+## More FC Mobile 27 leaks from the community
+
+### Possible third PlayStyle slot
+
+A separate community report has shown testing around the possibility of changing or customizing PlayStyles, including discussion of a potential third PlayStyle slot.
+
+Phan Minh Hậu FFM described an official test build showing a possible future system for customizing or changing PlayStyles, while separately sharing a Madridistaa-sourced Anniversary Box leak. citeturn2search2
+
+The PlayStyle customization concept should **not** be treated as a confirmed Season 27 launch feature. It is better understood as a system seen in testing or a future-facing build.
+
+### Yashin and other database removals
+
+FC Mobile community trackers have reported that Lev Yashin, Brolin, Smolarek, Govou and Noor were removed from the leaked FC 27 Icons database.
+
+That has led to speculation about whether those players will be available in FC Mobile 27. The database observation itself is community-reported and does not establish what EA will do with existing or future FC Mobile Player Items. citeturn1search2turn1search10
+
+### New Stellar Series and Zodiac-related content
+
+Sappurit has also reported a new **Stellar Series: Libra** structure, including a special Stellar Draft Voucher connected with upcoming Zodiac Series content. Madridistaa's feed has circulated a Libra player list including Bobby Charlton, Antonio Di Natale, Tim Ream, Xherdan Shaqiri, Alexander Nübel, Emil Forsberg and Abbosbek Fayzullaev. citeturn2search1turn2search3
+
+This appears to be post-anniversary or future content rather than part of the core September 24 anniversary launch, so it belongs on the wider FC Mobile 27 watchlist.
+
+### Potential Champions content
+
+Community posts attributed to Madridistaa have also discussed a future Champions event where accumulated Star Fragments could be used toward new 122 OVR players.
+
+The acquisition details and exact timing should be treated as reported information until the event appears in the live game. citeturn1search9
+
+## What Sappurit has revealed from the game data
+
+Sappurit's FC Mobile database work is especially useful because it is not limited to ordinary social-media speculation.
+
+The public FC Mobile Nag Screen archive records dated in-game assets and event screens, including entries through September 17, 2026. Its archive lists Beta GR9, Numero events, Champions and earlier 2026 content, providing a historical record of FC Mobile's event asset changes. citeturn2search0
+
+This type of data is useful because it can reveal event naming and asset changes before EA writes a full public article about them.
+
+For TanzimFC, we will treat this category as **data-derived leak information**, separate from an EA announcement.
+
+## The leak timeline
+
+| Date / period | Source | Report |
+|---|---|---|
+| Early September | MadridistaaFC | Week 1 Anniversary draft structure |
+| Mid September | Sappurit | Week 2 Anniversary draft structure |
+| Mid September | Sappurit | 122 OVR ceiling, countdown gifts, Gauntlet and event components |
+| Mid September | MadridistaaFC | Anniversary box players |
+| Mid September | MadridistaaFC | Week 4 Anniversary draft structure |
+| September | Sappurit | Stellar Libra and future Zodiac-related draft information |
+| September | Community database trackers | FC 27 Icon database changes |
+| September 23 | EA SPORTS FC MOBILE | Full Season 27 preview announced for FC Mobile LIVE during maintenance |
+
+## What we expect to learn from the livestream
+
+The official preview is the final major information drop before the live Season 27 rollout.
+
+The livestream is the place to watch for:
+
+- Final Season 27 gameplay changes
+- Final Game Plans demonstration
+- Anniversary event walkthrough
+- Final player acquisition methods
+- Draft and Box mechanics
+- Gauntlet details
+- New stadium presentation
+- Updated squads and kits
+- Any last-minute Season 27 features
+- Information that has not yet appeared in the written EA articles
+
+It is also where EA can resolve questions that the current written material does not fully answer.
 
 ## The FC Mobile 27 leaks and community reports
 
