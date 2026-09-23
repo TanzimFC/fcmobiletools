@@ -192,10 +192,10 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "title": "Unbreakable",
     "subtitle": "Upcoming FC Mobile side event",
     "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790171689/fc-mobile-tools/q1ch1sptkytjvyrudssn.png",
-    "startUtc": "2026-10-08T00:00:00.000Z",
-    "dateLabel": "October 8, 2026",
+    "startUtc": "2026-09-24T00:00:00.000Z",
+    "dateLabel": "September 24, 2026",
     "status": "UPCOMING",
-    "note": "Upcoming side event. The October 8 date is currently reported by community event schedules and should be treated as subject to change."
+    "note": "Coming September 24. The banner and date are maintained from the shared Events & Reset configuration."
   },
   "divisionRivalsReset": {
     "enabled": true,
