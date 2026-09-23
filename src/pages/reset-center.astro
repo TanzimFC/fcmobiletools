@@ -65,7 +65,7 @@ const pageSchema = {
       </article>
 
       <article class="reset-card rivals-card">
-        <div class="card-symbol">DR</div><div class="card-copy"><span class="feature-label">DIVISION RIVALS</span><h2>Season Reset</h2><p>{rivals.cycleDays}-day competitive cycle.</p></div><span class="cycle-pill">{rivals.cycleDays}D</span>
+        <div class="card-symbol">DR</div><div class="card-copy"><span class="feature-label">DIVISION RIVALS</span><h2>Division Rivals Reset</h2><p>{rivals.cycleDays}-day competitive cycle.</p></div><span class="cycle-pill">{rivals.cycleDays}D</span>
         <div class="mini-countdown"><div><strong id="rh">--</strong><small>HOURS</small></div><b>:</b><div><strong id="rm">--</strong><small>MIN</small></div><b>:</b><div><strong id="rs">--</strong><small>SEC</small></div></div>
         <div class="bar"><span id="rivalsPct">0%</span><i><b id="rivalsBar"></b></i></div>
         <div class="reset-meta"><span>NEXT RESET · LOCAL</span><strong id="rivalsLocal">—</strong><small id="rivalsUtc">—</small></div>
@@ -103,7 +103,7 @@ const pageSchema = {
 const $=id=>document.getElementById(id),DAY=86400000,pad=n=>String(n).padStart(2,'0');
 const secondaryStart=Date.parse('2026-10-08T00:00:00.000Z');
 const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
-const maintenanceStart=Date.parse('2026-09-23T21:30:00Z'),maintenanceEnd=Date.parse('2026-09-24T02:00:00Z');
+const eventStartMs=Date.parse(event.startUtc),maintenanceEnd=Number.isFinite(eventStartMs)?eventStartMs:Date.parse('2026-09-24T02:00:00Z'),maintenanceStart=maintenanceEnd-(4.5*60*60*1000);
 const localFmt=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
 const utcFmt=new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZone:'UTC',timeZoneName:'short'});
 const shortFmt=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
