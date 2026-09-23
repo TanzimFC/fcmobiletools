@@ -726,6 +726,14 @@ export default { async fetch(request,env) {
       return json({error:error?.message||'Unable to load timing data.'},500);
     }
   }
+  if(url.pathname === '/reset-center' || url.pathname === '/reset-center/') {
+    const asset=await env.ASSETS.fetch(new Request(new URL('/reset-center/',url),{method:'GET',headers:request.headers}));
+    if(!asset.ok) return asset;
+    const headers=new Headers(asset.headers);
+    headers.set('cache-control','no-store, max-age=0, must-revalidate');
+    headers.set('x-fcmobiletools-page','events-reset-live');
+    return new Response(await asset.arrayBuffer(),{status:asset.status,statusText:asset.statusText,headers});
+  }
   if(url.pathname.startsWith('/api/admin/')) return api(request,env,url.pathname.slice('/api/admin'.length));
   if(isAdminEntry) {
     if(await authenticated(request,env) || await creatorAuthenticated(request,env)) return adminDashboard(request,env,url);
