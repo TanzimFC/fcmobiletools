@@ -11,16 +11,6 @@ const groups = [
     { label: 'Redeem Codes', href: '/redeem-codes' },
     { label: 'Football Centre', href: '/football-centre' },
     { label: "A Nation's Story", href: '/a-nations-story' }
-  ]},
-  { label: 'Articles', links: [
-    { label: 'Updates', href: '/blog/category/updates/' },
-    { label: 'Leaks', href: '/blog/category/leaks/' },
-    { label: 'Guides', href: '/blog/category/guides/' },
-    { label: 'Event Guides', href: '/blog/category/event-guides/' },
-    { label: 'Analysis', href: '/blog/category/analysis/' },
-    { label: 'Reviews', href: '/blog/category/reviews/' },
-    { label: 'Tactics', href: '/blog/category/tactics/' },
-    { label: 'Rankings', href: '/blog/category/rankings/' }
   ]}
 ];
 const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
@@ -60,7 +50,6 @@ const groupIsActive = (group) => group.links.some((link) => isActive(link.href))
     <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
     <div class="site-mobile-group"><span>Tools</span>{groups[0].links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>
     <div class="site-mobile-group"><span>Live</span>{groups[1].links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>
-    <div class="site-mobile-group"><span>Articles</span>{groups[2].links.map((link) => <a href={link.href} class:list={{ active: isActive(link.href) }}>{link.label}</a>)}</div>
     <a href="/creator" class:list={{ active: isActive('/creator') }}>Creator</a>
     <a class="mobile-code" href="/redeem-codes" class:list={{ active: isActive('/redeem-codes') }}>Redeem Codes</a>
   </nav>
