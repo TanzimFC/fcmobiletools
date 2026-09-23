@@ -718,6 +718,14 @@ async function adminDashboard(request, env, url) {
 export default { async fetch(request,env) {
   const url=new URL(request.url);
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
+  if(url.pathname === '/api/football' && request.method === 'GET') {
+    try {
+      const file=await repoFile(env,'src/data/footballCentre.js');
+      return json({content:parseFootball(file.text),updatedAt:new Date().toISOString()},{headers:{'cache-control':'no-store, max-age=0'}});
+    } catch(error) {
+      return json({error:error?.message||'Unable to load timing data.'},500);
+    }
+  }
   if(url.pathname.startsWith('/api/admin/')) return api(request,env,url.pathname.slice('/api/admin'.length));
   if(isAdminEntry) {
     if(await authenticated(request,env) || await creatorAuthenticated(request,env)) return adminDashboard(request,env,url);
