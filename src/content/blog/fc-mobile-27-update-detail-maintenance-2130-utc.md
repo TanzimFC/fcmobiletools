@@ -1,5 +1,5 @@
 ---
-id: 4
+id: fc-mobile-27-update-detail-maintenance-2130-utc
 slug: "fc-mobile-27-update-detail-maintenance-2130-utc"
 title: "FCMobile 27 UPDATE Detail!"
 subtitle: ""
