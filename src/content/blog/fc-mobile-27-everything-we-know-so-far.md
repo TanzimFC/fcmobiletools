@@ -113,9 +113,9 @@ The important part is that mentality is now tied directly to the Game Plan syste
 
 ### How many Game Plans can you make?
 
-EA's latest Game Plans Deep Dive says you can create **up to five Game Plans per squad**.
+EA's latest Game Plans Deep Dive says you can create **up to four Game Plans per lineup**.
 
-The earlier Limited Beta announcement described up to four Game Plans during testing, but EA's September 22 Deep Dive expands the confirmed number to five. For the launch version, the latest official Deep Dive is the more current source.
+EA's September 22 Deep Dive contains an inconsistency: its introduction mentions five Game Plans per Squad, while the setup instructions say you can create up to four Game Plans per lineup. Because the detailed setup instructions and the August beta documentation both specify four, we are treating **four Game Plans per lineup as the currently documented figure** until EA clarifies the discrepancy.
 
 This is a useful example of why beta information should not automatically be treated as the final specification.
 
@@ -397,7 +397,7 @@ Check the Bernabéu and the other visual changes introduced with the update.
 | Month-long anniversary celebration | **Confirmed** |
 | Game Plans | **Confirmed** |
 | Five mentalities | **Confirmed** |
-| Up to five Game Plans per squad | **Confirmed by latest Deep Dive** |
+| Up to four Game Plans per lineup | **Documented by EA; latest Deep Dive contains a conflicting five-plan reference** |
 | Gauntlet Mode | **Confirmed and beta tested** |
 | Limited player appearances in Gauntlet | **Confirmed in beta** |
 | Stars and Gauntlet progression | **Confirmed in beta** |
