@@ -101,9 +101,22 @@ const pageSchema = {
 
 <script define:vars={{ startUtc: event.startUtc, endUtc: event.endUtc, eventEnabled: event.enabled, anchorUtc: rivals.anchorUtc, cycleDays: rivals.cycleDays, rivalsEnabled: rivals.enabled }}>
 const $=id=>document.getElementById(id),DAY=86400000,pad=n=>String(n).padStart(2,'0');
+const refreshConfig=async()=>{
+  try{
+    const r=await fetch('/api/football',{cache:'no-store'});
+    if(!r.ok)return;
+    const b=await r.json(),c=b?.content;
+    if(!c)return;
+    if(c.eventCountdown) Object.assign(window.__fcEvent||{},c.eventCountdown);
+    if(c.divisionRivalsReset) Object.assign(window.__fcRivals||{},c.divisionRivalsReset);
+    if(c.secondaryEvent) Object.assign(window.__fcSecondary||{},c.secondaryEvent);
+    if(c.eventCountdown?.banner) { const img=$('eventCard')?.querySelector('img'); if(img&&img.src!==c.eventCountdown.banner)img.src=c.eventCountdown.banner; }
+  }catch(error){console.warn('Timing sync failed',error)}
+};
 const secondaryStart=Date.parse('2026-10-08T00:00:00.000Z');
 const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
-const eventStartMs=Date.parse(event.startUtc),maintenanceEnd=Number.isFinite(eventStartMs)?eventStartMs:Date.parse('2026-09-24T02:00:00Z'),maintenanceStart=maintenanceEnd-(4.5*60*60*1000);
+const eventRuntime=Object.assign({},event); const rivalsRuntime=Object.assign({},rivals); window.__fcEvent=eventRuntime; window.__fcRivals=rivalsRuntime; window.__fcSecondary=Object.assign({},secondary);
+const eventStartMs=Date.parse(eventRuntime.startUtc),maintenanceEnd=Number.isFinite(eventStartMs)?eventStartMs:Date.parse('2026-09-24T02:00:00Z'),maintenanceStart=maintenanceEnd-(4.5*60*60*1000);
 const localFmt=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
 const utcFmt=new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZone:'UTC',timeZoneName:'short'});
 const shortFmt=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
@@ -124,11 +137,11 @@ const update=()=>{
  clock('d',dn);$('dailyBar').style.width=dp+'%';$('dailyPct').textContent=dp.toFixed(1)+'%';$('dailyUtc').textContent=utcFmt.format(new Date(dn));$('dailyLocal').textContent=localFmt.format(new Date(dn));
  if(dn!==lastDailyReset){if(lastDailyReset&&now>=lastDailyReset)beep(680);lastDailyReset=dn}
 
- const rn=rivalsEnabled?rivalsNext(now):NaN,cycle=(Number(cycleDays)||28)*DAY;
+ const rn=(window.__fcRivals?.enabled!==false)?rivalsNext(now):NaN,cycle=(Number(cycleDays)||28)*DAY;
  if(Number.isFinite(rn)){const start=rn-cycle,rp=Math.min(100,Math.max(0,((now-start)/cycle)*100));clock('r',rn);$('rivalsBar').style.width=rp+'%';$('rivalsPct').textContent=rp.toFixed(1)+'%';$('rivalsUtc').textContent=utcFmt.format(new Date(rn));$('rivalsLocal').textContent=localFmt.format(new Date(rn));$('rivalsTimelineUtc').textContent=utcFmt.format(new Date(rn));if(rn!==lastRivalsReset){if(lastRivalsReset&&now>=lastRivalsReset)beep(620);lastRivalsReset=rn}else{}}
 
- const start=Date.parse(startUtc),end=endUtc?Date.parse(endUtc):NaN,card=$('eventCard');
- if(!eventEnabled||!Number.isFinite(start)){ $('eventStatus').innerHTML='<i></i> NOT CONFIGURED';$('eventNote').textContent='Event timing is currently disabled or needs an Admin update';card.classList.remove('is-live');}
+ const liveEvent=window.__fcEvent||eventRuntime; const start=Date.parse(liveEvent.startUtc),end=liveEvent.endUtc?Date.parse(liveEvent.endUtc):NaN,card=$('eventCard');
+ if(liveEvent.enabled===false||!Number.isFinite(start)){ $('eventStatus').innerHTML='<i></i> NOT CONFIGURED';$('eventNote').textContent='Event timing is currently disabled or needs an Admin update';card.classList.remove('is-live');}
  else if(now<start){const total=Math.floor((start-now)/1000);$('ed').textContent=String(Math.floor(total/86400)).padStart(2,'0');$('eh').textContent=pad(Math.floor(total%86400/3600));$('em').textContent=pad(Math.floor(total%3600/60));$('es').textContent=pad(total%60);$('eventStatus').innerHTML='<i></i> STARTING SOON';$('eventNote').textContent='The event will switch to LIVE automatically at the configured start time';card.classList.remove('is-live');lastEventState='before'}
  else if(!Number.isFinite(end)||now<end){$('ed').textContent='00';$('eh').textContent='00';$('em').textContent='00';$('es').textContent='00';$('eventStatus').innerHTML='<i></i> LIVE NOW';$('eventNote').textContent=Number.isFinite(end)?'Event is live and will remain active until the configured end time':'Event is live — set an end time in Admin when the event window is known';if(lastEventState!=='live'){beep(980);lastEventState='live'}card.classList.add('is-live')}
  else{$('ed').textContent='00';$('eh').textContent='00';$('em').textContent='00';$('es').textContent='00';$('eventStatus').innerHTML='<i></i> EVENT ENDED';$('eventNote').textContent='The configured event window has ended — update it from Admin for the next event';card.classList.remove('is-live');lastEventState='ended'}
@@ -142,7 +155,7 @@ const startClocks=()=>{
   boot();
   timer=setInterval(boot,1000);
 };
-startClocks();
+startClocks(); refreshConfig(); setInterval(refreshConfig,30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)startClocks()});
 document.addEventListener('astro:page-load',startClocks);
 window.addEventListener('pagehide',()=>{if(timer)clearInterval(timer)},{once:true});
