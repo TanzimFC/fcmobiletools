@@ -21,14 +21,14 @@ const pageSchema = {
 
   <header class="topbar">
     <div class="brand"><span class="pulse"></span><span>FCMOBILETOOLS</span><b>EVENTS & RESET</b></div>
-    <div class="live-clock"><span id="zoneLabel">LOCAL</span><strong id="localClock">--:--:--</strong><i></i><span>UTC</span><strong id="utcClock">--:--:--</strong></div>
+    <div class="live-clock"><span>BDT</span><strong id="bdClock">--:--:--</strong><i></i><span>UTC</span><strong id="utcClock">--:--:--</strong><em id="zoneLabel">LOCAL</em></div>
   </header>
 
   <section class="hero">
     <div class="hero-copy">
       <div class="eyebrow"><span>FC MOBILE 27</span><b>LIVE TIMING CENTER</b></div>
-      <h1>Know what<br><em>happens next.</em></h1>
-      <p>Maintenance, events and resets — calculated automatically in your local time. Leave this page open and it keeps itself up to date.</p>
+      <h1>Events <em>&amp;</em> Reset</h1>
+      <p>The FC Mobile timing board. Maintenance, events and resets stay live automatically — with Bangladesh time and UTC always visible.</p>
       <div class="hero-actions"><a href="#next">See what's next <span>↓</span></a><button id="notifyBtn">◉ Notify me at reset</button></div>
     </div>
     <div class="hero-dial" aria-hidden="true"><div class="dial-ring r1"></div><div class="dial-ring r2"></div><div class="dial-ring r3"></div><div class="dial-core"><small>SEASON</small><strong>27</strong><span>LIVE</span></div></div>
@@ -37,7 +37,7 @@ const pageSchema = {
   <section class="maintenance" id="maintenanceCard">
     <div class="maint-status"><span class="warning">!</span><div><small>SEASON UPDATE</small><strong id="maintState">MAINTENANCE WINDOW</strong></div></div>
     <div class="maint-main"><h2>21:30 <span>UTC</span> <i>→</i> 02:00 <span>UTC</span></h2><p>Scheduled maintenance before the Anniversary / Season 27 update.</p></div>
-    <div class="maint-local"><small>YOUR LOCAL TIME</small><strong id="maintenanceLocal">—</strong><span id="maintCountdown">—</span></div>
+    <div class="maint-local"><small>BDT · DHAKA</small><strong id="maintenanceBd">—</strong><span id="maintCountdown">—</span></div>
   </section>
 
   <section class="section-head" id="next"><div><small>01 · MAIN EVENT</small><h2>What's happening next</h2></div><span id="syncLabel">● LIVE · SYNCING</span></section>
@@ -79,35 +79,36 @@ const pageSchema = {
   </section>
 
   <footer class="trust"><div><small>TIMEZONE SAFE</small><h2>One schedule.<br><em>Every timezone.</em></h2></div><p>All scheduled moments are based on UTC. Your browser converts them automatically, so the countdown remains consistent wherever you are.</p><span id="footerSync">LIVE</span></footer>
-</main><script define:vars={{ startUtc:event.startUtc, endUtc:event.endUtc, eventEnabled:event.enabled, anchorUtc:rivals.anchorUtc, cycleDays:rivals.cycleDays, rivalsEnabled:rivals.enabled }}>
-const $=id=>document.getElementById(id),DAY=86400000,pad=n=>String(n).padStart(2,'0');
-const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'; $('zoneLabel').textContent=zone;
-const localFull=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
-const localShort=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-const utcFull=new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZone:'UTC',timeZoneName:'short'});
-const utcShort=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'UTC',timeZoneName:'UTC'});
-let eventCfg={startUtc,endUtc,enabled:eventEnabled}, rivalsCfg={anchorUtc,cycleDays,enabled:rivalsEnabled}, secondaryCfg={startUtc:'2026-09-24T00:00:00Z'};
-let notify=false, lastEventState='';
-const fmtDur=ms=>{let s=Math.max(0,Math.floor(ms/1000));return{d:Math.floor(s/86400),h:Math.floor(s%86400/3600),m:Math.floor(s%3600/60),s:s%60}};
-const write=(p,ms)=>{const t=fmtDur(ms);$(p+'d')&&( $(p+'d').textContent=pad(t.d));$(p+'h').textContent=pad(t.h);$(p+'m').textContent=pad(t.m);$(p+'s').textContent=pad(t.s)};
+</main><script define:vars={{ startUtc:event.startUtc, endUtc:event.endUtc, eventEnabled:event.enabled, anchorUtc:rivals.anchorUtc, cycleDays:rivals.cycleDays, rivalsEnabled:rivals.enabled, secondaryStartUtc:secondary.startUtc }}>
+(() => {
+const $=id=>document.getElementById(id),DAY=86400000,pad=n=>String(Math.max(0,Number(n)||0)).padStart(2,'0');
+const safeDate=v=>{const n=Date.parse(v||'');return Number.isFinite(n)?n:NaN};
+const fmt=zone=>new Intl.DateTimeFormat('en-GB',{timeZone:zone,weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZoneName:'short'});
+const short=zone=>new Intl.DateTimeFormat('en-GB',{timeZone:zone,day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
+const localZone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+const localFull=fmt(localZone),localShort=short(localZone),bdFull=fmt('Asia/Dhaka'),bdShort=short('Asia/Dhaka'),utcFull=fmt('UTC');
+const set=(id,v)=>{const x=$(id);if(x)x.textContent=v};
+const eventFallback='2026-09-24T02:00:00.000Z';
+let eventCfg={startUtc:safeDate(startUtc)?startUtc:eventFallback,endUtc:endUtc||'',enabled:eventEnabled!==false};
+let rivalsCfg={anchorUtc:safeDate(anchorUtc)?anchorUtc:eventFallback,cycleDays:Number(cycleDays)||28,enabled:rivalsEnabled!==false};
+let secondaryCfg={startUtc:safeDate(secondaryStartUtc)?secondaryStartUtc:'2026-09-24T00:00:00.000Z'};
+set('zoneLabel',localZone);
+const duration=ms=>{let s=Math.max(0,Math.floor(ms/1000));return{d:Math.floor(s/86400),h:Math.floor(s%86400/3600),m:Math.floor(s%3600/60),s:s%60}};
+const write=(p,ms,days=true)=>{const t=duration(ms);if(days)set(p+'d',pad(t.d));set(p+'h',pad(t.h));set(p+'m',pad(t.m));set(p+'s',pad(t.s))};
 const dailyNext=now=>{const d=new Date(now),b=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),1);return now<b?b:b+DAY};
-const rivalsNext=now=>{const a=Date.parse(rivalsCfg.anchorUtc),cy=(Number(rivalsCfg.cycleDays)||28)*DAY;if(!Number.isFinite(a))return NaN;if(now<a)return a;return a+(Math.floor((now-a)/cy)+1)*cy};
-const sync=async()=>{try{const r=await fetch('/api/football',{cache:'no-store'});if(!r.ok)throw 0;const c=(await r.json())?.content;if(c?.eventCountdown)eventCfg={...eventCfg,...c.eventCountdown};if(c?.divisionRivalsReset)rivalsCfg={...rivalsCfg,...c.divisionRivalsReset};if(c?.secondaryEvent)secondaryCfg={...secondaryCfg,...c.secondaryEvent};$('syncLabel').textContent='● LIVE · SYNCED';$('footerSync').textContent='LIVE · SYNCED'}catch{$('syncLabel').textContent='● LIVE · LAST CONFIG'}};
-const render=()=>{const now=Date.now();
- $('localClock').textContent=localFull.format(new Date(now));$('utcClock').textContent=utcFull.format(new Date(now));
- const start=Date.parse(eventCfg.startUtc),end=Date.parse(eventCfg.endUtc||''),maintStart=start-4.5*60*60*1000;
- $('maintenanceLocal').textContent=localShort.format(new Date(maintStart))+' → '+localShort.format(new Date(start));
- if(now<maintStart){$('maintState').textContent='MAINTENANCE WINDOW';$('maintCountdown').textContent='Begins '+localShort.format(new Date(maintStart))}
- else if(now<start){$('maintState').textContent='MAINTENANCE SOON';$('maintCountdown').textContent=fmtDur(start-now).h+'h '+pad(fmtDur(start-now).m)+'m remaining'}
- else{$('maintState').textContent='UPDATE WINDOW COMPLETE';$('maintCountdown').textContent='Season update is live'}
- const dn=dailyNext(now),ds=dn-DAY,dp=((now-ds)/DAY)*100;write('d',dn-now);$('dailyBar').style.width=dp+'%';$('dailyPct').textContent=Math.floor(dp)+'%';$('dailyLocal').textContent=localFull.format(new Date(dn));$('dailyUtc').textContent=utcFull.format(new Date(dn));$('momentDaily').textContent=localShort.format(new Date(dn));
- const rn=rivalsCfg.enabled!==false?rivalsNext(now):NaN,cy=(Number(rivalsCfg.cycleDays)||28)*DAY;
- if(Number.isFinite(rn)){const rs=rn-cy,rp=((now-rs)/cy)*100;write('r',rn-now);$('rivalsBar').style.width=Math.max(0,Math.min(100,rp))+'%';$('rivalsPct').textContent=Math.floor(rp)+'%';$('rivalsLocal').textContent=localFull.format(new Date(rn));$('rivalsUtc').textContent=utcFull.format(new Date(rn));$('momentRivals').textContent=localShort.format(new Date(rn))}
- if(eventCfg.enabled!==false&&Number.isFinite(start)){const before=now<start,live=!before&&(!Number.isFinite(end)||now<end),remain=Math.max(0,start-now);write('e',remain);$('eventLocal').textContent=localFull.format(new Date(start));$('eventUtc').textContent=utcFull.format(new Date(start));$('momentEvent').textContent=before?localShort.format(new Date(start)):(live?'LIVE NOW':'ENDED');$('eventStatus').innerHTML='<i></i> '+(before?'STARTING SOON':live?'LIVE NOW':'ENDED');$('eventBadge').textContent=before?'UP NEXT':live?'LIVE':'ENDED';$('eventArtState').textContent=before?'STARTING SOON':live?'LIVE NOW':'ENDED';$('eventNote').textContent=before?'Countdown is running automatically. No refresh needed.':live?'The Anniversary Event is live now.':'This event window has ended.';$('stateDot').className=live?'live':'';if(before&&now>=maintStart&&now<start)$('eventNote').textContent='Maintenance is active before the event start.'}
- const sc=Date.parse(secondaryCfg.startUtc||'2026-09-24T00:00:00Z'),sd=fmtDur(sc-now);$('secondaryCountdown').textContent=sd.d>0?pad(sd.d)+'d '+pad(sd.h)+':'+pad(sd.m)+':'+pad(sd.s):pad(sd.h)+':'+pad(sd.m)+':'+pad(sd.s);$('secondaryState').textContent=now<sc?'UPCOMING':'LIVE';
+const rivalsNext=now=>{const a=safeDate(rivalsCfg.anchorUtc),cy=Math.max(1,Number(rivalsCfg.cycleDays)||28)*DAY;if(!Number.isFinite(a))return NaN;if(now<a)return a;return a+(Math.floor((now-a)/cy)+1)*cy};
+const sync=async()=>{try{const r=await fetch('/api/football?live='+Date.now(),{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw Error();const c=(await r.json())?.content;if(c?.eventCountdown?.startUtc)eventCfg={...eventCfg,...c.eventCountdown};if(c?.divisionRivalsReset?.anchorUtc)rivalsCfg={...rivalsCfg,...c.divisionRivalsReset};if(c?.secondaryEvent?.startUtc)secondaryCfg={...secondaryCfg,...c.secondaryEvent};set('syncLabel','● LIVE · SYNCED');set('footerSync','LIVE · SYNCED')}catch{set('syncLabel','● LIVE · AUTO CLOCK');set('footerSync','CLOCK RUNNING')}};
+const render=()=>{
+ const now=Date.now(),start=safeDate(eventCfg.startUtc),end=safeDate(eventCfg.endUtc),maintStart=Number.isFinite(start)?start-270*60000:NaN;
+ set('localClock',localFull.format(new Date(now)));set('bdClock',bdFull.format(new Date(now)));set('utcClock',utcFull.format(new Date(now)));
+ if(Number.isFinite(maintStart)&&Number.isFinite(start)){set('maintenanceBd',bdShort.format(new Date(maintStart))+' → '+bdShort.format(new Date(start)));set('maintCountdown',now<maintStart?'Maintenance starts '+bdShort.format(new Date(maintStart)):now<start?duration(start-now).h+'h '+pad(duration(start-now).m)+'m until update':'Update window reached');set('maintState',now<maintStart?'MAINTENANCE WINDOW':now<start?'MAINTENANCE SOON':'UPDATE WINDOW COMPLETE')}
+ const dn=dailyNext(now),ds=dn-DAY,dp=((now-ds)/DAY)*100;write('d',dn-now);set('dailyBar',null);const db=$('dailyBar');if(db)db.style.width=Math.min(100,Math.max(0,dp))+'%';set('dailyPct',Math.floor(dp)+'%');set('dailyLocal',localFull.format(new Date(dn)));set('dailyUtc',utcFull.format(new Date(dn)));set('momentDaily',localShort.format(new Date(dn)));
+ const rn=rivalsCfg.enabled!==false?rivalsNext(now):NaN,cy=(Number(rivalsCfg.cycleDays)||28)*DAY;if(Number.isFinite(rn)){const rs=rn-cy,rp=((now-rs)/cy)*100;write('r',rn-now,false);const rb=$('rivalsBar');if(rb)rb.style.width=Math.min(100,Math.max(0,rp))+'%';set('rivalsPct',Math.floor(rp)+'%');set('rivalsLocal',localFull.format(new Date(rn)));set('rivalsUtc',utcFull.format(new Date(rn)));set('momentRivals',localShort.format(new Date(rn)))}
+ if(eventCfg.enabled!==false&&Number.isFinite(start)){const before=now<start,live=!before&&(!Number.isFinite(end)||now<end);write('e',Math.max(0,start-now));set('eventLocal',localFull.format(new Date(start)));set('eventUtc',utcFull.format(new Date(start)));set('momentEvent',before?localShort.format(new Date(start)):(live?'LIVE NOW':'ENDED'));set('eventStatus',(before?'● STARTING SOON':live?'● LIVE NOW':'● ENDED'));set('eventBadge',before?'UP NEXT':live?'LIVE':'ENDED');set('eventArtState',before?'STARTING SOON':live?'LIVE NOW':'ENDED');set('eventNote',before?(now>=maintStart&&now<start?'Maintenance is active before the event start.':'Countdown is running automatically — no refresh needed.'):(live?'The event is live now.':'This event has ended.'));const dot=$('stateDot');if(dot)dot.className=live?'live':''}
+ const sc=safeDate(secondaryCfg.startUtc)||safeDate('2026-09-24T00:00:00Z'),sd=duration(sc-now);set('secondaryCountdown',sd.d>0?pad(sd.d)+'d '+pad(sd.h)+':'+pad(sd.m)+':'+pad(sd.s):pad(sd.h)+':'+pad(sd.m)+':'+pad(sd.s));set('secondaryState',now<sc?'UPCOMING':'LIVE');
 };
-$('notifyBtn').addEventListener('click',()=>{$('notifyBtn').textContent='✓ Alerts enabled';notify=true;try{if(Notification&&Notification.permission==='default')Notification.requestPermission()}catch{}});
-setInterval(render,1000);setInterval(sync,30000);render();sync();document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();sync()}});
+setInterval(render,1000);setInterval(sync,20000);render();sync();document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();sync()}});
+})();
 </script><style>
 :root{--bg:#05080b;--panel:#0a1116;--panel2:#0d171d;--line:#1b303a;--cyan:#5de0ff;--green:#54e5a0;--text:#edf8fb;--muted:#78909b;--dim:#506771;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
 .events-page{min-height:100vh;background:#05080b;color:var(--text);padding:18px 22px 80px;position:relative;overflow:hidden;font-family:Inter,system-ui,sans-serif}.grid-bg{position:absolute;inset:0;opacity:.12;background-image:linear-gradient(#1b3944 1px,transparent 1px),linear-gradient(90deg,#1b3944 1px,transparent 1px);background-size:70px 70px;mask-image:linear-gradient(to bottom,#000,transparent 70%);pointer-events:none}.fx{position:absolute;border-radius:50%;filter:blur(100px);opacity:.16;pointer-events:none}.fx-a{width:500px;height:500px;background:#00a9d0;left:-330px;top:250px}.fx-b{width:450px;height:450px;background:#6745ff;right:-300px;top:900px}.topbar,.hero,.maintenance,.section-head,.event-layout,.side-event,.timeline,.trust{max-width:1180px;margin-inline:auto;position:relative;z-index:1}.topbar{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #14252d;padding:2px 0 16px}.brand{display:flex;align-items:center;gap:10px;font:900 9px var(--mono);letter-spacing:.1em}.brand b{margin-left:6px;color:#62818c;font-size:7px;border-left:1px solid #28404a;padding-left:12px}.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px #54e5a015}.live-clock{display:flex;align-items:center;gap:8px;font:800 7px var(--mono);color:#68828c}.live-clock strong{color:#dcecf1;font-size:10px}.live-clock i{height:13px;width:1px;background:#29404a}
