@@ -139,6 +139,32 @@ function parseRedeem(text) {
 function redeemText(codes) { return `// FC Mobile redeem-code database.\nexport const REDEEM_CODES = ${JSON.stringify(codes,null,2)};\n\nexport const REDEEM_STATUS = {\n  active: { label: 'Active', className: 'active' },\n  scheduled: { label: 'Scheduled', className: 'scheduled' },\n  expired: { label: 'Expired', className: 'expired' },\n  unknown: { label: 'Unknown', className: 'unknown' },\n};\n`; }
 
 
+function parseFcMobile27(text) {
+  const match=text.match(/export const FC_MOBILE_27 = ([\s\S]+);\s*$/);
+  if(!match) throw new Error('FC Mobile 27 data file has an unexpected format.');
+  try { return JSON.parse(match[1]); } catch { throw new Error('FC Mobile 27 data file is not JSON-compatible.'); }
+}
+function validateFcMobile27(content) {
+  if(!content || typeof content!=='object' || !Array.isArray(content.releases) || !content.releases.length) throw new Error('At least one FC Mobile 27 release is required.');
+  const seen=new Set();
+  for(const release of content.releases) {
+    if(!release?.id || seen.has(release.id)) throw new Error('Release IDs must be unique and non-empty.');
+    seen.add(release.id);
+    if(!release.title || !release.version || !release.releaseDate) throw new Error('Release title, version, and release date are required.');
+    if(!/^https?:\/\/\S+$/i.test(String(release.downloadUrl||''))) throw new Error('Download URL must be a valid HTTP or HTTPS URL.');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(release.releaseDate))) throw new Error('Release date must use YYYY-MM-DD.');
+    if(!Array.isArray(release.changelog)) release.changelog=[];
+    release.changelog=release.changelog.map(x=>String(x).trim()).filter(Boolean);
+    release.status=['latest','active','archived'].includes(release.status)?release.status:'archived';
+  }
+  const latest=content.releases.findIndex(x=>x.status==='latest');
+  if(latest<0) content.releases[0].status='latest';
+  else content.releases.forEach((x,i)=>{ if(i!==latest && x.status==='latest') x.status='active'; });
+  content.lastUpdated=new Date().toISOString().slice(0,10);
+}
+function fcMobile27Text(content) {
+  return '// FC Mobile 27 APK release data managed by the admin panel.\n// Keep this file JSON-compatible so the Worker can validate and update it.\nexport const FC_MOBILE_27 = '+JSON.stringify(content,null,2)+';\n';
+}
 function parseFootball(text) {
   const match=text.match(/export const FOOTBALL_CENTRE_CONTENT = ([\s\S]+);\s*$/);
   if(!match) throw new Error('Football Centre data file has an unexpected format.');
@@ -679,6 +705,32 @@ async function api(request,env,path) {
       await createRevision(env,createdRow,{editorRole:'admin',action:status==='published'?'publish':status==='review'?'submit':'save',reviewStatus:status==='review'?'pending':status==='published'?'approved':'draft'});
       return json({ok:true,articleId:result.meta?.last_row_id,slug,action:'created'});
     }
+    if(path === '/fc-mobile-27' && request.method === 'GET') {
+      return json({content:parseFcMobile27((await repoFile(env,'src/data/fcMobile27.js')).text)});
+    }
+    if(path === '/fc-mobile-27' && request.method === 'POST') {
+      const input=await request.json().catch(()=>({}));
+      const content=parseFcMobile27((await repoFile(env,'src/data/fcMobile27.js')).text);
+      const release=input.release;
+      if(input.action==='create') {
+        if(!release || !release.title) throw new Error('Release data is required.');
+        release.id=String(release.id||release.releaseDate||Date.now());
+        content.releases=content.releases.filter(x=>x.id!==release.id);
+        content.releases.forEach(x=>{x.status='active';});
+        release.status='latest';
+        content.releases.unshift(release);
+      } else if(input.action==='update') {
+        if(!release || !release.id) throw new Error('Release ID is required.');
+        const index=content.releases.findIndex(x=>x.id===release.id);
+        if(index<0) throw new Error('Release not found.');
+        if(release.status==='latest') content.releases.forEach(x=>{x.status=x.id===release.id?'latest':'active';});
+        content.releases[index]={...content.releases[index],...release};
+      } else throw new Error('Unknown FC Mobile 27 action.');
+      validateFcMobile27(content);
+      const file=await repoFile(env,'src/data/fcMobile27.js');
+      const commitSha=await writeRepoFile(env,'src/data/fcMobile27.js',fcMobile27Text(content),file.sha,'admin: update FC Mobile 27 APK release');
+      return json({ok:true,commitSha,content});
+    }
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
     if(path === '/football' && request.method === 'POST') {
       const {content}=await request.json();
@@ -725,6 +777,10 @@ export default { async fetch(request,env) {
     } catch(error) {
       return json({error:error?.message||'Unable to load timing data.'},500);
     }
+  }
+  if(url.pathname === '/admin/fc-mobile-27.html') {
+    if(await authenticated(request,env)) return env.ASSETS.fetch(request);
+    return new Response('Not found',{status:404});
   }
   if(url.pathname === '/reset-center' || url.pathname === '/reset-center/') {
     const asset=await env.ASSETS.fetch(new Request(new URL('/reset-center/',url),{method:'GET',headers:request.headers}));
