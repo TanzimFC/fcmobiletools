@@ -11,7 +11,7 @@ export const FC_MOBILE_27 = {
       "season": "Season 27",
       "buildLabel": "September 24, 2026 season update",
       "releaseDate": "2026-09-24",
-      "downloadUrl": "https://omg10.com/4/11653028",
+      "downloadUrl": "https://www.apkmirror.com/wp-content/themes/APKMirror/download.php?id=16192074&key=b5e892074eb2ca1a9ca645528ee6d781b7891bc7&forcebaseapk=true",
       "status": "latest",
       "platform": "Android",
       "fileType": "APK",
