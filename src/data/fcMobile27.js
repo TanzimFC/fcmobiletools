@@ -2,12 +2,14 @@
 // Keep this file JSON-compatible so the Worker can validate and update it.
 export const FC_MOBILE_27 = {
   "lastUpdated": "2026-09-24",
+  "logoUrl": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790218791/fc-mobile-tools/t0gwuzeytzlmk13pes8q.webp",
   "releases": [
     {
       "id": "2026-09-24",
-      "title": "September 24, 2026 Update",
+      "title": "FC Mobile 27 — September 24, 2026 Update",
       "version": "FC Mobile 27",
-      "buildLabel": "September 24, 2026 update",
+      "season": "Season 27",
+      "buildLabel": "September 24, 2026 season update",
       "releaseDate": "2026-09-24",
       "downloadUrl": "https://omg10.com/4/11653028",
       "status": "latest",
@@ -15,11 +17,12 @@ export const FC_MOBILE_27 = {
       "fileType": "APK",
       "requirements": "Android device; exact minimum version is not listed",
       "changelog": [
-        "FC Mobile 27 season update",
-        "Updated squads and kits",
-        "Gameplay innovations introduced with the new season",
-        "Third-anniversary content begins with the season update",
-        "Game Plans and Mentalities expand tactical options"
+        "FC Mobile 27 Season 27 update",
+        "Updated squads and new kits",
+        "Gameplay innovations for the new season",
+        "Third-anniversary celebration content",
+        "New Game Plans and expanded Mentalities",
+        "New Gauntlet Mode content"
       ],
       "notes": "FCMOBILETOOLS is a fan-made resource. The download button opens an externally hosted APK link; the APK is not hosted by FCMOBILETOOLS.",
       "lastVerified": "2026-09-24"
