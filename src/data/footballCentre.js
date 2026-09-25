@@ -181,33 +181,45 @@ export const FOOTBALL_CENTRE_CONTENT = {
   "schedule": {
     "dailyResetUtc": "01:00",
     "maintenanceOffsetMinutes": 270,
-    "maintenanceLabel": "Scheduled maintenance before the Anniversary / Season 27 update."
+    "maintenanceLabel": "Maintenance is complete. Log in to claim the Season 27 / 3rd Anniversary maintenance gift."
   },
   "eventCountdown": {
     "enabled": true,
-    "title": "FC Mobile Anniversary Event",
-    "subtitle": "The Anniversary Event starts with the September 24 season update",
-    "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1789672979/fc-mobile-tools/wio7rwhdmnyawoa4j4zq.jpg",
+    "title": "FC Mobile 3rd Anniversary",
+    "subtitle": "The third-anniversary celebration is live with the FC Mobile 27 Season Update.",
+    "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790323719/fc-mobile-tools/qrtvtote0squixmcts6u.jpg",
     "startUtc": "2026-09-24T02:00:00.000Z",
     "endUtc": "",
-    "accent": "ANNIVERSARY EVENT"
+    "accent": "3RD ANNIVERSARY",
+    "logo": "https://sappurit.github.io/s10img/png/2026-09-17/anniversary27_topup_ANNI27_LOGO.png"
   },
   "secondaryEvent": {
     "enabled": true,
     "title": "Unbreakable",
-    "subtitle": "Upcoming FC Mobile side event",
-    "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790171689/fc-mobile-tools/q1ch1sptkytjvyrudssn.png",
-    "startUtc": "2026-09-24T00:00:00.000Z",
-    "dateLabel": "September 24, 2026",
+    "subtitle": "Upcoming FC Mobile major event",
+    "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg",
+    "startUtc": "2026-10-15T00:00:00.000Z",
+    "dateLabel": "October 15, 2026",
     "status": "UPCOMING",
-    "note": "Coming September 24. The banner and date are maintained from the shared Events & Reset configuration."
+    "note": "Unbreakable is scheduled for October 15, 2026."
   },
   "divisionRivalsReset": {
     "enabled": true,
-    "title": "Division Rivals Reset",
-    "anchorUtc": "2026-09-24T02:00:00.000Z",
+    "title": "Division Rivals Anniversary Season",
+    "anchorUtc": "2026-09-24T01:00:00.000Z",
     "cycleDays": 28,
-    "label": "28-day Division Rivals season reset",
-    "note": "The next reset is anchored to Thursday, September 24 at 02:00 UTC and repeats every 28 days. The schedule is configurable from the admin panel."
+    "label": "Anniversary season reset on October 22, 2026",
+    "note": "The Anniversary Division Rivals season runs from the September 24 Season 27 launch to the October 22 reset."
+  },
+  "maintenanceGift": {
+    "enabled": true,
+    "title": "Season 27 maintenance gift",
+    "note": "Maintenance is over. Log in to claim.",
+    "items": [
+      "3× Draft Vouchers",
+      "1,333 Star Shards",
+      "1,333 Rank Up Points"
+    ],
+    "source": "https://www.threads.com/@easfcmobile/post/DdpR3ZKlQ7G/fc-mobile-update-maintenance-has-started-estimated-downtime-hours-watch-fc/"
   }
 };

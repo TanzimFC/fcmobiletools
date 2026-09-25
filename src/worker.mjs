@@ -783,7 +783,10 @@ export default { async fetch(request,env) {
     return new Response('Not found',{status:404});
   }
   if(url.pathname === '/reset-center' || url.pathname === '/reset-center/') {
-    const asset=await env.ASSETS.fetch(new Request(new URL('/reset-center/',url),{method:'GET',headers:request.headers}));
+    return Response.redirect(new URL('/events/',url),301);
+  }
+  if(url.pathname === '/events' || url.pathname === '/events/') {
+    const asset=await env.ASSETS.fetch(new Request(new URL('/events/',url),{method:'GET',headers:request.headers}));
     if(!asset.ok) return asset;
     const headers=new Headers(asset.headers);
     headers.set('cache-control','no-store, max-age=0, must-revalidate');

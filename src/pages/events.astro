@@ -1,0 +1,552 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
+
+const anniversary = FOOTBALL_CENTRE_CONTENT.eventCountdown ?? {};
+const secondary = FOOTBALL_CENTRE_CONTENT.secondaryEvent ?? {};
+const rivals = FOOTBALL_CENTRE_CONTENT.divisionRivalsReset ?? {};
+const schedule = FOOTBALL_CENTRE_CONTENT.schedule ?? {};
+
+const anniversaryBanner = (anniversary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323719/fc-mobile-tools/qrtvtote0squixmcts6u.jpg')
+  .replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1600/');
+const unbreakableBanner = (secondary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg')
+  .replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1100/');
+const anniversaryLogo = anniversary.logo || 'https://sappurit.github.io/s10img/png/2026-09-17/anniversary27_topup_ANNI27_LOGO.png';
+
+const pageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'FC Mobile Events & Reset | FCMOBILETOOLS',
+  description: 'Live FC Mobile Anniversary Event, Unbreakable countdown, Daily Reset and Division Rivals season reset in one place.',
+  url: new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
+  publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
+};
+---
+<BaseLayout
+  title="FC Mobile Events & Reset | FCMOBILETOOLS"
+  description="Live FC Mobile Anniversary Event, Unbreakable countdown, Daily Reset and Division Rivals season reset in one place."
+>
+<script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
+
+<main class="events-hub">
+  <div class="hub-glow glow-a"></div>
+  <div class="hub-glow glow-b"></div>
+
+  <div class="hub-shell">
+    <header class="hub-header">
+      <div class="hub-kicker">
+        <span class="live-dot"></span>
+        FC MOBILE 27
+        <b>EVENTS &amp; RESET</b>
+      </div>
+
+      <div class="hub-header-row">
+        <div class="hub-title">
+          <h1>What’s live <em>right now.</em></h1>
+          <p>Everything important is above the fold: live events, the next major drop, and the next Division Rivals reset.</p>
+        </div>
+
+        <div class="clock-card" aria-label="Current local and UTC time">
+          <span>YOUR TIME</span>
+          <strong id="localClock">--:--:--</strong>
+          <small id="zoneLabel">LOCAL</small>
+          <i></i>
+          <span>UTC</span>
+          <b id="utcClock">--:--:--</b>
+        </div>
+      </div>
+    </header>
+
+    <section class="claim-strip" aria-label="Maintenance reward notice">
+      <div class="claim-icon">✓</div>
+      <div class="claim-copy">
+        <strong>Maintenance is over.</strong>
+        <span>Log in to claim the Season 27 / 3rd Anniversary maintenance gift.</span>
+      </div>
+      <div class="claim-items">
+        <span>3× Draft Vouchers</span>
+        <span>1,333 Star Shards</span>
+        <span>1,333 Rank Up Points</span>
+      </div>
+      <a href="https://www.threads.com/@easfcmobile/post/DdpR3ZKlQ7G/fc-mobile-update-maintenance-has-started-estimated-downtime-hours-watch-fc/" target="_blank" rel="noopener noreferrer">Source ↗</a>
+    </section>
+
+    <section class="featured-grid" aria-label="Featured events">
+      <article class="feature-card anniversary-card" id="anniversaryCard">
+        <div class="feature-visual">
+          <img
+            id="anniversaryImage"
+            src={anniversaryBanner}
+            alt="FC Mobile 3rd Anniversary"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
+          />
+          <div class="feature-shade"></div>
+          <img
+            id="anniversaryLogo"
+            class="anniversary-logo"
+            src={anniversaryLogo}
+            alt="FC Mobile Anniversary 27 logo"
+            loading="eager"
+            decoding="async"
+          />
+          <div class="feature-topline">
+            <span class="status-live">LIVE NOW</span>
+            <span>SEASON 27</span>
+          </div>
+        </div>
+        <div class="feature-copy">
+          <div class="copy-label">03RD ANNIVERSARY</div>
+          <h2>Anniversary Event</h2>
+          <p id="anniversarySubtitle">Live alongside the FC Mobile 27 Season Update.</p>
+          <div class="feature-meta">
+            <div>
+              <span>STATUS</span>
+              <strong id="anniversaryState">LIVE NOW</strong>
+            </div>
+            <div>
+              <span>STARTED</span>
+              <strong id="anniversaryStart">24 SEP 2026</strong>
+            </div>
+          </div>
+          <div class="source-row">
+            <span>EA confirms the third-anniversary celebration launched with the FC Mobile 27 update.</span>
+            <a href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary" target="_blank" rel="noopener noreferrer">EA announcement ↗</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="feature-card unbreakable-card" id="unbreakableCard">
+        <div class="feature-visual">
+          <img
+            id="unbreakableImage"
+            src={unbreakableBanner}
+            alt="FC Mobile Unbreakable"
+            loading="lazy"
+            decoding="async"
+          />
+          <div class="feature-shade"></div>
+          <div class="feature-topline">
+            <span class="status-upcoming">UPCOMING</span>
+            <span>MAJOR EVENT</span>
+          </div>
+          <div class="image-date">15 <small>OCT</small></div>
+        </div>
+        <div class="feature-copy">
+          <div class="copy-label">NEXT EVENT</div>
+          <h2>{secondary.title || 'Unbreakable'}</h2>
+          <p id="unbreakableSubtitle">{secondary.subtitle || 'Upcoming FC Mobile event'}</p>
+
+          <div class="event-countdown">
+            <span>COUNTDOWN</span>
+            <strong id="unbreakableCountdown">--:--:--</strong>
+          </div>
+
+          <div class="feature-meta">
+            <div>
+              <span>DATE</span>
+              <strong id="unbreakableDate">15 OCT 2026</strong>
+            </div>
+            <div>
+              <span>STATE</span>
+              <strong id="unbreakableState">UPCOMING</strong>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section-bar">
+      <div>
+        <span class="section-kicker">RESET TRACKER</span>
+        <h2>The next resets, without the clutter.</h2>
+      </div>
+      <span id="syncLabel">● LIVE · SYNCING</span>
+    </section>
+
+    <section class="reset-grid" aria-label="Reset countdowns">
+      <article class="reset-card daily-card">
+        <div class="reset-card-head">
+          <div class="mini-icon">24H</div>
+          <span>AUTO</span>
+        </div>
+        <div class="reset-label">DAILY RESET</div>
+        <h3>Daily Reset</h3>
+        <p>Repeats every day at 01:00 UTC.</p>
+        <strong class="big-count" id="dailyCountdown">--:--:--</strong>
+        <div class="reset-date"><span>NEXT</span><b id="dailyLocal">—</b></div>
+        <small id="dailyUtc">—</small>
+      </article>
+
+      <article class="reset-card rivals-card">
+        <div class="reset-card-head">
+          <div class="mini-icon">DR</div>
+          <span>22 OCT</span>
+        </div>
+        <div class="reset-label">DIVISION RIVALS</div>
+        <h3>Anniversary Season</h3>
+        <p>Current anniversary season resets on October 22.</p>
+        <strong class="big-count" id="rivalsCountdown">--:--:--</strong>
+        <div class="reset-date"><span>RESET</span><b id="rivalsLocal">22 Oct 2026</b></div>
+        <small id="rivalsUtc">22 Oct 2026 · 01:00 UTC</small>
+      </article>
+
+      <article class="reset-card season-card">
+        <div class="reset-card-head">
+          <div class="mini-icon">27</div>
+          <span>LIVE</span>
+        </div>
+        <div class="reset-label">CURRENT SEASON</div>
+        <h3>FC Mobile 27</h3>
+        <p>The new season launched with the third-anniversary celebration.</p>
+        <div class="season-status">
+          <i></i>
+          <strong>SEASON 27 IS LIVE</strong>
+        </div>
+        <div class="reset-date"><span>ANNIVERSARY</span><b>LIVE</b></div>
+        <small>Updated for 24 Sep 2026 launch</small>
+      </article>
+    </section>
+
+    <section class="compact-info">
+      <div>
+        <span class="section-kicker">AT A GLANCE</span>
+        <strong>Anniversary is live.</strong>
+      </div>
+      <div><span>NEXT MAJOR EVENT</span><b>15 OCT · UNBREAKABLE</b></div>
+      <div><span>DIVISION RIVALS</span><b>22 OCT · SEASON RESET</b></div>
+      <div><span>TIME BASIS</span><b>UTC + YOUR LOCAL TIME</b></div>
+    </section>
+  </div>
+</main>
+
+<script define:vars={{
+  anniversaryStartUtc: anniversary.startUtc,
+  anniversaryTitle: anniversary.title,
+  anniversarySubtitle: anniversary.subtitle,
+  anniversaryBanner,
+  anniversaryLogo,
+  unbreakableStartUtc: secondary.startUtc,
+  unbreakableTitle: secondary.title,
+  unbreakableSubtitle: secondary.subtitle,
+  unbreakableBanner,
+  rivalsAnchorUtc: rivals.anchorUtc,
+  rivalsCycleDays: rivals.cycleDays,
+  dailyResetUtc: schedule.dailyResetUtc || "01:00",
+}}>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const DAY = 86400000;
+
+  const pad = (value) => String(Math.max(0, Math.floor(Number(value) || 0))).padStart(2, '0');
+  const formatCountdown = (ms) => {
+    let total = Math.max(0, Math.floor(ms / 1000));
+    const days = Math.floor(total / 86400);
+    total %= 86400;
+    const hours = Math.floor(total / 3600);
+    total %= 3600;
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    return days > 0
+      ? days + 'd ' + pad(hours) + ':' + pad(mins) + ':' + pad(secs)
+      : pad(hours) + ':' + pad(mins) + ':' + pad(secs);
+  };
+
+  const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const localClock = new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+  });
+  const localDate = new Intl.DateTimeFormat(undefined, {
+    weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+  });
+  const utcDate = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short'
+  });
+
+  let cfg = {
+    anniversaryStartUtc,
+    anniversaryTitle,
+    anniversarySubtitle,
+    anniversaryBanner,
+    anniversaryLogo,
+    unbreakableStartUtc,
+    unbreakableTitle,
+    unbreakableSubtitle,
+    unbreakableBanner,
+    rivalsAnchorUtc,
+    rivalsCycleDays: Number(rivalsCycleDays) || 28,
+    dailyResetUtc,
+  };
+
+  const set = (id, value) => {
+    const node = $(id);
+    if (node) node.textContent = value;
+  };
+
+  const validTime = (value) => Number.isFinite(Date.parse(value || ''));
+
+  const nextDailyReset = (now) => {
+    const parts = String(cfg.dailyResetUtc || '01:00').split(':').map(Number);
+    const hour = Number.isFinite(parts[0]) ? Math.max(0, Math.min(23, parts[0])) : 1;
+    const minute = Number.isFinite(parts[1]) ? Math.max(0, Math.min(59, parts[1])) : 0;
+    const date = new Date(now);
+    const target = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hour, minute);
+    return now < target ? target : target + DAY;
+  };
+
+  const nextRivalsReset = (now) => {
+    const anchor = Date.parse(cfg.rivalsAnchorUtc || '');
+    const cycle = Math.max(1, Number(cfg.rivalsCycleDays) || 28) * DAY;
+    if (!Number.isFinite(anchor)) return NaN;
+    return now < anchor ? anchor : anchor + (Math.floor((now - anchor) / cycle) + 1) * cycle;
+  };
+
+  const render = () => {
+    const now = Date.now();
+
+    set('localClock', localClock.format(new Date(now)));
+    set('utcClock', new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZone: 'UTC', timeZoneName: 'short'
+    }).format(new Date(now)));
+    set('zoneLabel', localZone);
+
+    const anniversaryStart = Date.parse(cfg.anniversaryStartUtc || '');
+    const anniversaryLive = Number.isFinite(anniversaryStart) && now >= anniversaryStart;
+    set('anniversaryState', anniversaryLive ? 'LIVE NOW' : 'UPCOMING');
+    set('anniversarySubtitle', cfg.anniversarySubtitle || 'Third Anniversary celebration.');
+    if (Number.isFinite(anniversaryStart)) {
+      set('anniversaryStart', localDate.format(new Date(anniversaryStart)).replace(',', ''));
+    }
+
+    const unbreakable = Date.parse(cfg.unbreakableStartUtc || '');
+    if (Number.isFinite(unbreakable)) {
+      const live = now >= unbreakable;
+      set('unbreakableCountdown', live ? 'LIVE NOW' : formatCountdown(unbreakable - now));
+      set('unbreakableState', live ? 'LIVE NOW' : 'UPCOMING');
+      set('unbreakableDate', new Intl.DateTimeFormat('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC'
+      }).format(new Date(unbreakable)).toUpperCase());
+    }
+
+    const daily = nextDailyReset(now);
+    set('dailyCountdown', formatCountdown(daily - now));
+    set('dailyLocal', localDate.format(new Date(daily)));
+    set('dailyUtc', utcDate.format(new Date(daily)));
+
+    const rivals = nextRivalsReset(now);
+    if (Number.isFinite(rivals)) {
+      set('rivalsCountdown', formatCountdown(rivals - now));
+      set('rivalsLocal', localDate.format(new Date(rivals)));
+      set('rivalsUtc', utcDate.format(new Date(rivals)));
+    }
+  };
+
+  const sync = async () => {
+    try {
+      const response = await fetch('/api/football?live=' + Date.now(), {
+        cache: 'no-store',
+        credentials: 'same-origin'
+      });
+      if (!response.ok) throw new Error('sync');
+      const content = (await response.json())?.content || {};
+
+      if (content.eventCountdown) {
+        cfg = {
+          ...cfg,
+          anniversaryStartUtc: content.eventCountdown.startUtc || cfg.anniversaryStartUtc,
+          anniversaryTitle: content.eventCountdown.title || cfg.anniversaryTitle,
+          anniversarySubtitle: content.eventCountdown.subtitle || cfg.anniversarySubtitle,
+          anniversaryBanner: content.eventCountdown.banner || cfg.anniversaryBanner,
+          anniversaryLogo: content.eventCountdown.logo || cfg.anniversaryLogo,
+        };
+        if (content.eventCountdown.banner && $('anniversaryImage')) $('anniversaryImage').src = content.eventCountdown.banner;
+        if (content.eventCountdown.logo && $('anniversaryLogo')) $('anniversaryLogo').src = content.eventCountdown.logo;
+      }
+
+      if (content.secondaryEvent) {
+        cfg = {
+          ...cfg,
+          unbreakableStartUtc: content.secondaryEvent.startUtc || cfg.unbreakableStartUtc,
+          unbreakableTitle: content.secondaryEvent.title || cfg.unbreakableTitle,
+          unbreakableSubtitle: content.secondaryEvent.subtitle || cfg.unbreakableSubtitle,
+          unbreakableBanner: content.secondaryEvent.banner || cfg.unbreakableBanner,
+        };
+        if (content.secondaryEvent.banner && $('unbreakableImage')) $('unbreakableImage').src = content.secondaryEvent.banner;
+        set('unbreakableSubtitle', cfg.unbreakableSubtitle || 'Upcoming FC Mobile event');
+      }
+
+      if (content.divisionRivalsReset) {
+        cfg = {
+          ...cfg,
+          rivalsAnchorUtc: content.divisionRivalsReset.anchorUtc || cfg.rivalsAnchorUtc,
+          rivalsCycleDays: Number(content.divisionRivalsReset.cycleDays) || cfg.rivalsCycleDays,
+        };
+      }
+
+      if (content.schedule?.dailyResetUtc) cfg.dailyResetUtc = content.schedule.dailyResetUtc;
+      set('syncLabel', '● LIVE · SYNCED');
+    } catch {
+      set('syncLabel', '● LIVE · AUTO CLOCK');
+    }
+    render();
+  };
+
+  render();
+  sync();
+  setInterval(render, 1000);
+  setInterval(sync, 30000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      render();
+      sync();
+    }
+  });
+})();
+</script>
+
+<style>
+.events-hub{
+  --hub-bg:#061017;
+  --hub-panel:#0a151c;
+  --hub-panel-2:#0d1a22;
+  --hub-line:#1b3944;
+  --hub-line-soft:#16303a;
+  --hub-text:#effaff;
+  --hub-muted:#78949f;
+  --hub-dim:#52717d;
+  --hub-cyan:#67ddff;
+  --hub-green:#58e0a6;
+  --hub-gold:#ffd36e;
+  background:
+    radial-gradient(circle at 8% 3%, rgba(40,180,230,.12), transparent 30%),
+    radial-gradient(circle at 92% 18%, rgba(90,120,255,.09), transparent 25%),
+    linear-gradient(180deg,#050c11 0%,#061017 100%);
+  color:var(--hub-text);
+  min-height:100vh;
+  overflow:hidden;
+  padding:30px 22px 70px;
+  position:relative;
+}
+.hub-shell{max-width:1240px;margin:0 auto;position:relative;z-index:1}
+.hub-glow{position:absolute;border-radius:999px;filter:blur(95px);pointer-events:none;opacity:.18}
+.glow-a{width:420px;height:420px;left:-250px;top:240px;background:#00c7ff}
+.glow-b{width:430px;height:430px;right:-250px;top:820px;background:#594dff}
+.hub-header{padding:8px 0 22px;border-bottom:1px solid rgba(102,190,220,.13)}
+.hub-kicker{display:flex;align-items:center;gap:9px;color:#5f8290;font:900 8px/1 var(--mono);letter-spacing:.12em}
+.hub-kicker b{border-left:1px solid #2a4b58;padding-left:11px;color:#8aa9b5;font-size:7px}
+.live-dot{width:7px;height:7px;border-radius:999px;background:var(--hub-green);box-shadow:0 0 0 5px rgba(88,224,166,.08),0 0 15px rgba(88,224,166,.35)}
+.hub-header-row{display:grid;grid-template-columns:minmax(0,1fr) 230px;align-items:end;gap:34px;margin-top:18px}
+.hub-title h1{margin:0;font-size:clamp(48px,7vw,88px);line-height:.88;letter-spacing:-.07em}
+.hub-title h1 em{font-style:normal;color:var(--hub-cyan)}
+.hub-title p{max-width:680px;margin:14px 0 0;color:var(--hub-muted);font-size:10px;line-height:1.7}
+.clock-card{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;padding:13px;border:1px solid var(--hub-line);border-radius:14px;background:rgba(8,19,26,.86);box-shadow:0 18px 55px rgba(0,0,0,.22)}
+.clock-card span,.clock-card small{font:900 6px/1 var(--mono);color:#628390;letter-spacing:.12em}
+.clock-card strong,.clock-card b{font:900 12px/1 var(--mono);color:#d9eff5}
+.clock-card i{grid-column:1/-1;height:1px;background:#193039;margin:4px 0}
+.claim-strip{display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;align-items:center;gap:14px;margin-top:16px;padding:13px 14px;border:1px solid rgba(255,211,110,.19);border-radius:14px;background:linear-gradient(90deg,rgba(37,28,10,.78),rgba(10,21,28,.9))}
+.claim-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,211,110,.09);border:1px solid rgba(255,211,110,.22);color:var(--hub-gold);font-weight:900}
+.claim-copy strong,.claim-copy span{display:block}
+.claim-copy strong{font:900 9px/1 var(--mono);letter-spacing:.03em}
+.claim-copy span{margin-top:5px;color:#8ea1a8;font-size:8px}
+.claim-items{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.claim-items span{padding:7px 8px;border:1px solid #453c24;border-radius:8px;color:#decf9d;background:#17140c;font:900 6px/1 var(--mono)}
+.claim-strip>a{color:#84a8b5;font:900 6px/1 var(--mono);text-decoration:none;white-space:nowrap}
+.claim-strip>a:hover{color:var(--hub-cyan)}
+.featured-grid{display:grid;grid-template-columns:1.18fr .82fr;gap:14px;margin-top:16px}
+.feature-card{min-height:490px;border:1px solid var(--hub-line);border-radius:18px;background:linear-gradient(145deg,rgba(13,28,37,.94),rgba(7,16,22,.98));overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.28)}
+.feature-visual{position:relative;height:290px;background:#071117;overflow:hidden}
+.feature-visual>img:first-child{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .7s ease}
+.feature-card:hover .feature-visual>img:first-child{transform:scale(1.025)}
+.feature-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,10,14,.08) 0%,rgba(5,10,14,.16) 42%,rgba(5,10,14,.94) 100%)}
+.anniversary-logo{position:absolute;left:26px;bottom:25px;width:min(52%,300px);max-height:120px;object-fit:contain;object-position:left bottom;filter:drop-shadow(0 10px 26px rgba(0,0,0,.35))}
+.feature-topline{position:absolute;top:17px;left:17px;right:17px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.feature-topline span{padding:7px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(4,13,18,.7);font:900 6px/1 var(--mono);letter-spacing:.12em;color:#b7d3db}
+.status-live{color:var(--hub-green)!important;border-color:rgba(88,224,166,.25)!important}
+.status-upcoming{color:var(--hub-cyan)!important;border-color:rgba(103,221,255,.22)!important}
+.image-date{position:absolute;right:22px;bottom:20px;font:900 58px/.82 var(--mono);letter-spacing:-.08em;color:#fff;text-shadow:0 10px 30px rgba(0,0,0,.45)}
+.image-date small{font-size:11px;letter-spacing:.1em;color:#9ec0ca}
+.feature-copy{padding:23px 24px 25px}
+.copy-label,.section-kicker,.reset-label{font:900 6px/1 var(--mono);letter-spacing:.16em;color:#5fc7e1}
+.feature-copy h2{margin:9px 0 7px;font-size:clamp(31px,4vw,49px);line-height:.9;letter-spacing:-.06em}
+.feature-copy p{margin:0;color:#78929d;font-size:8px;line-height:1.6}
+.feature-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:17px}
+.feature-meta>div{padding:10px;border:1px solid var(--hub-line-soft);border-radius:9px;background:#071219}
+.feature-meta span,.event-countdown span,.reset-date span,.compact-info span{display:block;color:#577783;font:900 5px/1 var(--mono);letter-spacing:.12em}
+.feature-meta strong{display:block;margin-top:5px;font:900 8px/1.2 var(--mono);color:#d7edf2}
+.source-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-top:14px;padding-top:12px;border-top:1px solid #152d36}
+.source-row span{color:#58727c;font-size:6px;line-height:1.5;max-width:70%}
+.source-row a{color:#78b9c8;font:900 6px/1 var(--mono);text-decoration:none;white-space:nowrap}
+.event-countdown{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-top:18px;padding:12px;border:1px solid #183642;border-radius:10px;background:#071219}
+.event-countdown strong{font:900 25px/1 var(--mono);letter-spacing:-.06em;color:#ebf8fb}
+.reset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.section-bar{display:flex;justify-content:space-between;align-items:end;margin:42px 0 14px}
+.section-bar h2{margin:7px 0 0;font-size:28px;letter-spacing:-.05em}
+.section-bar>span{font:900 6px/1 var(--mono);color:#5bbf98}
+.reset-card{min-height:270px;padding:20px;border:1px solid var(--hub-line);border-radius:15px;background:linear-gradient(150deg,#0a151c,#071016);box-shadow:0 22px 60px rgba(0,0,0,.24)}
+.reset-card-head{display:flex;justify-content:space-between;align-items:center}
+.reset-card-head>span{padding:5px 7px;border:1px solid #213d48;border-radius:999px;color:#6f8f9b;font:900 5px/1 var(--mono)}
+.mini-icon{font:900 17px/1 var(--mono);color:#355966}
+.reset-label{margin-top:23px}
+.reset-card h3{margin:8px 0 5px;font-size:24px;letter-spacing:-.05em}
+.reset-card p{margin:0;color:#6e8791;font-size:8px;line-height:1.55;min-height:25px}
+.big-count{display:block;margin:23px 0 16px;font:900 34px/.95 var(--mono);letter-spacing:-.07em;color:#ecfbff}
+.reset-date{display:flex;justify-content:space-between;gap:12px;align-items:end;padding-top:11px;border-top:1px solid #17313b}
+.reset-date b{font:900 8px/1.25 var(--mono);text-align:right;color:#d7ecf1}
+.reset-card>small{display:block;margin-top:8px;color:#56737e;font:800 5px/1.3 var(--mono);text-align:right}
+.rivals-card{border-color:#245161;background:linear-gradient(145deg,#0b1b24,#071218)}
+.rivals-card .big-count{color:var(--hub-cyan)}
+.season-status{display:flex;gap:8px;align-items:center;margin:23px 0 19px;padding:12px;border:1px solid #1f3d35;border-radius:10px;background:#071a16;color:#bdeed9}
+.season-status i{width:7px;height:7px;border-radius:999px;background:var(--hub-green);box-shadow:0 0 12px rgba(88,224,166,.6)}
+.season-status strong{font:900 7px/1 var(--mono)}
+.compact-info{display:grid;grid-template-columns:1.15fr repeat(3,1fr);gap:1px;margin-top:12px;border:1px solid var(--hub-line);border-radius:13px;overflow:hidden;background:#142731}
+.compact-info>div{padding:16px;background:#071219}
+.compact-info>div:first-child{background:linear-gradient(130deg,#0b1d24,#071219)}
+.compact-info strong{display:block;margin-top:6px;font-size:14px;letter-spacing:-.03em}
+.compact-info b{display:block;margin-top:7px;color:#d2e8ee;font:900 7px/1.3 var(--mono)}
+.compact-info span{color:#5f7d88}
+@media(max-width:1000px){
+  .hub-header-row{grid-template-columns:1fr 210px}
+  .featured-grid{grid-template-columns:1fr 1fr}
+  .feature-visual{height:245px}
+  .reset-grid{grid-template-columns:1fr 1fr}
+  .season-card{grid-column:1/-1}
+  .compact-info{grid-template-columns:1fr 1fr}
+}
+@media(max-width:760px){
+  .events-hub{padding:22px 13px 55px}
+  .hub-header-row{grid-template-columns:1fr;gap:16px}
+  .clock-card{max-width:260px}
+  .claim-strip{grid-template-columns:auto 1fr}
+  .claim-items{grid-column:1/-1;justify-content:flex-start}
+  .claim-strip>a{grid-column:2;justify-self:start}
+  .featured-grid{grid-template-columns:1fr}
+  .feature-card{min-height:0}
+  .feature-visual{height:270px}
+  .section-bar{align-items:flex-start;gap:12px}
+  .section-bar h2{font-size:25px}
+  .section-bar>span{text-align:right}
+  .reset-grid{grid-template-columns:1fr}
+  .season-card{grid-column:auto}
+  .compact-info{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .hub-title h1{font-size:52px}
+  .hub-title p{font-size:9px}
+  .claim-strip{gap:10px;padding:12px}
+  .claim-copy span{font-size:7px}
+  .claim-items span{font-size:5px}
+  .feature-visual{height:235px}
+  .anniversary-logo{left:18px;bottom:18px;max-width:72%;width:250px}
+  .image-date{font-size:45px}
+  .feature-copy{padding:20px 18px 21px}
+  .feature-meta{grid-template-columns:1fr}
+  .source-row{display:block}
+  .source-row span{display:block;max-width:100%;margin-bottom:9px}
+  .reset-card{min-height:250px}
+  .big-count{font-size:31px}
+}
+</style>
