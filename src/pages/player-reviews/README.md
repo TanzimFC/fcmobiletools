@@ -1,15 +1,15 @@
-# PLAYER REVIEWS — ISOLATED FEATURE
+# Player Reviews — Isolated Feature
 
-This directory is intentionally self-contained.
+This directory is intentionally isolated from the legacy blog/review implementation.
 
-Do not merge its visual system, data model, CSS, review components, or editorial conventions into the legacy blog/review system without an explicit redesign pass.
+Do not merge its CSS, data model, visual language, navigation assumptions, or components into other site sections without an explicit redesign pass.
 
-Reference materials supplied during development are visual inspiration only; this feature does not copy another project's implementation.
+Reference material supplied during development is visual inspiration only. It is not copied as a template.
 
 Current scope:
 - /player-reviews/
-- Hristo Stoichkov, 121 OVR, Numero 8
+- Hristo Stoichkov — 121 OVR — Numero 8
 - Editorial ratings only
 - No community voting
 - No fabricated testimonials
-- No invented hands-on gameplay claims
+- No invented first-hand gameplay claims

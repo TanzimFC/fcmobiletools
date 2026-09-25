@@ -3,172 +3,254 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { playerReviews, getTier } from './playerReviewData.js';
 import './player-reviews.css';
 
-const tiers = ['All ratings', 'Elite', 'Strong', 'Solid', 'Mixed', 'Weak'];
-const positions = ['All positions', ...new Set(playerReviews.map((player) => player.position))];
-const events = ['All events', ...new Set(playerReviews.map((player) => player.event))];
-const weakFeet = ['Weak Foot', ...new Set(playerReviews.map((player) => player.weakFoot + '★'))];
-const skillMoves = ['Skill Moves', ...new Set(playerReviews.map((player) => player.skillMoves + '★'))];
+const tierGroups = [
+  ['All ratings', 'all'],
+  ['Elite', 'Elite'],
+  ['Strong', 'Strong'],
+  ['Solid', 'Solid'],
+  ['Mixed', 'Mixed'],
+  ['Weak', 'Weak']
+];
+
+const positionGroups = ['All positions', ...new Set(playerReviews.map((player) => player.position))];
+const eventGroups = ['All events', ...new Set(playerReviews.map((player) => player.event))];
+const weakFootGroups = ['All weak foot', ...new Set(playerReviews.map((player) => player.weakFoot + '★'))];
+const skillGroups = ['All skill moves', ...new Set(playerReviews.map((player) => player.skillMoves + '★'))];
 ---
 <BaseLayout
   title="FC Mobile Player Reviews"
-  description="Detailed FC Mobile player reviews with full card stats, substats, PlayStyles, strengths, weaknesses and editorial ratings."
+  description="Premium editorial FC Mobile player reviews with card-first discovery, ratings, attributes and PlayStyles."
 >
-  <main class="review-page review-home">
-    <div class="review-noise"></div>
-    <div class="review-light review-light-a"></div>
-    <div class="review-light review-light-b"></div>
-
+  <main class="review-page">
     <div class="review-shell">
-      <header class="review-home-head">
+      <header class="review-hero">
         <div>
-          <p class="review-eyebrow">TANZIMFC / PLAYER REVIEWS</p>
-          <h1>Every card.<br /><span>Properly reviewed.</span></h1>
-          <p class="review-home-lede">A focused FC Mobile player library built around the card itself. Search, filter and open a player for the full review.</p>
+          <p class="review-kicker">TANZIMFC / PLAYER REVIEWS</p>
+          <h1>Every card.<br /><em>Properly reviewed.</em></h1>
+          <p>A premium, card-first player library. Pick a player to open the complete review—ratings, strengths, weaknesses, fit, PlayStyles and source-linked card data.</p>
         </div>
         <div class="review-head-stat">
           <span>REVIEWS LIVE</span>
-          <strong>{playerReviews.length.toString().padStart(2, '0')}</strong>
+          <strong>{String(playerReviews.length).padStart(2, '0')}</strong>
           <small>EDITORIAL LIBRARY</small>
         </div>
       </header>
 
-      <section class="review-command-bar" aria-label="Player review search and filters">
-        <label class="review-search">
-          <span>⌕</span>
-          <input id="review-search" type="search" placeholder="Search player, event or position…" autocomplete="off" />
-          <kbd>⌘ K</kbd>
-        </label>
+      <button class="review-mobile-filter" id="mobile-filter-open" type="button">FILTER PLAYERS · {playerReviews.length} LIVE</button>
 
-        <div class="review-filter">
-          <span>RATING</span>
-          <select id="review-tier" aria-label="Filter by rating">{tiers.map((item) => <option value={item}>{item}</option>)}</select>
-        </div>
-        <div class="review-filter">
-          <span>POSITION</span>
-          <select id="review-position" aria-label="Filter by position">{positions.map((item) => <option value={item}>{item}</option>)}</select>
-        </div>
-        <div class="review-filter">
-          <span>EVENT</span>
-          <select id="review-event" aria-label="Filter by event">{events.map((item) => <option value={item}>{item}</option>)}</select>
-        </div>
-        <div class="review-filter optional-filter">
-          <span>WEAK FOOT</span>
-          <select id="review-weak-foot" aria-label="Filter by weak foot">{weakFeet.map((item) => <option value={item}>{item}</option>)}</select>
-        </div>
-        <div class="review-filter optional-filter">
-          <span>SKILL MOVES</span>
-          <select id="review-skill-moves" aria-label="Filter by skill moves">{skillMoves.map((item) => <option value={item}>{item}</option>)}</select>
-        </div>
-      </section>
-
-      <section class="review-library-head">
-        <div>
-          <span class="review-section-number">01</span>
-          <div>
-            <p>PLAYER LIBRARY</p>
-            <h2>Latest reviews</h2>
+      <div class="review-workspace">
+        <aside class="review-sidebar" id="review-sidebar" aria-label="Player review filters">
+          <div class="review-sidebar-section">
+            <p class="review-sidebar-title">Find a player</p>
+            <label class="review-search">
+              <input id="review-search" type="search" placeholder="Search player…" autocomplete="off" />
+              <span>⌕</span>
+            </label>
           </div>
-        </div>
-        <span id="review-result-count" class="review-result-count">{playerReviews.length} review{playerReviews.length === 1 ? '' : 's'}</span>
-      </section>
 
-      <section class={'review-card-stage' + (playerReviews.length === 1 ? ' single' : '')}>
-        <div class="stage-grid"></div>
-        <div class="stage-sheen"></div>
-        <div class="review-grid" id="review-grid" aria-live="polite">
-          {playerReviews.map((player, index) => (
-            <a
-              class="player-tile"
-              href={'/player-reviews/' + player.slug + '/'}
-              data-card
-              data-search={(player.name + ' ' + player.event + ' ' + player.position + ' ' + player.alternatePositions.join(' ')).toLowerCase()}
-              data-tier={getTier(player.review.overall).name}
-              data-position={player.position}
-              data-event={player.event}
-              data-weak-foot={player.weakFoot + '★'}
-              data-skill-moves={player.skillMoves + '★'}
-              aria-label={'Open ' + player.name + ' player review'}
-            >
-              <div class="player-card-frame">
-                <div class="player-card-aura"></div>
-                <div class="player-card-glass"></div>
-                <img src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' player card'} loading={index === 0 ? 'eager' : 'lazy'} />
+          <div class="review-sidebar-section">
+            <p class="review-sidebar-title">Rating</p>
+            <div class="review-filter-list" data-filter-group="tier">
+              {tierGroups.map(([label, value]) => (
+                <button class:list={['review-filter-button', value === 'all' ? 'is-active' : '']} type="button" data-value={value}>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div class="review-sidebar-section">
+            <p class="review-sidebar-title">Position</p>
+            <div class="review-filter-list" data-filter-group="position">
+              {positionGroups.map((label, index) => (
+                <button class:list={['review-filter-button', index === 0 ? 'is-active' : '']} type="button" data-value={index === 0 ? 'all' : label}>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div class="review-sidebar-section">
+            <p class="review-sidebar-title">Event</p>
+            <div class="review-filter-list" data-filter-group="event">
+              {eventGroups.map((label, index) => (
+                <button class:list={['review-filter-button', index === 0 ? 'is-active' : '']} type="button" data-value={index === 0 ? 'all' : label}>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div class="review-sidebar-section">
+            <p class="review-sidebar-title">Player profile</p>
+            <div class="review-filter-list" data-filter-group="weakFoot">
+              {weakFootGroups.map((label, index) => (
+                <button class:list={['review-filter-button', index === 0 ? 'is-active' : '']} type="button" data-value={index === 0 ? 'all' : label}>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+            <div class="review-filter-list" data-filter-group="skillMoves" style="margin-top:6px">
+              {skillGroups.map((label, index) => (
+                <button class:list={['review-filter-button', index === 0 ? 'is-active' : '']} type="button" data-value={index === 0 ? 'all' : label}>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div class="review-sidebar-section">
+            <p class="review-sidebar-title">Scale</p>
+            <div class="review-legend">
+              <div class="review-legend-row"><span>9.0 — 10.0 · Elite / Strong</span><i class="review-legend-dot dot-green"></i></div>
+              <div class="review-legend-row"><span>7.0 — 7.9 · Solid</span><i class="review-legend-dot dot-yellow"></i></div>
+              <div class="review-legend-row"><span>5.0 — 6.9 · Mixed / Weak</span><i class="review-legend-dot dot-red"></i></div>
+            </div>
+          </div>
+
+          <div class="review-sidebar-section">
+            <button class="review-reset" id="review-reset" type="button">RESET FILTERS</button>
+          </div>
+        </aside>
+
+        <section class="review-library">
+          <section class="review-library-head">
+            <div>
+              <p>01 / PLAYER LIBRARY</p>
+              <h2>Latest reviews</h2>
+            </div>
+            <span id="review-result-count" class="review-result-count">{playerReviews.length} review{playerReviews.length === 1 ? '' : 's'}</span>
+          </section>
+
+          <section class="review-stage">
+            <div class="review-grid" id="review-grid" aria-live="polite">
+              {playerReviews.map((player, index) => (
+                <a
+                  class="player-tile"
+                  href={'/player-reviews/' + player.slug + '/'}
+                  data-card
+                  data-search={(player.name + ' ' + player.event + ' ' + player.position).toLowerCase()}
+                  data-tier={getTier(player.review.overall).name}
+                  data-position={player.position}
+                  data-event={player.event}
+                  data-weak-foot={player.weakFoot + '★'}
+                  data-skill-moves={player.skillMoves + '★'}
+                  aria-label={'Open ' + player.name + ' player review'}
+                >
+                  <div class="player-card-frame">
+                    <img src={player.cardImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                  </div>
+                  <span class="player-name">{player.name}</span>
+                </a>
+              ))}
+              <div class="review-empty" id="review-empty" hidden>
+                <div><strong>No player cards found.</strong><span>Try another search or filter.</span></div>
               </div>
-              <span class="player-name">{player.name}</span>
-            </a>
-          ))}
-          <div id="review-empty" class="empty-state" hidden>
-            <strong>No reviews found</strong>
-            <span>Try another search or filter.</span>
-          </div>
-        </div>
-      </section>
+            </div>
+          </section>
 
-      <section class="review-rating-strip">
-        <div>
-          <span class="review-strip-kicker">RATING SYSTEM</span>
-          <strong>5.0 — 10.0</strong>
-        </div>
-        <div class="review-meter">
-          <span><i class="meter-red"></i>Weak</span>
-          <span><i class="meter-red"></i>Mixed</span>
-          <span><i class="meter-yellow"></i>Solid</span>
-          <span><i class="meter-green"></i>Strong</span>
-          <span><i class="meter-green"></i>Elite</span>
-        </div>
-      </section>
+          <section class="review-rating-strip">
+            <div>
+              <span class="review-strip-kicker">RATING SCALE</span>
+              <strong>5.0 — 10.0</strong>
+            </div>
+            <div class="review-meter">
+              <span><i class="meter-red"></i>Weak</span>
+              <span><i class="meter-red"></i>Mixed</span>
+              <span><i class="meter-yellow"></i>Solid</span>
+              <span><i class="meter-green"></i>Strong</span>
+              <span><i class="meter-green"></i>Elite</span>
+            </div>
+          </section>
+        </section>
+      </div>
     </div>
   </main>
 </BaseLayout>
 
 <script>
+  const mobileOpen = document.querySelector('#mobile-filter-open');
+  const sidebar = document.querySelector('#review-sidebar');
   const search = document.querySelector('#review-search');
-  const tier = document.querySelector('#review-tier');
-  const position = document.querySelector('#review-position');
-  const event = document.querySelector('#review-event');
-  const weakFoot = document.querySelector('#review-weak-foot');
-  const skillMoves = document.querySelector('#review-skill-moves');
+  const reset = document.querySelector('#review-reset');
   const cards = [...document.querySelectorAll('[data-card]')];
-  const empty = document.querySelector('#review-empty');
   const count = document.querySelector('#review-result-count');
+  const empty = document.querySelector('#review-empty');
 
-  function filterCards() {
-    const query = (search?.value || '').trim().toLowerCase();
-    const filters = {
-      tier: tier?.value || 'All ratings',
-      position: position?.value || 'All positions',
-      event: event?.value || 'All events',
-      weakFoot: weakFoot?.value || 'Weak Foot',
-      skillMoves: skillMoves?.value || 'Skill Moves'
-    };
+  const state = {
+    search: '',
+    tier: 'all',
+    position: 'all',
+    event: 'all',
+    weakFoot: 'all',
+    skillMoves: 'all'
+  };
 
+  const groups = [...document.querySelectorAll('[data-filter-group]')];
+
+  function setGroupState(group, value) {
+    group.querySelectorAll('button').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.value === value);
+    });
+  }
+
+  function applyFilters() {
+    const q = state.search.trim().toLowerCase();
     let visible = 0;
 
     cards.forEach((card) => {
       const show =
-        (!query || card.dataset.search.includes(query)) &&
-        (filters.tier === 'All ratings' || card.dataset.tier === filters.tier) &&
-        (filters.position === 'All positions' || card.dataset.position === filters.position) &&
-        (filters.event === 'All events' || card.dataset.event === filters.event) &&
-        (filters.weakFoot === 'Weak Foot' || card.dataset.weakFoot === filters.weakFoot) &&
-        (filters.skillMoves === 'Skill Moves' || card.dataset.skillMoves === filters.skillMoves);
+        (!q || card.dataset.search.includes(q)) &&
+        (state.tier === 'all' || card.dataset.tier === state.tier) &&
+        (state.position === 'all' || card.dataset.position === state.position) &&
+        (state.event === 'all' || card.dataset.event === state.event) &&
+        (state.weakFoot === 'all' || card.dataset.weakFoot === state.weakFoot) &&
+        (state.skillMoves === 'all' || card.dataset.skillMoves === state.skillMoves);
 
       card.hidden = !show;
       if (show) visible += 1;
     });
 
-    if (empty) empty.hidden = visible !== 0;
+    if (empty) empty.hidden = visible > 0;
     if (count) count.textContent = visible + ' review' + (visible === 1 ? '' : 's');
   }
 
-  [search, tier, position, event, weakFoot, skillMoves].forEach((control) => {
-    control?.addEventListener(control === search ? 'input' : 'change', filterCards);
+  groups.forEach((group) => {
+    const groupName = group.dataset.filterGroup;
+    group.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      state[groupName] = button.dataset.value;
+      setGroupState(group, button.dataset.value);
+      applyFilters();
+    });
   });
 
-  search?.addEventListener('keydown', (event) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+  search?.addEventListener('input', () => {
+    state.search = search.value;
+    applyFilters();
+  });
+
+  reset?.addEventListener('click', () => {
+    Object.assign(state, { search: '', tier: 'all', position: 'all', event: 'all', weakFoot: 'all', skillMoves: 'all' });
+    if (search) search.value = '';
+    groups.forEach((group) => setGroupState(group, 'all'));
+    applyFilters();
+  });
+
+  mobileOpen?.addEventListener('click', () => {
+    sidebar?.classList.toggle('is-mobile-open');
+    mobileOpen.textContent = sidebar?.classList.contains('is-mobile-open') ? 'CLOSE FILTERS' : 'FILTER PLAYERS · 01 LIVE';
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
-      search.focus();
+      search?.focus();
+    }
+    if (event.key === 'Escape') {
+      sidebar?.classList.remove('is-mobile-open');
+      if (mobileOpen) mobileOpen.textContent = 'FILTER PLAYERS · 01 LIVE';
     }
   });
 </script>
