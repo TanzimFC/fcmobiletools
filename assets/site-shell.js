@@ -1,23 +1,21 @@
 (() => {
   if (document.querySelector('[data-site-nav]')) return;
 
-  const nav = `
-<header class="site-nav" data-site-nav>
+  const nav = `<header class="site-nav" data-site-nav>
   <div class="site-nav-inner">
-    <a class="site-brand" href="/" aria-label="TanzimFC home"><span>FC</span> TanzimFC</a>
+    <a class="site-logo" href="/" aria-label="FCMOBILETOOLS home"><img src="/assets/images/logo.png" alt="FCMOBILETOOLS"></a>
     <nav class="site-primary" aria-label="Primary navigation">
-      <a href="/">Home</a>
-      <div class="site-nav-group"><button type="button" class="site-nav-trigger">Tools <span>⌄</span></button><div class="site-nav-menu"><a href="/team-ovr"><span>Team OVR</span><small>↗</small></a><a href="/training-calculator"><span>Training Calculator</span><small>↗</small></a><a href="/rank-up-calculator"><span>Rank Up Calculator</span><small>↗</small></a></div></div>
-      <div class="site-nav-group"><button type="button" class="site-nav-trigger">Explore <span>⌄</span></button><div class="site-nav-menu"><a href="/football-centre"><span>Football Centre</span><small>↗</small></a><a href="/trivia/"><span>Trivia</span><small>↗</small></a><a href="/blog/"><span>Blog</span><small>↗</small></a><a href="/creator"><span>Creator</span><small>↗</small></a></div></div>
-      <a href="/redeem-codes">Redeem Codes</a>
+      <a class="site-link" href="/">Home</a>
+      <div class="site-group"><button class="site-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools <span aria-hidden="true">⌄</span></button><div class="site-dropdown"><a href="/team-ovr"><span><strong>Team OVR</strong><small>Squad rating</small></span><b>↗</b></a><a href="/training-calculator"><span><strong>Training Calculator</strong><small>XP &amp; fodder</small></span><b>↗</b></a><a href="/rank-up-calculator"><span><strong>Rank Up Calculator</strong><small>Rank costs</small></span><b>↗</b></a><a href="/investment-calculator"><span><strong>Investment Calculator</strong><small>Market planning</small></span><b>↗</b></a></div></div>
+      <div class="site-group"><button class="site-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Live <span aria-hidden="true">⌄</span></button><div class="site-dropdown"><a href="/reset-center"><span><strong>Events &amp; Reset</strong><small>Countdowns &amp; schedules</small></span><b>↗</b></a><a href="/redeem-codes"><span><strong>Redeem Codes</strong><small>Current rewards</small></span><b>↗</b></a><a href="/football-centre"><span><strong>Football Centre</strong><small>Matches &amp; points</small></span><b>↗</b></a><a href="/a-nations-story"><span><strong>A Nation's Story</strong><small>Event answers</small></span><b>↗</b></a><a href="/fc-mobile-27"><span><strong>FC Mobile 27 APK</strong><small>Latest Android release</small></span><b>↗</b></a></div></div>
+      <a class="site-link" href="/blog/">Articles</a><a class="site-link" href="/creator">Creator</a><a class="site-cta" href="/redeem-codes"><i></i><span>Redeem Codes</span></a>
     </nav>
-    <button class="site-menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav" aria-label="Open menu">☰</button>
+    <button class="site-menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav" aria-label="Open menu"><span></span><span></span><span></span></button>
   </div>
   <nav id="site-mobile-nav" class="site-mobile-nav" aria-label="Mobile navigation">
-    <a href="/">Home</a>
-    <div class="site-mobile-group"><span>Tools</span><a href="/team-ovr">Team OVR</a><a href="/training-calculator">Training Calculator</a><a href="/rank-up-calculator">Rank Up Calculator</a></div>
-    <div class="site-mobile-group"><span>Explore</span><a href="/football-centre">Football Centre</a><a href="/trivia/">Trivia</a><a href="/blog/">Blog</a><a href="/creator">Creator</a></div>
-    <a href="/redeem-codes">Redeem Codes</a>
+    <a href="/">Home</a><div class="site-mobile-group"><strong>TOOLS</strong><a href="/team-ovr">Team OVR</a><a href="/training-calculator">Training Calculator</a><a href="/rank-up-calculator">Rank Up Calculator</a><a href="/investment-calculator">Investment Calculator</a></div>
+    <div class="site-mobile-group"><strong>LIVE</strong><a href="/reset-center">Events &amp; Reset</a><a href="/redeem-codes">Redeem Codes</a><a href="/football-centre">Football Centre</a><a href="/a-nations-story">A Nation's Story</a><a href="/fc-mobile-27">FC Mobile 27 APK</a></div>
+    <a href="/blog/">Articles</a><a href="/creator">Creator</a><a class="mobile-code" href="/redeem-codes"><i></i><span>Redeem Codes</span></a>
   </nav>
 </header>`;
 
@@ -51,12 +49,12 @@
     const target = url.pathname.replace(/\/$/, '') || '/';
     if (target === path && !url.hash) a.classList.add('active');
   });
-  header?.querySelectorAll('.site-nav-group').forEach(group => {
-    const trigger = group.querySelector('.site-nav-trigger');
+  header?.querySelectorAll('.site-group').forEach(group => {
+    const trigger = group.querySelector('.site-dropdown-trigger');
     trigger?.addEventListener('click', () => {
       const open = group.classList.toggle('open');
       trigger.setAttribute('aria-expanded', String(open));
-      header.querySelectorAll('.site-nav-group.open').forEach(other => { if (other !== group) other.classList.remove('open'); });
+      header.querySelectorAll('.site-group.open').forEach(other => { if (other !== group) other.classList.remove('open'); });
     });
   });
   button?.addEventListener('click', () => { const open = mobile?.classList.toggle('open') ?? false; button.setAttribute('aria-expanded', String(open)); });
