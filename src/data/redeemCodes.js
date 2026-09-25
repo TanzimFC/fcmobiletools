@@ -7,7 +7,7 @@ export const REDEEM_CODES = [
     "releaseDate": "2026-09-15",
     "expiryDate": null,
     "region": "Global",
-    "lastVerified": "2026-09-18",
+    "lastVerified": "2026-09-25",
     "notes": ""
   },
   {
