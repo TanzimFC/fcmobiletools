@@ -670,4 +670,126 @@ export const playerReviews = [
     }
   }
 
+  {
+    "slug": "dunga-121-numero-8",
+    "name": "Dunga",
+    "ovr": 121,
+    "position": "CDM",
+    "alternatePositions": [
+      "CM"
+    ],
+    "event": "Numero 8",
+    "program": "Numero 8",
+    "nation": "Brazil",
+    "foot": "Right",
+    "weakFoot": 4,
+    "skillMoves": 4,
+    "workRate": "Low / High",
+    "height": "177 cm",
+    "weight": "75 kg",
+    "starShards": 23690,
+    "auctionable": false,
+    "cardImage": null,
+    "stats": {
+      "pace": 140,
+      "shooting": 126,
+      "passing": 139,
+      "dribbling": 141,
+      "defending": 150,
+      "physical": 143
+    },
+    "substats": [],
+    "playstyles": [
+      {
+        "name": "Bruiser",
+        "level": 1,
+        "description": "Supports stronger physical challenges and ball-winning in midfield."
+      },
+      {
+        "name": "Bullet Pass",
+        "level": 1,
+        "description": "Adds faster, more direct passing after recovering possession."
+      }
+    ],
+    "traits": [
+      "Stepover and Exit",
+      "Bow",
+      "Powerful Driven Free Kick",
+      "Long Passer",
+      "Long Shot Taker"
+    ],
+    "review": {
+      "overall": 9.4,
+      "summary": "A disciplined holding-midfield profile built around defending, physical play and immediate progression after recovery.",
+      "verdict": "Dunga is at his clearest as a holding CDM. 150 Defending, 143 Physical and 139 Passing create a profile focused on winning possession and moving it forward, while the low attacking work rate keeps the role disciplined.",
+      "categories": [
+        [
+          "Pace",
+          8.9,
+          "140 Pace provides useful midfield coverage without making the card a pure mobility specialist."
+        ],
+        [
+          "Shooting",
+          7.4,
+          "126 Shooting is secondary to the defensive role, with limited attacking emphasis."
+        ],
+        [
+          "Passing",
+          9.2,
+          "139 Passing supports the card's transition role after winning possession."
+        ],
+        [
+          "Dribbling",
+          8.5,
+          "141 Dribbling is functional for a defensive midfielder rather than a carrying-focused profile."
+        ],
+        [
+          "Physical",
+          9.4,
+          "143 Physical supports contact-heavy midfield play."
+        ],
+        [
+          "Defending",
+          9.8,
+          "150 Defending is the headline attribute and defines the card's identity."
+        ]
+      ],
+      "strengths": [
+        [
+          "Defensive anchor",
+          "150 Defending makes defensive control the clear centre of the profile."
+        ],
+        [
+          "Physical base",
+          "143 Physical supports contact and ball-winning situations."
+        ],
+        [
+          "Transition passing",
+          "139 Passing and Bullet Pass give the card a useful first action after recovery."
+        ],
+        [
+          "Discipline",
+          "Low / High work rate keeps the profile naturally suited to a holding role."
+        ]
+      ],
+      "weaknesses": [
+        [
+          "Anticipate gap",
+          "The card's defensive package is built around Bruiser rather than Anticipate."
+        ],
+        [
+          "Attacking output",
+          "126 Shooting is a supporting attribute rather than a major source of value."
+        ],
+        [
+          "Aerial reach",
+          "At 177 cm, the card has less height than larger defensive midfield profiles."
+        ]
+      ],
+      "bestFor": "Holding midfield, ball winning, defensive coverage and quick progression after recovery.",
+      "bestUse": "Start at CDM. CM is the alternative placement when the formation needs a more advanced midfield position.",
+      "dataGuard": "Do not invent detailed sub-stat values until the current reviewed card data is verified."
+    }
+  }
+
 export const getPlayerReview = (slug) => playerReviews.find((player) => player.slug === slug);

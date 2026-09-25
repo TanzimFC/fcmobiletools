@@ -106,7 +106,11 @@ const eventOptions = ['all', ...new Set(playerReviews.map((p) => p.event))];
                   aria-label={'Open ' + player.name + ' review'}
                 >
                   <div class="player-card-wrap">
-                    <img class="player-card" src={player.cardImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                    {player.cardImage ? (
+                      <img class="player-card" src={player.cardImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                    ) : (
+                      <span class="player-card-placeholder" aria-hidden="true"><b>{player.ovr}</b><small>Card art pending</small></span>
+                    )}
                   </div>
                   <span class="player-name">{player.name}</span>
                 </a>
