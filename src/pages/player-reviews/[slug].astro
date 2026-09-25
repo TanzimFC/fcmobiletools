@@ -3,18 +3,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getPlayerReview, getTier } from './playerReviewData.js';
 import './player-reviews.css';
 
+import { playerReviews } from './playerReviewData.js';
+
 export function getStaticPaths() {
-  return [{
-    params: { slug: 'hristo-stoichkov-121-numero-8' },
-    props: { player: getPlayerReview('hristo-stoichkov-121-numero-8') }
-  }];
+  return playerReviews.map((player) => ({
+    params: { slug: player.slug },
+    props: { player }
+  }));
 }
 
 const player = Astro.props.player;
 const tier = getTier(player.review.overall);
 const tone = tier.color;
 const categoryTone = (score) => score >= 9 ? 'green' : score >= 7 ? 'yellow' : 'red';
-const baseStats = Object.entries(player.stats);
+const baseStats = player.stats ? Object.entries(player.stats) : [];
 const detailGroups = {
   attack: ['Finishing','Long Shot','Shot Power','Positioning','Short Passing','Long Passing','Vision','Crossing'],
   movement: ['Acceleration','Sprint Speed','Dribbling','Balance','Agility','Reactions','Ball Control'],
@@ -43,9 +45,15 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
         <div class="sr-hero-card" data-card-zone>
           <span class="sr-card-mark">{player.ovr}</span>
           <div class="sr-card-glow"></div>
-          <a class="sr-card-link" href={player.cardImage} target="_blank" rel="noreferrer" aria-label={'Open ' + player.name + ' card image'}>
-            <img class="sr-card" src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' card'} />
-          </a>
+          {player.cardImage ? (
+            <a class="sr-card-link" href={player.cardImage} target="_blank" rel="noreferrer" aria-label={'Open ' + player.name + ' card image'}>
+              <img class="sr-card" src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' card'} />
+            </a>
+          ) : (
+            <div class="sr-card-placeholder" aria-label={player.name + ' card artwork pending'}>
+              <b>{player.ovr}</b><span>{player.name}</span>
+            </div>
+          )}
         </div>
 
         <div class="sr-hero-copy">
@@ -86,11 +94,15 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
       <section class="sr-block sr-reveal" id="ratings">
         <header class="sr-head"><div><small>01 / PERFORMANCE MAP</small><h2>Profile at a glance.</h2></div><p>Base card attributes and editorial category scores are shown separately.</p></header>
 
-        <div class="sr-six">
-          {baseStats.map(([label,value]) => (
-            <article><div><span>{label}</span><b>{value}</b></div><i><em style={'width:' + Math.min(value,160) / 160 * 100 + '%'}></em></i></article>
-          ))}
-        </div>
+        {baseStats.length ? (
+          <div class="sr-six">
+            {baseStats.map(([label,value]) => (
+              <article><div><span>{label}</span><b>{value}</b></div><i><em style={'width:' + Math.min(value,160) / 160 * 100 + '%'}></em></i></article>
+            ))}
+          </div>
+        ) : (
+          <div class="sr-data-pending">Verified core attribute numbers have not been published for this review entry yet. No unverified numbers are displayed.</div>
+        )}
 
         <div class="sr-categories">
           {player.review.categories.map(([label,score,note]) => (
@@ -99,6 +111,7 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
               <div><i><em class={'sr-fill-' + categoryTone(score)} style={'width:' + score * 10 + '%'}></em></i><p>{note}</p></div>
             </article>
           ))}
+          {!player.review.categories.length && <div class="sr-data-pending">Category scores are not published yet for this entry.</div>}
         </div>
       </section>
 
@@ -140,13 +153,17 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
           <button type="button" data-filter="movement">Movement</button>
           <button type="button" data-filter="physical">Physical</button>
         </div>
-        <div class="sr-detail-grid">
-          {detailStats.map((item) => (
-            <article class="sr-detail" data-group={item.group}>
-              <span>{item.label}</span><b>{item.value}</b><i><em style={'width:' + Math.min(item.value,160) / 160 * 100 + '%'}></em></i>
-            </article>
-          ))}
-        </div>
+        {detailStats.length ? (
+          <div class="sr-detail-grid">
+            {detailStats.map((item) => (
+              <article class="sr-detail" data-group={item.group}>
+                <span>{item.label}</span><b>{item.value}</b><i><em style={'width:' + Math.min(item.value,160) / 160 * 100 + '%'}></em></i>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div class="sr-data-pending">Detailed verified attribute numbers will be added when the source data is published.</div>
+        )}
       </section>
 
       <section class="sr-final sr-reveal">
