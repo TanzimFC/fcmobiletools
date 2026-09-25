@@ -78,7 +78,6 @@ export const playerReviews = [
       ],
       bestFor: 'Direct attacking play, runs behind the defence and finishing around the box.',
       bestUse: 'Start at ST. RW and LW are alternative placements when the squad needs positional flexibility.',
-      note: 'TanzimFC editorial rating based on the player-card profile shown on this page.'
     }
   }
 ];
