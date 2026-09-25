@@ -14,219 +14,196 @@ export function getStaticPaths() {
 
 const player = Astro.props.player;
 const tier = getTier(player.review.overall);
-const tone = tier.color === 'green' ? 'green' : tier.color === 'yellow' ? 'yellow' : 'red';
-const scoreClass = (score) => getTier(score).color === 'green' ? 'bar-green' : getTier(score).color === 'yellow' ? 'bar-yellow' : 'bar-red';
-
+const tone = tier.color;
+const barClass = (score) => {
+  const color = getTier(score).color;
+  return color === 'green' ? 'bar-green' : color === 'yellow' ? 'bar-yellow' : 'bar-red';
+};
 const title = player.name + ' ' + player.ovr + ' OVR Review — ' + player.event + ' | FC Mobile';
-const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' review with a transparent editorial rating, card data, strengths, weaknesses and PlayStyles.';
+const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' player review with ratings, attributes, strengths, weaknesses and PlayStyles.';
 ---
 <BaseLayout title={title} description={description} image={player.cardImage} type="article">
   <main class="review-page review-detail" id="review-top">
-    <div class="detail-progress"><span id="detail-progress-bar"></span></div>
+    <div class="detail-progress"><i id="detail-progress"></i></div>
 
-    <div class="review-shell detail-shell">
-      <a class="detail-back" href="/player-reviews/">← All Player Reviews</a>
-
-      <nav class="mobile-detail-nav">
-        <select id="mobile-section-nav" aria-label="Jump to review section">
-          <option value="overview">01 · Overview</option>
-          <option value="ratings">02 · Ratings</option>
-          <option value="strengths">03 · Strengths</option>
-          <option value="fit">04 · Fit & PlayStyles</option>
-          <option value="data">05 · Card Data</option>
-        </select>
-      </nav>
+    <div class="review-shell">
+      <div class="detail-topbar">
+        <a class="detail-back" href="/player-reviews/">← Player Reviews</a>
+        <span class="detail-update">Editorial player review</span>
+      </div>
 
       <div class="detail-layout">
-        <aside class="detail-left-rail">
-          <div class="rail-card">
-            <div class="rail-title">On this review</div>
-            <nav class="section-nav">
-              <a href="#overview" data-section-link="overview" class="is-active"><span>01</span><b>Overview</b></a>
-              <a href="#ratings" data-section-link="ratings"><span>02</span><b>Ratings</b></a>
-              <a href="#strengths" data-section-link="strengths"><span>03</span><b>Strengths</b></a>
-              <a href="#fit" data-section-link="fit"><span>04</span><b>Fit & PlayStyles</b></a>
-              <a href="#data" data-section-link="data"><span>05</span><b>Card Data</b></a>
+        <aside class="detail-left">
+          <div class="detail-nav-card">
+            <div class="detail-nav-title">Review</div>
+            <nav class="detail-nav">
+              <a href="#overview" data-nav="overview" class="is-active"><span>01</span><b>Overview</b></a>
+              <a href="#ratings" data-nav="ratings"><span>02</span><b>Ratings</b></a>
+              <a href="#signals" data-nav="signals"><span>03</span><b>Signals</b></a>
+              <a href="#fit" data-nav="fit"><span>04</span><b>Fit</b></a>
+              <a href="#attributes" data-nav="attributes"><span>05</span><b>Attributes</b></a>
             </nav>
-          </div>
-
-          <div class="rail-card" style="margin-top:12px">
-            <div class="rail-title">Review profile</div>
-            <div style="padding:0 14px 14px;color:#68808b;font:700 8px 'IBM Plex Mono',monospace;line-height:1.75">
-              Editorial score<br />
-              Card data checked<br />
-              <strong style="color:#d8eef3">{player.addedOn}</strong>
-            </div>
           </div>
         </aside>
 
-        <div class="detail-main">
-          <section class="detail-hero detail-animate" id="overview" data-detail-section>
-            <div class="detail-card-zone" data-card-zone>
+        <section class="detail-main">
+          <section class="detail-hero reveal" id="overview" data-section>
+            <div class="detail-card-stage" data-card-zone>
               <img class="detail-card" src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' ' + player.event + ' card'} draggable="false" />
             </div>
 
             <div class="detail-copy">
-              <div class="detail-event-row">
-                <span class="detail-chip hot">{player.event}</span>
-                <span class="detail-chip">{player.program}</span>
-                <span class="detail-chip">{player.position}</span>
+              <p class="detail-eyebrow">TANZIMFC PLAYER REVIEW</p>
+              <div class="detail-tags">
+                <span class="detail-tag accent">{player.event}</span>
+                <span class="detail-tag">{player.position}</span>
+                <span class="detail-tag">{player.ovr} OVR</span>
               </div>
-              <p class="detail-program">TANZIMFC PLAYER REVIEW</p>
               <h1>{player.name}</h1>
-              <p class="lede">{player.review.verdict}</p>
+              <p class="summary">{player.review.verdict}</p>
 
-              <div class="detail-score-row">
+              <div class="detail-rating-line">
                 <strong class="detail-score">{player.review.overall.toFixed(1)}</strong>
                 <span class={'detail-tier tier-' + tone}>{tier.name}</span>
               </div>
 
               <div class="detail-meta-grid">
-                <div class="detail-meta"><small>OVR</small><strong>{player.ovr}</strong></div>
                 <div class="detail-meta"><small>POSITION</small><strong>{player.position}</strong></div>
+                <div class="detail-meta"><small>FOOT</small><strong>{player.foot}</strong></div>
                 <div class="detail-meta"><small>WEAK FOOT</small><strong>{player.weakFoot}★</strong></div>
                 <div class="detail-meta"><small>SKILL MOVES</small><strong>{player.skillMoves}★</strong></div>
               </div>
 
-              <p class="detail-source-note"><b>{player.starShards.toLocaleString()} Star Shards</b> · {player.auctionable ? 'Auctionable' : 'Not auctionable'} · {player.workRate} work rate.</p>
+              <p class="detail-note">{player.height} · {player.weight} · {player.workRate} · {player.auctionable ? 'Auctionable' : 'Not auctionable'}</p>
             </div>
           </section>
 
-          <section class="detail-block detail-animate" id="ratings" data-detail-section>
-            <header class="detail-block-head">
-              <div><p>02 / EDITORIAL BREAKDOWN</p><h2>Category ratings</h2></div>
-              <small>GREEN · YELLOW · RED</small>
+          <section class="detail-section reveal" id="ratings" data-section>
+            <header class="detail-section-header">
+              <div><p>02 / REVIEW SCORE</p><h2>Category ratings</h2></div>
+              <small>{tier.name.toUpperCase()}</small>
             </header>
-
             <div class="category-list">
               {player.review.categories.map(([label, score, note]) => (
-                <div class="category-item">
+                <div class="category-row">
                   <label>{label}</label>
-                  <div class="category-track"><i class={scoreClass(score)} style={'width:' + (score * 10) + '%'}></i></div>
-                  <b>{score.toFixed(1)}</b>
-                  <p class="category-note">{note}</p>
+                  <div class="category-track"><i class={barClass(score)} style={'width:' + (score * 10) + '%'}></i></div>
+                  <strong>{score.toFixed(1)}</strong>
+                  <p>{note}</p>
                 </div>
               ))}
             </div>
           </section>
 
-          <section class="detail-block detail-animate" id="strengths" data-detail-section>
-            <header class="detail-block-head">
-              <div><p>03 / THE GOOD & THE BAD</p><h2>Strengths & weaknesses</h2></div>
-              <small>OPEN EACH ITEM</small>
+          <section class="detail-section reveal" id="signals" data-section>
+            <header class="detail-section-header">
+              <div><p>03 / KEY SIGNALS</p><h2>Strengths & weaknesses</h2></div>
+              <small>EXPAND FOR DETAIL</small>
             </header>
 
-            <div class="expand-grid">
-              <div>
-                {player.review.strengths.map((item, index) => (
-                  <article class="expand-card">
-                    <button class="expand-head" type="button">
-                      <span>{String(index + 1).padStart(2, '0')} · {item.title}</span>
-                      <b>+</b>
-                    </button>
-                    <div class="expand-body">{item.detail}</div>
-                  </article>
+            <div class="signal-grid">
+              <article class="signal-card signal-good">
+                <div class="signal-card-head"><h3>Strengths</h3><span class="signal-mark">+</span></div>
+                {player.review.strengths.map(([title, detail], index) => (
+                  <button class="signal-row" type="button">
+                    <span class="signal-number">{String(index + 1).padStart(2, '0')}</span>
+                    <span class="signal-content"><strong>{title}</strong><small>{detail}</small></span>
+                    <span class="signal-arrow">›</span>
+                  </button>
                 ))}
-              </div>
-              <div>
-                {player.review.weaknesses.map((item, index) => (
-                  <article class="expand-card">
-                    <button class="expand-head" type="button">
-                      <span>{String(index + 1).padStart(2, '0')} · {item.title}</span>
-                      <b>+</b>
-                    </button>
-                    <div class="expand-body">{item.detail}</div>
-                  </article>
+              </article>
+
+              <article class="signal-card signal-bad">
+                <div class="signal-card-head"><h3>Weaknesses</h3><span class="signal-mark">−</span></div>
+                {player.review.weaknesses.map(([title, detail], index) => (
+                  <button class="signal-row" type="button">
+                    <span class="signal-number">{String(index + 1).padStart(2, '0')}</span>
+                    <span class="signal-content"><strong>{title}</strong><small>{detail}</small></span>
+                    <span class="signal-arrow">›</span>
+                  </button>
                 ))}
-              </div>
+              </article>
             </div>
           </section>
 
-          <section class="detail-block detail-animate" id="fit" data-detail-section>
-            <header class="detail-block-head">
-              <div><p>04 / ROLE & TOOLS</p><h2>Fit & PlayStyles</h2></div>
+          <section class="detail-section reveal" id="fit" data-section>
+            <header class="detail-section-header">
+              <div><p>04 / ROLE</p><h2>Fit & PlayStyles</h2></div>
               <small>{player.review.bestFor}</small>
             </header>
 
             <div class="fit-grid">
-              <div class="fit-card"><small>Primary role</small><strong>{player.position}</strong><span>{player.alternatePositions.join(' / ')} alternatives</span></div>
-              <div class="fit-card"><small>Best for</small><strong>{player.review.bestFor}</strong><span>Editorial role fit</span></div>
-              <div class="fit-card"><small>Body profile</small><strong>{player.height}</strong><span>{player.weight} · {player.workRate}</span></div>
+              <div class="fit-card"><small>Primary position</small><strong>{player.position}</strong><span>{player.alternatePositions.join(' / ')} alternate positions</span></div>
+              <div class="fit-card"><small>Best use</small><strong>{player.review.bestFor}</strong><span>Editorial fit</span></div>
+              <div class="fit-card"><small>Profile</small><strong>{player.height}</strong><span>{player.weight} · {player.workRate}</span></div>
             </div>
 
-            <div style="padding:0 22px 22px">
+            <div class="playstyle-area">
               <div class="fit-card">
-                <small>PlayStyles</small>
-                <div class="pills">
-                  {player.playstyles.map((style) => <span class="pill">{style.name} · L{style.level}</span>)}
-                </div>
-                <div class="pills">
-                  {player.traits.map((trait) => <span class="pill">{trait}</span>)}
-                </div>
+                <small>PlayStyles & traits</small>
+                <div class="pills">{player.playstyles.map((style) => <span class="pill">{style.name} · L{style.level}</span>)}</div>
+                <div class="pills">{player.traits.map((trait) => <span class="pill">{trait}</span>)}</div>
               </div>
             </div>
           </section>
 
-          <section class="detail-block detail-animate" id="data" data-detail-section>
-            <header class="detail-block-head">
-              <div><p>05 / CARD DATA</p><h2>Attributes & source trail</h2></div>
+          <section class="detail-section reveal" id="attributes" data-section>
+            <header class="detail-section-header">
+              <div><p>05 / CARD DATA</p><h2>Attributes</h2></div>
               <small>BASE CARD</small>
             </header>
 
-            <div class="fit-grid">
+            <div class="stat-toolbar" id="stat-toolbar">
+              <button class="stat-tab is-active" type="button" data-stat-filter="all">All</button>
+              <button class="stat-tab" type="button" data-stat-filter="attack">Attack</button>
+              <button class="stat-tab" type="button" data-stat-filter="movement">Movement</button>
+              <button class="stat-tab" type="button" data-stat-filter="physical">Physical</button>
+            </div>
+
+            <div class="stat-grid">
               {Object.entries(player.stats).map(([label, value]) => (
-                <div class="fit-card"><small>{label}</small><strong>{value}</strong><span>Base attribute</span></div>
+                <div class="stat-cell" data-stat-group={label === 'shooting' || label === 'passing' || label === 'dribbling' ? 'attack' : label === 'pace' ? 'movement' : label === 'physical' || label === 'defending' ? 'physical' : 'attack'}>
+                  <span>{label}</span><strong>{value}</strong><small>Base attribute</small>
+                </div>
               ))}
             </div>
 
-            <div style="padding:0 22px 22px">
-              <div class="fit-card">
-                <small>Selected substats</small>
-                <div class="pills">{player.substats.map(([label, value]) => <span class="pill">{label} · {value}</span>)}</div>
-              </div>
-            </div>
-
-            <div class="source-links">
-              {player.review.sources.map(([label, url]) => (
-                <a class="source-link" href={url} target="_blank" rel="noopener noreferrer">
-                  <span>{label}</span><b>↗</b>
-                </a>
+            <div class="stat-grid" style="padding-top:0">
+              {player.substats.map(([label, value]) => (
+                <div class="stat-cell" data-substat>
+                  <span>{label}</span><strong>{value}</strong><small>Detailed attribute</small>
+                </div>
               ))}
-            </div>
-
-            <div style="padding:0 22px 22px;color:#607985;font-size:9px;line-height:1.7">
-              {player.review.dataNote}
             </div>
           </section>
-        </div>
+        </section>
 
-        <aside class="detail-right-rail">
-          <section class="rail-card score-wheel-card">
-            <div class="rail-title">Editorial rating</div>
-            <div
-              class="score-wheel"
-              style={'--wheel-progress:' + (player.review.overall * 36) + 'deg;--wheel-color:var(--rv-' + tone + ')'}
-            >
+        <aside class="detail-right">
+          <section class="detail-side-card detail-side-block">
+            <p class="detail-side-title">Rating</p>
+            <div class="score-dial" style={'--dial-angle:' + (player.review.overall * 36) + 'deg;--dial-color:var(--rp-' + tone + ')'}>
               <div><small>RATING</small><strong>{player.review.overall.toFixed(1)}</strong></div>
             </div>
-            <p>{tier.name} · {player.review.overall.toFixed(1)} / 10</p>
+            <p class="detail-side-copy">{tier.name} · {player.review.overall.toFixed(1)} / 10</p>
           </section>
 
-          <section class="rail-card side-data">
-            <p class="side-data-title">Player snapshot</p>
-            <div class="side-data-grid">
+          <section class="detail-side-card detail-side-block">
+            <p class="detail-side-title">Snapshot</p>
+            <div class="snapshot">
+              <div><span>OVR</span><strong>{player.ovr}</strong></div>
               <div><span>Nation</span><strong>{player.nation}</strong></div>
+              <div><span>Position</span><strong>{player.position}</strong></div>
               <div><span>Foot</span><strong>{player.foot}</strong></div>
-              <div><span>Weak foot</span><strong>{player.weakFoot}★</strong></div>
-              <div><span>Skill moves</span><strong>{player.skillMoves}★</strong></div>
+              <div><span>Weak Foot</span><strong>{player.weakFoot}★</strong></div>
+              <div><span>Skill Moves</span><strong>{player.skillMoves}★</strong></div>
               <div><span>Height</span><strong>{player.height}</strong></div>
-              <div><span>Price</span><strong>{player.starShards.toLocaleString()}</strong></div>
+              <div><span>Star Shards</span><strong>{player.starShards.toLocaleString()}</strong></div>
             </div>
           </section>
 
-          <section class="rail-card side-data">
-            <p class="side-data-title">Review note</p>
-            <p style="margin:0;color:#6e8791;font-size:9px;line-height:1.7">{player.review.dataNote}</p>
+          <section class="detail-side-card detail-side-block">
+            <p class="detail-side-title">Review note</p>
+            <p class="detail-side-copy" style="text-align:left">{player.review.note}</p>
           </section>
         </aside>
       </div>
@@ -235,12 +212,11 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
 </BaseLayout>
 
 <script>
-  const progress = document.querySelector('#detail-progress-bar');
   const cardZone = document.querySelector('[data-card-zone]');
   const card = cardZone?.querySelector('.detail-card');
-  const navLinks = [...document.querySelectorAll('[data-section-link]')];
-  const sections = [...document.querySelectorAll('[data-detail-section]')];
-  const mobileSelect = document.querySelector('#mobile-section-nav');
+  const sections = [...document.querySelectorAll('[data-section]')];
+  const navLinks = [...document.querySelectorAll('[data-nav]')];
+  const progress = document.querySelector('#detail-progress');
 
   if (cardZone && card && window.matchMedia('(pointer:fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     cardZone.addEventListener('pointermove', (event) => {
@@ -248,51 +224,52 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
       const x = (event.clientX - rect.left) / rect.width - 0.5;
       const y = (event.clientY - rect.top) / rect.height - 0.5;
       card.style.transform =
-        'translate3d(' + (x * 11) + 'px,' + (y * -8) + 'px,0) rotateY(' + (x * 6) + 'deg) rotateX(' + (y * -5) + 'deg) rotateZ(-.45deg) scale(1.018)';
+        'translate3d(' + (x * 10) + 'px,' + (y * -7) + 'px,0) rotateY(' + (x * 5) + 'deg) rotateX(' + (y * -4) + 'deg) rotateZ(-.5deg) scale(1.015)';
     });
-    cardZone.addEventListener('pointerleave', () => {
-      card.style.transform = '';
-    });
+    cardZone.addEventListener('pointerleave', () => { card.style.transform = ''; });
   }
 
-  document.querySelectorAll('.expand-head').forEach((button) => {
-    button.addEventListener('click', () => {
-      button.parentElement?.classList.toggle('is-open');
+  document.querySelectorAll('.signal-row').forEach((row) => {
+    row.addEventListener('click', () => row.classList.toggle('is-open'));
+  });
+
+  document.querySelectorAll('.stat-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const filter = tab.dataset.statFilter;
+      document.querySelectorAll('.stat-tab').forEach((item) => item.classList.toggle('is-active', item === tab));
+      document.querySelectorAll('[data-stat-group]').forEach((cell) => {
+        cell.dataset.hidden = filter === 'all' || cell.dataset.statGroup === filter ? 'false' : 'true';
+      });
     });
   });
 
-  const reveal = () => {
-    sections.forEach((section) => {
-      const rect = section.getBoundingClientRect();
-      if (rect.top < window.innerHeight * .86) section.classList.add('is-visible');
-    });
-  };
+  if ('IntersectionObserver' in window) {
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.reveal').forEach((node) => revealObserver.observe(node));
+
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach((link) => link.classList.toggle('is-active', link.dataset.nav === entry.target.id));
+      });
+    }, { rootMargin: '-20% 0 -60% 0', threshold: 0 });
+    sections.forEach((section) => navObserver.observe(section));
+  } else {
+    document.querySelectorAll('.reveal').forEach((node) => node.classList.add('is-visible'));
+  }
 
   const updateProgress = () => {
     const doc = document.documentElement;
     const max = doc.scrollHeight - doc.clientHeight;
     if (progress) progress.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + '%';
-    reveal();
   };
-
-  if ('IntersectionObserver' in window) {
-    const sectionObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        const id = entry.target.id;
-        navLinks.forEach((link) => link.classList.toggle('is-active', link.dataset.sectionLink === id));
-        if (mobileSelect && mobileSelect.value !== id && ['overview', 'ratings', 'strengths', 'fit', 'data'].includes(id)) mobileSelect.value = id;
-      });
-    }, { rootMargin: '-22% 0px -62% 0px', threshold: 0 });
-
-    sections.forEach((section) => sectionObserver.observe(section));
-  }
-
-  mobileSelect?.addEventListener('change', () => {
-    document.getElementById(mobileSelect.value)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
-  reveal();
   updateProgress();
-  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('scroll', updateProgress, { passive:true });
 </script>

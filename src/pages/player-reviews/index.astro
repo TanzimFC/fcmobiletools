@@ -3,163 +3,128 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { playerReviews, getTier } from './playerReviewData.js';
 import './player-reviews.css';
 
-const tierGroups = [
-  ['All ratings', 'all'],
-  ['Elite', 'Elite'],
-  ['Strong', 'Strong'],
-  ['Solid', 'Solid'],
-  ['Mixed', 'Mixed'],
-  ['Weak', 'Weak']
-];
-
-const positionGroups = ['All positions', ...new Set(playerReviews.map((player) => player.position))];
-const eventGroups = ['All events', ...new Set(playerReviews.map((player) => player.event))];
-const weakFootGroups = ['All weak foot', ...new Set(playerReviews.map((player) => player.weakFoot + '★'))];
-const skillGroups = ['All skill moves', ...new Set(playerReviews.map((player) => player.skillMoves + '★'))];
+const tierOptions = ['all', 'Excellent', 'Great', 'Good', 'Average', 'Poor'];
+const positionOptions = ['all', ...new Set(playerReviews.map((p) => p.position))];
+const eventOptions = ['all', ...new Set(playerReviews.map((p) => p.event))];
 ---
 <BaseLayout
-  title="FC Mobile Player Reviews"
-  description="Premium editorial FC Mobile player reviews with card-first discovery, ratings, attributes and PlayStyles."
+  title="Player Reviews"
+  description="FC Mobile Player Reviews — a focused editorial library of player cards and detailed reviews."
 >
   <main class="review-page">
     <div class="review-shell">
-      <header class="review-hero">
+      <header class="review-library-hero">
         <div>
-          <p class="review-kicker">TANZIMFC / PLAYER REVIEWS</p>
-          <h1>Every card.<br /><em>Properly reviewed.</em></h1>
-          <p>A premium, card-first player library. Pick a player to open the complete review—ratings, strengths, weaknesses, fit, PlayStyles and source-linked card data.</p>
+          <p class="review-overline">TANZIMFC / PLAYER REVIEWS</p>
+          <h1>Player<br /><em>Reviews.</em></h1>
+          <p>A dedicated library for FC Mobile player cards. Browse the cards first, then open a complete review for the numbers, role, strengths, weaknesses and PlayStyles.</p>
         </div>
-        <div class="review-head-stat">
-          <span>REVIEWS LIVE</span>
+        <div class="review-library-meta">
+          <span>LIBRARY</span>
           <strong>{String(playerReviews.length).padStart(2, '0')}</strong>
-          <small>EDITORIAL LIBRARY</small>
+          <small>REVIEWS PUBLISHED</small>
         </div>
       </header>
 
-      <button class="review-mobile-filter" id="mobile-filter-open" type="button">FILTER PLAYERS · {playerReviews.length} LIVE</button>
+      <button class="review-mobile-filters" id="mobile-filter-toggle" type="button">FILTER PLAYERS</button>
 
       <div class="review-workspace">
-        <aside class="review-sidebar" id="review-sidebar" aria-label="Player review filters">
-          <div class="review-sidebar-section">
-            <p class="review-sidebar-title">Find a player</p>
-            <label class="review-search">
-              <input id="review-search" type="search" placeholder="Search player…" autocomplete="off" />
-              <span>⌕</span>
+        <aside class="review-filter-rail" id="review-filter-rail" aria-label="Player review filters">
+          <div class="filter-block">
+            <p class="filter-title">Search</p>
+            <label class="filter-search">
+              <input id="player-search" type="search" placeholder="Player name…" autocomplete="off" />
+              <b>⌕</b>
             </label>
           </div>
 
-          <div class="review-sidebar-section">
-            <p class="review-sidebar-title">Rating</p>
-            <div class="review-filter-list" data-filter-group="tier">
-              {tierGroups.map(([label, value]) => (
-                <button class:list={['review-filter-button', value === 'all' ? 'is-active' : '']} type="button" data-value={value}>
-                  <span>{label}</span>
+          <div class="filter-block">
+            <p class="filter-title">Rating</p>
+            <div class="filter-options" data-filter="tier">
+              {tierOptions.map((value, index) => (
+                <button class:list={['filter-option', index === 0 ? 'is-active' : '']} type="button" data-value={value}>
+                  <span>{value === 'all' ? 'All ratings' : value}</span>
+                  {value !== 'all' && <i class:list={['filter-dot', ['Excellent','Great'].includes(value) ? 'filter-green' : value === 'Good' ? 'filter-yellow' : 'filter-red']}></i>}
                 </button>
               ))}
             </div>
           </div>
 
-          <div class="review-sidebar-section">
-            <p class="review-sidebar-title">Position</p>
-            <div class="review-filter-list" data-filter-group="position">
-              {positionGroups.map((label, index) => (
-                <button class:list={['review-filter-button', index === 0 ? 'is-active' : '']} type="button" data-value={index === 0 ? 'all' : label}>
-                  <span>{label}</span>
+          <div class="filter-block">
+            <p class="filter-title">Position</p>
+            <div class="filter-options" data-filter="position">
+              {positionOptions.map((value, index) => (
+                <button class:list={['filter-option', index === 0 ? 'is-active' : '']} type="button" data-value={value}>
+                  <span>{value === 'all' ? 'All positions' : value}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div class="review-sidebar-section">
-            <p class="review-sidebar-title">Event</p>
-            <div class="review-filter-list" data-filter-group="event">
-              {eventGroups.map((label, index) => (
-                <button class:list={['review-filter-button', index === 0 ? 'is-active' : '']} type="button" data-value={index === 0 ? 'all' : label}>
-                  <span>{label}</span>
+          <div class="filter-block">
+            <p class="filter-title">Event</p>
+            <div class="filter-options" data-filter="event">
+              {eventOptions.map((value, index) => (
+                <button class:list={['filter-option', index === 0 ? 'is-active' : '']} type="button" data-value={value}>
+                  <span>{value === 'all' ? 'All events' : value}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div class="review-sidebar-section">
-            <p class="review-sidebar-title">Player profile</p>
-            <div class="review-filter-list" data-filter-group="weakFoot">
-              {weakFootGroups.map((label, index) => (
-                <button class:list={['review-filter-button', index === 0 ? 'is-active' : '']} type="button" data-value={index === 0 ? 'all' : label}>
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
-            <div class="review-filter-list" data-filter-group="skillMoves" style="margin-top:6px">
-              {skillGroups.map((label, index) => (
-                <button class:list={['review-filter-button', index === 0 ? 'is-active' : '']} type="button" data-value={index === 0 ? 'all' : label}>
-                  <span>{label}</span>
-                </button>
-              ))}
+          <div class="filter-block">
+            <p class="filter-title">Scale</p>
+            <div style="display:grid;gap:8px">
+              <div style="display:flex;align-items:center;gap:7px;color:#728a94;font:700 7px 'Space Mono',monospace"><i class="filter-dot filter-green"></i>9.0–10.0 · Excellent / Great</div>
+              <div style="display:flex;align-items:center;gap:7px;color:#728a94;font:700 7px 'Space Mono',monospace"><i class="filter-dot filter-yellow"></i>7.0–7.9 · Good</div>
+              <div style="display:flex;align-items:center;gap:7px;color:#728a94;font:700 7px 'Space Mono',monospace"><i class="filter-dot filter-red"></i>5.0–6.9 · Average / Poor</div>
             </div>
           </div>
 
-          <div class="review-sidebar-section">
-            <p class="review-sidebar-title">Scale</p>
-            <div class="review-legend">
-              <div class="review-legend-row"><span>9.0 — 10.0 · Elite / Strong</span><i class="review-legend-dot dot-green"></i></div>
-              <div class="review-legend-row"><span>7.0 — 7.9 · Solid</span><i class="review-legend-dot dot-yellow"></i></div>
-              <div class="review-legend-row"><span>5.0 — 6.9 · Mixed / Weak</span><i class="review-legend-dot dot-red"></i></div>
-            </div>
-          </div>
-
-          <div class="review-sidebar-section">
-            <button class="review-reset" id="review-reset" type="button">RESET FILTERS</button>
+          <div class="filter-block">
+            <button class="filter-reset" id="reset-filters" type="button">RESET</button>
           </div>
         </aside>
 
-        <section class="review-library">
-          <section class="review-library-head">
-            <div>
-              <p>01 / PLAYER LIBRARY</p>
-              <h2>Latest reviews</h2>
-            </div>
-            <span id="review-result-count" class="review-result-count">{playerReviews.length} review{playerReviews.length === 1 ? '' : 's'}</span>
-          </section>
+        <section class="review-main">
+          <div class="review-main-head">
+            <div><p>01 / LIBRARY</p><h2>Player cards</h2></div>
+            <span class="review-count" id="result-count">{playerReviews.length} review{playerReviews.length === 1 ? '' : 's'}</span>
+          </div>
 
           <section class="review-stage">
-            <div class="review-grid" id="review-grid" aria-live="polite">
+            <div class="card-grid" id="card-grid">
               {playerReviews.map((player, index) => (
                 <a
                   class="player-tile"
                   href={'/player-reviews/' + player.slug + '/'}
-                  data-card
+                  data-player
                   data-search={(player.name + ' ' + player.event + ' ' + player.position).toLowerCase()}
                   data-tier={getTier(player.review.overall).name}
                   data-position={player.position}
                   data-event={player.event}
-                  data-weak-foot={player.weakFoot + '★'}
-                  data-skill-moves={player.skillMoves + '★'}
-                  aria-label={'Open ' + player.name + ' player review'}
+                  aria-label={'Open ' + player.name + ' review'}
                 >
-                  <div class="player-card-frame">
-                    <img src={player.cardImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                  <div class="player-card-wrap">
+                    <img class="player-card" src={player.cardImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
                   </div>
                   <span class="player-name">{player.name}</span>
                 </a>
               ))}
-              <div class="review-empty" id="review-empty" hidden>
-                <div><strong>No player cards found.</strong><span>Try another search or filter.</span></div>
+              <div class="review-empty" id="empty-state" hidden>
+                <div><strong>No matching cards.</strong><span>Try another player, position or event.</span></div>
               </div>
             </div>
           </section>
 
-          <section class="review-rating-strip">
-            <div>
-              <span class="review-strip-kicker">RATING SCALE</span>
-              <strong>5.0 — 10.0</strong>
-            </div>
-            <div class="review-meter">
-              <span><i class="meter-red"></i>Weak</span>
-              <span><i class="meter-red"></i>Mixed</span>
-              <span><i class="meter-yellow"></i>Solid</span>
-              <span><i class="meter-green"></i>Strong</span>
-              <span><i class="meter-green"></i>Elite</span>
+          <section class="scale-bar">
+            <div><small>REVIEW SCALE</small><strong>5.0 — 10.0</strong></div>
+            <div class="scale-dots">
+              <span><i class="scale-red"></i>Poor</span>
+              <span><i class="scale-red"></i>Average</span>
+              <span><i class="scale-yellow"></i>Good</span>
+              <span><i class="scale-green"></i>Great</span>
+              <span><i class="scale-green"></i>Excellent</span>
             </div>
           </section>
         </section>
@@ -169,78 +134,60 @@ const skillGroups = ['All skill moves', ...new Set(playerReviews.map((player) =>
 </BaseLayout>
 
 <script>
-  const mobileOpen = document.querySelector('#mobile-filter-open');
-  const sidebar = document.querySelector('#review-sidebar');
-  const search = document.querySelector('#review-search');
-  const reset = document.querySelector('#review-reset');
-  const cards = [...document.querySelectorAll('[data-card]')];
-  const count = document.querySelector('#review-result-count');
-  const empty = document.querySelector('#review-empty');
+  const state = { search: '', tier: 'all', position: 'all', event: 'all' };
+  const search = document.querySelector('#player-search');
+  const cards = [...document.querySelectorAll('[data-player]')];
+  const empty = document.querySelector('#empty-state');
+  const count = document.querySelector('#result-count');
+  const rail = document.querySelector('#review-filter-rail');
+  const mobileToggle = document.querySelector('#mobile-filter-toggle');
 
-  const state = {
-    search: '',
-    tier: 'all',
-    position: 'all',
-    event: 'all',
-    weakFoot: 'all',
-    skillMoves: 'all'
-  };
-
-  const groups = [...document.querySelectorAll('[data-filter-group]')];
-
-  function setGroupState(group, value) {
-    group.querySelectorAll('button').forEach((button) => {
-      button.classList.toggle('is-active', button.dataset.value === value);
-    });
-  }
-
-  function applyFilters() {
-    const q = state.search.trim().toLowerCase();
+  function refresh() {
+    const query = state.search.trim().toLowerCase();
     let visible = 0;
 
     cards.forEach((card) => {
       const show =
-        (!q || card.dataset.search.includes(q)) &&
+        (!query || card.dataset.search.includes(query)) &&
         (state.tier === 'all' || card.dataset.tier === state.tier) &&
         (state.position === 'all' || card.dataset.position === state.position) &&
-        (state.event === 'all' || card.dataset.event === state.event) &&
-        (state.weakFoot === 'all' || card.dataset.weakFoot === state.weakFoot) &&
-        (state.skillMoves === 'all' || card.dataset.skillMoves === state.skillMoves);
-
+        (state.event === 'all' || card.dataset.event === state.event);
       card.hidden = !show;
       if (show) visible += 1;
     });
 
-    if (empty) empty.hidden = visible > 0;
+    if (empty) empty.hidden = visible !== 0;
     if (count) count.textContent = visible + ' review' + (visible === 1 ? '' : 's');
   }
 
-  groups.forEach((group) => {
-    const groupName = group.dataset.filterGroup;
+  document.querySelectorAll('[data-filter]').forEach((group) => {
+    const key = group.dataset.filter;
     group.addEventListener('click', (event) => {
       const button = event.target.closest('button');
       if (!button) return;
-      state[groupName] = button.dataset.value;
-      setGroupState(group, button.dataset.value);
-      applyFilters();
+      state[key] = button.dataset.value;
+      group.querySelectorAll('button').forEach((item) => item.classList.toggle('is-active', item === button));
+      refresh();
     });
   });
 
   search?.addEventListener('input', () => {
     state.search = search.value;
-    applyFilters();
+    refresh();
   });
 
-  reset?.addEventListener('click', () => {
-    Object.assign(state, { search: '', tier: 'all', position: 'all', event: 'all', weakFoot: 'all', skillMoves: 'all' });
+  document.querySelector('#reset-filters')?.addEventListener('click', () => {
+    Object.assign(state, { search: '', tier: 'all', position: 'all', event: 'all' });
     if (search) search.value = '';
-    groups.forEach((group) => setGroupState(group, 'all'));
-    applyFilters();
+    document.querySelectorAll('[data-filter]').forEach((group) => {
+      group.querySelectorAll('button').forEach((button, index) => button.classList.toggle('is-active', index === 0));
+    });
+    refresh();
   });
 
-  mobileOpen?.addEventListener('click', () => {
-    sidebar?.classList.toggle('is-mobile-open');
-    mobileOpen.textContent = sidebar?.classList.contains('is-mobile-open') ? 'CLOSE FILTERS' : 'FILTER PLAYERS · 01 LIVE';
+  mobileToggle?.addEventListener('click', () => {
+    rail?.classList.toggle('is-open');
+    mobileToggle.textContent = rail?.classList.contains('is-open') ? 'CLOSE FILTERS' : 'FILTER PLAYERS';
   });
 
   window.addEventListener('keydown', (event) => {
@@ -249,8 +196,8 @@ const skillGroups = ['All skill moves', ...new Set(playerReviews.map((player) =>
       search?.focus();
     }
     if (event.key === 'Escape') {
-      sidebar?.classList.remove('is-mobile-open');
-      if (mobileOpen) mobileOpen.textContent = 'FILTER PLAYERS · 01 LIVE';
+      rail?.classList.remove('is-open');
+      if (mobileToggle) mobileToggle.textContent = 'FILTER PLAYERS';
     }
   });
 </script>
