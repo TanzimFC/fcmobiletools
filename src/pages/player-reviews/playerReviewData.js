@@ -13,78 +13,76 @@ export function getTier(score) {
 
 export const playerReviews = [
   {
-    slug: 'hristo-stoichkov-121-numero-8',
-    name: 'Hristo Stoichkov',
-    ovr: 121,
-    position: 'ST',
-    alternatePositions: ['RW', 'LW'],
-    event: 'Numero 8',
-    program: 'Numero 8',
-    nation: 'Bulgaria',
-    foot: 'Left',
-    weakFoot: 4,
-    skillMoves: 4,
-    workRate: 'High / Medium',
-    height: '178 cm',
-    weight: '73 kg',
-    starShards: 22080,
-    auctionable: false,
-    cardImage: 'https://assets.fcmobilesquad.com/players/cards/v2/26/30920646-96b6e49b72c964dd.png',
-    stats: {
-      pace: 153,
-      shooting: 152,
-      passing: 141,
-      dribbling: 150,
-      defending: 95,
-      physical: 144
+      slug: 'hristo-stoichkov-121-numero-8',
+      name: 'Hristo Stoichkov',
+      ovr: 121,
+      position: 'ST',
+      alternatePositions: ['RW', 'LW'],
+      event: 'Numero 8',
+      program: 'Numero 8',
+      nation: 'Bulgaria',
+      foot: 'Left',
+      weakFoot: 4,
+      skillMoves: 4,
+      workRate: 'High / Medium',
+      height: '178 cm',
+      weight: '73 kg',
+      starShards: 22080,
+      auctionable: false,
+      cardImage: 'https://assets.fcmobilesquad.com/players/cards/v2/26/30920646-96b6e49b72c964dd.png',
+      stats: {
+        pace: 153,
+        shooting: 152,
+        passing: 141,
+        dribbling: 150,
+        defending: 95,
+        physical: 144
+      },
+      substats: [
+        ['Acceleration', 152], ['Sprint Speed', 154],
+        ['Finishing', 156], ['Long Shot', 152], ['Shot Power', 154],
+        ['Positioning', 146], ['Short Passing', 142], ['Long Passing', 139],
+        ['Vision', 140], ['Crossing', 142], ['Dribbling', 151],
+        ['Balance', 143], ['Agility', 150], ['Reactions', 152],
+        ['Ball Control', 152], ['Strength', 143], ['Aggression', 151],
+        ['Jumping', 138],
+        // DATA GUARD: Stamina stays out of the weakness list. Treat it as good / 100+ in this editorial review.
+        ['Stamina', 100], ['Heading', 146]
+      ],
+      playstyles: [
+        { name: 'Rapid', level: 1, description: 'Built around acceleration-focused attacking movement.' },
+        { name: 'Clinical Finisher', level: 1, description: 'Supports close-to-mid-range finishing.' }
+      ],
+      traits: ['Roulette', 'Twist Flip', 'Powerful Driven Free Kick', 'Finesse Shot', 'Flair'],
+      review: {
+        overall: 9.2,
+        summary: 'A high-output attacking profile built around pace, finishing, close control and a strong physical base.',
+        verdict: 'The card is strongest as a direct scoring option. Pace, finishing and dribbling lead the profile, with the 4★ weak foot, creation ceiling and defensive contribution providing the clearest trade-offs.',
+        categories: [
+          ['Pace', 9.5, '153 Pace with 152 Acceleration and 154 Sprint Speed.'],
+          ['Shooting', 9.5, '152 Shooting with 156 Finishing and 154 Shot Power.'],
+          ['Passing', 8.5, '141 Passing is useful for combinations and simple link play.'],
+          ['Dribbling', 9.3, '150 Dribbling with strong Agility, Reactions and Ball Control.'],
+          ['Physical', 8.8, '144 Physical and 143 Strength support the card well, with good stamina in this review profile.'],
+          ['Defending', 4.8, 'Defensive attributes are not central to this card’s role.']
+        ],
+        strengths: [
+          ['Explosive pace', '152 Acceleration and 154 Sprint Speed support a direct forward profile.'],
+          ['Finishing', '156 Finishing and 154 Shot Power give the card a clear scoring identity.'],
+          ['Close control', '150 Dribbling with 150 Agility, 152 Reactions and 152 Ball Control.'],
+          ['Physical base', '144 Physical, 143 Strength and the reviewed stamina profile support sustained attacking play.'],
+          ['Flexibility', 'ST is the primary position, with RW and LW available as alternatives.']
+        ],
+        weaknesses: [
+          ['Weak foot', '4★ Weak Foot gives less flexibility than a 5★ option.'],
+          ['Creation', 'Passing is useful, but playmaking is not the central strength of the card.'],
+          ['Defensive output', 'The defensive profile contributes little to its attacking role.']
+        ],
+        bestFor: 'Direct attacking play, runs behind the defence and finishing around the box.',
+        bestUse: 'Start at ST. RW and LW are alternative placements when the squad needs positional flexibility.',
+        dataGuard: 'Do not flag stamina as a weakness for this review. Keep the intended 100+ / good-stamina interpretation unless the reviewed card data is deliberately updated.',
+      }
     },
-    substats: [
-      ['Acceleration', 152], ['Sprint Speed', 154],
-      ['Finishing', 156], ['Long Shot', 152], ['Shot Power', 154],
-      ['Positioning', 146], ['Short Passing', 142], ['Long Passing', 139],
-      ['Vision', 140], ['Crossing', 142], ['Dribbling', 151],
-      ['Balance', 143], ['Agility', 150], ['Reactions', 152],
-      ['Ball Control', 152], ['Strength', 143], ['Aggression', 151],
-      ['Jumping', 138],
-      // DATA GUARD: Stamina stays out of the weakness list. Treat it as good / 100+ in this editorial review.
-      ['Stamina', 100], ['Heading', 146]
-    ],
-    playstyles: [
-      { name: 'Rapid', level: 1, description: 'Built around acceleration-focused attacking movement.' },
-      { name: 'Clinical Finisher', level: 1, description: 'Supports close-to-mid-range finishing.' }
-    ],
-    traits: ['Roulette', 'Twist Flip', 'Powerful Driven Free Kick', 'Finesse Shot', 'Flair'],
-    review: {
-      overall: 9.2,
-      summary: 'A high-output attacking profile built around pace, finishing, close control and a strong physical base.',
-      verdict: 'The card is strongest as a direct scoring option. Pace, finishing and dribbling lead the profile, with the 4★ weak foot, creation ceiling and defensive contribution providing the clearest trade-offs.',
-      categories: [
-        ['Pace', 9.5, '153 Pace with 152 Acceleration and 154 Sprint Speed.'],
-        ['Shooting', 9.5, '152 Shooting with 156 Finishing and 154 Shot Power.'],
-        ['Passing', 8.5, '141 Passing is useful for combinations and simple link play.'],
-        ['Dribbling', 9.3, '150 Dribbling with strong Agility, Reactions and Ball Control.'],
-        ['Physical', 8.8, '144 Physical and 143 Strength support the card well, with good stamina in this review profile.'],
-        ['Defending', 4.8, 'Defensive attributes are not central to this card’s role.']
-      ],
-      strengths: [
-        ['Explosive pace', '152 Acceleration and 154 Sprint Speed support a direct forward profile.'],
-        ['Finishing', '156 Finishing and 154 Shot Power give the card a clear scoring identity.'],
-        ['Close control', '150 Dribbling with 150 Agility, 152 Reactions and 152 Ball Control.'],
-        ['Physical base', '144 Physical, 143 Strength and the reviewed stamina profile support sustained attacking play.'],
-        ['Flexibility', 'ST is the primary position, with RW and LW available as alternatives.']
-      ],
-      weaknesses: [
-        ['Weak foot', '4★ Weak Foot gives less flexibility than a 5★ option.'],
-        ['Creation', 'Passing is useful, but playmaking is not the central strength of the card.'],
-        ['Defensive output', 'The defensive profile contributes little to its attacking role.']
-      ],
-      bestFor: 'Direct attacking play, runs behind the defence and finishing around the box.',
-      bestUse: 'Start at ST. RW and LW are alternative placements when the squad needs positional flexibility.',
-      dataGuard: 'Do not flag stamina as a weakness for this review. Keep the intended 100+ / good-stamina interpretation unless the reviewed card data is deliberately updated.',
-    }
-  }
-];
-
   {
     "slug": "frank-rijkaard-122-numero-8",
     "name": "Frank Rijkaard",
@@ -386,6 +384,127 @@ export const playerReviews = [
     }
   },
   {
+    "slug": "dunga-121-numero-8",
+    "name": "Dunga",
+    "ovr": 121,
+    "position": "CDM",
+    "alternatePositions": [
+      "CM"
+    ],
+    "event": "Numero 8",
+    "program": "Numero 8",
+    "nation": "Brazil",
+    "foot": "Right",
+    "weakFoot": 4,
+    "skillMoves": 4,
+    "workRate": "Low / High",
+    "height": "177 cm",
+    "weight": "75 kg",
+    "starShards": 23690,
+    "auctionable": false,
+    "cardImage": null,
+    "stats": {
+      "pace": 140,
+      "shooting": 126,
+      "passing": 139,
+      "dribbling": 141,
+      "defending": 150,
+      "physical": 143
+    },
+    "substats": [],
+    "playstyles": [
+      {
+        "name": "Bruiser",
+        "level": 1,
+        "description": "Supports stronger physical challenges and ball-winning in midfield."
+      },
+      {
+        "name": "Bullet Pass",
+        "level": 1,
+        "description": "Adds faster, more direct passing after recovering possession."
+      }
+    ],
+    "traits": [
+      "Stepover and Exit",
+      "Bow",
+      "Powerful Driven Free Kick",
+      "Long Passer",
+      "Long Shot Taker"
+    ],
+    "review": {
+      "overall": 9.4,
+      "summary": "A disciplined holding-midfield profile built around defending, physical play and immediate progression after recovery.",
+      "verdict": "Dunga is at his clearest as a holding CDM. 150 Defending, 143 Physical and 139 Passing create a profile focused on winning possession and moving it forward, while the low attacking work rate keeps the role disciplined.",
+      "categories": [
+        [
+          "Pace",
+          8.9,
+          "140 Pace provides useful midfield coverage without making the card a pure mobility specialist."
+        ],
+        [
+          "Shooting",
+          7.4,
+          "126 Shooting is secondary to the defensive role, with limited attacking emphasis."
+        ],
+        [
+          "Passing",
+          9.2,
+          "139 Passing supports the card's transition role after winning possession."
+        ],
+        [
+          "Dribbling",
+          8.5,
+          "141 Dribbling is functional for a defensive midfielder rather than a carrying-focused profile."
+        ],
+        [
+          "Physical",
+          9.4,
+          "143 Physical supports contact-heavy midfield play."
+        ],
+        [
+          "Defending",
+          9.8,
+          "150 Defending is the headline attribute and defines the card's identity."
+        ]
+      ],
+      "strengths": [
+        [
+          "Defensive anchor",
+          "150 Defending makes defensive control the clear centre of the profile."
+        ],
+        [
+          "Physical base",
+          "143 Physical supports contact and ball-winning situations."
+        ],
+        [
+          "Transition passing",
+          "139 Passing and Bullet Pass give the card a useful first action after recovery."
+        ],
+        [
+          "Discipline",
+          "Low / High work rate keeps the profile naturally suited to a holding role."
+        ]
+      ],
+      "weaknesses": [
+        [
+          "Anticipate gap",
+          "The card's defensive package is built around Bruiser rather than Anticipate."
+        ],
+        [
+          "Attacking output",
+          "126 Shooting is a supporting attribute rather than a major source of value."
+        ],
+        [
+          "Aerial reach",
+          "At 177 cm, the card has less height than larger defensive midfield profiles."
+        ]
+      ],
+      "bestFor": "Holding midfield, ball winning, defensive coverage and quick progression after recovery.",
+      "bestUse": "Start at CDM. CM is the alternative placement when the formation needs a more advanced midfield position.",
+      "dataGuard": "Do not invent detailed sub-stat values until the current reviewed card data is verified."
+    }
+  },
+  {
     "slug": "steven-gerrard-119-numero-8",
     "name": "Steven Gerrard",
     "ovr": 119,
@@ -669,127 +788,6 @@ export const playerReviews = [
       "statsPending": "Core attribute numbers are not yet published in the verified data set used for this review entry; no numbers have been invented."
     }
   }
-
-  {
-    "slug": "dunga-121-numero-8",
-    "name": "Dunga",
-    "ovr": 121,
-    "position": "CDM",
-    "alternatePositions": [
-      "CM"
-    ],
-    "event": "Numero 8",
-    "program": "Numero 8",
-    "nation": "Brazil",
-    "foot": "Right",
-    "weakFoot": 4,
-    "skillMoves": 4,
-    "workRate": "Low / High",
-    "height": "177 cm",
-    "weight": "75 kg",
-    "starShards": 23690,
-    "auctionable": false,
-    "cardImage": null,
-    "stats": {
-      "pace": 140,
-      "shooting": 126,
-      "passing": 139,
-      "dribbling": 141,
-      "defending": 150,
-      "physical": 143
-    },
-    "substats": [],
-    "playstyles": [
-      {
-        "name": "Bruiser",
-        "level": 1,
-        "description": "Supports stronger physical challenges and ball-winning in midfield."
-      },
-      {
-        "name": "Bullet Pass",
-        "level": 1,
-        "description": "Adds faster, more direct passing after recovering possession."
-      }
-    ],
-    "traits": [
-      "Stepover and Exit",
-      "Bow",
-      "Powerful Driven Free Kick",
-      "Long Passer",
-      "Long Shot Taker"
-    ],
-    "review": {
-      "overall": 9.4,
-      "summary": "A disciplined holding-midfield profile built around defending, physical play and immediate progression after recovery.",
-      "verdict": "Dunga is at his clearest as a holding CDM. 150 Defending, 143 Physical and 139 Passing create a profile focused on winning possession and moving it forward, while the low attacking work rate keeps the role disciplined.",
-      "categories": [
-        [
-          "Pace",
-          8.9,
-          "140 Pace provides useful midfield coverage without making the card a pure mobility specialist."
-        ],
-        [
-          "Shooting",
-          7.4,
-          "126 Shooting is secondary to the defensive role, with limited attacking emphasis."
-        ],
-        [
-          "Passing",
-          9.2,
-          "139 Passing supports the card's transition role after winning possession."
-        ],
-        [
-          "Dribbling",
-          8.5,
-          "141 Dribbling is functional for a defensive midfielder rather than a carrying-focused profile."
-        ],
-        [
-          "Physical",
-          9.4,
-          "143 Physical supports contact-heavy midfield play."
-        ],
-        [
-          "Defending",
-          9.8,
-          "150 Defending is the headline attribute and defines the card's identity."
-        ]
-      ],
-      "strengths": [
-        [
-          "Defensive anchor",
-          "150 Defending makes defensive control the clear centre of the profile."
-        ],
-        [
-          "Physical base",
-          "143 Physical supports contact and ball-winning situations."
-        ],
-        [
-          "Transition passing",
-          "139 Passing and Bullet Pass give the card a useful first action after recovery."
-        ],
-        [
-          "Discipline",
-          "Low / High work rate keeps the profile naturally suited to a holding role."
-        ]
-      ],
-      "weaknesses": [
-        [
-          "Anticipate gap",
-          "The card's defensive package is built around Bruiser rather than Anticipate."
-        ],
-        [
-          "Attacking output",
-          "126 Shooting is a supporting attribute rather than a major source of value."
-        ],
-        [
-          "Aerial reach",
-          "At 177 cm, the card has less height than larger defensive midfield profiles."
-        ]
-      ],
-      "bestFor": "Holding midfield, ball winning, defensive coverage and quick progression after recovery.",
-      "bestUse": "Start at CDM. CM is the alternative placement when the formation needs a more advanced midfield position.",
-      "dataGuard": "Do not invent detailed sub-stat values until the current reviewed card data is verified."
-    }
-  }
+];
 
 export const getPlayerReview = (slug) => playerReviews.find((player) => player.slug === slug);
