@@ -4,267 +4,206 @@ import { getPlayerReview, getTier } from './playerReviewData.js';
 import './player-reviews.css';
 
 export function getStaticPaths() {
-  return [
-    {
-      params: { slug: 'hristo-stoichkov-121-numero-8' },
-      props: { player: getPlayerReview('hristo-stoichkov-121-numero-8') }
-    }
-  ];
+  return [{
+    params: { slug: 'hristo-stoichkov-121-numero-8' },
+    props: { player: getPlayerReview('hristo-stoichkov-121-numero-8') }
+  }];
 }
 
 const player = Astro.props.player;
 const tier = getTier(player.review.overall);
 const tone = tier.color;
-const barClass = (score) => {
-  const color = getTier(score).color;
-  return color === 'green' ? 'bar-green' : color === 'yellow' ? 'bar-yellow' : 'bar-red';
+const categoryTone = (score) => score >= 9 ? 'green' : score >= 7 ? 'yellow' : 'red';
+const baseStats = Object.entries(player.stats);
+const detailGroups = {
+  attack: ['Finishing','Long Shot','Shot Power','Positioning','Short Passing','Long Passing','Vision','Crossing'],
+  movement: ['Acceleration','Sprint Speed','Dribbling','Balance','Agility','Reactions','Ball Control'],
+  physical: ['Strength','Aggression','Jumping','Stamina','Heading']
 };
-const title = player.name + ' ' + player.ovr + ' OVR Review — ' + player.event + ' | FC Mobile';
-const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' player review with ratings, attributes, strengths, weaknesses and PlayStyles.';
+const detailStats = Object.entries(detailGroups).flatMap(([group, labels]) =>
+  labels.map((name) => {
+    const item = player.substats.find(([label]) => label === name);
+    return item ? { group, label: item[0], value: item[1] } : null;
+  }).filter(Boolean)
+);
+const reviewTitle = player.name + ' ' + player.ovr + ' OVR Review — ' + player.event + ' | FC Mobile';
+const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' player review with editorial ratings, card data, strengths, weaknesses and PlayStyles.';
 ---
-<BaseLayout title={title} description={description} image={player.cardImage} type="article">
-  <main class="review-page review-detail" id="review-top">
+<BaseLayout title={reviewTitle} description={description} image={player.cardImage} type="article">
+  <main class="review-page review-detail stoichkov-review" id="review-top">
     <div class="detail-progress"><i id="detail-progress"></i></div>
 
-    <div class="review-shell">
-      <div class="detail-topbar">
-        <a class="detail-back" href="/player-reviews/">← Player Reviews</a>
-        <span class="detail-update">Editorial player review</span>
-      </div>
+    <div class="review-shell sr-shell">
+      <header class="sr-topbar">
+        <a href="/player-reviews/" class="sr-back">← Player Reviews</a>
+        <div class="sr-topmeta"><span>PLAYER DOSSIER</span><b>{player.event}</b></div>
+      </header>
 
-      <div class="detail-layout">
-        <aside class="detail-left">
-          <div class="detail-nav-card">
-            <div class="detail-nav-title">Review</div>
-            <nav class="detail-nav">
-              <a href="#overview" data-nav="overview" class="is-active"><span>01</span><b>Overview</b></a>
-              <a href="#ratings" data-nav="ratings"><span>02</span><b>Ratings</b></a>
-              <a href="#signals" data-nav="signals"><span>03</span><b>Signals</b></a>
-              <a href="#fit" data-nav="fit"><span>04</span><b>Fit</b></a>
-              <a href="#attributes" data-nav="attributes"><span>05</span><b>Attributes</b></a>
-            </nav>
+      <section class="sr-hero sr-reveal">
+        <div class="sr-hero-card" data-card-zone>
+          <span class="sr-card-mark">{player.ovr}</span>
+          <div class="sr-card-glow"></div>
+          <img class="sr-card" src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' card'} draggable="false" />
+        </div>
+
+        <div class="sr-hero-copy">
+          <div class="sr-kicker"><i></i> Editorial review</div>
+          <div class="sr-id"><span>{player.position}</span><b>{player.ovr} OVR</b><em>{player.event}</em></div>
+          <h1>{player.name}</h1>
+          <p class="sr-intro">{player.review.summary}</p>
+
+          <div class="sr-score-lockup">
+            <strong>{player.review.overall.toFixed(1)}</strong>
+            <span>/10</span>
+            <b class={'sr-tier-' + tone}>{tier.name}</b>
+          </div>
+
+          <div class="sr-fact-grid">
+            <div><small>Primary</small><b>{player.position}</b></div>
+            <div><small>Alt positions</small><b>{player.alternatePositions.join(' · ')}</b></div>
+            <div><small>Weak foot</small><b>{player.weakFoot}★</b></div>
+            <div><small>Skill moves</small><b>{player.skillMoves}★</b></div>
+            <div><small>Foot</small><b>{player.foot}</b></div>
+            <div><small>Work rate</small><b>{player.workRate}</b></div>
+          </div>
+        </div>
+
+        <aside class="sr-hero-side">
+          <div class="sr-side-top"><span>Card snapshot</span><b>{player.program}</b></div>
+          <div class="sr-ring" style={'--angle:' + player.review.overall * 36 + 'deg'}><strong>{player.review.overall.toFixed(1)}</strong><small>/ 10</small></div>
+          <div class="sr-side-grid">
+            <div><span>Nation</span><b>{player.nation}</b></div>
+            <div><span>Height</span><b>{player.height}</b></div>
+            <div><span>Weight</span><b>{player.weight}</b></div>
+            <div><span>Shards</span><b>{player.starShards.toLocaleString()}</b></div>
+            <div><span>Auctionable</span><b>{player.auctionable ? 'Yes' : 'No'}</b></div>
           </div>
         </aside>
+      </section>
 
-        <section class="detail-main">
-          <section class="detail-hero reveal" id="overview" data-section>
-            <div class="detail-card-stage" data-card-zone>
-              <img class="detail-card" src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' ' + player.event + ' card'} draggable="false" />
-            </div>
+      <section class="sr-block sr-reveal" id="ratings">
+        <header class="sr-head"><div><small>01 / PERFORMANCE MAP</small><h2>Profile at a glance.</h2></div><p>Base card attributes and editorial category scores are shown separately.</p></header>
 
-            <div class="detail-copy">
-              <p class="detail-eyebrow">TANZIMFC PLAYER REVIEW</p>
-              <div class="detail-tags">
-                <span class="detail-tag accent">{player.event}</span>
-                <span class="detail-tag">{player.position}</span>
-                <span class="detail-tag">{player.ovr} OVR</span>
-              </div>
-              <h1>{player.name}</h1>
-              <p class="summary">{player.review.verdict}</p>
+        <div class="sr-six">
+          {baseStats.map(([label,value]) => (
+            <article><div><span>{label}</span><b>{value}</b></div><i><em style={'width:' + Math.min(value,160) / 160 * 100 + '%'}></em></i></article>
+          ))}
+        </div>
 
-              <div class="detail-rating-line">
-                <strong class="detail-score">{player.review.overall.toFixed(1)}</strong>
-                <span class={'detail-tier tier-' + tone}>{tier.name}</span>
-              </div>
+        <div class="sr-categories">
+          {player.review.categories.map(([label,score,note]) => (
+            <article>
+              <div class="sr-cat-score"><b>{score.toFixed(1)}</b><span>{label}</span></div>
+              <div><i><em class={'sr-fill-' + categoryTone(score)} style={'width:' + score * 10 + '%'}></em></i><p>{note}</p></div>
+            </article>
+          ))}
+        </div>
+      </section>
 
-              <div class="detail-meta-grid">
-                <div class="detail-meta"><small>POSITION</small><strong>{player.position}</strong></div>
-                <div class="detail-meta"><small>FOOT</small><strong>{player.foot}</strong></div>
-                <div class="detail-meta"><small>WEAK FOOT</small><strong>{player.weakFoot}★</strong></div>
-                <div class="detail-meta"><small>SKILL MOVES</small><strong>{player.skillMoves}★</strong></div>
-              </div>
+      <section class="sr-two sr-reveal">
+        <article class="sr-block sr-signals">
+          <header class="sr-head"><div><small>02 / STRENGTHS</small><h2>What stands out.</h2></div><b>+</b></header>
+          {player.review.strengths.map(([label,detail],index) => (
+            <button type="button" class="sr-signal" aria-expanded="false">
+              <span>{String(index + 1).padStart(2,'0')}</span>
+              <div><b>{label}</b><small>{detail}</small></div>
+              <i>↗</i>
+            </button>
+          ))}
+        </article>
 
-              <p class="detail-note">{player.height} · {player.weight} · {player.workRate} · {player.auctionable ? 'Auctionable' : 'Not auctionable'}</p>
-            </div>
-          </section>
+        <article class="sr-block sr-signals">
+          <header class="sr-head"><div><small>03 / LIMITATIONS</small><h2>What to account for.</h2></div><b class="sr-minus">−</b></header>
+          {player.review.weaknesses.map(([label,detail],index) => (
+            <button type="button" class="sr-signal" aria-expanded="false">
+              <span>{String(index + 1).padStart(2,'0')}</span>
+              <div><b>{label}</b><small>{detail}</small></div>
+              <i>↗</i>
+            </button>
+          ))}
+        </article>
+      </section>
 
-          <section class="detail-section reveal" id="ratings" data-section>
-            <header class="detail-section-header">
-              <div><p>02 / REVIEW SCORE</p><h2>Category ratings</h2></div>
-              <small>{tier.name.toUpperCase()}</small>
-            </header>
-            <div class="category-list">
-              {player.review.categories.map(([label, score, note]) => (
-                <div class="category-row">
-                  <label>{label}</label>
-                  <div class="category-track"><i class={barClass(score)} style={'width:' + (score * 10) + '%'}></i></div>
-                  <strong>{score.toFixed(1)}</strong>
-                  <p>{note}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+      <section class="sr-block sr-reveal" id="fit">
+        <header class="sr-head"><div><small>04 / ROLE PROFILE</small><h2>How to read the card.</h2></div><p>{player.review.bestFor}</p></header>
+        <div class="sr-role">
+          <article class="sr-role-main"><small>PRIMARY POSITION</small><strong>{player.position}</strong><p>Start here. Alternative positions: {player.alternatePositions.join(' / ')}.</p><div>{player.position}{player.alternatePositions.map((pos) => <span>{pos}</span>)}</div></article>
+          <article><small>BEST USE</small><strong>{player.review.bestUse}</strong><p>{player.review.bestFor}</p></article>
+          <article><small>PLAYSTYLES</small>{player.playstyles.map((style) => <div class="sr-style"><b>{style.name}</b><span>LEVEL {style.level}</span><p>{style.description}</p></div>)}</article>
+          <article><small>TRAITS</small><div class="sr-traits">{player.traits.map((trait) => <span>{trait}</span>)}</div></article>
+        </div>
+      </section>
 
-          <section class="detail-section reveal" id="signals" data-section>
-            <header class="detail-section-header">
-              <div><p>03 / KEY SIGNALS</p><h2>Strengths & weaknesses</h2></div>
-              <small>EXPAND FOR DETAIL</small>
-            </header>
+      <section class="sr-block sr-reveal" id="attributes">
+        <header class="sr-head"><div><small>05 / ATTRIBUTE MATRIX</small><h2>Detailed card numbers.</h2></div><p>Switch between groups for a faster scan.</p></header>
+        <div class="sr-tabs">
+          <button class="is-active" type="button" data-filter="all">All</button>
+          <button type="button" data-filter="attack">Attack</button>
+          <button type="button" data-filter="movement">Movement</button>
+          <button type="button" data-filter="physical">Physical</button>
+        </div>
+        <div class="sr-detail-grid">
+          {detailStats.map((item) => (
+            <article class="sr-detail" data-group={item.group}>
+              <span>{item.label}</span><b>{item.value}</b><i><em style={'width:' + Math.min(item.value,160) / 160 * 100 + '%'}></em></i>
+            </article>
+          ))}
+        </div>
+      </section>
 
-            <div class="signal-grid">
-              <article class="signal-card signal-good">
-                <div class="signal-card-head"><h3>Strengths</h3><span class="signal-mark">+</span></div>
-                {player.review.strengths.map(([title, detail], index) => (
-                  <button class="signal-row" type="button">
-                    <span class="signal-number">{String(index + 1).padStart(2, '0')}</span>
-                    <span class="signal-content"><strong>{title}</strong><small>{detail}</small></span>
-                    <span class="signal-arrow">›</span>
-                  </button>
-                ))}
-              </article>
+      <section class="sr-final sr-reveal">
+        <div><small>EDITORIAL TAKEAWAY</small><h2>{player.review.verdict}</h2></div>
+        <strong>{player.review.overall.toFixed(1)}<span>/10</span></strong>
+      </section>
 
-              <article class="signal-card signal-bad">
-                <div class="signal-card-head"><h3>Weaknesses</h3><span class="signal-mark">−</span></div>
-                {player.review.weaknesses.map(([title, detail], index) => (
-                  <button class="signal-row" type="button">
-                    <span class="signal-number">{String(index + 1).padStart(2, '0')}</span>
-                    <span class="signal-content"><strong>{title}</strong><small>{detail}</small></span>
-                    <span class="signal-arrow">›</span>
-                  </button>
-                ))}
-              </article>
-            </div>
-          </section>
-
-          <section class="detail-section reveal" id="fit" data-section>
-            <header class="detail-section-header">
-              <div><p>04 / ROLE</p><h2>Fit & PlayStyles</h2></div>
-              <small>{player.review.bestFor}</small>
-            </header>
-
-            <div class="fit-grid">
-              <div class="fit-card"><small>Primary position</small><strong>{player.position}</strong><span>{player.alternatePositions.join(' / ')} alternate positions</span></div>
-              <div class="fit-card"><small>Best use</small><strong>{player.review.bestFor}</strong><span>Editorial fit</span></div>
-              <div class="fit-card"><small>Profile</small><strong>{player.height}</strong><span>{player.weight} · {player.workRate}</span></div>
-            </div>
-
-            <div class="playstyle-area">
-              <div class="fit-card">
-                <small>PlayStyles & traits</small>
-                <div class="pills">{player.playstyles.map((style) => <span class="pill">{style.name} · L{style.level}</span>)}</div>
-                <div class="pills">{player.traits.map((trait) => <span class="pill">{trait}</span>)}</div>
-              </div>
-            </div>
-          </section>
-
-          <section class="detail-section reveal" id="attributes" data-section>
-            <header class="detail-section-header">
-              <div><p>05 / CARD DATA</p><h2>Attributes</h2></div>
-              <small>BASE CARD</small>
-            </header>
-
-            <div class="stat-toolbar" id="stat-toolbar">
-              <button class="stat-tab is-active" type="button" data-stat-filter="all">All</button>
-              <button class="stat-tab" type="button" data-stat-filter="attack">Attack</button>
-              <button class="stat-tab" type="button" data-stat-filter="movement">Movement</button>
-              <button class="stat-tab" type="button" data-stat-filter="physical">Physical</button>
-            </div>
-
-            <div class="stat-grid">
-              {Object.entries(player.stats).map(([label, value]) => (
-                <div class="stat-cell" data-stat-group={label === 'shooting' || label === 'passing' || label === 'dribbling' ? 'attack' : label === 'pace' ? 'movement' : label === 'physical' || label === 'defending' ? 'physical' : 'attack'}>
-                  <span>{label}</span><strong>{value}</strong><small>Base attribute</small>
-                </div>
-              ))}
-            </div>
-
-            <div class="stat-grid" style="padding-top:0">
-              {player.substats.map(([label, value]) => (
-                <div class="stat-cell" data-substat>
-                  <span>{label}</span><strong>{value}</strong><small>Detailed attribute</small>
-                </div>
-              ))}
-            </div>
-          </section>
-        </section>
-
-        <aside class="detail-right">
-          <section class="detail-side-card detail-side-block">
-            <p class="detail-side-title">Rating</p>
-            <div class="score-dial" style={'--dial-angle:' + (player.review.overall * 36) + 'deg;--dial-color:var(--rp-' + tone + ')'}>
-              <div><small>RATING</small><strong>{player.review.overall.toFixed(1)}</strong></div>
-            </div>
-            <p class="detail-side-copy">{tier.name} · {player.review.overall.toFixed(1)} / 10</p>
-          </section>
-
-          <section class="detail-side-card detail-side-block">
-            <p class="detail-side-title">Snapshot</p>
-            <div class="snapshot">
-              <div><span>OVR</span><strong>{player.ovr}</strong></div>
-              <div><span>Nation</span><strong>{player.nation}</strong></div>
-              <div><span>Position</span><strong>{player.position}</strong></div>
-              <div><span>Foot</span><strong>{player.foot}</strong></div>
-              <div><span>Weak Foot</span><strong>{player.weakFoot}★</strong></div>
-              <div><span>Skill Moves</span><strong>{player.skillMoves}★</strong></div>
-              <div><span>Height</span><strong>{player.height}</strong></div>
-              <div><span>Star Shards</span><strong>{player.starShards.toLocaleString()}</strong></div>
-            </div>
-          </section>
-
-        </aside>
-      </div>
+      <nav class="sr-bottom"><a href="/player-reviews/">← All player reviews</a><span>{player.name} · {player.ovr} OVR</span><a href="#review-top">Back to top ↑</a></nav>
     </div>
   </main>
 </BaseLayout>
 
 <script>
-  const cardZone = document.querySelector('[data-card-zone]');
-  const card = cardZone?.querySelector('.detail-card');
-  const sections = [...document.querySelectorAll('[data-section]')];
-  const navLinks = [...document.querySelectorAll('[data-nav]')];
+  const zone = document.querySelector('[data-card-zone]');
+  const card = zone?.querySelector('.sr-card');
   const progress = document.querySelector('#detail-progress');
 
-  if (cardZone && card && window.matchMedia('(pointer:fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    cardZone.addEventListener('pointermove', (event) => {
-      const rect = cardZone.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
-      card.style.transform =
-        'translate3d(' + (x * 10) + 'px,' + (y * -7) + 'px,0) rotateY(' + (x * 5) + 'deg) rotateX(' + (y * -4) + 'deg) rotateZ(-.5deg) scale(1.015)';
+  if (zone && card && window.matchMedia('(pointer:fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    zone.addEventListener('pointermove', (event) => {
+      const rect = zone.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - .5;
+      const y = (event.clientY - rect.top) / rect.height - .5;
+      card.style.transform = 'translate3d(' + x * 12 + 'px,' + y * -10 + 'px,0) rotateY(' + x * 7 + 'deg) rotateX(' + y * -5 + 'deg) rotateZ(-1deg) scale(1.02)';
     });
-    cardZone.addEventListener('pointerleave', () => { card.style.transform = ''; });
+    zone.addEventListener('pointerleave', () => card.style.transform = '');
   }
 
-  document.querySelectorAll('.signal-row').forEach((row) => {
-    row.addEventListener('click', () => row.classList.toggle('is-open'));
+  document.querySelectorAll('.sr-signal').forEach((button) => {
+    button.addEventListener('click', () => {
+      const open = button.classList.toggle('is-open');
+      button.setAttribute('aria-expanded', String(open));
+    });
   });
 
-  document.querySelectorAll('.stat-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      const filter = tab.dataset.statFilter;
-      document.querySelectorAll('.stat-tab').forEach((item) => item.classList.toggle('is-active', item === tab));
-      document.querySelectorAll('[data-stat-group]').forEach((cell) => {
-        cell.dataset.hidden = filter === 'all' || cell.dataset.statGroup === filter ? 'false' : 'true';
-      });
+  document.querySelectorAll('[data-filter]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const filter = button.dataset.filter;
+      document.querySelectorAll('[data-filter]').forEach((item) => item.classList.toggle('is-active', item === button));
+      document.querySelectorAll('.sr-detail').forEach((item) => item.hidden = filter !== 'all' && item.dataset.group !== filter);
     });
   });
 
   if ('IntersectionObserver' in window) {
-    const revealObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.07 });
-    document.querySelectorAll('.reveal').forEach((node) => revealObserver.observe(node));
-
-    const navObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        navLinks.forEach((link) => link.classList.toggle('is-active', link.dataset.nav === entry.target.id));
-      });
-    }, { rootMargin: '-20% 0 -60% 0', threshold: 0 });
-    sections.forEach((section) => navObserver.observe(section));
+    const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
+      if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); }
+    }), { threshold:.06 });
+    document.querySelectorAll('.sr-reveal').forEach((node) => observer.observe(node));
   } else {
-    document.querySelectorAll('.reveal').forEach((node) => node.classList.add('is-visible'));
+    document.querySelectorAll('.sr-reveal').forEach((node) => node.classList.add('is-visible'));
   }
 
   const updateProgress = () => {
     const doc = document.documentElement;
     const max = doc.scrollHeight - doc.clientHeight;
-    if (progress) progress.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + '%';
+    if (progress) progress.style.width = (max > 0 ? window.scrollY / max * 100 : 0) + '%';
   };
   updateProgress();
   window.addEventListener('scroll', updateProgress, { passive:true });
