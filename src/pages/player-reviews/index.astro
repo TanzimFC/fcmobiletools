@@ -3,47 +3,155 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { playerReviews, getTier } from './playerReviewData.js';
 import './player-reviews.css';
 
+const featured = playerReviews[0];
 const tiers = ['All tiers', 'Elite', 'Strong', 'Solid', 'Mixed', 'Weak'];
 const positions = ['All positions', ...new Set(playerReviews.map((player) => player.position))];
 const events = ['All events', ...new Set(playerReviews.map((player) => player.event))];
+const featuredTier = getTier(featured.review.overall);
 ---
-<BaseLayout title="FC Mobile Player Reviews" description="TanzimFC editorial FC Mobile player reviews with card data, ratings, attributes and PlayStyles.">
-  <main class="review-page">
+<BaseLayout
+  title="FC Mobile Player Reviews"
+  description="Premium FC Mobile player reviews, card breakdowns, ratings, attributes and PlayStyles from TanzimFC."
+>
+  <main class="review-page review-home">
+    <div class="review-ambient review-ambient-a"></div>
+    <div class="review-ambient review-ambient-b"></div>
+    <div class="review-gridline"></div>
+
     <div class="review-shell">
-      <header class="review-hero">
-        <div>
-          <p class="review-eyebrow">FC MOBILE / PLAYER REVIEWS</p>
-          <h1>Review the<br /><span style="color:var(--blue)">card.</span></h1>
-          <p>Browse full FC Mobile player cards. Open a card to view the complete editorial review, rating breakdown and data.</p>
+      <header class="review-topbar reveal">
+        <div class="review-brand-lockup">
+          <span class="review-brand-mark">01</span>
+          <div>
+            <p class="review-eyebrow">FC MOBILE / PLAYER REVIEWS</p>
+            <h1>Player <em>Reviews</em></h1>
+          </div>
         </div>
-        <div class="review-scale">
-          <small>RATING SCALE</small>
-          <strong>5.0 — 10.0</strong>
-          <span>Poor · Average · Good · Great · Excellent</span>
+        <div class="review-top-meta">
+          <span>{playerReviews.length.toString().padStart(2, '0')} PLAYERS</span>
+          <i></i>
+          <span>EDITORIAL</span>
         </div>
       </header>
 
-      <section class="review-controls" aria-label="Player review filters">
-        <input id="review-search" class="review-search" type="search" placeholder="Search player or event…" autocomplete="off" />
-        <select id="review-tier" class="review-select" aria-label="Filter by tier">{tiers.map((item) => <option value={item}>{item}</option>)}</select>
-        <select id="review-position" class="review-select" aria-label="Filter by position">{positions.map((item) => <option value={item}>{item}</option>)}</select>
-        <select id="review-event" class="review-select" aria-label="Filter by event">{events.map((item) => <option value={item}>{item}</option>)}</select>
+      <section class="featured-review reveal" aria-label="Featured player review">
+        <div class="featured-copy">
+          <div class="featured-kicker">
+            <span>FEATURED REVIEW</span>
+            <i></i>
+            <b>{featured.event.toUpperCase()}</b>
+          </div>
+
+          <div class="featured-number">/{featured.ovr}</div>
+
+          <h2>{featured.name}</h2>
+
+          <div class="featured-meta">
+            <span>{featured.position}</span>
+            <i></i>
+            <span>{featured.nation}</span>
+            <i></i>
+            <span>{featured.alternativePositions.join(' / ')}</span>
+          </div>
+
+          <p class="featured-summary">{featured.review.summary}</p>
+
+          <div class="featured-actions">
+            <a class="featured-cta" href={'/player-reviews/' + featured.slug + '/'}>
+              <span>OPEN REVIEW</span>
+              <b>↗</b>
+            </a>
+            <div class={'featured-score featured-score-' + featuredTier.color}>
+              <small>TANZIMFC</small>
+              <strong>{featured.review.overall.toFixed(1)}</strong>
+              <span>{featuredTier.name}</span>
+            </div>
+          </div>
+
+          <div class="featured-highlights">
+            <div><span>PACE</span><strong>{featured.stats.pace}</strong></div>
+            <div><span>SHOOTING</span><strong>{featured.stats.shooting}</strong></div>
+            <div><span>DRIBBLING</span><strong>{featured.stats.dribbling}</strong></div>
+          </div>
+        </div>
+
+        <div class="featured-stage">
+          <div class="stage-label stage-label-top"><span>01</span><b>PLAYER CARD</b></div>
+          <div class="stage-orbit stage-orbit-a"></div>
+          <div class="stage-orbit stage-orbit-b"></div>
+          <div class="stage-pulse"></div>
+          <div class="stage-glow"></div>
+
+          <div class="stage-card-shell">
+            <img src={featured.cardImage} alt={featured.ovr + ' OVR ' + featured.name + ' ' + featured.event + ' player card'} />
+          </div>
+
+          <div class="stage-label stage-label-bottom">
+            <span>{featured.position}</span>
+            <b>{featured.event.toUpperCase()}</b>
+          </div>
+        </div>
       </section>
 
-      <section class="review-grid" id="review-grid" aria-live="polite">
-        {playerReviews.map((player) => {
-          const tier = getTier(player.review.overall);
-          return (
-            <a class="player-tile" href={'/player-reviews/' + player.slug + '/'} data-card
+      <section class="library-section reveal">
+        <div class="library-head">
+          <div>
+            <p class="library-eyebrow">PLAYER LIBRARY</p>
+            <h2>Every card. <span>One click away.</span></h2>
+          </div>
+          <div class="library-count"><strong>{playerReviews.length.toString().padStart(2, '0')}</strong><span>REVIEWS</span></div>
+        </div>
+
+        <div class="review-controls" aria-label="Player review filters">
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="review-search" type="search" placeholder="Search players" autocomplete="off" />
+          </label>
+
+          <div class="select-wrap">
+            <select id="review-tier" class="review-select" aria-label="Filter by tier">
+              {tiers.map((item) => <option value={item}>{item}</option>)}
+            </select>
+          </div>
+
+          <div class="select-wrap">
+            <select id="review-position" class="review-select" aria-label="Filter by position">
+              {positions.map((item) => <option value={item}>{item}</option>)}
+            </select>
+          </div>
+
+          <div class="select-wrap">
+            <select id="review-event" class="review-select" aria-label="Filter by event">
+              {events.map((item) => <option value={item}>{item}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <section class="review-grid" id="review-grid" aria-live="polite">
+          {playerReviews.map((player, index) => (
+            <a
+              class="player-tile reveal"
+              href={'/player-reviews/' + player.slug + '/'}
+              data-card
               data-search={(player.name + ' ' + player.event + ' ' + player.position).toLowerCase()}
-              data-tier={tier.name} data-position={player.position} data-event={player.event}
-              aria-label={'Open ' + player.name + ' player review'}>
-              <div class="player-card-frame"><img src={player.cardImage} alt="" loading="lazy" /></div>
+              data-tier={getTier(player.review.overall).name}
+              data-position={player.position}
+              data-event={player.event}
+              aria-label={'Open ' + player.name + ' player review'}
+            >
+              <div class="player-card-frame">
+                <div class="player-card-light"></div>
+                <img src={player.cardImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+              </div>
               <span class="player-name">{player.name}</span>
             </a>
-          );
-        })}
-        <div id="review-empty" class="empty-state" hidden><strong>No player cards found.</strong>Try a different search or filter.</div>
+          ))}
+
+          <div id="review-empty" class="empty-state" hidden>
+            <strong>No cards match.</strong>
+            <span>Change the filters and try again.</span>
+          </div>
+        </section>
       </section>
     </div>
   </main>
@@ -70,6 +178,7 @@ const events = ['All events', ...new Set(playerReviews.map((player) => player.ev
         (tierValue === 'All tiers' || card.dataset.tier === tierValue) &&
         (positionValue === 'All positions' || card.dataset.position === positionValue) &&
         (eventValue === 'All events' || card.dataset.event === eventValue);
+
       card.hidden = !show;
       if (show) visible += 1;
     });
@@ -79,4 +188,21 @@ const events = ['All events', ...new Set(playerReviews.map((player) => player.ev
 
   search?.addEventListener('input', filterCards);
   [tier, position, event].forEach((control) => control?.addEventListener('change', filterCards));
+
+  const cardsForParallax = document.querySelectorAll('.stage-card-shell');
+  cardsForParallax.forEach((card) => {
+    const stage = card.closest('.featured-stage');
+    if (!stage || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    stage.addEventListener('pointermove', (event) => {
+      const rect = stage.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - .5;
+      const y = (event.clientY - rect.top) / rect.height - .5;
+      card.style.transform = 'translate3d(' + (x * 11) + 'px,' + (y * 9) + 'px,0) rotateY(' + (x * 4) + 'deg) rotateX(' + (y * -3) + 'deg)';
+    });
+
+    stage.addEventListener('pointerleave', () => {
+      card.style.transform = '';
+    });
+  });
 </script>
