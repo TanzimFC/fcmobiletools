@@ -1,0 +1,85 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getPlayerReview, getTier } from '../playerReviewData.js';
+import './player-reviews.css';
+
+export function getStaticPaths() {
+  return [{ params: { slug: 'hristo-stoichkov-121-numero-8' }, props: { player: getPlayerReview('hristo-stoichkov-121-numero-8') } }];
+}
+
+const player = Astro.props.player;
+if (!player) return Astro.redirect('/player-reviews/');
+const tier = getTier(player.review.overall);
+const scoreClass = (score) => getTier(score).color === 'green' ? 'bar-green' : getTier(score).color === 'yellow' ? 'bar-yellow' : 'bar-red';
+const tierClass = tier.color === 'green' ? 'tier-green' : tier.color === 'yellow' ? 'tier-yellow' : 'tier-red';
+const title = player.name + ' ' + player.ovr + ' OVR Review — ' + player.event + ' | FC Mobile';
+const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' review with card stats, PlayStyles, strengths, weaknesses and editorial rating.';
+---
+<BaseLayout title={title} description={description} image={player.cardImage} type="article">
+  <main class="review-page review-detail">
+    <div class="review-shell">
+      <a class="back-link" href="/player-reviews/">← All player reviews</a>
+      <section class="detail-hero">
+        <div class="detail-card"><img src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' ' + player.event + ' player card'} /></div>
+        <div class="detail-main">
+          <div class="detail-kicker"><span class="detail-chip event">{player.event}</span><span class="detail-chip">{player.program}</span></div>
+          <h1>{player.name}</h1>
+          <div class="detail-meta"><span><b>{player.ovr}</b> OVR</span><span>•</span><span><b>{player.position}</b></span><span>•</span><span>{player.nation}</span><span>•</span><span>{player.alternativePositions.join(' / ')}</span></div>
+          <p class="detail-summary">{player.review.summary}</p>
+        </div>
+        <aside class="score-card">
+          <div>
+            <small>TANZIMFC RATING</small>
+            <div class="score-number">{player.review.overall.toFixed(1)}</div>
+            <span class={'score-tier ' + tierClass}>{tier.name}</span>
+          </div>
+          <p class="score-method">{player.review.method}</p>
+        </aside>
+      </section>
+
+      <section class="category-grid" aria-label="Review category scores">
+        {player.review.categories.map(([label, score]) => (
+          <div class="category-card"><small>{label}</small><strong>{score.toFixed(1)}</strong><div class="category-bar"><i class={scoreClass(score)} style={'width:' + (score * 10) + '%'}></i></div></div>
+        ))}
+      </section>
+
+      <div class="review-columns">
+        <div>
+          <section class="panel">
+            <span class="panel-kicker">01 / BREAKDOWN</span><h2>Category ratings</h2>
+            <div class="rating-list">
+              {player.review.categories.map(([label, score, note]) => (
+                <div><div class="rating-row"><label>{label}</label><div class="rating-track"><i class={scoreClass(score)} style={'width:' + (score * 10) + '%'}></i></div><b>{score.toFixed(1)}</b></div><p class="rating-note">{note}</p></div>
+              ))}
+            </div>
+          </section>
+
+          <div class="two-col">
+            <section class="panel"><span class="panel-kicker">02 / STRENGTHS</span><h2>What stands out</h2><ul class="bullet-list">{player.review.strengths.map((item) => <li>{item}</li>)}</ul></section>
+            <section class="panel"><span class="panel-kicker">03 / WEAKNESSES</span><h2>Where it falls short</h2><ul class="bullet-list weak">{player.review.weaknesses.map((item) => <li>{item}</li>)}</ul></section>
+          </div>
+
+          <section class="panel" style="margin-top:17px"><span class="panel-kicker">04 / ATTRIBUTES</span><h2>Key card data</h2><div class="stat-grid">{Object.entries(player.stats).map(([label, value]) => <div class="stat"><span>{label}</span><strong>{value}</strong><small>Base attribute</small></div>)}</div></section>
+          <section class="panel" style="margin-top:17px"><span class="panel-kicker">05 / DETAILED STATS</span><h2>Attribute detail</h2><table class="profile-table"><tbody>{player.detailedStats.map(([label, value]) => <tr><td>{label}</td><td>{value}</td></tr>)}</tbody></table></section>
+        </div>
+
+        <aside>
+          <section class="panel"><span class="panel-kicker">06 / PLAYER PROFILE</span><h2>Card details</h2><table class="profile-table"><tbody>
+            <tr><td>Strong foot</td><td>{player.strongFoot}</td></tr><tr><td>Weak foot</td><td>{player.weakFoot}★</td></tr><tr><td>Skill moves</td><td>{player.skillMoves}★</td></tr>
+            <tr><td>Work rate</td><td>{player.workRate}</td></tr><tr><td>Height</td><td>{player.height}</td></tr><tr><td>Weight</td><td>{player.weight}</td></tr>
+            <tr><td>Auctionable</td><td>{player.auctionable ? 'Yes' : 'No'}</td></tr><tr><td>Star Shards</td><td>{player.starShards.toLocaleString()}</td></tr>
+          </tbody></table><div class="pills">{player.alternativePositions.map((position) => <span class="pill">{position}</span>)}</div></section>
+
+          <section class="panel" style="margin-top:17px"><span class="panel-kicker">07 / PLAYSTYLES & TRAITS</span><h2>On-card tools</h2><div class="pills">{player.playStyles.map(([name, level]) => <span class="pill">{name} · L{level}</span>)}</div><div class="pills">{player.traits.map((trait) => <span class="pill">{trait}</span>)}</div></section>
+
+          <section class="panel" style="margin-top:17px"><span class="panel-kicker">08 / FIT</span><h2>Best use</h2><p style="margin:14px 0 0;color:#97aab5;font-size:11px;line-height:1.8">{player.review.bestUse}</p></section>
+
+          <section class="panel" style="margin-top:17px"><span class="panel-kicker">09 / SOURCES</span><h2>Data sources</h2><div class="sources">
+            <a href="https://renderz.app/player/30920646-stoichkov" target="_blank" rel="noopener noreferrer"><span>RenderZ — card data</span><b>↗</b></a>
+            <a href="https://fcmobilesquad.com/star-signings-players" target="_blank" rel="noopener noreferrer"><span>FC Mobile Squad — Star Signings</span><b>↗</b></a>
+          </div><p style="margin:12px 0 0;color:#617883;font-size:9px;line-height:1.65">Card data checked {player.review.sourceChecked}.</p></section>
+        </aside>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
