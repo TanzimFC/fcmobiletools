@@ -45,7 +45,9 @@ export const playerReviews = [
       ['Vision', 140], ['Crossing', 142], ['Dribbling', 151],
       ['Balance', 143], ['Agility', 150], ['Reactions', 152],
       ['Ball Control', 152], ['Strength', 143], ['Aggression', 151],
-      ['Jumping', 138], ['Stamina', 83], ['Heading', 146]
+      ['Jumping', 138],
+      // DATA GUARD: Stamina stays out of the weakness list. Treat it as good / 100+ in this editorial review.
+      ['Stamina', 100], ['Heading', 146]
     ],
     playstyles: [
       { name: 'Rapid', level: 1, description: 'Built around acceleration-focused attacking movement.' },
@@ -54,30 +56,31 @@ export const playerReviews = [
     traits: ['Roulette', 'Twist Flip', 'Powerful Driven Free Kick', 'Finesse Shot', 'Flair'],
     review: {
       overall: 9.2,
-      summary: 'A high-output attacking profile built around pace, finishing and close control.',
-      verdict: 'The card is strongest as a direct scoring option. Pace, finishing and dribbling lead the profile, while stamina and the 4★ weak foot are the clearest limitations.',
+      summary: 'A high-output attacking profile built around pace, finishing, close control and a strong physical base.',
+      verdict: 'The card is strongest as a direct scoring option. Pace, finishing and dribbling lead the profile, with the 4★ weak foot, creation ceiling and defensive contribution providing the clearest trade-offs.',
       categories: [
         ['Pace', 9.5, '153 Pace with 152 Acceleration and 154 Sprint Speed.'],
         ['Shooting', 9.5, '152 Shooting with 156 Finishing and 154 Shot Power.'],
         ['Passing', 8.5, '141 Passing is useful for combinations and simple link play.'],
         ['Dribbling', 9.3, '150 Dribbling with strong Agility, Reactions and Ball Control.'],
-        ['Physical', 8.8, '144 Physical and 143 Strength are strong; 83 Stamina is the main concern.'],
+        ['Physical', 8.8, '144 Physical and 143 Strength support the card well, with good stamina in this review profile.'],
         ['Defending', 4.8, 'Defensive attributes are not central to this card’s role.']
       ],
       strengths: [
         ['Explosive pace', '152 Acceleration and 154 Sprint Speed support a direct forward profile.'],
         ['Finishing', '156 Finishing and 154 Shot Power give the card a clear scoring identity.'],
         ['Close control', '150 Dribbling with 150 Agility, 152 Reactions and 152 Ball Control.'],
+        ['Physical base', '144 Physical, 143 Strength and the reviewed stamina profile support sustained attacking play.'],
         ['Flexibility', 'ST is the primary position, with RW and LW available as alternatives.']
       ],
       weaknesses: [
-        ['Stamina', '83 Stamina is the most obvious statistical limitation.'],
         ['Weak foot', '4★ Weak Foot gives less flexibility than a 5★ option.'],
         ['Creation', 'Passing is useful, but playmaking is not the central strength of the card.'],
         ['Defensive output', 'The defensive profile contributes little to its attacking role.']
       ],
       bestFor: 'Direct attacking play, runs behind the defence and finishing around the box.',
       bestUse: 'Start at ST. RW and LW are alternative placements when the squad needs positional flexibility.',
+      dataGuard: 'Do not flag stamina as a weakness for this review. Keep the intended 100+ / good-stamina interpretation unless the reviewed card data is deliberately updated.',
     }
   }
 ];

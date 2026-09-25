@@ -43,7 +43,9 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
         <div class="sr-hero-card" data-card-zone>
           <span class="sr-card-mark">{player.ovr}</span>
           <div class="sr-card-glow"></div>
-          <img class="sr-card" src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' card'} draggable="false" />
+          <a class="sr-card-link" href={player.cardImage} target="_blank" rel="noreferrer" aria-label={'Open ' + player.name + ' card image'}>
+            <img class="sr-card" src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' card'} />
+          </a>
         </div>
 
         <div class="sr-hero-copy">
@@ -101,26 +103,22 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
       </section>
 
       <section class="sr-two sr-reveal">
-        <article class="sr-block sr-signals">
+        <article class="sr-block sr-bullet-panel sr-strengths">
           <header class="sr-head"><div><small>02 / STRENGTHS</small><h2>What stands out.</h2></div><b>+</b></header>
-          {player.review.strengths.map(([label,detail],index) => (
-            <button type="button" class="sr-signal" aria-expanded="false">
-              <span>{String(index + 1).padStart(2,'0')}</span>
-              <div><b>{label}</b><small>{detail}</small></div>
-              <i>↗</i>
-            </button>
-          ))}
+          <ul class="sr-bullets">
+            {player.review.strengths.map(([label,detail]) => (
+              <li><span class="sr-bullet">+</span><div><strong>{label}</strong><p>{detail}</p></div></li>
+            ))}
+          </ul>
         </article>
 
-        <article class="sr-block sr-signals">
-          <header class="sr-head"><div><small>03 / LIMITATIONS</small><h2>What to account for.</h2></div><b class="sr-minus">−</b></header>
-          {player.review.weaknesses.map(([label,detail],index) => (
-            <button type="button" class="sr-signal" aria-expanded="false">
-              <span>{String(index + 1).padStart(2,'0')}</span>
-              <div><b>{label}</b><small>{detail}</small></div>
-              <i>↗</i>
-            </button>
-          ))}
+        <article class="sr-block sr-bullet-panel sr-limitations">
+          <header class="sr-head"><div><small>03 / WEAKNESSES</small><h2>What to account for.</h2></div><b class="sr-minus">−</b></header>
+          <ul class="sr-bullets">
+            {player.review.weaknesses.map(([label,detail]) => (
+              <li><span class="sr-bullet">−</span><div><strong>{label}</strong><p>{detail}</p></div></li>
+            ))}
+          </ul>
         </article>
       </section>
 
@@ -175,13 +173,6 @@ const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' 
     });
     zone.addEventListener('pointerleave', () => card.style.transform = '');
   }
-
-  document.querySelectorAll('.sr-signal').forEach((button) => {
-    button.addEventListener('click', () => {
-      const open = button.classList.toggle('is-open');
-      button.setAttribute('aria-expanded', String(open));
-    });
-  });
 
   document.querySelectorAll('[data-filter]').forEach((button) => {
     button.addEventListener('click', () => {
