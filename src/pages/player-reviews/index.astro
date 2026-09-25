@@ -95,25 +95,23 @@ const eventOptions = ['all', ...new Set(playerReviews.map((p) => p.event))];
           <section class="review-stage">
             <div class="card-grid" id="card-grid">
               {playerReviews.map((player, index) => (
-                <a
+                <div
                   class="player-tile"
-                  href={'/player-reviews/' + player.slug + '/'}
                   data-player
                   data-search={(player.name + ' ' + player.event + ' ' + player.position).toLowerCase()}
                   data-tier={getTier(player.review.overall).name}
                   data-position={player.position}
                   data-event={player.event}
-                  aria-label={'Open ' + player.name + ' review'}
                 >
                   <div class="player-card-wrap">
                     {player.cardImage ? (
-                      <img class="player-card" src={player.cardImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                      <img class="player-card player-card-static" src={player.cardImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} draggable="false" oncontextmenu="return false" />
                     ) : (
                       <span class="player-card-placeholder" aria-hidden="true"><b>{player.ovr}</b><small>Card art pending</small></span>
                     )}
                   </div>
-                  <span class="player-name">{player.name}</span>
-                </a>
+                  <a class="player-name" href={'/player-reviews/' + player.slug + '/'} aria-label={'Open ' + player.name + ' review'}>{player.name}</a>
+                </div>
               ))}
               <div class="review-empty" id="empty-state" hidden>
                 <div><strong>No matching cards.</strong><span>Try another player, position or event.</span></div>
