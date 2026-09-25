@@ -14,150 +14,267 @@ const tier = getTier(player.review.overall);
 const tone = tier.color === 'green' ? 'green' : tier.color === 'yellow' ? 'yellow' : 'red';
 
 const title = player.name + ' ' + player.ovr + ' OVR Review — ' + player.event + ' | FC Mobile';
-const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' review with a concise verdict, strengths, weaknesses and key card details.';
+const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' review with a concise verdict, strengths, weaknesses and player fit.';
 ---
 <BaseLayout title={title} description={description} image={player.cardImage} type="article">
-  <main class="review-page review-detail-v4">
-    <div class="review-v4-shell">
+  <main class="review-page review-detail-v5" id="review-top">
+    <div class="v5-progress"><span id="review-progress"></span></div>
 
-      <a class="v4-back" href="/player-reviews/">
+    <div class="v5-shell">
+      <a class="v5-back" href="/player-reviews/">
         <span>←</span>
-        Player Reviews
+        <span>Player Reviews</span>
       </a>
 
-      <section class="v4-hero" data-reveal>
-        <div class="v4-card-wrap" data-card-zone>
-          <img
-            src={player.cardImage}
-            alt={player.ovr + ' OVR ' + player.name + ' ' + player.event + ' card'}
-            draggable="false"
-            class="v4-card-image"
-          />
-        </div>
+      <div class="v5-layout">
+        <aside class="v5-left-rail" aria-label="Review sections">
+          <div class="v5-rail-sticky">
+            <p class="v5-rail-label">ON THIS REVIEW</p>
 
-        <div class="v4-copy">
-          <div class="v4-labels">
-            <span>{player.event}</span>
-            <span>{player.position}</span>
-            <span>{player.ovr} OVR</span>
-          </div>
+            <nav class="v5-section-nav">
+              <a href="#overview" data-nav="overview" class="is-active"><span>01</span> Overview</a>
+              <a href="#verdict" data-nav="verdict"><span>02</span> Verdict</a>
+              <a href="#strengths" data-nav="strengths"><span>03</span> Strengths</a>
+              <a href="#weaknesses" data-nav="weaknesses"><span>04</span> Weaknesses</a>
+              <a href="#fit" data-nav="fit"><span>05</span> Fit & PlayStyles</a>
+            </nav>
 
-          <h1>{player.name}</h1>
-          <p class="v4-summary">{player.review.summary}</p>
-
-          <div class="v4-rating-row">
-            <div class="v4-rating">
-              <strong>{player.review.overall.toFixed(1)}</strong>
-              <span class={'v4-rating-tier v4-' + tone}>{tier.name}</span>
-            </div>
-
-            <div class="v4-profile-line">
-              <span>{player.nation}</span>
-              <span>{player.foot} foot</span>
-              <span>{player.weakFoot}★ WF</span>
-              <span>{player.skillMoves}★ SM</span>
+            <div class="v5-rail-note">
+              <span>READING TIME</span>
+              <strong>1 min</strong>
+              <small>Focused review</small>
             </div>
           </div>
-        </div>
-      </section>
+        </aside>
 
-      <section class="v4-verdict" data-reveal>
-        <div class="v4-section-label">VERDICT</div>
-        <div>
-          <h2>{player.review.verdict}</h2>
-          <p>{player.review.bestFor}</p>
-        </div>
-        <div class="v4-fit">
-          <small>BEST FIT</small>
-          <strong>{player.position}</strong>
-          <span>{player.alternatePositions.join(' · ')}</span>
-        </div>
-      </section>
-
-      <section class="v4-sw" data-reveal>
-        <article class="v4-panel v4-positive">
-          <header>
-            <div>
-              <span>01</span>
-              <h2>Strengths</h2>
+        <div class="v5-main">
+          <section class="v5-hero" id="overview" data-section data-reveal>
+            <div class="v5-card-stage" data-card-zone>
+              <div class="v5-card-shadow"></div>
+              <div class="v5-card-glow"></div>
+              <img
+                class="v5-card"
+                src={player.cardImage}
+                alt={player.ovr + ' OVR ' + player.name + ' ' + player.event + ' card'}
+                draggable="false"
+              />
             </div>
-          </header>
 
-          <div class="v4-list">
-            {player.review.strengths.map((item) => (
-              <div class="v4-item">
-                <i></i>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
+            <div class="v5-hero-copy">
+              <div class="v5-kicker">
+                <span>{player.event}</span>
+                <span>{player.position}</span>
+                <span>{player.ovr} OVR</span>
+              </div>
+
+              <p class="v5-eyebrow">{player.program}</p>
+              <h1>{player.name}</h1>
+              <p class="v5-summary">{player.review.summary}</p>
+
+              <div class="v5-hero-foot">
+                <div class="v5-rating-lockup">
+                  <strong>{player.review.overall.toFixed(1)}</strong>
+                  <span class={'v5-tier v5-' + tone}>{tier.name}</span>
+                </div>
+
+                <div class="v5-rating-ring" aria-label={'Rating ' + player.review.overall + ' out of 10'}>
+                  <div>
+                    <small>RATING</small>
+                    <b>{Math.round(player.review.overall * 10)}</b>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </article>
-
-        <article class="v4-panel v4-negative">
-          <header>
-            <div>
-              <span>02</span>
-              <h2>Weaknesses</h2>
             </div>
-          </header>
+          </section>
 
-          <div class="v4-list">
-            {player.review.weaknesses.map((item) => (
-              <div class="v4-item">
-                <i></i>
+          <section class="v5-verdict-block" id="verdict" data-section data-reveal>
+            <div class="v5-block-index">02</div>
+            <div class="v5-block-main">
+              <p class="v5-label">THE SHORT READ</p>
+              <h2>{player.review.verdict}</h2>
+              <p class="v5-support">{player.review.bestFor}</p>
+            </div>
+            <div class="v5-verdict-tag">
+              <span>BEST FIT</span>
+              <strong>{player.position}</strong>
+              <small>{player.alternatePositions.join(' · ')}</small>
+            </div>
+          </section>
+
+          <section class="v5-signal-layout" data-reveal>
+            <article class="v5-signal v5-signal-good" id="strengths" data-section>
+              <header>
                 <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
+                  <p class="v5-label">03 / WHAT WORKS</p>
+                  <h2>Strengths</h2>
+                </div>
+                <span class="v5-signal-icon">+</span>
+              </header>
+
+              <div class="v5-signal-list">
+                {player.review.strengths.map((item, index) => (
+                  <button class="v5-signal-row" type="button" data-expand>
+                    <span class="v5-signal-number">{String(index + 1).padStart(2, '0')}</span>
+                    <span class="v5-signal-content">
+                      <strong>{item.title}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                    <span class="v5-signal-arrow">↗</span>
+                  </button>
+                ))}
+              </div>
+            </article>
+
+            <article class="v5-signal v5-signal-warn" id="weaknesses" data-section>
+              <header>
+                <div>
+                  <p class="v5-label">04 / TRADE-OFFS</p>
+                  <h2>Weaknesses</h2>
+                </div>
+                <span class="v5-signal-icon">−</span>
+              </header>
+
+              <div class="v5-signal-list">
+                {player.review.weaknesses.map((item, index) => (
+                  <button class="v5-signal-row" type="button" data-expand>
+                    <span class="v5-signal-number">{String(index + 1).padStart(2, '0')}</span>
+                    <span class="v5-signal-content">
+                      <strong>{item.title}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                    <span class="v5-signal-arrow">↗</span>
+                  </button>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <section class="v5-fit-panel" id="fit" data-section data-reveal>
+            <div>
+              <p class="v5-label">05 / FIT & PLAYSTYLES</p>
+              <h2>How the card fits</h2>
+            </div>
+
+            <div class="v5-fit-content">
+              <div class="v5-fit-role">
+                <small>PRIMARY</small>
+                <strong>{player.position}</strong>
+                <span>{player.alternatePositions.join(' / ')}</span>
+              </div>
+
+              <div class="v5-fit-meta">
+                <div><small>FOOT</small><strong>{player.foot}</strong></div>
+                <div><small>WEAK FOOT</small><strong>{player.weakFoot}★</strong></div>
+                <div><small>SKILL MOVES</small><strong>{player.skillMoves}★</strong></div>
+                <div><small>WORK RATE</small><strong>{player.workRate}</strong></div>
+              </div>
+
+              <div class="v5-playstyles">
+                <small>PLAYSTYLES</small>
+                <div>
+                  {player.playstyles.map((item) => <span>{item}</span>)}
                 </div>
               </div>
-            ))}
-          </div>
-        </article>
-      </section>
+            </div>
+          </section>
+        </div>
 
-      <section class="v4-bottom" data-reveal>
-        <article class="v4-mini">
-          <span class="v4-mini-label">PLAYSTYLES</span>
-          <div class="v4-tags">
-            {player.playstyles.map((item) => <span>{item}</span>)}
-          </div>
-        </article>
+        <aside class="v5-right-rail">
+          <div class="v5-right-sticky">
+            <section class="v5-side-card v5-side-rating">
+              <p>EDITORIAL RATING</p>
+              <div class="v5-side-score">
+                <strong>{player.review.overall.toFixed(1)}</strong>
+                <span class={'v5-tier v5-' + tone}>{tier.name}</span>
+              </div>
+              <div class="v5-side-meter"><span style={'width:' + (player.review.overall * 10) + '%'}></span></div>
+              <small>Card data + role fit + editorial analysis</small>
+            </section>
 
-        <article class="v4-mini">
-          <span class="v4-mini-label">CARD FIT</span>
-          <div class="v4-fit-line">
-            <strong>{player.position}</strong>
-            <span>{player.alternatePositions.join(' / ')}</span>
-            <em>{player.workRate}</em>
+            <section class="v5-side-card">
+              <p>PLAYER SNAPSHOT</p>
+              <div class="v5-side-list">
+                <div><span>Nation</span><strong>{player.nation}</strong></div>
+                <div><span>Foot</span><strong>{player.foot}</strong></div>
+                <div><span>Weak foot</span><strong>{player.weakFoot}★</strong></div>
+                <div><span>Skill moves</span><strong>{player.skillMoves}★</strong></div>
+              </div>
+            </section>
+
+            <a class="v5-side-cta" href="#review-top">
+              <span>BACK TO TOP</span>
+              <b>↑</b>
+            </a>
           </div>
-        </article>
-      </section>
+        </aside>
+      </div>
     </div>
   </main>
 </BaseLayout>
 
 <script>
-  const sections = [...document.querySelectorAll('[data-reveal]')];
   const cardZone = document.querySelector('[data-card-zone]');
+  const navLinks = [...document.querySelectorAll('[data-nav]')];
+  const sections = [...document.querySelectorAll('[data-section]')];
+  const progress = document.querySelector('#review-progress');
+  const expandable = [...document.querySelectorAll('[data-expand]')];
+
+  cardZone?.addEventListener('contextmenu', (event) => event.preventDefault());
+  cardZone?.addEventListener('dragstart', (event) => event.preventDefault());
+
+  if (cardZone && window.matchMedia('(pointer:fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const image = cardZone.querySelector('img');
+
+    cardZone.addEventListener('pointermove', (event) => {
+      const rect = cardZone.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      image.style.transform =
+        'translate3d(' + (x * 7) + 'px,' + (y * -7) + 'px,0) rotateY(' + (x * 4) + 'deg) rotateX(' + (y * -4) + 'deg) rotateZ(-.35deg) scale(1.012)';
+    });
+
+    cardZone.addEventListener('pointerleave', () => {
+      image.style.transform = '';
+    });
+  }
+
+  expandable.forEach((item) => {
+    item.addEventListener('click', () => {
+      item.classList.toggle('is-expanded');
+    });
+  });
 
   if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver((entries) => {
+    const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
+          revealObserver.unobserve(entry.target);
         }
       });
     }, { threshold: 0.08 });
 
-    sections.forEach((section) => observer.observe(section));
+    document.querySelectorAll('[data-reveal]').forEach((item) => revealObserver.observe(item));
+
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach((link) => link.classList.toggle('is-active', link.dataset.nav === entry.target.id));
+      });
+    }, { rootMargin: '-22% 0px -60% 0px', threshold: 0 });
+
+    sections.forEach((section) => navObserver.observe(section));
   } else {
-    sections.forEach((section) => section.classList.add('is-visible'));
+    document.querySelectorAll('[data-reveal]').forEach((item) => item.classList.add('is-visible'));
   }
 
-  cardZone?.addEventListener('contextmenu', (event) => event.preventDefault());
-  cardZone?.addEventListener('dragstart', (event) => event.preventDefault());
+  const updateProgress = () => {
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    const value = max > 0 ? (window.scrollY / max) * 100 : 0;
+    if (progress) progress.style.width = value + '%';
+  };
+
+  updateProgress();
+  window.addEventListener('scroll', updateProgress, { passive: true });
 </script>
