@@ -25,110 +25,47 @@ export const playerReviews = [
     foot: 'Left',
     weakFoot: 4,
     skillMoves: 4,
-    height: '178 cm',
-    weight: '73 kg',
     workRate: 'High / Medium',
     cardImage: 'https://assets.fcmobilesquad.com/players/cards/v2/26/30920646-96b6e49b72c964dd.png',
-    starShards: 22080,
-    auctionable: false,
-    addedOn: '2026-09-16',
-
-    // Current FC Mobile progression frame used by the review UI.
-    // Rank 5 adds +5 displayed OVR; Training 30 is the current training cap.
-    // Exact final substats depend on the selected skill-point path and are not invented here.
-    maxBuild: {
-      trainingLevel: 30,
-      maxTrainingLevel: 30,
-      rank: 5,
-      skillPoints: 5,
-      maxOvr: 126,
-      totalTrainingXp: 160000,
-      rankUpPoints: {
-        costs: [140, 280, 420, 560, 700],
-        total: 2100
-      }
-    },
-
-    stats: {
-      pace: 153,
-      shooting: 152,
-      passing: 141,
-      dribbling: 150,
-      defending: 95,
-      physical: 144
-    },
-
-    substats: {
-      pace: {
-        acceleration: 152,
-        sprint_speed: 154
-      },
-      shooting: {
-        finishing: 156,
-        long_shot: 152,
-        shot_power: 154,
-        positioning: 146,
-        volley: 153,
-        penalties: 140
-      },
-      passing: {
-        short_passing: 142,
-        long_passing: 139,
-        vision: 140,
-        crossing: 142,
-        curve: 149,
-        free_kick: 147
-      },
-      dribbling: {
-        dribbling: 151,
-        balance: 143,
-        agility: 150,
-        reactions: 152,
-        ball_control: 152
-      },
-      defending: {
-        marking: 76,
-        standing_tackle: 104,
-        sliding_tackle: 83,
-        awareness: 88
-      },
-      physical: {
-        heading: 146,
-        strength: 143,
-        aggression: 151,
-        jumping: 138,
-        stamina: 83
-      }
-    },
-
     playstyles: ['Rapid', 'Clinical Finisher'],
-    traits: ['Roulette', 'Twist Flip', 'Powerful Driven Free Kick', 'Finesse Shot', 'Flair'],
-
     review: {
       overall: 9.2,
-      summary: 'An attack-first striker profile built around explosive movement, elite finishing and sharp close control.',
-      verdict: 'The card is easiest to understand as a direct scorer: pace gets him into the action, finishing converts it, and dribbling keeps the attack moving. The main compromise is the 4★ weak foot.',
-      categories: [
-        ['Pace', 9.7, '152 Acc · 154 Sprint'],
-        ['Shooting', 9.6, '156 Fin · 154 Power'],
-        ['Passing', 8.7, '142 Short · 140 Vision'],
-        ['Dribbling', 9.5, '151 Drib · 152 Reactions'],
-        ['Defending', 5.8, '95 overall'],
-        ['Physical', 9.0, '143 Strength · 151 Aggression']
-      ],
+      summary: 'A direct attacking striker built around pace, finishing and close control.',
+      verdict: 'Stoichkov is easiest to understand as a fast scorer: he gets into dangerous areas quickly, finishes well and stays clean on the ball. The main compromise is the 4★ weak foot.',
       strengths: [
-        { title: 'Explosive', value: '152 Acc · 154 Sprint', detail: 'Top-end acceleration and sprint speed drive his direct striker profile.' },
-        { title: 'Finisher', value: '156 Fin · 154 Power', detail: 'Finishing, shot power, volleys and long shots all sit at a high level.' },
-        { title: 'Clean on the ball', value: '151 Drib · 152 Reactions', detail: 'Agility, reactions and ball control reinforce his close-control game.' },
-        { title: 'Flexible attack', value: 'ST · RW · LW', detail: 'The alternate positions make him easier to fit into rotating front lines.' }
+        {
+          title: 'Explosive',
+          detail: 'Built for direct attacking movement and quick runs behind the defence.'
+        },
+        {
+          title: 'Elite finishing',
+          detail: 'The attacking profile is heavily geared toward converting chances.'
+        },
+        {
+          title: 'Sharp dribbling',
+          detail: 'Strong close-control traits make him comfortable around the box.'
+        },
+        {
+          title: 'Flexible',
+          detail: 'ST is the natural role, with RW and LW available as alternatives.'
+        }
       ],
       weaknesses: [
-        { title: '4★ weak foot', value: 'Left-footed · 4★ WF', detail: 'The clearest limitation compared with elite 5★ weak-foot forwards.' },
-        { title: 'Passing ceiling', value: '141 Passing', detail: 'Good enough for combinations, but not the standout part of the card.' },
-        { title: 'Defensive value', value: '95 Defending', detail: 'This is an attacking card; defensive contribution is naturally secondary.' }
+        {
+          title: '4★ weak foot',
+          detail: 'The clearest limitation versus forwards with a 5★ weak foot.'
+        },
+        {
+          title: 'Not a creator first',
+          detail: 'Passing is useful, but playmaking is not the reason to use this card.'
+        },
+        {
+          title: 'Defensive value is limited',
+          detail: 'This is an attack-focused card and should be treated that way.'
+        }
       ],
-      fit: 'Best suited to ST, with RW/LW as flexible alternatives.',
-      bestFor: 'Direct attacking play, fast forward runs, finishing around the box and players who value close control.'
+      fit: 'Best at ST · RW / LW as alternatives.',
+      bestFor: 'Direct attacking play, runs behind the defence and finishing around the box.'
     }
   }
 ];
