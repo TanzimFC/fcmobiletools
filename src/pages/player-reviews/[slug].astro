@@ -11,164 +11,313 @@ const player = Astro.props.player;
 if (!player) return Astro.redirect('/player-reviews/');
 
 const tier = getTier(player.review.overall);
-const scoreTone = (score) => {
-  const color = getTier(score).color;
-  return color === 'green' ? 'tone-green' : color === 'yellow' ? 'tone-yellow' : 'tone-red';
-};
-const barTone = (score) => {
-  const color = getTier(score).color;
-  return color === 'green' ? 'bar-green' : color === 'yellow' ? 'bar-yellow' : 'bar-red';
-};
-const tierTone = tier.color === 'green' ? 'tier-green' : tier.color === 'yellow' ? 'tier-yellow' : 'tier-red';
+const tone = tier.color === 'green' ? 'green' : tier.color === 'yellow' ? 'yellow' : 'red';
 const title = player.name + ' ' + player.ovr + ' OVR Review — ' + player.event + ' | FC Mobile';
-const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' review with complete stats, substats, PlayStyles and detailed editorial analysis.';
-const pretty = (key) => key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-const substatGroups = [
-  ['Pace', 'pace', player.stats.pace],
-  ['Shooting', 'shooting', player.stats.shooting],
-  ['Passing', 'passing', player.stats.passing],
-  ['Dribbling', 'dribbling', player.stats.dribbling],
-  ['Defending', 'defending', player.stats.defending],
-  ['Physical', 'physical', player.stats.physical]
+const description = player.name + ' ' + player.ovr + ' OVR ' + player.event + ' review with readable strengths, weaknesses, progression and detailed card stats.';
+const pretty = (key) => key.replaceAll('_', ' ').replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+const statGroups = [
+  ['Pace', 'pace'],
+  ['Shooting', 'shooting'],
+  ['Passing', 'passing'],
+  ['Dribbling', 'dribbling'],
+  ['Defending', 'defending'],
+  ['Physical', 'physical']
 ];
 ---
 <BaseLayout title={title} description={description} image={player.cardImage} type="article">
-  <main class="review-page review-detail">
-    <div class="review-shell">
+  <main class="review-page review-detail-v3" style={'--review-tone:' + tone}>
+    <div class="review-shell-v3">
 
-      <a class="back-link" href="/player-reviews/"><span>←</span> Player Reviews</a>
+      <a class="v3-back" href="/player-reviews/">
+        <span class="v3-back-arrow">↖</span>
+        <span>Back to Player Reviews</span>
+      </a>
 
-      <section class="detail-hero">
-        <div class="detail-card-stage">
-          <div class="detail-card-aura"></div>
+      <section class="v3-hero" data-reveal>
+        <div class="v3-hero-glow"></div>
+
+        <div class="v3-card-zone" data-tilt-card>
+          <div class="v3-card-floor"></div>
           <img src={player.cardImage} alt={player.ovr + ' OVR ' + player.name + ' ' + player.event + ' card'} />
+          <span class="v3-card-badge">CARD</span>
         </div>
 
-        <div class="detail-identity">
-          <div class="detail-kicker">
-            <span class="detail-chip event">{player.event}</span>
-            <span class="detail-chip">{player.program}</span>
-          </div>
-          <div class="detail-ovr-line">
-            <span>{player.ovr} OVR</span>
-            <i></i>
+        <div class="v3-identity">
+          <div class="v3-meta-row">
+            <span>{player.event}</span>
+            <span>{player.program}</span>
             <span>{player.position}</span>
           </div>
-          <h1>{player.name}</h1>
-          <p class="detail-summary">{player.review.summary}</p>
 
-          <div class="detail-stat-ribbon">
-            <div><span>WEAK FOOT</span><strong>{player.weakFoot}★</strong></div>
-            <div><span>SKILL MOVES</span><strong>{player.skillMoves}★</strong></div>
-            <div><span>FOOT</span><strong>{player.foot}</strong></div>
-            <div><span>WORK RATE</span><strong>{player.workRate}</strong></div>
+          <p class="v3-overline">{player.ovr} OVR · {player.nation}</p>
+          <h1>{player.name}</h1>
+          <p class="v3-lede">{player.review.summary}</p>
+
+          <div class="v3-quick-facts">
+            <div><small>FOOT</small><strong>{player.foot}</strong></div>
+            <div><small>WEAK FOOT</small><strong>{player.weakFoot}★</strong></div>
+            <div><small>SKILL MOVES</small><strong>{player.skillMoves}★</strong></div>
+            <div><small>WORK RATE</small><strong>{player.workRate}</strong></div>
           </div>
         </div>
 
-        <aside class="detail-score">
-          <span class="score-label">TANZIMFC RATING</span>
-          <strong class="score-number">{player.review.overall.toFixed(1)}</strong>
-          <span class={'score-tier ' + tierTone}>{tier.name}</span>
-          <div class="score-track"><i class={barTone(player.review.overall)} style={'width:' + (player.review.overall * 10) + '%'}></i></div>
+        <aside class="v3-score">
+          <div class="v3-score-top">
+            <span>EDITORIAL RATING</span>
+            <b class={'v3-tier v3-tier-' + tone}>{tier.name}</b>
+          </div>
+          <strong class="v3-score-number">{player.review.overall.toFixed(1)}</strong>
+          <div class="v3-score-line"><i style={'width:' + (player.review.overall * 10) + '%'}></i></div>
+          <p>Based on card attributes, PlayStyles, traits and position fit.</p>
         </aside>
       </section>
 
-      <section class="attribute-overview">
-        {player.review.categories.map(([label, score, note]) => (
-          <article class="attribute-card">
-            <div class="attribute-head">
-              <div><span>{label}</span><small>{note}</small></div>
-              <strong class={scoreTone(score)}>{score.toFixed(1)}</strong>
-            </div>
-            <div class="attribute-bar"><i class={barTone(score)} style={'width:' + (score * 10) + '%'}></i></div>
-          </article>
-        ))}
+      <section class="v3-read-card" data-reveal>
+        <div class="v3-read-label">ONE-READ VERDICT</div>
+        <div class="v3-read-copy">
+          <h2>{player.review.verdict}</h2>
+          <p>{player.review.bestFor}</p>
+        </div>
+        <div class="v3-fit">
+          <small>BEST FIT</small>
+          <strong>{player.position}</strong>
+          <span>{player.alternatePositions.join(' · ')}</span>
+        </div>
       </section>
 
-      <section class="detail-main-grid">
-        <div class="detail-main-column">
-          <section class="premium-panel verdict-panel">
-            <div class="panel-heading"><span>01 / VERDICT</span><h2>The card in one read</h2></div>
-            <p class="verdict-copy">{player.review.verdict}</p>
-            <div class="verdict-meta">
-              <div><span>BEST POSITION</span><strong>{player.position}</strong></div>
-              <div><span>ALTERNATES</span><strong>{player.alternatePositions.join(' / ')}</strong></div>
-              <div><span>BEST FOR</span><strong>{player.review.bestFor}</strong></div>
+      <section class="v3-sw-grid" data-reveal>
+        <article class="v3-signal-panel v3-signal-positive">
+          <header>
+            <div>
+              <span class="v3-section-tag">01</span>
+              <div>
+                <small>WHAT YOU GET</small>
+                <h2>Strengths</h2>
+              </div>
             </div>
-          </section>
+            <span class="v3-signal-mark">+</span>
+          </header>
 
-          <section class="premium-panel">
-            <div class="panel-heading"><span>02 / WHAT STANDS OUT</span><h2>Strengths</h2></div>
-            <div class="pros-grid">{player.review.strengths.map((item, index) => <div class="pro-card"><span>{String(index + 1).padStart(2, '0')}</span><p>{item}</p></div>)}</div>
-          </section>
+          <div class="v3-signal-list">
+            {player.review.strengths.map((item, index) => (
+              <div class="v3-signal-item">
+                <span class="v3-signal-index">{String(index + 1).padStart(2, '0')}</span>
+                <div>
+                  <strong>{item.title}</strong>
+                  <b>{item.value}</b>
+                  <p>{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
 
-          <section class="premium-panel">
-            <div class="panel-heading"><span>03 / TRADE-OFFS</span><h2>Weaknesses</h2></div>
-            <div class="cons-grid">{player.review.weaknesses.map((item, index) => <div class="con-card"><span>{String(index + 1).padStart(2, '0')}</span><p>{item}</p></div>)}</div>
-          </section>
-
-          <section class="premium-panel">
-            <div class="panel-heading"><span>04 / FULL ATTRIBUTE PROFILE</span><h2>Detailed substats</h2></div>
-            <div class="substat-grid">
-              {substatGroups.map(([group, key, overall]) => (
-                <article class="substat-group">
-                  <div class="substat-group-head">
-                    <div><span>{group}</span><small>{overall}</small></div>
-                    <i></i>
-                  </div>
-                  <div class="substat-list">
-                    {Object.entries(player.substats[key]).map(([name, value]) => (
-                      <div class="substat-row">
-                        <span>{pretty(name)}</span>
-                        <strong>{value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
+        <article class="v3-signal-panel v3-signal-negative">
+          <header>
+            <div>
+              <span class="v3-section-tag">02</span>
+              <div>
+                <small>WHAT TO KNOW</small>
+                <h2>Weaknesses</h2>
+              </div>
             </div>
-          </section>
+            <span class="v3-signal-mark">−</span>
+          </header>
+
+          <div class="v3-signal-list">
+            {player.review.weaknesses.map((item, index) => (
+              <div class="v3-signal-item">
+                <span class="v3-signal-index">{String(index + 1).padStart(2, '0')}</span>
+                <div>
+                  <strong>{item.title}</strong>
+                  <b>{item.value}</b>
+                  <p>{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
+
+      <section class="v3-max-build" data-reveal>
+        <header class="v3-section-head">
+          <div>
+            <span class="v3-section-tag">03</span>
+            <div>
+              <small>MAX PROGRESSION</small>
+              <h2>Build the card to its cap</h2>
+            </div>
+          </div>
+          <span class="v3-build-pill">RANK 5 · LEVEL 30</span>
+        </header>
+
+        <div class="v3-build-dashboard">
+          <div class="v3-build-hero">
+            <span class="v3-build-kicker">DISPLAYED OVR AT MAX RANK</span>
+            <strong>{player.maxBuild.maxOvr}</strong>
+            <p>Base {player.ovr} + {player.maxBuild.rank} rank levels</p>
+          </div>
+
+          <div class="v3-build-stats">
+            <div class="v3-build-stat">
+              <span>TRAINING</span>
+              <strong>{player.maxBuild.trainingLevel}<em>/{player.maxBuild.maxTrainingLevel}</em></strong>
+              <i><b style={'width:' + ((player.maxBuild.trainingLevel / player.maxBuild.maxTrainingLevel) * 100) + '%'}></b></i>
+            </div>
+
+            <div class="v3-build-stat">
+              <span>RANK</span>
+              <strong>{player.maxBuild.rank}<em>/5</em></strong>
+              <i><b style={'width:' + ((player.maxBuild.rank / 5) * 100) + '%'}></b></i>
+            </div>
+
+            <div class="v3-build-stat">
+              <span>SKILL POINTS</span>
+              <strong>{player.maxBuild.skillPoints}</strong>
+              <p>Unlocked through rank-ups</p>
+            </div>
+
+            <div class="v3-build-stat">
+              <span>RANK UP POINTS</span>
+              <strong>{player.maxBuild.rankUpPoints.total.toLocaleString()}</strong>
+              <p>Total to reach Rank 5</p>
+            </div>
+          </div>
+
+          <div class="v3-rank-path" aria-label="Rank up path">
+            {player.maxBuild.rankUpPoints.costs.map((cost, index) => (
+              <div class="v3-rank-node">
+                <span>R{index + 1}</span>
+                <strong>+1</strong>
+                <small>{cost} points</small>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <aside class="detail-side-column">
-          <section class="premium-panel profile-panel">
-            <div class="panel-heading"><span>05 / PLAYER PROFILE</span><h2>Card details</h2></div>
-            <dl class="profile-list">
-              <div><dt>OVR</dt><dd>{player.ovr}</dd></div>
-              <div><dt>Position</dt><dd>{player.position}</dd></div>
-              <div><dt>Alternate positions</dt><dd>{player.alternatePositions.join(' / ')}</dd></div>
-              <div><dt>Nation</dt><dd>{player.nation}</dd></div>
-              <div><dt>Strong foot</dt><dd>{player.foot}</dd></div>
-              <div><dt>Weak foot</dt><dd>{player.weakFoot}★</dd></div>
-              <div><dt>Skill moves</dt><dd>{player.skillMoves}★</dd></div>
-              <div><dt>Height</dt><dd>{player.height}</dd></div>
-              <div><dt>Weight</dt><dd>{player.weight}</dd></div>
-              <div><dt>Work rate</dt><dd>{player.workRate}</dd></div>
-              <div><dt>Star Shards</dt><dd>{player.starShards.toLocaleString()}</dd></div>
-              <div><dt>Auctionable</dt><dd>{player.auctionable ? 'Yes' : 'No'}</dd></div>
-              <div><dt>Added</dt><dd>{player.addedOn}</dd></div>
-            </dl>
-          </section>
+        <div class="v3-build-note">
+          <span>MAX-STATE NOTE</span>
+          <p>Training and Rank Up are separate systems. The review uses the current Level 30 / Rank 5 progression frame; exact final attribute values vary with the selected skill-point path, so no fabricated max-substats are displayed.</p>
+        </div>
+      </section>
 
-          <section class="premium-panel">
-            <div class="panel-heading"><span>06 / PLAYSTYLES</span><h2>On-card abilities</h2></div>
-            <div class="tag-cloud">{player.playstyles.map((item) => <span class="ability-tag primary">{item}</span>)}</div>
-            <div class="trait-label">TRAITS</div>
-            <div class="tag-cloud">{player.traits.map((item) => <span class="ability-tag">{item}</span>)}</div>
-          </section>
-
-          <section class="premium-panel rating-panel">
-            <div class="panel-heading"><span>07 / RATING METER</span><h2>How the score reads</h2></div>
-            <div class="meter-scale">
-              <div><span>9.0 — 10.0</span><b class="green">Elite</b></div>
-              <div><span>8.0 — 8.9</span><b class="green">Strong</b></div>
-              <div><span>7.0 — 7.9</span><b class="yellow">Solid</b></div>
-              <div><span>6.0 — 6.9</span><b class="red">Mixed</b></div>
-              <div><span>5.0 — 5.9</span><b class="red">Weak</b></div>
+      <section class="v3-attribute-section" data-reveal>
+        <header class="v3-section-head">
+          <div>
+            <span class="v3-section-tag">04</span>
+            <div>
+              <small>CARD ATTRIBUTES</small>
+              <h2>The numbers that matter</h2>
             </div>
-          </section>
-        </aside>
+          </div>
+          <span class="v3-section-caption">CORE PROFILE</span>
+        </header>
+
+        <div class="v3-stat-grid">
+          {player.review.categories.map(([label, score, note]) => (
+            <article class="v3-stat-card">
+              <div class="v3-stat-card-top">
+                <div>
+                  <small>{label}</small>
+                  <span>{note}</span>
+                </div>
+                <strong class={'tone-' + getTier(score).color}>{score.toFixed(1)}</strong>
+              </div>
+              <div class="v3-stat-score-bar"><i style={'width:' + (score * 10) + '%'}></i></div>
+              <div class="v3-stat-value">{player.stats[label.toLowerCase()]}</div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <details class="v3-details" data-reveal>
+        <summary>
+          <span>
+            <small>OPTIONAL DETAIL</small>
+            <strong>Full substat profile</strong>
+          </span>
+          <b>Open</b>
+        </summary>
+
+        <div class="v3-detail-body">
+          <div class="v3-substat-grid">
+            {statGroups.map(([group, key]) => (
+              <article class="v3-substat-group">
+                <header>
+                  <span>{group}</span>
+                  <strong>{player.stats[key]}</strong>
+                </header>
+                <div>
+                  {Object.entries(player.substats[key]).map(([name, value]) => (
+                    <div class="v3-substat-row">
+                      <span>{pretty(name)}</span>
+                      <strong>{value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </details>
+
+      <section class="v3-bottom-grid" data-reveal>
+        <article class="v3-mini-panel">
+          <span class="v3-panel-kicker">05 / ABILITIES</span>
+          <h2>PlayStyles & traits</h2>
+          <div class="v3-tags">
+            {player.playstyles.map((item) => <span class="v3-tag v3-tag-main">{item}</span>)}
+            {player.traits.map((item) => <span class="v3-tag">{item}</span>)}
+          </div>
+        </article>
+
+        <article class="v3-mini-panel">
+          <span class="v3-panel-kicker">06 / PROFILE</span>
+          <h2>Card details</h2>
+          <div class="v3-profile-grid">
+            <div><small>POSITION</small><strong>{player.position}</strong></div>
+            <div><small>ALT</small><strong>{player.alternatePositions.join(' / ')}</strong></div>
+            <div><small>NATION</small><strong>{player.nation}</strong></div>
+            <div><small>HEIGHT</small><strong>{player.height}</strong></div>
+            <div><small>WEIGHT</small><strong>{player.weight}</strong></div>
+            <div><small>AUCTIONABLE</small><strong>{player.auctionable ? 'YES' : 'NO'}</strong></div>
+          </div>
+        </article>
       </section>
     </div>
   </main>
 </BaseLayout>
+
+<script>
+  const revealItems = [...document.querySelectorAll('[data-reveal]')];
+  const tiltCard = document.querySelector('[data-tilt-card]');
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealItems.forEach((item) => observer.observe(item));
+  } else {
+    revealItems.forEach((item) => item.classList.add('is-visible'));
+  }
+
+  if (tiltCard && window.matchMedia('(pointer:fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const image = tiltCard.querySelector('img');
+    tiltCard.addEventListener('pointermove', (event) => {
+      const rect = tiltCard.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      image.style.transform = 'translate3d(' + (x * 10) + 'px,' + (y * -10) + 'px,0) rotateY(' + (x * 7) + 'deg) rotateX(' + (y * -7) + 'deg) rotateZ(-0.6deg) scale(1.02)';
+      tiltCard.style.setProperty('--mx', (x * 100 + 50) + '%');
+      tiltCard.style.setProperty('--my', (y * 100 + 50) + '%');
+    });
+    tiltCard.addEventListener('pointerleave', () => {
+      image.style.transform = '';
+    });
+  }
+</script>
