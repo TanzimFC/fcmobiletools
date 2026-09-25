@@ -1,0 +1,82 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { playerReviews, getTier } from './playerReviewData.js';
+import './player-reviews.css';
+
+const tiers = ['All tiers', 'Elite', 'Strong', 'Solid', 'Mixed', 'Weak'];
+const positions = ['All positions', ...new Set(playerReviews.map((player) => player.position))];
+const events = ['All events', ...new Set(playerReviews.map((player) => player.event))];
+---
+<BaseLayout title="FC Mobile Player Reviews" description="TanzimFC editorial FC Mobile player reviews with card data, ratings, attributes and PlayStyles.">
+  <main class="review-page">
+    <div class="review-shell">
+      <header class="review-hero">
+        <div>
+          <p class="review-eyebrow">FC MOBILE / PLAYER REVIEWS</p>
+          <h1>Review the<br /><span style="color:var(--blue)">card.</span></h1>
+          <p>Browse full FC Mobile player cards. Open a card to view the complete editorial review, rating breakdown and data.</p>
+        </div>
+        <div class="review-scale">
+          <small>RATING SCALE</small>
+          <strong>5.0 — 10.0</strong>
+          <span>Poor · Average · Good · Great · Excellent</span>
+        </div>
+      </header>
+
+      <section class="review-controls" aria-label="Player review filters">
+        <input id="review-search" class="review-search" type="search" placeholder="Search player or event…" autocomplete="off" />
+        <select id="review-tier" class="review-select" aria-label="Filter by tier">{tiers.map((item) => <option value={item}>{item}</option>)}</select>
+        <select id="review-position" class="review-select" aria-label="Filter by position">{positions.map((item) => <option value={item}>{item}</option>)}</select>
+        <select id="review-event" class="review-select" aria-label="Filter by event">{events.map((item) => <option value={item}>{item}</option>)}</select>
+      </section>
+
+      <section class="review-grid" id="review-grid" aria-live="polite">
+        {playerReviews.map((player) => {
+          const tier = getTier(player.review.overall);
+          return (
+            <a class="player-tile" href={'/player-reviews/' + player.slug + '/'} data-card
+              data-search={(player.name + ' ' + player.event + ' ' + player.position).toLowerCase()}
+              data-tier={tier.name} data-position={player.position} data-event={player.event}
+              aria-label={'Open ' + player.name + ' player review'}>
+              <div class="player-card-frame"><img src={player.cardImage} alt="" loading="lazy" /></div>
+              <span class="player-name">{player.name}</span>
+            </a>
+          );
+        })}
+        <div id="review-empty" class="empty-state" hidden><strong>No player cards found.</strong>Try a different search or filter.</div>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  const search = document.querySelector('#review-search');
+  const tier = document.querySelector('#review-tier');
+  const position = document.querySelector('#review-position');
+  const event = document.querySelector('#review-event');
+  const cards = [...document.querySelectorAll('[data-card]')];
+  const empty = document.querySelector('#review-empty');
+
+  function filterCards() {
+    const query = (search?.value || '').trim().toLowerCase();
+    const tierValue = tier?.value || 'All tiers';
+    const positionValue = position?.value || 'All positions';
+    const eventValue = event?.value || 'All events';
+    let visible = 0;
+
+    cards.forEach((card) => {
+      const show =
+        (!query || card.dataset.search.includes(query)) &&
+        (tierValue === 'All tiers' || card.dataset.tier === tierValue) &&
+        (positionValue === 'All positions' || card.dataset.position === positionValue) &&
+        (eventValue === 'All events' || card.dataset.event === eventValue);
+      card.hidden = !show;
+      if (show) visible += 1;
+    });
+
+    if (empty) empty.hidden = visible !== 0;
+  }
+
+  search?.addEventListener('input', filterCards);
+  [tier, position, event].forEach((control) => control?.addEventListener('change', filterCards));
+</script>
