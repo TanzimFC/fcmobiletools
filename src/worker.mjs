@@ -1,4 +1,5 @@
 import { argon2id, argon2Verify } from 'hash-wasm';
+import { handlePlayerRequest } from './lib/playerDatabase.js';
 
 const SESSION_COOKIE = 'fcm_admin_session';
 const CREATOR_SESSION_COOKIE = 'fcm_creator_session';
@@ -825,6 +826,7 @@ async function adminDashboard(request, env, url) {
 export default { async fetch(request,env) {
   const url=new URL(request.url);
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
+  if(url.pathname === '/api/players' || url.pathname.startsWith('/api/players/')) return handlePlayerRequest(request,url.pathname);
   if(url.pathname === '/api/football' && request.method === 'GET') {
     try {
       const file=await repoFile(env,'src/data/footballCentre.js');
