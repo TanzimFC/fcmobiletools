@@ -1,0 +1,46 @@
+---
+import { SITE_ADS } from '../config/siteAds.js';
+
+const pathname = Astro.url.pathname;
+const isExcluded = SITE_ADS.excludedPathPrefixes.some((prefix) =>
+  pathname === prefix || pathname.startsWith(prefix + '/')
+);
+---
+
+{SITE_ADS.enabled && !isExcluded && (
+  <script define:vars={{ config: SITE_ADS }}>
+    (() => {
+      if (window.__FCMOBILETOOLS_SITE_ADS__) return;
+      window.__FCMOBILETOOLS_SITE_ADS__ = true;
+
+      const root = document.body || document.documentElement;
+      if (!root) return;
+
+      if (config.popunder?.enabled) {
+        const loaded = document.documentElement.dataset.sitePopunderLoaded;
+        if (!loaded) {
+          document.documentElement.dataset.sitePopunderLoaded = '1';
+          const script = document.createElement('script');
+          script.dataset.zone = config.popunder.zone;
+          script.src = config.popunder.src;
+          script.async = true;
+          root.appendChild(script);
+        }
+      }
+
+      if (config.push?.enabled) {
+        window.setTimeout(() => {
+          if (document.visibilityState === 'prerender') return;
+          if (document.documentElement.dataset.sitePushLoaded === '1') return;
+
+          document.documentElement.dataset.sitePushLoaded = '1';
+          const script = document.createElement('script');
+          script.src = config.push.src + '?z=' + encodeURIComponent(config.push.zone);
+          script.setAttribute('data-cfasync', 'false');
+          script.async = true;
+          document.body.appendChild(script);
+        }, config.push.delayMs);
+      }
+    })();
+  </script>
+)}
