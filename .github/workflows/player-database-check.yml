@@ -2,6 +2,7 @@ name: Player database build check
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
   workflow_dispatch:
 
@@ -17,4 +18,5 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - run: node scripts/player-data/test-player-api.mjs
       - run: npm run build
