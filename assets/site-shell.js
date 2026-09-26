@@ -10,7 +10,7 @@
       <div class="site-group"><button class="site-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Live <span aria-hidden="true">⌄</span></button><div class="site-dropdown"><a href="/events"><span><strong>Events &amp; Reset</strong><small>Countdowns &amp; schedules</small></span><b>↗</b></a><a href="/redeem-codes"><span><strong>Redeem Codes</strong><small>Current rewards</small></span><b>↗</b></a><a href="/football-centre"><span><strong>Football Centre</strong><small>Matches &amp; points</small></span><b>↗</b></a><a href="/a-nations-story"><span><strong>A Nation's Story</strong><small>Event answers</small></span><b>↗</b></a><a href="/fc-mobile-27"><span><strong>FC Mobile 27 APK</strong><small>Latest Android release</small></span><b>↗</b></a></div></div>
       <a class="site-link" href="/blog/">Articles</a><a class="site-link" href="/creator">Creator</a><a class="site-cta" href="/redeem-codes"><i></i><span>Redeem Codes</span></a>
     </nav>
-    <button class="site-menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav" aria-label="Open menu"><span></span><span></span><span></span></button>
+    <button class="site-menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav" aria-label="Open menu"><span class="site-menu-dots" aria-hidden="true">•••</span><span class="site-menu-label">MENU</span></button>
   </div>
   <nav id="site-mobile-nav" class="site-mobile-nav" aria-label="Mobile navigation">
     <a href="/">Home</a><div class="site-mobile-group"><strong>TOOLS</strong><a href="/team-ovr">Team OVR</a><a href="/training-calculator">Training Calculator</a><a href="/rank-up-calculator">Rank Up Calculator</a><a href="/investment-calculator">Investment Calculator</a></div>
