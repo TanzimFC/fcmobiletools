@@ -1,0 +1,107 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import catalog from '../../data/playerPageCatalog.json';
+export function getStaticPaths() {
+  return catalog.map(([player_id, name, ovr, position]) => {
+    const slug = `${name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${player_id}`;
+    return { params: { slug }, props: { player: { player_id, name, slug, ovr, position } } };
+  });
+}
+const { player } = Astro.props;
+const title = `${player.name} ${player.ovr} ${player.position} | FC Mobile Player Database | FCMOBILETOOLS`;
+const description = `${player.name} ${player.ovr} OVR ${player.position} FC Mobile card. View card details, player stats, rank records, and dated Star Shard cost data.`;
+const structuredData = { '@context': 'https://schema.org', '@type': 'WebPage', name: title, description, url: new URL(`/player/${player.slug}/`, Astro.site), isPartOf: { '@type': 'WebSite', name: 'FCMOBILETOOLS', url: Astro.site } };
+---
+<BaseLayout title={title} description={description}>
+  <main class="player-detail" data-player-slug={player.slug}>
+    <a class="player-back-link" href="/players/">← Back to player database</a>
+    <section class="player-detail-head">
+      <div class="player-detail-art" id="detail-art"><div class="player-card-fallback" aria-hidden="true">{player.name.slice(0, 1).toUpperCase()}</div></div>
+      <div class="player-detail-title">
+        <p class="players-eyebrow">FCMOBILETOOLS · PLAYER PROFILE</p>
+        <h1>{player.name}</h1>
+        <p id="player-event">FC Mobile player card</p>
+        <div class="player-info-pills"><span><b>{player.ovr}</b> OVR</span><span>{player.position}</span><span>Alt: —</span><span class="player-rank-label">Base card</span></div>
+        <p class="player-source player-market" id="market-status">Current coin sell-price data: no verified price observation available.</p>
+      </div>
+    </section>
+    <div class="player-detail-grid">
+      <section class="player-panel"><h2>Overview</h2><div class="player-stat-list" id="player-overview"><span class="player-loading">Loading player details…</span></div></section>
+      <section class="player-panel"><h2>Star Shard cost</h2><div class="player-stat-list" id="player-shards"><span class="player-loading">Checking dated source records…</span></div><p class="player-source" id="shard-source"></p></section>
+      <section class="player-panel"><h2>Attributes</h2><div id="player-stats"><p class="player-loading">Detailed stats have not been verified for this card.</p></div></section>
+      <section class="player-panel"><h2>Rank and training records</h2><div class="player-rank-list" id="player-ranks"><span>Rank data has not been sourced for this card.</span></div><p class="player-source" id="rank-status">No rank modifier is applied unless a source record exists.</p></section>
+      <section class="player-panel"><h2>PlayStyles</h2><div class="player-abilities" id="player-abilities"><span class="player-loading">No verified PlayStyle records yet.</span></div></section>
+      <section class="player-panel"><h2>Traits</h2><div class="player-abilities" id="player-traits"><span class="player-loading">No verified trait records yet.</span></div></section>
+    </div>
+    <section class="player-panel" style="margin-top:14px"><h2>Related players</h2><div class="player-related" id="related-players"><span class="player-loading">Loading players in the same position…</span></div></section>
+    <p class="player-data-note">Player listing and Star Shard source: <a href="https://fcmobilesquad.com/star-signings-players" rel="nofollow">FC Mobile Squad</a>. Dataset observed September 16, 2026. Prices, statistics, and abilities are shown only when sourced.</p>
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)}></script>
+  </main>
+</BaseLayout>
+
+<script>
+import { renderPlayerCard as card } from '../../lib/playerCard.js';
+const page = document.querySelector('[data-player-slug]');
+const slug = page?.getAttribute('data-player-slug');
+const esc = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+const groups = { Pace: ['pace','acceleration','sprint_speed'], Shooting: ['shooting','finishing','shot_power','long_shot','positioning','volleys','penalties'], Passing: ['passing','short_passing','long_passing','vision','crossing','curve','free_kick'], Dribbling: ['dribbling','agility','balance','reactions','ball_control'], Defending: ['defending','marking','standing_tackle','sliding_tackle','awareness','heading'], Physical: ['physical','stamina','strength','aggression','jumping'], Goalkeeping: ['diving','handling','kicking','reflexes'] };
+function statRows(stats, activeRank) {
+  if (!stats || typeof stats !== 'object' || !Object.keys(stats).length) return '<p class="player-loading">Detailed stats have not been verified for this card.</p>';
+  const values = { ...stats };
+  const modifiers = activeRank?.stat_modifiers || {};
+  for (const [key, amount] of Object.entries(modifiers)) if (Number.isFinite(Number(values[key]))) values[key] = Number(values[key]) + Number(amount);
+  const labels = { sprint_speed: 'Sprint speed', shot_power: 'Shot power', long_shot: 'Long shots', short_passing: 'Short passing', long_passing: 'Long passing', free_kick: 'Free kick', ball_control: 'Ball control', standing_tackle: 'Standing tackle', sliding_tackle: 'Sliding tackle' };
+  return Object.entries(groups).map(([group, keys]) => {
+    const rows = keys.filter((key) => values[key] !== undefined && values[key] !== null).map((key) => `<div class="player-stat-item"><span>${esc(labels[key] || key.replaceAll('_', ' ') )}</span><b>${esc(values[key])}</b></div>`).join('');
+    return rows ? `<h3>${esc(group)}</h3><div class="player-stat-list">${rows}</div>` : '';
+  }).join('') || '<p class="player-loading">Detailed stats have not been verified for this card.</p>';
+}
+function abilities(rows, type) {
+  const list = rows.filter((row) => row.player_abilities?.ability_type === type);
+  if (!list.length) return `<span class="player-loading">No verified ${type === 'playstyle' ? 'PlayStyle' : 'trait'} records yet.</span>`;
+  return list.map((row) => { const item = row.player_abilities; const asset = item.player_assets?.public_url || item.player_assets?.local_path; return `<span class="player-ability">${asset ? `<img src="${esc(asset)}" alt="">` : ''}${esc(item.name)}${item.is_plus ? ' +' : ''}</span>`; }).join('');
+}
+async function load() {
+  try {
+    const response = await fetch(`/api/players/${encodeURIComponent(slug)}`);
+    const player = await response.json();
+    if (!response.ok) throw new Error(player.error || 'Player details unavailable.');
+    document.querySelector('#player-event').textContent = player.event || 'FC Mobile player card';
+    if (player.image) document.querySelector('#detail-art').insertAdjacentHTML('beforeend', `<img src="${esc(player.image)}" alt="${esc(player.name)} ${player.ovr} OVR player card" decoding="async" onerror="this.remove()">`);
+    const pills = document.querySelectorAll('.player-info-pills span');
+    pills[2].textContent = `Alt: ${(player.alternate_positions || []).join(', ') || '—'}`;
+    document.querySelector('#player-overview').innerHTML = [
+      ['Skill moves', player.skill_moves], ['Weak foot', player.weak_foot], ['Strong foot', player.strong_foot], ['Foot side', player.strong_foot_side], ['Attack work rate', player.work_rate_attack], ['Defence work rate', player.work_rate_defense], ['Height', player.height_cm ? `${player.height_cm} cm` : null], ['Weight', player.weight_kg ? `${player.weight_kg} kg` : null]
+    ].filter(([,value]) => value !== null && value !== undefined).map(([label,value]) => `<div class="player-stat-item"><span>${esc(label)}</span><b>${esc(value)}</b></div>`).join('') || '<p class="player-loading">No additional overview data has been verified.</p>';
+    if (player.shard_cost) {
+      document.querySelector('#player-shards').innerHTML = `<div class="player-stat-item"><span>${esc(player.shard_cost.shard_type.replaceAll('_',' '))}</span><b>${Number(player.shard_cost.shard_cost).toLocaleString()}</b></div><div class="player-stat-item"><span>Observed</span><b>${new Date(player.shard_cost.observed_at).toLocaleDateString()}</b></div>`;
+      document.querySelector('#shard-source').innerHTML = `Source: <a href="${esc(player.shard_cost.source_url)}" rel="nofollow">${esc(player.shard_cost.source_name)}</a>`;
+    } else document.querySelector('#player-shards').innerHTML = '<p class="player-loading">No shard-cost record is available.</p>';
+    if (player.sell_price?.current_sell_price != null) document.querySelector('#market-status').innerHTML = `Current sell price: <strong class="player-live-price">${Number(player.sell_price.current_sell_price).toLocaleString()} ${esc(player.sell_price.currency)}</strong> · observed ${new Date(player.sell_price.observed_at).toLocaleDateString()} · <a href="${esc(player.sell_price.source_url)}" rel="nofollow">source</a>`;
+    document.querySelector('#player-stats').innerHTML = statRows(player.stats?.stats, null);
+    const ranks = player.ranks || [];
+    if (ranks.length) {
+      const rankNode = document.querySelector('#player-ranks');
+      rankNode.innerHTML = ranks.map((rank, index) => `<button type="button" class="player-rank-choice" data-rank-index="${index}">Rank ${rank.rank}${rank.training_level ? ` · L${rank.training_level}` : ''}${rank.ovr ? ` · ${rank.ovr} OVR` : ''}</button>`).join('');
+      rankNode.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => {
+        const rank = ranks[Number(button.dataset.rankIndex)];
+        document.querySelectorAll('.player-rank-choice').forEach((x) => x.setAttribute('aria-pressed', String(x === button)));
+        document.querySelector('#player-stats').innerHTML = statRows(player.stats?.stats, rank);
+        document.querySelector('#rank-status').textContent = rank.source_url ? `Rank modifiers from ${rank.source_url}` : `Rank ${rank.rank} modifiers loaded from the database.`;
+      }));
+    }
+    document.querySelector('#player-abilities').innerHTML = abilities(player.abilities || [], 'playstyle');
+    document.querySelector('#player-traits').innerHTML = abilities(player.abilities || [], 'trait');
+    const related = await fetch(`/api/players?position=${encodeURIComponent(player.position)}&limit=7&sort=ovr-desc`);
+    const relatedData = await related.json();
+    document.querySelector('#related-players').innerHTML = relatedData.players.filter((item) => item.player_id !== player.player_id).slice(0,6).map(card).join('') || '<p>No related players found.</p>';
+  } catch (error) {
+    document.querySelector('#player-overview').innerHTML = `<p class="player-loading">${esc(error.message)}</p>`;
+  }
+}
+load();
+</script>
+
+<style is:global>
+.player-stat-item{gap:10px}.player-stat-item span{text-transform:capitalize}.player-panel h3{margin:16px 0 8px;color:#7edfff;font-size:12px;text-transform:uppercase;letter-spacing:.08em}.player-rank-choice{padding:8px 10px;border:1px solid #2a4553;border-radius:9px;background:#0a171f;color:#bdd4de;cursor:pointer}.player-rank-choice[aria-pressed="true"]{border-color:#65d6ff;color:#fff}.player-abilities .player-loading{display:block}
+</style>
