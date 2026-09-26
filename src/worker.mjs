@@ -131,7 +131,7 @@ async function writeRepoFile(env,path,text,sha,message) {
 }
 
 function parseSiteAds(text) {
-  const match=text.match(/export const SITE_ADS = (\{[\\s\\S]*?\});\\s*$/);
+  const match=text.match(/export const SITE_ADS = (\{[\s\S]*?\});\s*$/);
   if(!match) throw new Error('Ad configuration file has an unexpected format.');
   try { return JSON.parse(match[1]); } catch { throw new Error('Ad configuration is not valid JSON.'); }
 }
@@ -152,8 +152,9 @@ function validateSiteAds(content) {
   content.push.src=String(content.push.src||'').trim();
   content.push.delayMs=Number(content.push.delayMs);
 
-  if(!content.popunder.zone || !/^https:\\/\\/\\S+$/i.test(content.popunder.src)) throw new Error('Popunder network settings are invalid.');
-  if(!content.push.zone || !/^https:\\/\\/\\S+$/i.test(content.push.src)) throw new Error('Push network settings are invalid.');
+  const validHttps=(value)=>{try{return new URL(value).protocol==='https:';}catch{return false;}};
+  if(!content.popunder.zone || !validHttps(content.popunder.src)) throw new Error('Popunder network settings are invalid.');
+  if(!content.push.zone || !validHttps(content.push.src)) throw new Error('Push network settings are invalid.');
   if(!Number.isInteger(content.push.delayMs) || content.push.delayMs<5000 || content.push.delayMs>300000) throw new Error('Push delay must be between 5 and 300 seconds.');
 
   // Never allow the admin UI to remove the private exclusions.
