@@ -135,12 +135,21 @@ create index if not exists player_shard_costs_event_idx on public.player_shard_c
 create index if not exists player_ability_links_ability_idx on public.player_ability_links (ability_id, player_id);
 
 -- Public clients can read active player data; writes require the trusted admin claim.
-do $$ declare tbl text; begin
+do $$ declare tbl text; read_predicate text; begin
   foreach tbl in array array['players','player_stats','player_ranks','player_prices','player_shard_costs','player_assets','player_abilities','player_ability_links'] loop
     execute format('alter table public.%I enable row level security', tbl);
     execute format('drop policy if exists "public read active player data" on public.%I', tbl);
     execute format('drop policy if exists "admin manage player data" on public.%I', tbl);
-    execute format('create policy "public read active player data" on public.%I for select to anon, authenticated using (true)', tbl);
+    if tbl = 'players' then
+      read_predicate := 'is_active';
+    elsif tbl = 'player_abilities' then
+      read_predicate := 'true';
+    elsif tbl = 'player_assets' then
+      read_predicate := 'player_id is null or exists (select 1 from public.players p where p.player_id = player_assets.player_id and p.is_active)';
+    else
+      read_predicate := 'exists (select 1 from public.players p where p.player_id = ' || tbl || '.player_id and p.is_active)';
+    end if;
+    execute format('create policy "public read active player data" on public.%I for select to anon, authenticated using (%s)', tbl, read_predicate);
     execute format('create policy "admin manage player data" on public.%I for all to authenticated using ((select auth.jwt() -> ''app_metadata'' ->> ''role'') = ''admin'') with check ((select auth.jwt() -> ''app_metadata'' ->> ''role'') = ''admin'')', tbl);
   end loop;
 end $$;
