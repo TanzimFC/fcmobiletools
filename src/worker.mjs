@@ -130,6 +130,41 @@ async function writeRepoFile(env,path,text,sha,message) {
   return body.commit?.sha;
 }
 
+function parseSiteAds(text) {
+  const match=text.match(/export const SITE_ADS = (\{[\\s\\S]*?\});\\s*$/);
+  if(!match) throw new Error('Ad configuration file has an unexpected format.');
+  try { return JSON.parse(match[1]); } catch { throw new Error('Ad configuration is not valid JSON.'); }
+}
+
+function validateSiteAds(content) {
+  if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
+  content.enabled=Boolean(content.enabled);
+  content.provider=String(content.provider||'Monetag').trim()||'Monetag';
+
+  if(!content.popunder || typeof content.popunder!=='object') throw new Error('Popunder configuration is missing.');
+  if(!content.push || typeof content.push!=='object') throw new Error('Push configuration is missing.');
+
+  content.popunder.enabled=Boolean(content.popunder.enabled);
+  content.popunder.zone=String(content.popunder.zone||'').trim();
+  content.popunder.src=String(content.popunder.src||'').trim();
+  content.push.enabled=Boolean(content.push.enabled);
+  content.push.zone=String(content.push.zone||'').trim();
+  content.push.src=String(content.push.src||'').trim();
+  content.push.delayMs=Number(content.push.delayMs);
+
+  if(!content.popunder.zone || !/^https:\\/\\/\\S+$/i.test(content.popunder.src)) throw new Error('Popunder network settings are invalid.');
+  if(!content.push.zone || !/^https:\\/\\/\\S+$/i.test(content.push.src)) throw new Error('Push network settings are invalid.');
+  if(!Number.isInteger(content.push.delayMs) || content.push.delayMs<5000 || content.push.delayMs>300000) throw new Error('Push delay must be between 5 and 300 seconds.');
+
+  // Never allow the admin UI to remove the private exclusions.
+  content.excludedPathPrefixes=['/admin','/api','/creator/login'];
+  return content;
+}
+
+function siteAdsText(content) {
+  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// /admin, /api, and /creator/login remain excluded from ads server-side.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
+}
+
 function parseRedeem(text) {
   const start=text.indexOf('export const REDEEM_CODES = '), end=text.indexOf('export const REDEEM_STATUS',start);
   if(start<0 || end<0) throw new Error('Redeem data file has an unexpected format.');
@@ -534,6 +569,23 @@ async function api(request,env,path) {
     if(path === '/me') {
       const account=await getAdminAccount(env);
       return json({username:account?.username||env.ADMIN_USERNAME,displayName:account?.display_name||account?.username||env.ADMIN_USERNAME,role:'admin',updatedAt:account?.updated_at||null});
+    }
+    if(path === '/ad-settings' && request.method === 'GET') {
+      return json({settings:parseSiteAds((await repoFile(env,'src/config/siteAds.js')).text)});
+    }
+    if(path === '/ad-settings' && request.method === 'POST') {
+      const input=await request.json().catch(()=>({}));
+      const current=parseSiteAds((await repoFile(env,'src/config/siteAds.js')).text);
+      const next=validateSiteAds({
+        ...current,
+        enabled:input.enabled===undefined?current.enabled:Boolean(input.enabled),
+        provider:current.provider,
+        popunder:{...current.popunder,...(input.popunder||{})},
+        push:{...current.push,...(input.push||{})}
+      });
+      const file=await repoFile(env,'src/config/siteAds.js');
+      const commitSha=await writeRepoFile(env,'src/config/siteAds.js',siteAdsText(next),file.sha,'admin: update site ad settings');
+      return json({ok:true,commitSha,settings:next});
     }
     if(path === '/account' && (request.method === 'GET' || request.method === 'PUT')) {
       const account=await getAdminAccount(env); if(!account) return json({error:'Admin login is not configured.'},503);
