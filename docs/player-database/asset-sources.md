@@ -1,10 +1,10 @@
-# Player database asset provenance
+# Player database asset sources
 
-| Asset group | Repository handling | Source / rights |
+| Asset group | Handling | Source / attribution |
 | --- | --- | --- |
-| Coin, shard, and sell-price UI indicators | Original FCMOBILETOOLS SVGs in `assets/player-ui/` | Authored for this repository; no external art source |
-| Player portraits and card backgrounds | Not mirrored by this initial change | Must be sourced from an authorized dataset/provider or documented license before import |
-| Nation flags, club badges, league logos, event art | Not mirrored by this initial change | Rights and redistribution terms need review before bundling |
-| PlayStyle, trait, and rank icons | Not mirrored by this initial change | Source/license needs to be recorded in the asset registry |
+| Coin, Star Shard, and sell-price indicators | Original SVGs in `public/assets/player-ui/` | Created for FCMOBILETOOLS |
+| Pace, shooting, passing, dribbling, defending, and physical UI icons | Original SVG category icons in `public/assets/player-ui/`; these are category visuals, not sourced player-specific PlayStyle records | Created for FCMOBILETOOLS |
+| Player-card artwork | `player_assets` maps source-listed image URLs for lazy display; the binary files are not mirrored into this source commit | Image URLs listed by [FC Mobile Squad](https://fcmobilesquad.com/star-signings-players); project owner confirms permission for EA in-game art reuse; source attribution is retained in Supabase |
+| Club badges, nation flags, league marks, event graphics, rank and trait icons | Not yet populated | Add only with source, attribution, and reuse status recorded |
 
-The player asset registry stores the source URL, source name, license, attribution, and optional SHA-256 checksum alongside a local path or hosted URL. Do not ingest assets when reuse permission is unknown. Remote price or shard records should carry source name, source URL, usage-policy status, and observation time.
+No Zenith source code or datasets were copied. The first catalog has no verified player-specific PlayStyle, trait, or rank-icon records, so the custom category icons are not presented as those records. The Supabase `player_assets` registry stores asset key, type, URL/path, source, license note, attribution, and optional checksum.
