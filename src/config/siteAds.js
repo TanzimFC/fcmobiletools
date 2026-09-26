@@ -12,7 +12,7 @@ export const SITE_ADS = {
     "enabled": true,
     "zone": "11875910",
     "src": "https://5gvci.com/act/files/tag.min.js",
-    "delayMs": 30000
+    "delayMs": 10000
   },
   "excludedPathPrefixes": [
     "/admin",
