@@ -130,6 +130,8 @@ async function writeRepoFile(env,path,text,sha,message) {
   return body.commit?.sha;
 }
 
+const AD_SETTINGS_BUILD_FIX = '2026-09-26';
+
 function parseSiteAds(text) {
   const match=text.match(/export const SITE_ADS = (\{[\s\S]*?\});\s*$/);
   if(!match) throw new Error('Ad configuration file has an unexpected format.');
