@@ -18,10 +18,28 @@ const fmt=(n)=>Number(n).toLocaleString();
 <script>
 import { calculateRankUp } from '../lib/fcMobileRankUp.js';
 import { RANKS } from '../data/fcMobileRankUp.js';
-const $=(id)=>document.getElementById(id); const fmt=(n)=>Number(n).toLocaleString();
-const base=$('base'),current=$('current'),target=$('target'),available=$('available');current.value='0';target.value='5';
-function render(){const d=calculateRankUp({baseOVR:base.value,currentRank:current.value,targetRank:target.value,availableRP:available.value});if(!d.valid){$('error').hidden=false;$('error').textContent=d.error;return;}$('error').hidden=true;$('required').textContent=fmt(d.requiredRP);$('ovr').textContent=fmt(d.targetOVR);$('skills').textContent=d.skillPoints;$('gained').textContent=d.ranksGained;$('costTotal').textContent=`${fmt(d.requiredRP)} RP`;$('status').textContent=`${d.bracket.label} · R${d.currentRank} → R${d.targetRank}`;$('remaining').textContent=d.remainingRP===null?'—':fmt(d.remainingRP);$('rankPath').innerHTML=RANKS.map((r)=>`<div class="rank-node ${r.value===d.currentRank?'current':''} ${r.value===d.targetRank?'target':''}"><b>R${r.value}</b><span>${r.name}</span></div>`).join('<i></i>');$('stepRows').innerHTML=d.steps.length?d.steps.map((s)=>`<div class="step"><div><b>R${s.from} → R${s.to}</b><small>${RANKS[s.to].name}</small></div><strong>${fmt(s.cost)} RP</strong></div>`).join(''):'<div class="empty">No RP required</div>';}
-[base,current,target,available].forEach((e)=>e.addEventListener('input',render));render();
+const $=(id)=>document.getElementById(id);
+const fmt=(n)=>Number(n).toLocaleString();
+const base=$('base'),current=$('current'),target=$('target'),available=$('available');
+current.value='0';target.value='5';
+function render(){
+  const d=calculateRankUp({baseOVR:base.value,currentRank:current.value,targetRank:target.value,availableRP:available.value});
+  if(!d.valid){$('error').hidden=false;$('error').textContent=d.error;return}
+  $('error').hidden=true;
+  $('required').textContent=fmt(d.requiredRP);
+  $('ovr').textContent=fmt(d.targetOVR);
+  $('skills').textContent=d.skillPoints;
+  $('gained').textContent=d.ranksGained;
+  $('costTotal').textContent=fmt(d.requiredRP)+' RP';
+  $('status').textContent=d.bracket.label+' · R'+d.currentRank+' → R'+d.targetRank;
+  $('remaining').textContent=d.remainingRP===null?'—':fmt(d.remainingRP);
+  $('miniFrom').textContent='R'+d.currentRank;
+  $('miniTo').textContent='R'+d.targetRank;
+  $('rankPath').innerHTML=RANKS.map((r)=>'<article class="rank-card '+(r.value===d.currentRank?'current ':'')+(r.value===d.targetRank?'target ':'')+(r.value>d.currentRank&&r.value<d.targetRank?'route':'')+'"><span class="rank-index">R'+r.value+'</span><strong>'+r.name+'</strong><b>'+(r.value===d.currentRank?'CURRENT':r.value===d.targetRank?'TARGET':r.value<d.currentRank?'PREVIOUS':'UPGRADE')+'</b></article>').join('');
+  $('stepRows').innerHTML=d.steps.length?d.steps.map((step)=>'<div class="step"><div class="step-left"><span class="step-badge">R'+step.from+' → R'+step.to+'</span><div><b>'+RANKS[step.to].name+'</b><small>Base OVR bracket: '+d.bracket.label+'</small></div></div><strong>'+fmt(step.cost)+' RP</strong></div>').join(''):'<div class="empty">No RP required</div>';
+}
+[base,current,target,available].forEach((e)=>e.addEventListener('input',render));
+render();
 </script>
 <style>
 :root{--bg:#071018;--panel:#0f1a26;--panel2:#132333;--line:rgba(255,255,255,.08);--text:#f5f8fb;--muted:#a7b4c3;--cyan:#4cc9ff;--cyan2:#63d4ff;--gold:#ffb84a;--mono:'Space Grotesk',system-ui,sans-serif;--sans:'Inter',system-ui,sans-serif}
