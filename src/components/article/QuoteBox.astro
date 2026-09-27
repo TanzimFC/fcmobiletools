@@ -1,0 +1,12 @@
+---
+const { author = '', source = '', href = '' } = Astro.props;
+---
+<figure class="article-quote">
+  <div class="quote-mark" aria-hidden="true">“</div>
+  <blockquote><slot /></blockquote>
+  {(author || source) ? <figcaption><strong>{author}</strong>{source ? <span> · {href ? <a href={href} target="_blank" rel="noopener noreferrer">{source}</a> : source}</span> : null}</figcaption> : null}
+</figure>
+<style>
+.article-quote{margin:30px 0;padding:20px 21px;border:1px solid rgba(76,201,255,.12);border-radius:16px;background:linear-gradient(145deg,rgba(13,29,40,.82),rgba(7,17,25,.9));box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.quote-mark{font:900 34px/.7 var(--font-display);color:#4cc9ff;margin-bottom:7px}.article-quote blockquote{margin:0;color:#d6e7ec;font:600 16px/1.65 var(--font-display);border:0;padding:0}.article-quote figcaption{margin-top:12px;color:#69838f;font:700 8px/1.4 var(--font-body);letter-spacing:.04em}.article-quote figcaption strong{color:#9cc4d1}.article-quote a{color:#7ed9fb;text-decoration:none}
+</style>
