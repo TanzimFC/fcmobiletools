@@ -1,0 +1,16 @@
+---
+const { label = 'Tip', title = '' } = Astro.props;
+---
+<aside class="article-tip" role="note">
+  <div class="tip-icon" aria-hidden="true">i</div>
+  <div class="tip-content">
+    <span>{label}</span>
+    {title ? <strong>{title}</strong> : null}
+    <div><slot /></div>
+  </div>
+</aside>
+<style>
+.article-tip{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;margin:30px 0;padding:16px 17px;border:1px solid rgba(76,201,255,.16);border-radius:16px;background:linear-gradient(145deg,rgba(11,37,52,.7),rgba(8,20,30,.92));box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.tip-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid rgba(76,201,255,.25);border-radius:11px;background:rgba(76,201,255,.08);color:#86ddff;font:900 12px/1 var(--font-display)}
+.tip-content{display:grid;gap:5px}.tip-content>span{font:900 7px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:#7ddcff}.tip-content strong{font:700 15px/1.35 var(--font-display);color:#effaff}.tip-content>div{color:#acc6d0;font:400 13px/1.72 var(--font-body)}.tip-content :global(p){margin:0}
+</style>
