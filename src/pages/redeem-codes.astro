@@ -321,7 +321,7 @@ const faqSchema = {
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[c]));
 
-    const escapeRegExp = (value) => String(value).replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\<div class="toast" id="toast" role="status" aria-live="polite"></div>');
+    const escapeRegExp = (value) => String(value).replace(/[.*+?^\x24{\}()|[\]\\]/g, '\\x5c\\x24&');
 
     const highlight = (text, query) => {
       const safe = escapeHtml(text);
