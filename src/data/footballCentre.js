@@ -187,7 +187,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "enabled": true,
     "title": "FC Mobile 3rd Anniversary",
     "subtitle": "The third-anniversary celebration is live with the FC Mobile 27 Season Update.",
-    "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790323719/fc-mobile-tools/qrtvtote0squixmcts6u.jpg",
+    "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790493363/fc-mobile-tools/yxuxjsxdsrfzyel58eai.png",
     "startUtc": "2026-09-24T02:00:00.000Z",
     "endUtc": "",
     "accent": "3RD ANNIVERSARY",
@@ -199,9 +199,9 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "subtitle": "Upcoming FC Mobile major event",
     "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg",
     "startUtc": "2026-10-15T00:00:00.000Z",
-    "dateLabel": "October 15, 2026",
-    "status": "UPCOMING",
-    "note": "Unbreakable is scheduled for October 15, 2026."
+    "dateLabel": "",
+    "status": "AUTO",
+    "note": "Status and date are calculated automatically from the configured start time."
   },
   "divisionRivalsReset": {
     "enabled": true,
