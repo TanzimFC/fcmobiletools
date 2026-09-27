@@ -67,7 +67,7 @@ Use the schedule below to find the expected maintenance window in your region.
 ### Middle East
 
 | Location | Start | Expected End |
-|---|---:|---:|
+| --- | ---: | ---: |
 | 🇸🇦 Saudi Arabia | 12:30 AM | 5:00 AM |
 | 🇶🇦 Qatar | 12:30 AM | 5:00 AM |
 | 🇰🇼 Kuwait | 12:30 AM | 5:00 AM |
@@ -80,7 +80,7 @@ Use the schedule below to find the expected maintenance window in your region.
 ### Africa
 
 | Location | Start | Expected End |
-|---|---:|---:|
+| --- | ---: | ---: |
 | 🇪🇬 Egypt | 11:30 PM | 4:00 AM |
 | 🇿🇦 South Africa | 11:30 PM | 4:00 AM |
 | 🇳🇬 Nigeria | 10:30 PM | 3:00 AM |
@@ -91,7 +91,7 @@ Use the schedule below to find the expected maintenance window in your region.
 ### Europe — Part 1
 
 | Location | Start | Expected End |
-|---|---:|---:|
+| --- | ---: | ---: |
 | 🇬🇧 UK | 10:30 PM | 3:00 AM |
 | 🇮🇪 Ireland | 10:30 PM | 3:00 AM |
 | 🇵🇹 Portugal | 10:30 PM | 3:00 AM |
@@ -102,7 +102,7 @@ Use the schedule below to find the expected maintenance window in your region.
 ### Europe — Part 2
 
 | Location | Start | Expected End |
-|---|---:|---:|
+| --- | ---: | ---: |
 | 🇮🇹 Italy | 11:30 PM | 4:00 AM |
 | 🇳🇱 Netherlands | 11:30 PM | 4:00 AM |
 | 🇧🇪 Belgium | 11:30 PM | 4:00 AM |
@@ -114,7 +114,7 @@ Use the schedule below to find the expected maintenance window in your region.
 ### North America
 
 | Location | Start | Expected End |
-|---|---:|---:|
+| --- | ---: | ---: |
 | 🇺🇸 New York | 5:30 PM | 10:00 PM |
 | 🇺🇸 Chicago | 4:30 PM | 9:00 PM |
 | 🇺🇸 Denver | 3:30 PM | 8:00 PM |
@@ -126,7 +126,7 @@ Use the schedule below to find the expected maintenance window in your region.
 ### South America
 
 | Location | Start | Expected End |
-|---|---:|---:|
+| --- | ---: | ---: |
 | 🇧🇷 Brazil | 6:30 PM | 11:00 PM |
 | 🇦🇷 Argentina | 6:30 PM | 11:00 PM |
 | 🇨🇱 Chile | 6:30 PM | 11:00 PM |
@@ -137,7 +137,7 @@ Use the schedule below to find the expected maintenance window in your region.
 ### Oceania
 
 | Location | Start | Expected End |
-|---|---:|---:|
+| --- | ---: | ---: |
 | 🇦🇺 Sydney | 7:30 AM | 12:00 PM |
 | 🇦🇺 Melbourne | 7:30 AM | 12:00 PM |
 | 🇦🇺 Brisbane | 6:30 AM | 11:00 AM |
@@ -148,7 +148,7 @@ Use the schedule below to find the expected maintenance window in your region.
 For players in Bangladesh and nearby regions, the UTC schedule converts to:
 
 | Location | Start | Expected End |
-|---|---:|---:|
+| --- | ---: | ---: |
 | 🇧🇩 Bangladesh | 3:30 AM | 8:00 AM |
 | 🇮🇳 India | 3:00 AM | 7:30 AM |
 | 🇵🇰 Pakistan | 2:30 AM | 7:00 AM |
