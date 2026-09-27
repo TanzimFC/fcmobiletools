@@ -24,3 +24,10 @@ Write the article in Markdown. Use headings, paragraphs, lists, tables, quotes, 
 ## First section
 
 Replace this template with your content, then set `status: published` when it is ready.
+
+## Timeline
+
+For articles with dated milestones, add a normal list under a heading named exactly `Timeline`. Bold the date or milestone label so the article automatically gets the timeline treatment.
+
+- **17 Sep** — Anniversary event goes live.
+- **22 Oct** — Season reset begins.
