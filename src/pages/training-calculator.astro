@@ -16,7 +16,37 @@ const nextXp = (i) => i < MAX_TRAINING_LEVEL ? `${fmt(TRAINING_LEVELS[i + 1] - T
     <div class="metric-grid"><article><small>REQUIRED PLAYERS</small><b id="cards">0</b><span>Cards</span></article><article><small>XP PER CARD</small><b id="perCard">0</b><span>Selected fodder</span></article><article><small>LEVELS GAINED</small><b id="gained">0</b><span>Selected route</span></article><article><small>EXCESS XP</small><b id="extra">0</b><span>After training</span></article></div>
   </div>
   <div class="progress-card"><div class="progress-meta"><span id="from">LEVEL 0</span><b id="pct">0%</b><span id="to">LEVEL 30</span></div><div class="progress-track"><i id="fill"></i></div></div>
-  <div class="best-route"><div><span class="label">BEST VALUE ROUTE</span><h3>Lowest-cost combination highlighted automatically.</h3><p id="bestRouteText">Select your training route to calculate the recommended combination.</p></div><strong id="bestRouteValue">—</strong></div>
+  <section class="fodder-guide" aria-label="Training fodder guide">
+    <div class="guide-head">
+      <div>
+        <span class="label">TRAINING FODDER GUIDE</span>
+        <h3>How to build your training stock</h3>
+        <p>Use the calculator for the exact XP requirement, then use the route below to keep your club supplied with training cards.</p>
+      </div>
+      <span class="guide-live"><i></i> DAILY ROUTE</span>
+    </div>
+    <div class="guide-grid">
+      <article class="guide-card recommended">
+        <div class="guide-icon">01</div>
+        <div class="guide-copy">
+          <span class="guide-kicker">RECOMMENDED FODDER</span>
+          <h4>60–69 OVR</h4>
+          <p>At <strong>120 XP per card</strong>, this is a practical everyday fodder option for a fast training loop without jumping straight to high-OVR cards.</p>
+        </div>
+        <div class="guide-stat"><b>120</b><span>XP / CARD</span></div>
+      </article>
+      <article class="guide-card exchange">
+        <div class="guide-icon">02</div>
+        <div class="guide-copy">
+          <span class="guide-kicker">DAILY EXCHANGE</span>
+          <h4>30 Bronze Players → 1M Coins</h4>
+          <p>Use the <strong>Coins</strong> exchange to stock up on Bronze players. The route is available <strong>20 times per day</strong>, giving up to <strong>600 players</strong> from the daily reset.</p>
+        </div>
+        <div class="guide-stat"><b>20×</b><span>PER DAY</span></div>
+      </article>
+    </div>
+    <div class="guide-note"><span>↻</span><p><strong>Daily refresh:</strong> the exchange limit resets each day, making it a recurring source of training fodder.</p><b>20M COINS MAX / DAY</b></div>
+  </section>
   <div class="break"><div class="break-title"><span class="label">LEVEL BREAKDOWN</span><h3>Expandable training levels</h3><p>Open a level to see the XP added and cumulative total.</p></div><div id="breakdown" class="level-cards"></div></div>
 </div></section>
 <section class="reference"><div class="wrap"><div class="section-title"><span class="label">REFERENCE DATA</span><h2>FC Mobile Training XP table</h2><p>All 31 levels and all configured fodder values are rendered directly from the source data.</p></div><div class="reference-grid"><div class="ref-card"><h3>XP by Training Level</h3><div class="scroll"><table><thead><tr><th>LEVEL</th><th>TOTAL XP</th><th>XP TO NEXT</th></tr></thead><tbody>{TRAINING_LEVELS.map((xp, i) => <tr><td>Level {i}</td><td>{fmt(xp)} XP</td><td>{nextXp(i)}</td></tr>)}</tbody></table></div></div><div class="ref-card"><h3>Fodder XP Values</h3><div class="fodder-grid">{FODDER.map((f) => <div><span>{f.label}</span><b>{fmt(f.xp)} XP</b></div>)}</div></div></div></div></section>
@@ -53,8 +83,7 @@ function render() {
   const pct = Math.round(d.targetLevel / MAX_TRAINING_LEVEL * 100);
   $('pct').textContent = `${pct}%`;
   $('fill').style.width = `${pct}%`;
-  $('bestRouteText').textContent = `${d.cards} × ${d.fodder.label} cards supplies ${fmt(d.cards * d.fodder.xp)} XP for the selected route.`;
-  $('bestRouteValue').textContent = d.extraXP > 0 ? `+${fmt(d.extraXP)} XP` : 'Exact fit';
+  // Training guidance is presented as a fixed practical route below; calculator output remains driven by calculateTraining().
   const rows = [];
   for (let i = d.currentLevel; i < d.targetLevel; i++) {
     const step = TRAINING_LEVELS[i + 1] - TRAINING_LEVELS[i];
@@ -410,5 +439,34 @@ render();
   .training-page .metric-grid b{font-size:22px !important}
   .training-page .best-route{align-items:flex-start;flex-direction:column}
 }
+
+
+/* Training fodder guide */
+.training-page .fodder-guide{margin:14px 30px 0;padding:20px;border:1px solid rgba(76,201,255,.15);border-radius:22px;background:radial-gradient(500px 220px at 0% 0%,rgba(76,201,255,.055),transparent 65%),linear-gradient(150deg,#091c2e,#061522)}
+.training-page .guide-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding-bottom:18px;border-bottom:1px solid var(--line-soft)}
+.training-page .guide-head h3{margin:8px 0 5px;color:#e8f7fd;font:800 21px/1 var(--mono);letter-spacing:-.04em}
+.training-page .guide-head p{max-width:680px;margin:0;color:#7897aa;font:500 9px/1.6 var(--sans)}
+.training-page .guide-live{display:inline-flex;align-items:center;gap:7px;min-height:28px;padding:0 10px;border:1px solid rgba(76,201,255,.14);border-radius:999px;color:#65869b;font:800 6px/1 var(--mono);letter-spacing:.13em;white-space:nowrap}
+.training-page .guide-live i{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px rgba(76,201,255,.8)}
+.training-page .guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
+.training-page .guide-card{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:13px;align-items:start;min-height:150px;padding:17px;border:1px solid var(--line-soft);border-radius:17px;background:linear-gradient(145deg,#0b2238,#081827);overflow:hidden;transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+.training-page .guide-card::after{content:"";position:absolute;width:130px;height:130px;right:-70px;bottom:-78px;border-radius:50%;background:rgba(76,201,255,.08);filter:blur(22px)}
+.training-page .guide-card:hover{transform:translateY(-2px);border-color:rgba(76,201,255,.25);box-shadow:0 14px 36px rgba(0,0,0,.18)}
+.training-page .guide-icon{width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(76,201,255,.17);border-radius:9px;background:#092238;color:var(--cyan);font:800 7px/1 var(--mono)}
+.training-page .guide-copy{min-width:0}
+.training-page .guide-kicker{display:block;color:#56788c;font:800 6px/1 var(--mono);letter-spacing:.13em}
+.training-page .guide-copy h4{margin:7px 0;color:#eaf8fd;font:800 17px/1 var(--mono);letter-spacing:-.03em}
+.training-page .guide-copy p{margin:0;color:#7897aa;font:500 9px/1.65 var(--sans)}
+.training-page .guide-copy p strong{color:#b8eaff}
+.training-page .guide-stat{position:relative;z-index:1;min-width:70px;padding:9px 8px;border:1px solid rgba(76,201,255,.12);border-radius:11px;background:rgba(76,201,255,.045);text-align:center}
+.training-page .guide-stat b{display:block;color:var(--cyan);font:800 16px/1 var(--mono)}
+.training-page .guide-stat span{display:block;margin-top:5px;color:#507285;font:800 5px/1 var(--mono);letter-spacing:.10em}
+.training-page .guide-note{display:flex;align-items:center;gap:11px;margin-top:10px;padding:12px 14px;border:1px solid var(--line-soft);border-radius:13px;background:#071725}
+.training-page .guide-note>span{width:25px;height:25px;display:grid;place-items:center;flex:0 0 25px;border:1px solid rgba(76,201,255,.15);border-radius:8px;color:var(--cyan);font:800 12px/1 var(--mono)}
+.training-page .guide-note p{flex:1;margin:0;color:#708fa2;font:500 8px/1.55 var(--sans)}
+.training-page .guide-note p strong{color:#b8eaff}
+.training-page .guide-note>b{color:#68889b;font:800 6px/1 var(--mono);letter-spacing:.1em;white-space:nowrap}
+@media(max-width:760px){.training-page .fodder-guide{margin-inline:18px;padding:17px}.training-page .guide-head{align-items:flex-start;flex-direction:column}.training-page .guide-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.training-page .guide-card{grid-template-columns:auto minmax(0,1fr);padding:15px}.training-page .guide-stat{grid-column:2;justify-self:start;min-width:64px}.training-page .guide-note{align-items:flex-start;flex-wrap:wrap}.training-page .guide-note>b{margin-left:36px}}
 
 </style>
