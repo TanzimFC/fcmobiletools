@@ -118,7 +118,7 @@ body:before{background-image:linear-gradient(rgba(255,255,255,.025) 1px,transpar
 }
 @media(max-width:520px){.top-signout{font-size:7px;padding:0 9px}.state{padding:7px 8px}.state span{display:none}.nav{top:56px}.nav button,.nav-external{min-height:44px}}
 </style></head><body><div class="layout" id="adminLayout"><button class="side-toggle" id="sideToggle" type="button" aria-label="Toggle admin navigation" aria-expanded="true"><span>Collapse</span></button><aside class="side"><div class="brand"><a class="brand-logo" href="/"><img src="/assets/images/logo.png" alt="FCMobiletools"></a><div><b>Admin Workspace</b><small>FCMobiletools command centre</small></div></div><div class="side-card"><span>WORKSPACE MODE</span><strong>Live content control</strong><p>Changes here are written into the site data flow</p></div><div class="navlabel">Workspace</div><nav class="nav" id="mobileAdminMenu"><button data-section="overview">Overview</button><button data-section="redeem">Redeem Codes</button><button data-section="football">Football Centre</button><button data-section="media">Media Library</button><button data-section="events">Events &amp; Resets</button><button data-section="articles">Articles</button><button data-section="inbox">Inbox <i class="nav-badge" id="inboxBadge" hidden>0</i></button><button data-section="creators">Creators</button><button data-section="account">Account</button><button data-section="ads" data-admin-only>Ad Settings</button><a class="nav-external" href="/admin/fc-mobile-27.html">FC Mobile 27 APK</a><a class="nav-external" href="/admin/rank-up.html">Rank Up Admin</a></nav><div class="side-session"><button class="out" id="logout" type="button">Sign out</button></div></aside><div class="main"><header class="top"><div class="top-title"><div class="crumb">Admin / <span id="crumb">Overview</span></div><h1 id="title">Overview</h1></div><div class="top-actions"><button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-expanded="false" aria-controls="mobileAdminMenu" aria-label="Open admin menu"><span></span><span></span><span></span></button><div class="state"><i class="dot" id="dot"></i><span id="status">Ready</span></div><button class="top-signout" id="logoutTop" type="button">Sign out</button></div></header><main class="body" id="app"></main></div></div><div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div><div class="modal" id="modal"><div class="dialog" id="dialog"></div></div><script>
-const $=s=>document.querySelector(s),app=$('#app'),modal=$('#modal'),dialog=$('#dialog');let football=null,media=[],workspaceRole='admin',workspaceUser=null,tiptapEditor=null;const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function cloudinaryUrl(url,w=900,h=600){const value=String(url||'');try{const u=new URL(value);if(!u.pathname.includes('/image/upload/'))return value;u.pathname=u.pathname.replace('/image/upload/','/image/upload/f_auto,q_auto,w_'+w+',h_'+h+',c_fill/');return u.toString()}catch{return value}}async function api(path,o={}){const prefix=workspaceRole==='creator'?'/api/creator':'/api/admin';const r=await fetch(prefix+path,{credentials:'same-origin',...o});const b=await r.json().catch(()=>({}));if(r.status===401){throw Error((b.error||'Session expired')+' ['+prefix+path+']')}if(!r.ok)throw Error(b.error||`Request failed (${r.status})`);return b}function showToast(message,type='success'){const region=$('#toastRegion');if(!region)return;const toast=document.createElement('div');toast.className='toast '+type;toast.setAttribute('role',type==='error'?'alert':'status');toast.innerHTML='<i></i><div><b>'+esc(message)+'</b></div><button type="button" aria-label="Dismiss notification">×</button>';toast.querySelector('button').onclick=()=>toast.remove();region.appendChild(toast);setTimeout(()=>{toast.classList.add('out');setTimeout(()=>toast.remove(),180)},4200)}function state(t,ok=true){$('#status').textContent=t;$('#dot').className='dot'+(ok?'':' bad');if(t&&t!=='Ready'&&!/^Loading/i.test(t)&&!/^Saving/i.test(t))showToast(t,ok?'success':'error')}function busy(b,on){if(!b)return;b.disabled=on;b.setAttribute('aria-busy',on?'true':'false');b.setAttribute('aria-disabled',on?'true':'false');if(on){b.dataset.t=b.textContent;b.textContent='Saving…'}else b.textContent=b.dataset.t||b.textContent}function nav(s){document.querySelectorAll('[data-section]').forEach(b=>b.classList.toggle('active',b.dataset.section===s));const n={overview:'Overview',redeem:'Redeem Codes',football:'Football Centre',media:'Media Library',events:'Events & Reset',articles:'Articles',inbox:'Inbox',creators:'Creators',account:'Account',ads:'Ad Settings'}[s]||'Workspace';$('#title').textContent=n;$('#crumb').textContent=n}function openModal(h){dialog.innerHTML=h;modal.classList.add('open');document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal)}function closeModal(){modal.classList.remove('open');dialog.innerHTML=''}modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))closeModal()});
+const $=s=>document.querySelector(s),app=$('#app'),modal=$('#modal'),dialog=$('#dialog');let football=null,media=[],workspaceRole='admin',workspaceUser=null,tiptapEditor=null;const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function cloudinaryUrl(url,w=900,h=600){const value=String(url||'');try{const u=new URL(value);if(!u.pathname.includes('/image/upload/'))return value;u.pathname=u.pathname.replace('/image/upload/','/image/upload/f_auto,q_auto,w_'+w+',h_'+h+',c_fill/');return u.toString()}catch{return value}}async function api(path,o={}){const prefix=workspaceRole==='creator'?'/api/creator':'/api/admin';const r=await fetch(prefix+path,{credentials:'same-origin',...o});const b=await r.json().catch(()=>({}));if(r.status===401){throw Error((b.error||'Session expired')+' ['+prefix+path+']')}if(!r.ok)throw Error(b.error||`Request failed (${r.status})`);return b}function showToast(message,type='success'){const region=$('#toastRegion');if(!region)return;const toast=document.createElement('div');toast.className='toast '+type;toast.setAttribute('role',type==='error'?'alert':'status');toast.innerHTML='<i></i><div><b>'+esc(message)+'</b></div><button type="button" aria-label="Dismiss notification">×</button>';toast.querySelector('button').onclick=()=>toast.remove();region.appendChild(toast);setTimeout(()=>{toast.classList.add('out');setTimeout(()=>toast.remove(),180)},4200)}function state(t,ok=true){$('#status').textContent=t;$('#dot').className='dot'+(ok?'':' bad');if(t&&t!=='Ready'&&!/^Loading/i.test(t)&&!/^Saving/i.test(t))showToast(t,ok?'success':'error')}function busy(b,on){if(!b)return;b.disabled=on;b.setAttribute('aria-busy',on?'true':'false');b.setAttribute('aria-disabled',on?'true':'false');if(on){b.dataset.t=b.textContent;b.textContent='Saving…'}else b.textContent=b.dataset.t||b.textContent}function nav(s){if(window.articleEditorDirty?.() && !confirm('You have unsaved article changes. Leave the editor?'))return;document.querySelectorAll('[data-section]').forEach(b=>b.classList.toggle('active',b.dataset.section===s));const n={overview:'Overview',redeem:'Redeem Codes',football:'Football Centre',media:'Media Library',events:'Events & Reset',articles:'Articles',inbox:'Inbox',creators:'Creators',account:'Account',ads:'Ad Settings'}[s]||'Workspace';$('#title').textContent=n;$('#crumb').textContent=n}function openModal(h){dialog.innerHTML=h;modal.classList.add('open');document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal)}function closeModal(){modal.classList.remove('open');dialog.innerHTML=''}modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))closeModal()});
 $('#sideToggle').onclick=()=>{const collapsed=$('#adminLayout').classList.toggle('nav-collapsed');$('#sideToggle').setAttribute('aria-expanded',collapsed?'false':'true');};
 const mobileMenuToggle=$('#mobileMenuToggle'),mobileMenu=$('#mobileAdminMenu'),logoutTop=$('#logoutTop');const closeMobileMenu=()=>{document.body.classList.remove('mobile-menu-open');mobileMenuToggle?.setAttribute('aria-expanded','false')};mobileMenuToggle?.addEventListener('click',e=>{e.stopPropagation();const open=document.body.classList.toggle('mobile-menu-open');mobileMenuToggle.setAttribute('aria-expanded',open?'true':'false')});document.addEventListener('click',e=>{if(document.body.classList.contains('mobile-menu-open')&&!mobileMenu?.contains(e.target)&&!mobileMenuToggle?.contains(e.target))closeMobileMenu()});mobileMenu?.addEventListener('click',e=>{if(e.target.closest('[data-section]'))closeMobileMenu()});
 
@@ -222,7 +222,7 @@ async function articlesSection(filter='all') {
     +'</div>'
     +'<div class="article-library-panel"><div class="library-head"><div><span>CONTENT LIBRARY</span><h3>'+ (filter==='review'?'Approval queue':filter==='published'?'Published articles':filter==='draft'?'Draft articles':filter==='trash'?'Trash':'All articles') +'</h3><p>Everything stays in the same editorial workspace.</p></div><label class="article-search-admin">⌕ <input class="input" id="articleSearch" placeholder="Search title, author, category"></label></div>'
     +'<div class="article-admin-list">'
-    +(visible.map(a=>'<div class="article-admin-row"><span class="article-admin-thumb">'+(a.data?.image?'<img src="'+esc(a.data.image)+'" alt="">':'FC')+'</span><span><b>'+esc(a.data?.title||a.path)+'</b><small>'+esc(a.data?.category||'Guides')+' · '+esc(a.data?.author||'')+'</small></span><i class="article-status">'+esc(filter==='trash'?'trashed':a.data?.status||'draft')+'</i><span class="article-row-actions">'+(filter==='trash'?'<button class="btn" data-restore-article="'+esc(a.data?.id)+'">Restore</button>':'<button class="btn" data-open-article="'+esc(a.path)+'">Open</button><button class="btn danger-btn" data-trash-article="'+esc(a.data?.id)+'">Trash</button>')+'</span></div>').join('')
+    +(visible.map(a=>'<div class="article-admin-row" data-article-path="'+esc(a.path)+'"><span class="article-admin-thumb">'+(a.data?.image?'<img src="'+esc(a.data.image)+'" alt="">':'FC')+'</span><span><b>'+esc(a.data?.title||a.path)+'</b><small>'+esc(a.data?.category||'Guides')+' · '+esc(a.data?.author||'')+'</small></span><i class="article-status">'+esc(filter==='trash'?'trashed':a.data?.status||'draft')+'</i><span class="article-row-actions">'+(filter==='trash'?'<button class="btn" data-restore-article="'+esc(a.data?.id)+'">Restore</button>':'<button class="btn" data-open-article="'+esc(a.path)+'">Open</button><button class="btn danger-btn" data-trash-article="'+esc(a.data?.id)+'">Trash</button>')+'</span></div>').join('')
       ||'<div class="empty">Nothing in this view yet.</div>')
     +'</div></div>';
   document.querySelectorAll('[data-af]').forEach(b=>b.onclick=()=>articlesSection(b.dataset.af));
@@ -328,6 +328,7 @@ function articleEditor(item) {
   $('#articleEditor').innerHTML=articleMarkdownToHTML(item?.body||'');
   const editor=$('#articleEditor');
   loadTipTap(editor,editor.innerHTML).then(instance=>{if(instance){editor.contentEditable='true';}});
+  window.articleEditorDirty=()=>dirty;
   const setStatusUI=()=>{
     const st=$('#articleStatus').value;
     const labels={draft:'Draft is private until published.',review:'This article is waiting in the approval queue.',published:'This article is live on the public site.',archived:'Archived articles are hidden from the public site.'};
@@ -360,22 +361,74 @@ function articleEditor(item) {
   $('#articleFontFamily').onchange=e=>{if(tiptapEditor && e.target.value)tiptapEditor.chain().focus().setMark('textStyle',{fontFamily:e.target.value}).run();};
   $('#articleStatus').onchange=setStatusUI;
   $('#articleLink').onclick=()=>{const url=prompt('Link URL');if(url){if(tiptapEditor)tiptapEditor.chain().focus().setLink({href:url}).run();else{editor.focus();document.execCommand('createLink',false,url);}}};
-  const applyInlineImage=(url)=>{
-    if(tiptapEditor){tiptapEditor.chain().focus().setImage({src:url,alt:'Article image'}).run();}else{editor.focus();document.execCommand('insertHTML',false,'<img src="'+esc(url)+'" alt="Article image">');}
+  $('#articleInsertTable').onclick=()=>{if(tiptapEditor)tiptapEditor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run();else state('Table editing requires the rich editor to load.',false);};
+  $('#articleAddRow').onclick=()=>{if(tiptapEditor&&tiptapEditor.can().addRowAfter())tiptapEditor.chain().focus().addRowAfter().run();else state('Place the cursor inside a table first.',false);};
+  $('#articleAddCol').onclick=()=>{if(tiptapEditor&&tiptapEditor.can().addColumnAfter())tiptapEditor.chain().focus().addColumnAfter().run();else state('Place the cursor inside a table first.',false);};
+  $('#articleDeleteTable').onclick=()=>{if(tiptapEditor&&tiptapEditor.can().deleteTable())tiptapEditor.chain().focus().deleteTable().run();else state('Place the cursor inside a table first.',false);};
+  const applyInlineImage=(url,alt='Article image')=>{
+    if(tiptapEditor){tiptapEditor.chain().focus().setImage({src:url,alt}).run();}else{editor.focus();document.execCommand('insertHTML',false,'<img src="'+esc(url)+'" alt="'+esc(alt)+'">');}
     if(!$('#articleImagePreview img')){
       $('#articleImagePreview').innerHTML='<img src="'+esc(url)+'" alt="">';
+      $('#articleImageAlt').value=alt;
       $('#saveHint').textContent='Cover auto-selected from first image';
     }
-    dirty=true;
+    dirty=true;$('#saveHint').textContent='Unsaved changes';
   };
-  $('#articleInlineImage').onclick=()=>articleMediaPicker(applyInlineImage);
-  $('#articlePickImage').onclick=()=>articleMediaPicker(url=>{$('#articleImagePreview').innerHTML='<img src="'+esc(url)+'" alt="">';$('#saveHint').textContent='Cover selected';dirty=true;});
-  $('#articleBack').onclick=()=>articlesSection(item?.data?.status||'all');
+
+  const uploadArticleImage=async(file,asCover=false)=>{
+    if(!file||!file.type.startsWith('image/'))return;
+    try{
+      const s=await api('/media/sign');
+      const fd=new FormData();
+      fd.append('file',file);fd.append('api_key',s.apiKey);fd.append('timestamp',s.timestamp);fd.append('folder',s.folder);fd.append('signature',s.signature);
+      const up=await fetch('https://api.cloudinary.com/v1_1/'+s.cloudName+'/image/upload',{method:'POST',body:fd});
+      const data=await up.json();
+      if(!up.ok)throw Error(data?.error?.message||'Upload failed');
+      const alt=prompt('Alt text for this image:',file.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '))||'Article image';
+      if(asCover){
+        $('#articleImagePreview').innerHTML='<img src="'+esc(data.secure_url)+'" alt="">';
+        $('#articleImageAlt').value=alt;
+        $('#saveHint').textContent='Cover uploaded — unsaved';
+        dirty=true;
+      }else{
+        applyInlineImage(data.secure_url,alt);
+      }
+    }catch(err){state(err.message,false);}
+  };
+
+  $('#articleInlineImage').onclick=()=>articleMediaPicker((url)=>{const alt=prompt('Alt text for this image:','Article image')||'Article image';applyInlineImage(url,alt);});
+  $('#articleUploadImage').onclick=()=>$('#articleInlineFile').click();
+  $('#articleInlineFile').onchange=e=>{const file=e.target.files?.[0];if(file)uploadArticleImage(file,false);e.target.value='';};
+  $('#articlePickImage').onclick=()=>articleMediaPicker(url=>{
+    $('#articleImagePreview').innerHTML='<img src="'+esc(url)+'" alt="">';
+    $('#articleImageAlt').value='';
+    $('#saveHint').textContent='Cover selected — unsaved';
+    dirty=true;
+  });
+  $('#articleUploadCover').onclick=()=>{
+    const input=document.createElement('input');input.type='file';input.accept='image/*';input.click();
+    input.onchange=()=>{const file=input.files?.[0];if(file)uploadArticleImage(file,true);};
+  };
+  $('#articleBack').onclick=()=>{if(dirty&&!confirm('You have unsaved article changes. Leave without saving?'))return;window.articleEditorDirty=null;articlesSection(item?.data?.status||'all');};
   $('#articlePreview').onclick=()=>{
     openModal('<div class="dialoghead"><div><h3>Article preview</h3><div class="muted">A quick look before publishing</div></div><button class="close" data-close>×</button></div><div class="dialogbody article-preview"><p class="eyebrow">'+esc($('#articleType').selectedOptions[0]?.textContent||'Article')+'</p><h1>'+esc($('#articleTitle').value)+'</h1><p>'+esc($('#articleDescription').value)+'</p>'+($('#articleImagePreview img')?.outerHTML||'')+'<div>'+editor.innerHTML+'</div></div>');
   };
   let dirty=false;
+  window.articleEditorDirty=()=>dirty;
   editor.addEventListener('input',()=>{dirty=true;$('#saveHint').textContent='Unsaved changes';});
+  editor.addEventListener('drop',event=>{
+    const file=[...(event.dataTransfer?.files||[])].find(item=>item.type.startsWith('image/'));
+    if(!file)return;
+    event.preventDefault();event.stopPropagation();uploadArticleImage(file,false);
+  });
+  editor.addEventListener('dragover',event=>{
+    if([...(event.dataTransfer?.items||[])].some(item=>item.type.startsWith('image/')))event.preventDefault();
+  });
+  editor.addEventListener('paste',event=>{
+    const file=[...(event.clipboardData?.files||[])].find(item=>item.type.startsWith('image/'));
+    if(!file)return;
+    event.preventDefault();event.stopPropagation();uploadArticleImage(file,false);
+  });
   document.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{dirty=true;$('#saveHint').textContent='Unsaved changes';}));
   const save=async status=>{
     const title=$('#articleTitle').value.trim();
@@ -383,7 +436,12 @@ function articleEditor(item) {
     const button=status==='published'?$('#articlePublish'):status==='review'?$('#articleReview'):$('#articleSave');
     busy(button,true);
     try{
-      const payload={...a,title,subtitle:$('#articleSubtitle').value.trim(),category:$('#articleType').selectedOptions[0]?.textContent||'Guides',type:$('#articleType').value,featured:workspaceRole==='admin'?Boolean($('#articleFeatured')?.checked):Boolean(a.featured),tags:$('#articleTags').value.split(',').map(x=>x.trim()).filter(Boolean),description:$('#articleDescription').value.trim(),image:$('#articleImagePreview img')?.src||a.image||'',slug:$('#articleSlug').value.trim()||title,author:$('#articleAuthor').value.trim()||'TanzimFC',status,body:articleHTMLToMarkdown(tiptapEditor?tiptapEditor.getHTML():editor.innerHTML),createOnly:!item};
+      const payload={...a,title,subtitle:$('#articleSubtitle').value.trim(),category:$('#articleType').selectedOptions[0]?.textContent||'Guides',type:$('#articleType').value,featured:workspaceRole==='admin'?Boolean($('#articleFeatured')?.checked):Boolean(a.featured),tags:$('#articleTags').value.split(',').map(x=>x.trim()).filter(Boolean),description:$('#articleDescription').value.trim(),image:$('#articleImagePreview img')?.src||a.image||'',slug:$('#articleSlug').value.trim()||title,author:$('#articleAuthor').value.trim()||'TanzimFC',status,body:articleHTMLToMarkdown(tiptapEditor?tiptapEditor.getHTML():editor.innerHTML),
+        imageAlt:$('#articleImageAlt').value.trim(),
+        imageCaption:$('#articleImageCaption').value.trim(),
+        seoTitle:$('#articleSeoTitle').value.trim(),
+        seoDescription:$('#articleSeoDescription').value.trim(),
+        createOnly:!item};
       const endpoint=workspaceRole==='creator'?(item?'/articles/'+item.data.id:'/articles'):'/articles';await api(endpoint,{method:item&&workspaceRole==='creator'?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
       dirty=false;$('#saveHint').textContent=status==='published'?'Published':'Saved just now';state(status==='published'?'Article published':status==='review'?'Sent to approval queue':'Draft saved');
       await articlesSection(status==='published'?'published':status==='review'?'review':'draft'); refreshInboxBadge();
