@@ -1,0 +1,16 @@
+---
+const { label = 'Unconfirmed', title = '' } = Astro.props;
+---
+<aside class="article-leak" role="note">
+  <div class="leak-icon" aria-hidden="true">?</div>
+  <div class="leak-content">
+    <span>{label}</span>
+    {title ? <strong>{title}</strong> : null}
+    <div><slot /></div>
+  </div>
+</aside>
+<style>
+.article-leak{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;margin:30px 0;padding:16px 17px;border:1px solid rgba(240,204,121,.22);border-radius:16px;background:linear-gradient(145deg,rgba(49,39,17,.62),rgba(22,18,10,.9));box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.leak-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid rgba(240,204,121,.28);border-radius:11px;background:rgba(240,204,121,.08);color:#f0cc79;font:900 14px/1 var(--font-display)}
+.leak-content{display:grid;gap:5px}.leak-content>span{font:900 7px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:#f0cc79}.leak-content strong{font:700 15px/1.35 var(--font-display);color:#f6ecd0}.leak-content>div{color:#b6a778;font:400 13px/1.72 var(--font-body)}.leak-content :global(p){margin:0}
+</style>
