@@ -15,10 +15,26 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
 <main class="rank-page"><header class="hero"><div class="wrap"><nav><a href="/">FCMOBILETOOLS</a><span>›</span><span>Rank Up Calculator</span></nav><div class="hero-grid"><div><span class="eyebrow">FC MOBILE / RANK LAB</span><h1>Rank Up <em>Calculator</em></h1><p>Calculate the exact Rank Up Points needed from your current rank to your target rank.</p><div class="pills"><span>RANK UP POINTS</span><span>BASE OVR</span><span>R0 → R5</span></div></div><div class="hero-mark"><div class="hero-rank-orb"><img src={RANK_ICONS[5]} alt="" /></div><strong>R5</strong><small>ORANGE RANK</small></div></div></div></header>
 <section class="wrap section"><div class="calculator-shell">
   <div class="planner-head"><div><span class="label">RANK UP PLANNER</span><h2>Build your rank path</h2><p>Enter the Base OVR and choose the current and target rank. Calculation logic is unchanged.</p></div><b class="max">R0 → R5</b></div>
-  <div class="fields"><label>Base OVR<input id="base" type="number" min="0" max="150" value="110"></label><label>Current Rank<select id="current">${RANKS.map((r)=><option value={r.value}>R{r.value} · {r.name}</option>)}</select></label><label>Target Rank<select id="target">${RANKS.map((r)=><option value={r.value}>R{r.value} · {r.name}</option>)}</select></label><label>Available RP<input id="available" type="number" min="0" placeholder="Optional"></label></div>
+  <div class="fields rank-inputs">
+  <label>Base OVR<input id="base" type="number" min="0" max="150" value="110" inputmode="numeric"></label>
+  <label>Available Rank Up Points <small>OPTIONAL</small><input id="available" type="number" min="0" placeholder="Leave empty to ignore balance" inputmode="numeric"></label>
+  <input id="current" type="hidden" value="0">
+  <input id="target" type="hidden" value="5">
+</div>
+<div class="visual-rank-selectors">
+  <div class="selector-block">
+    <div class="selector-title"><div><span>CURRENT RANK</span><small>Where the player is now</small></div><b id="currentLabel">R0 · Base</b></div>
+    <div id="currentChoices" class="rank-choice-grid"></div>
+  </div>
+  <div class="selector-divider"></div>
+  <div class="selector-block">
+    <div class="selector-title"><div><span>TARGET RANK</span><small>The rank you want to reach</small></div><b id="targetLabel">R5 · Orange</b></div>
+    <div id="targetChoices" class="rank-choice-grid"></div>
+  </div>
+</div>
   <div id="error" class="error" hidden></div>
   <div class="summary-grid"><article class="rp-summary"><small>RP REQUIRED</small><strong id="required">0</strong><p id="status">Choose your rank path</p><div class="rank-flow-mini"><span id="miniFrom">R0</span><i></i><span id="miniTo">R5</span></div></article><div class="metric-grid"><article><small>OVR AFTER RANK</small><b id="ovr">110</b><span>Base OVR + rank</span></article><article><small>SKILL POINTS</small><b id="skills">0</b><span>Earned on the route</span></article><article><small>RANKS GAINED</small><b id="gained">0</b><span>Upgrade steps</span></article><article><small>RP BALANCE</small><b id="remaining">—</b><span>After available RP</span></article></div></div>
-  <div class="rank-chart"><div class="chart-head"><span class="label">RANK UP CHART</span><h3>Player rank slots</h3><p>Each step is a card instead of plain text.</p></div><div id="rankPath" class="rank-cards"></div></div>
+  <div class="rank-chart route-preview"><div class="chart-head"><span class="label">RANK PATH</span><h3>Visual upgrade route</h3><p>Select the two ranks above and the route updates instantly below.</p></div><div id="rankPath" class="rank-path-preview"></div></div>
   <div class="steps"><div class="steps-head"><div><span class="label">COST BREAKDOWN</span><h3>Every rank step</h3></div><b id="costTotal">0 RP</b></div><div id="stepRows"></div></div>
 </div>
 <div class="reference"><div class="section-title"><span class="label">REFERENCE DATA</span><h2>Rank Up Points by Base OVR</h2><p>Complete R1 to R5 costs for every configured Base OVR bracket.</p></div><div class="scroll"><table><thead><tr><th>BASE OVR</th><th>R1 GREEN</th><th>R2 BLUE</th><th>R3 PURPLE</th><th>R4 RED</th><th>R5 ORANGE</th></tr></thead><tbody>${RANK_COSTS.map((row)=><tr><td>{row.label}</td>{row.costs.map((cost)=><td>{fmt(cost)} RP</td>)}</tr>)</tbody></table></div></div></section>
@@ -26,13 +42,90 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
 <script>
 import { calculateRankUp } from '../lib/fcMobileRankUp.js';
 import { RANKS } from '../data/fcMobileRankUp.js';
+
 const $=(id)=>document.getElementById(id);
 const fmt=(n)=>Number(n).toLocaleString();
+const RANK_ICONS={
+  1:'/assets/images/rankup/rankicon_25_RANK1_ANIM.png',
+  2:'/assets/images/rankup/rankicon_25_RANK2_ANIM.png',
+  3:'/assets/images/rankup/rankicon_25_RANK3_ANIM.png',
+  4:'/assets/images/rankup/rankicon_25_RANK4_ANIM.png',
+  5:'/assets/images/rankup/rankicon_25_RANK5_ANIM.png'
+};
 const base=$('base'),current=$('current'),target=$('target'),available=$('available');
-current.value='0';target.value='5';
+const currentChoices=$('currentChoices'),targetChoices=$('targetChoices');
+
+function icon(value,size='small'){
+  return RANK_ICONS[value]
+    ? '<img src="'+RANK_ICONS[value]+'" alt="" loading="eager">'
+    : '<span class="rank-base-mark">R0</span>';
+}
+
+function buildSelectors(){
+  const make=(type)=>RANKS.map((r)=>'<button type="button" class="rank-choice" data-select-'+type+'="'+r.value+'">'
+    +'<span class="rank-choice-icon '+(r.value===0?'base':'')+'">'+icon(r.value)+'</span>'
+    +'<span class="rank-choice-copy"><strong>R'+r.value+'</strong><small>'+r.name+'</small></span>'
+    +'<span class="rank-choice-state">'+(type==='current'?'CURRENT':'TARGET')+'</span>'
+    +'</button>').join('');
+  currentChoices.innerHTML=make('current');
+  targetChoices.innerHTML=make('target');
+
+  currentChoices.querySelectorAll('[data-select-current]').forEach((button)=>button.addEventListener('click',()=>{
+    const next=Number(button.dataset.selectCurrent);
+    current.value=String(next);
+    if(Number(target.value)<=next) target.value=String(Math.min(5,next+1));
+    render();
+  }));
+
+  targetChoices.querySelectorAll('[data-select-target]').forEach((button)=>button.addEventListener('click',()=>{
+    if(button.disabled) return;
+    target.value=button.dataset.selectTarget;
+    render();
+  }));
+}
+
+function syncSelectors(){
+  const from=Number(current.value),to=Number(target.value);
+  currentChoices.querySelectorAll('[data-select-current]').forEach((button)=>{
+    const value=Number(button.dataset.selectCurrent);
+    button.classList.toggle('selected',value===from);
+    button.disabled=value>=to;
+    button.querySelector('.rank-choice-state').textContent=value===from?'SELECTED':'CURRENT';
+  });
+  targetChoices.querySelectorAll('[data-select-target]').forEach((button)=>{
+    const value=Number(button.dataset.selectTarget);
+    button.classList.toggle('selected',value===to);
+    button.disabled=value<=from;
+    button.querySelector('.rank-choice-state').textContent=value===to?'SELECTED':'TARGET';
+  });
+  $('currentLabel').textContent='R'+from+' · '+RANKS[from].name;
+  $('targetLabel').textContent='R'+to+' · '+RANKS[to].name;
+}
+
+function renderRoute(from,to){
+  $('rankPath').innerHTML=RANKS.map((r)=>{
+    const active=r.value>=from&&r.value<=to;
+    const focus=r.value===from||r.value===to;
+    return '<span class="route-node '+(active?'active ':'')+(focus?'focus':'')+'">'
+      +'<span class="route-node-icon '+(r.value===0?'base':'')+'">'+icon(r.value)+'</span>'
+      +'<b>R'+r.value+'</b><small>'+r.name+'</small>'
+      +'</span>';
+  }).join('<i class="route-node-line"></i>');
+}
+
 function render(){
-  const d=calculateRankUp({baseOVR:base.value,currentRank:current.value,targetRank:target.value,availableRP:available.value});
-  if(!d.valid){$('error').hidden=false;$('error').textContent=d.error;return}
+  syncSelectors();
+  const d=calculateRankUp({
+    baseOVR:base.value,
+    currentRank:current.value,
+    targetRank:target.value,
+    availableRP:available.value
+  });
+  if(!d.valid){
+    $('error').hidden=false;
+    $('error').textContent=d.error;
+    return;
+  }
   $('error').hidden=true;
   $('required').textContent=fmt(d.requiredRP);
   $('ovr').textContent=fmt(d.targetOVR);
@@ -43,10 +136,20 @@ function render(){
   $('remaining').textContent=d.remainingRP===null?'—':fmt(d.remainingRP);
   $('miniFrom').textContent='R'+d.currentRank;
   $('miniTo').textContent='R'+d.targetRank;
-  $('rankPath').innerHTML=RANKS.map((r)=>'<article class="rank-card '+(r.value===d.currentRank?'current ':'')+(r.value===d.targetRank?'target ':'')+(r.value>d.currentRank&&r.value<d.targetRank?'route ':'')+'"><div class="rank-card-top"><span class="rank-index">R'+r.value+'</span><b>'+(r.value===d.currentRank?'CURRENT':r.value===d.targetRank?'TARGET':r.value<d.currentRank?'PREVIOUS':'UPGRADE')+'</b></div><div class="rank-icon '+(r.value===0?'rank-icon-base':'')+'">'+(RANK_ICONS[r.value]?'<img src="'+RANK_ICONS[r.value]+'" alt="" loading="lazy"/>':'<span>BASE</span>')+'</div><strong>'+r.name+'</strong><small>Rank '+r.value+'</small></article>').join('');
-  $('stepRows').innerHTML=d.steps.length?d.steps.map((step,index)=>'<article class="cost-step"><div class="cost-step-rail"><span class="cost-step-dot">'+String(index+1).padStart(2,'0')+'</span><i></i></div><div class="cost-step-main"><div class="cost-step-heading"><div><span class="step-kicker">RANK UPGRADE</span><h4>R'+step.from+' → R'+step.to+' <em>'+RANKS[step.to].name+'</em></h4></div><strong><img src="'+RP_ICON+'" alt="" />'+fmt(step.cost)+' <small>RP</small></strong></div><div class="cost-step-meta"><span><b>FROM</b> R'+step.from+'</span><span><b>TO</b> R'+step.to+'</span><span><b>OVR BRACKET</b> '+d.bracket.label+'</span></div><div class="cost-step-meter"><span style="width:'+Math.min(100,Math.max(8,Math.round(step.cost/Math.max(...d.steps.map(s=>s.cost))*100)))+'%"></span></div></div></article>').join(''):'<div class="empty">No RP required</div>';
+  renderRoute(Number(d.currentRank),Number(d.targetRank));
+
+  $('stepRows').innerHTML=d.steps.length
+    ? d.steps.map((step,index)=>'<article class="cost-step">'
+      +'<div class="cost-step-number">'+String(index+1).padStart(2,'0')+'</div>'
+      +'<div class="cost-step-route"><span>R'+step.from+'</span><i>→</i><strong>R'+step.to+' '+RANKS[step.to].name+'</strong></div>'
+      +'<small class="cost-step-ovr">'+d.bracket.label+' OVR</small>'
+      +'<b class="cost-step-price">'+fmt(step.cost)+' <small>RP</small></b>'
+      +'</article>').join('')
+    : '<div class="empty">No RP required for this route.</div>';
 }
-[base,current,target,available].forEach((e)=>e.addEventListener('input',render));
+
+buildSelectors();
+[base,available].forEach((e)=>e.addEventListener('input',render));
 render();
 </script>
 <style>
