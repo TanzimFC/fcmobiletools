@@ -414,7 +414,46 @@ async function overview(){
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>load(b.dataset.go)); await refreshInboxBadge();
 }
 function codeForm(c){return `<div class="dialoghead"><div><h3>${c?'Edit redeem code':'New redeem code'}</h3><div class="muted">${c?'Update this existing record':'Create a new public code record'}</div></div><button class="close" data-close>×</button></div><div class="dialogbody"><div class="grid"><label class="field"><span>Code</span><input class="input" id="code" value="${esc(c?.code||'')}" autocomplete="off"></label><label class="field"><span>Reward</span><input class="input" id="reward" value="${esc(c?.reward||'')}"></label><label class="field"><span>Status</span><select id="cstatus"><option value="active" ${c?.status==='active'?'selected':''}>Active</option><option value="scheduled" ${c?.status==='scheduled'?'selected':''}>Scheduled</option><option value="expired" ${c?.status==='expired'?'selected':''}>Expired</option></select></label><label class="field"><span>Region</span><input class="input" id="region" value="${esc(c?.region||'Global')}"></label><label class="field"><span>Release date</span><input class="input" id="release" type="date" value="${esc(c?.releaseDate||'')}"></label><label class="field"><span>Expiry date</span><input class="input" id="expiry" type="date" value="${esc(c?.expiryDate||'')}"></label><label class="field"><span>Last verified</span><input class="input" id="verified" type="date" value="${esc(c?.lastVerified||'')}"></label><label class="field"><span>Notes</span><input class="input" id="notes" value="${esc(c?.notes||'')}"></label></div></div><div class="dialogfoot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="commit">${c?'Update code':'Create code'}</button></div>`}
-async function redeem(){const{codes}=await api('/redeem');app.innerHTML=`<div class="hero"><div><div class="eyebrow"><i></i> CONTENT OPS</div><h2>Redeem Codes</h2><p>Search, review and edit codes without leaving the list</p></div><button class="btn primary" id="new">+ New code</button></div><div class="card section"><div class="head"><div><h3>Code database</h3><p>${codes.length} records</p></div><input class="input search" id="codeSearch" placeholder="Search code or reward"></div><div class="codegrid"><div class="code headrow"><span>Code</span><span>Reward</span><span>Status</span><span>Release</span><span>Expiry</span><span></span></div>${codes.map(x=>`<div class="code" data-row data-search="${esc((x.code+' '+x.reward).toLowerCase())}"><strong>${esc(x.code)}</strong><span>${esc(x.reward)}</span><span><i class="pill ${esc(x.status)}">${esc(x.status)}</i></span><span>${esc(x.releaseDate||'—')}</span><span>${esc(x.expiryDate||'No expiry')}</span><button class="btn" data-edit="${esc(x.code)}">Edit</button></div>`).join('')||'<div class="empty">No redeem codes found</div>'}</div></div>`;$('#new').onclick=()=>{openModal(codeForm(null));$('#commit').onclick=saveCode};document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{openModal(codeForm(codes.find(x=>String(x.code).toUpperCase()===b.dataset.edit.toUpperCase())));$('#commit').onclick=saveCode});$('#codeSearch').oninput=e=>document.querySelectorAll('[data-row]').forEach(r=>r.style.display=(r.dataset.search||'').includes(e.target.value.toLowerCase())?'':'none')}
+async function redeem(){
+  const {codes}=await api('/redeem');
+  const ordered=[...(codes||[])].sort((a,b)=>String(b.releaseDate||'').localeCompare(String(a.releaseDate||'')));
+  app.innerHTML=`<div class="hero"><div><div class="eyebrow"><i></i> CONTENT OPS</div><h2>Redeem Codes</h2><p>One database for active, scheduled and historical codes. These records feed the public Redeem Codes page.</p></div><button class="btn primary" id="new">+ New code</button></div>
+  <div class="card section">
+    <div class="head"><div><h3>Redeem code database</h3><p><span id="redeemTotal">${ordered.length}</span> records · admin edits sync to the public site</p></div><input class="input search" id="codeSearch" placeholder="Search code, reward, region, note"></div>
+    <div class="tabs" id="redeemStatusTabs"><button class="active" data-redeem-status="all">All</button><button data-redeem-status="active">Active</button><button data-redeem-status="scheduled">Scheduled</button><button data-redeem-status="expired">Expired</button></div>
+    <div class="codegrid">
+      <div class="code headrow"><span>Code</span><span>Reward</span><span>Status</span><span>Release</span><span>Expiry</span><span></span></div>
+      ${ordered.map((x,i)=>`<div class="code" data-row data-status="${esc(x.status||'unknown')}" data-search="${esc([x.code,x.reward,x.region,x.notes,x.status,x.releaseDate,x.expiryDate,x.lastVerified].filter(Boolean).join(' ').toLowerCase())}">
+        <strong>${esc(x.code)}${i===0&&x.status==='active'?'<small style="display:block;margin-top:4px;color:#67e7a6;font:700 7px var(--mono)">LATEST CODE</small>':''}</strong>
+        <span>${esc(x.reward)}<small style="display:block;margin-top:4px;color:#687a83;font:600 7px var(--mono)">${esc(x.region||'Global')} · Verified ${esc(x.lastVerified||'—')}${x.notes?' · '+esc(x.notes):''}</small></span>
+        <span><i class="pill ${esc(x.status)}">${esc(x.status)}</i></span>
+        <span>${esc(x.releaseDate||'—')}</span>
+        <span>${esc(x.expiryDate||'No expiry')}</span>
+        <button class="btn" data-edit="${esc(x.code)}">Edit</button>
+      </div>`).join('')||'<div class="empty">No redeem codes found</div>'}
+    </div>
+  </div>`;
+  $('#new').onclick=()=>{openModal(codeForm(null));$('#commit').onclick=saveCode};
+  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const found=ordered.find(x=>String(x.code).toUpperCase()===b.dataset.edit.toUpperCase());openModal(codeForm(found));$('#commit').onclick=saveCode});
+  let statusFilter='all';
+  const applyRedeemFilter=()=>{
+    const q=($('#codeSearch').value||'').toLowerCase().trim();
+    let shown=0;
+    document.querySelectorAll('[data-row]').forEach(row=>{
+      const matchesText=(row.dataset.search||'').includes(q);
+      const matchesStatus=statusFilter==='all'||row.dataset.status===statusFilter;
+      row.style.display=matchesText&&matchesStatus?'':'none';
+      if(matchesText&&matchesStatus)shown++;
+    });
+    $('#redeemTotal').textContent=q||statusFilter!=='all'?shown:ordered.length;
+  };
+  $('#codeSearch').oninput=applyRedeemFilter;
+  document.querySelectorAll('[data-redeem-status]').forEach(button=>button.onclick=()=>{
+    statusFilter=button.dataset.redeemStatus||'all';
+    document.querySelectorAll('[data-redeem-status]').forEach(b=>b.classList.toggle('active',b===button));
+    applyRedeemFilter();
+  });
+}
 async function saveCode(){const b=$('#commit');busy(b,true);try{const r=await api('/redeem',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:$('#code').value,reward:$('#reward').value,status:$('#cstatus').value,releaseDate:$('#release').value,expiryDate:$('#expiry').value||null,region:$('#region').value,lastVerified:$('#verified').value,notes:$('#notes').value})});closeModal();state(r.action==='updated'?'Code updated':'Code created');await redeem()}catch(e){state(e.message,false)}finally{busy(b,false)}}
 function fTabs(a){return `<div class="tabs">${[['content','Content'],['matches','Matches'],['analysis','Analysis'],['totw','TOTW'],['settings','Settings']].map(x=>`<button class="${a===x[0]?'active':''}" data-ft="${x[0]}">${x[1]}</button>`).join('')}</div>`}function get(o,p){return p.split('.').reduce((v,k)=>v?.[k],o)??''}function set(o,p,v){const a=p.split('.');let x=o;for(const k of a.slice(0,-1))x=x[k]??{};x[a.at(-1)]=v}function fields(list){return `<div class="grid">${list.map(([p,l,n])=>`<label class="field"><span>${l}</span><input class="input" ${n?'type="number" min="0"':''} data-field="${p}" value="${esc(get(football,p))}"></label>`).join('')}</div>`}
 function club(id,c){return `<article class="club"><div class="clubhead"><img class="clubimg" src="${esc(c.logo)}" alt=""><div><div class="clubname">${esc(c.name||'Unnamed club')}</div><div class="clubid">ID · ${esc(id)}</div></div></div><div class="grid"><label class="field"><span>Name</span><input class="input" data-club="${esc(id)}" data-k="name" value="${esc(c.name)}"></label><label class="field"><span>Short name</span><input class="input" data-club="${esc(id)}" data-k="short" value="${esc(c.short)}"></label></div><label class="field" style="margin-top:12px"><span>Logo URL</span><input class="input" data-club="${esc(id)}" data-k="logo" value="${esc(c.logo)}"></label><button class="btn" data-pick="${esc(id)}" style="margin-top:8px">Choose from Media Library</button></article>`}function match(m,i){const opts=k=>Object.entries(football.clubs).map(([id,c])=>`<option value="${esc(id)}" ${m[k]===id?'selected':''}>${esc(c.name)}</option>`).join('');return `<article class="match"><div><div class="num">${String(i+1).padStart(2,'0')}</div><div class="week">${esc(m.id)}</div></div><label class="field"><span>Week</span><input class="input" type="number" min="1" data-match="${esc(m.id)}" data-k="week" value="${Number(m.week)||1}"></label><label class="field"><span>Home club</span><select data-match="${esc(m.id)}" data-k="home">${opts('home')}</select></label><label class="field"><span>Away club</span><select data-match="${esc(m.id)}" data-k="away">${opts('away')}</select></label></article>`}
