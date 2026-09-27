@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import remarkGfm from 'remark-gfm';
 
 const nationRedirects = Object.fromEntries(
   ['japan', 'netherlands', 'mexico', 'france', 'brazil'].flatMap((country) => [
@@ -16,6 +17,7 @@ export default defineConfig({
   output: 'static',
   build: { format: 'directory' },
   integrations: [sitemap()],
+  markdown: { remarkPlugins: [remarkGfm] },
   redirects: {
     '/trivia': '/a-nations-story/',
     ...nationRedirects
