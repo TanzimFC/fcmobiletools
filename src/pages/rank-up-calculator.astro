@@ -1,173 +1,374 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { RANKS, RANK_COSTS } from '../data/fcMobileRankUp.js';
-const fmt=(n)=>Number(n).toLocaleString();
+
+const fmt = (n) => Number(n).toLocaleString();
 const RANK_ICONS = {
-  1: '/assets/images/rankup/rankicon_25_RANK1_ANIM.png',
-  2: '/assets/images/rankup/rankicon_25_RANK2_ANIM.png',
-  3: '/assets/images/rankup/rankicon_25_RANK3_ANIM.png',
-  4: '/assets/images/rankup/rankicon_25_RANK4_ANIM.png',
-  5: '/assets/images/rankup/rankicon_25_RANK5_ANIM.png'
+  1: '/assets/images/rankup/rankicon_25_RANK1.png',
+  2: '/assets/images/rankup/rankicon_25_RANK2.png',
+  3: '/assets/images/rankup/rankicon_25_RANK3.png',
+  4: '/assets/images/rankup/rankicon_25_RANK4.png',
+  5: '/assets/images/rankup/rankicon_25_RANK5.png'
 };
 const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
 ---
-<BaseLayout title="FC Mobile Rank Up Calculator | Rank Up Points | FCMOBILETOOLS" description="Calculate FC Mobile Rank Up Points, rank costs, OVR gain and Skill Points with a complete Base OVR reference table.">
-<main class="rank-page"><header class="hero"><div class="wrap"><nav><a href="/">FCMOBILETOOLS</a><span>›</span><span>Rank Up Calculator</span></nav><div class="hero-grid"><div><span class="eyebrow">FC MOBILE / RANK LAB</span><h1>Rank Up <em>Calculator</em></h1><p>Calculate the exact Rank Up Points needed from your current rank to your target rank.</p><div class="pills"><span>RANK UP POINTS</span><span>BASE OVR</span><span>R0 → R5</span></div></div><div class="hero-mark"><div class="hero-rank-orb"><canvas class="rank-sprite hero-sprite" data-sprite={RANK_ICONS[5]} aria-label="Animated Orange Rank icon"></canvas></div><strong>R5</strong><small>ORANGE RANK</small></div></div></div></header>
-<section class="wrap section"><div class="calculator-shell">
-  <div class="planner-head"><div><span class="label">RANK UP PLANNER</span><h2>Build your rank path</h2><p>Enter the Base OVR and choose the current and target rank. Calculation logic is unchanged.</p></div><b class="max">R0 → R5</b></div>
-  <div class="fields planner-fields"><label>Base OVR<input id="base" type="number" min="0" max="150" value="110" inputmode="numeric"></label><label>Available Rank Up Points <small>OPTIONAL</small><input id="available" type="number" min="0" placeholder="Leave empty to ignore" inputmode="numeric"></label><input id="current" type="hidden" value="0"><input id="target" type="hidden" value="5"></div><div class="rank-selector-panel"><div class="selector-head"><div><span class="label">CURRENT RANK</span><p>Select the player’s current rank</p></div><strong id="currentLabel">R0 · Base</strong></div><div id="currentChoices" class="rank-selector-grid"></div><div class="selector-separator"></div><div class="selector-head"><div><span class="label">TARGET RANK</span><p>Select the rank you want to reach</p></div><strong id="targetLabel">R5 · Orange</strong></div><div id="targetChoices" class="rank-selector-grid"></div></div>
-  <div id="error" class="error" hidden></div>
-  <div class="summary-grid"><article class="rp-summary"><small>RP REQUIRED</small><strong id="required">0</strong><p id="status">Choose your rank path</p><div class="rank-flow-mini"><span id="miniFrom">R0</span><i></i><span id="miniTo">R5</span></div></article><div class="metric-grid"><article><small>OVR AFTER RANK</small><b id="ovr">110</b><span>Base OVR + rank</span></article><article><small>SKILL POINTS</small><b id="skills">0</b><span>Earned on the route</span></article><article><small>RANKS GAINED</small><b id="gained">0</b><span>Upgrade steps</span></article><article><small>RP BALANCE</small><b id="remaining">—</b><span>After available RP</span></article></div></div>
-  <div class="rank-chart"><div class="chart-head"><span class="label">RANK UP CHART</span><h3>Player rank slots</h3><p>Each step is a card instead of plain text.</p></div><div id="rankPath" class="rank-cards"></div></div>
-  <div class="steps"><div class="steps-head"><div><span class="label">COST BREAKDOWN</span><h3>Every rank step</h3></div><b id="costTotal">0 RP</b></div><div id="stepRows"></div></div>
-</div>
-<div class="reference"><div class="section-title"><span class="label">REFERENCE DATA</span><h2>Rank Up Points by Base OVR</h2><p>Complete R1 to R5 costs for every configured Base OVR bracket.</p></div><div class="scroll"><table><thead><tr><th>BASE OVR</th><th>R1 GREEN</th><th>R2 BLUE</th><th>R3 PURPLE</th><th>R4 RED</th><th>R5 ORANGE</th></tr></thead><tbody>${RANK_COSTS.map((row)=><tr><td>{row.label}</td>{row.costs.map((cost)=><td>{fmt(cost)} RP</td>)}</tr>)</tbody></table></div></div></section>
-<section class="faq"><div class="wrap"><span class="label">FAQ</span><h2>FC Mobile Rank Up Calculator FAQ</h2><details open><summary>How are Rank Up Points calculated?</summary><p>The calculator finds the Base OVR bracket and adds the costs for each rank step between your current and target rank.</p></details><details><summary>Which ranks are included?</summary><p>{RANKS.map((r)=>`R${r.value} ${r.name}`).join(' · ')}.</p></details></div></section></main>
-<script>
-import { calculateRankUp } from '../lib/fcMobileRankUp.js';
-import { RANKS } from '../data/fcMobileRankUp.js';
 
-const $=(id)=>document.getElementById(id);
-const fmt=(n)=>Number(n).toLocaleString();
-const base=$('base'),current=$('current'),target=$('target'),available=$('available');
-const currentChoices=$('currentChoices'),targetChoices=$('targetChoices');
+<BaseLayout
+  title="FC Mobile Rank Up Calculator | Rank Up Points | FCMOBILETOOLS"
+  description="Calculate FC Mobile Rank Up Points by Base OVR, choose your current and target rank visually, and view a clear rank-up cost breakdown."
+>
+  <main class="rank-page">
+    <header class="hero">
+      <div class="wrap hero-wrap">
+        <div class="crumb"><a href="/">FCMOBILETOOLS</a><span>/</span><span>Rank Up Calculator</span></div>
+        <div class="hero-grid">
+          <div>
+            <span class="eyebrow">FC MOBILE / RANK LAB</span>
+            <h1>Rank Up <em>Calculator</em></h1>
+            <p>Choose the rank you have, choose the rank you want, enter the Base OVR, and the calculator handles the rest.</p>
+            <div class="hero-tags"><span>LIVE CALCULATION</span><span>BASE OVR</span><span>RANK PATH</span></div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="hero-art-glow"></div>
+            <img src={RANK_ICONS[5]} alt="" />
+            <div class="hero-art-copy"><b>Orange</b><span>Final rank</span></div>
+          </div>
+        </div>
+      </div>
+    </header>
 
-function spriteMarkup(value, extra=''){
-  const src={"1":"/assets/images/rankup/rankicon_25_RANK1_ANIM.png","2":"/assets/images/rankup/rankicon_25_RANK2_ANIM.png","3":"/assets/images/rankup/rankicon_25_RANK3_ANIM.png","4":"/assets/images/rankup/rankicon_25_RANK4_ANIM.png","5":"/assets/images/rankup/rankicon_25_RANK5_ANIM.png"}[value];
-  return src ? '<canvas class="rank-sprite selector-sprite '+extra+'" data-sprite="'+src+'" aria-label="Animated R'+value+' rank icon"></canvas>' : '<span class="base-rank-text">R0</span>';
-}
+    <section class="wrap main-section">
+      <div class="calculator">
+        <div class="calculator-head">
+          <div>
+            <span class="eyebrow">RANK UP PLANNER</span>
+            <h2>Plan the upgrade</h2>
+            <p>Use the rank artwork as the selector. No complicated dropdowns.</p>
+          </div>
+          <div class="head-note"><span>6 ranks</span><i></i><span>5 upgrade steps</span></div>
+        </div>
 
-function buildRankSelectors(){
-  const make=(type)=>RANKS.map((r)=>'<button class="rank-option" type="button" data-rank-type="'+type+'" data-value="'+r.value+'">'+
-    '<span class="rank-option-art '+(r.value===0?'base':'')+'">'+spriteMarkup(r.value)+'</span>'+
-    '<span class="rank-option-copy"><strong>R'+r.value+'</strong><small>'+r.name+'</small></span>'+
-    '<span class="rank-option-state">'+(type==='current'?'CURRENT':'TARGET')+'</span>'+
-  '</button>').join('');
-  currentChoices.innerHTML=make('current');
-  targetChoices.innerHTML=make('target');
+        <div class="inputs">
+          <label class="field">
+            <span>BASE OVR</span>
+            <input id="base" type="number" min="0" max="150" value="110" inputmode="numeric" />
+          </label>
+          <label class="field">
+            <span>AVAILABLE RANK UP POINTS <small>OPTIONAL</small></span>
+            <input id="available" type="number" min="0" placeholder="Leave empty to ignore" inputmode="numeric" />
+          </label>
+        </div>
 
-  currentChoices.querySelectorAll('[data-rank-type="current"]').forEach((button)=>{
-    button.addEventListener('click',()=>{
-      if(button.disabled) return;
-      current.value=button.dataset.value;
-      if(Number(target.value)<=Number(current.value)) target.value=String(Math.min(5,Number(current.value)+1));
-      render();
-    });
-  });
-  targetChoices.querySelectorAll('[data-rank-type="target"]').forEach((button)=>{
-    button.addEventListener('click',()=>{
-      if(button.disabled) return;
-      target.value=button.dataset.value;
-      render();
-    });
-  });
+        <div class="selector">
+          <div class="selector-row">
+            <div class="selector-heading">
+              <span class="eyebrow">CURRENT RANK</span>
+              <p>Pick the rank the player currently has.</p>
+            </div>
+            <strong id="currentLabel">Base</strong>
+          </div>
+          <div id="currentChoices" class="rank-grid"></div>
 
-  startSprites();
-}
+          <div class="selector-divider"></div>
 
-function syncSelectors(){
-  const from=Number(current.value),to=Number(target.value);
-  currentChoices.querySelectorAll('.rank-option').forEach((button)=>{
-    const value=Number(button.dataset.value);
-    const selected=value===from;
-    button.disabled=value>=to;
-    button.classList.toggle('selected',selected);
-    button.querySelector('.rank-option-state').textContent=selected?'SELECTED':'CURRENT';
-  });
-  targetChoices.querySelectorAll('.rank-option').forEach((button)=>{
-    const value=Number(button.dataset.value);
-    const selected=value===to;
-    button.disabled=value<=from;
-    button.classList.toggle('selected',selected);
-    button.querySelector('.rank-option-state').textContent=selected?'SELECTED':'TARGET';
-  });
-  $('currentLabel').textContent='R'+from+' · '+RANKS[from].name;
-  $('targetLabel').textContent='R'+to+' · '+RANKS[to].name;
-}
+          <div class="selector-row">
+            <div class="selector-heading">
+              <span class="eyebrow">TARGET RANK</span>
+              <p>Pick the rank you want to reach.</p>
+            </div>
+            <strong id="targetLabel">Orange</strong>
+          </div>
+          <div id="targetChoices" class="rank-grid"></div>
 
-function render(){
-  syncSelectors();
-  const d=calculateRankUp({baseOVR:base.value,currentRank:current.value,targetRank:target.value,availableRP:available.value});
-  if(!d.valid){$('error').hidden=false;$('error').textContent=d.error;return}
-  $('error').hidden=true;
-  $('required').textContent=fmt(d.requiredRP);
-  $('ovr').textContent=fmt(d.targetOVR);
-  $('skills').textContent=d.skillPoints;
-  $('gained').textContent=d.ranksGained;
-  $('costTotal').textContent=fmt(d.requiredRP)+' RP';
-  $('status').textContent=d.bracket.label+' · R'+d.currentRank+' → R'+d.targetRank;
-  $('remaining').textContent=d.remainingRP===null?'—':fmt(d.remainingRP);
-  $('miniFrom').textContent='R'+d.currentRank;
-  $('miniTo').textContent='R'+d.targetRank;
-  $('rankPath').innerHTML=RANKS.map((r)=>'<article class="rank-card '+(r.value===d.currentRank?'current ':'')+(r.value===d.targetRank?'target ':'')+(r.value>d.currentRank&&r.value<d.targetRank?'route ':'')+'"><div class="rank-card-top"><span class="rank-index">R'+r.value+'</span><b>'+(r.value===d.currentRank?'CURRENT':r.value===d.targetRank?'TARGET':r.value<d.currentRank?'PREVIOUS':'UPGRADE')+'</b></div><div class="rank-icon '+(r.value===0?'rank-icon-base':'')+'">'+(r.value>0?spriteMarkup(r.value,'chart-sprite'):'<span class="base-rank-text">BASE</span>')+'</div><strong>'+r.name+'</strong><small>Rank '+r.value+'</small></article>').join('');
-  $('stepRows').innerHTML=d.steps.length?d.steps.map((step,index)=>'<article class="cost-step"><div class="cost-step-rail"><span class="cost-step-dot">'+String(index+1).padStart(2,'0')+'</span><i></i></div><div class="cost-step-main"><div class="cost-step-heading"><div><span class="step-kicker">RANK UPGRADE</span><h4>R'+step.from+' → R'+step.to+' <em>'+RANKS[step.to].name+'</em></h4></div><strong>'+fmt(step.cost)+' <small>RP</small></strong></div><div class="cost-step-meta"><span><b>FROM</b> R'+step.from+'</span><span><b>TO</b> R'+step.to+'</span><span><b>OVR BRACKET</b> '+d.bracket.label+'</span></div><div class="cost-step-meter"><span style="width:'+Math.min(100,Math.max(8,Math.round(step.cost/Math.max(...d.steps.map(s=>s.cost))*100)))+'%"></span></div></div></article>').join(''):'<div class="empty">No RP required</div>';
-  startSprites();
-}
+          <input id="current" type="hidden" value="0" />
+          <input id="target" type="hidden" value="5" />
+          <div id="error" class="error" hidden></div>
+        </div>
 
-let spriteAnimations=[];
-function detectSpriteGrid(image){
-  const w=image.naturalWidth,h=image.naturalHeight;
-  if(w>h && w%h===0 && w/h>=2 && w/h<=24) return {cols:w/h,rows:1};
-  if(h>w && h%w===0 && h/w>=2 && h/w<=24) return {cols:1,rows:h/w};
-  return {cols:1,rows:1};
-}
+        <div class="result">
+          <div class="result-grid">
+            <article class="total-card">
+              <span class="eyebrow">RP REQUIRED</span>
+              <div class="rp-number">
+                <img src={RP_ICON} alt="" />
+                <strong id="required">0</strong>
+              </div>
+              <p id="status">Choose your upgrade route.</p>
+              <div class="route-pill"><span id="miniFrom">Base</span><i></i><span id="miniTo">Orange</span></div>
+            </article>
 
-function startSprite(canvas){
-  const src=canvas.dataset.sprite;
-  if(!src||canvas.dataset.ready==='1') return;
-  canvas.dataset.ready='1';
-  const image=new Image();
-  image.decoding='async';
-  image.onload=()=>{
-    const grid=detectSpriteGrid(image);
-    const frames=grid.cols*grid.rows;
-    const frameW=image.naturalWidth/grid.cols;
-    const frameH=image.naturalHeight/grid.rows;
-    const dpr=Math.min(window.devicePixelRatio||1,2);
-    const cssSize=canvas.classList.contains('hero-sprite')?110:canvas.classList.contains('selector-sprite')?58:76;
-    canvas.width=Math.round(cssSize*dpr);
-    canvas.height=Math.round(cssSize*dpr);
-    canvas.style.width=cssSize+'px';
-    canvas.style.height=cssSize+'px';
-    const ctx=canvas.getContext('2d');
-    ctx.imageSmoothingEnabled=true;
-    let frame=0,last=0;
-    const fps=frames>1?12:1;
-    const tick=(ts)=>{
-      if(!document.body.contains(canvas)) return;
-      if(ts-last>=1000/fps){
-        last=ts;
-        const col=frame%grid.cols,row=Math.floor(frame/grid.cols);
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        const scale=Math.min(canvas.width/frameW,canvas.height/frameH);
-        const dw=frameW*scale,dh=frameH*scale;
-        const dx=(canvas.width-dw)/2,dy=(canvas.height-dh)/2;
-        ctx.drawImage(image,col*frameW,row*frameH,frameW,frameH,dx,dy,dw,dh);
-        frame=(frame+1)%frames;
-      }
-      requestAnimationFrame(tick);
+            <div class="metrics">
+              <article><span>OVR AFTER RANK</span><strong id="ovr">110</strong><small>Base OVR plus rank value</small></article>
+              <article><span>SKILL POINTS</span><strong id="skills">0</strong><small>Earned across the route</small></article>
+              <article><span>RANKS GAINED</span><strong id="gained">0</strong><small>Upgrade steps</small></article>
+              <article><span>RP BALANCE</span><strong id="remaining">—</strong><small>After available points</small></article>
+            </div>
+          </div>
+
+          <div class="route-preview">
+            <div class="route-preview-head">
+              <div><span class="eyebrow">UPGRADE PATH</span><strong id="routeText">Base → Orange</strong></div>
+              <span class="route-status">CALCULATED LIVE</span>
+            </div>
+            <div id="routeTrack" class="route-track"></div>
+          </div>
+
+          <section class="breakdown">
+            <div class="breakdown-head">
+              <div>
+                <span class="eyebrow">COST BREAKDOWN</span>
+                <h3>What each step costs</h3>
+                <p>Actual Rank Up Point costs only. The RP icon appears beside real currency values.</p>
+              </div>
+              <div class="breakdown-total"><img src={RP_ICON} alt="" /><strong id="costTotal">0</strong><small>RP</small></div>
+            </div>
+            <div id="stepRows"></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="reference">
+        <div class="reference-head">
+          <div>
+            <span class="eyebrow">REFERENCE</span>
+            <h2>Rank Up Points by Base OVR</h2>
+            <p>Use this table when you want to verify the configured cost brackets.</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>BASE OVR</th><th>Green</th><th>Blue</th><th>Purple</th><th>Red</th><th>Orange</th></tr></thead>
+            <tbody>
+              {RANK_COSTS.map((row) => (
+                <tr>
+                  <td><strong>{row.label}</strong></td>
+                  {row.costs.map((cost) => <td><img src={RP_ICON} alt="" />{fmt(cost)}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <div class="wrap">
+        <span class="eyebrow">FAQ</span>
+        <h2>Rank Up Calculator FAQ</h2>
+        <details open><summary>How are Rank Up Points calculated?</summary><p>The calculator uses the Base OVR bracket and adds the configured cost of each upgrade between your selected current and target rank.</p></details>
+        <details><summary>Which ranks are available?</summary><p>Base, Green, Blue, Purple, Red and Orange.</p></details>
+        <details><summary>What does Available Rank Up Points do?</summary><p>Enter your current balance to see how many points remain after the upgrade route.</p></details>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    import { calculateRankUp } from '../lib/fcMobileRankUp.js';
+    import { RANKS } from '../data/fcMobileRankUp.js';
+
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => Number(n).toLocaleString();
+    const base = $('base');
+    const available = $('available');
+    const current = $('current');
+    const target = $('target');
+    const currentChoices = $('currentChoices');
+    const targetChoices = $('targetChoices');
+
+    const ICONS = {
+      1:'/assets/images/rankup/rankicon_25_RANK1.png',
+      2:'/assets/images/rankup/rankicon_25_RANK2.png',
+      3:'/assets/images/rankup/rankicon_25_RANK3.png',
+      4:'/assets/images/rankup/rankicon_25_RANK4.png',
+      5:'/assets/images/rankup/rankicon_25_RANK5.png'
     };
-    requestAnimationFrame(tick);
-  };
-  image.src=src;
-}
-function startSprites(){
-  document.querySelectorAll('.rank-sprite[data-sprite]').forEach(startSprite);
-}
 
-buildRankSelectors();
-[base,current,target,available].forEach((e)=>e.addEventListener('input',render));
-render();
-</script>
-<style>
-:root{--bg:#071018;--panel:#0f1a26;--panel2:#132333;--line:rgba(255,255,255,.08);--text:#f5f8fb;--muted:#a7b4c3;--cyan:#4cc9ff;--cyan2:#63d4ff;--gold:#ffb84a;--mono:'Space Grotesk',system-ui,sans-serif;--sans:'Inter',system-ui,sans-serif}
-*{box-sizing:border-box}.rank-page{background:radial-gradient(700px 380px at 80% 3%,rgba(76,201,255,.08),transparent 70%);padding-bottom:24px}.wrap{width:min(1180px,calc(100% - 36px));margin:auto}.hero{border-bottom:1px solid var(--line);background:radial-gradient(700px 400px at 8% 0,rgba(76,201,255,.1),transparent 64%)}.hero>.wrap{padding:34px 0 58px}.hero nav{display:flex;gap:10px;color:#718394;font:700 10px var(--mono);margin-bottom:58px}.hero nav a{color:var(--cyan)}.hero-grid{display:grid;grid-template-columns:1fr 240px;gap:40px;align-items:center}.eyebrow,.label{font:800 10px var(--mono);letter-spacing:.14em;color:var(--cyan)}h1{font:700 clamp(50px,7vw,88px)/.9 var(--mono);letter-spacing:-.07em;margin:15px 0 20px}h1 em{font-style:normal;color:var(--cyan)}.hero p{max-width:650px;color:var(--muted);font-size:15px;line-height:1.7}.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}.pills span{padding:8px 10px;border:1px solid var(--line);border-radius:999px;color:#7f92a1;font:700 8px var(--mono)}.hero-mark{height:230px;display:grid;place-items:center;align-content:center;border:1px solid rgba(76,201,255,.16);border-radius:28px;background:linear-gradient(145deg,#102433,#0a141e);box-shadow:0 24px 80px rgba(0,0,0,.3),0 0 80px rgba(76,201,255,.08)}.hero-rank-orb{width:110px;height:110px;display:grid;place-items:center;margin-bottom:2px}.hero-rank-orb img{width:125px;height:125px;object-fit:contain;filter:drop-shadow(0 16px 22px rgba(0,0,0,.35))}.hero-mark strong{font:900 50px var(--mono);letter-spacing:-.09em}.hero-mark small{color:var(--cyan);font:800 8px var(--mono);letter-spacing:.2em}.section{padding:42px 0 70px}.calculator-shell,.reference{border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,#0f1a26,#0b131c);box-shadow:0 24px 70px rgba(0,0,0,.24);overflow:hidden}.planner-head{display:flex;justify-content:space-between;gap:20px;padding:28px;border-bottom:1px solid var(--line)}h2{font-size:28px;letter-spacing:-.04em;margin:7px 0}.planner-head p{margin:0;color:var(--muted);font-size:12px}.max{height:max-content;padding:10px 12px;border:1px solid rgba(255,184,74,.2);border-radius:10px;color:var(--gold);background:rgba(255,184,74,.05);font:800 9px var(--mono)}.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:24px 28px}.fields label{display:grid;gap:8px;color:#91a3b2;font:800 9px var(--mono)}input,select{width:100%;min-height:48px;padding:0 13px;border:1px solid #284051;border-radius:12px;background:#0b141d;color:var(--text);font:700 11px var(--mono);outline:0}.summary-grid{position:sticky;top:104px;z-index:18;display:grid;grid-template-columns:minmax(0,1fr) 1.05fr;gap:14px;padding:2px 28px;background:linear-gradient(180deg,#0f1a26 0%,#0f1a26f2 84%,transparent)}.rp-summary,.metric-grid article{border:1px solid rgba(255,255,255,.08);border-radius:18px;background:linear-gradient(145deg,#122635,#0b1822)}.rp-summary{padding:22px}.rp-summary small,.metric-grid small{font:800 8px var(--mono);letter-spacing:.12em;color:#76a4b6}.rp-summary strong{display:block;margin:8px 0;font:900 clamp(44px,6vw,76px)/.9 var(--mono);letter-spacing:-.08em}.rp-summary p{margin:0;color:var(--muted);font-size:11px}.rank-flow-mini{display:flex;align-items:center;gap:9px;margin-top:18px;color:#8ea2b1;font:800 8px var(--mono)}.rank-flow-mini i{width:44px;height:2px;background:linear-gradient(90deg,#2b4558,var(--cyan))}.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric-grid article{padding:16px}.metric-grid b{display:block;margin:8px 0 3px;font:900 20px var(--mono);color:var(--text)}.metric-grid span{color:#708595;font-size:9px}.rank-chart{margin-top:20px;border-top:1px solid var(--line);padding:24px 28px 25px}.chart-head h3{margin:7px 0 4px;font-size:19px}.chart-head p{margin:0;color:var(--muted);font-size:10px}.rank-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:16px}.rank-card{position:relative;min-height:164px;padding:13px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#0b151f,#0a121a);display:flex;flex-direction:column;justify-content:space-between;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.rank-card .rank-card-top{display:flex;align-items:center;justify-content:space-between;gap:6px}.rank-card .rank-index{font:900 10px var(--mono);color:#6f8594}.rank-card .rank-card-top>b{font:800 6px var(--mono);letter-spacing:.1em;color:#637988}.rank-card .rank-icon{width:72px;height:72px;margin:4px auto 0;display:grid;place-items:center;border:1px solid rgba(76,201,255,.13);border-radius:15px;background:radial-gradient(circle,rgba(76,201,255,.1),rgba(7,16,24,.12));overflow:hidden}.rank-card .rank-icon img{width:86px;height:86px;object-fit:contain;display:block;filter:drop-shadow(0 7px 12px rgba(0,0,0,.28))}.rank-card strong{font:800 13px var(--mono);line-height:1.1;text-align:center}.rank-icon-base{border-color:rgba(255,255,255,.06)!important;color:#617381;font:800 8px var(--mono)}.rank-icon-base span{opacity:.75}.rank-card>small{display:block;color:#637988;font:600 8px var(--mono);text-align:center}.rank-card.current{border-color:rgba(76,201,255,.5);box-shadow:0 0 28px rgba(76,201,255,.08)}.rank-card.current .rank-index,.rank-card.current b{color:var(--cyan)}.rank-card.target{background:linear-gradient(145deg,rgba(76,201,255,.19),#0c2030);border-color:var(--cyan);box-shadow:0 12px 35px rgba(76,201,255,.12)}.rank-card.target .rank-index,.rank-card.target b{color:var(--cyan2)}.rank-card.route{border-color:rgba(76,201,255,.18)}.steps{margin:0 28px 28px;border:1px solid var(--line);border-radius:15px;overflow:hidden}.steps-head{display:flex;justify-content:space-between;padding:19px;border-bottom:1px solid var(--line)}.steps-head h3{margin:7px 0 0}.steps-head>b{color:var(--cyan);font:900 15px var(--mono)}.step{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line)}.step:last-child{border:0}.step-left{display:flex;align-items:center;gap:12px}.step-badge{padding:7px 8px;border-radius:8px;background:#102131;color:var(--cyan);font:800 8px var(--mono)}.step b{font-size:11px}.step small{display:block;color:#617887;font-size:8px;margin-top:4px}.step>strong{font:900 13px var(--mono);color:#dff8ff;white-space:nowrap}.reference{padding:26px;margin-top:14px}.section-title{margin-bottom:20px}.section-title h2{margin:8px 0}.section-title p{margin:0;color:var(--muted);font-size:11px}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:720px}th,td{text-align:left;padding:12px 14px;border-top:1px solid var(--line);font-size:10px}th{color:#6f8594;font:800 8px var(--mono)}td{color:#d7e4ea}.faq{padding:70px 0}.faq details{border-top:1px solid var(--line);padding:17px 0}.faq summary{cursor:pointer;font-weight:800;font-size:12px}.faq p{color:var(--muted);font-size:11px;line-height:1.7}.error{margin:0 28px 14px;padding:11px;border:1px solid rgba(255,112,112,.25);background:rgba(255,112,112,.06);color:#ff9b9b;border-radius:10px;font:700 9px var(--mono)}.empty{padding:18px;color:var(--muted);font-size:10px}@media(max-width:920px){.summary-grid{position:relative;top:auto;background:none}.hero-grid,.summary-grid{grid-template-columns:1fr}.hero-mark{display:none}.fields{grid-template-columns:1fr 1fr}.rank-cards{grid-template-columns:repeat(3,1fr)}.wrap{width:calc(100% - 24px)}}@media(max-width:560px){.hero>.wrap{padding-bottom:44px}.hero nav{margin-bottom:38px}.hero h1{font-size:52px}.section{padding-top:28px}.fields{grid-template-columns:1fr;padding:18px}.summary-grid{padding:0 18px}.rp-summary{padding:18px}.planner-head{align-items:flex-start;flex-direction:column}.rank-chart{padding:22px 18px}.rank-cards{grid-template-columns:repeat(2,1fr)}.steps{margin:0 18px 18px}.reference{padding:20px}.step{align-items:flex-start}.step-left{align-items:flex-start}.step>strong{font-size:11px}}
-</style>
-<style>
-.rank-page .steps{margin:0 28px 28px;border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:linear-gradient(145deg,#0d1822,#0a121a);box-shadow:0 18px 55px rgba(0,0,0,.2)}
-.rank-page .steps-head{padding:22px 22px 18px;background:linear-gradient(180deg,rgba(76,201,255,.045),transparent);border-bottom:1px solid var(--line);align-items:flex-end}
-.rank-page .steps-head h3{font-size:22px;letter-spacing:-.03em}.rank-page .steps-head p{margin:5px 0 0;color:var(--muted);font-size:10px}.rank-page .steps-head>b{padding:10px 12px;border:1px solid rgba(76,201,255,.16);border-radius:10px;background:rgba(76,201,255,.055);font-size:13px}
-.rank-page #stepRows{padding:8px 14px 14px}.rank-page .cost-step{display:grid;grid-template-columns:38px minmax(0,1fr);gap:13px;padding:9px 5px}.rank-page .cost-step-rail{display:flex;flex-direction:column;align-items:center;padding-top:5px}.rank-page .cost-step-dot{width:28px;height:28px;display:grid;place-items:center;border:1px solid rgba(76,201,255,.22);border-radius:9px;background:#0e2230;color:var(--cyan);font:800 8px var(--mono)}.rank-page .cost-step-rail i{width:1px;flex:1;margin-top:6px;background:linear-gradient(180deg,rgba(76,201,255,.24),rgba(255,255,255,.03))}.rank-page .cost-step:last-child .cost-step-rail i{display:none}
-.rank-page .cost-step-main{padding:15px 16px;border:1px solid rgba(255,255,255,.07);border-radius:15px;background:#0d1721;transition:border-color .18s,transform .18s,background .18s}.rank-page .cost-step-main:hover{transform:translateX(2px);border-color:rgba(76,201,255,.18);background:#0f1b26}.rank-page .cost-step-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}.rank-page .step-kicker{font:800 7px var(--mono);letter-spacing:.14em;color:#668394}.rank-page .cost-step-heading h4{margin:5px 0 0;font:800 14px var(--mono)}.rank-page .cost-step-heading h4 em{font-style:normal;color:#758b98;font-weight:600}.rank-page .cost-step-heading>strong{font:900 21px var(--mono);color:#e4f8ff;white-space:nowrap}.rank-page .cost-step-heading>strong small{font:800 8px var(--mono);color:var(--cyan)}.rank-page .cost-step-meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:11px;color:#6f8593;font:700 8px var(--mono)}.rank-page .cost-step-meta b{color:#496676;margin-right:3px}.rank-page .cost-step-meter{height:4px;margin-top:13px;border-radius:99px;background:#172834;overflow:hidden}.rank-page .cost-step-meter span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2875c8,var(--cyan))}
-@media(max-width:560px){.rank-page .rank-cards{grid-template-columns:repeat(2,1fr)}.rank-page .rank-card{min-height:152px}.rank-page .rank-icon{width:50px;height:50px}.rank-page .rank-icon img{width:62px;height:62px}.rank-page .steps{margin-left:18px;margin-right:18px}.rank-page #stepRows{padding-inline:9px}.rank-page .cost-step{grid-template-columns:30px minmax(0,1fr);gap:9px}.rank-page .cost-step-dot{width:24px;height:24px;font-size:7px}.rank-page .cost-step-main{padding:13px}.rank-page .cost-step-heading{display:block}.rank-page .cost-step-heading>strong{display:block;margin-top:9px;font-size:19px}.rank-page .cost-step-meta{gap:8px}.rank-page .steps-head{align-items:flex-start;display:block}.rank-page .steps-head>b{display:inline-flex;margin-top:12px}}
-</style>
+    const rankName = (value) => RANKS[value]?.name || 'Base';
+
+    function icon(value){
+      return ICONS[value]
+        ? '<img src="'+ICONS[value]+'" alt="" loading="eager" />'
+        : '<span class="base-icon">Base</span>';
+    }
+
+    function buildSelectors(){
+      const make = (kind) => RANKS.map((rank) =>
+        '<button class="rank-option" type="button" data-kind="'+kind+'" data-value="'+rank.value+'">'
+          +'<span class="rank-option-art '+(rank.value===0?'base':'')+'">'+icon(rank.value)+'</span>'
+          +'<span class="rank-option-copy"><strong>'+rank.name+'</strong><small>'+(kind==='current'?'Your player':'Target')+'</small></span>'
+          +'<span class="rank-option-check"></span>'
+        +'</button>'
+      ).join('');
+
+      currentChoices.innerHTML = make('current');
+      targetChoices.innerHTML = make('target');
+
+      currentChoices.querySelectorAll('.rank-option').forEach((button) => {
+        button.addEventListener('click', () => {
+          if(button.disabled) return;
+          const value = Number(button.dataset.value);
+          current.value = String(value);
+          if(Number(target.value) <= value) target.value = String(Math.min(5, value + 1));
+          render();
+        });
+      });
+
+      targetChoices.querySelectorAll('.rank-option').forEach((button) => {
+        button.addEventListener('click', () => {
+          if(button.disabled) return;
+          target.value = button.dataset.value;
+          render();
+        });
+      });
+    }
+
+    function syncSelectors(){
+      const from = Number(current.value);
+      const to = Number(target.value);
+
+      currentChoices.querySelectorAll('.rank-option').forEach((button) => {
+        const value = Number(button.dataset.value);
+        button.disabled = value >= to;
+        button.classList.toggle('selected', value === from);
+      });
+
+      targetChoices.querySelectorAll('.rank-option').forEach((button) => {
+        const value = Number(button.dataset.value);
+        button.disabled = value <= from;
+        button.classList.toggle('selected', value === to);
+      });
+
+      $('currentLabel').textContent = rankName(from);
+      $('targetLabel').textContent = rankName(to);
+    }
+
+    function routeMarkup(from, to){
+      return RANKS.map((rank) => {
+        const active = rank.value >= from && rank.value <= to;
+        const focus = rank.value === from || rank.value === to;
+        return '<div class="route-node '+(active?'active ':'')+(focus?'focus':'')+'">'
+          +'<span class="route-icon '+(rank.value===0?'base':'')+'">'+icon(rank.value)+'</span>'
+          +'<strong>'+rank.name+'</strong>'
+        +'</div>';
+      }).join('<i></i>');
+    }
+
+    function render(){
+      syncSelectors();
+
+      const data = calculateRankUp({
+        baseOVR: base.value,
+        currentRank: current.value,
+        targetRank: target.value,
+        availableRP: available.value
+      });
+
+      if(!data.valid){
+        $('error').hidden = false;
+        $('error').textContent = data.error;
+        return;
+      }
+
+      $('error').hidden = true;
+      $('required').textContent = fmt(data.requiredRP);
+      $('ovr').textContent = fmt(data.targetOVR);
+      $('skills').textContent = data.skillPoints;
+      $('gained').textContent = data.ranksGained;
+      $('remaining').textContent = data.remainingRP === null ? '—' : fmt(data.remainingRP);
+      $('status').textContent = data.bracket.label + ' · '+rankName(data.currentRank)+' → '+rankName(data.targetRank);
+      $('miniFrom').textContent = rankName(data.currentRank);
+      $('miniTo').textContent = rankName(data.targetRank);
+      $('routeText').textContent = rankName(data.currentRank)+' → '+rankName(data.targetRank);
+      $('routeTrack').innerHTML = routeMarkup(Number(data.currentRank), Number(data.targetRank));
+      $('costTotal').textContent = fmt(data.requiredRP);
+
+      $('stepRows').innerHTML = data.steps.length
+        ? data.steps.map((step, index) =>
+          '<article class="cost-row">'
+            +'<div class="cost-row-index">'+String(index+1).padStart(2,'0')+'</div>'
+            +'<div class="cost-row-route"><span>'+rankName(step.from)+'</span><i>→</i><strong>'+rankName(step.to)+'</strong></div>'
+            +'<div class="cost-row-ovr">OVR '+data.bracket.label+'</div>'
+            +'<div class="cost-row-price"><img src="/assets/images/fc_c2_IMG_FC_C02_07.png" alt="" /><strong>'+fmt(step.cost)+'</strong><small>RP</small></div>'
+          +'</article>'
+        ).join('')
+        : '<div class="empty">No Rank Up Points required for this route.</div>';
+    }
+
+    buildSelectors();
+    [base, available].forEach((field) => field.addEventListener('input', render));
+    render();
+  </script>
+
+  <style>
+    :root{
+      --rank-bg:#071018;--rank-panel:#0d1822;--rank-panel-2:#112230;
+      --rank-line:rgba(255,255,255,.08);--rank-text:#f5f8fb;--rank-muted:#9aabb8;
+      --rank-dim:#647987;--rank-cyan:#4cc9ff;--rank-cyan-2:#86ddff;
+      --rank-font-head:'Space Grotesk',system-ui,sans-serif;--rank-font-body:'Inter',system-ui,sans-serif
+    }
+    .rank-page{color:var(--rank-text);background:
+      radial-gradient(700px 400px at 8% 0,rgba(76,201,255,.09),transparent 66%),
+      radial-gradient(600px 360px at 92% 10%,rgba(76,201,255,.045),transparent 70%);
+      padding-bottom:30px}
+    .wrap{width:min(1180px,calc(100% - 36px));margin:auto}
+    .hero{border-bottom:1px solid var(--rank-line);background:linear-gradient(180deg,rgba(7,16,24,.75),transparent)}
+    .hero-wrap{padding:30px 0 48px}
+    .crumb{display:flex;gap:9px;margin-bottom:45px;color:#607583;font:700 9px var(--rank-font-head)}
+    .crumb a{color:var(--rank-cyan);text-decoration:none}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:50px;align-items:center}
+    .eyebrow{font:800 9px var(--rank-font-head);letter-spacing:.14em;color:var(--rank-cyan);text-transform:uppercase}
+    h1{margin:13px 0 17px;font:800 clamp(50px,7vw,82px)/.9 var(--rank-font-head);letter-spacing:-.07em}
+    h1 em{font-style:normal;color:var(--rank-cyan)}
+    .hero p{max-width:680px;margin:0;color:var(--rank-muted);font:500 14px/1.75 var(--rank-font-body)}
+    .hero-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:21px}
+    .hero-tags span{padding:7px 10px;border:1px solid var(--rank-line);border-radius:999px;color:#788e9c;font:800 8px var(--rank-font-head);background:rgba(255,255,255,.015)}
+    .hero-art{position:relative;display:grid;place-items:center;padding:24px 12px 18px;border:1px solid rgba(76,201,255,.13);border-radius:26px;background:linear-gradient(145deg,#102432,#0a141d);box-shadow:0 24px 70px rgba(0,0,0,.26)}
+    .hero-art-glow{position:absolute;width:130px;height:130px;border-radius:50%;background:rgba(76,201,255,.13);filter:blur(28px)}
+    .hero-art img{position:relative;width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 15px 24px rgba(0,0,0,.34))}
+    .hero-art-copy{position:relative;text-align:center;margin-top:4px}.hero-art-copy b{display:block;font:900 25px var(--rank-font-head)}.hero-art-copy span{display:block;margin-top:3px;color:#718795;font:600 8px var(--rank-font-head)}
+    .main-section{padding:40px 0 64px}
+    .calculator,.reference{border:1px solid var(--rank-line);border-radius:24px;background:linear-gradient(145deg,#0f1a26,#0b141d);box-shadow:0 28px 90px rgba(0,0,0,.22);overflow:hidden}
+    .calculator-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:26px 28px;border-bottom:1px solid var(--rank-line)}
+    .calculator-head h2,.reference h2,.faq h2{margin:7px 0 5px;font:800 27px var(--rank-font-head);letter-spacing:-.04em}
+    .calculator-head p,.reference p{margin:0;color:var(--rank-muted);font:500 11px/1.6 var(--rank-font-body)}
+    .head-note{display:flex;align-items:center;gap:10px;color:#6c8391;font:800 8px var(--rank-font-head);white-space:nowrap}
+    .head-note i{width:24px;height:1px;background:#335061}
+    .inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:22px 28px 6px}
+    .field{display:grid;gap:8px;color:#7a909e;font:800 9px var(--rank-font-head);letter-spacing:.1em}
+    .field small{color:#4d6675;font-size:7px;letter-spacing:.08em}
+    .field input{width:100%;height:48px;border:1px solid #29414e;border-radius:12px;background:#09141d;color:var(--rank-text);padding:0 13px;outline:none;font:700 11px var(--rank-font-head);transition:.18s}
+    .field input:focus{border-color:var(--rank-cyan);box-shadow:0 0 0 3px rgba(76,201,255,.1)}
+    .selector{padding:22px 28px 26px}
+    .selector-row{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:11px}
+    .selector-heading p{margin:4px 0 0;color:#586f7d;font:500 9px var(--rank-font-body)}
+    .selector-row>strong{color:var(--rank-cyan);font:900 11px var(--rank-font-head)}
+    .rank-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
+    .rank-option{position:relative;min-height:100px;padding:11px 10px;border:1px solid rgba(255,255,255,.065);border-radius:16px;background:linear-gradient(145deg,#0c1720,#09131b);color:var(--rank-text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease}
+    .rank-option:hover:not(:disabled){transform:translateY(-2px);border-color:rgba(76,201,255,.25);box-shadow:0 16px 34px rgba(0,0,0,.18)}
+    .rank-option.selected{border-color:var(--rank-cyan);background:linear-gradient(145deg,rgba(76,201,255,.13),#0a1822);box-shadow:0 0 0 1px rgba(76,201,255,.12),0 15px 38px rgba(76,201,255,.08)}
+    .rank-option:disabled{opacity:.22;cursor:not-allowed;filter:saturate(.45)}
+    .rank-option-art{width:55px;height:55px;display:grid;place-items:center}.rank-option-art img{width:61px;height:61px;object-fit:contain;display:block;filter:drop-shadow(0 8px 12px rgba(0,0,0,.3))}
+    .rank-option-art.base{border:1px solid rgba(255,255,255,.07);border-radius:13px;background:rgba(255,255,255,.02)}
+    .base-icon{color:#718592;font:900 10px var(--rank-font-head)}
+    .rank-option-copy{text-align:center}.rank-option-copy strong{display:block;font:900 12px var(--rank-font-head)}.rank-option-copy small{display:block;margin-top:3px;color:#526a77;font:600 7px var(--rank-font-head)}
+    .rank-option-check{position:absolute;top:8px;right:8px;width:7px;height:7px;border:1px solid #385363;border-radius:50%}.rank-option.selected .rank-option-check{background:var(--rank-cyan);border-color:var(--rank-cyan);box-shadow:0 0 10px rgba(76,201,255,.55)}
+    .selector-divider{height:1px;margin:23px 0;background:linear-gradient(90deg,transparent,var(--rank-line),transparent)}
+    .error{margin:0 28px 14px;padding:11px 12px;border:1px solid rgba(255,116,112,.25);border-radius:10px;background:rgba(255,116,112,.055);color:#ffaaa4;font:700 9px var(--rank-font-head)}
+    .result{padding:2px 28px 28px}
+    .result-grid{display:grid;grid-template-columns:minmax(0,1fr) 1.15fr;gap:12px}
+    .total-card,.metrics article{border:1px solid rgba(76,201,255,.11);border-radius:18px;background:linear-gradient(145deg,#102533,#0b1721)}
+    .total-card{padding:20px 21px}.rp-number{display:flex;align-items:center;gap:9px;margin:10px 0 5px}.rp-number img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 5px 8px rgba(0,0,0,.3))}.rp-number strong{font:900 clamp(45px,6vw,70px)/.9 var(--rank-font-head);letter-spacing:-.08em}.total-card p{margin:0;color:var(--rank-muted);font:500 10px var(--rank-font-body)}
+    .route-pill{display:inline-flex;align-items:center;gap:9px;margin-top:15px;padding:7px 9px;border:1px solid rgba(255,255,255,.065);border-radius:999px;color:#86a0af;font:800 8px var(--rank-font-head)}.route-pill i{width:20px;height:1px;background:#36505f}
+    .metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metrics article{padding:16px}.metrics article span{display:block;color:#637b89;font:800 8px var(--rank-font-head);letter-spacing:.1em}.metrics article strong{display:block;margin-top:7px;font:900 22px var(--rank-font-head);letter-spacing:-.04em}.metrics article small{display:block;margin-top:3px;color:#4f6572;font:500 8px var(--rank-font-body)}
+    .route-preview{margin-top:13px;padding:15px 16px;border:1px solid rgba(255,255,255,.065);border-radius:16px;background:rgba(255,255,255,.017)}.route-preview-head{display:flex;justify-content:space-between;align-items:end;gap:14px}.route-preview-head>div strong{display:block;margin-top:4px;font:900 16px var(--rank-font-head)}.route-status{padding:6px 8px;border:1px solid rgba(76,201,255,.1);border-radius:999px;color:#7290a0;font:800 7px var(--rank-font-head)}
+    .route-track{display:flex;align-items:center;gap:6px;margin-top:13px;overflow:auto;padding-bottom:2px}.route-node{min-width:65px;display:grid;justify-items:center;gap:3px;color:#536b78}.route-node.active{color:#a8dff0}.route-node.focus{color:var(--rank-cyan)}.route-node i{}.route-node .route-icon{width:34px;height:34px;display:grid;place-items:center}.route-node .route-icon img{width:39px;height:39px;object-fit:contain}.route-node .route-icon.base{border:1px solid rgba(255,255,255,.07);border-radius:9px}.route-node .route-icon.base:before{content:'Base';font:900 7px var(--rank-font-head);color:#718692}.route-node strong{font:800 8px var(--rank-font-head);white-space:nowrap}.route-track>i{width:22px;height:1px;flex:0 0 22px;background:#2b4554}
+    .breakdown{margin-top:14px;border:1px solid rgba(255,255,255,.07);border-radius:18px;overflow:hidden;background:#0a151e}.breakdown-head{display:flex;justify-content:space-between;align-items:end;gap:16px;padding:18px 19px;border-bottom:1px solid var(--rank-line);background:linear-gradient(180deg,rgba(76,201,255,.035),transparent)}.breakdown-head h3{margin:7px 0 3px;font:800 20px var(--rank-font-head);letter-spacing:-.03em}.breakdown-head p{margin:0;color:#5a717f;font:500 9px var(--rank-font-body)}.breakdown-total{display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid rgba(76,201,255,.13);border-radius:10px;background:rgba(76,201,255,.04)}.breakdown-total img{width:21px;height:21px;object-fit:contain}.breakdown-total strong{font:900 16px var(--rank-font-head)}.breakdown-total small{color:var(--rank-cyan);font:900 8px var(--rank-font-head)}
+    .cost-row{display:grid;grid-template-columns:34px minmax(0,1fr) 100px auto;align-items:center;gap:12px;padding:13px 17px;border-bottom:1px solid rgba(255,255,255,.05)}.cost-row:last-child{border-bottom:0}.cost-row-index{width:27px;height:27px;display:grid;place-items:center;border:1px solid rgba(76,201,255,.15);border-radius:8px;color:var(--rank-cyan);background:#0d202d;font:800 8px var(--rank-font-head)}.cost-row-route{display:flex;align-items:center;gap:7px;color:#95aab6;font:800 10px var(--rank-font-head)}.cost-row-route span{color:#607783}.cost-row-route i{font-style:normal;color:#365263}.cost-row-route strong{color:#e8f3f7}.cost-row-ovr{color:#536b78;font:700 8px var(--rank-font-head)}.cost-row-price{display:flex;align-items:center;justify-content:flex-end;gap:5px}.cost-row-price img{width:19px;height:19px;object-fit:contain}.cost-row-price strong{font:900 17px var(--rank-font-head)}.cost-row-price small{color:var(--rank-cyan);font:900 7px var(--rank-font-head)}
+    .empty{padding:18px;color:var(--rank-muted);font:600 10px var(--rank-font-body)}
+    .reference{margin-top:14px;padding:26px 28px}.reference-head{margin-bottom:18px}.table-scroll{overflow:auto}.reference table{width:100%;min-width:720px;border-collapse:collapse}.reference th,.reference td{text-align:left;padding:11px 12px;border-top:1px solid var(--rank-line);font:600 10px var(--rank-font-body)}.reference th{color:#617886;font:800 8px var(--rank-font-head);letter-spacing:.08em}.reference td{color:#cad8df}.reference td strong{font:800 10px var(--rank-font-head)}.reference td img{width:16px;height:16px;object-fit:contain;vertical-align:-4px;margin-right:5px}
+    .faq{padding:55px 0 78px}.faq details{border-top:1px solid var(--rank-line);padding:16px 0}.faq summary{cursor:pointer;font:800 12px var(--rank-font-head)}.faq p{max-width:760px;color:var(--rank-muted);font:500 10px/1.75 var(--rank-font-body)}
+    @media(max-width:980px){.hero-grid{grid-template-columns:1fr}.hero-art{display:none}.rank-grid{grid-template-columns:repeat(3,1fr)}.result-grid{grid-template-columns:1fr}}
+    @media(max-width:680px){.wrap{width:calc(100% - 22px)}.calculator-head{align-items:flex-start;flex-direction:column}.inputs{grid-template-columns:1fr;padding:18px}.selector{padding:20px 18px}.rank-grid{grid-template-columns:repeat(2,1fr)}.result{padding-left:18px;padding-right:18px}.metrics{gap:7px}.metrics article{padding:14px}.breakdown-head{align-items:flex-start;flex-direction:column}.cost-row{grid-template-columns:28px 1fr auto;gap:9px}.cost-row-ovr{grid-column:2}.cost-row-price{grid-column:3;grid-row:1/3}.reference{padding:20px}}
+    @media(max-width:430px){.hero-wrap{padding-top:24px}.crumb{margin-bottom:32px}.hero h1{font-size:50px}.rank-option{min-height:92px;padding:9px 7px}.rank-option-art{width:49px;height:49px}.rank-option-art img{width:55px;height:55px}.rank-option-copy strong{font-size:11px}.route-node{min-width:57px}.cost-row{grid-template-columns:26px 1fr}.cost-row-price{grid-column:2;grid-row:auto;justify-content:flex-start}.cost-row-route{font-size:9px}}
+  </style>
+</BaseLayout>
