@@ -256,18 +256,24 @@ async function loadTipTap(editorEl, initialHTML){
       import('https://esm.sh/@tiptap/extension-color@2.11.5'),
       import('https://esm.sh/@tiptap/extension-highlight@2.11.5'),
       import('https://esm.sh/@tiptap/extension-text-align@2.11.5'),
-      import('https://esm.sh/@tiptap/extension-typography@2.11.5')
+      import('https://esm.sh/@tiptap/extension-typography@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-table@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-table-row@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-table-header@2.11.5'),
+      import('https://esm.sh/@tiptap/extension-table-cell@2.11.5')
     ]);
     const {Editor}=core;
     const StarterKit=starter.default||starter;
     const Link=link.default||link;
     const Image=image.default||image;
-    const Placeholder=placeholder.default||placeholder; const Underline=underline.default||underline; const TextStyle=textStyle.default||textStyle; const Color=color.default||color; const Highlight=highlight.default||highlight; const TextAlign=textAlign.default||textAlign; const Typography=typography.default||typography; const FontFamily=core.Extension.create({name:'fontFamily',addGlobalAttributes(){return[{types:['textStyle'],attributes:{fontFamily:{default:null,parseHTML:el=>el.style.fontFamily||null,renderHTML:attrs=>attrs.fontFamily?{style:'font-family:'+attrs.fontFamily}:{} }}}]}}); const FontSize=core.Extension.create({name:'fontSize',addGlobalAttributes(){return[{types:['textStyle'],attributes:{fontSize:{default:null,parseHTML:el=>el.style.fontSize||null,renderHTML:attrs=>attrs.fontSize?{style:'font-size:'+attrs.fontSize}:{} }}}]}});
+    const Placeholder=placeholder.default||placeholder; const Underline=underline.default||underline; const TextStyle=textStyle.default||textStyle; const Color=color.default||color; const Highlight=highlight.default||highlight; const TextAlign=textAlign.default||textAlign; const Typography=typography.default||typography;
+    const Table=table.default||table; const TableRow=tableRow.default||tableRow; const TableHeader=tableHeader.default||tableHeader; const TableCell=tableCell.default||tableCell; const FontFamily=core.Extension.create({name:'fontFamily',addGlobalAttributes(){return[{types:['textStyle'],attributes:{fontFamily:{default:null,parseHTML:el=>el.style.fontFamily||null,renderHTML:attrs=>attrs.fontFamily?{style:'font-family:'+attrs.fontFamily}:{} }}}]}}); const FontSize=core.Extension.create({name:'fontSize',addGlobalAttributes(){return[{types:['textStyle'],attributes:{fontSize:{default:null,parseHTML:el=>el.style.fontSize||null,renderHTML:attrs=>attrs.fontSize?{style:'font-size:'+attrs.fontSize}:{} }}}]}});
     tiptapEditor=new Editor({element:editorEl,content:initialHTML||'',extensions:[
       StarterKit.configure({heading:{levels:[1,2,3]},link:false}),
       Link.configure({openOnClick:false,autolink:true,HTMLAttributes:{class:'article-link'}}),
       Image.configure({allowBase64:false,HTMLAttributes:{class:'article-inline-image'}}),
       Underline,TextStyle,FontFamily,FontSize,Color,Highlight.configure({multicolor:true}),TextAlign.configure({types:['heading','paragraph']}),Typography,
+      Table.configure({resizable:true,HTMLAttributes:{class:'editor-table'}}),TableRow,TableHeader,TableCell,
       Placeholder.configure({placeholder:'Start writing your article here…'})
     ],onUpdate:()=>{$('#saveHint').textContent='Unsaved changes';dirty=true;}});
     return tiptapEditor;
