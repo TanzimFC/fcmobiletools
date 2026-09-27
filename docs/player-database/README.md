@@ -10,10 +10,10 @@ Source-reported values are kept as dated observations with their source URL. Mis
 
 ## Routes and API
 
-- `/players/` — paginated search, position/event/OVR filters, and OVR/name sorting.
+- `/players/` — database-backed pagination, search, position/club/league/nation/event/OVR filters, and OVR/name sorting. Custom card frames render from the stored player fields even when artwork cannot load.
 - `/player/<slug>/` — statically rendered title/description/canonical metadata for each indexed player, with record details fetched from the API.
 - `GET /api/players` — search, filters, sort, limit/offset pagination, image mapping, and latest shard/price observations.
-- `GET /api/players/filters` — supported positions.
+- `GET /api/players/filters` — distinct position, club, league, nation, and event facets from a bounded Postgres aggregate RPC.
 - `GET /api/players/:slug` — metadata, stats, ranks, abilities, assets, and latest observations.
 
 The Worker uses the project's Supabase publishable key, never a service-role key. Postgres RLS limits public reads to active player rows and associated public records; admin writes require the `app_metadata.role=admin` claim.
@@ -26,6 +26,16 @@ node scripts/player-data/normalize-player-import.mjs /tmp/star-shards.json /tmp/
 ```
 
 Fetch is sequential and throttled. The normalizer validates IDs, slugs, OVR, positions, URLs, source attribution, permissions, stats objects, prices, and shard costs. Review normalized output before any import. Initial rows were loaded in batches into Supabase after validation; the public admin CRUD/import interface is not included yet.
+
+
+
+## Admin and import setup
+
+The existing Worker admin login protects `/admin/players/` and every `/api/admin/player-database` request. Configure the Cloudflare Worker secret `SUPABASE_SERVICE_ROLE_KEY` (the Supabase project's server-side secret key) before using write actions. Keep this value out of `wrangler.toml`, source files, and browser bundles. The site continues to use the publishable key for public read-only APIs. The worker returns a clear `503` configuration error when the server-side secret is absent.
+
+Single records are edited as JSON in the admin page. Bulk files may be JSON arrays, JSON objects with a `players` array, or CSV. CSV headers include `player_id,name,ovr,position,event,club,league,nation`; structured columns such as `stats,ranks,playstyles,traits,assets,alternate_positions` accept JSON values (alternate positions may also use a pipe-separated list). Uploads are previewed, validated again by the Worker, limited to 200 records per request, and sent in batches of 100. Source and reuse metadata are retained for asset mappings. Archiving sets `is_active=false` so public pages stop listing the card while its record remains recoverable.
+
+The migration also exposes `player_playstyles` and `player_traits` as RLS-aware views over the normalized ability tables, plus `player_filter_options()` so filters do not download the whole player catalog.
 
 ## Price freshness
 

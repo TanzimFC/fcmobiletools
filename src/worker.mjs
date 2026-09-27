@@ -1,5 +1,6 @@
 import { argon2id, argon2Verify } from 'hash-wasm';
 import { handlePlayerRequest } from './lib/playerDatabase.js';
+import { handlePlayerAdminRequest } from './lib/playerAdmin.js';
 
 const SESSION_COOKIE = 'fcm_admin_session';
 const CREATOR_SESSION_COOKIE = 'fcm_creator_session';
@@ -570,6 +571,7 @@ async function api(request,env,path) {
   if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
+    if(path === '/player-database' || path.startsWith('/player-database/')) return handlePlayerAdminRequest(request,path,env);
     if(path === '/me') {
       const account=await getAdminAccount(env);
       return json({username:account?.username||env.ADMIN_USERNAME,displayName:account?.display_name||account?.username||env.ADMIN_USERNAME,role:'admin',updatedAt:account?.updated_at||null});
