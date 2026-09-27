@@ -14,7 +14,9 @@ function validatePlayer(input) {
   if (!name) throw new Error('Player name is required.');
   if (!Number.isInteger(ovr) || ovr < 1 || ovr > 150) throw new Error('OVR must be an integer from 1 to 150.');
   if (!POSITIONS.has(position)) throw new Error('Choose a valid FC Mobile position.');
-  const result = { player_id, name, slug: slugify(row.slug || name) + '-' + player_id, ovr, position };
+  const baseSlug = slugify(row.slug || name);
+  const slug = baseSlug.endsWith('-' + player_id) ? baseSlug : baseSlug + '-' + player_id;
+  const result = { player_id, name, slug, ovr, position };
   for (const field of allowedPlayerFields) if (row[field] !== undefined && !['player_id','name','slug','ovr','position'].includes(field)) result[field] = row[field];
   if (Array.isArray(row.alternate_positions)) result.alternate_positions = row.alternate_positions.map((x) => String(x).toUpperCase()).filter((x) => POSITIONS.has(x));
   for (const field of ['skill_moves','weak_foot']) if (result[field] != null && (!Number.isInteger(Number(result[field])) || Number(result[field]) < 1 || Number(result[field]) > 5)) throw new Error(field + ' must be from 1 to 5.');
@@ -66,14 +68,14 @@ export async function handlePlayerAdminRequest(request, path, env) {
     const players = incoming.map(validatePlayer);
     if (new Set(players.map((row) => row.player_id)).size !== players.length) return reply({ error:'Duplicate player_id values are not allowed in one import batch.' },400);
     await upsert('players', players, 'player_id');
-    const statsRows = incoming.map((row,i) => row.stats !== undefined ? { player_id:players[i].player_id, stats:row.stats, source_name:row.source?.name || row.source_name || null, source_url:row.source?.url || row.source_url || null, verified_at:row.source?.observed_at || new Date().toISOString() } : null).filter(Boolean);
+    const statsRows = incoming.map((row,i) => row.stats !== undefined ? { player_id:players[i].player_id, stats:row.stats, source_name:row.source?.name || row.source_name || null, source_url:row.source?.url || row.source_url || null, verified_at:row.source?.observed_at || null } : null).filter(Boolean);
     await upsert('player_stats', statsRows, 'player_id');
     const rankRows = incoming.flatMap((row,i) => (Array.isArray(row.ranks) ? row.ranks : []).map(rank => ({ player_id:players[i].player_id, rank:Number(rank.rank)||0, training_level:Number(rank.training_level)||0, ovr:rank.ovr == null ? null : Number(rank.ovr), stat_modifiers:rank.stat_modifiers || {}, source_url:rank.source_url || row.source?.url || null })));
     await upsert('player_ranks', rankRows, 'player_id,rank,training_level');
     const assetRows = incoming.flatMap((row,i) => Object.entries(row.assets || {}).flatMap(([kind,value]) => {
       const asset = value && typeof value === 'object' ? value : { public_url:value };
       if (!asset.public_url && !asset.local_path) return [];
-      return [{ asset_key:String(asset.asset_key || kind + '-' + players[i].player_id), player_id:players[i].player_id, asset_type:kind, local_path:asset.local_path || null, public_url:asset.public_url || null, source_name:asset.source_name || row.source?.name || row.source_name || 'Unspecified', source_url:asset.source_url || row.source?.url || row.source_url || 'https://example.invalid/', license:asset.license || 'unverified', attribution:asset.attribution || null, checksum_sha256:asset.checksum_sha256 || null }];
+      return [{ asset_key:String(asset.asset_key || (kind === 'player_image' ? 'player-card-' : kind + '-') + players[i].player_id), player_id:players[i].player_id, asset_type:kind, local_path:asset.local_path || null, public_url:asset.public_url || null, source_name:asset.source_name || row.source?.name || row.source_name || null, source_url:asset.source_url || row.source?.url || row.source_url || null, license:asset.license || row.source?.usage_policy || 'unverified', attribution:asset.attribution || null, checksum_sha256:asset.checksum_sha256 || null }];
     }));
     await upsert('player_assets', assetRows, 'asset_key');
     const abilityRows = incoming.flatMap(row => ['playstyles','traits'].flatMap(type => (Array.isArray(row[type]) ? row[type] : []).map(item => ({ name:String(item.name || '').trim(), slug:slugify(item.slug || item.name) + (item.is_plus ? '-plus' : ''), ability_type:type === 'playstyles' ? 'playstyle' : 'trait', is_plus:Boolean(item.is_plus), description:item.description || null, asset_key:item.asset_key || null })).filter(item => item.name && item.slug)));
