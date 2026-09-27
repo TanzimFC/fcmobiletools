@@ -44,7 +44,8 @@ async function enrich(rows) {
   const assetsById = new Map();
   for (const asset of assets.rows) {
     const mapped = assetsById.get(asset.player_id) || {};
-    if (asset.asset_type) mapped[asset.asset_type] = asset.local_path || asset.public_url || null;
+    const assetType = asset.asset_type || 'player_image';
+    mapped[assetType] = asset.local_path || asset.public_url || null;
     assetsById.set(asset.player_id, mapped);
   }
   return rows.map((player) => {
