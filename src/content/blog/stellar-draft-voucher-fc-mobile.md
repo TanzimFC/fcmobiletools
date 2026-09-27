@@ -20,7 +20,7 @@ excerpt: "Understand the Stellar Draft Voucher in FC Mobile 27, where to use it,
 tags: ["FC Mobile 27", "Stellar Libra", "Stellar Draft", "Draft Voucher", "FC Mobile Guides"]
 relatedPlayers: []
 relatedEvents: ["Stellar Libra"]
-relatedArticles: ["fc-mobile-27-stellar-libra-event", "stellar-libra-tokens-fc-mobile"]
+relatedArticles: ["stellar-libra-tokens-fc-mobile"]
 relatedTools: []
 relatedCodes: []
 featured: false
@@ -187,9 +187,6 @@ No. Check the balances shown on your own live account.
 No. Libra Tokens are event progression currency.
 
 ## Keep reading
-
-[**FC Mobile 27 Stellar Libra Event Guide**](/blog/fc-mobile-27-stellar-libra-event/)  
-The complete Stellar: Libra overview, player list, event structure and current issues.
 
 [**Stellar Libra Tokens Guide**](/blog/stellar-libra-tokens-fc-mobile/)  
 How Libra Tokens work, where to look for them and what to do when a token is missing.
