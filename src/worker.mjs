@@ -1,6 +1,4 @@
 import { argon2id, argon2Verify } from 'hash-wasm';
-import { handlePlayerRequest } from './lib/playerDatabase.js';
-import { handlePlayerAdminRequest } from './lib/playerAdmin.js';
 
 const SESSION_COOKIE = 'fcm_admin_session';
 const CREATOR_SESSION_COOKIE = 'fcm_creator_session';
@@ -571,7 +569,6 @@ async function api(request,env,path) {
   if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
-    if(path === '/player-database' || path.startsWith('/player-database/')) return handlePlayerAdminRequest(request,path,env);
     if(path === '/me') {
       const account=await getAdminAccount(env);
       return json({username:account?.username||env.ADMIN_USERNAME,displayName:account?.display_name||account?.username||env.ADMIN_USERNAME,role:'admin',updatedAt:account?.updated_at||null});
@@ -827,8 +824,9 @@ async function adminDashboard(request, env, url) {
 
 export default { async fetch(request,env) {
   const url=new URL(request.url);
+  if(url.pathname === '/players' || url.pathname.startsWith('/players/') || url.pathname === '/player' || url.pathname.startsWith('/player/')) return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
-  if(url.pathname === '/api/players' || url.pathname.startsWith('/api/players/')) return handlePlayerRequest(request,url.pathname);
+  if(url.pathname === '/api/players' || url.pathname.startsWith('/api/players/')) return json({error:'Player database is temporarily unavailable.'},404);
   if(url.pathname === '/api/football' && request.method === 'GET') {
     try {
       const file=await repoFile(env,'src/data/footballCentre.js');
