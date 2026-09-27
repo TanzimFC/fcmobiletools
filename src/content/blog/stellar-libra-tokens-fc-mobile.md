@@ -20,7 +20,7 @@ excerpt: "A practical FC Mobile 27 guide to Stellar Libra Tokens, including wher
 tags: ["FC Mobile 27", "Stellar Libra", "Libra Tokens", "FC Mobile Guides", "Event Rewards"]
 relatedPlayers: []
 relatedEvents: ["Stellar Libra"]
-relatedArticles: ["fc-mobile-27-stellar-libra-event", "stellar-draft-voucher-fc-mobile"]
+relatedArticles: ["stellar-draft-voucher-fc-mobile"]
 relatedTools: []
 relatedCodes: []
 featured: false
@@ -213,9 +213,6 @@ Do not assume a universal daily amount while the live distribution is still bein
 No. Draft entry and event progression use different items.
 
 ## Keep reading
-
-[**FC Mobile 27 Stellar Libra Event Guide**](/blog/fc-mobile-27-stellar-libra-event/)  
-The full event overview, current player pool, Stellar Draft and the main Libra mechanics.
 
 [**Stellar Draft Voucher Guide**](/blog/stellar-draft-voucher-fc-mobile/)  
 A dedicated explanation of the new voucher and the current Draft-consumption issue.
