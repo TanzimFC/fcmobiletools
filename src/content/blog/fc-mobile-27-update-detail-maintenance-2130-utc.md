@@ -66,92 +66,344 @@ Use the schedule below to find the expected maintenance window in your region.
 
 ### Middle East
 
-| Location | Start | Expected End |
-| --- | ---: | ---: |
-| 🇸🇦 Saudi Arabia | 12:30 AM | 5:00 AM |
-| 🇶🇦 Qatar | 12:30 AM | 5:00 AM |
-| 🇰🇼 Kuwait | 12:30 AM | 5:00 AM |
-| 🇧🇭 Bahrain | 12:30 AM | 5:00 AM |
-| 🇯🇴 Jordan | 12:30 AM | 5:00 AM |
-| 🇮🇱 Israel | 12:30 AM | 5:00 AM |
-| 🇦🇪 UAE | 1:30 AM | 6:00 AM |
-| 🇴🇲 Oman | 1:30 AM | 6:00 AM |
+<table class="article-source-table">
+  <thead><tr>
+    <th scope="col" style="text-align:left">Location</th>
+    <th scope="col" style="text-align:right">Start</th>
+    <th scope="col" style="text-align:right">Expected End</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">🇸🇦 Saudi Arabia</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇶🇦 Qatar</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇰🇼 Kuwait</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇧🇭 Bahrain</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇯🇴 Jordan</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇮🇱 Israel</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇦🇪 UAE</td>
+      <td style="text-align:right">1:30 AM</td>
+      <td style="text-align:right">6:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇴🇲 Oman</td>
+      <td style="text-align:right">1:30 AM</td>
+      <td style="text-align:right">6:00 AM</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### Africa
 
-| Location | Start | Expected End |
-| --- | ---: | ---: |
-| 🇪🇬 Egypt | 11:30 PM | 4:00 AM |
-| 🇿🇦 South Africa | 11:30 PM | 4:00 AM |
-| 🇳🇬 Nigeria | 10:30 PM | 3:00 AM |
-| 🇰🇪 Kenya | 12:30 AM | 5:00 AM |
-| 🇬🇭 Ghana | 9:30 PM | 2:00 AM |
-| 🇲🇦 Morocco | 9:30 PM | 2:00 AM |
+<table class="article-source-table">
+  <thead><tr>
+    <th scope="col" style="text-align:left">Location</th>
+    <th scope="col" style="text-align:right">Start</th>
+    <th scope="col" style="text-align:right">Expected End</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">🇪🇬 Egypt</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇿🇦 South Africa</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇳🇬 Nigeria</td>
+      <td style="text-align:right">10:30 PM</td>
+      <td style="text-align:right">3:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇰🇪 Kenya</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇬🇭 Ghana</td>
+      <td style="text-align:right">9:30 PM</td>
+      <td style="text-align:right">2:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇲🇦 Morocco</td>
+      <td style="text-align:right">9:30 PM</td>
+      <td style="text-align:right">2:00 AM</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### Europe — Part 1
 
-| Location | Start | Expected End |
-| --- | ---: | ---: |
-| 🇬🇧 UK | 10:30 PM | 3:00 AM |
-| 🇮🇪 Ireland | 10:30 PM | 3:00 AM |
-| 🇵🇹 Portugal | 10:30 PM | 3:00 AM |
-| 🇪🇸 Spain | 11:30 PM | 4:00 AM |
-| 🇫🇷 France | 11:30 PM | 4:00 AM |
-| 🇩🇪 Germany | 11:30 PM | 4:00 AM |
+<table class="article-source-table">
+  <thead><tr>
+    <th scope="col" style="text-align:left">Location</th>
+    <th scope="col" style="text-align:right">Start</th>
+    <th scope="col" style="text-align:right">Expected End</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">🇬🇧 UK</td>
+      <td style="text-align:right">10:30 PM</td>
+      <td style="text-align:right">3:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇮🇪 Ireland</td>
+      <td style="text-align:right">10:30 PM</td>
+      <td style="text-align:right">3:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇵🇹 Portugal</td>
+      <td style="text-align:right">10:30 PM</td>
+      <td style="text-align:right">3:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇪🇸 Spain</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇫🇷 France</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇩🇪 Germany</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### Europe — Part 2
 
-| Location | Start | Expected End |
-| --- | ---: | ---: |
-| 🇮🇹 Italy | 11:30 PM | 4:00 AM |
-| 🇳🇱 Netherlands | 11:30 PM | 4:00 AM |
-| 🇧🇪 Belgium | 11:30 PM | 4:00 AM |
-| 🇵🇱 Poland | 11:30 PM | 4:00 AM |
-| 🇬🇷 Greece | 12:30 AM | 5:00 AM |
-| 🇷🇴 Romania | 12:30 AM | 5:00 AM |
-| 🇹🇷 Türkiye | 12:30 AM | 5:00 AM |
+<table class="article-source-table">
+  <thead><tr>
+    <th scope="col" style="text-align:left">Location</th>
+    <th scope="col" style="text-align:right">Start</th>
+    <th scope="col" style="text-align:right">Expected End</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">🇮🇹 Italy</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇳🇱 Netherlands</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇧🇪 Belgium</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇵🇱 Poland</td>
+      <td style="text-align:right">11:30 PM</td>
+      <td style="text-align:right">4:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇬🇷 Greece</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇷🇴 Romania</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇹🇷 Türkiye</td>
+      <td style="text-align:right">12:30 AM</td>
+      <td style="text-align:right">5:00 AM</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### North America
 
-| Location | Start | Expected End |
-| --- | ---: | ---: |
-| 🇺🇸 New York | 5:30 PM | 10:00 PM |
-| 🇺🇸 Chicago | 4:30 PM | 9:00 PM |
-| 🇺🇸 Denver | 3:30 PM | 8:00 PM |
-| 🇺🇸 Los Angeles | 2:30 PM | 7:00 PM |
-| 🇨🇦 Toronto | 5:30 PM | 10:00 PM |
-| 🇨🇦 Vancouver | 2:30 PM | 7:00 PM |
-| 🇲🇽 Mexico City | 3:30 PM | 8:00 PM |
+<table class="article-source-table">
+  <thead><tr>
+    <th scope="col" style="text-align:left">Location</th>
+    <th scope="col" style="text-align:right">Start</th>
+    <th scope="col" style="text-align:right">Expected End</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">🇺🇸 New York</td>
+      <td style="text-align:right">5:30 PM</td>
+      <td style="text-align:right">10:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇺🇸 Chicago</td>
+      <td style="text-align:right">4:30 PM</td>
+      <td style="text-align:right">9:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇺🇸 Denver</td>
+      <td style="text-align:right">3:30 PM</td>
+      <td style="text-align:right">8:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇺🇸 Los Angeles</td>
+      <td style="text-align:right">2:30 PM</td>
+      <td style="text-align:right">7:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇨🇦 Toronto</td>
+      <td style="text-align:right">5:30 PM</td>
+      <td style="text-align:right">10:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇨🇦 Vancouver</td>
+      <td style="text-align:right">2:30 PM</td>
+      <td style="text-align:right">7:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇲🇽 Mexico City</td>
+      <td style="text-align:right">3:30 PM</td>
+      <td style="text-align:right">8:00 PM</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### South America
 
-| Location | Start | Expected End |
-| --- | ---: | ---: |
-| 🇧🇷 Brazil | 6:30 PM | 11:00 PM |
-| 🇦🇷 Argentina | 6:30 PM | 11:00 PM |
-| 🇨🇱 Chile | 6:30 PM | 11:00 PM |
-| 🇨🇴 Colombia | 4:30 PM | 9:00 PM |
-| 🇵🇪 Peru | 4:30 PM | 9:00 PM |
-| 🇪🇨 Ecuador | 4:30 PM | 9:00 PM |
+<table class="article-source-table">
+  <thead><tr>
+    <th scope="col" style="text-align:left">Location</th>
+    <th scope="col" style="text-align:right">Start</th>
+    <th scope="col" style="text-align:right">Expected End</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">🇧🇷 Brazil</td>
+      <td style="text-align:right">6:30 PM</td>
+      <td style="text-align:right">11:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇦🇷 Argentina</td>
+      <td style="text-align:right">6:30 PM</td>
+      <td style="text-align:right">11:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇨🇱 Chile</td>
+      <td style="text-align:right">6:30 PM</td>
+      <td style="text-align:right">11:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇨🇴 Colombia</td>
+      <td style="text-align:right">4:30 PM</td>
+      <td style="text-align:right">9:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇵🇪 Peru</td>
+      <td style="text-align:right">4:30 PM</td>
+      <td style="text-align:right">9:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇪🇨 Ecuador</td>
+      <td style="text-align:right">4:30 PM</td>
+      <td style="text-align:right">9:00 PM</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### Oceania
 
-| Location | Start | Expected End |
-| --- | ---: | ---: |
-| 🇦🇺 Sydney | 7:30 AM | 12:00 PM |
-| 🇦🇺 Melbourne | 7:30 AM | 12:00 PM |
-| 🇦🇺 Brisbane | 6:30 AM | 11:00 AM |
-| 🇳🇿 New Zealand | 9:30 AM | 2:00 PM |
+<table class="article-source-table">
+  <thead><tr>
+    <th scope="col" style="text-align:left">Location</th>
+    <th scope="col" style="text-align:right">Start</th>
+    <th scope="col" style="text-align:right">Expected End</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">🇦🇺 Sydney</td>
+      <td style="text-align:right">7:30 AM</td>
+      <td style="text-align:right">12:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇦🇺 Melbourne</td>
+      <td style="text-align:right">7:30 AM</td>
+      <td style="text-align:right">12:00 PM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇦🇺 Brisbane</td>
+      <td style="text-align:right">6:30 AM</td>
+      <td style="text-align:right">11:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇳🇿 New Zealand</td>
+      <td style="text-align:right">9:30 AM</td>
+      <td style="text-align:right">2:00 PM</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### South Asia
 
 For players in Bangladesh and nearby regions, the UTC schedule converts to:
 
-| Location | Start | Expected End |
-| --- | ---: | ---: |
-| 🇧🇩 Bangladesh | 3:30 AM | 8:00 AM |
-| 🇮🇳 India | 3:00 AM | 7:30 AM |
-| 🇵🇰 Pakistan | 2:30 AM | 7:00 AM |
+<table class="article-source-table">
+  <thead><tr>
+    <th scope="col" style="text-align:left">Location</th>
+    <th scope="col" style="text-align:right">Start</th>
+    <th scope="col" style="text-align:right">Expected End</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">🇧🇩 Bangladesh</td>
+      <td style="text-align:right">3:30 AM</td>
+      <td style="text-align:right">8:00 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇮🇳 India</td>
+      <td style="text-align:right">3:00 AM</td>
+      <td style="text-align:right">7:30 AM</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">🇵🇰 Pakistan</td>
+      <td style="text-align:right">2:30 AM</td>
+      <td style="text-align:right">7:00 AM</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ## What if FC Mobile is still down after 02:00 UTC?
 
