@@ -21,6 +21,7 @@ const structuredData = { '@context': 'https://schema.org', '@type': 'WebPage', n
         <p class="players-eyebrow">FCMOBILETOOLS · PLAYER PROFILE</p>
         <h1>{player.name}</h1>
         <p id="player-event">FC Mobile player card</p>
+        <div class="player-detail-marks" id="player-marks" aria-label="Player club, nation and league"></div>
         <div class="player-info-pills"><span><b>{player.ovr}</b> OVR</span><span>{player.position}</span><span>Alt: —</span><span class="player-rank-label">Base card</span></div>
         <p class="player-source player-market" id="market-status">Current coin sell-price data: no verified price observation available.</p>
       </div>
@@ -28,13 +29,13 @@ const structuredData = { '@context': 'https://schema.org', '@type': 'WebPage', n
     <div class="player-detail-grid">
       <section class="player-panel"><h2>Overview</h2><div class="player-stat-list" id="player-overview"><span class="player-loading">Loading player details…</span></div></section>
       <section class="player-panel"><h2>Star Shard cost</h2><div class="player-stat-list" id="player-shards"><span class="player-loading">Checking dated source records…</span></div><p class="player-source" id="shard-source"></p></section>
-      <section class="player-panel"><h2>Attributes</h2><div id="player-stats"><p class="player-loading">Detailed stats have not been verified for this card.</p></div></section>
+      <section class="player-panel"><h2>Attributes</h2><div id="player-stats"><p class="player-loading">Detailed stats have not been verified for this card.</p></div><p class="player-source" id="stats-source"></p></section>
       <section class="player-panel"><h2>Rank and training records</h2><div class="player-rank-list" id="player-ranks"><span>Rank data has not been sourced for this card.</span></div><p class="player-source" id="rank-status">No rank modifier is applied unless a source record exists.</p></section>
       <section class="player-panel"><h2>PlayStyles</h2><div class="player-abilities" id="player-abilities"><span class="player-loading">No verified PlayStyle records yet.</span></div></section>
       <section class="player-panel"><h2>Traits</h2><div class="player-abilities" id="player-traits"><span class="player-loading">No verified trait records yet.</span></div></section>
     </div>
     <section class="player-panel" style="margin-top:14px"><h2>Related players</h2><div class="player-related" id="related-players"><span class="player-loading">Loading players in the same position…</span></div></section>
-    <p class="player-data-note">Player listing and Star Shard source: <a href="https://fcmobilesquad.com/star-signings-players" rel="nofollow">FC Mobile Squad</a>. Dataset observed September 16, 2026. Prices, statistics, and abilities are shown only when sourced.</p>
+    <p class="player-data-note">Player listing and Star Shard observations are sourced from FC Mobile Squad. Verified statistics and abilities are attributed to their individual data sources when available. This independent fan-made database is not affiliated with EA.</p>
     <script type="application/ld+json" set:html={JSON.stringify(structuredData)}></script>
   </main>
 </BaseLayout>
@@ -68,6 +69,8 @@ async function load() {
     if (!response.ok) throw new Error(player.error || 'Player details unavailable.');
     document.querySelector('#player-event').textContent = player.event || 'FC Mobile player card';
     if (player.image) document.querySelector('#detail-art').insertAdjacentHTML('beforeend', `<img src="${esc(player.image)}" alt="${esc(player.name)} ${player.ovr} OVR player card" decoding="async" onerror="this.remove()">`);
+    const marks=[['club_badge',player.club_badge,player.club],['nation_flag',player.nation_flag,player.nation],['league_logo',player.league_logo,player.league]].filter(([,src])=>src).map(([kind,src,label])=>`<span class="player-detail-mark"><img src="${esc(src)}" alt="" loading="lazy"><small>${esc(label||kind)}</small></span>`).join('');
+    document.querySelector('#player-marks').innerHTML=marks;
     const pills = document.querySelectorAll('.player-info-pills span');
     pills[2].textContent = `Alt: ${(player.alternate_positions || []).join(', ') || '—'}`;
     document.querySelector('#player-overview').innerHTML = [
@@ -79,6 +82,8 @@ async function load() {
     } else document.querySelector('#player-shards').innerHTML = '<p class="player-loading">No shard-cost record is available.</p>';
     if (player.sell_price?.current_sell_price != null) document.querySelector('#market-status').innerHTML = `Current sell price: <strong class="player-live-price">${Number(player.sell_price.current_sell_price).toLocaleString()} ${esc(player.sell_price.currency)}</strong> · observed ${new Date(player.sell_price.observed_at).toLocaleDateString()} · <a href="${esc(player.sell_price.source_url)}" rel="nofollow">source</a>`;
     document.querySelector('#player-stats').innerHTML = statRows(player.stats?.stats, null);
+    const statsSource=document.querySelector('#stats-source');
+    if(player.stats?.source_url) statsSource.innerHTML=`Source: <a href="${esc(player.stats.source_url)}" rel="nofollow noopener" target="_blank">${esc(player.stats.source_name||'Verified source')}</a>${player.stats.verified_at?` · verified ${new Date(player.stats.verified_at).toLocaleDateString()}`:''}`;
     const ranks = player.ranks || [];
     if (ranks.length) {
       const rankNode = document.querySelector('#player-ranks');
@@ -133,4 +138,5 @@ load();
 .player-detail-grid>.player-panel:nth-child(3){grid-column:span 2}
 .player-related{margin-top:15px}
 @media(max-width:700px){.player-detail-head{min-height:0}.player-detail-art{min-height:235px}.player-detail-art img{max-height:235px}.player-detail-grid>.player-panel:nth-child(3){grid-column:auto}.player-panel{padding:16px}}
+.player-detail-marks{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.player-detail-mark{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;border:1px solid #284654;border-radius:999px;background:#08151ccc;color:#afc9d3;font-size:10px}.player-detail-mark img{width:20px;height:20px;object-fit:contain}.player-detail-mark small{font:700 9px/1.2 var(--mono)}
 </style>
