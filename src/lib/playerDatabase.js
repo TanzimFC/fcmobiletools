@@ -50,11 +50,26 @@ async function enrich(rows) {
   }));
 }
 
-async function readRpc(name) {\n  const result = await fetch(new URL('/rest/v1/rpc/' + name, SUPABASE_URL), {\n    method: 'POST',\n    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`, 'content-type': 'application/json', accept: 'application/json' },\n    body: '{}'\n  });\n  if (!result.ok) throw new Error(`Player filter request failed (${result.status}).`);\n  return result.json();\n}\n\nfunction setExactFilter(query, field, value) {\n  const clean = String(value || '').trim().slice(0, 100);\n  if (clean) query.set(field, `eq."${clean.replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"')}"`);\n}\n\nexport async function handlePlayerRequest(request, pathname) {
+async function readRpc(name) {
+  const result = await fetch(new URL('/rest/v1/rpc/' + name, SUPABASE_URL), {
+    method: 'POST',
+    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`, 'content-type': 'application/json', accept: 'application/json' },
+    body: '{}'
+  });
+  if (!result.ok) throw new Error(`Player filter request failed (${result.status}).`);
+  return result.json();
+}
+
+function setExactFilter(query, field, value) {
+  const clean = String(value || '').trim().slice(0, 100);
+  if (clean && !/[(),]/.test(clean)) query.set(field, 'eq.' + JSON.stringify(clean));
+}
+
+export async function handlePlayerRequest(request, pathname) {
   if (request.method !== 'GET') return response({ error: 'Method not allowed.' }, 405, { allow: 'GET' });
   try {
     if (pathname === '/api/players/filters') {
-      return response({ positions: ['CAM','CB','CDM','CF','CM','GK','LB','LM','LW','RB','RM','RW','ST'], source: SOURCE_PAGE });
+      return response({ ...(await readRpc('player_filter_options')), source: SOURCE_PAGE });
     }
     if (pathname === '/api/players' || pathname === '/api/players/') {
       const url = new URL(request.url);
@@ -67,8 +82,7 @@ async function readRpc(name) {\n  const result = await fetch(new URL('/rest/v1/r
       if (search) query.set('normalized_name', `ilike.*${search}*`);
       const position = (params.get('position') || '').toUpperCase();
       if (/^[A-Z]{1,4}$/.test(position)) query.set('position', `eq.${position}`);
-      const event = (params.get('event') || '').slice(0, 80);
-      if (event) query.set('event', `eq."${event.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+      for (const field of ['club', 'league', 'nation', 'event']) setExactFilter(query, field, params.get(field));
       const minOvr = Number(params.get('minOvr'));
       const maxOvr = Number(params.get('maxOvr'));
       const ovrFilters = [];
