@@ -316,6 +316,7 @@ const faqSchema = {
     const filterButtons = [...document.querySelectorAll('.redeem-filter')];
     const data = Array.isArray(redeemSearchData) ? redeemSearchData : [];
     let activeStatus = 'all';
+    const latestActiveCode = [...data].filter((item) => item.status === 'active').sort((a,b) => String(b.releaseDate || '').localeCompare(String(a.releaseDate || '')))[0]?.code || '';
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -359,7 +360,7 @@ const faqSchema = {
         return;
       }
       results.innerHTML = filtered.map((item, index) => {
-        const isLatest = data[0]?.code === item.code && item.status === 'active';
+        const isLatest = latestActiveCode === item.code && item.status === 'active';
         const label = item.status === 'active' ? 'Active' : item.status === 'scheduled' ? 'Scheduled' : 'Expired';
         return '<article class="search-code-card' + (isLatest ? ' latest-search-card' : '') + '">' +
           '<div class="search-card-top">' +
