@@ -152,7 +152,22 @@ function articleHTMLToMarkdown(html) {
     if(tag==='blockquote') return '\n\n> '+inner.replace(/\n+/g,'\n> ')+'\n\n';
     if(tag==='a') return '['+inner+']('+node.getAttribute('href')+')';
     if(tag==='img') return '\n\n!['+(node.getAttribute('alt')||'Article image')+']('+node.getAttribute('src')+')\n\n';
-    if(tag==='li') return '- '+inner+'\n';
+    if(tag==='code') return '<code>'+inner+'</code>';
+    if(tag==='pre') return '\n\n<pre><code>'+inner+'</code></pre>\n\n';
+    if(tag==='span') return node.getAttribute('style')?'<span style="'+node.getAttribute('style').replace(/"/g,'&quot;')+'">'+inner+'</span>':inner;
+    if(tag==='mark') return '<mark'+(node.getAttribute('data-color')?' data-color="'+node.getAttribute('data-color')+'"':'')+'>'+inner+'</mark>';
+    if(tag==='table'){
+      const rows=[...node.querySelectorAll('tr')].map(row=>[...row.children].map(cell=>String(cell.innerText||'').replace(/\|/g,'\\|').trim()));
+      if(!rows.length)return '';
+      const cols=Math.max(...rows.map(row=>row.length));
+      const normalized=rows.map(row=>Array.from({length:cols},(_,i)=>row[i]||''));
+      return '\n\n| '+normalized[0].join(' | ')+' |\n| '+normalized[0].map(()=> '---').join(' | ')+' |\n'+normalized.slice(1).map(row=>'| '+row.join(' | ')+' |').join('\n')+'\n\n';
+    }
+    if(tag==='li'){
+      const ordered=node.parentElement?.tagName?.toLowerCase()==='ol';
+      const index=ordered ? [...node.parentElement.children].indexOf(node)+1 : 0;
+      return (ordered?index+'. ':'- ')+inner+'\n';
+    }
     if(tag==='hr') return '\n\n---\n\n';
     if(tag==='br') return '\n';
     return inner;
