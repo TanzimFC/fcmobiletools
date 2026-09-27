@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { REDEEM_CODES, REDEEM_STATUS } from '../data/redeemCodes.js';
 
-const pageSize = 24;
+const pageSize = Math.max(REDEEM_CODES.length, 1);
 const url = Astro.url;
 const query = (url.searchParams.get('q') || '').trim();
 const filter = ['all', 'active', 'scheduled', 'expired'].includes(url.searchParams.get('status'))
@@ -142,7 +142,7 @@ const faqSchema = {
           </div>
           <div class="verified"><span class="verified-beacon"><i></i></span><div><b>Last verified</b><strong>{fmtDate(lastUpdated)}</strong></div></div></div>
 
-        
+
         <div class="live-grid">
           {activeCodes.length ? activeCodes.map((item, index) => {
             const status = statusInfo(item.status);
@@ -153,7 +153,7 @@ const faqSchema = {
                   {isLatest
                     ? <span class="latest-label"><i>✦</i> Latest code</span>
                     : <span class="card-number">{String(index + 1).padStart(2, '0')}</span>}
-                  <span class={\`status \${status.className}\`}><i></i>{status.label}</span>
+                  <span class={`status ${status.className}`}><i></i>{status.label}</span>
                 </div>
                 <div class="code-heading-row">
                   <code>{item.code}</code>
@@ -166,31 +166,21 @@ const faqSchema = {
                   </div>
                 </div>
                 <p class="card-meta">
-                  <span>Added {fmtDate(item.releaseDate)}</span>
-                  <span>•</span>
-                  <span>{item.region || 'Global'}</span>
-                  <span>•</span>
+                  <span>Added {fmtDate(item.releaseDate)}</span><span>•</span>
+                  <span>{item.region || 'Global'}</span><span>•</span>
                   <span>Checked {fmtDate(item.lastVerified)}</span>
                 </p>
                 <div class="card-actions">
                   <button type="button" class="copy-code" data-copy={item.code}>Copy code <span>⌘</span></button>
-                  <a
-                    href={'https://redeem.fcm.ea.com/?redeemCode=' + encodeURIComponent(item.code)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Redeem <span>↗</span>
-                  </a>
+                  <a href={`https://redeem.fcm.ea.com/?redeemCode=${encodeURIComponent(item.code)}`} target="_blank" rel="noopener noreferrer">Redeem <span>↗</span></a>
                 </div>
               </article>
             );
           }) : (
-            <div class="empty">
-              <strong>No active redeem codes right now</strong>
-              <span>Use the archive to browse scheduled and historical records</span>
-            </div>
+            <div class="empty"><strong>No active redeem codes right now</strong><span>Use the database below to browse historical records.</span></div>
           )}
         </div>
+
       </section>
 
       <section class="archive" id="archive">
@@ -198,7 +188,7 @@ const faqSchema = {
           <div>
             <span class="section-kicker">SEARCH THE DATABASE</span>
             <h2>FC Mobile code archive</h2>
-            <p>{matches.length} matching records across active, scheduled and expired codes</p>
+            <p><span id="redeem-count">{REDEEM_CODES.length}</span> records · active, scheduled and historical codes</p>
           </div>
           <a class="archive-link" href="#how-it-works">How redemption works <span>↓</span></a>
         </div>
@@ -206,7 +196,7 @@ const faqSchema = {
         <form class="controls" method="get" action="/redeem-codes">
           <label class="search">
             <span>⌕</span>
-            <input id="redeem-search-input" name="q" value={query} placeholder="Search code, reward, region or note" autocomplete="off" />
+            <input id="redeem-search" name="q" value={query} placeholder="Search code, reward, region or note" autocomplete="off" />
           </label>
           <div class="filters">
             {[
@@ -220,7 +210,7 @@ const faqSchema = {
           </div>
         </form>
 
-        <div class="archive-table" id="redeem-results-table">
+        <div class="archive-table">
           <div class="table-head">
             <span>Code</span><span>Reward</span><span>Added</span><span>Checked</span><span>Status</span><span></span>
           </div>
@@ -228,7 +218,7 @@ const faqSchema = {
           {pageItems.length ? pageItems.map((item) => {
             const status = statusInfo(item.status);
             return (
-              <article class="table-row" data-redeem-row data-search={item.code + " " + item.reward + " " + (item.region || "") + " " + (item.notes || "")}>
+              <article class="table-row" data-redeem-row data-search={item.code + " " + item.reward + " " + (item.region || "") + " " + (item.notes || "") + " " + (item.status || "")}>
                 <div class="table-code">
                   <code>{item.code}</code>
                   <button type="button" data-copy={item.code} aria-label={`Copy ${item.code}`}>Copy</button>
@@ -500,55 +490,36 @@ const faqSchema = {
 .codes-page .reward-chips{display:flex;flex-wrap:wrap;gap:7px}
 .codes-page .reward-chips span{padding:7px 9px;border:1px solid rgba(86,214,255,.14);border-radius:999px;background:rgba(86,214,255,.055);color:#cceef6;font:800 8px/1.2 var(--font-body)}
 .codes-page .card-meta{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 18px;color:#708a97;font:600 8px/1.4 var(--mono)}
-.codes-page #redeem-search-input:focus{outline:none}
-.codes-page [data-redeem-row][hidden]{display:none}
-.codes-page .search-match{background:rgba(86,214,255,.18);color:#e8fbff;border-radius:3px;padding:0 2px}
-@media(max-width:760px){
-  .codes-page .latest-card{padding:18px}
-  .codes-page .code-heading-row code{flex-basis:100%}
-}
+.codes-page .archive-table .table-row[hidden]{display:none}
+@media(max-width:760px){.codes-page .latest-card{padding:18px}.codes-page .code-heading-row code{flex-basis:100%}}
 </style>
 <script is="inline">
 (() => {
-  const input = document.getElementById('redeem-search-input');
+  const input = document.getElementById('redeem-search');
   const rows = Array.from(document.querySelectorAll('[data-redeem-row]'));
+  const count = document.getElementById('redeem-count');
   if (!input || !rows.length) return;
-
-  const esc = (value) => String(value).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const originals = new Map();
-
-  const highlight = (node, query) => {
-    if (!node) return;
-    if (!originals.has(node)) originals.set(node, node.textContent || '');
-    const original = originals.get(node);
-    const terms = query.split(/\s+/).filter(Boolean);
-    if (!terms.length) {
-      node.textContent = original;
-      return;
-    }
-    let html = esc(original);
-    terms.forEach((term) => {
-      const safe = esc(term).replace(/[.*+?^\x24{}()|[\]\\]/g, '\\\\$&');
-      html = html.replace(new RegExp('(' + safe + ')', 'ig'), '<mark class="search-match">$1</mark>');
-    });
-    node.innerHTML = html;
-  };
 
   const apply = () => {
     const query = (input.value || '').trim().toLowerCase();
     const words = query.split(/\s+/).filter(Boolean);
+    let visible = 0;
     rows.forEach((row) => {
       const hay = (row.dataset.search || '').toLowerCase();
       const show = words.every((word) => hay.includes(word));
       row.hidden = !show;
-      if (show) {
-        highlight(row.querySelector('.table-code code'), query);
-        highlight(row.querySelector('.table-reward strong'), query);
-      }
+      if (show) visible += 1;
     });
+    if (count) count.textContent = query ? visible : rows.length;
   };
 
   input.addEventListener('input', apply);
+  window.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      input.focus();
+    }
+  });
   apply();
 })();
 </script>
