@@ -366,9 +366,24 @@ function articleEditor(item) {
     +'</aside></div></div>';
   $('#articleType').value=a.type||'guide';
   $('#revisionHistory')?.addEventListener('click',()=>revisionHistory(a.id));
-  $('#articleEditor').innerHTML=articleMarkdownToHTML(item?.body||'');
   const editor=$('#articleEditor');
-  loadTipTap(editor,editor.innerHTML).then(instance=>{if(instance){editor.contentEditable='true';}});
+  editor.dataset.editorReady='false';
+  $('#articleSave').disabled=true;$('#articleReview').disabled=true;$('#articlePublish')?.setAttribute('disabled','true');
+  const hydrateArticleEditor=async()=>{
+    const markdown=String(item?.body||'');
+    try{
+      const markedModule=await import('https://esm.sh/marked@14.1.3');
+      const marked=markedModule.marked||markedModule.default||markedModule;
+      editor.innerHTML=marked.parse(markdown,{gfm:true,breaks:false});
+    }catch{
+      editor.innerHTML=articleMarkdownToHTML(markdown);
+    }
+    const instance=await loadTipTap(editor,editor.innerHTML);
+    if(instance)editor.contentEditable='true';
+    editor.dataset.editorReady='true';
+    $('#articleSave').disabled=false;$('#articleReview').disabled=false;$('#articlePublish')?.removeAttribute('disabled');
+  };
+  hydrateArticleEditor().catch(err=>{editor.innerHTML=articleMarkdownToHTML(item?.body||'');editor.dataset.editorReady='true';$('#articleSave').disabled=false;$('#articleReview').disabled=false;$('#articlePublish')?.removeAttribute('disabled');console.warn(err)});
   window.articleEditorDirty=()=>dirty;
   const setStatusUI=()=>{
     const st=$('#articleStatus').value;
