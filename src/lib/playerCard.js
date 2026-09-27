@@ -11,6 +11,13 @@ export function renderPlayerCard(player = {}) {
   const tier = Number(ovr) >= 120 ? 'legend' : Number(ovr) >= 116 ? 'elite' : 'standard';
   const event = String(player.event || 'FC Mobile');
   const image = imagePath(player.image);
+  const background = imagePath(player.card_background);
+  const cardStyle = background ? ` style="--player-card-bg:url(&quot;${esc(background)}&quot;)"` : '';
+  const identityMarks = [
+    ['club_badge', player.club_badge, player.club],
+    ['nation_flag', player.nation_flag, player.nation],
+    ['league_logo', player.league_logo, player.league],
+  ].filter(([, src]) => imagePath(src)).map(([kind, src, label]) => `<img class="player-card-mark" src="${esc(imagePath(src))}" alt="${esc(label || kind.replace('_',' '))}" title="${esc(label || '')}" loading="lazy" decoding="async">`).join('');
   const portrait = image
     ? `<img class="player-card-image" src="${esc(image)}" alt="${esc(name)} player card" loading="lazy" decoding="async" onerror="this.remove();this.closest('.player-card-art')?.classList.add('image-missing')">`
     : '';
@@ -18,10 +25,10 @@ export function renderPlayerCard(player = {}) {
     ? `<span class="player-card-shards"><img src="/assets/player-ui/shards.svg" alt="" loading="lazy">${Number(player.shard_cost.shard_cost).toLocaleString()}</span>`
     : '';
   return `<a class="player-card-shell" href="/player/${encodeURIComponent(player.slug || '')}/" data-player-card="${esc(player.player_id || '')}">
-    <div class="player-card-art player-card-tier-${tier}">
+    <div class="player-card-art player-card-tier-${tier}"${cardStyle}>
       <div class="player-card-topline"><span>FC MOBILE</span><span class="player-card-edition">PLAYER DATABASE</span></div>
       <div class="player-card-rating"><b>${esc(ovr)}</b><small>OVR</small><strong>${esc(player.position || '—')}</strong></div>
-      <div class="player-card-emblem" aria-hidden="true">FC</div>
+      <div class="player-card-emblem" aria-label="${esc([player.club,player.nation,player.league].filter(Boolean).join(", ") || "Club, nation and league marks")}">${identityMarks || "FC"}</div>
       <div class="player-card-portrait" aria-label="${esc(name)} player card artwork">
         <div class="player-card-monogram" aria-hidden="true">${esc(initials)}</div>
         ${portrait}

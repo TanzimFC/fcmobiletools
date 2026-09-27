@@ -37,17 +37,28 @@ async function observations(rows, table, columns) {
 
 async function enrich(rows) {
   const [assets, shards, prices] = await Promise.all([
-    readTable('player_assets', new URLSearchParams({ select: 'player_id,public_url,local_path', player_id: playerIdsFilter(rows), asset_type: 'eq.player_image' })),
+    readTable('player_assets', new URLSearchParams({ select: 'player_id,asset_type,public_url,local_path', player_id: playerIdsFilter(rows) })),
     observations(rows, 'player_shard_costs', 'player_id,shard_cost,shard_type,event,source_name,source_url,observed_at'),
     observations(rows, 'player_prices', 'player_id,current_sell_price,lowest_sell_price,highest_sell_price,currency,source_name,source_url,usage_policy,observed_at'),
   ]);
-  const imageById = new Map(assets.rows.map((x) => [x.player_id, x.local_path || x.public_url]));
-  return rows.map((player) => ({
+  const assetsById = new Map();
+  for (const asset of assets.rows) {
+    const mapped = assetsById.get(asset.player_id) || {};
+    if (asset.asset_type) mapped[asset.asset_type] = asset.local_path || asset.public_url || null;
+    assetsById.set(asset.player_id, mapped);
+  }
+  return rows.map((player) => {
+    const mapped = assetsById.get(player.player_id) || {};
+    return {
     ...player,
-    image: imageById.get(player.player_id) || null,
+    image: mapped.player_image || null,
+    card_background: mapped.card_background || null,
+    nation_flag: mapped.nation_flag || null,
+    club_badge: mapped.club_badge || null,
+    league_logo: mapped.league_logo || null,
     shard_cost: shards.get(player.player_id) || null,
     sell_price: prices.get(player.player_id) || null,
-  }));
+  }; });
 }
 
 async function readRpc(name) {
