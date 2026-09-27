@@ -35,31 +35,34 @@ async function observations(rows, table, columns) {
   return latest;
 }
 
+function assetMatchKey(value) {
+  return String(value || '').normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 async function enrich(rows) {
   const [assets, shards, prices] = await Promise.all([
     readTable('player_assets', new URLSearchParams({ select: 'player_id,asset_type,public_url,local_path', player_id: playerIdsFilter(rows) })),
     observations(rows, 'player_shard_costs', 'player_id,shard_cost,shard_type,event,source_name,source_url,observed_at'),
     observations(rows, 'player_prices', 'player_id,current_sell_price,lowest_sell_price,highest_sell_price,currency,source_name,source_url,usage_policy,observed_at'),
   ]);
-  const assetsById = new Map();
-  for (const asset of assets.rows) {
-    const mapped = assetsById.get(asset.player_id) || {};
-    const assetType = asset.asset_type || 'player_image';
-    mapped[assetType] = asset.local_path || asset.public_url || null;
-    assetsById.set(asset.player_id, mapped);
+  const keys = new Map();
+  for (const p of rows) for (const [field,value] of Object.entries({event:p.event,club:p.club,league:p.league,nation:p.nation,player_id:p.player_id})) {
+    const key=assetMatchKey(value); if(!key)continue;
+    if(!keys.has(field))keys.set(field,new Set()); keys.get(field).add(key);
   }
-  return rows.map((player) => {
-    const mapped = assetsById.get(player.player_id) || {};
-    return {
-    ...player,
-    image: mapped.player_image || null,
-    card_background: mapped.card_background || null,
-    nation_flag: mapped.nation_flag || null,
-    club_badge: mapped.club_badge || null,
-    league_logo: mapped.league_logo || null,
-    shard_cost: shards.get(player.player_id) || null,
-    sell_price: prices.get(player.player_id) || null,
-  }; });
+  const globalRows=(await Promise.all([...keys].map(async([field,values])=>{
+    try {
+      const q=new URLSearchParams({select:'asset_type,match_field,match_key,public_url,local_path',player_id:'is.null',match_field:'eq.'+field,match_key:'in.('+[...values].map(x=>'"'+x.replace(/"/g,'\\"')+'"').join(',')+')'});
+      return (await readTable('player_assets',q)).rows;
+    } catch { return []; }
+  }))).flat();
+  const global=new Map(globalRows.map(a=>[a.asset_type+'|'+a.match_field+'|'+a.match_key,a.local_path||a.public_url||null]));
+  const byId=new Map();
+  for(const a of assets.rows){const m=byId.get(a.player_id)||{};m[a.asset_type||'player_image']=a.local_path||a.public_url||null;byId.set(a.player_id,m);}
+  return rows.map(player=>{
+    const m=byId.get(player.player_id)||{}, get=(type,field,value)=>global.get(type+'|'+field+'|'+assetMatchKey(value))||null;
+    return {...player,image:m.player_image||get('player_image','player_id',player.player_id),card_background:m.card_background||get('card_background','event',player.event),nation_flag:m.nation_flag||get('nation_flag','nation',player.nation),club_badge:m.club_badge||get('club_badge','club',player.club),league_logo:m.league_logo||get('league_logo','league',player.league),shard_cost:shards.get(player.player_id)||null,sell_price:prices.get(player.player_id)||null};
+  });
 }
 
 async function readRpc(name) {
