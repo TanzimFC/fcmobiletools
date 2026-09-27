@@ -38,6 +38,23 @@ export async function handlePlayerAdminRequest(request, path, env) {
   };
   const upsert = (table, rows, conflict) => rows.length ? db(table, '?' + new URLSearchParams({ on_conflict: conflict }), { method:'POST', body:rows, prefer:'resolution=merge-duplicates,return=minimal' }) : null;
   try {
+    if (request.method === 'POST' && path === '/player-database/assets') {
+      const input = await requestJson(), assets = Array.isArray(input) ? input : input.assets;
+      const kinds = new Set(['player_image','card_background','nation_flag','club_badge','league_logo','event_art','playstyle','trait','rank','currency','ui_icon']);
+      const fields = new Set(['event','club','nation','league','player_id','playstyle','trait','rank']);
+      if (!Array.isArray(assets) || !assets.length || assets.length > 500) return reply({ error:'Import 1 to 500 asset mappings per request.' },400);
+      const rows = assets.map(asset => {
+        if (!asset || typeof asset !== 'object') throw new Error('Each asset mapping must be an object.');
+        const asset_type=String(asset.asset_type||''), match_field=String(asset.match_field||''), match_key=slugify(asset.match_key||''), asset_key=String(asset.asset_key||'').slice(0,160);
+        if (!kinds.has(asset_type)||!fields.has(match_field)||!match_key||!asset_key) throw new Error('Each mapping needs asset_key, valid asset_type, match_field and match_key.');
+        if (asset.local_path && !String(asset.local_path).startsWith('/assets/')) throw new Error('Local paths must start with /assets/.');
+        if (!asset.local_path && !/^https:\/\//i.test(String(asset.public_url||''))) throw new Error('Provide an approved local path or HTTPS URL.');
+        return {asset_key,player_id:null,asset_type,match_field,match_key,local_path:asset.local_path||null,public_url:asset.public_url||null,source_name:String(asset.source_name||'').slice(0,120),source_url:String(asset.source_url||'').slice(0,500),license:String(asset.license||'unverified').slice(0,120),attribution:asset.attribution||null,checksum_sha256:asset.checksum_sha256||null};
+      });
+      if(new Set(rows.map(row=>row.asset_key)).size!==rows.length)return reply({error:'Duplicate asset_key values are not allowed.'},400);
+      await upsert('player_assets',rows,'asset_key');
+      return reply({ok:true,imported:rows.length});
+    }
     if (request.method === 'GET' && path === '/player-database') {
       const url = new URL(request.url), limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 50)), offset = Math.max(0, Number(url.searchParams.get('offset')) || 0), term = String(url.searchParams.get('q') || '').slice(0,80);
       const query = new URLSearchParams({ select:'player_id,name,slug,ovr,position,club,league,nation,event,is_active', is_active:'eq.true', order:'ovr.desc,name.asc', limit:String(limit), offset:String(offset) });
@@ -75,7 +92,7 @@ export async function handlePlayerAdminRequest(request, path, env) {
     const assetRows = incoming.flatMap((row,i) => Object.entries(row.assets || {}).flatMap(([kind,value]) => {
       const asset = value && typeof value === 'object' ? value : { public_url:value };
       if (!asset.public_url && !asset.local_path) return [];
-      return [{ asset_key:String(asset.asset_key || (kind === 'player_image' ? 'player-card-' : kind + '-') + players[i].player_id), player_id:players[i].player_id, asset_type:kind, local_path:asset.local_path || null, public_url:asset.public_url || null, source_name:asset.source_name || row.source?.name || row.source_name || null, source_url:asset.source_url || row.source?.url || row.source_url || null, license:asset.license || row.source?.usage_policy || 'unverified', attribution:asset.attribution || null, checksum_sha256:asset.checksum_sha256 || null }];
+      return [{ asset_key:String(asset.asset_key || (kind === 'player_image' ? 'player-card-' : kind + '-') + players[i].player_id), player_id:players[i].player_id, asset_type:kind, match_field:asset.match_field || null, match_key:asset.match_key ? slugify(asset.match_key) : null, local_path:asset.local_path || null, public_url:asset.public_url || null, source_name:asset.source_name || row.source?.name || row.source_name || null, source_url:asset.source_url || row.source?.url || row.source_url || null, license:asset.license || row.source?.usage_policy || 'unverified', attribution:asset.attribution || null, checksum_sha256:asset.checksum_sha256 || null }];
     }));
     await upsert('player_assets', assetRows, 'asset_key');
     const abilityRows = incoming.flatMap(row => ['playstyles','traits'].flatMap(type => (Array.isArray(row[type]) ? row[type] : []).map(item => ({ name:String(item.name || '').trim(), slug:slugify(item.slug || item.name) + (item.is_plus ? '-plus' : ''), ability_type:type === 'playstyles' ? 'playstyle' : 'trait', is_plus:Boolean(item.is_plus), description:item.description || null, asset_key:item.asset_key || null })).filter(item => item.name && item.slug)));
