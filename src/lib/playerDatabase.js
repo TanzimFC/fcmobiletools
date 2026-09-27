@@ -37,11 +37,11 @@ async function observations(rows, table, columns) {
 
 async function enrich(rows) {
   const [assets, shards, prices] = await Promise.all([
-    readTable('player_assets', new URLSearchParams({ select: 'player_id,public_url', player_id: playerIdsFilter(rows), asset_type: 'eq.player_image' })),
+    readTable('player_assets', new URLSearchParams({ select: 'player_id,public_url,local_path', player_id: playerIdsFilter(rows), asset_type: 'eq.player_image' })),
     observations(rows, 'player_shard_costs', 'player_id,shard_cost,shard_type,event,source_name,source_url,observed_at'),
     observations(rows, 'player_prices', 'player_id,current_sell_price,lowest_sell_price,highest_sell_price,currency,source_name,source_url,usage_policy,observed_at'),
   ]);
-  const imageById = new Map(assets.rows.map((x) => [x.player_id, x.public_url]));
+  const imageById = new Map(assets.rows.map((x) => [x.player_id, x.local_path || x.public_url]));
   return rows.map((player) => ({
     ...player,
     image: imageById.get(player.player_id) || null,
@@ -50,7 +50,7 @@ async function enrich(rows) {
   }));
 }
 
-export async function handlePlayerRequest(request, pathname) {
+async function readRpc(name) {\n  const result = await fetch(new URL('/rest/v1/rpc/' + name, SUPABASE_URL), {\n    method: 'POST',\n    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`, 'content-type': 'application/json', accept: 'application/json' },\n    body: '{}'\n  });\n  if (!result.ok) throw new Error(`Player filter request failed (${result.status}).`);\n  return result.json();\n}\n\nfunction setExactFilter(query, field, value) {\n  const clean = String(value || '').trim().slice(0, 100);\n  if (clean) query.set(field, `eq."${clean.replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"')}"`);\n}\n\nexport async function handlePlayerRequest(request, pathname) {
   if (request.method !== 'GET') return response({ error: 'Method not allowed.' }, 405, { allow: 'GET' });
   try {
     if (pathname === '/api/players/filters') {
@@ -62,7 +62,7 @@ export async function handlePlayerRequest(request, pathname) {
       const limit = Math.min(100, Math.max(1, Number(params.get('limit')) || 48));
       const offset = Math.max(0, Math.min(100000, Number(params.get('offset')) || 0));
       const sortMap = { 'ovr-desc': 'ovr.desc,name.asc', 'ovr-asc': 'ovr.asc,name.asc', 'name-asc': 'name.asc', 'name-desc': 'name.desc' };
-      const query = new URLSearchParams({ select: 'player_id,name,slug,ovr,position,alternate_positions,event', is_active: 'eq.true', order: sortMap[params.get('sort')] || sortMap['ovr-desc'] });
+      const query = new URLSearchParams({ select: 'player_id,name,slug,ovr,position,alternate_positions,club,league,nation,event', is_active: 'eq.true', order: sortMap[params.get('sort')] || sortMap['ovr-desc'] });
       const search = (params.get('q') || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 -]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
       if (search) query.set('normalized_name', `ilike.*${search}*`);
       const position = (params.get('position') || '').toUpperCase();
