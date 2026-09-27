@@ -16,18 +16,18 @@ const totalDays=NATIONS_STORY.reduce((sum,nation)=>sum+nation.days.length,0);
 </BaseLayout>
 <script define:vars={{searchIndex,themeMap}}>
 const input=document.querySelector('#question-finder'),results=document.querySelector('#finder-results'),empty=document.querySelector('#finder-empty'),clear=document.querySelector('#clear-finder'),status=document.querySelector('#finder-status'),data=searchIndex;
-const esc=v=>String(v).replace(/[&<>\\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c));
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const escapeRegExp=v=>v.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&');
 function highlight(text,query){
-  const source=esc(text);
-  const terms=[...new Set(query.toLowerCase().split(/\\s+/).filter(Boolean))].sort((a,b)=>b.length-a.length);
-  if(!terms.length)return source;
-  const pattern=new RegExp('('+terms.map(term=>term.replace(/[.*+?^{}()|[\\]\\\\]/g,'\\\\$&')).join('|')+')','ig');
-  return source.replace(pattern,'<mark>$1</mark>');
+  let output=esc(text);
+  const terms=[...new Set(query.toLowerCase().split(/\s+/).filter(Boolean))].sort((a,b)=>b.length-a.length);
+  for(const term of terms){ output=output.replace(new RegExp('('+escapeRegExp(esc(term))+')','ig'),'<mark>$1</mark>'); }
+  return output;
 }
 function render(value){
   const query=value.trim().toLowerCase();
   if(!query){results.innerHTML='';empty.hidden=false;status.textContent=data.length+' questions indexed';return}
-  const words=query.split(/\\s+/).filter(Boolean);
+  const words=query.split(/\s+/).filter(Boolean);
   const matches=data.filter(item=>{const hay=(item.nation+' '+item.question+' '+item.answer).toLowerCase();return words.every(word=>hay.includes(word))}).slice(0,12);
   empty.hidden=true;
   status.textContent=matches.length?matches.length+' matching questions':'No matching question';
