@@ -321,16 +321,14 @@ const faqSchema = {
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[c]));
 
-    const escapeRegExp = (value) => String(value).replace(/[.*+?^\x24{\}()|[\]\\]/g, '\\x5c\\x24&');
-
     const highlight = (text, query) => {
-      const safe = escapeHtml(text);
-      const terms = [...new Set(query.toLowerCase().split(/\s+/).filter(Boolean))].sort((a,b) => b.length - a.length);
-      let out = safe;
-      for (const term of terms) {
-        out = out.replace(new RegExp('(' + escapeRegExp(escapeHtml(term)) + ')', 'ig'), '<mark>$1</mark>');
-      }
-      return out;
+      const terms = [...new Set(query.toLowerCase().split(/\s+/).filter(Boolean))];
+      return escapeHtml(text).split(/(\s+)/).map((part) => {
+        if (!part.trim()) return part;
+        return terms.some((term) => part.toLowerCase().includes(term))
+          ? '<mark>' + part + '</mark>'
+          : part;
+      }).join('');
     };
 
     const fmt = (value) => {
