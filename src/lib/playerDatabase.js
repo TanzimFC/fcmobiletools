@@ -110,7 +110,7 @@ export async function handlePlayerRequest(request, pathname) {
     if (pathname.startsWith('/api/players/')) {
       const slug = decodeURIComponent(pathname.slice('/api/players/'.length)).replace(/[^a-zA-Z0-9-]/g, '').slice(0, 120);
       if (!slug) return response({ error: 'Player not found.' }, 404);
-      const playerQuery = new URLSearchParams({ select: 'player_id,name,slug,ovr,position,alternate_positions,event,skill_moves,weak_foot,strong_foot,strong_foot_side,work_rate_attack,work_rate_defense,height_cm,weight_kg,date_added,is_untradable', slug: `eq.${slug}`, is_active: 'eq.true', limit: '1' });
+      const playerQuery = new URLSearchParams({ select: 'player_id,name,slug,ovr,position,alternate_positions,club,league,nation,event,skill_moves,weak_foot,strong_foot,strong_foot_side,work_rate_attack,work_rate_defense,height_cm,weight_kg,date_added,is_untradable', slug: `eq.${slug}`, is_active: 'eq.true', limit: '1' });
       const { rows } = await readTable('players', playerQuery);
       if (!rows[0]) return response({ error: 'Player not found.' }, 404);
       const player = rows[0];
