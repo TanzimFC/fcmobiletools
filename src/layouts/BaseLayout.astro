@@ -44,6 +44,8 @@ const siteSchema = {
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
   <meta property="og:title" content={title} />
   <meta property="og:site_name" content="FCMobiletools" />
   <meta property="og:description" content={description} />
@@ -82,6 +84,30 @@ const siteSchema = {
           loader.classList.remove('done');
         }
       }, { capture: true });
+    })();
+  </script>
+  <script is:inline>
+    (() => {
+      const markInvalid = (field) => {
+        if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) return;
+        if (field.validity?.valid) field.removeAttribute('aria-invalid');
+        else field.setAttribute('aria-invalid','true');
+      };
+      document.addEventListener('invalid', (event) => markInvalid(event.target), true);
+      document.addEventListener('input', (event) => markInvalid(event.target));
+      document.querySelectorAll('form').forEach((form) => {
+        form.addEventListener('submit', () => {
+          form.classList.add('was-validated');
+          const submitter = form.querySelector('button[type="submit"],input[type="submit"]');
+          if (submitter) {
+            submitter.setAttribute('aria-busy','true');
+            window.setTimeout(() => submitter.removeAttribute('aria-busy'), 12000);
+          }
+        });
+      });
+      window.addEventListener('pageshow', () => {
+        document.querySelectorAll('[aria-busy="true"]').forEach((element) => element.removeAttribute('aria-busy'));
+      });
     })();
   </script>
   <style is="global">
