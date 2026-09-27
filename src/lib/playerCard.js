@@ -1,8 +1,35 @@
 const esc = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+const imagePath = (value) => {
+  const url = String(value || '').trim();
+  return /^https:\/\//i.test(url) || /^\/assets\//.test(url) ? url : '';
+};
 
-export function renderPlayerCard(player) {
-  const initials = player.name.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
-  const image = player.image ? `<img src="${esc(player.image)}" alt="${esc(player.name)} ${player.ovr} OVR player card" loading="lazy" decoding="async" onerror="this.remove()">` : '';
-  const shards = player.shard_cost ? `<span class="player-card-shards">✦ ${Number(player.shard_cost.shard_cost).toLocaleString()} shards</span>` : '';
-  return `<a class="player-card-shell" href="/player/${encodeURIComponent(player.slug)}/"><div class="player-card-art"><div class="player-card-fallback" aria-hidden="true">${esc(initials)}</div>${image}<span class="player-card-ovr"><b>${player.ovr}</b><small>OVR</small></span><span class="player-card-position">${esc(player.position)}</span>${shards}</div><div class="player-card-copy"><h2>${esc(player.name)}</h2><p>${esc(player.event || 'FC Mobile player')}</p></div></a>`;
+export function renderPlayerCard(player = {}) {
+  const name = String(player.name || 'Unknown player');
+  const initials = name.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'FC';
+  const ovr = Number.isInteger(Number(player.ovr)) ? Number(player.ovr) : '—';
+  const tier = Number(ovr) >= 120 ? 'legend' : Number(ovr) >= 116 ? 'elite' : 'standard';
+  const event = String(player.event || 'FC Mobile');
+  const image = imagePath(player.image);
+  const portrait = image
+    ? `<img class="player-card-image" src="${esc(image)}" alt="${esc(name)} player card" loading="lazy" decoding="async" onerror="this.remove();this.closest('.player-card-art')?.classList.add('image-missing')">`
+    : '';
+  const shards = player.shard_cost
+    ? `<span class="player-card-shards"><img src="/assets/player-ui/shards.svg" alt="" loading="lazy">${Number(player.shard_cost.shard_cost).toLocaleString()}</span>`
+    : '';
+  return `<a class="player-card-shell" href="/player/${encodeURIComponent(player.slug || '')}/" data-player-card="${esc(player.player_id || '')}">
+    <div class="player-card-art player-card-tier-${tier}">
+      <div class="player-card-topline"><span>FC MOBILE</span><span class="player-card-edition">PLAYER DATABASE</span></div>
+      <div class="player-card-rating"><b>${esc(ovr)}</b><small>OVR</small><strong>${esc(player.position || '—')}</strong></div>
+      <div class="player-card-emblem" aria-hidden="true">FC</div>
+      <div class="player-card-portrait" aria-label="${esc(name)} player card artwork">
+        <div class="player-card-monogram" aria-hidden="true">${esc(initials)}</div>
+        ${portrait}
+      </div>
+      <div class="player-card-identity"><strong>${esc(name)}</strong><span>${esc(event)}</span></div>
+      <div class="player-card-footline"><span>FCMOBILETOOLS</span><span>${esc(player.position || 'PLAYER')}</span></div>
+      ${shards}
+    </div>
+    <div class="player-card-copy"><h2>${esc(name)}</h2><p>${esc(event)}</p></div>
+  </a>`;
 }
