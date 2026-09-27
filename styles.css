@@ -395,3 +395,41 @@ button{color:inherit}
     font-size:5px;
   }
 }
+
+
+/* Phase 8 — hidden UI quality + performance safeguards */
+:where(img){max-width:100%;height:auto}
+:where(input,select,textarea):focus-visible{
+  outline:2px solid var(--primary);
+  outline-offset:2px;
+  border-color:rgba(76,201,255,.52);
+  box-shadow:0 0 0 4px rgba(76,201,255,.075)
+}
+:where(form.was-validated) :where(input,select,textarea):invalid,
+:where(input,select,textarea[aria-invalid="true"]){
+  border-color:rgba(255,112,112,.82);
+  box-shadow:0 0 0 3px rgba(255,112,112,.09)
+}
+:where(button,.btn,.premium-button){-webkit-tap-highlight-color:transparent}
+:where(button,.btn,.premium-button):disabled{cursor:wait;opacity:.72}
+:where(.btn,.premium-button)[aria-busy="true"]{
+  position:relative;pointer-events:none;cursor:wait
+}
+:where(.btn,.premium-button)[aria-busy="true"]::before{
+  content:"";display:block;width:13px;height:13px;flex:0 0 13px;
+  border:2px solid currentColor;border-right-color:transparent;border-radius:50%;
+  animation:phase8-button-spin .7s linear infinite
+}
+@keyframes phase8-button-spin{to{transform:rotate(360deg)}}
+:where(.feature-card,.tool-card,.article-card,.blog-card,.premium-card,.result-card){
+  border-radius:18px;
+  box-shadow:var(--shadow-sm)
+}
+:where(.feature-card,.tool-card,.article-card,.blog-card,.premium-card,.result-card):hover{
+  box-shadow:var(--shadow-md)
+}
+:where(.feature-grid,.article-grid,.blog-list){align-items:stretch}
+:where(.feature-grid,.article-grid,.blog-list) > :where(.feature-card,.article-card,.blog-card){height:100%}
+@media(prefers-reduced-motion:reduce){
+  :where(.btn,.premium-button)[aria-busy="true"]::before{animation:none}
+}
