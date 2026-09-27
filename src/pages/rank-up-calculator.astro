@@ -22,103 +22,104 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
 >
   <main class="rank-page">
     <section class="hero">
-      <div class="shell">
+      <div class="hero-backdrop"></div>
+      <div class="shell hero-inner">
         <div class="crumb"><a href="/">FCMOBILETOOLS</a><span>/</span><span>Rank Up Calculator</span></div>
-
         <div class="hero-layout">
           <div class="hero-copy">
-            <span class="eyebrow">FC MOBILE / RANK LAB</span>
+            <div class="hero-kicker"><span></span>RANK LAB / FC MOBILE</div>
             <h1>Rank Up <em>Calculator</em></h1>
-            <p>Plan the exact upgrade route for your player. Set the Base OVR, tap the current rank, choose the destination, and get the RP total instantly.</p>
-            <div class="hero-meta">
-              <span>LIVE CALCULATOR</span>
+            <p>Build the exact upgrade route for your player. Set the Base OVR, select the current rank, select the target rank, and get the required RP instantly.</p>
+            <div class="hero-pills">
+              <span>LIVE CALCULATION</span>
               <span>STATIC RANK ART</span>
               <span>RP BREAKDOWN</span>
             </div>
           </div>
 
-          <div class="hero-rank" aria-hidden="true">
-            <div class="hero-ring hero-ring-one"></div>
-            <div class="hero-ring hero-ring-two"></div>
-            <div class="hero-rank-core"><img src={RANK_ICONS[5]} alt="" /></div>
-            <div class="hero-rank-label"><strong>Orange</strong><span>Maximum rank</span></div>
+          <div class="hero-display" aria-hidden="true">
+            <div class="hero-display-grid"></div>
+            <div class="hero-ring ring-a"></div>
+            <div class="hero-ring ring-b"></div>
+            <div class="hero-rank-art"><img src={RANK_ICONS[5]} alt="" /></div>
+            <div class="hero-display-caption">
+              <span>MAXIMUM RANK</span>
+              <strong>ORANGE</strong>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="shell content">
-      <div class="planner">
-        <div class="planner-topline"></div>
-
-        <header class="planner-head">
+    <section class="shell app">
+      <div class="workspace">
+        <div class="workspace-top">
           <div>
-            <span class="eyebrow">RANK UP PLANNER</span>
-            <h2>Build the upgrade</h2>
-            <p>Everything updates as you change the selection.</p>
+            <span class="section-kicker">RANK UP PLANNER</span>
+            <h2>Build your upgrade path</h2>
           </div>
-          <div class="status-badge"><i></i><span>LIVE</span></div>
-        </header>
-
-        <div class="inputs">
-          <label class="input-card">
-            <div class="input-label">
-              <span>BASE OVR</span>
-              <small>PLAYER BASE</small>
-            </div>
-            <div class="input-control">
-              <input id="base" type="number" min="0" max="150" value="110" inputmode="numeric" aria-label="Base OVR" />
-              <span>OVR</span>
-            </div>
-          </label>
-
-          <label class="input-card optional">
-            <div class="input-label">
-              <span>AVAILABLE RP</span>
-              <small>OPTIONAL</small>
-            </div>
-            <div class="input-control">
-              <input id="available" type="number" min="0" placeholder="—" inputmode="numeric" aria-label="Available Rank Up Points" />
-              <span>RP</span>
-            </div>
-          </label>
+          <div class="workspace-status"><i></i><span>CALCULATOR ACTIVE</span></div>
         </div>
 
-        <section class="rank-picker">
-          <div class="picker-head">
-            <div>
-              <span class="eyebrow">RANK PATH</span>
-              <h3>Choose the starting and finishing rank</h3>
-              <p>Selecting a rank creates the route automatically.</p>
+        <div class="workspace-controls">
+          <label class="control">
+            <span>BASE OVR</span>
+            <div class="control-field">
+              <input id="base" type="number" min="0" max="150" value="110" inputmode="numeric" />
+              <small>OVR</small>
             </div>
-            <div class="picker-route">
+          </label>
+
+          <label class="control">
+            <span>AVAILABLE RP <em>OPTIONAL</em></span>
+            <div class="control-field">
+              <input id="available" type="number" min="0" placeholder="—" inputmode="numeric" />
+              <small>RP</small>
+            </div>
+          </label>
+
+          <div class="control-note">
+            <span>HOW IT WORKS</span>
+            <p>Choose your starting rank and destination. Only valid routes stay active.</p>
+          </div>
+        </div>
+
+        <section class="selector-area">
+          <div class="selector-heading">
+            <div>
+              <span class="section-kicker">RANK PATH</span>
+              <h3>Choose the starting and finishing rank</h3>
+            </div>
+            <div class="route-chip">
               <span id="routeFrom">Base</span>
-              <i></i>
+              <b>→</b>
               <span id="routeTo">Orange</span>
             </div>
           </div>
 
-          <div class="rank-stage">
-            <div class="rank-column">
-              <div class="rank-column-head">
-                <span class="step-index">01</span>
-                <div><span>CURRENT RANK</span><small>Your player's rank now</small></div>
+          <div class="selector-stage">
+            <div class="selector-group">
+              <div class="group-heading">
+                <span class="group-index">01</span>
+                <div><strong>CURRENT RANK</strong><small>Player's current level</small></div>
               </div>
-              <div class="rank-frame">
+              <div class="rank-dock">
                 <div id="currentChoices" class="rank-grid"></div>
               </div>
             </div>
 
-            <div class="path-arrow" aria-hidden="true">
-              <span></span><b>→</b><span></span>
+            <div class="selector-bridge">
+              <span></span>
+              <b>→</b>
+              <span></span>
             </div>
 
-            <div class="rank-column">
-              <div class="rank-column-head">
-                <span class="step-index">02</span>
-                <div><span>TARGET RANK</span><small>Your player's destination</small></div>
+            <div class="selector-group">
+              <div class="group-heading">
+                <span class="group-index">02</span>
+                <div><strong>TARGET RANK</strong><small>Desired finishing level</small></div>
               </div>
-              <div class="rank-frame">
+              <div class="rank-dock">
                 <div id="targetChoices" class="rank-grid"></div>
               </div>
             </div>
@@ -130,61 +131,38 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
         </section>
 
         <section class="results">
-          <div class="result-summary">
-            <article class="rp-card">
-              <div class="summary-cap"><span class="eyebrow">TOTAL RP REQUIRED</span><span class="summary-line"></span></div>
-              <div class="rp-main">
-                <div class="rp-orb"><img src={RP_ICON} alt="" /></div>
+          <div class="result-hero">
+            <div class="result-copy">
+              <span class="section-kicker">UPGRADE COST</span>
+              <div class="result-number">
+                <div class="rp-icon-frame"><img src={RP_ICON} alt="" /></div>
                 <strong id="required">0</strong>
                 <span>RP</span>
               </div>
               <p id="status">Choose your upgrade route.</p>
-              <div class="summary-route"><span id="miniFrom">Base</span><i>→</i><span id="miniTo">Orange</span></div>
-            </article>
+              <div class="result-path"><span id="miniFrom">Base</span><i>→</i><span id="miniTo">Orange</span></div>
+            </div>
 
-            <div class="stat-grid">
-              <article>
-                <span>OVR AFTER RANK</span>
-                <strong id="ovr">110</strong>
-                <small>Base OVR + rank</small>
-              </article>
-              <article>
-                <span>RANKS GAINED</span>
-                <strong id="gained">0</strong>
-                <small>Total upgrade steps</small>
-              </article>
-              <article>
-                <span>SKILL POINTS</span>
-                <strong id="skills">0</strong>
-                <small>Earned from ranks</small>
-              </article>
-              <article>
-                <span>RP BALANCE</span>
-                <strong id="remaining">—</strong>
-                <small>After the upgrade</small>
-              </article>
+            <div class="result-stats">
+              <div><span>OVR AFTER RANK</span><strong id="ovr">110</strong><small>Base OVR + target rank</small></div>
+              <div><span>RANKS GAINED</span><strong id="gained">0</strong><small>Upgrade steps</small></div>
+              <div><span>SKILL POINTS</span><strong id="skills">0</strong><small>Earned from upgrades</small></div>
+              <div><span>RP BALANCE</span><strong id="remaining">—</strong><small>After available RP</small></div>
             </div>
           </div>
 
-          <section class="cost-panel">
-            <div class="cost-head">
+          <section class="cost-module">
+            <div class="module-head">
               <div>
-                <span class="eyebrow">COST BREAKDOWN</span>
-                <h3>Upgrade steps</h3>
-                <p>Simple table. One row per rank-up.</p>
+                <span class="section-kicker">COST BREAKDOWN</span>
+                <h3>Every upgrade step</h3>
               </div>
-              <div class="total-pill"><span>TOTAL</span><strong id="costTotal">0 RP</strong></div>
+              <div class="module-total"><span>TOTAL</span><strong id="costTotal">0 RP</strong></div>
             </div>
-
             <div class="table-wrap">
               <table class="cost-table">
                 <thead>
-                  <tr>
-                    <th>STEP</th>
-                    <th>UPGRADE</th>
-                    <th>BASE OVR</th>
-                    <th>RP REQUIRED</th>
-                  </tr>
+                  <tr><th>STEP</th><th>UPGRADE</th><th>BASE OVR</th><th>RP REQUIRED</th></tr>
                 </thead>
                 <tbody id="stepRows"></tbody>
               </table>
@@ -196,24 +174,17 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
       <section class="reference">
         <div class="reference-head">
           <div>
-            <span class="eyebrow">REFERENCE</span>
+            <span class="section-kicker">REFERENCE DATA</span>
             <h2>RP cost by Base OVR</h2>
-            <p>The exact configured cost for each individual rank step.</p>
+            <p>Each column represents the cost of one individual rank step.</p>
           </div>
-          <div class="ref-mark">FCMOBILETOOLS <span>/</span> DATA</div>
+          <div class="reference-mark">FCMOBILETOOLS <span>/</span> RANK LAB</div>
         </div>
 
-        <div class="reference-wrap">
-          <table>
+        <div class="reference-table-wrap">
+          <table class="reference-table">
             <thead>
-              <tr>
-                <th>BASE OVR</th>
-                <th>GREEN</th>
-                <th>BLUE</th>
-                <th>PURPLE</th>
-                <th>RED</th>
-                <th>ORANGE</th>
-              </tr>
+              <tr><th>BASE OVR</th><th>GREEN</th><th>BLUE</th><th>PURPLE</th><th>RED</th><th>ORANGE</th></tr>
             </thead>
             <tbody>
               {RANK_COSTS.map((row) => (
@@ -230,12 +201,12 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
 
     <section class="faq">
       <div class="shell">
-        <span class="eyebrow">HELP</span>
+        <span class="section-kicker">HELP</span>
         <h2>Rank Up Calculator FAQ</h2>
         <div class="faq-grid">
-          <details open><summary>How does the calculator work?</summary><p>The calculator reads the Base OVR bracket and adds each rank-up cost from your current rank to the target rank.</p></details>
+          <details open><summary>How is the RP total calculated?</summary><p>The calculator reads the Base OVR bracket and adds the cost of every rank step between the current and target rank.</p></details>
           <details><summary>Which ranks are supported?</summary><p>Base, Green, Blue, Purple, Red and Orange.</p></details>
-          <details><summary>What does Available RP do?</summary><p>Enter your current RP balance to see how much remains after the selected upgrade route.</p></details>
+          <details><summary>What does Available RP do?</summary><p>Enter your balance to calculate the remaining RP after the selected upgrade path.</p></details>
         </div>
       </div>
     </section>
@@ -273,12 +244,11 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
     function makeRankButtons(kind){
       return RANKS.map((rank) =>
         '<button class="rank-tile" type="button" aria-pressed="false" data-kind="'+kind+'" data-value="'+rank.value+'">'
-          +'<span class="rank-tile-bg"></span>'
-          +'<span class="rank-tile-shine"></span>'
-          +'<span class="rank-tile-selected-bar"></span>'
+          +'<span class="rank-tile-aura"></span>'
+          +'<span class="rank-tile-sheen"></span>'
           +'<span class="rank-tile-art">'+icon(rank.value)+'</span>'
-          +'<span class="rank-tile-name">'+rank.name+'</span>'
-          +'<span class="rank-tile-check"><b>✓</b></span>'
+          +'<span class="rank-tile-label">'+rank.name+'</span>'
+          +'<span class="rank-tile-marker">✓</span>'
         +'</button>'
       ).join('');
     }
@@ -312,16 +282,16 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
 
       currentChoices.querySelectorAll('.rank-tile').forEach((button) => {
         const value = Number(button.dataset.value);
-        button.disabled = value >= to;
         const selected = value === from;
+        button.disabled = value >= to;
         button.classList.toggle('selected', selected);
         button.setAttribute('aria-pressed', selected ? 'true' : 'false');
       });
 
       targetChoices.querySelectorAll('.rank-tile').forEach((button) => {
         const value = Number(button.dataset.value);
-        button.disabled = value <= from;
         const selected = value === to;
+        button.disabled = value <= from;
         button.classList.toggle('selected', selected);
         button.setAttribute('aria-pressed', selected ? 'true' : 'false');
       });
@@ -383,302 +353,146 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
 
   <style>
     :root{
-      --r-bg:#050b11;
-      --r-panel:#09131d;
-      --r-panel-2:#0c1925;
-      --r-panel-3:#102332;
-      --r-line:rgba(255,255,255,.085);
-      --r-line-soft:rgba(255,255,255,.045);
-      --r-text:#f4f9fb;
-      --r-muted:#8fa7b4;
-      --r-dim:#5d7481;
-      --r-cyan:#49ccff;
-      --r-cyan-bright:#a7ebff;
-      --r-glow:rgba(73,204,255,.24);
-      --r-head:'Space Grotesk',system-ui,sans-serif;
-      --r-body:'Inter',system-ui,sans-serif;
+      --rc-bg:#040b11;
+      --rc-bg-2:#06131c;
+      --rc-panel:#081722;
+      --rc-panel-2:#0a1c29;
+      --rc-panel-3:#0d2433;
+      --rc-text:#f5f9fb;
+      --rc-muted:#93a9b5;
+      --rc-dim:#607987;
+      --rc-line:rgba(255,255,255,.075);
+      --rc-line-soft:rgba(255,255,255,.045);
+      --rc-cyan:#4cc9ff;
+      --rc-cyan-2:#a5ebff;
+      --rc-head:'Space Grotesk',system-ui,sans-serif;
+      --rc-body:'Inter',system-ui,sans-serif;
     }
 
     .rank-page{
+      color:var(--rc-text);
       min-height:100vh;
-      color:var(--r-text);
       background:
-        radial-gradient(900px 500px at 8% -5%,rgba(73,204,255,.11),transparent 66%),
-        radial-gradient(780px 480px at 95% 10%,rgba(73,204,255,.06),transparent 70%),
-        linear-gradient(180deg,#050b11 0%,#07111a 54%,#050c12 100%);
-      overflow:hidden;
+        radial-gradient(900px 500px at 4% 0%,rgba(76,201,255,.12),transparent 68%),
+        radial-gradient(760px 470px at 96% 8%,rgba(76,201,255,.07),transparent 68%),
+        linear-gradient(180deg,#040b11 0%,#061019 52%,#040b11 100%);
     }
+    .shell{width:min(1180px,calc(100% - 38px));margin:auto}
 
-    .shell{width:min(1180px,calc(100% - 36px));margin:0 auto}
-    .hero{position:relative;border-bottom:1px solid var(--r-line);background:linear-gradient(180deg,rgba(5,11,17,.98),rgba(5,11,17,.72))}
-    .hero:after{content:"";position:absolute;left:12%;right:12%;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(73,204,255,.52),transparent)}
-    .hero .shell{padding:27px 0 48px}
-    .crumb{display:flex;align-items:center;gap:9px;margin-bottom:48px;color:#5b727f;font:800 9px/1 var(--r-head)}
-    .crumb a{color:var(--r-cyan);text-decoration:none}
-    .hero-layout{display:grid;grid-template-columns:minmax(0,1fr) 210px;align-items:center;gap:62px}
-    .eyebrow{color:var(--r-cyan);font:900 9px/1 var(--r-head);letter-spacing:.16em}
-    .hero h1{margin:14px 0 17px;font:800 clamp(52px,7vw,84px)/.86 var(--r-head);letter-spacing:-.075em}
-    .hero h1 em{font-style:normal;color:var(--r-cyan)}
-    .hero-copy>p{max-width:720px;margin:0;color:var(--r-muted);font:500 13px/1.8 var(--r-body)}
-    .hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-    .hero-meta span{padding:7px 10px;border:1px solid var(--r-line);border-radius:999px;color:#728b98;background:rgba(255,255,255,.012);font:900 7px/1 var(--r-head);letter-spacing:.08em}
+    .hero{position:relative;border-bottom:1px solid var(--rc-line);overflow:hidden}
+    .hero-backdrop{position:absolute;inset:0;background-image:linear-gradient(rgba(76,201,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(76,201,255,.018) 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(90deg,#000,transparent 94%);opacity:.75}
+    .hero-inner{position:relative;padding:28px 0 52px}
+    .crumb{display:flex;gap:9px;align-items:center;margin-bottom:48px;color:#56717e;font:800 9px/1 var(--rc-head)}
+    .crumb a{color:var(--rc-cyan);text-decoration:none}
+    .hero-layout{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:72px;align-items:center}
+    .hero-kicker{display:flex;align-items:center;gap:8px;color:#6f8996;font:900 8px/1 var(--rc-head);letter-spacing:.15em}
+    .hero-kicker span{width:20px;height:1px;background:var(--rc-cyan);box-shadow:0 0 12px rgba(76,201,255,.5)}
+    .hero h1{margin:15px 0 17px;font:800 clamp(52px,7vw,86px)/.86 var(--rc-head);letter-spacing:-.08em}
+    .hero h1 em{font-style:normal;color:var(--rc-cyan)}
+    .hero-copy>p{max-width:700px;margin:0;color:var(--rc-muted);font:500 13px/1.8 var(--rc-body)}
+    .hero-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:21px}
+    .hero-pills span{padding:7px 10px;border:1px solid var(--rc-line);border-radius:999px;color:#718996;background:rgba(255,255,255,.01);font:900 7px/1 var(--rc-head);letter-spacing:.08em}
 
-    .hero-rank{position:relative;display:grid;justify-items:center;padding:20px 15px 16px;border:1px solid rgba(73,204,255,.16);border-radius:26px;background:linear-gradient(145deg,#0c202d,#08131c);box-shadow:0 30px 80px rgba(0,0,0,.28);overflow:hidden}
-    .hero-rank:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(73,204,255,.08),transparent 48%);pointer-events:none}
-    .hero-rank-core{position:relative;display:grid;place-items:center;width:145px;height:145px}
-    .hero-rank-core img{width:136px;height:136px;object-fit:contain;filter:drop-shadow(0 18px 30px rgba(0,0,0,.4))}
-    .hero-ring{position:absolute;border-radius:50%;border:1px solid rgba(73,204,255,.14)}
-    .hero-ring-one{width:158px;height:158px;animation:spin 18s linear infinite}
-    .hero-ring-two{width:122px;height:122px;border-color:rgba(73,204,255,.08);animation:spin-reverse 12s linear infinite}
-    .hero-rank-label{text-align:center}.hero-rank-label strong{display:block;margin-top:3px;font:900 24px/1 var(--r-head)}.hero-rank-label span{display:block;margin-top:5px;color:#708a97;font:700 8px/1 var(--r-head)}
+    .hero-display{position:relative;height:244px;display:grid;place-items:center;border:1px solid rgba(76,201,255,.16);border-radius:30px;background:linear-gradient(145deg,#0a1c28,#06121b);box-shadow:0 30px 100px rgba(0,0,0,.28);overflow:hidden}
+    .hero-display-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(76,201,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(76,201,255,.025) 1px,transparent 1px);background-size:26px 26px;mask-image:radial-gradient(circle,#000 25%,transparent 74%)}
+    .hero-ring{position:absolute;border-radius:50%;border:1px solid rgba(76,201,255,.16)}
+    .ring-a{width:176px;height:176px;animation:spin 18s linear infinite}
+    .ring-b{width:136px;height:136px;border-color:rgba(76,201,255,.08);animation:spin-reverse 11s linear infinite}
+    .hero-rank-art{position:relative;width:160px;height:160px;display:grid;place-items:center}
+    .hero-rank-art img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 22px 30px rgba(0,0,0,.45))}
+    .hero-display-caption{position:absolute;bottom:17px;left:0;right:0;text-align:center}
+    .hero-display-caption span{display:block;color:#5f7a87;font:900 7px/1 var(--rc-head);letter-spacing:.14em}.hero-display-caption strong{display:block;margin-top:5px;color:#eaf8fc;font:900 20px/1 var(--rc-head)}
     @keyframes spin{to{transform:rotate(360deg)}}@keyframes spin-reverse{to{transform:rotate(-360deg)}}
 
-    .content{padding:38px 0 70px}
-    .planner,.reference{border:1px solid var(--r-line);border-radius:26px;background:linear-gradient(145deg,#091520,#071019);box-shadow:0 30px 100px rgba(0,0,0,.24);overflow:hidden}
-    .planner{position:relative}
-    .planner-topline{height:2px;background:linear-gradient(90deg,transparent,rgba(73,204,255,.48),rgba(167,235,255,.84),transparent)}
-    .planner-head{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:24px 28px;border-bottom:1px solid var(--r-line)}
-    .planner-head h2,.reference h2,.faq h2{margin:7px 0 5px;font:800 27px/1 var(--r-head);letter-spacing:-.045em}
-    .planner-head p,.reference-head p{margin:0;color:var(--r-muted);font:500 10px/1.55 var(--r-body)}
-    .status-badge{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid rgba(73,204,255,.13);border-radius:999px;color:#78929f;font:900 7px/1 var(--r-head);letter-spacing:.12em}
-    .status-badge i{width:6px;height:6px;border-radius:50%;background:var(--r-cyan);box-shadow:0 0 0 rgba(73,204,255,.7);animation:pulse 2.2s ease-out infinite}
-    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(73,204,255,0)}55%{box-shadow:0 0 0 7px rgba(73,204,255,0)}20%{box-shadow:0 0 0 0 rgba(73,204,255,.45)}}
+    .app{padding:39px 0 72px}
+    .workspace{border:1px solid var(--rc-line);border-radius:28px;background:linear-gradient(150deg,#081722,#061019);box-shadow:0 35px 110px rgba(0,0,0,.28);overflow:hidden}
+    .workspace:before{content:"";display:block;height:2px;background:linear-gradient(90deg,transparent,var(--rc-cyan),rgba(165,235,255,.75),transparent)}
+    .workspace-top{display:flex;justify-content:space-between;align-items:center;padding:25px 29px;border-bottom:1px solid var(--rc-line)}
+    .section-kicker{display:block;color:var(--rc-cyan);font:900 8px/1 var(--rc-head);letter-spacing:.17em}
+    .workspace-top h2,.reference h2,.faq h2{margin:8px 0 4px;font:800 27px/1 var(--rc-head);letter-spacing:-.05em}
+    .workspace-status{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid rgba(76,201,255,.12);border-radius:999px;color:#6d8794;font:900 7px/1 var(--rc-head);letter-spacing:.11em}
+    .workspace-status i{width:6px;height:6px;border-radius:50%;background:var(--rc-cyan);box-shadow:0 0 12px rgba(76,201,255,.75);animation:pulse 2.2s infinite}
+    @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(76,201,255,0)}}
 
-    .inputs{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:19px 28px 9px}
-    .input-card{padding:14px 15px;border:1px solid var(--r-line-soft);border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.018),rgba(255,255,255,.005))}
-    .input-label{display:flex;justify-content:space-between;gap:10px;margin-bottom:9px;color:#718895;font:900 8px/1 var(--r-head);letter-spacing:.12em}
-    .input-label small{color:#4b6572;font:900 7px/1 var(--r-head);letter-spacing:.08em}
-    .input-control{display:flex;align-items:center;gap:10px}
-    .input-control input{width:100%;min-width:0;height:46px;border:1px solid #294250;border-radius:12px;background:#07131c;color:var(--r-text);padding:0 13px;outline:0;font:900 13px var(--r-head);transition:border-color .18s,box-shadow .18s,background .18s}
-    .input-control input:focus{border-color:rgba(73,204,255,.72);background:#081620;box-shadow:0 0 0 3px rgba(73,204,255,.09),0 0 30px rgba(73,204,255,.06)}
-    .input-control>span{color:#56727f;font:900 8px/1 var(--r-head)}
+    .workspace-controls{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:11px;padding:21px 29px 8px}
+    .control{padding:14px;border:1px solid var(--rc-line-soft);border-radius:18px;background:rgba(255,255,255,.008)}
+    .control>span{display:flex;justify-content:space-between;margin-bottom:9px;color:#718a96;font:900 8px/1 var(--rc-head);letter-spacing:.12em}
+    .control>span em{font-style:normal;color:#45616f;font-size:7px}
+    .control-field{display:flex;align-items:center;gap:9px}.control-field input{width:100%;height:45px;border:1px solid #28414e;border-radius:12px;background:#06131d;color:var(--rc-text);padding:0 12px;outline:0;font:900 13px var(--rc-head);transition:.18s}
+    .control-field input:focus{border-color:rgba(76,201,255,.72);box-shadow:0 0 0 3px rgba(76,201,255,.08),0 0 26px rgba(76,201,255,.05)}
+    .control-field small{color:#52707d;font:900 7px/1 var(--rc-head)}
+    .control-note{padding:14px 16px;border-left:1px solid rgba(76,201,255,.16);align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+    .control-note span{color:#536f7c;font:900 7px/1 var(--rc-head);letter-spacing:.13em}.control-note p{margin:7px 0 0;max-width:300px;color:#76909c;font:500 9px/1.55 var(--rc-body)}
 
-    .rank-picker{
-      position:relative;
-      padding:22px 28px 28px;
-      background:
-        radial-gradient(620px 230px at 50% 0%,rgba(73,204,255,.045),transparent 70%),
-        linear-gradient(180deg,rgba(9,24,36,.72),rgba(5,15,24,.45));
-    }
-    .picker-head{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:18px}
-    .picker-head h3{margin:7px 0 0;font:800 20px/1 var(--r-head);letter-spacing:-.035em}
-    .picker-head p{margin:5px 0 0;color:#607986;font:500 9px/1.45 var(--r-body)}
-    .picker-route{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid rgba(73,204,255,.14);border-radius:999px;background:rgba(73,204,255,.028);color:#9bb1bb;font:900 8px/1 var(--r-head);white-space:nowrap}
-    .picker-route i{width:19px;height:1px;background:#42616f}
+    .selector-area{padding:24px 29px 29px}
+    .selector-heading{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:18px}
+    .selector-heading h3{margin:8px 0 0;font:800 20px/1 var(--rc-head);letter-spacing:-.035em}
+    .route-chip{display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid rgba(76,201,255,.13);border-radius:999px;background:rgba(76,201,255,.025);color:#9bb2bd;font:900 8px/1 var(--rc-head)}.route-chip b{color:var(--rc-cyan);font-size:10px}
 
-    .rank-stage{display:grid;grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr);align-items:stretch;gap:12px}
-    .rank-column-head{display:flex;align-items:center;gap:10px;margin:0 0 10px 2px}
-    .step-index{display:grid;place-items:center;width:29px;height:29px;border:1px solid rgba(73,204,255,.18);border-radius:8px;background:#0a2030;color:var(--r-cyan);font:900 8px/1 var(--r-head)}
-    .rank-column-head span:not(.step-index){display:block;color:#d7e8ee;font:900 8px/1 var(--r-head);letter-spacing:.11em}
-    .rank-column-head small{display:block;margin-top:4px;color:#4e6976;font:500 7px/1 var(--r-body)}
-    .rank-frame{
-      padding:13px;
-      border:1px solid rgba(55,135,176,.18);
-      border-radius:22px;
-      background:
-        radial-gradient(360px 120px at 50% 0%,rgba(31,120,163,.09),transparent 72%),
-        linear-gradient(145deg,#071a28,#06121d 70%);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.028),
-        inset 0 -22px 50px rgba(0,90,130,.025),
-        0 18px 45px rgba(0,0,0,.18);
-    }
-    .rank-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+    .selector-stage{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);align-items:stretch;gap:12px}
+    .group-heading{display:flex;gap:10px;align-items:center;margin:0 0 10px 2px}.group-index{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;border:1px solid rgba(76,201,255,.16);background:#082031;color:var(--rc-cyan);font:900 8px/1 var(--rc-head)}
+    .group-heading strong{display:block;color:#dceaf0;font:900 8px/1 var(--rc-head);letter-spacing:.10em}.group-heading small{display:block;margin-top:4px;color:#506b78;font:500 7px/1 var(--rc-body)}
+    .rank-dock{padding:13px;border:1px solid rgba(68,139,171,.18);border-radius:23px;background:linear-gradient(145deg,#061926,#06131d);box-shadow:inset 0 1px 0 rgba(255,255,255,.025),inset 0 -25px 60px rgba(0,92,132,.025)}
+    .rank-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
 
-    .rank-tile{
-      position:relative;
-      width:100%;
-      min-width:0;
-      height:116px;
-      padding:9px 6px 8px;
-      border:1px solid rgba(48,113,145,.22);
-      border-radius:16px;
-      background:
-        radial-gradient(85px 65px at 50% 15%,rgba(24,74,101,.20),transparent 72%),
-        linear-gradient(145deg,#081827,#06121c 72%);
-      color:var(--r-text);
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:3px;
-      cursor:pointer;
-      overflow:hidden;
-      isolation:isolate;
-      transition:
-        transform .24s cubic-bezier(.2,.8,.2,1),
-        border-color .22s,
-        box-shadow .24s,
-        background .22s,
-        opacity .2s;
-    }
-    .rank-tile:after{
-      content:"";
-      position:absolute;
-      inset:1px;
-      border-radius:15px;
-      border:1px solid transparent;
-      background:linear-gradient(145deg,rgba(255,255,255,.05),transparent 34%,rgba(73,204,255,.015)) border-box;
-      mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);
-      mask-composite:exclude;
-      pointer-events:none;
-      z-index:2;
-    }
-    .rank-tile:hover:not(:disabled){
-      transform:translateY(-4px);
-      border-color:rgba(73,204,255,.38);
-      background:
-        radial-gradient(90px 70px at 50% 10%,rgba(73,204,255,.11),transparent 72%),
-        linear-gradient(145deg,#0b1e2d,#07131e 72%);
-      box-shadow:
-        0 16px 32px rgba(0,0,0,.25),
-        0 0 30px rgba(73,204,255,.06);
-    }
-    .rank-tile.selected{
-      border:2px solid var(--r-cyan);
-      background:
-        radial-gradient(105px 82px at 50% 6%,rgba(73,204,255,.26),transparent 70%),
-        linear-gradient(180deg,rgba(23,70,94,.96),rgba(7,24,37,.98) 78%);
-      box-shadow:
-        inset 0 0 0 1px rgba(188,242,255,.22),
-        inset 0 0 28px rgba(73,204,255,.09),
-        0 0 0 3px rgba(73,204,255,.08),
-        0 0 30px rgba(73,204,255,.18),
-        0 16px 40px rgba(0,0,0,.30);
-      animation:selectedLift 2.7s ease-in-out infinite;
-    }
-    @keyframes selectedLift{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
-    .rank-tile-bg{
-      position:absolute;
-      width:85px;
-      height:85px;
-      top:-36px;
-      left:50%;
-      transform:translateX(-50%);
-      border-radius:50%;
-      background:rgba(73,204,255,.18);
-      filter:blur(23px);
-      opacity:0;
-      transition:opacity .22s,transform .32s;
-      z-index:-1;
-    }
-    .rank-tile.selected .rank-tile-bg{opacity:1;transform:translateX(-50%) scale(1.13);animation:tileGlow 2.6s ease-in-out infinite}
-    @keyframes tileGlow{0%,100%{opacity:.62}50%{opacity:1}}
-    .rank-tile-shine{
-      position:absolute;
-      inset:-80% 25% auto;
-      height:165%;
-      transform:rotate(22deg) translateX(-150%);
-      background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);
-      opacity:0;
-      pointer-events:none;
-    }
-    .rank-tile.selected .rank-tile-shine{opacity:1;animation:shineSweep 3.2s ease-in-out infinite}
-    @keyframes shineSweep{0%,35%{transform:rotate(22deg) translateX(-150%)}70%,100%{transform:rotate(22deg) translateX(180%)}}
+    .rank-tile{position:relative;min-width:0;width:100%;height:122px;padding:10px 6px 9px;border:1px solid rgba(74,132,158,.18);border-radius:17px;background:linear-gradient(145deg,#091824,#06121c);color:var(--rc-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;overflow:hidden;isolation:isolate;transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .2s,box-shadow .2s,background .2s,opacity .2s}
+    .rank-tile:hover:not(:disabled){transform:translateY(-4px);border-color:rgba(76,201,255,.4);background:linear-gradient(145deg,#0a1d2b,#07131e);box-shadow:0 16px 34px rgba(0,0,0,.24),0 0 28px rgba(76,201,255,.05)}
+    .rank-tile.selected{border:2px solid var(--rc-cyan);background:radial-gradient(100px 72px at 50% 5%,rgba(76,201,255,.24),transparent 72%),linear-gradient(180deg,#123247,#081720);box-shadow:inset 0 0 0 1px rgba(165,235,255,.16),inset 0 0 28px rgba(76,201,255,.08),0 0 0 3px rgba(76,201,255,.08),0 0 30px rgba(76,201,255,.16);animation:selectedPulse 2.5s ease-in-out infinite}
+    .rank-tile.selected:after{content:"";position:absolute;left:16%;right:16%;bottom:0;height:3px;border-radius:999px;background:linear-gradient(90deg,transparent,var(--rc-cyan-2),transparent);box-shadow:0 0 16px rgba(76,201,255,.9);animation:barPulse 2.2s ease-in-out infinite}
+    .rank-tile:disabled{opacity:.12;cursor:not-allowed}
+    .rank-tile-aura{position:absolute;width:92px;height:92px;left:50%;top:-42px;transform:translateX(-50%);border-radius:50%;background:rgba(76,201,255,.18);filter:blur(24px);opacity:0;z-index:-1}
+    .rank-tile.selected .rank-tile-aura{opacity:1;animation:auraPulse 2.6s ease-in-out infinite}
+    .rank-tile-sheen{position:absolute;top:-100%;left:-25%;width:150%;height:220%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.11),transparent);transform:rotate(22deg) translateX(-70%);opacity:0}
+    .rank-tile.selected .rank-tile-sheen{opacity:1;animation:sheen 3.2s ease-in-out infinite}
+    .rank-tile-art{position:relative;z-index:3;width:80px;height:80px;display:grid;place-items:center;overflow:visible}.rank-tile-art img{width:84px;height:84px;object-fit:contain;filter:drop-shadow(0 10px 15px rgba(0,0,0,.4));transition:transform .2s,filter .2s}.rank-tile:hover:not(:disabled) .rank-tile-art img{transform:scale(1.04)}.rank-tile.selected .rank-tile-art img{transform:scale(1.09);filter:drop-shadow(0 10px 18px rgba(76,201,255,.22))}
+    .rank-tile-label{position:relative;z-index:3;color:#89a1ad;font:900 8px/1 var(--rc-head)}.rank-tile.selected .rank-tile-label{color:#fff;text-shadow:0 0 12px rgba(165,235,255,.2)}
+    .rank-tile-marker{position:absolute;z-index:5;right:8px;top:8px;width:18px;height:18px;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(82,128,150,.32);background:rgba(4,15,23,.8);color:transparent;font:900 10px/1 var(--rc-head);transition:.2s}
+    .rank-tile.selected .rank-tile-marker{border-color:var(--rc-cyan-2);background:var(--rc-cyan);color:#03202b;box-shadow:0 0 0 3px rgba(76,201,255,.08),0 0 15px rgba(76,201,255,.88)}
+    @keyframes selectedPulse{50%{transform:translateY(-2px)}}@keyframes auraPulse{50%{opacity:.95;transform:translateX(-50%) scale(1.1)}}@keyframes sheen{0%,35%{transform:rotate(22deg) translateX(-70%)}70%,100%{transform:rotate(22deg) translateX(70%)}}@keyframes barPulse{50%{opacity:1;transform:scaleX(1.05)}} 
 
-    .rank-tile-art{position:relative;z-index:3;width:76px;height:76px;display:grid;place-items:center;overflow:visible}
-    .rank-tile-art img{display:block;width:82px;height:82px;max-width:none;max-height:none;object-fit:contain;filter:drop-shadow(0 9px 14px rgba(0,0,0,.38));transition:transform .23s,filter .23s}
-    .rank-tile:hover:not(:disabled) .rank-tile-art img{transform:scale(1.05)}
-    .rank-tile.selected .rank-tile-art img{transform:scale(1.09);filter:drop-shadow(0 9px 16px rgba(73,204,255,.20))}
-    .rank-tile-selected-bar{
-      position:absolute;
-      left:15%;
-      right:15%;
-      bottom:0;
-      height:3px;
-      border-radius:99px;
-      background:linear-gradient(90deg,transparent,var(--r-cyan-bright),transparent);
-      box-shadow:0 0 16px rgba(73,204,255,.9);
-      opacity:0;
-      transform:scaleX(.55);
-      z-index:5;
-    }
-    .rank-tile.selected .rank-tile-selected-bar{
-      opacity:1;
-      transform:scaleX(1);
-      animation:selectedBar 2.2s ease-in-out infinite;
-    }
-    @keyframes selectedBar{0%,100%{opacity:.65}50%{opacity:1}}
-    .rank-tile-name{position:relative;z-index:3;color:#8ca3af;font:900 8px/1 var(--r-head);transition:color .2s}
-    .rank-tile.selected .rank-tile-name{color:#ffffff;text-shadow:0 0 10px rgba(167,235,255,.24)}
-    .rank-tile-check{
-      position:absolute;
-      right:8px;
-      top:8px;
-      width:17px;
-      height:17px;
-      display:grid;
-      place-items:center;
-      border:1px solid rgba(83,130,151,.35);
-      border-radius:50%;
-      background:rgba(4,16,25,.78);
-      color:transparent;
-      z-index:5;
-      box-shadow:inset 0 0 8px rgba(0,0,0,.18);
-      transition:.2s ease;
-    }
-    .rank-tile-check b{font:900 9px/1 var(--r-head)}
-    .rank-tile.selected .rank-tile-check{
-      border-color:var(--r-cyan-bright);
-      background:var(--r-cyan);
-      color:#03202c;
-      box-shadow:
-        0 0 0 3px rgba(73,204,255,.08),
-        0 0 14px rgba(73,204,255,.85);
-    }
+    .selector-bridge{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}.selector-bridge span{width:1px;flex:1;max-height:60px;background:linear-gradient(180deg,transparent,var(--rc-line),transparent)}.selector-bridge b{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid rgba(76,201,255,.14);background:#071722;color:var(--rc-cyan);font:900 11px/1 var(--rc-head);box-shadow:0 0 20px rgba(76,201,255,.04)}
 
-    .path-arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#3c5867}
-    .path-arrow span{width:1px;flex:1;max-height:50px;background:linear-gradient(180deg,transparent,var(--r-line),transparent)}
-    .path-arrow b{display:grid;place-items:center;width:28px;height:28px;border:1px solid rgba(73,204,255,.12);border-radius:50%;background:#091822;color:var(--r-cyan);font:900 10px/1 var(--r-head);box-shadow:0 0 18px rgba(73,204,255,.04)}
+    .error{margin-top:13px;padding:11px 12px;border:1px solid rgba(255,116,112,.22);border-radius:11px;background:rgba(255,116,112,.055);color:#ffaaa4;font:700 9px/1.4 var(--rc-head)}
 
-    .error{margin-top:13px;padding:11px 12px;border:1px solid rgba(255,116,112,.22);border-radius:10px;background:rgba(255,116,112,.055);color:#ffaba6;font:700 9px/1.4 var(--r-head)}
+    .results{padding:0 29px 29px}
+    .result-hero{display:grid;grid-template-columns:minmax(0,1fr) 1.45fr;gap:12px}
+    .result-copy{position:relative;padding:22px 22px;border:1px solid rgba(76,201,255,.17);border-radius:22px;background:linear-gradient(145deg,#0a2534,#07151f);overflow:hidden}
+    .result-copy:after{content:"";position:absolute;width:170px;height:170px;right:-72px;bottom:-94px;border-radius:50%;background:rgba(76,201,255,.1);filter:blur(25px)}
+    .result-number{display:flex;align-items:center;gap:12px;margin:12px 0 6px}.rp-icon-frame{width:60px;height:60px;display:grid;place-items:center;border:1px solid rgba(76,201,255,.15);border-radius:18px;background:rgba(76,201,255,.04)}.rp-icon-frame img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,.36))}
+    .result-number strong{font:900 clamp(49px,5vw,69px)/.88 var(--rc-head);letter-spacing:-.075em}.result-number>span{align-self:flex-end;margin:0 0 6px;color:var(--rc-cyan-2);font:900 8px/1 var(--rc-head)}
+    .result-copy p{margin:0;color:var(--rc-muted);font:500 9px/1.5 var(--rc-body)}.result-path{display:inline-flex;align-items:center;gap:8px;margin-top:15px;padding:8px 10px;border:1px solid rgba(255,255,255,.06);border-radius:999px;color:#91a8b3;font:900 8px/1 var(--rc-head)}.result-path i{font-style:normal;color:#4b6673}
 
-    .results{padding:0 28px 28px}
-    .result-summary{display:grid;grid-template-columns:minmax(0,1fr) 1.45fr;gap:10px}
-    .rp-card{position:relative;overflow:hidden;padding:20px 21px;border:1px solid rgba(73,204,255,.17);border-radius:20px;background:linear-gradient(145deg,#0d2737,#091722);box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 18px 45px rgba(0,0,0,.17)}
-    .rp-card:before{content:"";position:absolute;right:-65px;bottom:-80px;width:165px;height:165px;border-radius:50%;background:rgba(73,204,255,.09);filter:blur(25px)}
-    .summary-cap{display:flex;align-items:center;gap:10px}.summary-line{height:1px;flex:1;background:linear-gradient(90deg,rgba(73,204,255,.2),transparent)}
-    .rp-main{display:flex;align-items:center;gap:12px;margin:11px 0 6px}.rp-orb{width:56px;height:56px;display:grid;place-items:center;border:1px solid rgba(73,204,255,.16);border-radius:17px;background:rgba(73,204,255,.045);box-shadow:inset 0 0 20px rgba(73,204,255,.04)}
-    .rp-orb img{width:45px;height:45px;object-fit:contain;filter:drop-shadow(0 7px 11px rgba(0,0,0,.35))}
-    .rp-main strong{font:900 clamp(48px,5vw,68px)/.88 var(--r-head);letter-spacing:-.075em}
-    .rp-main>span{align-self:flex-end;margin-bottom:5px;color:var(--r-cyan-bright);font:900 8px/1 var(--r-head)}
-    .rp-card p{margin:0;color:var(--r-muted);font:500 9px/1.5 var(--r-body)}
-    .summary-route{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:7px 9px;border:1px solid rgba(255,255,255,.06);border-radius:999px;color:#91a7b2;font:900 8px/1 var(--r-head)}
-    .summary-route i{font-style:normal;color:#49636f}
+    .result-stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}.result-stats>div{padding:16px;border:1px solid var(--rc-line-soft);border-radius:18px;background:linear-gradient(145deg,#08151f,#06111a)}.result-stats span{display:block;color:#647d8a;font:900 7px/1 var(--rc-head);letter-spacing:.1em}.result-stats strong{display:block;margin-top:8px;color:#eff8fa;font:900 23px/1 var(--rc-head);letter-spacing:-.045em}.result-stats small{display:block;margin-top:5px;color:#4f6874;font:500 7px/1.4 var(--rc-body)}
 
-    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat-grid article{padding:15px;border:1px solid var(--r-line-soft);border-radius:17px;background:linear-gradient(145deg,#0a161f,#081118)}
-    .stat-grid span{display:block;color:#657d89;font:900 7px/1 var(--r-head);letter-spacing:.1em}.stat-grid strong{display:block;margin-top:7px;color:#edf7fa;font:900 22px/1 var(--r-head);letter-spacing:-.04em}.stat-grid small{display:block;margin-top:4px;color:#516976;font:500 7px/1.4 var(--r-body)}
+    .cost-module{margin-top:13px;border:1px solid var(--rc-line);border-radius:20px;overflow:hidden;background:#06121a}.module-head{display:flex;justify-content:space-between;align-items:end;gap:15px;padding:19px 20px;border-bottom:1px solid var(--rc-line)}.module-head h3{margin:7px 0 0;font:800 20px/1 var(--rc-head);letter-spacing:-.04em}.module-total{text-align:right}.module-total span{display:block;color:#5d7784;font:900 7px/1 var(--rc-head);letter-spacing:.12em}.module-total strong{display:block;margin-top:5px;color:#edf8fb;font:900 17px/1 var(--rc-head)}
+    .table-wrap{overflow:auto}.cost-table{width:100%;min-width:620px;border-collapse:collapse}.cost-table th{padding:11px 17px;background:#081721;border-bottom:1px solid var(--rc-line);color:#5f7885;text-align:left;font:900 7px/1 var(--rc-head);letter-spacing:.12em}.cost-table td{padding:12px 17px;border-bottom:1px solid var(--rc-line-soft);color:#879ba6;font:600 9px/1 var(--rc-body)}.cost-table tbody tr:last-child td{border-bottom:0}.cost-table tbody tr:hover{background:rgba(76,201,255,.025)}.step-num{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;border:1px solid rgba(76,201,255,.15);background:#081d2a;color:var(--rc-cyan);font:900 8px/1 var(--rc-head)}.upgrade-cell{display:flex;gap:8px;align-items:center}.upgrade-cell strong{color:#dcebf0;font:900 10px/1 var(--rc-head)}.upgrade-cell span{color:#3e5a68}.rp-amount{color:#f2f8fa;font:900 12px/1 var(--rc-head);white-space:nowrap}.table-empty{padding:22px 17px!important;color:#728793!important}
 
-    .cost-panel{margin-top:12px;border:1px solid var(--r-line);border-radius:19px;overflow:hidden;background:#08131b}
-    .cost-head{display:flex;justify-content:space-between;align-items:end;gap:16px;padding:18px 19px;border-bottom:1px solid var(--r-line)}.cost-head h3{margin:7px 0 3px;font:800 20px/1 var(--r-head);letter-spacing:-.04em}.cost-head p{margin:0;color:#5a717d;font:500 9px/1.5 var(--r-body)}
-    .total-pill{min-width:104px;text-align:right}.total-pill span{display:block;color:#5f7784;font:900 7px/1 var(--r-head);letter-spacing:.12em}.total-pill strong{display:block;margin-top:5px;color:#edf7fa;font:900 17px/1 var(--r-head)}
-    .table-wrap{overflow:auto}.cost-table{width:100%;min-width:620px;border-collapse:collapse}.cost-table th{padding:11px 16px;border-bottom:1px solid var(--r-line);background:#09151e;color:#5d7784;text-align:left;font:900 7px/1 var(--r-head);letter-spacing:.12em}.cost-table td{padding:12px 16px;border-bottom:1px solid var(--r-line-soft);color:#849aa5;font:600 9px/1 var(--r-body)}.cost-table tbody tr:last-child td{border-bottom:0}.cost-table tbody tr{transition:background .18s}.cost-table tbody tr:hover{background:rgba(73,204,255,.025)}
-    .step-num{display:grid;place-items:center;width:26px;height:26px;border:1px solid rgba(73,204,255,.13);border-radius:8px;background:#0a1e2b;color:var(--r-cyan);font:900 8px/1 var(--r-head)}.upgrade-cell{display:flex;align-items:center;gap:8px}.upgrade-cell strong{color:#dcebf0;font:900 10px/1 var(--r-head)}.upgrade-cell span{color:#405c6a}.rp-amount{color:#f4f8fa;font:900 12px/1 var(--r-head);white-space:nowrap}.table-empty{padding:22px 16px!important;color:#748995!important}
+    .reference{margin-top:13px;padding:26px 29px;border:1px solid var(--rc-line);border-radius:24px;background:linear-gradient(145deg,#081620,#061019);box-shadow:0 26px 80px rgba(0,0,0,.18)}
+    .reference-head{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:18px}.reference-head p{margin:6px 0 0;color:var(--rc-muted);font:500 9px/1.5 var(--rc-body)}.reference-mark{color:#415c69;font:900 7px/1 var(--rc-head);letter-spacing:.1em}.reference-mark span{margin:0 4px;color:#29444f}
+    .reference-table-wrap{overflow:auto}.reference-table{width:100%;min-width:720px;border-collapse:collapse}.reference-table th,.reference-table td{padding:11px 12px;border-top:1px solid var(--rc-line);text-align:left}.reference-table th{color:#607985;font:900 7px/1 var(--rc-head);letter-spacing:.1em}.reference-table td{color:#bcc9cf;font:700 9px/1 var(--rc-body)}.reference-table td strong{font:900 9px/1 var(--rc-head)}
 
-    .reference{margin-top:13px;padding:25px 28px}.reference-head{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:17px}.reference-head p{margin-top:5px}.ref-mark{color:#425c69;font:900 7px/1 var(--r-head);letter-spacing:.1em}.ref-mark span{color:#28434f;margin:0 4px}.reference-wrap{overflow:auto}.reference table{width:100%;min-width:720px;border-collapse:collapse}.reference th,.reference td{padding:11px 12px;border-top:1px solid var(--r-line);text-align:left}.reference th{color:#5f7783;font:900 7px/1 var(--r-head);letter-spacing:.1em}.reference td{color:#b9c7ce;font:700 9px/1 var(--r-body)}.reference td strong{font:900 9px/1 var(--r-head)}
-
-    .faq{padding:16px 0 78px}.faq h2{margin-bottom:18px}.faq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.faq details{min-height:106px;padding:15px 16px;border:1px solid var(--r-line);border-radius:15px;background:#09141d}.faq summary{cursor:pointer;color:#dfedf2;font:900 10px/1.4 var(--r-head)}.faq p{color:var(--r-muted);font:500 9px/1.7 var(--r-body)}
+    .faq{padding:14px 0 78px}.faq h2{margin:8px 0 18px}.faq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.faq details{min-height:108px;padding:16px;border:1px solid var(--rc-line);border-radius:17px;background:#07131c}.faq summary{cursor:pointer;color:#e2edf1;font:900 10px/1.4 var(--rc-head)}.faq p{color:var(--rc-muted);font:500 9px/1.7 var(--rc-body)}
 
     @media(max-width:980px){
-      .hero-layout{grid-template-columns:1fr}.hero-rank{display:none}.result-summary{grid-template-columns:1fr}.faq-grid{grid-template-columns:1fr}
-      .rank-stage{grid-template-columns:1fr}.path-arrow{height:34px;flex-direction:row}.path-arrow span{height:1px;width:100%;max-height:none;background:linear-gradient(90deg,transparent,var(--r-line),transparent)}.path-arrow b{flex:0 0 auto}
+      .hero-layout{grid-template-columns:1fr}.hero-display{display:none}.workspace-controls{grid-template-columns:1fr 1fr}.control-note{grid-column:1/-1;border-left:0;border-top:1px solid rgba(76,201,255,.14);padding:12px 0 0}
+      .selector-stage{grid-template-columns:1fr}.selector-bridge{height:40px;flex-direction:row}.selector-bridge span{height:1px;width:100%;max-height:none;background:linear-gradient(90deg,transparent,var(--rc-line),transparent)}.selector-bridge b{flex:0 0 auto}
+      .result-hero{grid-template-columns:1fr}.faq-grid{grid-template-columns:1fr}
     }
 
     @media(max-width:760px){
-      .shell{width:calc(100% - 22px)}.hero .shell{padding-top:23px}.crumb{margin-bottom:34px}.hero h1{font-size:54px}
-      .planner-head{padding:21px 18px;align-items:flex-start;flex-direction:column}
-      .inputs{grid-template-columns:1fr;padding:17px 18px 7px}.rank-picker{padding:20px 18px 24px}.picker-head{align-items:flex-start;flex-direction:column}
-      .rank-frame{padding:10px}.rank-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.rank-tile{height:112px}.rank-tile-art{width:72px;height:72px}.rank-tile-art img{width:76px;height:76px}
-      .results{padding:0 18px 18px}.reference{padding:20px 18px}.reference-head{align-items:flex-start;flex-direction:column}
+      .shell{width:calc(100% - 22px)}.hero-inner{padding-top:23px}.crumb{margin-bottom:34px}.hero h1{font-size:54px}
+      .workspace-top{padding:21px 18px;align-items:flex-start;flex-direction:column}.workspace-controls{grid-template-columns:1fr;padding:17px 18px 7px}
+      .selector-area{padding:20px 18px 24px}.selector-heading{align-items:flex-start;flex-direction:column}.rank-dock{padding:10px}.rank-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.rank-tile{height:114px}.rank-tile-art{width:74px;height:74px}.rank-tile-art img{width:79px;height:79px}
+      .results{padding:0 18px 18px}.reference{padding:21px 18px}
     }
 
     @media(max-width:460px){
-      .hero h1{font-size:47px}.rank-frame{padding:8px}.rank-grid{gap:7px}.rank-tile{height:101px;padding:7px 4px}.rank-tile-art{width:64px;height:64px}.rank-tile-art img{width:68px;height:68px}.rank-tile-name{font-size:7px}.stat-grid article{padding:13px}.stat-grid strong{font-size:19px}.rp-main strong{font-size:51px}.rp-orb{width:50px;height:50px}.rp-orb img{width:40px;height:40px}.cost-table{min-width:560px}
+      .hero h1{font-size:47px}.rank-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.rank-tile{height:106px}.rank-tile-art{width:67px;height:67px}.rank-tile-art img{width:72px;height:72px}
+      .result-number strong{font-size:51px}.rp-icon-frame{width:52px;height:52px}.rp-icon-frame img{width:41px;height:41px}.result-stats>div{padding:13px}
     }
 
     @media(prefers-reduced-motion:reduce){
-      .hero-ring-one,.hero-ring-two,.status-badge i,.rank-tile.selected,.rank-tile.selected .rank-tile-bg,.rank-tile.selected .rank-tile-shine{animation:none!important}
-      .rank-tile,.rank-tile-art img{transition:none!important}
+      .ring-a,.ring-b,.workspace-status i,.rank-tile.selected,.rank-tile.selected .rank-tile-aura,.rank-tile.selected .rank-tile-sheen,.rank-tile.selected:after{animation:none!important}
     }
   </style>
 </BaseLayout>
