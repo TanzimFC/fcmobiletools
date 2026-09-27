@@ -1,9 +1,8 @@
---- 
+---
 const current = Astro.url.pathname;
-const isActive = (href) => href === '/' ? current === '/' : current === href || current.startsWith(`${href}/`);
+const isActive = (href) => href === '/' ? current === '/' : current === href || current.startsWith(href + '/');
 const navGroups = [
   { label: 'Tools', links: [
-    { label: 'Player Database', href: '/players', meta: 'Browse players' },
     { label: 'Team OVR', href: '/team-ovr', meta: 'Squad rating' },
     { label: 'Training Calculator', href: '/training-calculator', meta: 'XP planner' },
     { label: 'Rank Up Calculator', href: '/rank-up-calculator', meta: 'Rank costs' },
@@ -37,10 +36,6 @@ const groupActive = (group) => group.links.some((item) => isActive(item.href));
       ))}
       <a class:list={{ active: current.startsWith('/blog') }} href="/blog">Articles</a>
     </nav>
-    <form class="fcmt-search" action="/players/" method="get" role="search">
-      <input type="search" name="q" placeholder="Search players" aria-label="Search players" autocomplete="off" />
-      <button type="submit" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.2 4.2"></path></svg></button>
-    </form>
     <button id="fcmtMenuBtn" class="fcmt-menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="fcmtDrawer"><span></span><span></span><span></span></button>
   </div>
   <div id="fcmtBackdrop" class="fcmt-backdrop" aria-hidden="true"></div>
@@ -49,10 +44,6 @@ const groupActive = (group) => group.links.some((item) => isActive(item.href));
       <a class="fcmt-drawer-logo" href="/" aria-label="FCMobiletools home"><img src="/assets/images/logo.png" alt="FCMobiletools" /></a>
       <button id="fcmtCloseBtn" class="fcmt-close" type="button" aria-label="Close menu">×</button>
     </div>
-    <form class="fcmt-mobile-search" action="/players/" method="get" role="search">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.2 4.2"></path></svg>
-      <input type="search" name="q" placeholder="Search players" aria-label="Search players" autocomplete="off" />
-    </form>
     <a class:list={{ active: isActive('/') }} href="/">Home</a>
     {navGroups.map((group) => (
       <section class="fcmt-mobile-group">
@@ -83,17 +74,16 @@ const groupActive = (group) => group.links.some((item) => isActive(item.href));
 
 <style>
 .fcmt-header{position:sticky;top:0;z-index:1200;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(7,16,24,.78);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);box-shadow:0 14px 42px rgba(0,0,0,.18)}
-.fcmt-header-inner{min-height:86px;display:flex;align-items:center;gap:24px}
-.fcmt-brand{display:flex;align-items:center;width:250px;height:64px;flex:0 0 auto}.fcmt-brand img{width:100%;height:100%;object-fit:contain;object-position:left center;filter:drop-shadow(0 10px 24px rgba(0,0,0,.28));transition:transform .2s ease}.fcmt-brand:hover img{transform:scale(1.015) translateY(-1px)}
+.fcmt-header-inner{min-height:94px;display:flex;align-items:center;gap:24px}
+.fcmt-brand{display:flex;align-items:center;width:300px;height:76px;flex:0 0 auto}.fcmt-brand img{width:100%;height:100%;object-fit:contain;object-position:left center;filter:drop-shadow(0 10px 24px rgba(0,0,0,.28));transition:transform .2s ease}.fcmt-brand:hover img{transform:scale(1.015) translateY(-1px)}
 .fcmt-nav{display:flex;align-items:center;gap:3px;margin-left:auto}.fcmt-nav>a,.fcmt-group>button{position:relative;display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:10px 13px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--muted);font:700 13px/1 var(--font-body);cursor:pointer;text-decoration:none;transition:.18s ease}.fcmt-nav>a:hover,.fcmt-nav>a.active,.fcmt-group>button:hover,.fcmt-group>button.active{color:var(--text);background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.065)}.fcmt-nav>a.active:after,.fcmt-group>button.active:after{content:"";position:absolute;left:13px;right:13px;bottom:4px;height:2px;border-radius:999px;background:var(--primary);box-shadow:0 0 12px rgba(76,201,255,.28)}
 .fcmt-group{position:relative}.fcmt-group>button span{color:var(--muted-strong);transition:transform .18s ease}.fcmt-group:hover>button span{transform:translateY(1px)}.fcmt-dropdown{position:absolute;top:calc(100% + 10px);left:50%;width:300px;padding:8px;transform:translate(-50%,8px);border:1px solid rgba(255,255,255,.09);border-radius:18px;background:rgba(15,26,38,.98);box-shadow:0 28px 70px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.035);opacity:0;pointer-events:none;transition:.18s ease}.fcmt-group:hover .fcmt-dropdown,.fcmt-group:focus-within .fcmt-dropdown{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
 .fcmt-dropdown a{display:flex;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid transparent;border-radius:13px;color:var(--muted);text-decoration:none;transition:.16s ease}.fcmt-dropdown a:hover,.fcmt-dropdown a.active{color:var(--text);background:rgba(76,201,255,.065);border-color:rgba(76,201,255,.1);transform:translateX(2px)}.fcmt-dropdown strong,.fcmt-dropdown small{display:block}.fcmt-dropdown strong{font:700 13px/1.25 var(--font-body)}.fcmt-dropdown small{margin-top:4px;font:500 11px/1.2 var(--font-body);color:#738494}.fcmt-dropdown b{color:#738494}
-.fcmt-search{display:flex;align-items:center;width:174px;min-height:42px;margin-left:5px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(15,26,38,.7);overflow:hidden;transition:.18s ease}.fcmt-search:focus-within{border-color:rgba(76,201,255,.38);box-shadow:0 0 0 4px rgba(76,201,255,.06)}.fcmt-search input,.fcmt-mobile-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font:600 12px/1 var(--font-body)}.fcmt-search input{padding:11px 10px 11px 12px}.fcmt-search input::placeholder,.fcmt-mobile-search input::placeholder{color:#6f8192}.fcmt-search button{width:40px;height:40px;flex:0 0 40px;border:0;background:transparent;color:var(--muted-strong);cursor:pointer}.fcmt-search svg,.fcmt-mobile-search svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}.fcmt-search button:hover{color:var(--primary)}
-.fcmt-menu{display:none;width:46px;height:46px;flex:0 0 46px;align-items:center;justify-content:center;flex-direction:column;gap:5px;margin-left:auto;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(15,26,38,.82);color:var(--text);cursor:pointer}.fcmt-menu span{width:17px;height:2px;border-radius:99px;background:currentColor}
-.fcmt-backdrop{position:fixed;inset:0;z-index:1290;background:rgba(2,8,13,.58);backdrop-filter:blur(5px);opacity:0;pointer-events:none;transition:opacity .22s ease}.fcmt-backdrop.open{opacity:1;pointer-events:auto}.fcmt-drawer{position:fixed;top:0;right:0;z-index:1300;width:min(420px,92vw);height:100dvh;padding:22px;overflow-y:auto;border-left:1px solid rgba(255,255,255,.09);background:linear-gradient(180deg,#0f1a26fc,#071018fc);box-shadow:-28px 0 80px rgba(0,0,0,.4);transform:translateX(105%);transition:transform .24s ease}.fcmt-drawer.open{transform:translateX(0)}.fcmt-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.fcmt-drawer-logo{display:flex;width:206px;height:54px}.fcmt-drawer-logo img{width:100%;height:100%;object-fit:contain;object-position:left center}.fcmt-close{width:44px;height:44px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.035);color:var(--text);font-size:25px;cursor:pointer}.fcmt-mobile-search{display:flex;align-items:center;gap:9px;width:100%;min-height:48px;margin-bottom:14px;padding:0 13px;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.035)}.fcmt-mobile-search input{padding:12px 0}.fcmt-mobile-search svg{color:var(--muted-strong);flex:0 0 18px}
+.fcmt-menu{display:none;width:48px;height:48px;flex:0 0 48px;align-items:center;justify-content:center;flex-direction:column;gap:5px;margin-left:auto;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(15,26,38,.82);color:var(--text);cursor:pointer}.fcmt-menu span{width:18px;height:2px;border-radius:99px;background:currentColor}
+.fcmt-backdrop{position:fixed;inset:0;z-index:1290;background:rgba(2,8,13,.58);backdrop-filter:blur(5px);opacity:0;pointer-events:none;transition:opacity .22s ease}.fcmt-backdrop.open{opacity:1;pointer-events:auto}.fcmt-drawer{position:fixed;top:0;right:0;z-index:1300;width:min(420px,92vw);height:100dvh;padding:22px;overflow-y:auto;border-left:1px solid rgba(255,255,255,.09);background:linear-gradient(180deg,#0f1a26fc,#071018fc);box-shadow:-28px 0 80px rgba(0,0,0,.4);transform:translateX(105%);transition:transform .24s ease}.fcmt-drawer.open{transform:translateX(0)}.fcmt-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.fcmt-drawer-logo{display:flex;width:238px;height:64px}.fcmt-drawer-logo img{width:100%;height:100%;object-fit:contain;object-position:left center}.fcmt-close{width:44px;height:44px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.035);color:var(--text);font-size:25px;cursor:pointer}
 .fcmt-drawer>a,.fcmt-mobile-group>a{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;align-items:center;min-height:56px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.065);border-radius:12px;color:var(--muted);text-decoration:none;transition:.17s ease}.fcmt-mobile-group{margin-top:6px;padding-top:7px;border-top:1px solid rgba(255,255,255,.065)}.fcmt-mobile-group>span{display:block;padding:8px 12px 7px;color:var(--primary);font:800 10px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase}.fcmt-mobile-group>a{border-top:0}.fcmt-drawer>a:hover,.fcmt-drawer>a.active,.fcmt-mobile-group>a:hover,.fcmt-mobile-group>a.active{color:var(--text);background:rgba(76,201,255,.065);transform:translateX(2px)}.fcmt-drawer strong,.fcmt-drawer small{display:block}.fcmt-drawer strong{font:700 14px/1.25 var(--font-body)}.fcmt-drawer small{color:#6f8292;font:500 11px/1.25 var(--font-body)}.fcmt-drawer b{color:#6f8292}.fcmt-drawer a:hover b,.fcmt-drawer a.active b{color:var(--primary)}
 :global(html.fcmt-menu-open){overflow:hidden}
-@media(max-width:1120px){.fcmt-header-inner{gap:14px}.fcmt-brand{width:224px}.fcmt-nav>a,.fcmt-group>button{padding-inline:10px}.fcmt-search{width:158px}}
-@media(max-width:980px){.fcmt-header-inner{min-height:76px}.fcmt-nav,.fcmt-search{display:none}.fcmt-menu{display:flex}.fcmt-brand{width:236px;height:60px}}
-@media(max-width:560px){.fcmt-header-inner{width:calc(100% - 20px);min-height:70px}.fcmt-brand{width:206px;height:55px}.fcmt-drawer{width:min(390px,94vw);padding:18px}}
+@media(max-width:1200px){.fcmt-header-inner{gap:14px}.fcmt-brand{width:280px}.fcmt-nav>a,.fcmt-group>button{padding-inline:10px}}
+@media(max-width:980px){.fcmt-header-inner{min-height:82px}.fcmt-nav{display:none}.fcmt-menu{display:flex}.fcmt-brand{width:258px;height:66px}}
+@media(max-width:560px){.fcmt-header-inner{width:calc(100% - 20px);min-height:74px}.fcmt-brand{width:224px;height:60px}.fcmt-drawer{width:min(390px,94vw);padding:18px}.fcmt-drawer-logo{width:222px;height:60px}}
 </style>
