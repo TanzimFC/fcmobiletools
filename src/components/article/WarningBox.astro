@@ -1,0 +1,16 @@
+---
+const { label = 'Important', title = '' } = Astro.props;
+---
+<aside class="article-warning" role="alert">
+  <div class="warning-icon" aria-hidden="true">!</div>
+  <div class="warning-content">
+    <span>{label}</span>
+    {title ? <strong>{title}</strong> : null}
+    <div><slot /></div>
+  </div>
+</aside>
+<style>
+.article-warning{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;margin:30px 0;padding:16px 17px;border:1px solid rgba(255,112,112,.2);border-radius:16px;background:linear-gradient(145deg,rgba(52,19,23,.62),rgba(24,11,14,.92));box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.warning-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid rgba(255,112,112,.28);border-radius:11px;background:rgba(255,112,112,.08);color:#ff9696;font:900 13px/1 var(--font-display)}
+.warning-content{display:grid;gap:5px}.warning-content>span{font:900 7px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:#ff9696}.warning-content strong{font:700 15px/1.35 var(--font-display);color:#fff2f2}.warning-content>div{color:#c8aeb2;font:400 13px/1.72 var(--font-body)}.warning-content :global(p){margin:0}
+</style>
