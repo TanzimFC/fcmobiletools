@@ -99,8 +99,8 @@ const siteSchema = {
       const num = loader.querySelector('.sl-num i');
 
       // Loader timing: MIN is the minimum visible time; MAX is the safety ceiling.
-      const MIN = 1200;
-      const MAX = 4500;
+      const MIN = 450;
+      const MAX = 1800;
 
       let p = 0;
       let start = performance.now();
@@ -132,7 +132,7 @@ const siteSchema = {
         const canFinish = !navigating && (ready || t > MAX) && t > MIN;
 
         if (canFinish) {
-          p = Math.min(1, p + Math.max((1 - p) * 0.14, 0.006));
+          p = Math.min(1, p + Math.max((1 - p) * 0.26, 0.014));
         } else {
           p += (Math.min(0.9, 1 - Math.exp(-t / 800)) - p) * 0.1;
         }
@@ -232,7 +232,7 @@ const siteSchema = {
     .site-loader.done{
       visibility:hidden;
       pointer-events:none;
-      transition:visibility 0s linear 1.4s;
+      transition:visibility 0s linear .62s;
     }
 
     .sl-half{
@@ -252,7 +252,7 @@ const siteSchema = {
     .sl-bot{bottom:0}
     .done .sl-top{
       transform:translateY(-101%);
-      transition:transform 1s cubic-bezier(.76,0,.24,1) .3s;
+      transition:transform .5s cubic-bezier(.76,0,.24,1) .06s;
     }
     .done .sl-bot{
       transform:translateY(101%);
@@ -285,11 +285,11 @@ const siteSchema = {
     .sl-core{
       position:relative;
       z-index:2;
-      transition:opacity .35s ease,transform .6s cubic-bezier(.4,0,.2,1);
+      transition:opacity .22s ease,transform .34s cubic-bezier(.4,0,.2,1);
     }
     .done .sl-core{
       opacity:0;
-      transform:scale(1.07);
+      transform:scale(1.045);
     }
 
     .sl-ring{
