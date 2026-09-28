@@ -99,12 +99,11 @@ const siteSchema = {
       const num = loader.querySelector('.sl-num i');
 
       // Loader timing: MIN is the minimum visible time; MAX is the safety ceiling.
-      const MIN = 180;
-      const MAX = 1000;
+      const MIN = 650;
+      const MAX = 2200;
 
       let p = 0;
       let start = performance.now();
-      let navigating = false;
       let raf = 0;
       let timer = 0;
       let ready = document.readyState === 'complete';
@@ -129,10 +128,10 @@ const siteSchema = {
 
       const tick = (now) => {
         const t = now - start;
-        const canFinish = !navigating && (ready || t > MAX) && t > MIN;
+        const canFinish = (ready || t > MAX) && t > MIN;
 
         if (canFinish) {
-          p = Math.min(1, p + Math.max((1 - p) * 0.42, 0.045));
+          p = Math.min(1, p + Math.max((1 - p) * 0.34, 0.02));
         } else {
           p += (Math.min(0.9, 1 - Math.exp(-t / 800)) - p) * 0.1;
         }
@@ -142,7 +141,7 @@ const siteSchema = {
         if (p < 1) {
           raf = requestAnimationFrame(tick);
         } else {
-          timer = setTimeout(open, 80);
+          timer = setTimeout(open, 120);
         }
       };
 
@@ -154,36 +153,10 @@ const siteSchema = {
 
       raf = requestAnimationFrame(tick);
 
-      // Leaving for another page: restart the pitch and loading ring.
-      document.addEventListener('click', (event) => {
-        const link = event.target.closest?.('a');
-        if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
-
-        const url = new URL(link.href, location.href);
-        const isInternalNavigation =
-          url.origin === location.origin &&
-          url.pathname !== location.pathname &&
-          !event.metaKey &&
-          !event.ctrlKey &&
-          !event.shiftKey &&
-          !event.altKey;
-
-        if (!isInternalNavigation) return;
-
-        stop();
-        navigating = true;
-        p = 0;
-        start = performance.now();
-        loader.classList.remove('done');
-        paint();
-        raf = requestAnimationFrame(tick);
-      }, { capture: true });
-
       // Back/forward cache restore: never leave the loader stuck on screen.
       window.addEventListener('pageshow', (event) => {
         if (!event.persisted) return;
         stop();
-        navigating = false;
         p = 1;
         paint();
         open();
