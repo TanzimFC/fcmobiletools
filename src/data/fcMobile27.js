@@ -1,7 +1,7 @@
 // FC Mobile 27 APK release data managed by the admin panel.
 // Keep this file JSON-compatible so the Worker can validate and update it.
 export const FC_MOBILE_27 = {
-  "lastUpdated": "2026-09-27",
+  "lastUpdated": "2026-09-28",
   "logoUrl": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790218791/fc-mobile-tools/t0gwuzeytzlmk13pes8q.webp",
   "releases": [
     {
@@ -11,7 +11,7 @@ export const FC_MOBILE_27 = {
       "season": "Season 27",
       "buildLabel": "September 24, 2026 season update",
       "releaseDate": "2026-09-24",
-      "downloadUrl": "https://www.apkmirror.com/wp-content/themes/APKMirror/download.php?id=16192074&key=ac5acb450fa6186d24157293dcfa4a4787f1e2b0&forcebaseapk=true",
+      "downloadUrl": "https://omg10.com/4/11653028",
       "status": "latest",
       "platform": "Android",
       "fileType": "APK",
