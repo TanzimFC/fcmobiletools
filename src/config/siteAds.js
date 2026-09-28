@@ -1,7 +1,7 @@
 // Central ad configuration managed by the FC Mobile Tools admin panel.
 // /admin, /api, and /creator/login remain excluded from ads server-side.
 export const SITE_ADS = {
-  "enabled": false,
+  "enabled": true,
   "provider": "Monetag",
   "popunder": {
     "enabled": true,
