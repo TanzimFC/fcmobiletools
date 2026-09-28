@@ -2,10 +2,9 @@
 const current = Astro.url.pathname;
 const isActive = (href) => href === '/' ? current === '/' : current === href || current.startsWith(href + '/');
 
-/* Set to true once /assets/images/logo.png exists (square icon, no text) */
-const hasMark = false;
+const hasMark = true;
 
-const cta = { label: 'FC Mobile 27 APK', href: '/fc-mobile-27', meta: 'Season 27 · Sep 24' };
+const cta = { label: 'FC Mobile 27 APK', href: '/fc-mobile-27', meta: 'Season 27 · Sep 24', image: 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790218791/fc-mobile-tools/t0gwuzeytzlmk13pes8q.webp' };
 
 const navGroups = [
   { id: 'tools', label: 'Tools', links: [
@@ -90,6 +89,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
               </div>
 
               <a class="fcmt-feature" href={cta.href}>
+                <img class="fcmt-feature-art" src={cta.image} alt="" width="520" height="300" loading="eager" decoding="async" />
                 <span class="fcmt-feature-glow" aria-hidden="true"></span>
                 <span class="fcmt-feature-tag"><i></i>Most popular</span>
                 <strong>{cta.label}</strong>
@@ -148,6 +148,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
     </div>
 
     <a class="fcmt-hero" href={cta.href}>
+      <img class="fcmt-feature-art" src={cta.image} alt="" width="720" height="360" loading="eager" decoding="async" />
       <span class="fcmt-feature-glow" aria-hidden="true"></span>
       <span class="fcmt-feature-tag"><i></i>Most popular</span>
       <strong>{cta.label}</strong>
@@ -397,7 +398,11 @@ html.fcmt-lock{overflow:hidden}
 
 /* Featured card */
 .fcmt-feature,.fcmt-hero{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;overflow:hidden;padding:18px;border-radius:18px;border:1px solid rgba(76,201,255,.22);background:linear-gradient(160deg,rgba(76,201,255,.16),rgba(76,201,255,.03) 55%,rgba(8,16,24,.6));text-decoration:none;color:var(--text);transition:transform .25s cubic-bezier(.2,.8,.2,1),border-color .25s,box-shadow .25s}
+.fcmt-feature{min-height:238px}
+.fcmt-hero{min-height:132px}
 .fcmt-feature:hover,.fcmt-hero:active{transform:translateY(-2px);border-color:rgba(76,201,255,.45);box-shadow:0 20px 40px -14px rgba(76,201,255,.3)}
+.fcmt-feature-art{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.82;filter:saturate(.95) contrast(1.02)}
+.fcmt-feature::after,.fcmt-hero::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(5,12,18,.05) 0%,rgba(5,12,18,.18) 26%,rgba(5,12,18,.88) 100%);pointer-events:none}
 .fcmt-feature-glow{position:absolute;z-index:-1;top:-40%;right:-30%;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(76,201,255,.5),transparent 65%);filter:blur(10px);animation:fcmt-drift 7s ease-in-out infinite alternate}
 @keyframes fcmt-drift{to{transform:translate(-16px,18px) scale(1.15)}}
 .fcmt-feature-tag{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;padding:5px 10px;border-radius:99px;background:rgba(4,18,27,.6);border:1px solid rgba(76,201,255,.28);color:var(--primary);font:800 9.5px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase}
@@ -509,7 +514,7 @@ kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 
   /* Leave room so the dock never covers page content or the footer */
   body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0))}
 }
-@media(max-width:380px){.fcmt-word strong{font-size:15px}.fcmt-word em{letter-spacing:.28em}.fcmt-sec-grid{gap:6px}.fcmt-tile{padding:12px}}
+@media(max-width:380px){.fcmt-mark-img{width:38px;height:38px;flex-basis:38px}.fcmt-word strong{font-size:15px}.fcmt-word em{letter-spacing:.28em}.fcmt-sec-grid{gap:6px}.fcmt-tile{padding:12px}}
 
 @media(prefers-reduced-motion:reduce){
   .fcmt *,.fcmt-sheet,.fcmt-sheet *,.fcmt-pal,.fcmt-pal *,.fcmt-dock,.fcmt-dock *{animation:none!important;transition-duration:.01ms!important;transition-delay:0s!important}
