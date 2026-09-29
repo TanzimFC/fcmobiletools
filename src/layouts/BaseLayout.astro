@@ -9,27 +9,62 @@ export interface Props {
   description?: string;
   image?: string;
   type?: 'website' | 'article';
+  publishedTime?: string;
+  modifiedTime?: string;
+  section?: string;
+  author?: string;
 }
 
 const {
   title,
-  description = 'FC Mobile tools, calculators, redeem codes, guides and event resources from FCMobiletools.',
+  description = 'FCMOBILETOOLS is your FC Mobile hub for live events, redeem codes, player tools, calculators, guides and the latest game updates.',
   image = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1200/v1789653531/fc-mobile-tools/o6ocwktktmw5yml9n8km.png',
   type = 'website',
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.online');
-const siteUrl = new URL('/', Astro.site ?? 'https://fcmobiletools.online');
+const siteOrigin = Astro.site ?? new URL('https://fcmobiletools.online');
+const canonicalPath = Astro.url.pathname === '/' || Astro.url.pathname.endsWith('/')
+  ? Astro.url.pathname
+  : Astro.url.pathname + '/';
+const canonical = new URL(canonicalPath, siteOrigin);
+const siteUrl = new URL('/', siteOrigin);
+const siteName = 'FCMOBILETOOLS';
+const siteDescription = description;
+const socialImage = image ? new URL(image, siteOrigin).toString() : new URL('/assets/images/hero.png', siteOrigin).toString();
+const isHomePage = canonical.pathname === '/';
+
 const siteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'FCMobiletools',
+  '@id': siteUrl.toString() + '#website',
+  name: siteName,
   alternateName: 'FC Mobile Tools',
-  url: siteUrl,
-  publisher: {
-    '@type': 'Person',
-    name: 'Tanzim',
-  },
+  url: siteUrl.toString(),
+  description: siteDescription,
+  publisher: { '@id': siteUrl.toString() + '#organization' }
+};
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': siteUrl.toString() + '#organization',
+  name: siteName,
+  alternateName: 'FC Mobile Tools',
+  url: siteUrl.toString(),
+  logo: {
+    '@type': 'ImageObject',
+    url: new URL('/assets/images/favicon.png', siteOrigin).toString()
+  }
+};
+
+const pageSchema = {
+  '@context': 'https://schema.org',
+  '@type': type === 'article' ? 'Article' : 'WebPage',
+  '@id': canonical.toString() + '#webpage',
+  url: canonical.toString(),
+  name: title,
+  description: description,
+  isPartOf: { '@id': siteUrl.toString() + '#website' }
 };
 ---
 <!doctype html>
@@ -39,8 +74,12 @@ const siteSchema = {
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#071018" />
   <meta name="description" content={description} />
-  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <meta name="author" content={author ?? 'FCMOBILETOOLS'} />
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
   <link rel="canonical" href={canonical} />
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+  <link rel="apple-touch-icon" href="/assets/images/favicon.png" />
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -51,14 +90,22 @@ const siteSchema = {
   <meta property="og:description" content={description} />
   <meta property="og:type" content={type} />
   <meta property="og:url" content={canonical} />
-  <meta property="og:image" content={image} />
-  <meta property="og:image:alt" content="FCMobiletools FC Mobile artwork" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:image" content={socialImage} />
+  <meta property="og:image:alt" content="FCMOBILETOOLS FC Mobile artwork" />
+  {publishedTime ? <meta property="article:published_time" content={publishedTime} /> : null}
+  {modifiedTime ? <meta property="article:modified_time" content={modifiedTime} /> : null}
+  {section ? <meta property="article:section" content={section} /> : null}
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
-  <meta name="twitter:image" content={image} />
-  <title>{title} — FCMobiletools</title>
-  <script type="application/ld+json" set:html={JSON.stringify(siteSchema)}></script>
+  <meta name="twitter:url" content={canonical} />
+  <meta name="twitter:image" content={socialImage} />
+  <title>{title} | FCMOBILETOOLS</title>
+  {isHomePage ? <>
+    <script type="application/ld+json" set:html={JSON.stringify(siteSchema)}></script>
+    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)}></script>
+  </> : <script type="application/ld+json" set:html={JSON.stringify(pageSchema)}></script>}
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-YY53FCHMLW"></script>
   <script is:inline>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-YY53FCHMLW');</script>
 </head>
