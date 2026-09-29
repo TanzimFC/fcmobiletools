@@ -72,10 +72,21 @@ const articleSchema={
   description:post.data.seoDescription??post.data.description,
   datePublished:post.data.publishedAt?.toISOString(),
   dateModified:(post.data.updatedAt??post.data.publishedAt)?.toISOString(),
-  author:{'@type':'Person',name:post.data.author},
-  publisher:{'@type':'Person',name:'TanzimFC'},
+  author:{
+    '@type':'Person',
+    name:post.data.author,
+    url:new URL('/blog/author/'+slugify(post.data.author)+'/',Astro.site??'https://fcmobiletools.online').toString()
+  },
+  publisher:{
+    '@type':'Organization',
+    name:'FCMOBILETOOLS',
+    url:new URL('/',Astro.site??'https://fcmobiletools.online').toString(),
+    logo:{'@type':'ImageObject',url:new URL('/assets/images/favicon.png',Astro.site??'https://fcmobiletools.online').toString()}
+  },
   image:coverImage?[{'@type':'ImageObject',url:coverImage,caption:post.data.imageCaption??post.data.title}]:undefined,
-  mainEntityOfPage:articleUrl
+  mainEntityOfPage:{'@type':'WebPage','@id':articleUrl},
+  articleSection:category,
+  keywords:post.data.tags?.length?post.data.tags:undefined
 };
 const breadcrumbSchema={
   '@context':'https://schema.org',
@@ -90,7 +101,7 @@ const breadcrumbSchema={
 const shareUrl=articleUrl;
 const shareText=post.data.title+' — FCMOBILETOOLS';
 ---
-<BaseLayout title={post.data.seoTitle ?? post.data.title} description={post.data.seoDescription ?? post.data.description} image={coverImage} type="article">
+<BaseLayout title={post.data.seoTitle ?? post.data.title} description={post.data.seoDescription ?? post.data.description} image={coverImage} type="article" publishedTime={post.data.publishedAt?.toISOString()} modifiedTime={(post.data.updatedAt ?? post.data.publishedAt)?.toISOString()} section={category} author={post.data.author}>
 <script type="application/ld+json" set:html={JSON.stringify(articleSchema)}></script>
 <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)}></script>
 <div class="article-progress"><span id="articleProgress"></span></div>
