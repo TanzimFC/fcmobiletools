@@ -61,7 +61,7 @@ const POSITIONS = [
                   <article class="card" data-index={i} style={'--x:' + x + '%;--y:' + y + '%'}>
                     <div class="card-top">
                       <span class="position">{pos}</span>
-                      <span>Player {i + 1}</span>
+                      <span>P{i + 1}</span>
                     </div>
                     <input
                       data-field="baseOVR"
@@ -608,6 +608,61 @@ const POSITIONS = [
       .example-row{grid-template-columns:1.2fr 1fr .45fr;padding:9px}
       .formula code{font-size:8px}
       .guide-faq summary{font-size:9px}
+    }
+  </style>
+  <style is="global">
+    /* Runtime-generated Team OVR UI needs global selectors because Astro cannot scope
+       CSS onto nodes created later by team-ovr.js. Keep every selector inside .ovr-tool. */
+    .ovr-tool .subs{display:grid;grid-template-columns:1fr;gap:10px;margin-top:13px}
+    .ovr-tool .sub{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:11px;padding:14px;border:1px solid rgba(107,207,242,.12);border-radius:16px;background:linear-gradient(155deg,#0c1d28,#08151d);overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.14);min-width:0}
+    .ovr-tool .sub:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--blue),rgba(107,207,242,.10));opacity:.9;pointer-events:none}
+    .ovr-tool .sub-top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:0 0 11px;border-bottom:1px solid var(--border)}
+    .ovr-tool .sub-top-left{display:flex;align-items:center;gap:9px;min-width:0}
+    .ovr-tool .sub-top-left small{font:800 7px var(--mono);color:var(--blue);letter-spacing:.12em;white-space:nowrap}
+    .ovr-tool .sub-top-left b{font:900 10px var(--mono);white-space:nowrap}
+    .ovr-tool .sub-status{display:inline-flex;align-items:center;gap:5px;min-width:0;margin-left:auto;padding:6px 8px;border:1px solid rgba(107,207,242,.12);border-radius:999px;background:rgba(107,207,242,.035);font:800 6px var(--mono);color:#7893a0;letter-spacing:.07em;white-space:nowrap}
+    .ovr-tool .sub-status:before{content:"";width:4px;height:4px;flex:0 0 4px;border-radius:50%;background:var(--blue);box-shadow:0 0 9px rgba(107,207,242,.45)}
+    .ovr-tool .sub-remove{width:30px;height:30px;flex:0 0 30px;border:1px solid var(--border);border-radius:9px;background:rgba(255,255,255,.018);color:#76909b;cursor:pointer;font:700 16px/1 var(--mono);transition:.15s}
+    .ovr-tool .sub-remove:hover{color:var(--text);border-color:rgba(107,207,242,.45);background:var(--blue3);transform:translateY(-1px)}
+    .ovr-tool .sub-field{min-width:0;padding:3px 2px 2px}
+    .ovr-tool .sub-field label{display:block;min-width:0;color:#718b98;font:800 7px/1 var(--mono);letter-spacing:.1em;white-space:nowrap}
+    .ovr-tool .sub-field label:before{content:"";display:block;width:18px;height:2px;margin-bottom:8px;border-radius:99px;background:rgba(107,207,242,.35)}
+    .ovr-tool .sub input,.ovr-tool .sub select{display:block;width:100%;min-width:0;height:43px;margin-top:8px;border:1px solid #294756;border-radius:11px;background:#07151e;color:var(--text);padding:0 11px;font:800 11px var(--mono);outline:0;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+    .ovr-tool .sub input::placeholder{color:#5d7886}
+    .ovr-tool .sub input:hover,.ovr-tool .sub select:hover{border-color:#35596a;background:#081923}
+    .ovr-tool .sub input:focus,.ovr-tool .sub select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(107,207,242,.065);background:#091b25}
+    .ovr-tool .sub-foot{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;margin-top:1px;padding:12px 2px 0;border-top:1px solid var(--border)}
+    .ovr-tool .sub-foot-copy{min-width:0}
+    .ovr-tool .sub-foot-copy span{display:block;color:#73909c;font:800 7px var(--mono);letter-spacing:.1em}
+    .ovr-tool .sub-foot-copy small{display:block;margin-top:4px;color:#58727f;font-size:8px;line-height:1.35}
+    .ovr-tool .sub-foot strong{min-width:48px;text-align:right;color:var(--blue);font:900 24px var(--mono);letter-spacing:-.04em}
+    .ovr-tool .add-sub-btn{display:flex;align-items:center;gap:10px;min-width:0;margin-top:11px;padding:0 12px;text-align:left}
+    .ovr-tool .add-sub-btn .add-icon{display:grid;place-items:center;width:26px;height:26px;flex:0 0 26px;border-radius:8px;background:var(--blue3);color:var(--blue);font:900 18px/1 var(--mono)}
+    .ovr-tool .add-sub-btn .add-copy{display:block;min-width:0}
+    .ovr-tool .add-sub-btn .add-copy b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+    .ovr-tool .add-sub-btn .add-copy small{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#66818e;font:700 6px var(--mono);letter-spacing:.08em}
+    .ovr-tool .add-sub-btn .add-max{margin-left:auto;color:#6d8793;font:800 6px var(--mono);letter-spacing:.08em;white-space:nowrap}
+    .ovr-tool .planner-empty{padding:13px;margin-top:12px;border:1px dashed #315061;border-radius:11px;color:var(--muted);background:rgba(8,19,27,.36);font-size:9px;line-height:1.6;overflow-wrap:anywhere}
+    .ovr-tool .route{padding:12px;margin-top:9px;border:1px solid var(--border);border-radius:11px;background:rgba(8,19,27,.55);min-width:0;overflow:hidden}
+    .ovr-tool .route.best{border-color:var(--blue);box-shadow:0 0 0 1px rgba(107,207,242,.05)}
+    .ovr-tool .route-title{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;font-size:10px;font-weight:900}
+    .ovr-tool .route-title b,.ovr-tool .route-title span{min-width:0;overflow-wrap:anywhere}
+    .ovr-tool .route-title span{font:800 7px var(--mono);color:var(--blue)}
+    .ovr-tool .route p{margin:7px 0 0;color:var(--muted);font-size:9px;line-height:1.6;overflow-wrap:anywhere}
+    .ovr-tool .bottleneck-card{display:flex;align-items:center;gap:12px;min-width:0;padding:12px;margin-top:12px;border:1px solid var(--border);border-radius:11px;background:rgba(8,19,27,.5);overflow:hidden}
+    .ovr-tool .bottleneck-ovr{min-width:48px;color:var(--blue);font:900 24px var(--mono)}
+    .ovr-tool .bottleneck-card>div:last-child{min-width:0}
+    .ovr-tool .bottleneck-card strong{display:block;overflow-wrap:anywhere;font-size:10px}
+    .ovr-tool .bottleneck-card p{margin:3px 0 0;color:var(--muted);font-size:8px;line-height:1.5;overflow-wrap:anywhere}
+    .ovr-tool .next-routes{min-width:0;overflow-wrap:anywhere}
+    @media(max-width:520px){
+      .ovr-tool .sub{grid-template-columns:1fr;padding:12px}
+      .ovr-tool .sub-status{font-size:5.5px;padding:5px 6px}
+      .ovr-tool .sub-top{align-items:center}
+      .ovr-tool .sub-foot{grid-column:1}
+      .ovr-tool .add-sub-btn{padding-inline:10px}
+      .ovr-tool .add-sub-btn .add-copy small{letter-spacing:.04em}
+      .ovr-tool .bottleneck-card{align-items:flex-start}
     }
   </style>
   <script src="../scripts/team-ovr.js"></script>
