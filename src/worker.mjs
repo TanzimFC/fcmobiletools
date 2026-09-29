@@ -850,6 +850,9 @@ export default { async fetch(request,env) {
   }
 
   if(url.pathname === '/players' || url.pathname.startsWith('/players/') || url.pathname === '/player' || url.pathname.startsWith('/player/')) return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});
+  if(url.pathname === '/fc-mobile-beta' || url.pathname === '/fc-mobile-beta/' || url.pathname === '/legacy/fc-mobile-beta.html') {
+    return Response.redirect(new URL('/fc-mobile-27/',url),301);
+  }
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
   if(url.pathname === '/api/players' || url.pathname.startsWith('/api/players/')) return json({error:'Player database is temporarily unavailable.'},404);
   if(url.pathname === '/api/football' && request.method === 'GET') {
