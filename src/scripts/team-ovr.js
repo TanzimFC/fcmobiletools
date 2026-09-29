@@ -41,25 +41,6 @@ if (formation && subsEl && addSub && reset) {
     rightCol.insertBefore(badgesBlock, plannerBlock);
   }
 
-  const style = document.createElement('style');
-  style.textContent = `
-    .pitch{aspect-ratio:2/3!important;height:auto!important}
-    .pitch>img{object-fit:fill!important}
-    .formation{overflow:visible}
-    .card{width:clamp(58px,14%,112px);padding:7px}
-    .card-top{gap:3px}.card-top span:last-child{white-space:nowrap;font-size:7px}
-    .card input{height:31px;font-size:11px}.card select{height:27px;font-size:8px}
-    .subs-block,.badges-block{margin-bottom:20px}
-    .subs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .sub{min-width:0}.sub-foot{display:flex;justify-content:space-between;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font:700 7px var(--mono);color:var(--muted)}
-    .sub-foot b{color:var(--blue);font:900 10px var(--mono)}
-    .badges{display:flex!important;flex-direction:column!important;gap:10px!important;width:100%}
-    .badge{width:100%!important;box-sizing:border-box!important;min-width:0!important}
-    @media(max-width:760px){.card{width:58px;padding:5px}.card-top span:last-child{font-size:6px}.card input{height:26px;font-size:9px}.card select{height:23px;font-size:7px}.card-ovr{font-size:8px}.subs{grid-template-columns:1fr}.right-col .subs-block,.right-col .badges-block{margin-bottom:14px}}
-    @media(max-width:380px){.card{width:54px;padding:4px}.card-top{margin-bottom:3px}.card-top span:last-child{font-size:5.5px}.card input{height:24px;font-size:8px}.card select{height:21px;font-size:6.5px}.card-ovr{margin-top:3px}}
-  `;
-  document.head.appendChild(style);
-
   function playerLabel(index) {
     return `Player ${index + 1}`;
   }
