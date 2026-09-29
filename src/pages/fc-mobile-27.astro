@@ -3,11 +3,39 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { FC_MOBILE_27 } from '../data/fcMobile27.js';
 
 const current = FC_MOBILE_27.releases[0];
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.online').href;
+const canonical = new URL(Astro.url.pathname === '/' || Astro.url.pathname.endsWith('/') ? Astro.url.pathname : Astro.url.pathname + '/', Astro.site ?? 'https://fcmobiletools.online').href;
 const siteUrl = new URL('/', Astro.site ?? 'https://fcmobiletools.online').href;
-const pageTitle = 'FC Mobile 27 APK Download — September 24, 2026 Latest Version';
-const pageDescription = 'Download the latest FC Mobile 27 APK for Android. Updated September 24, 2026 for Season 27 with the current download link, update details, changelog, installation guide and FAQ.';
+const pageTitle = 'FC Mobile 27 Update & Android Installation Guide — September 24, 2026';
+const pageDescription = 'A practical FC Mobile 27 Season 27 update guide covering the September 24, 2026 changes, Game Plans, Gauntlet Mode, new PlayStyles, Android installation and official sources.';
 const gameLogo = FC_MOBILE_27.logoUrl;
+const officialInstallUrl = current.installUrl;
+
+const officialSources = [
+  {
+    label: 'EA SPORTS FC Mobile',
+    title: 'FC Mobile 27 Update — Patch Notes',
+    description: 'EA\'s official September 24, 2026 update notes covering Game Plans, Gauntlet Mode, PlayStyles and matchday changes.',
+    url: 'https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-27-update'
+  },
+  {
+    label: 'EA SPORTS FC Mobile',
+    title: 'Game Plans Deep Dive',
+    description: 'EA\'s September 22 deep dive explaining the new tactical system and Mentalities.',
+    url: 'https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fcm27-game-plans-deep-dive'
+  },
+  {
+    label: 'EA SPORTS FC Mobile',
+    title: 'Gauntlet Deep Dive',
+    description: 'EA\'s September 23 deep dive on the squad-rotation challenge mode and its modifiers.',
+    url: 'https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fcm27-gauntlet-deep-dive'
+  },
+  {
+    label: 'EA SPORTS FC Mobile',
+    title: 'Third Anniversary',
+    description: 'EA\'s announcement for the Season 27 launch and third-anniversary celebration.',
+    url: 'https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary'
+  }
+];
 
 const pageSchema = {
   '@context': 'https://schema.org',
@@ -29,15 +57,15 @@ const softwareSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   '@id': canonical + '#software',
-  name: 'FC Mobile 27',
-  alternateName: ['EA SPORTS FC Mobile 27', 'FC Mobile 27 APK', 'EA FC Mobile 27'],
+  name: 'EA SPORTS FC Mobile 27',
+  alternateName: ['FC Mobile 27', 'EA FC Mobile 27'],
   applicationCategory: 'GameApplication',
   operatingSystem: 'Android',
   softwareVersion: current.version,
   releaseNotes: current.changelog.join('. ') + '.',
   dateModified: current.releaseDate,
   isAccessibleForFree: true,
-  downloadUrl: current.downloadUrl,
+  sameAs: officialInstallUrl,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }
 };
 
@@ -46,38 +74,38 @@ const breadcrumbSchema = {
   '@type': 'BreadcrumbList',
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'FCMOBILETOOLS', item: siteUrl },
-    { '@type': 'ListItem', position: 2, name: 'FC Mobile 27 APK', item: canonical }
+    { '@type': 'ListItem', position: 2, name: 'FC Mobile 27 Update Guide', item: canonical }
   ]
 };
 
 const faqItems = [
   {
-    q: 'What is the latest FC Mobile 27 APK version?',
-    a: 'This page currently lists FC Mobile 27 Season 27, updated September 24, 2026. The page uses the current release entry maintained in FCMOBILETOOLS release data.'
+    q: 'What changed in the FC Mobile 27 update?',
+    a: 'The September 24, 2026 Season 27 update adds Game Plans, Gauntlet Mode, new PlayStyles and further audio and visual changes. EA also launched the third-anniversary celebration with the new season.'
   },
   {
-    q: 'When was FC Mobile 27 updated?',
-    a: 'The Season 27 update is dated September 24, 2026. EA announced the new FC Mobile 27 season update for that date.'
+    q: 'What is Game Plans in FC Mobile 27?',
+    a: 'Game Plans is a tactical system that lets players prepare different formations and change the team approach during a match. EA describes Mentalities as part of the system for changing team width, attacking runs and defensive-line height.'
   },
   {
-    q: 'What is new in the FC Mobile 27 update?',
-    a: 'EA has announced updated squads, new kits, gameplay innovations and a third-anniversary celebration for the new season. EA has also published deep dives covering Game Plans and Gauntlet Mode.'
+    q: 'What is Gauntlet Mode?',
+    a: 'Gauntlet Mode is a PvE challenge built around squad rotation. EA describes escalating rounds with match objectives, traits and modifiers, including alternate rules that change how matches are played.'
   },
   {
-    q: 'Can I download FC Mobile 27 APK on Android?',
-    a: 'This page provides an external Android APK download link. The file is not hosted by FCMOBILETOOLS, so verify the source, file and permissions before installing.'
+    q: 'Where should I install FC Mobile 27 on Android?',
+    a: 'For the standard Android installation, use the official EA SPORTS FC Soccer Mobile 27 listing on Google Play. FCMOBILETOOLS does not host or distribute APK packages.'
   },
   {
-    q: 'Is FC Mobile 27 an official EA game?',
-    a: 'EA SPORTS FC Mobile is an EA game. FCMOBILETOOLS is an independent fan-made website and is not operated by EA.'
+    q: 'Does FCMOBILETOOLS provide an APK file?',
+    a: 'No. FCMOBILETOOLS does not host, modify, repackage, mirror or redistribute APK files. This page focuses on the update information and points Android users to the official store listing.'
   },
   {
-    q: 'How do I install FC Mobile 27 APK?',
-    a: 'Download the APK, allow your browser or file manager to install apps from that source when Android requests it, then open the downloaded file and follow the installation steps. Back up important game data before replacing an existing installation.'
+    q: 'Why is this page not a third-party APK mirror?',
+    a: 'A download page should be transparent about where software comes from. We keep the installation path official and use the page for update context, feature explanations, installation guidance and source tracking rather than mirroring an APK.'
   },
   {
-    q: 'Will this FC Mobile 27 APK download link be updated?',
-    a: 'Yes. New releases can be added through the FCMOBILETOOLS admin release manager, allowing the public download card and release history to use the newest entry.'
+    q: 'How often is this FC Mobile 27 guide updated?',
+    a: 'The release information is maintained from the latest official update details. The current release was verified on September 29, 2026, with the Season 27 update dated September 24, 2026.'
   }
 ];
 
@@ -93,316 +121,320 @@ const faqSchema = {
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription} image={gameLogo} type="website">
-<meta name="keywords" content="FC Mobile 27 APK, FC Mobile 27 download, FC Mobile 27 APK download, FC Mobile 27 latest version, FC Mobile 27 Android APK, FC Mobile 27 September 24 2026 update, FC Mobile 27 Season 27, FC Mobile 27 update, EA SPORTS FC Mobile 27 APK, FC Mobile 27 latest APK" />
-<meta name="author" content="FCMOBILETOOLS" />
-<meta property="og:image:alt" content="FC Mobile 27 game logo" />
-<link rel="preload" as="image" href={gameLogo} fetchpriority="high" />
-<script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
-<script type="application/ld+json" set:html={JSON.stringify(softwareSchema)} />
-<script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
-<script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  <meta name="keywords" content="FC Mobile 27, FC Mobile 27 update, FC Mobile 27 APK, FC Mobile 27 Android, FC Mobile 27 Season 27, Game Plans, Gauntlet Mode, PlayStyles" />
+  <meta name="author" content="FCMOBILETOOLS" />
+  <meta property="og:image:alt" content="FC Mobile 27 game logo" />
+  <link rel="preload" as="image" href={gameLogo} fetchpriority="high" />
+  <script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(softwareSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
 
-<script is:inline>document.documentElement.classList.add('js');</script>
-<main class="apk-page" data-page>
-  <div class="ambient ambient-one"></div>
-  <div class="ambient ambient-two"></div>
-  <div class="scanline"></div>
+  <main class="update-page">
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
 
-  <section class="wrap hero">
-    <div class="hero-copy">
-      <div class="eyebrow"><span class="live-dot"></span>FC MOBILE 27 · ANDROID APK</div>
+    <section class="wrap hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow"><span></span> SEASON 27 · OFFICIAL UPDATE GUIDE</div>
+          <h1>FC Mobile 27<br /><em>the update, explained.</em></h1>
+          <p class="lead">Season 27 arrived on September 24, 2026. This guide brings the important changes into one place, explains what they mean in-game, and gives Android players a clear path to the official installation.</p>
+          <div class="hero-actions">
+            <a class="primary-cta" href={officialInstallUrl} target="_blank" rel="noopener noreferrer">
+              <span class="cta-icon">↗</span>
+              <span><small>OFFICIAL ANDROID LISTING</small><strong>Open Google Play</strong></span>
+            </a>
+            <a class="secondary-cta" href="#changes">Explore the update <span>↓</span></a>
+          </div>
+          <div class="trust-row">
+            <span><i></i> Verified September 29, 2026</span>
+            <span>Independent fan resource</span>
+            <span>Not affiliated with EA</span>
+          </div>
+        </div>
+        <div class="hero-art">
+          <div class="art-ring ring-a"></div>
+          <div class="art-ring ring-b"></div>
+          <div class="art-glow"></div>
+          <div class="logo-frame"><img src={gameLogo} alt="FC Mobile 27" width="160" height="160" fetchpriority="high" /></div>
+          <div class="art-tag tag-top">24 SEP 2026</div>
+          <div class="art-tag tag-bottom">SEASON 27</div>
+        </div>
+      </div>
+    </section>
 
-      <div class="logo-orbit">
-        <div class="orbit orbit-one"></div>
-        <div class="orbit orbit-two"></div>
-        <div class="logo-glow"></div>
-        <img src={gameLogo} alt="FC Mobile 27 game logo" class="game-logo" width="112" height="112" fetchpriority="high" />
+    <section class="wrap release-bar">
+      <div><span>RELEASE</span><strong>September 24, 2026</strong></div>
+      <div><span>VERSION</span><strong>{current.version}</strong></div>
+      <div><span>PLATFORM</span><strong>Android</strong></div>
+      <div><span>DISTRIBUTION</span><strong>Google Play</strong></div>
+    </section>
+
+    <section class="wrap section" id="changes">
+      <div class="section-head">
+        <div><p class="kicker">01 / WHAT CHANGED</p><h2>Season 27 is more than a roster refresh.</h2></div>
+        <p>EA's September 24 update combines tactical changes, a new challenge mode, additional PlayStyles and matchday presentation work. The points below translate the official notes into a practical overview.</p>
       </div>
 
-      <div class="release-line">
-        <span>SEASON 27</span>
-        <i></i>
-        <strong>UPDATED {current.releaseDate.split('-').reverse().join(' ')}</strong>
-      </div>
-
-      <h1>FC Mobile 27 APK<br /><em>Latest Version Download</em></h1>
-      <p class="lead">Get the latest FC Mobile 27 APK for Android with the September 24, 2026 Season 27 update. This page keeps the current release, download link, changelog and installation information together.</p>
-
-      <div class="hero-actions">
-        <a class="download" href={current.downloadUrl} target="_blank" rel="nofollow noopener noreferrer">
-          <span class="download-icon">↓</span>
-          <span><small>SEPTEMBER 24, 2026 RELEASE</small><strong>Download FC Mobile 27 APK</strong></span>
-          <b>↗</b>
-        </a>
-        <a class="secondary-action" href="#update">View update details <span>↓</span></a>
-      </div>
-
-      <div class="micro-note"><span></span> External APK link · Android · {current.fileType} · Free download</div>
-    </div>
-  </section>
-
-  <section class="wrap quick-facts reveal">
-    <article><span>VERSION</span><strong>{current.version}</strong><small>{current.season}</small></article>
-    <article><span>UPDATED</span><strong>24 SEP 2026</strong><small>Current release date</small></article>
-    <article><span>PLATFORM</span><strong>{current.platform}</strong><small>{current.fileType} download</small></article>
-    <article><span>DOWNLOAD</span><strong>EXTERNAL</strong><small>Opens in a new tab</small></article>
-  </section>
-
-  <section class="wrap section reveal" id="update">
-    <div class="section-marker">01 / THE UPDATE</div>
-    <div class="section-heading">
-      <div>
-        <p class="kicker">FC MOBILE 27 · SEPTEMBER 24, 2026</p>
-        <h2>The Season 27 update is here.</h2>
-      </div>
-      <p class="heading-copy">EA's Season 27 launch brings a new football season, updated squads, new kits, gameplay innovations and third-anniversary content. </p>
-    </div>
-
-    <div class="feature-layout">
-      <article class="feature-card large">
-        <span class="feature-number">01</span>
-        <div><small>RELEASE</small><h3>September 24, 2026</h3><p>The date attached to the FC Mobile 27 Season 27 update.</p></div>
-      </article>
-      <article class="feature-card">
-        <span class="feature-number">02</span>
-        <div><small>CONTENT</small><h3>Updated squads + new kits</h3><p>EA says the new season launches with updated squads, new uniforms and gameplay innovations.</p></div>
-      </article>
-      <article class="feature-card">
-        <span class="feature-number">03</span>
-        <div><small>TACTICS</small><h3>Game Plans</h3><p>EA's Game Plans system adds more tactical flexibility by pairing formations with expanded Mentalities.</p></div>
-      </article>
-      <article class="feature-card">
-        <span class="feature-number">04</span>
-        <div><small>MODE</small><h3>Gauntlet Mode</h3><p>EA's September 23 deep dive introduces Gauntlet Mode as a squad-depth challenge with escalating matches and modifiers.</p></div>
-      </article>
-      <article class="feature-card">
-        <span class="feature-number">05</span>
-        <div><small>ANNIVERSARY</small><h3>Third-anniversary celebration</h3><p>The new Season 27 update launches alongside FC Mobile's third-anniversary celebration.</p></div>
-      </article>
-    </div>
-  </section>
-
-  <section class="wrap section reveal">
-    <div class="section-marker">02 / DOWNLOAD</div>
-    <div class="download-panel">
-      <div>
-        <p class="kicker">CURRENT RELEASE</p>
-        <h2>Download the latest FC Mobile 27 APK</h2>
-        <p>The button below uses the current external download URL stored in the site's release data. The APK itself is not hosted on FCMOBILETOOLS.</p>
-      </div>
-      <div class="download-meta">
-        <div><span>VERSION</span><strong>{current.version}</strong></div>
-        <div><span>UPDATED</span><strong>{current.releaseDate}</strong></div>
-        <div><span>TYPE</span><strong>{current.fileType}</strong></div>
-        <div><span>HOST</span><strong>EXTERNAL</strong></div>
-      </div>
-      <div class="panel-actions">
-        <a class="download compact" href={current.downloadUrl} target="_blank" rel="nofollow noopener noreferrer"><span class="download-icon">↓</span><span><small>OPEN DOWNLOAD</small><strong>Get FC Mobile 27 APK</strong></span><b>↗</b></a>
-        <button class="copy-link" type="button" data-copy-url={current.downloadUrl}>Copy download link</button>
-      </div>
-      <div class="copy-status" data-copy-status aria-live="polite"></div>
-    </div>
-  </section>
-
-  <section class="wrap section reveal">
-    <div class="section-marker">03 / CHANGELOG</div>
-    <div class="section-heading">
-      <div><p class="kicker">SEPTEMBER 24, 2026</p><h2>What changed in FC Mobile 27?</h2></div>
-      <span class="scroll-hint">Hover the cards</span>
-    </div>
-    <div class="changelog">
-      {current.changelog.map((item, index) => (
-        <article class="change-card">
-          <span>0{index + 1}</span>
-          <strong>{item}</strong>
-          <i></i>
+      <div class="feature-grid">
+        <article class="feature-card featured">
+          <div class="feature-index">01</div>
+          <div><span>TACTICS</span><h3>Game Plans</h3><p>Build different tactical setups before a match and switch approaches when the game state changes. EA's new Mentalities affect team width, attacking runs and defensive-line height together.</p></div>
+          <a href="#game-plans">Understand Game Plans <b>↘</b></a>
         </article>
-      ))}
-    </div>
-  </section>
+        <article class="feature-card">
+          <div class="feature-index">02</div>
+          <div><span>NEW MODE</span><h3>Gauntlet Mode</h3><p>A PvE format built around escalating rounds, squad rotation, match objectives, traits and modifiers that can change the conditions of a match.</p></div>
+          <a href="#gauntlet">See how it works <b>↘</b></a>
+        </article>
+        <article class="feature-card">
+          <div class="feature-index">03</div>
+          <div><span>GAMEPLAY</span><h3>New PlayStyles</h3><p>Season 27 adds new ways for players to behave on the pitch, alongside gameplay tuning and better handling for selected shooting and heading situations.</p></div>
+          <a href="#playstyles">Gameplay notes <b>↘</b></a>
+        </article>
+        <article class="feature-card">
+          <div class="feature-index">04</div>
+          <div><span>PRESENTATION</span><h3>Audio + visuals</h3><p>The update also refreshes visual and audio elements, giving the new season a different matchday presentation instead of focusing only on team data.</p></div>
+        </article>
+      </div>
+    </section>
 
-  <section class="wrap section reveal" id="install">
-    <div class="section-marker">04 / INSTALL GUIDE</div>
-    <div class="section-heading">
-      <div><p class="kicker">ANDROID APK</p><h2>How to install FC Mobile 27 APK</h2></div>
-      <p class="heading-copy">Use these steps when installing an APK outside the Play Store.</p>
-    </div>
-    <div class="steps">
-      <article><b>01</b><div><h3>Download the APK</h3><p>Tap the download button and follow the external host's download flow.</p></div></article>
-      <article><b>02</b><div><h3>Allow the source when Android asks</h3><p>Android may ask for permission for your browser or file manager to install unknown apps. Only allow it for a source you trust.</p></div></article>
-      <article><b>03</b><div><h3>Open and install the file</h3><p>Open the downloaded APK and follow Android's installation prompts. Do not bypass security warnings blindly.</p></div></article>
-      <article><b>04</b><div><h3>Launch FC Mobile 27</h3><p>Open the game and sign in. Back up important data before replacing an existing installation.</p></div></article>
-    </div>
-    <div class="warning"><strong>Important:</strong> FCMOBILETOOLS does not host the APK. An external APK can change, expire or be unavailable, and you should verify the file before installation.</div>
-  </section>
+    <section class="wrap section deep-section" id="game-plans">
+      <div class="section-head compact">
+        <div><p class="kicker">02 / GAME PLANS</p><h2>A tactical layer for changing match situations.</h2></div>
+      </div>
+      <div class="deep-layout">
+        <div class="numbered-copy">
+          <article><b>01</b><div><h3>Prepare more than one approach</h3><p>Game Plans lets you organize formations and tactical approaches before the match. That gives a squad a clearer transition path when the original setup is no longer working.</p></div></article>
+          <article><b>02</b><div><h3>Use Mentalities as the control layer</h3><p>EA describes three Mentality settings that dynamically influence team width, attacking runs and defensive-line height. The practical effect is that one choice can change several team behaviours together.</p></div></article>
+          <article><b>03</b><div><h3>Think about the match state</h3><p>A leading team may need a different shape from a team chasing an equalizer. Game Plans is designed around those transitions, making tactical planning part of the squad setup rather than an afterthought.</p></div></article>
+        </div>
+        <aside class="insight-card">
+          <span>FCMOBILETOOLS TAKE</span>
+          <strong>Prepare the plan before you need it.</strong>
+          <p>The useful part of Game Plans is not having more menus. It is having a deliberate second option ready for a match that stops going to plan.</p>
+        </aside>
+      </div>
+    </section>
 
-  <section class="wrap section reveal">
-    <div class="section-marker">05 / OFFICIAL SOURCES</div>
-    <div class="section-heading">
-      <div><p class="kicker">EA SPORTS FC MOBILE</p><h2>Official FC Mobile 27 information</h2></div>
-      <p class="heading-copy">Use EA's own pages for official announcements, update context and feature details.</p>
-    </div>
-    <div class="sources">
-      <a href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary" target="_blank" rel="noopener noreferrer"><span>EA SPORTS FC™ MOBILE</span><strong>Third Anniversary</strong><small>Official Season 27 and anniversary announcement.</small><b>READ ON EA.COM ↗</b></a>
-      <a href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news" target="_blank" rel="noopener noreferrer"><span>EA SPORTS FC™ MOBILE</span><strong>News & Updates</strong><small>EA's FC Mobile news, updates and patch notes hub.</small><b>OPEN EA.COM ↗</b></a>
-      <a href="https://www.ea.com/it/games/ea-sports-fc/fc-mobile/news/fcm27-gauntlet-deep-dive" target="_blank" rel="noopener noreferrer"><span>EA SPORTS FC™ MOBILE</span><strong>Gauntlet Deep Dive</strong><small>Official September 23, 2026 look at the new mode.</small><b>READ ON EA.COM ↗</b></a>
-    </div>
-  </section>
+    <section class="wrap section deep-section" id="gauntlet">
+      <div class="section-head compact">
+        <div><p class="kicker">03 / GAUNTLET MODE</p><h2>Squad depth becomes part of the challenge.</h2></div>
+      </div>
+      <div class="gauntlet-panel">
+        <div class="round-track">
+          <div class="round done"><span>01</span><b>Build</b><small>Choose the squad</small></div>
+          <i></i>
+          <div class="round active"><span>02</span><b>Adapt</b><small>React to objectives</small></div>
+          <i></i>
+          <div class="round"><span>03</span><b>Rotate</b><small>Manage player use</small></div>
+          <i></i>
+          <div class="round"><span>04</span><b>Finish</b><small>Complete the run</small></div>
+        </div>
+        <div class="gauntlet-copy">
+          <div><span class="mini-label">WHY IT MATTERS</span><h3>It rewards planning beyond the starting XI.</h3><p>EA's deep dive describes escalating rounds with unique match objectives, traits and modifiers. Alternative rules such as Hot Zone, Position Hero and No Rules can change the way a match is approached, while automatic position adjustments help the challenge accommodate squad rotation.</p></div>
+          <div class="rule-list">
+            <div><b>Dynamic objectives</b><span>Match goals can change from round to round.</span></div>
+            <div><b>Modifiers</b><span>Traits and rules can alter the conditions you play under.</span></div>
+            <div><b>Rotation</b><span>Squad depth matters because the format is built around repeated rounds.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <section class="wrap section faq reveal">
-    <div class="section-marker">06 / FAQ</div>
-    <div class="section-heading">
-      <div><p class="kicker">FC MOBILE 27 APK QUESTIONS</p><h2>FC Mobile 27 FAQ</h2></div>
-    </div>
-    {faqItems.map(item => <details><summary>{item.q}<span>+</span></summary><p>{item.a}</p></details>)}
-  </section>
+    <section class="wrap section" id="playstyles">
+      <div class="section-head">
+        <div><p class="kicker">04 / GAMEPLAY</p><h2>New PlayStyles and matchday tuning.</h2></div>
+        <p>EA's Season 27 notes list new PlayStyles and additional tuning. The important distinction is that these are gameplay changes, not simply database updates.</p>
+      </div>
+      <div class="playstyle-grid">
+        <article><span>PLAYSTYLE 01</span><h3>Passing traits</h3><p>New PlayStyle behaviour gives selected players more specialized passing options, with improved target selection and longer setup distance for certain through-ball situations.</p></article>
+        <article><span>PLAYSTYLE 02</span><h3>Dead-ball control</h3><p>Set-piece behaviour is also expanded, with more spin, pace and control for free-kick situations.</p></article>
+        <article><span>GAMEPLAY TUNING</span><h3>Shooting + heading</h3><p>EA also reports adjustments to finesse-shot foot selection and short-range heading accuracy for players without the Precision Header PlayStyle.</p></article>
+      </div>
+      <div class="source-note">These details are summarized from EA's September 24, 2026 FC Mobile 27 patch notes. Feature names and behaviour can change in later updates.</div>
+    </section>
 
-  <section class="wrap final-cta reveal">
-    <div><span class="final-tag">FC MOBILE 27 · SEASON 27</span><h2>Ready for the new season?</h2><p>Download the current APK link or jump back to the update details before installing.</p></div>
-    <a class="download" href={current.downloadUrl} target="_blank" rel="nofollow noopener noreferrer"><span class="download-icon">↓</span><span><small>UPDATED 24 SEP 2026</small><strong>Download FC Mobile 27 APK</strong></span><b>↗</b></a>
-  </section>
-</main>
+    <section class="wrap section">
+      <div class="section-head compact">
+        <div><p class="kicker">05 / UPDATE AT A GLANCE</p><h2>The release in one view.</h2></div>
+      </div>
+      <div class="facts-table">
+        <div><span>Release date</span><strong>September 24, 2026</strong><small>Season 27 launch update</small></div>
+        <div><span>Android distribution</span><strong>Google Play</strong><small>Official EA app listing</small></div>
+        <div><span>Major systems</span><strong>Game Plans + Gauntlet</strong><small>New tactical and challenge layers</small></div>
+        <div><span>Gameplay</span><strong>New PlayStyles</strong><small>Additional tuning and behaviour changes</small></div>
+        <div><span>Presentation</span><strong>Audio + visual updates</strong><small>Matchday experience changes</small></div>
+        <div><span>Anniversary</span><strong>Third anniversary</strong><small>Celebration launched with Season 27</small></div>
+      </div>
+    </section>
 
+    <section class="wrap section install-section" id="install">
+      <div class="section-head">
+        <div><p class="kicker">06 / ANDROID INSTALLATION</p><h2>Use the official installation path.</h2></div>
+        <p>There is no third-party APK mirror on this page. That keeps the source of the software clear and makes the installation process easier to verify.</p>
+      </div>
+      <div class="install-grid">
+        <div class="install-steps">
+          <article><b>01</b><div><h3>Open Google Play</h3><p>Use the official EA SPORTS FC Soccer Mobile 27 listing linked below.</p></div></article>
+          <article><b>02</b><div><h3>Check the publisher</h3><p>Confirm that the listing is published by Electronic Arts before installing or updating.</p></div></article>
+          <article><b>03</b><div><h3>Update or install</h3><p>Use the store's Install or Update action. Your device will handle the supported app package and compatibility checks.</p></div></article>
+          <article><b>04</b><div><h3>Open the updated game</h3><p>Launch FC Mobile and allow the in-game update or download process to finish before judging whether the Season 27 content is available.</p></div></article>
+        </div>
+        <div class="official-card">
+          <div class="official-badge">OFFICIAL DISTRIBUTION</div>
+          <img src={gameLogo} alt="" width="90" height="90" loading="lazy" decoding="async" />
+          <h3>EA SPORTS FC Soccer Mobile 27</h3>
+          <p>Electronic Arts · Android · Google Play</p>
+          <a href={officialInstallUrl} target="_blank" rel="noopener noreferrer">Open official listing <span>↗</span></a>
+        </div>
+      </div>
+      <div class="transparency-box">
+        <strong>Software transparency</strong>
+        <p>FCMOBILETOOLS does not host, modify, repackage, mirror or redistribute APK files. We use this page for update documentation and direct Android users to the official distribution listing.</p>
+      </div>
+    </section>
 
+    <section class="wrap section">
+      <div class="section-head compact">
+        <div><p class="kicker">07 / HOW WE MAINTAIN THIS PAGE</p><h2>What is checked, and what is not.</h2></div>
+      </div>
+      <div class="editorial-grid">
+        <article><span>CHECKED</span><h3>Release date and feature list</h3><p>The September 24, 2026 release information is compared against EA's official FC Mobile update notes and supporting deep dives.</p></article>
+        <article><span>CHECKED</span><h3>Official installation path</h3><p>The Android call-to-action points to the official Google Play listing rather than a third-party file host.</p></article>
+        <article><span>NOT CLAIMED</span><h3>Third-party APK integrity</h3><p>Because we do not host or distribute APK packages here, this site does not make claims about the integrity, modifications or safety of third-party APK files.</p></article>
+      </div>
+    </section>
 
-<script>
-  const page = document.querySelector('[data-page]');
-  const revealItems = document.querySelectorAll('.reveal');
-  const copyButton = document.querySelector('[data-copy-url]');
-  const copyStatus = document.querySelector('[data-copy-status]');
+    <section class="wrap section sources-section">
+      <div class="section-head compact">
+        <div><p class="kicker">08 / OFFICIAL REFERENCES</p><h2>Read the update from EA.</h2></div>
+        <p>These are the official EA references used for the factual summary on this page.</p>
+      </div>
+      <div class="sources">
+        {officialSources.map(source => (
+          <a href={source.url} target="_blank" rel="noopener noreferrer">
+            <span>{source.label}</span>
+            <h3>{source.title}</h3>
+            <p>{source.description}</p>
+            <strong>READ ON EA.COM ↗</strong>
+          </a>
+        ))}
+      </div>
+    </section>
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.12 });
+    <section class="wrap section faq">
+      <div class="section-head compact">
+        <div><p class="kicker">09 / FAQ</p><h2>FC Mobile 27 questions.</h2></div>
+      </div>
+      <div class="faq-list">
+        {faqItems.map(item => (
+          <details>
+            <summary>{item.q}<span>+</span></summary>
+            <p>{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
 
-  revealItems.forEach((item) => observer.observe(item));
-
-  copyButton?.addEventListener('click', async () => {
-    const url = copyButton.getAttribute('data-copy-url') || '';
-    try {
-      await navigator.clipboard.writeText(url);
-      copyStatus.textContent = 'Download link copied';
-      copyButton.classList.add('copied');
-      setTimeout(() => {
-        copyStatus.textContent = '';
-        copyButton.classList.remove('copied');
-      }, 2200);
-    } catch {
-      copyStatus.textContent = 'Copy is unavailable in this browser';
-    }
-  });
-
-  let frame = 0;
-  page?.addEventListener('pointermove', (event) => {
-    if (frame) return;
-    frame = requestAnimationFrame(() => {
-      frame = 0;
-      const x = (event.clientX / window.innerWidth - 0.5) * 2;
-      const y = (event.clientY / window.innerHeight - 0.5) * 2;
-      page.style.setProperty('--mx', x.toFixed(3));
-      page.style.setProperty('--my', y.toFixed(3));
-    });
-  }, { passive: true });
-</script>
+    <section class="wrap final-cta">
+      <div>
+        <span>SEASON 27 · SEPTEMBER 24, 2026</span>
+        <h2>Keep the official path. Use the tools around it.</h2>
+        <p>Check the live events, plan your Gauntlet squad, or calculate your team before heading back into FC Mobile.</p>
+      </div>
+      <div class="final-links">
+        <a href="/events">Events &amp; Reset <span>↗</span></a>
+        <a href="/gauntlet-planner">Gauntlet Planner <span>↗</span></a>
+        <a href="/team-ovr">Team OVR <span>↗</span></a>
+      </div>
+    </section>
+  </main>
 </BaseLayout>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
-.apk-page{
+.update-page{
   --display:'Space Grotesk',system-ui,sans-serif;
   --body:'DM Sans',system-ui,sans-serif;
-  --mono2:'Space Mono',ui-monospace,monospace;
-  --mx:0;
-  --my:0;
-  position:relative;overflow:hidden;min-height:100vh;padding-bottom:80px;
+  position:relative;
+  overflow:hidden;
+  min-height:100vh;
+  padding:0 0 90px;
   background:
-    radial-gradient(800px 520px at calc(18% + var(--mx) * 2%) calc(8% + var(--my) * 2%),#55c7f215,transparent 62%),
-    radial-gradient(900px 600px at calc(86% - var(--mx) * 2%) calc(18% - var(--my) * 2%),#48d98a0d,transparent 64%),
+    radial-gradient(900px 520px at 10% 2%,rgba(76,201,255,.10),transparent 62%),
+    radial-gradient(800px 560px at 92% 18%,rgba(89,231,166,.07),transparent 66%),
     var(--bg);
   color:var(--text);
   font-family:var(--body);
 }
-.apk-page *{box-sizing:border-box}
-.apk-page a,.apk-page button{font-family:var(--body)}
+.update-page *{box-sizing:border-box}
 .wrap{width:min(1140px,calc(100% - 32px));margin:auto;position:relative}
-.ambient{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;opacity:.48}
-.ambient-one{width:280px;height:280px;left:-90px;top:360px;background:#55c7f21c}
-.ambient-two{width:340px;height:340px;right:-130px;top:1080px;background:#48d98a12}
-.scanline{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 0%,#ffffff021 50%,transparent 100%);background-size:100% 6px;opacity:.35}
-.hero{padding:72px 0 52px;text-align:center}
-.hero-copy{max-width:900px;margin:auto}
-.eyebrow{display:inline-flex;gap:9px;align-items:center;padding:7px 11px;border:1px solid #284350;border-radius:999px;background:#07141bd8;color:#83b1c0;font:700 8px var(--mono2);letter-spacing:.12em;box-shadow:0 14px 50px #0004}
-.live-dot{width:6px;height:6px;border-radius:50%;background:#61e4a0;box-shadow:0 0 0 5px #61e4a011,0 0 18px #61e4a0;animation:pulse 1.8s ease-in-out infinite}
-.logo-orbit{position:relative;width:148px;height:148px;margin:28px auto 12px;display:grid;place-items:center}
-.logo-glow{position:absolute;width:100px;height:100px;border-radius:50%;background:#55c7f23b;filter:blur(32px);animation:glowPulse 3.2s ease-in-out infinite}
-.game-logo{position:relative;z-index:3;width:112px;height:112px;object-fit:contain;filter:drop-shadow(0 18px 40px #0009);animation:logoFloat 5s ease-in-out infinite}
-.orbit{position:absolute;border:1px solid #55c7f229;border-radius:50%;transform:rotateX(68deg);animation:orbitSpin 10s linear infinite}
-.orbit-one{inset:3px}.orbit-two{inset:18px;border-color:#48d98a1f;animation-duration:14s;animation-direction:reverse}
-.release-line{display:flex;justify-content:center;align-items:center;gap:10px;color:#66818f;font:700 7px var(--mono2);letter-spacing:.12em}
-.release-line strong{color:#82dfff}.release-line i{width:3px;height:3px;border-radius:50%;background:#405966}
-.hero h1{font:700 clamp(44px,7vw,82px)/.9 var(--display);letter-spacing:-.065em;margin:18px 0 18px}
-.hero h1 em{font-style:normal;color:var(--blue)}
-.lead{max-width:760px;margin:0 auto;color:#93a8b4;font-size:13px;line-height:1.85}
-.hero-actions{display:flex;justify-content:center;gap:9px;align-items:center;margin-top:28px;flex-wrap:wrap}
-.download{display:flex;align-items:center;gap:11px;min-width:330px;padding:13px 14px 13px 12px;border:1px solid #5cccf1;border-radius:12px;background:linear-gradient(135deg,#55c7f2,#1e9dd1);color:#03131b;text-decoration:none;box-shadow:0 18px 55px #55c7f225;transition:.22s;position:relative;overflow:hidden}
-.download:before{content:"";position:absolute;inset:-80% -40%;background:linear-gradient(115deg,transparent 35%,#fff8 50%,transparent 65%);transform:translateX(-65%) rotate(7deg);transition:.55s}
-.download:hover:before{transform:translateX(65%) rotate(7deg)}
-.download:hover{transform:translateY(-3px);box-shadow:0 25px 65px #55c7f23c}
-.download-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:#03131b18;font:900 17px var(--mono2)}
-.download>span:not(.download-icon){display:grid;text-align:left;gap:2px;flex:1;position:relative}
-.download small{font:700 6px var(--mono2);letter-spacing:.1em;opacity:.66}.download strong{font:700 11px var(--display);letter-spacing:-.01em}.download>b{font:900 13px var(--mono2);position:relative}
-.secondary-action{padding:12px 15px;border:1px solid #28424f;border-radius:11px;color:#94b6c4;text-decoration:none;font:700 8px var(--mono2);transition:.2s}
-.secondary-action:hover{border-color:#55c7f2;color:#e6faff;transform:translateY(-2px)}
-.micro-note{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:13px;color:#5e7783;font:700 7px var(--mono2);letter-spacing:.04em}
-.micro-note span{width:5px;height:5px;border-radius:50%;background:#708891}
-.quick-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-bottom:15px}
-.quick-facts article{padding:14px;border:1px solid var(--border);border-radius:12px;background:#091218cc;box-shadow:0 16px 45px #0004;transition:.22s}
-.quick-facts article:hover{transform:translateY(-4px);border-color:#315365}
-.quick-facts span,.download-meta span,.feature-card small,.sources span{display:block;color:#5b7886;font:800 7px var(--mono2);letter-spacing:.11em}
-.quick-facts strong{display:block;margin:5px 0 2px;font:700 12px var(--display);color:#eaf8fc}.quick-facts small{color:#748e9a;font-size:8px}
-.section{padding:64px 0;border-top:1px solid #172a34}
-.section-marker{color:var(--blue);font:800 7px var(--mono2);letter-spacing:.15em}
-.section-heading{display:flex;justify-content:space-between;align-items:end;gap:30px;margin:10px 0 24px}
-.kicker{color:#668493;font:800 7px var(--mono2);letter-spacing:.12em;margin:0 0 8px}
-.section h2{font:700 clamp(30px,4.2vw,50px)/.96 var(--display);letter-spacing:-.055em;margin:0}
-.heading-copy{max-width:420px;color:#8197a4;font-size:10px;line-height:1.75;margin:0}
-.feature-layout{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
-.feature-card{grid-column:span 2;min-height:185px;padding:18px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(145deg,#0b151b,#091116);position:relative;overflow:hidden;transition:.25s;transform-style:preserve-3d}
-.feature-card.large{grid-column:span 2;min-height:215px;background:linear-gradient(145deg,#0b1e29,#081219);border-color:#29495a}
-.feature-card:after{content:"";position:absolute;inset:auto -35px -60px;width:170px;height:170px;border-radius:50%;background:#55c7f211;filter:blur(30px)}
-.feature-card:hover{transform:perspective(800px) translateY(-7px) rotateX(2deg) rotateY(calc(var(--mx) * 2deg));border-color:#34586b;box-shadow:0 24px 60px #0006}
-.feature-number{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#55c7f20e;color:var(--blue);font:800 7px var(--mono2)}
-.feature-card h3{font:700 16px/1.13 var(--display);letter-spacing:-.025em;margin:35px 0 8px;max-width:250px}.feature-card p{color:#718995;font-size:9px;line-height:1.7;margin:0;max-width:290px}
-.download-panel{padding:24px;border:1px solid #294754;border-radius:17px;background:linear-gradient(135deg,#091922,#081217);box-shadow:0 25px 80px #0007;position:relative;overflow:hidden}
-.download-panel:before{content:"";position:absolute;inset:0;background:radial-gradient(480px 180px at 85% 0,#55c7f20d,transparent 62%);pointer-events:none}
-.download-panel h2{max-width:620px}.download-panel>div:first-child p:last-child{max-width:700px;color:#78919d;font-size:10px;line-height:1.75;margin:10px 0 0}
-.download-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0}
-.download-meta div{padding:11px;border:1px solid #203743;border-radius:10px;background:#081219}
-.download-meta strong{display:block;color:#e8f7fb;font:700 9px var(--mono2);margin-top:5px}
-.panel-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.download.compact{min-width:290px}
-.copy-link{padding:11px 13px;border:1px solid #29434f;border-radius:10px;background:#0b151b;color:#9ab5c0;font:700 8px var(--mono2);cursor:pointer;transition:.2s}
-.copy-link:hover,.copy-link.copied{border-color:#56d6ff;color:#dbf8ff;background:#0d1b22}
-.copy-status{min-height:15px;margin-top:8px;color:#60e3a3;font:700 7px var(--mono2)}
-.changelog{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.change-card{min-height:135px;padding:16px;border:1px solid var(--border);border-radius:13px;background:var(--surface);position:relative;overflow:hidden;transition:.22s}
-.change-card:hover{transform:translateY(-5px);border-color:#33586b;box-shadow:0 20px 45px #0005}
-.change-card>span{color:var(--blue);font:800 8px var(--mono2)}.change-card strong{display:block;margin-top:40px;font:700 13px/1.28 var(--display);letter-spacing:-.015em}.change-card i{position:absolute;right:12px;top:12px;width:5px;height:5px;border-radius:50%;background:#63e3a1;box-shadow:0 0 16px #63e3a1}
-.steps{display:grid;gap:8px}.steps article{display:grid;grid-template-columns:38px 1fr;gap:13px;padding:16px 17px;border:1px solid var(--border);border-radius:13px;background:#091117;transition:.2s}.steps article:hover{transform:translateX(4px);border-color:#315365}.steps b{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:#55c7f20d;color:var(--blue);font:800 7px var(--mono2)}.steps h3{margin:0 0 3px;font:700 13px var(--display)}.steps p{margin:0;color:#718994;font-size:9px;line-height:1.7}
-.warning{margin-top:12px;padding:14px 15px;border:1px solid #5b403b;border-radius:11px;background:#231613;color:#a99089;font-size:9px;line-height:1.7}.warning strong{color:#ffc2b7}
-.sources{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.sources a{min-height:155px;padding:17px;border:1px solid var(--border);border-radius:13px;background:#091117;text-decoration:none;display:flex;flex-direction:column;transition:.22s}.sources a:hover{transform:translateY(-5px);border-color:#33586b;box-shadow:0 18px 45px #0005}.sources strong{font:700 16px var(--display);letter-spacing:-.025em;margin:10px 0 7px}.sources small{color:#718995;font-size:9px;line-height:1.6}.sources b{margin-top:auto;padding-top:18px;color:var(--blue);font:800 7px var(--mono2)}
-.faq details{border-bottom:1px solid var(--border);padding:16px 0}.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:20px;align-items:center;color:#edf8fb;font:700 12px var(--display)}.faq summary::-webkit-details-marker{display:none}.faq summary span{color:var(--blue);font:400 18px var(--mono2);transition:.2s}.faq details[open] summary span{transform:rotate(45deg)}.faq details p{max-width:780px;margin:10px 0 0;color:#718995;font-size:10px;line-height:1.75}
-.final-cta{display:grid;grid-template-columns:1fr auto;align-items:center;gap:30px;padding:55px 0 20px}.final-tag{color:#65df9f;font:800 7px var(--mono2);letter-spacing:.14em}.final-cta h2{font:700 38px/.95 var(--display);letter-spacing:-.055em;margin:9px 0}.final-cta p{max-width:560px;color:#718995;font-size:10px;margin:0}.final-cta .download{min-width:300px}
-.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}.reveal.is-visible{opacity:1;transform:none}
-@keyframes pulse{50%{opacity:.45;transform:scale(.85)}}@keyframes glowPulse{50%{opacity:.65;transform:scale(1.12)}}@keyframes logoFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-8px) rotate(1deg)}}@keyframes orbitSpin{to{transform:rotateX(68deg) rotateZ(360deg)}}
-@media(max-width:900px){.feature-card,.feature-card.large{grid-column:span 3}.sources{grid-template-columns:1fr}.section-heading{align-items:start;flex-direction:column}.heading-copy{max-width:680px}.final-cta{grid-template-columns:1fr}.final-cta .download{justify-self:start}}
-@media(max-width:680px){.quick-facts{grid-template-columns:1fr 1fr}.feature-layout{grid-template-columns:1fr}.feature-card,.feature-card.large{grid-column:auto}.changelog{grid-template-columns:1fr 1fr}.download-meta{grid-template-columns:1fr 1fr}.hero{padding-top:55px}.hero h1{font-size:44px}.download{min-width:0;width:100%;max-width:510px}.final-cta .download{width:100%}}
-@media(max-width:480px){.wrap{width:calc(100% - 24px)}.quick-facts{grid-template-columns:1fr}.changelog{grid-template-columns:1fr}.release-line{flex-wrap:wrap}.hero h1{font-size:39px}.game-logo{width:96px;height:96px}.logo-orbit{width:132px;height:132px}}
-@media(prefers-reduced-motion:reduce){.apk-page *, .apk-page *:before, .apk-page *:after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}.download:hover{transform:none}}
+.ambient{position:absolute;pointer-events:none;filter:blur(80px);border-radius:50%}
+.ambient-a{width:360px;height:360px;background:rgba(76,201,255,.10);left:-160px;top:900px}
+.ambient-b{width:380px;height:380px;background:rgba(89,231,166,.07);right:-170px;top:2200px}
+.hero{padding:76px 0 42px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.2fr) 360px;gap:62px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #294552;border-radius:999px;background:rgba(6,19,27,.82);color:#91b4c3;font:700 8px/1 var(--body);letter-spacing:.14em}
+.eyebrow span{width:6px;height:6px;border-radius:50%;background:#61e4a0;box-shadow:0 0 14px rgba(97,228,160,.7)}
+.hero h1{font:700 clamp(48px,7vw,86px)/.9 var(--display);letter-spacing:-.065em;margin:20px 0 20px}
+.hero h1 em{font-style:normal;color:#4cc9ff}
+.lead{max-width:740px;margin:0;color:#99abb7;font-size:14px;line-height:1.85}
+.hero-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:27px}
+.primary-cta{display:flex;align-items:center;gap:11px;min-width:294px;padding:13px 14px 13px 12px;border:1px solid #5bcaf0;border-radius:13px;background:linear-gradient(135deg,#55c7f2,#269bca);color:#04151c;text-decoration:none;box-shadow:0 22px 60px rgba(76,201,255,.16);transition:.2s}
+.primary-cta:hover{transform:translateY(-3px);box-shadow:0 30px 70px rgba(76,201,255,.24)}
+.cta-icon{width:35px;height:35px;border-radius:9px;display:grid;place-items:center;background:rgba(3,19,27,.12);font-size:18px}
+.primary-cta>span:not(.cta-icon){display:grid;gap:2px}
+.primary-cta small{font-size:7px;font-weight:800;letter-spacing:.11em;opacity:.65}.primary-cta strong{font:700 12px var(--display)}
+.secondary-cta{padding:12px 15px;border:1px solid #2b424f;border-radius:12px;color:#9bb4bf;text-decoration:none;font:700 9px/1 var(--body);transition:.2s}
+.secondary-cta:hover{border-color:#426373;color:#d9e8ed}
+.trust-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:17px;color:#667f8b;font-size:9px}
+.trust-row span{display:flex;align-items:center;gap:7px}.trust-row i{width:5px;height:5px;background:#71e2a5;border-radius:50%;box-shadow:0 0 10px rgba(113,226,165,.5)}
+.hero-art{position:relative;aspect-ratio:1;display:grid;place-items:center}
+.logo-frame{position:relative;z-index:3;width:218px;height:218px;border:1px solid #2b4a57;border-radius:42px;background:linear-gradient(145deg,#10242d,#071219);display:grid;place-items:center;box-shadow:0 36px 90px rgba(0,0,0,.32),inset 0 0 50px rgba(76,201,255,.05);transform:rotate(-4deg)}
+.logo-frame:before{content:"";position:absolute;inset:18px;border:1px solid rgba(76,201,255,.14);border-radius:30px}
+.logo-frame img{width:160px;height:160px;object-fit:contain;filter:drop-shadow(0 24px 36px rgba(0,0,0,.52));transform:rotate(4deg)}
+.art-ring{position:absolute;border:1px solid rgba(76,201,255,.16);border-radius:50%}.ring-a{inset:16% 8%;transform:rotate(24deg)}.ring-b{inset:4% 18%;border-color:rgba(89,231,166,.11);transform:rotate(-32deg)}
+.art-glow{position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(76,201,255,.18);filter:blur(55px)}
+.art-tag{position:absolute;z-index:4;padding:8px 10px;border:1px solid #294552;background:#07141bdc;color:#9ab4bf;border-radius:8px;font:700 7px/1 var(--body);letter-spacing:.13em;box-shadow:0 15px 40px rgba(0,0,0,.25)}
+.tag-top{top:8%;right:0}.tag-bottom{bottom:9%;left:0;color:#8ee7b2;border-color:#2c4e40}
+.release-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:1px;background:#263b45;border:1px solid #263b45;border-radius:15px;overflow:hidden}
+.release-bar>div{padding:17px 19px;background:#09141b}
+.release-bar span{display:block;color:#69818d;font-size:7px;font-weight:800;letter-spacing:.13em;margin-bottom:5px}
+.release-bar strong{font:600 12px var(--display)}
+.section{padding-top:100px}
+.section-head{display:flex;justify-content:space-between;gap:35px;align-items:end;margin-bottom:27px}
+.section-head>div{max-width:690px}.section-head>p{max-width:450px;color:#8197a2;font-size:12px;line-height:1.75;margin:0}
+.section-head.compact{display:block}.section-head.compact>p{margin-top:10px}
+.kicker{margin:0 0 8px;color:#54c8f1;font-size:8px;font-weight:800;letter-spacing:.13em}
+.section h2{margin:0;font:700 clamp(30px,4vw,51px)/1.02 var(--display);letter-spacing:-.045em}
+.feature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.feature-card{min-height:260px;padding:24px;border:1px solid #263d48;border-radius:18px;background:linear-gradient(145deg,#0c171e,#091218);position:relative;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+.feature-card.featured{background:linear-gradient(145deg,#0d202a,#091218);border-color:#355667}
+.feature-card:after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-70px;top:-70px;background:rgba(76,201,255,.06);filter:blur(10px)}
+.feature-index{color:#4cc9ff;font:700 10px var(--display)}
+.feature-card span{display:block;margin-top:45px;color:#6d8793;font:800 7px/1 var(--body);letter-spacing:.13em}.feature-card h3{margin:8px 0;color:#e7f2f5;font:700 25px var(--display);letter-spacing:-.035em}.feature-card p{margin:0;color:#90a5af;font-size:11px;line-height:1.7;max-width:470px}.feature-card a{position:relative;z-index:2;color:#9bc8d7;text-decoration:none;font-size:9px;font-weight:800}.feature-card a b{margin-left:5px;color:#4cc9ff}
+.deep-section{padding-top:100px}
+.deep-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+.numbered-copy{display:grid;gap:1px;border:1px solid #253943;border-radius:18px;overflow:hidden;background:#253943}
+.numbered-copy article{display:grid;grid-template-columns:42px 1fr;gap:12px;padding:21px 23px;background:#0b151b}.numbered-copy b{font:700 10px var(--display);color:#4cc9ff}.numbered-copy h3{margin:0 0 5px;font:700 17px var(--display)}.numbered-copy p{margin:0;color:#8b9fa9;font-size:11px;line-height:1.7}
+.insight-card{padding:24px;border:1px solid #2c5144;border-radius:18px;background:linear-gradient(145deg,#0d1c17,#091218);position:sticky;top:90px}
+.insight-card span,.mini-label{font-size:7px;font-weight:800;letter-spacing:.13em;color:#74dda5}.insight-card strong{display:block;margin:13px 0 9px;font:700 23px/1.12 var(--display);letter-spacing:-.04em}.insight-card p{margin:0;color:#8aa299;font-size:11px;line-height:1.7}
+.gauntlet-panel{border:1px solid #2a404a;border-radius:18px;background:linear-gradient(145deg,#0b171d,#081117);padding:26px}
+.round-track{display:flex;align-items:center;gap:8px;overflow:auto;padding-bottom:23px}
+.round{min-width:122px;padding:14px;border:1px solid #29404b;border-radius:12px;background:#0a141a}.round.done{border-color:#2f6149;background:#0b1914}.round.active{border-color:#4b6d7e;box-shadow:0 10px 30px rgba(76,201,255,.08)}.round span{display:block;color:#6d8490;font-size:7px;font-weight:800;letter-spacing:.1em}.round b{display:block;margin:6px 0 3px;font:700 14px var(--display)}.round small{color:#78909b;font-size:8px}.round-track>i{flex:1;min-width:30px;height:1px;background:#29404b}
+.gauntlet-copy{display:grid;grid-template-columns:1.2fr .8fr;gap:22px;padding-top:22px;border-top:1px solid #20333c}.gauntlet-copy h3{margin:7px 0 9px;font:700 27px/1.08 var(--display);letter-spacing:-.04em}.gauntlet-copy p{margin:0;color:#8ea3ad;font-size:11px;line-height:1.75}.rule-list{display:grid;gap:8px}.rule-list div{padding:13px;border:1px solid #253a43;border-radius:11px;background:#091218}.rule-list b{display:block;font-size:10px}.rule-list span{display:block;margin-top:4px;color:#778e99;font-size:9px;line-height:1.5}
+.playstyle-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.playstyle-grid article{min-height:190px;padding:22px;border:1px solid #273d47;border-radius:17px;background:#0b151b}.playstyle-grid span,.editorial-grid span{color:#6c8792;font-size:7px;font-weight:800;letter-spacing:.13em}.playstyle-grid h3{margin:22px 0 8px;font:700 20px var(--display)}.playstyle-grid p,.editorial-grid p{margin:0;color:#8b9fa9;font-size:11px;line-height:1.7}.source-note{margin-top:12px;padding:12px 14px;border-left:2px solid #4cc9ff;background:#09151b;color:#6f8792;font-size:9px;line-height:1.6}
+.facts-table{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.facts-table>div{padding:17px;border:1px solid #263d47;border-radius:14px;background:#0a151b}.facts-table span{display:block;color:#68818d;font-size:7px;font-weight:800;letter-spacing:.12em}.facts-table strong{display:block;margin:8px 0 4px;font:600 16px var(--display)}.facts-table small{color:#78909b;font-size:9px}
+.install-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:stretch}.install-steps{display:grid;gap:1px;border:1px solid #263c46;border-radius:18px;overflow:hidden;background:#263c46}.install-steps article{display:grid;grid-template-columns:40px 1fr;gap:12px;padding:20px;background:#0a151b}.install-steps b{font:700 10px var(--display);color:#4cc9ff}.install-steps h3{margin:0 0 5px;font:700 17px var(--display)}.install-steps p{margin:0;color:#8ba0aa;font-size:11px;line-height:1.65}
+.official-card{padding:25px;border:1px solid #355064;border-radius:18px;background:linear-gradient(150deg,#0d1d26,#091217);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}.official-badge{padding:6px 8px;border:1px solid #315b49;border-radius:999px;background:#6fe3a611;color:#8fe6b3;font-size:7px;font-weight:800;letter-spacing:.12em}.official-card img{width:90px;height:90px;object-fit:contain;margin:22px 0 12px;filter:drop-shadow(0 15px 25px rgba(0,0,0,.45))}.official-card h3{margin:0;font:700 20px var(--display)}.official-card p{margin:6px 0 19px;color:#7f949f;font-size:10px}.official-card a{display:flex;justify-content:space-between;align-items:center;width:100%;padding:12px 13px;border:1px solid #4ebcdd;border-radius:10px;background:#54c7ed;color:#04151c;text-decoration:none;font-size:9px;font-weight:800}.official-card a span{font-size:13px}.transparency-box{margin-top:12px;padding:18px;border:1px solid #3d4b54;border-radius:14px;background:#0b141a}.transparency-box strong{font:700 14px var(--display)}.transparency-box p{margin:6px 0 0;color:#8297a1;font-size:10px;line-height:1.65}
+.editorial-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.editorial-grid article{padding:21px;border:1px solid #263c46;border-radius:16px;background:#0a151b}.editorial-grid h3{margin:18px 0 8px;font:700 18px var(--display)}
+.sources{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.sources a{display:block;padding:21px;border:1px solid #273e48;border-radius:16px;background:#0a151b;text-decoration:none;transition:.18s}.sources a:hover{transform:translateY(-2px);border-color:#426575}.sources span{font-size:7px;color:#6e8792;font-weight:800;letter-spacing:.12em}.sources h3{margin:10px 0 6px;font:700 18px var(--display)}.sources p{margin:0;color:#879ca6;font-size:10px;line-height:1.65}.sources strong{display:block;margin-top:18px;color:#63cceb;font-size:8px;letter-spacing:.08em}
+.faq-list{border-top:1px solid #263b44}.faq-list details{border-bottom:1px solid #263b44}.faq-list summary{display:flex;justify-content:space-between;gap:15px;padding:18px 4px;list-style:none;cursor:pointer;font:600 15px var(--display)}.faq-list summary::-webkit-details-marker{display:none}.faq-list summary span{color:#4cc9ff}.faq-list p{max-width:850px;margin:0;padding:0 38px 18px 4px;color:#879ba5;font-size:11px;line-height:1.75}
+.final-cta{margin-top:100px;padding:30px;border:1px solid #2a4552;border-radius:20px;background:linear-gradient(135deg,#0d1c24,#0a1419);display:flex;align-items:center;justify-content:space-between;gap:26px}.final-cta>div:first-child{max-width:660px}.final-cta>div:first-child>span{color:#64d2f7;font-size:7px;font-weight:800;letter-spacing:.13em}.final-cta h2{margin:9px 0 8px;font:700 31px/1.08 var(--display);letter-spacing:-.04em}.final-cta p{margin:0;color:#8297a0;font-size:11px;line-height:1.65}.final-links{display:grid;grid-template-columns:repeat(3,1fr);min-width:390px}.final-links a{padding:15px;border-left:1px solid #29414c;color:#a2bdc8;text-decoration:none;font-size:9px;font-weight:800}.final-links a span{float:right;color:#4cc9ff}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr}.hero-art{max-width:330px;margin:auto}.deep-layout,.install-grid,.gauntlet-copy{grid-template-columns:1fr}.insight-card{position:static}.feature-grid,.playstyle-grid,.editorial-grid,.sources{grid-template-columns:1fr 1fr}.facts-table{grid-template-columns:1fr 1fr}.final-cta{align-items:stretch;flex-direction:column}.final-links{min-width:0}}
+@media(max-width:680px){.wrap{width:min(100% - 22px,1140px)}.hero{padding-top:54px}.hero h1{font-size:52px}.release-bar{grid-template-columns:1fr 1fr}.section{padding-top:72px}.section-head{display:block}.section-head>p{margin-top:12px}.feature-grid,.playstyle-grid,.editorial-grid,.sources,.facts-table{grid-template-columns:1fr}.feature-card{min-height:230px}.gauntlet-panel{padding:18px}.final-links{grid-template-columns:1fr}.final-links a{border-left:0;border-top:1px solid #29414c}.final-cta{margin-top:72px}.hero-actions{align-items:stretch}.primary-cta{min-width:0;width:100%}.secondary-cta{display:flex;justify-content:space-between}.art-tag{display:none}}
+@media(prefers-reduced-motion:reduce){.primary-cta,.sources a{transition:none}}
 </style>
