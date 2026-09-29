@@ -17,6 +17,7 @@ export const SITE_ADS = {
   "excludedPathPrefixes": [
     "/admin",
     "/api",
-    "/creator/login"
+    "/creator/login",
+    "/fc-mobile-27"
   ]
 };
