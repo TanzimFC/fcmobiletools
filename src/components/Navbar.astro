@@ -2,7 +2,7 @@
 const current = Astro.url.pathname;
 const isActive = (href) => href === '/' ? current === '/' : current === href || current.startsWith(href + '/');
 
-const cta = { label: 'FC Mobile 27 APK', href: '/fc-mobile-27', meta: 'Season 27 · Sep 24', image: 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790218791/fc-mobile-tools/t0gwuzeytzlmk13pes8q.webp' };
+const cta = { label: 'FC Mobile 27 Update', href: '/fc-mobile-27', meta: 'Season 27 · Sep 24', image: 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790218791/fc-mobile-tools/t0gwuzeytzlmk13pes8q.webp' };
 
 const navGroups = [
   { id: 'tools', label: 'Tools', links: [
@@ -21,7 +21,7 @@ const navGroups = [
 
 const allLinks = [
   { label: 'Home', href: '/', meta: 'Start here', icon: 'home' },
-  { label: cta.label, href: cta.href, meta: cta.meta, icon: 'apk' },
+  { label: cta.label, href: cta.href, meta: cta.meta, icon: 'arrow' },
   ...navGroups.flatMap((g) => g.links.map((l) => ({ ...l, group: g.label }))),
   { label: 'Articles', href: '/blog', meta: 'News, leaks, guides', icon: 'articles' }
 ];
@@ -88,7 +88,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
                 <span class="fcmt-feature-glow" aria-hidden="true"></span>
                 <span class="fcmt-feature-tag"><i></i>Most popular</span>
                 <strong>{cta.label}</strong>
-                <small>Latest Season 27 download, changelog and install guide.</small>
+                <small>Season 27 changes, feature guide and official Android install.</small>
                 <span class="fcmt-feature-cta">Open page <span set:html={ico('arrow', 14, 2.4)}></span></span>
               </a>
             </div>
@@ -124,7 +124,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 <nav class="fcmt-dock" aria-label="Quick navigation">
   <a class:list={{ active: isActive('/') }} href="/" aria-current={isActive('/') ? 'page' : undefined}><span set:html={ico('home', 20)}></span><em>Home</em></a>
   <a class:list={{ active: isActive('/events') }} href="/events" aria-current={isActive('/events') ? 'page' : undefined}><span set:html={ico('events', 20)}></span><em>Events</em></a>
-  <a class:list={['fcmt-dock-main', { active: isActive(cta.href) }]} href={cta.href} aria-label={cta.label}><span set:html={ico('apk', 22, 2)}></span><em>APK</em></a>
+  <a class:list={['fcmt-dock-main', { active: isActive(cta.href) }]} href={cta.href} aria-label={cta.label}><span set:html={ico('arrow', 22, 2)}></span><em>Update</em></a>
   <a class:list={{ active: isActive('/redeem-codes') }} href="/redeem-codes" aria-current={isActive('/redeem-codes') ? 'page' : undefined}><span set:html={ico('codes', 20)}></span><em>Codes</em></a>
   <button type="button" id="fcmtDockMore" aria-label="More" aria-haspopup="dialog"><span set:html={ico('menu', 20)}></span><em>More</em></button>
 </nav>
@@ -144,7 +144,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
       <span class="fcmt-feature-glow" aria-hidden="true"></span>
       <span class="fcmt-feature-tag"><i></i>Most popular</span>
       <strong>{cta.label}</strong>
-      <small>Latest Season 27 download, changelog and install guide.</small>
+      <small>Season 27 changes, feature guide and official Android install.</small>
       <span class="fcmt-hero-arrow" set:html={ico('arrow', 18, 2.2)}></span>
     </a>
 
@@ -196,7 +196,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         </li>
       ))}
     </ul>
-    <p class="fcmt-pal-empty" id="fcmtPalEmpty" hidden>No matches. Try “codes”, “events” or “apk”.</p>
+    <p class="fcmt-pal-empty" id="fcmtPalEmpty" hidden>No matches. Try “codes”, “events” or “update”.</p>
   </div>
 </div>
 
