@@ -16,7 +16,9 @@ export default defineConfig({
   site: 'https://fcmobiletools.online',
   output: 'static',
   build: { format: 'directory' },
-  integrations: [sitemap()],
+  integrations: [sitemap({
+    filter: (page) => !new URL(page).pathname.startsWith('/admin')
+  })],
   markdown: { remarkPlugins: [remarkGfm] },
   redirects: {
     '/trivia': '/a-nations-story/',
