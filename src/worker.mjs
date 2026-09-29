@@ -824,6 +824,12 @@ async function adminDashboard(request, env, url) {
 
 export default { async fetch(request,env) {
   const url=new URL(request.url);
+
+  // Permanently redirect the former Worker hostname to the custom domain.
+  if(url.hostname === 'tanzimfc.fcmobiletools.workers.dev') {
+    return Response.redirect('https://fcmobiletools.online' + url.pathname + url.search,301);
+  }
+
   if(url.pathname === '/players' || url.pathname.startsWith('/players/') || url.pathname === '/player' || url.pathname.startsWith('/player/')) return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
   if(url.pathname === '/api/players' || url.pathname.startsWith('/api/players/')) return json({error:'Player database is temporarily unavailable.'},404);
