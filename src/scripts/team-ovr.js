@@ -151,8 +151,11 @@ if (formation && subsEl && addSub && reset) {
     if (emptyState) emptyState.hidden = state.subs.length > 0;
     const count = $('sub-count');
     if (count) count.textContent = String(state.subs.length);
-    addSub.disabled = state.subs.length >= maxSubs;
-    addSub.textContent = state.subs.length >= maxSubs ? 'Maximum 7 substitutes' : '+ Add Substitute';
+    const atLimit = state.subs.length >= maxSubs;
+    addSub.disabled = atLimit;
+    addSub.innerHTML = atLimit
+      ? '<span class="add-icon">✓</span><span class="add-copy"><b>Substitutes Full</b><small>Maximum of 7 included</small></span><span class="add-max">7 / 7</span>'
+      : '<span class="add-icon">+</span><span class="add-copy"><b>Add Substitute</b><small>Add a player to the squad average</small></span><span class="add-max">MAX 7</span>';
   }
 
   function renderPlanner(target, players, current, badges) {
@@ -267,7 +270,7 @@ if (formation && subsEl && addSub && reset) {
     const estimate = baseAverage === null ? null : baseAverage + (rankAverage ?? 0) + badgeBonus;
 
     $('starter-count').textContent = `${state.starters.filter(valid).length} / ${STARTING_XI_SIZE}`;
-    $('sub-count').textContent = `${state.subs.length} included`;
+    $('sub-count').textContent = String(state.subs.length);
     $('badge-total').textContent = `+${badgeBonus} OVR`;
     $('base-avg').textContent = result?.baseAverage ?? baseAverage ?? '--';
     $('rank-avg').textContent = result?.rankAverage ?? rankAverage ?? '--';
