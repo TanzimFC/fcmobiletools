@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { REDEEM_CODES, REDEEM_STATUS } from '../data/redeemCodes.js';
 
-const pageSize = Math.max(REDEEM_CODES.length, 1);
+const pageSize = 10;
 const url = Astro.url;
 const query = (url.searchParams.get('q') || '').trim();
 const filter = ['all', 'active', 'scheduled', 'expired'].includes(url.searchParams.get('status'))
@@ -242,11 +242,13 @@ const faqSchema = {
           )}
         </div>
 
-        <nav class="pagination" aria-label="Redeem code pages">
-          <a class:disabled={currentPage === 1} href={currentPage > 1 ? pageUrl(currentPage - 1) : '#'}>← Previous</a>
-          <span>Page {currentPage} of {totalPages}</span>
-          <a class:disabled={currentPage === totalPages} href={currentPage < totalPages ? pageUrl(currentPage + 1) : '#'}>Next →</a>
-        </nav>
+        {totalPages > 1 && (
+          <nav class="pagination" aria-label="Redeem code pages">
+            <a class:disabled={currentPage === 1} href={currentPage > 1 ? pageUrl(currentPage - 1) : '#'}>← Previous</a>
+            <span>Page {currentPage} of {totalPages}</span>
+            <a class:disabled={currentPage === totalPages} href={currentPage < totalPages ? pageUrl(currentPage + 1) : '#'}>Next →</a>
+          </nav>
+        )}
       </section>
 
       <section class="content-grid" id="how-it-works">
