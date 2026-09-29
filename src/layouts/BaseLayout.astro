@@ -81,6 +81,7 @@ const pageSchema = {
   <meta name="author" content={author ?? 'FCMOBILETOOLS'} />
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
   <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <meta name="google-adsense-account" content="ca-pub-2527295119501596" />
   <link rel="canonical" href={canonical} />
   <link rel="icon" type="image/png" href="/assets/images/favicon.png" />
   <link rel="apple-touch-icon" href="/assets/images/favicon.png" />
@@ -121,8 +122,36 @@ const pageSchema = {
   <script is:inline>
     window.dataLayer=window.dataLayer||[];
     window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};
+
+    // Default all non-essential Google storage to denied until a consent signal
+    // is supplied by Google Privacy & Messaging / another configured CMP.
+    gtag('consent','default',{
+      ad_storage:'denied',
+      analytics_storage:'denied',
+      ad_user_data:'denied',
+      ad_personalization:'denied',
+      wait_for_update:500
+    });
     gtag('js',new Date());
     gtag('config','G-YY53FCHMLW');
+
+    // Google Privacy & Messaging exposes the revocation flow through googlefc.
+    // Keeping this bridge site-wide gives the footer one stable "Privacy Choices"
+    // entry point while the actual consent UI remains provider-managed.
+    window.FCMOBILETOOLS_OPEN_PRIVACY_CHOICES=()=>{
+      if(window.googlefc?.callbackQueue && typeof window.googlefc.showRevocationMessage==='function'){
+        window.googlefc.callbackQueue.push(window.googlefc.showRevocationMessage);
+        return true;
+      }
+      if(window.googlefc?.callbackQueue){
+        window.googlefc.callbackQueue.push(()=>{
+          if(typeof window.googlefc?.showRevocationMessage==='function') window.googlefc.showRevocationMessage();
+        });
+        return true;
+      }
+      window.dispatchEvent(new CustomEvent('fcmobiletools:privacy-unavailable'));
+      return false;
+    };
 
     const loadAnalytics=()=>{
       if(window.__FCMOBILETOOLS_GTAG_LOADED__) return;
