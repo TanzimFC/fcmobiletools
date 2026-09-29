@@ -73,7 +73,7 @@ const POSITIONS = [
                       aria-label={'Player ' + (i + 1) + ' Base OVR'}
                     />
                     <select data-field="rank" aria-label={'Player ' + (i + 1) + ' Rank'}>
-                      <option value="">Rank</option>
+                      <option value="0" selected>Rank 0</option>
                       {RANK_OPTIONS.map((rank) => <option value={rank}>Rank {rank}</option>)}
                     </select>
                     <div class="card-ovr" data-card-ovr>--</div>
@@ -81,30 +81,6 @@ const POSITIONS = [
                 ))}
               </div>
             </div>
-          </section>
-        </div>
-
-        <div class="right-col">
-          <section class="block overview">
-            <div class="block-head">
-              <div>
-                <small>02</small>
-                <div>
-                  <h2>OVR Breakdown</h2>
-                  <p>See exactly what is moving the number.</p>
-                </div>
-              </div>
-            </div>
-            <div class="ovr-lines">
-              <div><span>Base OVR contribution</span><b id="break-base">--</b></div>
-              <div><span>Rank contribution</span><b id="break-rank">--</b></div>
-              <div><span>Badge bonus</span><b id="break-badge">+0</b></div>
-              <div class="total"><span>Team OVR</span><b id="break-total">--</b></div>
-            </div>
-            <details>
-              <summary>How was this calculated?</summary>
-              <div id="math">Enter players to see the live calculation.</div>
-            </details>
           </section>
 
           <section class="block subs-block">
@@ -136,6 +112,31 @@ const POSITIONS = [
               <span class="add-max">MAX 7</span>
             </button>
           </section>
+        </div>
+
+        <div class="right-col">
+          <section class="block overview">
+            <div class="block-head">
+              <div>
+                <small>03</small>
+                <div>
+                  <h2>OVR Breakdown</h2>
+                  <p>See exactly what is moving the number.</p>
+                </div>
+              </div>
+            </div>
+            <div class="ovr-lines">
+              <div><span>Base OVR contribution</span><b id="break-base">--</b></div>
+              <div><span>Rank contribution</span><b id="break-rank">--</b></div>
+              <div><span>Badge bonus</span><b id="break-badge">+0</b></div>
+              <div class="total"><span>Team OVR</span><b id="break-total">--</b></div>
+            </div>
+            <details>
+              <summary>How was this calculated?</summary>
+              <div id="math">Enter players to see the live calculation.</div>
+            </details>
+          </section>
+
 
           <section class="block badges-block">
             <div class="block-head">
@@ -406,6 +407,8 @@ const POSITIONS = [
     .formation{position:absolute;inset:0;overflow:visible}
     .card{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);width:clamp(72px,12.5%,116px);padding:8px;border:1px solid rgba(107,207,242,.45);border-radius:12px;background:linear-gradient(145deg,rgba(6,18,28,.98),rgba(8,23,31,.92));box-shadow:0 12px 26px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.04);backdrop-filter:blur(8px);transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
     .card:focus-within{transform:translate(-50%,-52%);border-color:var(--blue);box-shadow:0 16px 30px rgba(0,0,0,.38),0 0 0 3px rgba(107,207,242,.07)}
+    .card.is-bottleneck{border-color:#ff5b68;outline:2px solid rgba(255,91,104,.74);outline-offset:2px;box-shadow:0 0 0 4px rgba(255,91,104,.10),0 16px 30px rgba(0,0,0,.38),inset 0 0 0 1px rgba(255,91,104,.32)}
+    .card.is-bottleneck:focus-within{border-color:#ff5b68;outline-color:#ff5b68;box-shadow:0 0 0 4px rgba(255,91,104,.13),0 18px 34px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,91,104,.4)}
     .card-top{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:6px}
     .position{font:900 9px var(--mono);color:#83dfff}
     .card-top span:last-child{font:700 6px var(--mono);color:#728995;white-space:nowrap}
@@ -617,12 +620,11 @@ const POSITIONS = [
     }
   </style>
   <style is="global">
-    /* Runtime-generated Team OVR UI needs global selectors because Astro cannot scope
-       CSS onto nodes created later by team-ovr.js. Keep every selector inside .ovr-tool. */
-    .ovr-tool .subs{display:grid;grid-template-columns:1fr;gap:10px;margin-top:13px}
-    .ovr-tool .sub{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:11px;padding:14px;border:1px solid rgba(107,207,242,.12);border-radius:16px;background:linear-gradient(155deg,#0c1d28,#08151d);overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.14);min-width:0}
-    .ovr-tool .sub:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--blue),rgba(107,207,242,.10));opacity:.9;pointer-events:none}
-    .ovr-tool .sub-top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:0 0 11px;border-bottom:1px solid var(--border)}
+    /* Runtime-generated Team OVR UI */
+    .ovr-tool .subs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+    .ovr-tool .sub{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:14px;border:1px solid rgba(107,207,242,.12);border-radius:17px;background:linear-gradient(155deg,#0c1d28,#08151d);overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.14);min-width:0}
+    .ovr-tool .sub:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--blue),rgba(107,207,242,.08));opacity:.9;pointer-events:none}
+    .ovr-tool .sub-top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:9px;min-width:0;padding:0 0 11px;border-bottom:1px solid var(--border)}
     .ovr-tool .sub-top-left{display:flex;align-items:center;gap:9px;min-width:0}
     .ovr-tool .sub-top-left small{font:800 7px var(--mono);color:var(--blue);letter-spacing:.12em;white-space:nowrap}
     .ovr-tool .sub-top-left b{font:900 10px var(--mono);white-space:nowrap}
@@ -630,19 +632,19 @@ const POSITIONS = [
     .ovr-tool .sub-status:before{content:"";width:4px;height:4px;flex:0 0 4px;border-radius:50%;background:var(--blue);box-shadow:0 0 9px rgba(107,207,242,.45)}
     .ovr-tool .sub-remove{width:30px;height:30px;flex:0 0 30px;border:1px solid var(--border);border-radius:9px;background:rgba(255,255,255,.018);color:#76909b;cursor:pointer;font:700 16px/1 var(--mono);transition:.15s}
     .ovr-tool .sub-remove:hover{color:var(--text);border-color:rgba(107,207,242,.45);background:var(--blue3);transform:translateY(-1px)}
-    .ovr-tool .sub-field{min-width:0;padding:3px 2px 2px}
+    .ovr-tool .sub-field{min-width:0;padding:2px}
     .ovr-tool .sub-field label{display:block;min-width:0;color:#718b98;font:800 7px/1 var(--mono);letter-spacing:.1em;white-space:nowrap}
-    .ovr-tool .sub-field label:before{content:"";display:block;width:18px;height:2px;margin-bottom:8px;border-radius:99px;background:rgba(107,207,242,.35)}
+    .ovr-tool .sub-field label:before{content:"";display:block;width:18px;height:2px;margin-bottom:7px;border-radius:99px;background:rgba(107,207,242,.35)}
     .ovr-tool .sub input,.ovr-tool .sub select{display:block;width:100%;min-width:0;height:43px;margin-top:8px;border:1px solid #294756;border-radius:11px;background:#07151e;color:var(--text);padding:0 11px;font:800 11px var(--mono);outline:0;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
     .ovr-tool .sub input::placeholder{color:#5d7886}
     .ovr-tool .sub input:hover,.ovr-tool .sub select:hover{border-color:#35596a;background:#081923}
     .ovr-tool .sub input:focus,.ovr-tool .sub select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(107,207,242,.065);background:#091b25}
-    .ovr-tool .sub-foot{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;margin-top:1px;padding:12px 2px 0;border-top:1px solid var(--border)}
+    .ovr-tool .sub-foot{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;margin-top:0;padding:11px 2px 0;border-top:1px solid var(--border)}
     .ovr-tool .sub-foot-copy{min-width:0}
     .ovr-tool .sub-foot-copy span{display:block;color:#73909c;font:800 7px var(--mono);letter-spacing:.1em}
     .ovr-tool .sub-foot-copy small{display:block;margin-top:4px;color:#58727f;font-size:8px;line-height:1.35}
     .ovr-tool .sub-foot strong{min-width:48px;text-align:right;color:var(--blue);font:900 24px var(--mono);letter-spacing:-.04em}
-    .ovr-tool .add-sub-btn{display:flex;align-items:center;gap:10px;min-width:0;margin-top:11px;padding:0 12px;text-align:left}
+    .ovr-tool .add-sub-btn{display:flex;align-items:center;gap:10px;min-width:0;margin-top:12px;padding:0 12px;text-align:left}
     .ovr-tool .add-sub-btn .add-icon{display:grid;place-items:center;width:26px;height:26px;flex:0 0 26px;border-radius:8px;background:var(--blue3);color:var(--blue);font:900 18px/1 var(--mono)}
     .ovr-tool .add-sub-btn .add-copy{display:block;min-width:0}
     .ovr-tool .add-sub-btn .add-copy b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
@@ -661,6 +663,9 @@ const POSITIONS = [
     .ovr-tool .bottleneck-card strong{display:block;overflow-wrap:anywhere;font-size:10px}
     .ovr-tool .bottleneck-card p{margin:3px 0 0;color:var(--muted);font-size:8px;line-height:1.5;overflow-wrap:anywhere}
     .ovr-tool .next-routes{min-width:0;overflow-wrap:anywhere}
+    @media(max-width:820px){
+      .ovr-tool .subs{grid-template-columns:1fr}
+    }
     @media(max-width:520px){
       .ovr-tool .sub{grid-template-columns:1fr;padding:12px}
       .ovr-tool .sub-status{font-size:5.5px;padding:5px 6px}
