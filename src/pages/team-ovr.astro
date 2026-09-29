@@ -226,6 +226,139 @@ const POSITIONS = [
         </div>
       </section>
 
+      <section class="ovr-guide" aria-labelledby="ovr-guide-title">
+        <div class="guide-intro">
+          <div>
+            <span class="guide-kicker">TEAM OVR / FIELD GUIDE</span>
+            <h2 id="ovr-guide-title">Understand the number before you upgrade a player</h2>
+            <p>Team OVR is not the same thing as the rating shown on one player card. It is a squad-level result, so replacing one player, adding a rank, or activating a Team Badge can change the headline even when the change looks small on the card itself.</p>
+            <p>EA describes Team OVR as being based on the OVR of the players in the team together with ranks and boosts. The calculator above turns those inputs into a transparent squad calculation and keeps a live estimate visible while you build the lineup.</p>
+          </div>
+          <div class="guide-note">
+            <span class="guide-note-label">METHOD</span>
+            <strong>Live estimate first. Exact result when the included squad is complete.</strong>
+            <small>Method reviewed 29 September 2026</small>
+          </div>
+        </div>
+
+        <div class="guide-grid">
+          <article class="guide-panel">
+            <div class="guide-panel-head">
+              <span>01</span>
+              <h3>What the calculator measures</h3>
+            </div>
+            <p><strong>Base OVR</strong> is the starting value entered for each included player. The calculator averages the Base OVR values and rounds that average up. This gives you the base portion of the Team OVR calculation.</p>
+            <p><strong>Rank</strong> is entered separately because a ranked player contributes additional OVR. The calculator averages the entered rank values and rounds that average up once rank data is available.</p>
+            <p><strong>Badges</strong> are represented as the selectable Team OVR bonus slots in this tool. Each active slot contributes +1 to the calculator's displayed bonus.</p>
+          </article>
+
+          <article class="guide-panel">
+            <div class="guide-panel-head">
+              <span>02</span>
+              <h3>Why a single upgrade can change the result</h3>
+            </div>
+            <p>The averages are rounded, so the visible Team OVR does not have to move one point for every one-point player upgrade. Sometimes an upgrade sits inside the same rounding boundary and the headline stays unchanged. The next upgrade can then push the average across that boundary and increase Team OVR by one.</p>
+            <p>That is why the <strong>Next OVR</strong> panel and <strong>Biggest OVR Bottleneck</strong> panel look at the squad as a whole instead of simply telling you to upgrade the lowest card.</p>
+          </article>
+
+          <article class="guide-panel">
+            <div class="guide-panel-head">
+              <span>03</span>
+              <h3>A worked example</h3>
+            </div>
+            <div class="example-table" role="table" aria-label="Worked Team OVR example">
+              <div role="row" class="example-row example-head"><span role="columnheader">Input</span><span role="columnheader">Squad average</span><span role="columnheader">Result</span></div>
+              <div role="row" class="example-row"><span role="cell">Base OVR</span><b role="cell">112.18</b><strong role="cell">113</strong></div>
+              <div role="row" class="example-row"><span role="cell">Rank</span><b role="cell">1.27</b><strong role="cell">2</strong></div>
+              <div role="row" class="example-row"><span role="cell">Badge bonus</span><b role="cell">+1</b><strong role="cell">+1</strong></div>
+              <div role="row" class="example-row example-total"><span role="cell">Displayed Team OVR</span><b role="cell">113 + 2 + 1</b><strong role="cell">116</strong></div>
+            </div>
+            <p class="guide-caption">The decimals above are deliberately shown so you can see why the displayed components become 113 and 2 after rounding up. The same rounding effect is what the calculator's upgrade planner is designed to account for.</p>
+          </article>
+
+          <article class="guide-panel">
+            <div class="guide-panel-head">
+              <span>04</span>
+              <h3>Rank and training are different</h3>
+            </div>
+            <p>Ranking a player increases the player's OVR. Training is different: EA explains that training increases player attributes, while ranking increases OVR and unlocks higher training levels.</p>
+            <p>For that reason, the Team OVR calculator asks for <strong>Rank</strong>, not Training Level. Your training work can still matter a lot on the pitch, but it is not substituted for the rank value in this Team OVR calculation.</p>
+          </article>
+
+          <article class="guide-panel">
+            <div class="guide-panel-head">
+              <span>05</span>
+              <h3>How to use the live estimate correctly</h3>
+            </div>
+            <p>Start by entering the Base OVR for the players you already know. The headline updates immediately from the values entered so far. Add ranks as you verify them. This is useful when you are checking a screenshot, rebuilding a lineup, or comparing several possible replacements without having to finish every field first.</p>
+            <p>Treat a partial result as a <strong>working estimate</strong>. Once every included player has both Base OVR and Rank, the tool switches to the exact calculation for that squad size.</p>
+          </article>
+
+          <article class="guide-panel">
+            <div class="guide-panel-head">
+              <span>06</span>
+              <h3>Where to look for the next upgrade</h3>
+            </div>
+            <p>Use <strong>Biggest OVR Bottleneck</strong> to identify the lowest entered Base OVR. Then check <strong>Next OVR</strong> to see how much change is needed to cross the next displayed rating boundary.</p>
+            <p>For a finished squad, <strong>Reach X OVR</strong> compares Base OVR, Rank, and mixed routes. That makes the planner more useful than a generic “upgrade your lowest player” rule because it shows the arithmetic behind the target.</p>
+          </article>
+        </div>
+
+        <div class="guide-deep">
+          <div class="guide-deep-copy">
+            <span class="guide-kicker">THE CALCULATION</span>
+            <h3>The formula used by this tool</h3>
+            <p>For a complete squad, the tool uses the following transparent model:</p>
+            <div class="formula">
+              <code>Team OVR = ceil(total Base OVR ÷ squad size) + ceil(total Rank ÷ squad size) + Badge Bonus</code>
+            </div>
+            <p>Substitutes are included when you add them because this calculator treats them as part of the included squad average. With no complete squad, the headline intentionally remains a live estimate based on the values you have entered rather than pretending missing data is zero.</p>
+            <p>This presentation is designed to make the arithmetic inspectable. EA's current help guidance describes Team OVR as the average of player OVR, ranks and boosts, while the official FC Mobile training guidance confirms that ranking a player raises their OVR.</p>
+          </div>
+          <div class="guide-deep-card">
+            <span>OFFICIAL REFERENCE</span>
+            <strong>What EA confirms</strong>
+            <p>EA's current help page says Team OVR uses player OVR together with ranks and boosts. EA's ranking guide also explains that every five Training Levels allows a player to be ranked, with a +1 OVR increase per rank step.</p>
+            <div class="guide-links">
+              <a href="https://help.ea.com/en/articles/ea-sports-fc/fc-mobile/how-to-rank-up-players/" target="_blank" rel="noopener">EA Help · Rank Up Players ↗</a>
+              <a href="https://www.ea.com/ea-originals/news/fc-mobile-training-deep-dive" target="_blank" rel="noopener">EA · Training Deep Dive ↗</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-faq">
+          <div class="guide-faq-head">
+            <span class="guide-kicker">FAQ</span>
+            <h3>Team OVR questions that actually affect the calculation</h3>
+          </div>
+
+          <details>
+            <summary>Why does my Team OVR sometimes stay the same after upgrading a player?</summary>
+            <p>The calculator rounds the Base OVR and Rank averages up. An upgrade can increase a component's underlying average without crossing the next whole-number boundary. When the average finally crosses that boundary, the displayed Team OVR moves.</p>
+          </details>
+
+          <details>
+            <summary>Do I need to enter all 11 players before I can see a Team OVR?</summary>
+            <p>No. The headline is intentionally a live partial estimate. One valid Base OVR is enough to start it. The exact result is shown after every included player has valid Base OVR and Rank data.</p>
+          </details>
+
+          <details>
+            <summary>Are substitutes included?</summary>
+            <p>Yes. In this calculator, every substitute you add becomes part of the included squad average. An unfinished substitute is not treated as a completed player until both Base OVR and Rank are entered.</p>
+          </details>
+
+          <details>
+            <summary>Does Training Level increase Team OVR in this calculator?</summary>
+            <p>Training Level is not a Team OVR input here. EA distinguishes training from ranking: training improves attributes, while ranking increases a player's OVR. The calculator therefore asks for Rank rather than Training Level.</p>
+          </details>
+
+          <details>
+            <summary>Why is the result labelled LIVE ESTIMATE before the squad is complete?</summary>
+            <p>Because missing fields are not secretly converted into zeroes. The tool shows what can be calculated from the data you have entered and labels it as an estimate. That keeps the partial result useful without presenting incomplete data as a finished squad calculation.</p>
+          </details>
+        </div>
+      </section>
+
       <div class="reset-row">
         <button class="reset" id="reset" type="button"><span>↺</span>Reset Squad</button>
       </div>
