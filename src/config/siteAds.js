@@ -4,12 +4,12 @@ export const SITE_ADS = {
   "enabled": false,
   "provider": "Monetag",
   "popunder": {
-    "enabled": true,
+    "enabled": false,
     "zone": "11875908",
     "src": "https://al5sm.com/tag.min.js"
   },
   "push": {
-    "enabled": true,
+    "enabled": false,
     "zone": "11875910",
     "src": "https://5gvci.com/act/files/tag.min.js",
     "delayMs": 10000
