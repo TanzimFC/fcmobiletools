@@ -857,6 +857,16 @@ export default { async fetch(request,env) {
   if(url.pathname === '/reset-center' || url.pathname === '/reset-center/') {
     return Response.redirect(new URL('/events/',url),301);
   }
+  if(url.pathname === '/team-ovr' || url.pathname === '/team-ovr/') {
+    const assetUrl = new URL('/team-ovr/', url);
+    assetUrl.searchParams.set('_fcmtools_build', '2026-09-29-ovr-fix');
+    const asset=await env.ASSETS.fetch(new Request(assetUrl,{method:'GET',headers:request.headers}));
+    if(!asset.ok) return asset;
+    const headers=new Headers(asset.headers);
+    headers.set('cache-control','no-store, max-age=0, must-revalidate');
+    headers.set('x-fcmobiletools-page','team-ovr-live');
+    return new Response(await asset.arrayBuffer(),{status:asset.status,statusText:asset.statusText,headers});
+  }
   if(url.pathname === '/events' || url.pathname === '/events/') {
     const asset=await env.ASSETS.fetch(new Request(new URL('/events/',url),{method:'GET',headers:request.headers}));
     if(!asset.ok) return asset;
