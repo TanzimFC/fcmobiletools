@@ -173,24 +173,93 @@ const pageSchema = {
       const loader = document.getElementById('site-loader');
       if (!loader) return;
 
-      const close = () => loader.classList.add('done');
+      const arc = loader.querySelector('.sl-arc');
+      const head = loader.querySelector('.sl-head');
+      const num = loader.querySelector('.sl-num i');
 
-      // Decorative only: never wait for every image, font or third-party script.
-      const closeAfterReady = () => window.setTimeout(close, 520);
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', closeAfterReady, { once: true });
-      } else {
-        closeAfterReady();
+      let progress = 0;
+      let ready = document.readyState !== 'loading';
+      let completed = false;
+      let raf = 0;
+      const startedAt = performance.now();
+
+      const paint = () => {
+        const value = Math.max(0, Math.min(1, progress));
+        if (arc) arc.style.strokeDashoffset = String(100 - value * 100);
+        if (head) head.setAttribute('transform', 'rotate(' + value * 360 + ' 110 110)');
+        if (num) num.textContent = String(Math.round(value * 100));
+      };
+
+      const closeAt100 = () => {
+        if (completed) return;
+        completed = true;
+        cancelAnimationFrame(raf);
+
+        const from = progress;
+        const finishStartedAt = performance.now();
+
+        const animateTo100 = (now) => {
+          const t = Math.min(1, (now - finishStartedAt) / 320);
+          const eased = 1 - Math.pow(1 - t, 3);
+          progress = from + (1 - from) * eased;
+          paint();
+
+          if (t < 1) {
+            raf = requestAnimationFrame(animateTo100);
+            return;
+          }
+
+          progress = 1;
+          paint();
+
+          // Leave 100% visible for a beat before the branded split opens.
+          window.setTimeout(() => loader.classList.add('done'), 160);
+        };
+
+        raf = requestAnimationFrame(animateTo100);
+      };
+
+      const tick = (now) => {
+        if (completed) return;
+
+        const elapsed = now - startedAt;
+
+        // Smoothly fill to 88% while the document becomes ready.
+        const timeTarget = Math.min(0.88, 0.08 + (elapsed / 1500) * 0.80);
+        const target = ready ? Math.max(0.94, timeTarget) : timeTarget;
+
+        progress += (target - progress) * 0.10;
+        paint();
+
+        raf = requestAnimationFrame(tick);
+      };
+
+      const markReady = () => {
+        ready = true;
+      };
+
+      paint();
+      raf = requestAnimationFrame(tick);
+
+      if (!ready) {
+        document.addEventListener('DOMContentLoaded', markReady, { once: true });
       }
 
-      // Safety ceiling for unusual stalls.
-      window.setTimeout(close, 1400);
+      // The final jump to 100% happens when the page is fully loaded.
+      window.addEventListener('load', closeAt100, { once: true });
+
+      // Safety ceiling: even a stalled external resource cannot trap the loader.
+      window.setTimeout(closeAt100, 2600);
 
       window.addEventListener('pageshow', (event) => {
-        if (event.persisted) close();
+        if (!event.persisted) return;
+        cancelAnimationFrame(raf);
+        progress = 1;
+        completed = true;
+        paint();
+        loader.classList.add('done');
       });
     })();
-  </script>
   </script>
   <script is:inline>
     (() => {
