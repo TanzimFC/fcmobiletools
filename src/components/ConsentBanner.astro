@@ -1,0 +1,239 @@
+---
+---
+
+<div class="fcmt-consent" id="fcmtConsent" hidden data-consent-version="1">
+  <div class="fcmt-consent-card" role="dialog" aria-modal="true" aria-labelledby="fcmtConsentTitle" aria-describedby="fcmtConsentText">
+    <div class="fcmt-consent-copy">
+      <div class="fcmt-consent-kicker"><span></span> PRIVACY</div>
+      <h2 id="fcmtConsentTitle">Your privacy matters</h2>
+      <p id="fcmtConsentText">We use cookies and similar technologies to keep FCMOBILETOOLS running, understand how the site is used, and support advertising. You can accept all, reject non-essential technologies, or manage your choices.</p>
+      <a class="fcmt-consent-policy" href="/legal/privacy-policy#privacy-choices">Read our privacy policy</a>
+    </div>
+    <div class="fcmt-consent-actions">
+      <button type="button" class="fcmt-consent-btn ghost" data-consent="reject">Reject Non-Essential</button>
+      <button type="button" class="fcmt-consent-btn secondary" data-consent="manage">Manage Choices</button>
+      <button type="button" class="fcmt-consent-btn primary" data-consent="accept">Accept All</button>
+    </div>
+  </div>
+</div>
+
+<div class="fcmt-consent-modal" id="fcmtConsentModal" hidden>
+  <div class="fcmt-consent-backdrop" data-consent-close></div>
+  <div class="fcmt-consent-settings" role="dialog" aria-modal="true" aria-labelledby="fcmtSettingsTitle">
+    <div class="fcmt-settings-head">
+      <div>
+        <div class="fcmt-consent-kicker"><span></span> PRIVACY SETTINGS</div>
+        <h2 id="fcmtSettingsTitle">Control your choices</h2>
+        <p>Choose which optional technologies may be used on FCMOBILETOOLS.</p>
+      </div>
+      <button type="button" class="fcmt-settings-close" aria-label="Close privacy settings" data-consent-close>×</button>
+    </div>
+
+    <div class="fcmt-setting-list">
+      <section class="fcmt-setting">
+        <div>
+          <strong>Essential</strong>
+          <p>Required for core site functionality, security, and remembering necessary preferences.</p>
+        </div>
+        <span class="fcmt-setting-status">Always on</span>
+      </section>
+
+      <section class="fcmt-setting">
+        <div>
+          <strong>Analytics</strong>
+          <p>Helps us understand aggregate site usage and improve pages, tools, and performance.</p>
+        </div>
+        <label class="fcmt-toggle">
+          <input id="fcmtAnalytics" type="checkbox" />
+          <span></span>
+          <em>Allow</em>
+        </label>
+      </section>
+
+      <section class="fcmt-setting">
+        <div>
+          <strong>Advertising</strong>
+          <p>Allows advertising technologies and relevant advertising where applicable.</p>
+        </div>
+        <label class="fcmt-toggle">
+          <input id="fcmtAdvertising" type="checkbox" />
+          <span></span>
+          <em>Allow</em>
+        </label>
+      </section>
+    </div>
+
+    <div class="fcmt-settings-foot">
+      <a href="/legal/cookie-policy#privacy-choices">Cookie Policy</a>
+      <div>
+        <button type="button" class="fcmt-consent-btn ghost" data-consent="reject">Reject All</button>
+        <button type="button" class="fcmt-consent-btn primary" data-consent="save">Save Choices</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.fcmt-consent,
+.fcmt-consent-modal{font-family:var(--font-body)}
+.fcmt-consent[hidden],
+.fcmt-consent-modal[hidden]{display:none!important}
+.fcmt-consent{position:fixed;left:16px;right:16px;bottom:16px;z-index:4900;pointer-events:none}
+.fcmt-consent-card{width:min(1040px,100%);margin:0 auto;display:flex;align-items:end;justify-content:space-between;gap:28px;padding:20px 20px 18px;border:1px solid rgba(255,255,255,.11);border-radius:22px;background:linear-gradient(145deg,rgba(17,30,43,.98),rgba(7,16,24,.985));box-shadow:0 24px 70px rgba(0,0,0,.52),0 1px 0 rgba(255,255,255,.07) inset;backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);pointer-events:auto;transform:translateY(18px);opacity:0;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .25s ease}
+.fcmt-consent.is-open .fcmt-consent-card{transform:none;opacity:1}
+.fcmt-consent-copy{min-width:0;max-width:690px}
+.fcmt-consent-kicker{display:flex;align-items:center;gap:8px;color:var(--primary);font:800 9px/1 var(--font-body);letter-spacing:.17em}
+.fcmt-consent-kicker span{width:22px;height:1px;background:var(--primary);box-shadow:0 0 10px rgba(76,201,255,.4)}
+.fcmt-consent h2{margin:8px 0 6px;font:800 clamp(21px,2vw,27px)/1.08 var(--font-display);letter-spacing:-.035em}
+.fcmt-consent p{margin:0;color:#aab9c7;font:500 12.5px/1.65 var(--font-body)}
+.fcmt-consent-policy{display:inline-block;margin-top:7px;color:#7fdcff;font:700 11px/1.3 var(--font-body);text-decoration:underline;text-underline-offset:2px}
+.fcmt-consent-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto}
+.fcmt-consent-btn{min-height:42px;padding:0 14px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);font:800 11px/1 var(--font-body);letter-spacing:.01em;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease}
+.fcmt-consent-btn:hover{transform:translateY(-1px);border-color:rgba(76,201,255,.25);background:rgba(255,255,255,.065)}
+.fcmt-consent-btn.primary{border-color:transparent;background:linear-gradient(135deg,#8fe3ff,#4cc9ff 55%,#35b3ec);color:#03131c;box-shadow:0 10px 26px rgba(76,201,255,.22)}
+.fcmt-consent-btn.primary:hover{box-shadow:0 14px 32px rgba(76,201,255,.3)}
+.fcmt-consent-btn.secondary{background:rgba(76,201,255,.08);border-color:rgba(76,201,255,.2)}
+.fcmt-consent-btn.ghost{background:transparent;color:#aebdca}
+.fcmt-consent-modal{position:fixed;inset:0;z-index:4950;display:grid;place-items:center;padding:20px}
+.fcmt-consent-backdrop{position:absolute;inset:0;background:rgba(2,8,13,.68);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.fcmt-consent-settings{position:relative;width:min(650px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;border:1px solid rgba(255,255,255,.11);border-radius:24px;background:linear-gradient(180deg,#132131,#08121b);box-shadow:0 40px 120px rgba(0,0,0,.65);padding:22px}
+.fcmt-settings-head{display:flex;gap:20px;justify-content:space-between}
+.fcmt-settings-head h2{margin:9px 0 6px;font:800 29px/1 var(--font-display);letter-spacing:-.04em}
+.fcmt-settings-head p{margin:0;color:#8294a5;font:500 12.5px/1.6 var(--font-body);max-width:500px}
+.fcmt-settings-close{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.035);color:#a6b5c3;font-size:24px;line-height:1;cursor:pointer}
+.fcmt-setting-list{display:grid;gap:9px;margin-top:22px}
+.fcmt-setting{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:15px;border:1px solid rgba(255,255,255,.075);border-radius:16px;background:rgba(255,255,255,.025)}
+.fcmt-setting strong{display:block;color:var(--text);font:800 13px/1.2 var(--font-body)}
+.fcmt-setting p{max-width:470px;margin:5px 0 0;color:#718394;font:500 11.5px/1.55 var(--font-body)}
+.fcmt-setting-status{white-space:nowrap;color:var(--primary);font:800 10px/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase}
+.fcmt-toggle{display:flex;align-items:center;gap:8px;flex:0 0 auto;color:#8293a3;font:700 10px/1 var(--font-body)}
+.fcmt-toggle input{position:absolute;opacity:0;pointer-events:none}
+.fcmt-toggle span{position:relative;width:46px;height:25px;border:1px solid rgba(255,255,255,.11);border-radius:99px;background:#1a2937;transition:.2s}
+.fcmt-toggle span::after{content:"";position:absolute;left:3px;top:3px;width:17px;height:17px;border-radius:50%;background:#788897;transition:.2s}
+.fcmt-toggle input:checked+span{border-color:rgba(76,201,255,.36);background:rgba(76,201,255,.18)}
+.fcmt-toggle input:checked+span::after{transform:translateX(21px);background:var(--primary);box-shadow:0 0 10px rgba(76,201,255,.4)}
+.fcmt-toggle input:focus-visible+span{outline:2px solid var(--primary);outline-offset:3px}
+.fcmt-settings-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;padding-top:17px;border-top:1px solid rgba(255,255,255,.075)}
+.fcmt-settings-foot>a{color:#7fdcff;font:700 11px/1.3 var(--font-body);text-decoration:underline;text-underline-offset:2px}
+.fcmt-settings-foot>div{display:flex;gap:8px}
+html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
+@media(max-width:780px){
+  .fcmt-consent{left:10px;right:10px;bottom:10px}
+  .fcmt-consent-card{align-items:stretch;flex-direction:column;gap:15px;padding:17px;border-radius:19px}
+  .fcmt-consent-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .fcmt-consent-btn{width:100%;min-height:43px}
+  .fcmt-consent-btn.primary{grid-column:1/-1;order:-1}
+}
+@media(max-width:480px){
+  .fcmt-consent{bottom:8px}
+  .fcmt-consent-copy p{font-size:12px;line-height:1.55}
+  .fcmt-consent-policy{font-size:10.5px}
+  .fcmt-consent-settings{padding:17px;border-radius:20px}
+  .fcmt-settings-head h2{font-size:25px}
+  .fcmt-setting{align-items:flex-start;flex-direction:column}
+  .fcmt-setting-status{margin-left:0}
+  .fcmt-toggle{width:100%;justify-content:space-between}
+  .fcmt-settings-foot{align-items:stretch;flex-direction:column}
+  .fcmt-settings-foot>div{display:grid;grid-template-columns:1fr 1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  .fcmt-consent-card{transition:none}
+}
+</style>
+
+<script is:inline>
+(() => {
+  const root = document.documentElement;
+  const banner = document.getElementById('fcmtConsent');
+  const modal = document.getElementById('fcmtConsentModal');
+  if (!banner || !modal) return;
+
+  const COOKIE = 'fcmobiletools_consent';
+  const VERSION = '1';
+  const maxAge = 60 * 60 * 24 * 180;
+
+  const readCookie = () => {
+    const row = document.cookie.split('; ').find((item) => item.startsWith(COOKIE + '='));
+    if (!row) return null;
+    try { return JSON.parse(decodeURIComponent(row.slice(COOKIE.length + 1))); } catch { return null; }
+  };
+
+  const writeCookie = (value) => {
+    document.cookie = COOKIE + '=' + encodeURIComponent(JSON.stringify({
+      version: VERSION,
+      analytics: !!value.analytics,
+      advertising: !!value.advertising,
+      ts: new Date().toISOString()
+    })) + '; Max-Age=' + maxAge + '; Path=/; SameSite=Lax';
+  };
+
+  const updateGoogleConsent = ({analytics, advertising}) => {
+    if (typeof window.gtag !== 'function') return;
+    window.gtag('consent', 'update', {
+      analytics_storage: analytics ? 'granted' : 'denied',
+      ad_storage: advertising ? 'granted' : 'denied',
+      ad_user_data: advertising ? 'granted' : 'denied',
+      ad_personalization: advertising ? 'granted' : 'denied'
+    });
+  };
+
+  const apply = (choice) => {
+    writeCookie(choice);
+    updateGoogleConsent(choice);
+    banner.classList.remove('is-open');
+    window.setTimeout(() => { banner.hidden = true; }, 280);
+    modal.hidden = true;
+    root.classList.remove('fcmt-consent-lock');
+  };
+
+  const openModal = () => {
+    const current = readCookie() || { analytics: false, advertising: false };
+    document.getElementById('fcmtAnalytics').checked = !!current.analytics;
+    document.getElementById('fcmtAdvertising').checked = !!current.advertising;
+    modal.hidden = false;
+    root.classList.add('fcmt-consent-lock');
+  };
+
+  const showBanner = () => {
+    if (readCookie()?.version === VERSION) return;
+    banner.hidden = false;
+    requestAnimationFrame(() => banner.classList.add('is-open'));
+  };
+
+  banner.querySelector('[data-consent="accept"]')?.addEventListener('click', () => apply({analytics:true,advertising:true}));
+  banner.querySelector('[data-consent="reject"]')?.addEventListener('click', () => apply({analytics:false,advertising:false}));
+  banner.querySelector('[data-consent="manage"]')?.addEventListener('click', openModal);
+
+  modal.querySelectorAll('[data-consent-close]').forEach((el) => el.addEventListener('click', () => {
+    modal.hidden = true;
+    root.classList.remove('fcmt-consent-lock');
+  }));
+
+  modal.querySelector('[data-consent="reject"]')?.addEventListener('click', () => apply({analytics:false,advertising:false}));
+  modal.querySelector('[data-consent="save"]')?.addEventListener('click', () => apply({
+    analytics: document.getElementById('fcmtAnalytics').checked,
+    advertising: document.getElementById('fcmtAdvertising').checked
+  }));
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (!modal.hidden) {
+      modal.hidden = true;
+      root.classList.remove('fcmt-consent-lock');
+      return;
+    }
+  });
+
+  window.FCMOBILETOOLS_OPEN_PRIVACY_CHOICES = () => {
+    openModal();
+    return true;
+  };
+
+  const existing = readCookie();
+  if (existing?.version === VERSION) {
+    updateGoogleConsent(existing);
+  } else {
+    showBanner();
+  }
+})();
+</script>
