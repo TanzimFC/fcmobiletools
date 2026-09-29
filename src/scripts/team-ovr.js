@@ -17,7 +17,7 @@ const reset = document.getElementById('reset');
 
 if (formation && subsEl && addSub && reset) {
   const state = {
-    starters: Array.from(formation.querySelectorAll('.card')).map(() => ({ baseOVR: null, rank: null })),
+    starters: Array.from(formation.querySelectorAll('.card')).map(() => ({ baseOVR: null, rank: 0 })),
     subs: [],
     badges: Array(MAX_BADGE_SLOTS).fill(false),
   };
@@ -31,15 +31,6 @@ if (formation && subsEl && addSub && reset) {
 
   const pitch = formation.closest('.pitch');
   if (pitch) pitch.style.aspectRatio = '2 / 3';
-
-  const rightCol = document.querySelector('.right-col');
-  const subsBlock = document.querySelector('.subs-block');
-  const badgesBlock = subsBlock?.nextElementSibling;
-  const plannerBlock = rightCol?.querySelector('.planner');
-  if (rightCol && subsBlock && badgesBlock && plannerBlock) {
-    rightCol.insertBefore(subsBlock, plannerBlock);
-    rightCol.insertBefore(badgesBlock, plannerBlock);
-  }
 
   function playerLabel(index) {
     return `Player ${index + 1}`;
@@ -140,7 +131,7 @@ if (formation && subsEl && addSub && reset) {
       const rank = card.querySelector('[data-rank]');
       const subOvr = card.querySelector('[data-sub-ovr]');
       base.value = player.baseOVR ?? '';
-      rank.value = player.rank ?? '';
+      rank.value = String(player.rank ?? 0);
       subOvr.textContent = valid(player) ? player.baseOVR + player.rank : '--';
       base.addEventListener('input', () => { player.baseOVR = base.value === '' ? null : Number(base.value); subOvr.textContent = valid(player) ? player.baseOVR + player.rank : isValidBaseOVR(player.baseOVR) ? player.baseOVR : '--'; recompute(); });
       rank.addEventListener('change', () => { player.rank = rank.value === '' ? null : Number(rank.value); subOvr.textContent = valid(player) ? player.baseOVR + player.rank : '--'; recompute(); });
@@ -284,10 +275,14 @@ if (formation && subsEl && addSub && reset) {
     $('break-total').textContent = result?.teamOVR ?? estimate ?? '--';
     $('planner-current').textContent = result?.teamOVR ?? estimate ?? '--';
 
+    const enteredBaseValues = players.filter((player) => isValidBaseOVR(player.baseOVR)).map((player) => player.baseOVR);
+    const lowestBase = enteredBaseValues.length ? Math.min(...enteredBaseValues) : null;
+
     formation.querySelectorAll('.card').forEach((card, index) => {
       const player = state.starters[index];
       const cardOvr = card.querySelector('[data-card-ovr]');
       cardOvr.textContent = valid(player) ? player.baseOVR + player.rank : isValidBaseOVR(player.baseOVR) ? player.baseOVR : '--';
+      card.classList.toggle('is-bottleneck', lowestBase !== null && isValidBaseOVR(player.baseOVR) && player.baseOVR === lowestBase);
     });
 
     const math = $('math');
@@ -313,7 +308,7 @@ if (formation && subsEl && addSub && reset) {
 
   addSub.addEventListener('click', () => {
     if (state.subs.length >= maxSubs) return;
-    state.subs.push({ id: Date.now() + Math.random(), baseOVR: null, rank: null });
+    state.subs.push({ id: Date.now() + Math.random(), baseOVR: null, rank: 0 });
     renderSubs();
     recompute();
   });
@@ -323,11 +318,11 @@ if (formation && subsEl && addSub && reset) {
 
   reset.addEventListener('click', () => {
     if (!window.confirm('Reset the squad?')) return;
-    state.starters.forEach((player) => { player.baseOVR = null; player.rank = null; });
+    state.starters.forEach((player) => { player.baseOVR = null; player.rank = 0; });
     state.subs = [];
     state.badges.fill(false);
     formation.querySelectorAll('[data-field="baseOVR"]').forEach((input) => { input.value = ''; });
-    formation.querySelectorAll('[data-field="rank"]').forEach((select) => { select.value = ''; });
+    formation.querySelectorAll('[data-field="rank"]').forEach((select) => { select.value = '0'; });
     document.querySelectorAll('[data-badge]').forEach((checkbox) => { checkbox.checked = false; });
     renderSubs();
     recompute();
