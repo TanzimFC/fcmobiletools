@@ -87,8 +87,16 @@ const pageSchema = {
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+  {isHomePage ? <link rel="preload" as="image" href="/assets/images/herobeli.png" type="image/png" fetchpriority="high" /> : null}
+  <link
+    rel="preload"
+    as="style"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    onload="this.onload=null;this.rel='stylesheet'"
+  />
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+  </noscript>
   <meta property="og:title" content={title} />
   <meta property="og:site_name" content="FCMobiletools" />
   <meta property="og:description" content={description} />
@@ -110,8 +118,28 @@ const pageSchema = {
     <script type="application/ld+json" set:html={JSON.stringify(siteSchema)}></script>
     <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)}></script>
   </> : <script type="application/ld+json" set:html={JSON.stringify(pageSchema)}></script>}
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YY53FCHMLW"></script>
-  <script is:inline>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-YY53FCHMLW');</script>
+  <script is:inline>
+    window.dataLayer=window.dataLayer||[];
+    window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};
+    gtag('js',new Date());
+    gtag('config','G-YY53FCHMLW');
+
+    const loadAnalytics=()=>{
+      if(window.__FCMOBILETOOLS_GTAG_LOADED__) return;
+      window.__FCMOBILETOOLS_GTAG_LOADED__=true;
+      const script=document.createElement('script');
+      script.src='https://www.googletagmanager.com/gtag/js?id=G-YY53FCHMLW';
+      script.async=true;
+      document.head.appendChild(script);
+    };
+    window.addEventListener('load',()=>{
+      if('requestIdleCallback' in window){
+        window.requestIdleCallback(loadAnalytics,{timeout:3000});
+      }else{
+        window.setTimeout(loadAnalytics,1200);
+      }
+    },{once:true});
+  </script>
 </head>
 <body>
   <div id="site-loader" class="site-loader" aria-hidden="true">
@@ -129,7 +157,7 @@ const pageSchema = {
             <circle class="sl-dot" cx="110" cy="14" r="2.6" />
           </g>
         </svg>
-        <img class="sl-logo" src="/assets/images/logo.png" alt="FCMobiletools" width="1774" height="887" fetchpriority="high" decoding="async" />
+        <img class="sl-logo" src="/assets/images/logo.png" alt="FCMobiletools" width="1774" height="887" fetchpriority="low" decoding="async" />
       </div>
       <span class="sl-num"><i>0</i>%</span>
     </div>
@@ -145,74 +173,24 @@ const pageSchema = {
       const loader = document.getElementById('site-loader');
       if (!loader) return;
 
-      const arc = loader.querySelector('.sl-arc');
-      const head = loader.querySelector('.sl-head');
-      const num = loader.querySelector('.sl-num i');
+      const close = () => loader.classList.add('done');
 
-      // Loader timing: MIN is the minimum visible time; MAX is the safety ceiling.
-      const MIN = 650;
-      const MAX = 2200;
-
-      let p = 0;
-      let start = performance.now();
-      let raf = 0;
-      let timer = 0;
-      let ready = document.readyState === 'complete';
-
-      const stop = () => {
-        cancelAnimationFrame(raf);
-        clearTimeout(timer);
-      };
-
-      const paint = () => {
-        arc.style.strokeDashoffset = String(100 - p * 100);
-        head.setAttribute('transform', 'rotate(' + p * 360 + ' 110 110)');
-        num.textContent = Math.round(p * 100);
-      };
-
-      const open = () => {
-        stop();
-        p = 1;
-        paint();
-        loader.classList.add('done');
-      };
-
-      const tick = (now) => {
-        const t = now - start;
-        const canFinish = (ready || t > MAX) && t > MIN;
-
-        if (canFinish) {
-          p = Math.min(1, p + Math.max((1 - p) * 0.34, 0.02));
-        } else {
-          p += (Math.min(0.9, 1 - Math.exp(-t / 800)) - p) * 0.1;
-        }
-
-        paint();
-
-        if (p < 1) {
-          raf = requestAnimationFrame(tick);
-        } else {
-          timer = setTimeout(open, 120);
-        }
-      };
-
-      if (!ready) {
-        window.addEventListener('load', () => {
-          ready = true;
-        }, { once: true });
+      // Decorative only: never wait for every image, font or third-party script.
+      const closeAfterReady = () => window.setTimeout(close, 520);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', closeAfterReady, { once: true });
+      } else {
+        closeAfterReady();
       }
 
-      raf = requestAnimationFrame(tick);
+      // Safety ceiling for unusual stalls.
+      window.setTimeout(close, 1400);
 
-      // Back/forward cache restore: never leave the loader stuck on screen.
       window.addEventListener('pageshow', (event) => {
-        if (!event.persisted) return;
-        stop();
-        p = 1;
-        paint();
-        open();
+        if (event.persisted) close();
       });
     })();
+  </script>
   </script>
   <script is:inline>
     (() => {
