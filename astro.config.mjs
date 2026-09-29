@@ -13,7 +13,7 @@ const nationRedirects = Object.fromEntries(
 );
 
 export default defineConfig({
-  site: 'https://tanzimfc.fcmobiletools.workers.dev',
+  site: 'https://fcmobiletools.online',
   output: 'static',
   build: { format: 'directory' },
   integrations: [sitemap()],

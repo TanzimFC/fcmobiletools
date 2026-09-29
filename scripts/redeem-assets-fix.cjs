@@ -22,7 +22,7 @@ replaceOrFail(
   '@type': 'WebPage',
   name: 'FC Mobile Redeem Codes | Working Codes, Rewards & EA Redemption | FCMOBILETOOLS',
   description: 'Find working FC Mobile redeem codes, active codes, rewards and official EA redemption steps on FCMOBILETOOLS.',
-  url: new URL(Astro.url.pathname, Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href,
+  url: new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.online').href,
   dateModified: lastUpdated || undefined,
   primaryImageOfPage: {
     '@type': 'ImageObject',
@@ -61,8 +61,8 @@ replaceOrFail(
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'FCMOBILETOOLS', item: new URL('/', Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href },
-    { '@type': 'ListItem', position: 2, name: 'FC Mobile Redeem Codes', item: new URL('/redeem-codes', Astro.site ?? 'https://tanzimfc.fcmobiletools.workers.dev').href },
+    { '@type': 'ListItem', position: 1, name: 'FCMOBILETOOLS', item: new URL('/', Astro.site ?? 'https://fcmobiletools.online').href },
+    { '@type': 'ListItem', position: 2, name: 'FC Mobile Redeem Codes', item: new URL('/redeem-codes', Astro.site ?? 'https://fcmobiletools.online').href },
   ],
 };
 
