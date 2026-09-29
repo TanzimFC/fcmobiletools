@@ -189,7 +189,17 @@ function validateFcMobile27(content) {
     if(!release?.id || seen.has(release.id)) throw new Error('Release IDs must be unique and non-empty.');
     seen.add(release.id);
     if(!release.title || !release.version || !release.releaseDate) throw new Error('Release title, version, and release date are required.');
-    if(!/^https?:\/\/\S+$/i.test(String(release.downloadUrl||''))) throw new Error('Download URL must be a valid HTTP or HTTPS URL.');
+    try {
+      const installUrl = new URL(String(release.installUrl||''));
+      if(installUrl.protocol !== 'https:' || installUrl.hostname.toLowerCase() !== 'play.google.com') {
+        throw new Error('Official install URL must be the Google Play listing.');
+      }
+    } catch(error) {
+      throw new Error(error?.message === 'Official install URL must be the Google Play listing.'
+        ? error.message
+        : 'Official install URL must be a valid HTTPS Google Play URL.');
+    }
+    release.installUrl = String(release.installUrl).trim();
     if(!/^\d{4}-\d{2}-\d{2}$/.test(String(release.releaseDate))) throw new Error('Release date must use YYYY-MM-DD.');
     if(!Array.isArray(release.changelog)) release.changelog=[];
     release.changelog=release.changelog.map(x=>String(x).trim()).filter(Boolean);
