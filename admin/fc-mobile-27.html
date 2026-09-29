@@ -87,7 +87,7 @@ function render(){
   const rows = model.releases.map(function(x){
     return '<div class="row"><div><strong>' + esc(x.title) + '</strong><small>' + esc(x.version) + '</small></div><div class="url">' + esc(x.installUrl) + '</div><span class="pill">' + esc(x.status) + '</span><small>' + esc(x.releaseDate) + '</small><button class="btn" data-edit="' + esc(x.id) + '">Edit</button></div>';
   }).join('');
-  $('#table').innerHTML = '<div class="row head"><span>RELEASE</span><span>DOWNLOAD</span><span>STATUS</span><span>DATE</span><span></span></div>' + rows;
+  $('#table').innerHTML = '<div class="row head"><span>RELEASE</span><span>INSTALL SOURCE</span><span>STATUS</span><span>DATE</span><span></span></div>' + rows;
   document.querySelectorAll('[data-edit]').forEach(function(btn){btn.onclick=function(){openForm(btn.getAttribute('data-edit'));};});
 }
 
@@ -104,7 +104,7 @@ function openForm(id){
   const release = id && model ? model.releases.find(function(x){return x.id === id;}) : null;
   $('#dialogTitle').textContent = release ? 'Edit FC Mobile 27 release' : 'New FC Mobile 27 release';
   $('#saveHint').textContent = release ? 'Editing existing release' : 'Creating new release';
-  fill(release || {status:'latest',platform:'Android',fileType:'APK',requirements:'Android device; exact minimum version is not listed',releaseDate:new Date().toISOString().slice(0,10),notes:'FCMOBILETOOLS is an independent fan-made resource. Android installation is directed to the official Google Play listing.'});
+  fill(release || {status:'latest',platform:'Android',fileType:'Official app',requirements:'Android device; exact minimum version is not listed',releaseDate:new Date().toISOString().slice(0,10),notes:'FCMOBILETOOLS is an independent fan-made resource. Android installation is directed to the official Google Play listing.'});
   $('#modal').classList.add('open');
 }
 
@@ -126,7 +126,7 @@ $('#form').onsubmit=async function(e){
     version: f.elements.version.value.trim(),
     buildLabel: f.elements.buildLabel.value.trim(),
     releaseDate: f.elements.releaseDate.value,
-    downloadUrl: f.elements.installUrl.value.trim(),
+    installUrl: f.elements.installUrl.value.trim(),
     status: f.elements.status.value,
     platform: f.elements.platform.value.trim() || 'Android',
     fileType: f.elements.fileType.value.trim() || 'APK',
