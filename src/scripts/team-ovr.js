@@ -46,6 +46,7 @@ if (formation && subsEl && addSub && reset) {
     .pitch{aspect-ratio:2/3!important;height:auto!important}
     .pitch>img{object-fit:fill!important}
     .formation{overflow:visible}
+    .sub-empty[hidden]{display:none!important}
     .card{width:clamp(58px,14%,112px);padding:7px}
     .card-top{gap:3px}.card-top span:last-child{white-space:nowrap;font-size:7px}
     .card input{height:31px;font-size:11px}.card select{height:27px;font-size:8px}
@@ -59,6 +60,10 @@ if (formation && subsEl && addSub && reset) {
     @media(max-width:380px){.card{width:54px;padding:4px}.card-top{margin-bottom:3px}.card-top span:last-child{font-size:5.5px}.card input{height:24px;font-size:8px}.card select{height:21px;font-size:6.5px}.card-ovr{margin-top:3px}}
   `;
   document.head.appendChild(style);
+
+  formation.querySelectorAll('.card select[data-field="rank"]').forEach((select) => {
+    select.value = '0';
+  });
 
   function playerLabel(index) {
     return `Player ${index + 1}`;
