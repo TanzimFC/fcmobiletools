@@ -824,10 +824,19 @@ async function adminDashboard(request, env, url) {
 
 export default { async fetch(request,env) {
   const url=new URL(request.url);
+  const hostHeader=(request.headers.get('host')||'').split(':')[0].toLowerCase();
 
-  // Permanently redirect the former Worker hostname to the custom domain.
-  if(url.hostname === 'tanzimfc.fcmobiletools.workers.dev') {
-    return Response.redirect('https://fcmobiletools.online' + url.pathname + url.search,301);
+  // Permanently redirect every request received on the former Worker hostname.
+  // Check both URL.hostname and Host because the Worker may receive a normalized host.
+  if(url.hostname === 'tanzimfc.fcmobiletools.workers.dev' || hostHeader === 'tanzimfc.fcmobiletools.workers.dev') {
+    const destination='https://fcmobiletools.online' + url.pathname + url.search;
+    return new Response(null,{
+      status:301,
+      headers:{
+        location:destination,
+        'cache-control':'public, max-age=3600, s-maxage=3600'
+      }
+    });
   }
 
   if(url.pathname === '/players' || url.pathname.startsWith('/players/') || url.pathname === '/player' || url.pathname.startsWith('/player/')) return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});
