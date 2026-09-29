@@ -47,7 +47,7 @@ if (formation && subsEl && addSub && reset) {
 
   formation.querySelectorAll('.card').forEach((card, index) => {
     const number = card.querySelector('.card-top span:last-child');
-    if (number) number.textContent = playerLabel(index);
+    if (number) number.textContent = `P${index + 1}`;
   });
 
   function allocation(players, key, amount) {
