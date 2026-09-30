@@ -109,7 +109,7 @@ async function authenticated(request, env) {
 const SUPABASE_DEFAULT_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
 
 function supabaseConfig(env){
-  const base=String(env.SUPABASE_URL||SUPABASE_DEFAULT_URL).replace(/\\/$/,'');
+  const base=String(env.SUPABASE_URL||SUPABASE_DEFAULT_URL).replace(/\/$/,'');
   const key=String(env.SUPABASE_SECRET_KEY||'').trim();
   if(!key) throw new Error('SUPABASE_SECRET_KEY is not configured in the Worker.');
   return {base,key};
@@ -590,7 +590,7 @@ function parseFrontmatter(text) {
     if((value.startsWith('"')&&value.endsWith('"'))||(value.startsWith("'")&&value.endsWith("'"))) value=value.slice(1,-1);
     if(value==='true'||value==='false') data[hit[1]]=value==='true';
     else if(value==='null') data[hit[1]]=null;
-    else if(/^\\d+$/.test(value)) data[hit[1]]=Number(value);
+    else if(/^\d+$/.test(value)) data[hit[1]]=Number(value);
     else if(value.startsWith('[')) { try { data[hit[1]]=JSON.parse(value); } catch { data[hit[1]]=value; } }
     else data[hit[1]]=value;
   }
@@ -889,7 +889,7 @@ async function api(request,env,path) {
         throw error;
       }
     }
-    if(path.match(/^\/creators\/\\d+$/) && request.method === 'PUT') {
+    if(path.match(/^\/creators\/\d+$/) && request.method === 'PUT') {
       const id=Number(path.split('/')[2]);
       if(!Number.isInteger(id)||id<1) return json({error:'Invalid creator ID.'},400);
       const input=await request.json();
