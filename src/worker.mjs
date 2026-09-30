@@ -147,21 +147,25 @@ function editorialRow(row){
     id:row.id,
     body:row.content_html||'',
     data:{
-      id:row.id,slug:row.slug,title:row.title,subtitle:row.subtitle,
+      id:row.id,slug:row.slug,title:row.title,subtitle:row.subtitle||'',
       description:row.description||row.excerpt||'',excerpt:row.excerpt||row.description||'',
       content:row.content_html||'',contentJson:row.content_json||null,
-      type:'guide',category:row.category_name||'Guides',author:row.author_name||'TanzimFC',
-      status:editorialUiStatus(row.status),image:row.cover_image||'',imageAlt:row.image_alt||'',
-      imageCaption:row.image_caption||'',thumbnail:row.cover_image||'',featured:Boolean(row.featured),
-      readingTime:Number(row.reading_time||1),tags,seoTitle:row.seo_title||'',
-      seoDescription:row.seo_description||'',canonicalUrl:row.canonical_url||'',series:row.series||'',
-      createdAt:row.created_at,updatedAt:row.updated_at,publishedAt:row.published_at||null
+      type:row.type||'guide',category:row.category||'Guides',author:row.author_name||'TanzimFC',
+      authorSlug:row.author_slug||'',status:editorialUiStatus(row.status),image:row.cover_image||'',
+      imageAlt:row.image_alt||'',imageCaption:row.image_caption||'',thumbnail:row.cover_image||'',
+      featured:Boolean(row.featured),readingTime:Number(row.reading_time||1),tags,
+      seoTitle:row.seo_title||'',seoDescription:row.seo_description||'',canonicalUrl:row.canonical_url||'',
+      factStatus:row.fact_status||'verified',lastReviewed:row.last_reviewed||'',sources:Array.isArray(row.sources)?row.sources:[],
+      relatedArticles:Array.isArray(row.related_articles)?row.related_articles:[],relatedTools:Array.isArray(row.related_tools)?row.related_tools:[],
+      series:row.series||'',seriesOrder:row.series_order??null,createdAt:row.created_at,updatedAt:row.updated_at,publishedAt:row.published_at||null
     }
   };
 }
-async function editorialArticles(env){
-  const rows=await supabaseRest(env,"articles?select=*,article_categories(name)&order=updated_at.desc");
-  return (rows||[]).map(row=>({...editorialRow({...row,category_name:row.article_categories?.name}),data:{...editorialRow({...row,category_name:row.article_categories?.name}).data}}));
+async function editorialArticles(env,identity){
+  let path="articles?select=*&order=updated_at.desc&limit=100";
+  if(identity?.role==='writer') path+="&owner_key=eq."+encodeURIComponent(identity.ownerKey);
+  const rows=await supabaseRest(env,path);
+  return (rows||[]).map(editorialRow);
 }
 async function editorialRevision(env,articleId,input,actorName='TanzimFC'){
   const existing=await supabaseRest(env,"article_revisions?select=revision_no&article_id=eq."+encodeURIComponent(articleId)+"&order=revision_no.desc&limit=1");
