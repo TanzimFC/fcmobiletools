@@ -324,6 +324,7 @@ async function editorialApi(request,env,path){
     const title=String(input.title||'').trim();
     const slug=String(input.slug||title).trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,160);
     if(!title||!slug) return json({error:'Article title is required.'},400);
+    const isAutosave=Boolean(input.autosave);
     let status=editorialStatus(input.status);
     if(identity.role==='writer' && status==='published') status='in_review';
 
