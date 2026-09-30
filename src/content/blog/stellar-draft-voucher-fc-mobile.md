@@ -52,26 +52,15 @@ It was introduced for the Stellar Series, beginning with the Libra chapter. The 
 
 In simple terms:
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Item</th>
-    <th scope="col" style="text-align:left">Main role</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Stellar Draft Voucher</strong></td>
-      <td style="text-align:left">Entry item for the Stellar Draft system</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Regular Draft Voucher</strong></td>
-      <td style="text-align:left">Entry item for the standard Draft system</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Stellar Libra Token</strong></td>
-      <td style="text-align:left">Event progression and reward currency</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Item | Main role |
+| :--- | :--- |
+| <strong>Stellar Draft Voucher</strong> | Entry item for the Stellar Draft system |
+| <strong>Regular Draft Voucher</strong> | Entry item for the standard Draft system |
+| <strong>Stellar Libra Token</strong> | Event progression and reward currency |
+
+
 
 
 The three items are different. A Libra Token is not a Draft Voucher, and a regular Draft Voucher is not the same item as the Stellar Draft Voucher.
@@ -88,50 +77,19 @@ The Libra chapter currently has its own player pool, with cards ranging from **1
 
 The current Stellar: Libra player list includes:
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Player</th>
-    <th scope="col" style="text-align:right">OVR</th>
-    <th scope="col" style="text-align:left">Position</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Bobby Charlton</strong></td>
-      <td style="text-align:right">122</td>
-      <td style="text-align:left">CAM</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Antonio Di Natale</strong></td>
-      <td style="text-align:right">121</td>
-      <td style="text-align:left">ST</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Tim Ream</strong></td>
-      <td style="text-align:right">121</td>
-      <td style="text-align:left">CB</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Xherdan Shaqiri</strong></td>
-      <td style="text-align:right">121</td>
-      <td style="text-align:left">RW</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Abbosbek Fayzullaev</strong></td>
-      <td style="text-align:right">120</td>
-      <td style="text-align:left">RM</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Alexander Nübel</strong></td>
-      <td style="text-align:right">120</td>
-      <td style="text-align:left">GK</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Emil Forsberg</strong></td>
-      <td style="text-align:right">120</td>
-      <td style="text-align:left">CAM</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Player | OVR | Position |
+| :--- | ---: | :--- |
+| <strong>Bobby Charlton</strong> | 122 | CAM |
+| <strong>Antonio Di Natale</strong> | 121 | ST |
+| <strong>Tim Ream</strong> | 121 | CB |
+| <strong>Xherdan Shaqiri</strong> | 121 | RW |
+| <strong>Abbosbek Fayzullaev</strong> | 120 | RM |
+| <strong>Alexander Nübel</strong> | 120 | GK |
+| <strong>Emil Forsberg</strong> | 120 | CAM |
+
+
 
 
 We are keeping this list in table form because player versions and presentation can change while the live event is active.
