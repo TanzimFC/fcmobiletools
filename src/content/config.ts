@@ -22,6 +22,10 @@ const blog = defineCollection({
     createdAt: z.coerce.date().optional(),
     updatedAt: z.coerce.date().optional(),
     publishedAt: z.coerce.date().optional(),
+    // Legacy field names still present in older articles. They are read by src/lib/blog.js
+    // so those posts keep their date and cover instead of silently losing them.
+    pubDate: z.coerce.date().optional(),
+    heroImage: z.string().optional(),
     image: z.string().optional(),
     imageAlt: z.string().optional(),
     imageCaption: z.string().optional(),

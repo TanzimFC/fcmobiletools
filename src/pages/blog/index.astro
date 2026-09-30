@@ -1,238 +1,195 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import PostCard from '../../components/blog/PostCard.astro';
+import BlogEffects from '../../components/blog/BlogEffects.astro';
+import '../../styles/blog.css';
+import { getPosts, sectionsIn, seriesIn, TOOLS, fmtDate, iso } from '../../lib/blog.js';
 
-const posts = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft))
-  .sort((a,b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0));
+const posts = await getPosts();
+const sections = sectionsIn(posts);
+const series = seriesIn(posts).filter((s) => s.count > 1);
 
-const firstInlineImage = (post) => String(post.body ?? '').match(/!\[[^\]]*\]\(([^)]+)\)/)?.[1] ?? '';
-const coverImage = (post) => post.data.image || firstInlineImage(post);
-const optimizeCloudinary = (url,width) => {
-  const value = String(url ?? '');
-  return value.includes('res.cloudinary.com') && value.includes('/image/upload/')
-    ? value.replace('/image/upload/','/image/upload/f_auto,q_auto,dpr_auto,w_'+width+'/')
-    : value;
-};
-const readingTime = (post) => post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
-const fmtDate = (d, opts) => d?.toLocaleDateString('en-US', opts) ?? '';
-const isoDate = (d) => d?.toISOString?.() ?? '';
-
-const categoryOf = (post) => {
-  if (post.data.type === 'leaks') return 'Leaks';
-  if (post.data.type === 'news') return 'Updates';
-  if (post.data.type === 'analysis') return 'Analysis';
-  if (post.data.type === 'player-review') return 'Reviews';
-  if (post.data.type === 'opinion') return 'Tactics';
-  return 'Guides';
-};
-const categoryKey = (post) => categoryOf(post).toLowerCase();
-const categoryHref = (label) => '/blog/category/' + label.toLowerCase().replace(/\s+/g,'-') + '/';
-const categoryAccent = (key) => ({
-  updates: '#67dbff',
-  leaks: '#b7a0ff',
-  guides: '#72e1ad',
-  analysis: '#ffd18a',
-  reviews: '#f3ca76',
-  tactics: '#f29bd2'
-}[key] ?? '#67dbff');
-
-const categoryLabels = ['Updates','Leaks','Guides','Analysis','Reviews','Tactics'];
-const categoryCounts = Object.fromEntries(
-  categoryLabels.map((label) => [label.toLowerCase(), posts.filter((post) => categoryOf(post) === label).length])
-);
-const categoryLinks = [
-  { label: 'All', key: 'all', href: '/blog', count: posts.length },
-  ...categoryLabels
-    .filter((label) => categoryCounts[label.toLowerCase()] > 0)
-    .map((label) => ({ label, key: label.toLowerCase(), href: categoryHref(label), count: categoryCounts[label.toLowerCase()] }))
-];
-
-// Hero: up to 3 stories, featured ones first
-const heroPicks = [];
-const heroSeen = new Set();
-for (const post of [...posts.filter((p) => p.data.featured), ...posts]) {
-  if (!heroSeen.has(post.slug) && heroPicks.length < 3) {
-    heroPicks.push(post);
-    heroSeen.add(post.slug);
-  }
+// Featured stories first, then newest. Up to three fill the top bento.
+const picks = [];
+for (const post of [...posts.filter((p) => p.featured), ...posts]) {
+  if (picks.length < 3 && !picks.includes(post)) picks.push(post);
 }
-const [lead, ...side] = heroPicks;
+const [lead, ...side] = picks;
+const heroSlugs = picks.map((p) => p.slug);
+const latest = posts[0]?.updated ?? posts[0]?.date;
 
-const searchText = (post) =>
-  [post.data.title, post.data.description, post.data.excerpt, categoryOf(post)].filter(Boolean).join(' ').toLowerCase();
+const toolPicks = ['/redeem-codes', '/team-ovr', '/training-calculator', '/rank-up-calculator'].map((href) => ({ href, ...TOOLS[href] }));
+
+const site = Astro.site ?? new URL('https://fcmobiletools.online');
+const listSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'FC Mobile Articles',
+  url: new URL('/blog/', site).toString(),
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: posts.slice(0, 20).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: new URL(p.href, site).toString(), name: p.title }))
+  }
+};
 ---
-<BaseLayout title="FC Mobile Articles" description="FC Mobile updates, leaks, guides, analysis, reviews and tactics from FCMOBILETOOLS.">
-<main class="journal" data-blog-page>
+<BaseLayout title="FC Mobile Articles" description="FC Mobile updates, leaks, guides, analysis and reviews from FCMOBILETOOLS. Anything unconfirmed is clearly labelled.">
+<script type="application/ld+json" set:html={JSON.stringify(listSchema)}></script>
+<main class="bl bl-index" data-blog-index data-hero-slugs={JSON.stringify(heroSlugs)}>
+  <BlogEffects />
 
-  <header class="wrap masthead">
-    <h1>Articles</h1>
-    <p>Updates, leaks, guides and analysis for FC Mobile players. Anything unconfirmed is labelled as such.</p>
+  <header class="bl-masthead">
+    <div class="bl-wrap bl-masthead-grid">
+      <div>
+        <p class="bl-eyebrow"><i></i>The FCMOBILETOOLS Journal</p>
+        <h1>Everything worth knowing about <em>FC Mobile</em>.</h1>
+        <p class="bl-lede">Updates, leaks, guides and analysis for players who like to know before they spend. Anything unconfirmed is labelled as such.</p>
+      </div>
+      <ul class="bl-glance" aria-label="Journal at a glance">
+        <li><b>{posts.length}</b><span>Articles</span></li>
+        <li><b>{sections.length}</b><span>Sections</span></li>
+        <li><b>{fmtDate(latest, 'short') || '—'}</b><span>Last update</span></li>
+      </ul>
+    </div>
   </header>
 
   {lead ? (
-    <section class="wrap hero" id="heroSection" aria-label="Featured articles">
-      <a class="cover" href={'/blog/' + lead.slug + '/'} style={'--accent:' + categoryAccent(categoryKey(lead))}>
-        {coverImage(lead)
-          ? <img src={optimizeCloudinary(coverImage(lead), 1400)} alt={lead.data.imageAlt ?? ''} width="1400" height="800" loading="eager" fetchpriority="high" decoding="async" />
-          : <span class="cover-fallback" aria-hidden="true">FC</span>}
-        <span class="cover-shade" aria-hidden="true"></span>
-        <div class="cover-body">
-          <span class="chip"><i></i>{categoryOf(lead)}</span>
-          <h2>{lead.data.title}</h2>
-          <p>{lead.data.excerpt ?? lead.data.description}</p>
-          <div class="cover-foot">
-            <span class="btn">Read the story</span>
-            <span class="meta"><time datetime={isoDate(lead.data.publishedAt)}>{fmtDate(lead.data.publishedAt,{month:'long',day:'numeric',year:'numeric'})}</time><span>{readingTime(lead)} min read</span></span>
-          </div>
-        </div>
-      </a>
-
-      {side.length > 0 ? (
-        <div class="hero-side">
-          {side.map((post) => (
-            <a class="mini" href={'/blog/' + post.slug + '/'} style={'--accent:' + categoryAccent(categoryKey(post))}>
-              {coverImage(post)
-                ? <img src={optimizeCloudinary(coverImage(post), 800)} alt={post.data.imageAlt ?? ''} width="800" height="450" loading="lazy" decoding="async" />
-                : <span class="cover-fallback" aria-hidden="true">FC</span>}
-              <span class="cover-shade" aria-hidden="true"></span>
-              <div class="mini-body">
-                <span class="chip"><i></i>{categoryOf(post)}</span>
-                <h3>{post.data.title}</h3>
-                <span class="meta"><time datetime={isoDate(post.data.publishedAt)}>{fmtDate(post.data.publishedAt,{month:'short',day:'numeric'})}</time><span>{readingTime(post)} min read</span></span>
-              </div>
-            </a>
-          ))}
-        </div>
-      ) : null}
+    <section class:list={['bl-wrap', 'bl-bento', { 'is-solo': side.length === 0, 'is-duo': side.length === 1 }]} id="featured" aria-label="Featured articles">
+      <PostCard post={lead} variant="lead" eager />
+      {side.map((post) => <PostCard post={post} variant="tile" />)}
     </section>
   ) : null}
 
-  <div class="bar-wrap">
-    <div class="wrap bar">
-      <nav class="topics" aria-label="Filter articles by topic">
-        {categoryLinks.map((item) => (
-          <a class:list={['topic', { active: item.key === 'all' }]} data-topic={item.key} href={item.href} aria-current={item.key === 'all' ? 'true' : undefined} style={item.key !== 'all' ? '--accent:' + categoryAccent(item.key) : undefined}>
-            {item.key !== 'all' ? <i></i> : null}{item.label}<b>{item.count}</b>
-          </a>
+  <div class="bl-bar">
+    <div class="bl-wrap bl-bar-inner">
+      <nav class="bl-topics" aria-label="Filter articles by section">
+        <a class="bl-topic is-active" data-topic="all" href="/blog" aria-current="true">All<b>{posts.length}</b></a>
+        {sections.map((s) => (
+          <a class="bl-topic" data-topic={s.slug} href={'/blog/category/' + s.slug + '/'} style={'--bl-accent:' + s.accent}><i></i>{s.label}<b>{s.count}</b></a>
         ))}
       </nav>
-      <label class="search" for="articleSearch">
+      <label class="bl-search" for="blSearch">
         <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="M13.5 13.5 17 17"/></svg>
-        <input id="articleSearch" type="search" placeholder="Search articles" autocomplete="off" aria-label="Search articles" />
+        <input id="blSearch" type="search" placeholder="Search articles" autocomplete="off" aria-label="Search articles" />
         <kbd aria-hidden="true">/</kbd>
-        <button id="clearSearch" type="button" aria-label="Clear search" hidden>×</button>
+        <button id="blClear" type="button" aria-label="Clear search" hidden>×</button>
       </label>
     </div>
   </div>
 
-  <section class="wrap feed" aria-labelledby="feedHeading">
-    <div class="feed-head">
-      <h2 id="feedHeading"><span id="resultLabel">Latest articles</span></h2>
-      <span class="count" id="resultCount" aria-live="polite">{posts.length} articles</span>
-    </div>
+  {series.length ? (
+    <section class="bl-wrap bl-block" id="seriesRail" aria-labelledby="seriesHeading" data-reveal>
+      <div class="bl-block-head">
+        <h2 id="seriesHeading">Ongoing series</h2>
+        <p>Read a story in order, start to finish.</p>
+      </div>
+      <div class="bl-rail">
+        {series.map((s) => (
+          <a class="bl-series" href={'/blog/series/' + s.slug + '/'} style={'--bl-accent:' + s.accent}>
+            <small>Series</small>
+            <h3>{s.name}</h3>
+            <div class="bl-dots" aria-hidden="true">{s.parts.map(() => <i></i>)}</div>
+            <p>{s.count} parts · {s.minutes} min total</p>
+            <b>Start the series →</b>
+          </a>
+        ))}
+      </div>
+    </section>
+  ) : null}
 
-    <div class="grid" id="articleStream">
-      {posts.map((post) => (
-        <a
-          class="card"
-          href={'/blog/' + post.slug + '/'}
-          data-story
-          data-hero={heroSeen.has(post.slug) ? 'true' : 'false'}
-          data-category={categoryKey(post)}
-          data-title={searchText(post)}
-          style={'--accent:' + categoryAccent(categoryKey(post))}
-        >
-          <div class="thumb">
-            {coverImage(post)
-              ? <img src={optimizeCloudinary(coverImage(post), 760)} alt={post.data.imageAlt ?? ''} width="760" height="475" loading="lazy" decoding="async" />
-              : <span class="cover-fallback" aria-hidden="true">FC</span>}
-          </div>
-          <div class="card-body">
-            <span class="chip"><i></i>{categoryOf(post)}</span>
-            <h3>{post.data.title}</h3>
-            <p>{post.data.excerpt ?? post.data.description}</p>
-            <span class="meta"><time datetime={isoDate(post.data.publishedAt)}>{fmtDate(post.data.publishedAt,{month:'short',day:'numeric',year:'numeric'})}</time><span>{readingTime(post)} min read</span></span>
-          </div>
-        </a>
+  <section class="bl-wrap bl-block" aria-labelledby="feedHeading">
+    <div class="bl-block-head">
+      <h2 id="feedHeading"><span id="blLabel">Latest articles</span></h2>
+      <span class="bl-count" id="blCount" aria-live="polite">{posts.length} articles</span>
+    </div>
+    <div class="bl-grid" id="blGrid">
+      {posts.map((post) => <PostCard post={post} filterable />)}
+    </div>
+    <div class="bl-empty" id="blEmpty" hidden aria-live="polite">
+      <strong>No articles match that.</strong>
+      <span>Try another section or clear the search.</span>
+      <button class="bl-btn" type="button" id="blReset">Show all articles</button>
+    </div>
+    <div class="bl-more"><button class="bl-btn" type="button" id="blMore" hidden></button></div>
+  </section>
+
+  <section class="bl-wrap bl-block" aria-labelledby="toolsHeading" data-reveal>
+    <div class="bl-block-head">
+      <h2 id="toolsHeading">Put the reading to work</h2>
+      <a href="/">All tools →</a>
+    </div>
+    <div class="bl-tools">
+      {toolPicks.map((t) => (
+        <a class="bl-tool" href={t.href}><em>{t.label}</em><strong>{t.title}</strong><span>{t.description}</span><b>Open tool →</b></a>
       ))}
-    </div>
-
-    <div class="empty" id="emptyState" hidden aria-live="polite">
-      <strong>No articles match.</strong>
-      <span>Try a different topic or clear the search.</span>
-      <button type="button" id="resetFilters">Show all articles</button>
     </div>
   </section>
 </main>
 
 <script is:inline>
 (() => {
-  const root = document.querySelector('[data-blog-page]');
+  const root = document.querySelector('[data-blog-index]');
   if (!root) return;
-  const cards = [...root.querySelectorAll('[data-story]')];
+  const PAGE = 9;
+  const heroSlugs = new Set(JSON.parse(root.dataset.heroSlugs || '[]'));
+  const cards = [...root.querySelectorAll('[data-post]')];
   const topics = [...root.querySelectorAll('[data-topic]')];
-  const search = root.querySelector('#articleSearch');
-  const clear = root.querySelector('#clearSearch');
-  const count = root.querySelector('#resultCount');
-  const label = root.querySelector('#resultLabel');
-  const empty = root.querySelector('#emptyState');
-  const hero = root.querySelector('#heroSection');
-  const reset = root.querySelector('#resetFilters');
-  let topic = 'all';
+  const $ = (id) => root.querySelector(id);
+  const search = $('#blSearch'), clear = $('#blClear'), count = $('#blCount'), label = $('#blLabel');
+  const empty = $('#blEmpty'), more = $('#blMore'), reset = $('#blReset');
+  const gated = [$('#featured'), $('#seriesRail')].filter(Boolean);
+  let topic = 'all', limit = PAGE;
 
-  const pushUrl = () => {
-    const p = new URLSearchParams();
-    if (topic !== 'all') p.set('topic', topic);
-    const q = (search.value || '').trim();
-    if (q) p.set('q', q);
-    const s = p.toString();
-    history.replaceState({}, '', s ? '/blog?' + s : '/blog');
-  };
+  const labelFor = (key) => topics.find((t) => t.dataset.topic === key)?.textContent.replace(/\d+$/, '').trim() || key;
 
   const setTopic = (key) => {
     topic = key;
     topics.forEach((t) => {
       const on = t.dataset.topic === key;
-      t.classList.toggle('active', on);
-      if (on) t.setAttribute('aria-current', 'true'); else t.removeAttribute('aria-current');
+      t.classList.toggle('is-active', on);
+      on ? t.setAttribute('aria-current', 'true') : t.removeAttribute('aria-current');
     });
   };
 
-  const render = (updateUrl = true) => {
-    const q = (search.value || '').trim().toLowerCase();
+  const syncUrl = () => {
+    const p = new URLSearchParams();
+    if (topic !== 'all') p.set('topic', topic);
+    const q = search.value.trim();
+    if (q) p.set('q', q);
+    const s = p.toString();
+    history.replaceState({}, '', s ? '/blog?' + s : '/blog');
+  };
+
+  const render = (writeUrl = true) => {
+    const q = search.value.trim().toLowerCase();
     const filtered = topic !== 'all' || !!q;
-    let shown = 0;
-    cards.forEach((c) => {
-      const okTopic = topic === 'all' || c.dataset.category === topic;
-      const okQuery = !q || (c.dataset.title || '').includes(q);
-      // when unfiltered, stories already in the hero are not repeated in the grid
-      const show = okTopic && okQuery && (filtered || c.dataset.hero !== 'true');
-      c.hidden = !show;
-      if (show) shown++;
-    });
-    if (hero) hero.hidden = filtered;
-    count.textContent = shown + (shown === 1 ? ' article' : ' articles');
-    label.textContent = q ? 'Results for “' + search.value.trim() + '”'
-      : topic === 'all' ? 'Latest articles'
-      : topic[0].toUpperCase() + topic.slice(1);
+    // Unfiltered, stories already featured above are not repeated in the grid.
+    const matches = cards.filter((c) =>
+      (topic === 'all' || c.dataset.section === topic) &&
+      (!q || c.dataset.search.includes(q)) &&
+      (filtered || !heroSlugs.has(c.dataset.slug)));
+    const visible = new Set(matches.slice(0, limit));
+    cards.forEach((c) => { c.hidden = !visible.has(c); });
+    gated.forEach((el) => { el.hidden = filtered; });
+    count.textContent = matches.length + (matches.length === 1 ? ' article' : ' articles');
+    label.textContent = q ? 'Results for “' + search.value.trim() + '”' : topic === 'all' ? 'Latest articles' : labelFor(topic);
     clear.hidden = !q;
-    empty.hidden = shown > 0;
-    if (updateUrl) pushUrl();
+    empty.hidden = matches.length > 0;
+    const left = matches.length - visible.size;
+    more.hidden = left <= 0;
+    more.textContent = 'Show ' + Math.min(PAGE, left) + ' more · ' + left + ' left';
+    if (writeUrl) syncUrl();
   };
 
-  topics.forEach((t) => t.addEventListener('click', (e) => {
-    e.preventDefault();
-    setTopic(t.dataset.topic || 'all');
-    render();
-  }));
-  search.addEventListener('input', () => render());
-  clear.addEventListener('click', () => { search.value = ''; search.focus(); render(); });
-  reset?.addEventListener('click', () => { search.value = ''; setTopic('all'); render(); });
+  topics.forEach((t) => t.addEventListener('click', (e) => { e.preventDefault(); limit = PAGE; setTopic(t.dataset.topic); render(); }));
+  search.addEventListener('input', () => { limit = PAGE; render(); });
+  clear.addEventListener('click', () => { search.value = ''; search.focus(); limit = PAGE; render(); });
+  reset.addEventListener('click', () => { search.value = ''; limit = PAGE; setTopic('all'); render(); });
+  more.addEventListener('click', () => { limit += PAGE; render(false); });
 
   addEventListener('keydown', (e) => {
     const tag = document.activeElement?.tagName;
-    if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(tag)) { e.preventDefault(); search.focus(); }
-    if (e.key === 'Escape' && document.activeElement === search) { search.value = ''; render(); search.blur(); }
+    if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) { e.preventDefault(); search.focus(); }
+    if (e.key === 'Escape' && document.activeElement === search) { search.value = ''; limit = PAGE; render(); search.blur(); }
   });
 
   const params = new URLSearchParams(location.search);
@@ -242,113 +199,4 @@ const searchText = (post) =>
   render(false);
 })();
 </script>
-
-<style>
-.journal{--accent:var(--blue,#67dbff);position:relative;background:var(--bg);color:var(--text);padding-bottom:120px;overflow:clip}
-.journal:before{content:"";position:absolute;inset:0 0 auto;height:720px;pointer-events:none;background:radial-gradient(60% 55% at 85% 0%,#55c7f224,transparent 70%),radial-gradient(40% 40% at 0% 30%,#7a6bff10,transparent 70%)}
-.wrap{position:relative;width:min(1240px,calc(100% - 40px));margin-inline:auto}
-
-/* masthead */
-.masthead{padding:64px 0 32px;display:flex;align-items:end;justify-content:space-between;gap:32px;flex-wrap:wrap}
-.masthead h1{margin:0;font-size:clamp(44px,6vw,76px);line-height:1;letter-spacing:-.04em;font-weight:800}
-.masthead p{margin:0;max-width:44ch;color:#8fa5af;font-size:16px;line-height:1.6}
-
-/* shared bits */
-.chip{display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.01em}
-.chip i,.topic i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
-.meta{display:flex;flex-wrap:wrap;gap:6px 14px;color:#7c929c;font-size:13px}
-.meta > span + span:before,.meta time + span:before{content:"";display:inline-block;width:3px;height:3px;margin-right:14px;border-radius:50%;background:#48616c;vertical-align:middle}
-.cover-fallback{position:absolute;inset:0;display:grid;place-items:center;color:#1d3846;font-size:64px;font-weight:900;letter-spacing:-.05em;background:linear-gradient(135deg,#0c1e29,#08131a)}
-
-/* hero */
-.hero{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(280px,1fr);gap:16px}
-.cover,.mini{position:relative;display:block;overflow:hidden;border:1px solid #1d3441;border-radius:24px;background:#08131a;color:#fff;text-decoration:none;isolation:isolate}
-.cover{min-height:560px;display:flex;align-items:end}
-.cover img,.mini img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform 1.1s cubic-bezier(.2,.7,.2,1)}
-.cover img{animation:settle 1.6s cubic-bezier(.2,.7,.2,1) both}
-@keyframes settle{from{transform:scale(1.07)}to{transform:scale(1)}}
-.cover:hover img,.mini:hover img{transform:scale(1.035)}
-.cover-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#04101800 25%,#041018cc 68%,#041018f5 100%)}
-.cover-body{width:100%;max-width:780px;padding:40px}
-.cover-body h2{margin:14px 0 12px;font-size:clamp(30px,4vw,52px);line-height:1.04;letter-spacing:-.035em;font-weight:800;text-wrap:balance}
-.cover-body p{margin:0 0 24px;max-width:60ch;color:#bfd0d7;font-size:16px;line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.cover-foot{display:flex;align-items:center;flex-wrap:wrap;gap:12px 22px}
-.btn{display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:999px;background:var(--accent);color:#04121a;font-size:14px;font-weight:800;transition:transform .2s,box-shadow .2s}
-.cover:hover .btn{transform:translateY(-1px);box-shadow:0 10px 30px color-mix(in srgb,var(--accent) 40%,transparent)}
-.cover .meta{color:#a9bcc5}
-.hero-side{display:grid;grid-auto-rows:1fr;gap:16px}
-.mini{display:flex;align-items:end;min-height:272px}
-.mini .cover-shade{background:linear-gradient(180deg,#04101815 15%,#041018f0 100%)}
-.mini-body{padding:22px}
-.mini-body h3{margin:10px 0 12px;font-size:21px;line-height:1.18;letter-spacing:-.02em;font-weight:750;text-wrap:balance;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.mini .meta{color:#a9bcc5}
-
-/* filter bar */
-.bar-wrap{position:sticky;top:64px;z-index:30;margin-top:44px;background:linear-gradient(180deg,var(--bg) 70%,transparent);backdrop-filter:blur(12px)}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0}
-.topics{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;min-width:0}
-.topics::-webkit-scrollbar{display:none}
-.topic{display:inline-flex;align-items:center;gap:8px;flex:none;height:40px;padding:0 15px;border:1px solid #1f3743;border-radius:999px;background:#08141b;color:#9bb0ba;font-size:14px;font-weight:600;text-decoration:none;transition:background .2s,border-color .2s,color .2s}
-.topic b{color:#5d7782;font-size:12px;font-weight:700}
-.topic:hover{border-color:#34596b;color:#e3f6fc}
-.topic.active{background:#e6f9ff;border-color:#e6f9ff;color:#06141c}
-.topic.active b{color:#3d6577}
-.topic.active i{box-shadow:none}
-.search{display:flex;align-items:center;gap:10px;flex:0 0 280px;height:40px;padding:0 12px 0 14px;border:1px solid #26414e;border-radius:999px;background:#08141b;color:#6f8893;transition:border-color .2s,box-shadow .2s}
-.search:focus-within{border-color:var(--blue,#67dbff);box-shadow:0 0 0 3px #67dbff22}
-.search input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#e0f2f8;font:500 14px inherit;font-family:inherit}
-.search input::placeholder{color:#5c7580}
-.search kbd{display:grid;place-items:center;width:22px;height:22px;border:1px solid #2f4b58;border-radius:6px;color:#6f8893;font:700 12px inherit;font-family:inherit}
-.search input:focus ~ kbd{display:none}
-.search button{width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#15323f;color:#bfe6f3;font-size:16px;line-height:1;cursor:pointer}
-.search:has(button:not([hidden])) kbd{display:none}
-.topic:focus-visible,.card:focus-visible,.cover:focus-visible,.mini:focus-visible,.search button:focus-visible,.empty button:focus-visible{outline:2px solid var(--blue,#67dbff);outline-offset:3px}
-
-/* feed */
-.feed{padding-top:28px}
-.feed-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:22px}
-.feed-head h2{margin:0;font-size:clamp(24px,2.6vw,32px);letter-spacing:-.03em;font-weight:800}
-.count{color:#7c929c;font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
-.card{display:flex;flex-direction:column;overflow:hidden;border:1px solid #1a2f3a;border-radius:20px;background:linear-gradient(180deg,#0a1720,#08121a);color:var(--text);text-decoration:none;transition:transform .3s,border-color .3s,box-shadow .3s}
-.card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--accent) 45%,#1a2f3a);box-shadow:0 24px 60px #0009,0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent)}
-.thumb{position:relative;aspect-ratio:16/10;overflow:hidden;background:#0a181f}
-.thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
-.card:hover .thumb img{transform:scale(1.05)}
-.card-body{display:flex;flex-direction:column;gap:10px;flex:1;padding:20px 22px 22px}
-.card-body h3{margin:0;font-size:21px;line-height:1.22;letter-spacing:-.02em;font-weight:750;text-wrap:balance}
-.card-body p{margin:0;color:#8fa5af;font-size:15px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.card-body .meta{margin-top:auto;padding-top:8px}
-
-.empty{display:grid;justify-items:center;gap:8px;margin-top:8px;padding:56px 24px;border:1px dashed #2c4754;border-radius:20px;background:#08141b;text-align:center;color:#8fa5af}
-.empty strong{color:#e0f2f8;font-size:18px}
-.empty button{margin-top:10px;height:40px;padding:0 18px;border:1px solid #34596b;border-radius:999px;background:transparent;color:#d7f3fb;font:700 14px inherit;font-family:inherit;cursor:pointer}
-.empty button:hover{background:#0d2430}
-[hidden]{display:none!important}
-
-@media(max-width:1020px){
-  .hero{grid-template-columns:1fr}
-  .hero-side{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
-  .cover{min-height:480px}
-  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .bar{flex-direction:column;align-items:stretch}
-  .search{flex:none;width:100%}
-}
-@media(max-width:680px){
-  .wrap{width:calc(100% - 28px)}
-  .masthead{padding:44px 0 24px}
-  .cover{min-height:440px}
-  .cover-body{padding:24px}
-  .hero-side{grid-template-columns:1fr}
-  .mini{min-height:230px}
-  .bar-wrap{top:58px;margin-top:32px}
-  .grid{grid-template-columns:1fr}
-  .topic b{display:none}
-}
-@media(prefers-reduced-motion:reduce){
-  .cover img{animation:none}
-  .cover img,.mini img,.thumb img,.card,.btn{transition:none}
-  .card:hover{transform:none}
-}
-</style>
 </BaseLayout>

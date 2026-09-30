@@ -1,22 +1,55 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
-const slugify=(value)=>String(value??'').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
-const posts=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft));
-const series=[...new Set(posts.map((post)=>post.data.series).filter(Boolean))];
-export async function getStaticPaths(){
-  const slugifyPath=(value)=>String(value??'').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
-  const seriesForPaths=await getCollection('blog',({data})=>data.status==='published'&&!data.draft);
-  const seriesNames=[...new Set(seriesForPaths.map((post)=>post.data.series).filter(Boolean))];
-  return seriesNames.map((name)=>({params:{series:slugifyPath(name)},props:{name}}));
+import HubHero from '../../../components/blog/HubHero.astro';
+import PostCard from '../../../components/blog/PostCard.astro';
+import BlogEffects from '../../../components/blog/BlogEffects.astro';
+import '../../../styles/blog.css';
+import { getPosts, seriesIn } from '../../../lib/blog.js';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return seriesIn(posts).map((s) => ({ params: { series: s.slug }, props: { slug: s.slug } }));
 }
-const {name}=Astro.props;
-const seriesPosts=posts.filter((post)=>post.data.series===name).sort((a,b)=>(a.data.seriesOrder??0)-(b.data.seriesOrder??0));
+
+const posts = await getPosts();
+const series = seriesIn(posts).find((s) => s.slug === Astro.props.slug);
+const first = series.parts[0];
+const site = Astro.site ?? new URL('https://fcmobiletools.online');
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWorkSeries',
+  name: series.name,
+  url: new URL('/blog/series/' + series.slug + '/', site).toString(),
+  hasPart: series.parts.map((p) => ({ '@type': 'Article', headline: p.title, url: new URL(p.href, site).toString() }))
+};
 ---
-<BaseLayout title={name + ' — FC Mobile Series'} description={'The ' + name + ' FC Mobile article series on FCMOBILETOOLS.'}>
-<main class="series-hub"><section class="series-hero"><div class="wrap"><p class="eyebrow">ARTICLE SERIES</p><h1>{name}</h1><p>{seriesPosts.length} articles in this series.</p><a href="/blog">← Back to articles</a></div></section><section class="wrap series-body"><div class="series-list">{seriesPosts.map((post,index)=><a class="series-item" href={'/blog/' + post.slug + '/'}><span>{String(index+1).padStart(2,'0')}</span><div><small>{post.data.category}</small><h2>{post.data.title}</h2><p>{post.data.excerpt??post.data.description}</p></div><b>Read ↗</b></a>)}</div></section></main>
-<style>
-.series-hub{background:var(--bg);min-height:70vh;overflow:hidden}.wrap{width:min(980px,calc(100% - 28px));margin:auto}.series-hero{border-bottom:1px solid var(--border);background:radial-gradient(circle at 82% 0,#55c7f21a,transparent 36%),#07131b}.series-hero .wrap{padding:68px 0}.eyebrow{color:var(--blue);font:900 8px var(--mono);letter-spacing:.16em}.series-hero h1{max-width:820px;margin:16px 0 9px;font-size:clamp(50px,7vw,82px);line-height:.92;letter-spacing:-.075em}.series-hero p{color:#8297a3;font-size:11px}.series-hero a{display:inline-block;margin-top:13px;color:#8ddffc;text-decoration:none;font:800 8px var(--mono)}.series-body{padding:44px 0 90px}.series-list{border-top:1px solid #1b2d36}.series-item{display:grid;grid-template-columns:56px minmax(0,1fr) 70px;gap:18px;align-items:center;padding:20px 0;border-bottom:1px solid #1b2d36;color:var(--text);text-decoration:none;transition:.2s}.series-item:hover{padding-left:7px;border-color:#3b6477}.series-item>span{color:#4a7080;font:900 16px var(--mono)}.series-item small{color:var(--blue);font:800 7px var(--mono);text-transform:uppercase}.series-item h2{margin:6px 0;font-size:18px;line-height:1.1}.series-item p{margin:0;color:#7d929d;font-size:9px;line-height:1.65}.series-item>b{color:#8bdaF8;text-align:right;font:900 7px var(--mono)}@media(max-width:600px){.series-item{grid-template-columns:40px 1fr}.series-item>b{display:none}}
-</style>
+<BaseLayout title={series.name + ' — FC Mobile Series'} description={'The ' + series.name + ' article series on FCMOBILETOOLS: ' + series.count + ' ' + (series.count === 1 ? 'part' : 'parts') + ' to read in order.'}>
+<script type="application/ld+json" set:html={JSON.stringify(schema)}></script>
+<main class="bl bl-series-page" style={'--bl-accent:' + series.accent}>
+  <BlogEffects />
+  <HubHero
+    eyebrow="Article series"
+    title={series.name}
+    blurb="Read the story in order, from the first announcement to the latest details."
+    accent={series.accent}
+    crumbs={[{ href: '/blog/series/' + series.slug + '/', label: series.name }]}
+    stats={[
+      { value: series.count, label: series.count === 1 ? 'Part' : 'Parts' },
+      { value: series.minutes, label: 'Minutes in total' }
+    ]}
+  >
+    <a slot="actions" class="bl-btn bl-btn--primary" href={first.href}>Start with part 1 →</a>
+  </HubHero>
+
+  <section class="bl-wrap bl-block" aria-label={series.name + ' parts'}>
+    <ol class="bl-parts">
+      {series.parts.map((p, i) => (
+        <li class="bl-part" data-reveal>
+          <span class="bl-part-no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <PostCard post={p} variant="row" />
+        </li>
+      ))}
+    </ol>
+  </section>
 </main>
 </BaseLayout>
