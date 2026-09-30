@@ -44,7 +44,7 @@ This guide explains the voucher clearly, without mixing it up with Libra Tokens 
 
 ## What is the Stellar Draft Voucher?
 
-<div class="article-inline-icon"><img src="https://res.cloudinary.com/b0qikv7n/image/upload/v1790528955/fc-mobile-tools/kac9t1aomu9fohcx9ln7.png" alt="Stellar Draft Voucher icon" loading="lazy" style="width:96px;max-width:96px;height:96px;max-height:96px;object-fit:contain;margin:18px 0 8px;border:0;background:transparent;box-shadow:none" /></div>
+<div class="article-inline-icon"><img src="https://res.cloudinary.com/b0qikv7n/image/upload/v1790528955/fc-mobile-tools/kac9t1aomu9fohcx9ln7.png" alt="Stellar Draft Voucher icon" loading="lazy" /></div>
 
 The Stellar Draft Voucher is the **special ticket associated with the Stellar Draft**.
 
