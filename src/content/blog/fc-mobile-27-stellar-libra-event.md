@@ -45,22 +45,17 @@ This guide brings the live information together in one place and separates the e
 
 ## Stellar: Libra at a glance
 
-
-
 | Detail | Current information |
 | :--- | :--- |
-| <strong>Event</strong> | Stellar: Libra |
-| <strong>Current event window</strong> | September 24 to October 22, 2026 |
-| <strong>Players</strong> | 7 |
-| <strong>Highest OVR</strong> | 122 |
-| <strong>Highest-rated player</strong> | Bobby Charlton |
-| <strong>Main Draft system</strong> | Stellar Draft |
-| <strong>Special Draft item</strong> | Stellar Draft Voucher |
-| <strong>Event currency</strong> | Stellar Libra Token |
-| <strong>Season</strong> | FC Mobile 27 |
-
-
-
+| **Event** | Stellar: Libra |
+| **Current event window** | September 24 to October 22, 2026 |
+| **Players** | 7 |
+| **Highest OVR** | 122 |
+| **Highest-rated player** | Bobby Charlton |
+| **Main Draft system** | Stellar Draft |
+| **Special Draft item** | Stellar Draft Voucher |
+| **Event currency** | Stellar Libra Token |
+| **Season** | FC Mobile 27 |
 
 ## What is Stellar: Libra?
 
@@ -102,20 +97,15 @@ The exact menu layout can change after maintenance or event updates, so use the 
 
 The current Libra pool contains **seven players** from 120 to 122 OVR.
 
-
-
 | Player | OVR | Position |
 | :--- | ---: | :--- |
-| <strong>Bobby Charlton</strong> | 122 | CAM |
-| <strong>Antonio Di Natale</strong> | 121 | ST |
-| <strong>Tim Ream</strong> | 121 | CB |
-| <strong>Xherdan Shaqiri</strong> | 121 | RW |
-| <strong>Abbosbek Fayzullaev</strong> | 120 | RM |
-| <strong>Alexander Nübel</strong> | 120 | GK |
-| <strong>Emil Forsberg</strong> | 120 | CAM |
-
-
-
+| **Bobby Charlton** | 122 | CAM |
+| **Antonio Di Natale** | 121 | ST |
+| **Tim Ream** | 121 | CB |
+| **Xherdan Shaqiri** | 121 | RW |
+| **Abbosbek Fayzullaev** | 120 | RM |
+| **Alexander Nübel** | 120 | GK |
+| **Emil Forsberg** | 120 | CAM |
 
 The highest-rated player in the current pool is **Bobby Charlton at 122 OVR**.
 
@@ -193,16 +183,11 @@ They should not be confused with either Draft Voucher.
 
 The basic distinction is:
 
-
-
 | Item | Role |
 | :--- | :--- |
-| <strong>Libra Token</strong> | Stellar: Libra event progression and rewards |
-| <strong>Stellar Draft Voucher</strong> | Stellar Draft entry |
-| <strong>Regular Draft Voucher</strong> | Standard Draft entry |
-
-
-
+| **Libra Token** | Stellar: Libra event progression and rewards |
+| **Stellar Draft Voucher** | Stellar Draft entry |
+| **Regular Draft Voucher** | Standard Draft entry |
 
 This separation is one of the most important things to understand before spending event resources.
 
@@ -245,17 +230,12 @@ Until the live behavior is fully clarified or changed, check the voucher balance
 
 The new event is easiest to understand when you keep the systems separate.
 
-
-
 | Stellar: Libra | Standard FC Mobile Draft |
 | :--- | :--- |
 | Stellar player pool | Standard Draft pool |
 | Libra Tokens | Normal game resources |
 | Stellar Draft | Standard Draft |
 | Stellar Draft Voucher | Regular Draft Voucher |
-
-
-
 
 The event does not replace the normal FC Mobile economy. It adds another event-specific layer on top of it.
 
