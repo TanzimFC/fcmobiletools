@@ -1,28 +1,266 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
-const latestArticles=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft)).sort((a,b)=>(b.data.publishedAt?.valueOf()??0)-(a.data.publishedAt?.valueOf()??0)).slice(0,4);
-const optimizeCloudinary=(url,width)=>{const value=String(url??'');return value.includes('res.cloudinary.com')&&value.includes('/image/upload/')?value.replace('/image/upload/','/image/upload/f_auto,q_auto,dpr_auto,w_'+width+'/'):value;};
-const readingTime=post=>post.data.readingTime??Math.max(1,Math.ceil((post.body?.split(/\\s+/).filter(Boolean).length??0)/220));
+
+// Hour (UTC) when the daily reset happens. Change this if the game resets at a different time.
+const RESET_HOUR_UTC = 0;
+
+const latestArticles = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft))
+  .sort((a, b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0))
+  .slice(0, 4);
+
+const optimizeCloudinary = (url, width) => {
+  const value = String(url ?? '');
+  return value.includes('res.cloudinary.com') && value.includes('/image/upload/')
+    ? value.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_' + width + '/')
+    : value;
+};
+const readingTime = post =>
+  post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
+
+const tools = [
+  { href: '/redeem-codes', title: 'Redeem Codes', text: 'See which codes are live and jump straight to redeeming them.', size: 'lg' },
+  { href: '/team-ovr', title: 'Team OVR', text: 'Work out your squad OVR from player ratings and upgrades.', size: 'lg' },
+  { href: '/training-calculator', title: 'Training Calculator', text: 'Plan XP, fodder, levels and excess XP.' },
+  { href: '/rank-up-calculator', title: 'Rank Up Calculator', text: 'Rank Up Points, OVR gain and Skill Points.' },
+  { href: '/football-centre', title: 'Football Centre', text: 'Track matches, points, rewards and event resources.' },
+  { href: '/gauntlet-planner', title: 'Gauntlet Mode Planner', text: 'Plan match-by-match rotations and track who is available.' },
+  { href: '/a-nations-story', title: "A Nation's Story", text: 'Find event answers without digging.' },
+  { href: '/fc-mobile-27', title: 'FC Mobile 27 update', text: 'Season 27 changes, feature guide and official Android install.', tag: 'New' },
+];
 ---
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..600&display=swap" rel="stylesheet" />
+
 <BaseLayout title="FC Mobile Tools, Codes & Guides" description="FCMOBILETOOLS is your FC Mobile hub for live events, redeem codes, player tools, calculators, guides and the latest game updates.">
 <main class="home">
-<section class="home-hero"><picture class="hero-media"><source media="(max-width: 600px)" srcset="/assets/images/herobeli.png" type="image/png" /><img class="hero-bg" src="/assets/images/herobeli.png" alt="" width="1600" height="900" fetchpriority="high" decoding="async" sizes="100vw" /></picture><div class="hero-shade"></div><div class="wrap hero-inner"><div class="hero-copy"><p class="eyebrow">FCMOBILETOOLS</p><h1>Everything useful<br /><em>starts here</em></h1><p>Check what is live, see the next reset in your local time, redeem codes and use the calculators you actually need</p><div class="hero-actions"><a class="btn primary" href="/events">Open Events and Reset <span>↗</span></a><a class="btn" href="/redeem-codes">Redeem Codes <span>↗</span></a></div><div class="hero-points"><span><i></i> UTC synced</span><span><i></i> Local time aware</span><span><i></i> Live updates</span></div></div></div></section>
-<section class="wrap live-section"><div class="section-head"><div><p class="eyebrow">01 / LIVE</p><h2>Know what happens <em>next</em></h2></div><p>One place for the daily reset, Anniversary Event and Division Rivals cycle</p></div><a class="live-panel" href="/events"><div><span class="live-mark"><i></i> EVENTS AND RESET</span><h3>Daily reset · Anniversary Event · Division Rivals</h3><p>Open the unified countdown center with UTC reference, automatic local-time conversion and animated progress</p></div><b>OPEN CENTER ↗</b></a></section>
-<section class="wrap tools-section"><div class="section-head"><div><p class="eyebrow">02 / TOOLS</p><h2>Built for the <em>actual grind</em></h2></div><p>Fast utilities without pushing secondary tools into the spotlight</p></div><div class="tool-grid">
-<a class="tool-card featured cyan" href="/redeem-codes"><span>01 / REDEEM</span><h3>Redeem Codes</h3><p>Check current codes and move straight to redemption</p><strong>CHECK CODES →</strong></a>
-<a class="tool-card featured" href="/team-ovr"><span>02 / CALCULATOR</span><h3>Team OVR</h3><p>Calculate squad OVR from player ratings and upgrades</p><strong>CALCULATE →</strong></a>
-<a class="tool-card" href="/training-calculator"><span>03</span><h3>Training Calculator</h3><p>Plan XP, fodder, levels and excess XP</p><strong>OPEN →</strong></a>
-<a class="tool-card" href="/rank-up-calculator"><span>04</span><h3>Rank Up Calculator</h3><p>Calculate Rank Up Points, OVR gain and Skill Points</p><strong>OPEN →</strong></a>
-<a class="tool-card" href="/football-centre"><span>05</span><h3>Football Centre</h3><p>Track matches, points, rewards and event resources</p><strong>OPEN →</strong></a>
-<a class="tool-card" href="/gauntlet-planner"><span>06</span><h3>Gauntlet Mode Planner</h3><p>Build match-by-match squad rotations and track player availability</p><strong>PLAN ROTATION →</strong></a>
-<a class="tool-card" href="/a-nations-story"><span>07</span><h3>A Nation's Story</h3><p>Find event answers without digging</p><strong>FIND ANSWERS →</strong></a>
-<a class="tool-card" href="/fc-mobile-27"><span>08</span><h3>FC Mobile 27 Update</h3><p>Season 27 changes, feature guide and official Android install</p><strong>READ UPDATE →</strong></a>
-</div></section>
-<section class="wrap latest-section"><div class="section-head"><div><p class="eyebrow">03 / LATEST</p><h2>Fresh <em>guides</em></h2></div><a class="section-link" href="/blog">VIEW ALL →</a></div>{latestArticles.length?<div class="article-grid">{latestArticles.map(post=><a class="article-card" href={`/blog/${post.slug}/`}>{post.data.image?<img src={optimizeCloudinary(post.data.image,680)} alt="" width="680" height="350" loading="lazy" decoding="async" />:<div class="placeholder">FC</div>}<div><div class="meta"><span>{post.data.category}</span><span>{readingTime(post)} MIN</span></div><h3>{post.data.title}</h3><p>{post.data.excerpt??post.data.description}</p><strong>READ ARTICLE →</strong></div></a>)}</div>:<div class="empty">No published articles yet</div>}</section>
-<section class="wrap closing"><div><p class="eyebrow">04 / FCMOBILETOOLS</p><h2>Less searching<br /><em>more playing</em></h2></div><a href="/events">Make the Events and Reset your starting point <span>↗</span></a></section>
+
+  <section class="hero">
+    <img class="hero-bg" src="/assets/images/herobeli.png" alt="" width="1600" height="900" fetchpriority="high" decoding="async" />
+    <div class="hero-shade"></div>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1 class="rise" style="--i:0">Everything FC Mobile, timed to your clock.</h1>
+        <p class="lede rise" style="--i:1">See the next reset in your local time, redeem codes and plan upgrades with calculators built for the grind.</p>
+        <div class="actions rise" style="--i:2">
+          <a class="btn primary" href="/events">Open Events and Reset</a>
+          <a class="btn" href="/redeem-codes">Redeem Codes</a>
+        </div>
+      </div>
+
+      <aside class="reset rise" style="--i:3" data-reset data-reset-hour={RESET_HOUR_UTC} aria-label="Daily reset countdown">
+        <div class="reset-top">
+          <span class="live"><i></i>Live</span>
+          <span class="reset-label">Next daily reset in</span>
+        </div>
+        <div class="clock" aria-live="off"><span data-h>--</span><b>:</b><span data-m>--</span><b>:</b><span data-s>--</span></div>
+        <div class="bar" role="presentation"><span data-bar></span></div>
+        <dl class="reset-meta">
+          <div><dt>Resets at</dt><dd data-local>--</dd></div>
+          <div><dt>Now in UTC</dt><dd data-utc>--</dd></div>
+        </dl>
+        <a class="reset-link" href="/events">
+          <span>Anniversary Event and Division Rivals timers</span>
+          <svg class="go" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7" /></svg>
+        </a>
+      </aside>
+    </div>
+  </section>
+
+  <section class="wrap section">
+    <header class="head">
+      <h2>Tools for the actual grind</h2>
+      <p>Quick, focused utilities. Open one, get your answer, get back to playing.</p>
+    </header>
+    <div class="tools">
+      {tools.map(t => (
+        <a class:list={['tool', t.size === 'lg' && 'lg']} href={t.href}>
+          <span class="tool-top">
+            {t.tag ? <em class="tag">{t.tag}</em> : <span></span>}
+            <svg class="go" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7" /></svg>
+          </span>
+          <span class="tool-body">
+            <h3>{t.title}</h3>
+            <p>{t.text}</p>
+          </span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="wrap section latest">
+    <header class="head">
+      <h2>Fresh guides</h2>
+      <a class="all" href="/blog">View all guides</a>
+    </header>
+    {latestArticles.length ? (
+      <div class="posts">
+        {latestArticles.map((post, i) => (
+          <a class:list={['post', i === 0 && 'first']} href={`/blog/${post.slug}/`}>
+            {post.data.image
+              ? <img src={optimizeCloudinary(post.data.image, i === 0 ? 900 : 360)} alt="" width={i === 0 ? 900 : 360} height={i === 0 ? 500 : 240} loading="lazy" decoding="async" />
+              : <div class="ph">FC</div>}
+            <div class="post-text">
+              <p class="meta">{post.data.category} · {readingTime(post)} min read</p>
+              <h3>{post.data.title}</h3>
+              {i === 0 && <p class="excerpt">{post.data.excerpt ?? post.data.description}</p>}
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : <div class="empty">No guides published yet. Check back soon.</div>}
+  </section>
+
+  <section class="wrap closing">
+    <h2>Less searching, more playing.</h2>
+    <a class="btn primary" href="/events">Start with Events and Reset</a>
+  </section>
+
 </main>
 </BaseLayout>
+
+<script is:inline>
+(function () {
+  var el = document.querySelector('[data-reset]');
+  if (!el) return;
+  var hour = Number(el.dataset.resetHour) || 0;
+  var q = function (s) { return el.querySelector(s); };
+  var H = q('[data-h]'), M = q('[data-m]'), S = q('[data-s]');
+  var bar = q('[data-bar]'), local = q('[data-local]'), utc = q('[data-utc]');
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  function tick() {
+    var now = new Date();
+    var next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hour));
+    if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+    var ms = next - now, s = Math.floor(ms / 1000);
+    H.textContent = pad(Math.floor(s / 3600));
+    M.textContent = pad(Math.floor((s % 3600) / 60));
+    S.textContent = pad(s % 60);
+    bar.style.transform = 'scaleX(' + (1 - ms / 864e5).toFixed(4) + ')';
+    local.textContent = next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    utc.textContent = now.toISOString().slice(11, 19);
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+
 <style>
-.home{background:var(--bg);color:var(--text);overflow:hidden}.home .wrap{width:min(1180px,calc(100% - 36px));margin:auto}.home .eyebrow{margin:0;color:var(--blue);font:900 9px var(--mono);letter-spacing:.16em}.home-hero{position:relative;min-height:670px;border-bottom:1px solid var(--border);overflow:hidden;background:#060d13}.hero-media{position:absolute;inset:0;display:block}.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.7}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,#05090df7 0%,#05090dd2 43%,#05090d66 76%,#05090dc0 100%),linear-gradient(0deg,#05090df4 0%,transparent 50%,#05090d55 100%)}.hero-inner{position:relative;z-index:2;min-height:670px;display:flex;align-items:center;padding:90px 0 60px}.hero-copy{max-width:760px}.hero-copy .eyebrow span{color:var(--muted);margin:0 5px}.hero-copy h1{font-size:clamp(56px,8vw,98px);line-height:.86;letter-spacing:-.07em;margin:19px 0}.hero-copy h1 em,.section-head h2 em,.closing h2 em{font-style:normal;color:var(--blue)}.hero-copy>p{max-width:680px;color:#a7b7c1;font-size:14px;line-height:1.8;margin:0}.hero-actions{display:flex;gap:9px;margin-top:30px}.btn{display:inline-flex;gap:10px;align-items:center;padding:14px 17px;border:1px solid #314250;border-radius:9px;background:#091017b8;color:#eef7fa;text-decoration:none;font:900 8px var(--mono);transition:.2s}.btn.primary{background:var(--blue);border-color:var(--blue);color:#061018}.btn:hover{transform:translateY(-2px);border-color:var(--blue)}.hero-points{display:flex;gap:15px;margin-top:22px;color:#728596;font:800 7px var(--mono);letter-spacing:.04em}.hero-points i{display:inline-block;width:5px;height:5px;border-radius:50%;background:#63e3a1;margin-right:5px}.live-section,.tools-section,.latest-section{padding:80px 0;content-visibility:auto;contain-intrinsic-size:520px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:35px;margin-bottom:22px}.section-head h2{font-size:clamp(32px,4.5vw,53px);line-height:.94;letter-spacing:-.06em;margin:10px 0 0}.section-head>p{max-width:370px;color:var(--muted);font-size:10px;line-height:1.7;margin:0}.live-panel{display:flex;justify-content:space-between;align-items:center;gap:25px;padding:26px;border:1px solid #1e394a;border-radius:17px;background:linear-gradient(120deg,#091721,#081117);color:var(--text);text-decoration:none;transition:.25s}.live-panel:hover{transform:translateY(-4px);border-color:#3a6b84;box-shadow:0 24px 55px #0007}.live-mark{display:inline-flex;align-items:center;gap:7px;color:#72e3a2;font:900 8px var(--mono);letter-spacing:.13em}.live-mark i{width:6px;height:6px;border-radius:50%;background:#62e3a1;box-shadow:0 0 0 5px #62e3a111;animation:blink 1.4s infinite}.live-panel h3{font-size:23px;letter-spacing:-.035em;margin:13px 0 7px}.live-panel p{margin:0;color:#7f91a2;font-size:10px}.live-panel>b{color:var(--blue);font:900 8px var(--mono);white-space:nowrap}.tool-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px}.tool-card{grid-column:span 2;position:relative;min-height:190px;padding:21px;border:1px solid var(--border);border-radius:15px;background:var(--surface);color:var(--text);text-decoration:none;transition:.2s}.tool-card.featured{grid-column:span 3;min-height:235px;background:linear-gradient(145deg,#0c1c27,#081219)}.tool-card.cyan{background:linear-gradient(145deg,#0d1d25,#081219)}.tool-card:hover{transform:translateY(-4px);border-color:#36596a;box-shadow:0 20px 45px #0005}.tool-card>span{font:900 8px var(--mono);letter-spacing:.13em;color:var(--blue)}.tool-card h3{font-size:20px;letter-spacing:-.03em;margin:37px 0 8px}.tool-card.featured h3{font-size:27px;margin-top:48px}.tool-card p{max-width:440px;color:var(--muted);font-size:10px;line-height:1.7;margin:0}.tool-card strong{position:absolute;left:21px;bottom:19px;color:var(--blue);font:900 8px var(--mono)}.latest-section{border-bottom:1px solid var(--border)}.section-link{color:var(--blue);text-decoration:none;font:900 8px var(--mono)}.article-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.article-card{display:grid;grid-template-rows:auto 1fr;overflow:hidden;border:1px solid var(--border);border-radius:15px;background:var(--surface);color:var(--text);text-decoration:none;transition:.2s}.article-card:hover{transform:translateY(-3px);border-color:#36596a;box-shadow:0 20px 45px #0005}.article-card img,.article-card .placeholder{width:100%;aspect-ratio:16/9;height:auto;display:block;object-fit:cover}.article-card .placeholder{display:grid;place-items:center;background:#0b1c25;color:var(--blue);font:900 34px var(--mono)}.article-card>div:last-child{padding:17px}.meta{display:flex;gap:10px;color:var(--blue);font:900 7px var(--mono)}.meta span:last-child{color:#6e8490}.article-card h3{font-size:16px;line-height:1.1;margin:10px 0 7px}.article-card p{color:var(--muted);font-size:9px;line-height:1.6;margin:0}.article-card strong{display:block;color:var(--blue);font:900 7px var(--mono);margin-top:12px}.empty{padding:25px;border:1px dashed #263744;border-radius:12px;color:var(--muted);font-size:10px}.closing{display:flex;justify-content:space-between;align-items:end;gap:40px;padding:80px 0 100px}.closing h2{font-size:clamp(42px,5vw,64px);line-height:.9;letter-spacing:-.065em;margin:11px 0}.closing>a{padding:15px 17px;border:1px solid #244354;border-radius:10px;background:#09151c;color:#9fdff2;text-decoration:none;font:800 8px var(--mono)}.closing>a span{margin-left:15px}@keyframes blink{50%{opacity:.35;transform:scale(.8)}}@media(max-width:850px){.tool-grid{grid-template-columns:1fr 1fr}.tool-card,.tool-card.featured{grid-column:span 1}.tool-card.featured{min-height:220px}.article-grid{grid-template-columns:1fr}.closing{align-items:start;flex-direction:column}}@media(max-width:560px){.home .wrap{width:calc(100% - 28px)}.home-hero,.hero-inner{min-height:620px}.hero-inner{padding:75px 0 40px}.hero-copy h1{font-size:clamp(49px,14vw,72px)}.tool-grid{grid-template-columns:1fr}.tool-card,.tool-card.featured{min-height:200px}.section-head{align-items:start;flex-direction:column;gap:12px}.live-panel{align-items:start;flex-direction:column}.hero-points{flex-wrap:wrap}.article-card{grid-template-rows:auto 1fr}}
+.home {
+  --c-bg: var(--bg, #050a0f);
+  --c-text: var(--text, #eaf3f7);
+  --c-muted: var(--muted, #8fa2ae);
+  --c-line: var(--border, #1b2c39);
+  --c-panel: var(--surface, #0a1620);
+  --c-accent: var(--blue, #44d7ee);
+  --display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --body: 'Instrument Sans', system-ui, sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--body);
+  overflow: hidden;
+}
+.home a { color: inherit; text-decoration: none; }
+.home :focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+h1, h2, h3 { font-family: var(--display); margin: 0; font-weight: 700; }
+p { margin: 0; }
+
+/* Hero */
+.hero { position: relative; min-height: 700px; display: flex; align-items: center; border-bottom: 1px solid var(--c-line); }
+.hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
+.hero-shade { position: absolute; inset: 0; background:
+  linear-gradient(90deg, #050a0ff5 0%, #050a0fcc 48%, #050a0f70 100%),
+  linear-gradient(0deg, var(--c-bg) 0%, transparent 40%); }
+.hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; padding: 96px 0 72px; }
+.hero h1 { font-size: clamp(42px, 6.4vw, 84px); line-height: .98; letter-spacing: -.04em; max-width: 12ch; }
+.lede { margin-top: 24px; max-width: 46ch; font-size: 18px; line-height: 1.6; color: #b4c3cc; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+.btn { display: inline-flex; align-items: center; padding: 15px 22px; border: 1px solid #2a3c4a; border-radius: 12px; background: #0a141cb0; font-weight: 600; font-size: 15px; transition: border-color .2s, background .2s; }
+.btn:hover { border-color: var(--c-accent); }
+.btn.primary { background: var(--c-accent); border-color: var(--c-accent); color: #04121a; }
+.btn.primary:hover { background: #7be6f7; }
+
+/* Reset card: the one showpiece */
+.reset { padding: 28px; border: 1px solid #23485a; border-radius: 24px; background: linear-gradient(160deg, #0c1c27e6, #08121aeb); backdrop-filter: blur(18px); box-shadow: 0 30px 80px #0009, inset 0 1px 0 #ffffff0f; }
+.reset-top { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--c-muted); }
+.live { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 99px; background: #63e3a11a; color: #7ceeb1; font-weight: 600; font-size: 13px; }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: #63e3a1; animation: pulse 1.6s ease-in-out infinite; }
+.clock { display: flex; align-items: baseline; gap: 6px; margin: 22px 0 20px; font-family: var(--display); font-weight: 700; font-size: clamp(52px, 7vw, 78px); letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock b { color: var(--c-accent); font-weight: 500; opacity: .8; }
+.bar { height: 6px; border-radius: 6px; background: #ffffff12; overflow: hidden; }
+.bar span { display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #2aa6c2, var(--c-accent)); box-shadow: 0 0 18px var(--c-accent); }
+.reset-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 22px 0; }
+.reset-meta dt { font-size: 13px; color: var(--c-muted); }
+.reset-meta dd { margin: 4px 0 0; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.reset-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 18px; border-top: 1px solid var(--c-line); font-size: 15px; font-weight: 500; }
+.go { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--c-accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
+.reset-link:hover .go, .tool:hover .go { transform: translate(2px, -2px); }
+
+/* Sections */
+.section { padding: 96px 0 0; }
+.head { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-bottom: 32px; }
+.head h2 { font-size: clamp(30px, 4vw, 46px); letter-spacing: -.035em; line-height: 1.05; }
+.head p { max-width: 36ch; color: var(--c-muted); font-size: 16px; line-height: 1.6; }
+.all { color: var(--c-accent); font-weight: 600; font-size: 15px; }
+.all:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Tools bento */
+.tools { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.tool { grid-column: span 2; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; min-height: 176px; padding: 22px; border: 1px solid var(--c-line); border-radius: 18px; background: var(--c-panel); transition: border-color .2s; }
+.tool:hover { border-color: #3b6377; }
+.tool.lg { grid-column: span 3; min-height: 250px; padding: 28px; background:
+  radial-gradient(420px 220px at 100% 0%, #44d7ee1f, transparent 70%), linear-gradient(160deg, #0d1d29, #08131b); border-color: #21445a; }
+.tool-top { display: flex; justify-content: space-between; align-items: center; min-height: 22px; }
+.tag { font-style: normal; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--c-accent); color: #04121a; }
+.tool h3 { font-size: 20px; letter-spacing: -.02em; }
+.tool.lg h3 { font-size: 32px; letter-spacing: -.03em; }
+.tool p { margin-top: 8px; color: var(--c-muted); font-size: 15px; line-height: 1.55; max-width: 38ch; }
+
+/* Posts */
+.posts { display: grid; grid-template-columns: 1.25fr 1fr; grid-auto-rows: 1fr; gap: 14px; }
+.post { display: grid; grid-template-columns: 150px 1fr; gap: 18px; align-items: center; padding: 12px; border: 1px solid var(--c-line); border-radius: 18px; background: var(--c-panel); transition: border-color .2s; }
+.post:hover { border-color: #3b6377; }
+.post img, .ph { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 12px; display: block; }
+.ph { display: grid; place-items: center; background: #0b1c25; color: var(--c-accent); font: 700 28px var(--display); }
+.post.first { grid-row: span 3; grid-template-columns: 1fr; align-content: start; gap: 0; padding: 14px 14px 26px; }
+.post.first img, .post.first .ph { aspect-ratio: 16 / 9; border-radius: 12px; }
+.post.first .post-text { padding: 22px 12px 0; }
+.meta { font-size: 13px; color: var(--c-accent); font-weight: 600; }
+.post h3 { margin-top: 8px; font-size: 18px; line-height: 1.2; letter-spacing: -.015em; }
+.post.first h3 { font-size: clamp(24px, 2.6vw, 32px); line-height: 1.12; letter-spacing: -.03em; }
+.excerpt { margin-top: 12px; color: var(--c-muted); font-size: 16px; line-height: 1.6; max-width: 56ch; }
+.empty { padding: 28px; border: 1px dashed #2a3c4a; border-radius: 14px; color: var(--c-muted); }
+
+/* Closing */
+.closing { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 110px 0 120px; }
+.closing h2 { font-size: clamp(34px, 5vw, 60px); letter-spacing: -.04em; line-height: 1; max-width: 14ch; }
+
+/* One page-load sequence */
+.rise { animation: rise .8s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i) * 110ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes pulse { 50% { opacity: .35; transform: scale(.75); } }
+@media (prefers-reduced-motion: reduce) { .rise, .live i { animation: none; } .go { transition: none; } }
+
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 40px; padding: 72px 0 48px; }
+  .hero h1 { max-width: 14ch; }
+  .tools { grid-template-columns: 1fr 1fr; }
+  .tool, .tool.lg { grid-column: span 1; }
+  .tool.lg { grid-column: span 2; min-height: 200px; }
+  .posts { grid-template-columns: 1fr; }
+  .post.first { grid-row: auto; }
+  .closing { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 560px) {
+  .wrap { width: calc(100% - 28px); }
+  .section { padding-top: 72px; }
+  .head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .tools { grid-template-columns: 1fr; }
+  .tool.lg { grid-column: span 1; }
+  .reset { padding: 22px; }
+  .post { grid-template-columns: 110px 1fr; gap: 14px; }
+  .post.first { grid-template-columns: 1fr; }
+}
 </style>
