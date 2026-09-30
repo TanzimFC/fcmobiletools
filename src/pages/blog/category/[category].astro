@@ -4,16 +4,17 @@ import HubHero from '../../../components/blog/HubHero.astro';
 import PostCard from '../../../components/blog/PostCard.astro';
 import BlogEffects from '../../../components/blog/BlogEffects.astro';
 import '../../../styles/blog.css';
-import { getPosts, categoryPages, sectionsIn, fmtDate } from '../../../lib/blog.js';
+import { categoryPages, sectionsIn, fmtDate, SECTIONS, sectionOf } from '../../../lib/blog.js';
+import { getPublishedPosts } from '../../../lib/blog-supabase.js';
 
-// One page per canonical section AND per free-text category in use, so older URLs keep working.
-export async function getStaticPaths() {
-  const posts = await getPosts();
-  return categoryPages(posts).map((c) => ({ params: { category: c.slug }, props: { slug: c.slug } }));
-}
+export const prerender = false;
+Astro.response.headers.set('Cache-Control','public, max-age=0, s-maxage=15, stale-while-revalidate=60');
 
-const posts = await getPosts();
-const page = categoryPages(posts).find((c) => c.slug === Astro.props.slug);
+const posts = await getPublishedPosts();
+const requestedSlug = String(Astro.params.category || '').replace(/\/$/,'');
+const pages = categoryPages(posts);
+const known = Object.values(SECTIONS).find((s) => s.slug === requestedSlug);
+const page = pages.find((c) => c.slug === requestedSlug) || {slug:requestedSlug,label:known?.label||requestedSlug.replaceAll('-',' '),accent:known?.accent||sectionOf('guide').accent,blurb:known?.blurb||`Every published article filed under ${requestedSlug.replaceAll('-',' ')}.`,posts:[]};
 const sections = sectionsIn(posts);
 const [lead, ...rest] = page.posts;
 const minutes = page.posts.reduce((n, p) => n + p.minutes, 0);
