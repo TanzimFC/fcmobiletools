@@ -14,6 +14,8 @@ const optimizeCloudinary = (url,width) => {
     : value;
 };
 const readingTime = (post) => post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
+const fmtDate = (d, opts) => d?.toLocaleDateString('en-US', opts) ?? '';
+const isoDate = (d) => d?.toISOString?.() ?? '';
 
 const categoryOf = (post) => {
   if (post.data.type === 'leaks') return 'Leaks';
@@ -23,469 +25,330 @@ const categoryOf = (post) => {
   if (post.data.type === 'opinion') return 'Tactics';
   return 'Guides';
 };
-
 const categoryKey = (post) => categoryOf(post).toLowerCase();
 const categoryHref = (label) => '/blog/category/' + label.toLowerCase().replace(/\s+/g,'-') + '/';
-const categoryAccent = (label) => ({
+const categoryAccent = (key) => ({
   updates: '#67dbff',
   leaks: '#b7a0ff',
   guides: '#72e1ad',
   analysis: '#ffd18a',
   reviews: '#f3ca76',
   tactics: '#f29bd2'
-}[label] ?? '#67dbff');
+}[key] ?? '#67dbff');
 
 const categoryLabels = ['Updates','Leaks','Guides','Analysis','Reviews','Tactics'];
-const categoryLinks = [
-  { label: 'All', key: 'all', href: '/blog' },
-  ...categoryLabels.map((label) => ({ label, key: label.toLowerCase(), href: categoryHref(label) }))
-];
-
-const featured = posts.filter((post) => post.data.featured);
-const editorial = [];
-const editorialSeen = new Set();
-
-for (const post of [...featured, ...posts]) {
-  if (!editorialSeen.has(post.slug) && editorial.length < 3) {
-    editorial.push(post);
-    editorialSeen.add(post.slug);
-  }
-}
-
-const featuredLead = editorial[0];
-const featuredSupport = editorial.slice(1,3);
-const latest = posts.filter((post) => !editorialSeen.has(post.slug));
-
 const categoryCounts = Object.fromEntries(
   categoryLabels.map((label) => [label.toLowerCase(), posts.filter((post) => categoryOf(post) === label).length])
 );
+const categoryLinks = [
+  { label: 'All', key: 'all', href: '/blog', count: posts.length },
+  ...categoryLabels
+    .filter((label) => categoryCounts[label.toLowerCase()] > 0)
+    .map((label) => ({ label, key: label.toLowerCase(), href: categoryHref(label), count: categoryCounts[label.toLowerCase()] }))
+];
+
+// Hero: up to 3 stories, featured ones first
+const heroPicks = [];
+const heroSeen = new Set();
+for (const post of [...posts.filter((p) => p.data.featured), ...posts]) {
+  if (!heroSeen.has(post.slug) && heroPicks.length < 3) {
+    heroPicks.push(post);
+    heroSeen.add(post.slug);
+  }
+}
+const [lead, ...side] = heroPicks;
+
+const searchText = (post) =>
+  [post.data.title, post.data.description, post.data.excerpt, categoryOf(post)].filter(Boolean).join(' ').toLowerCase();
 ---
 <BaseLayout title="FC Mobile Articles" description="FC Mobile updates, leaks, guides, analysis, reviews and tactics from FCMOBILETOOLS.">
-<main class="blog-hub" data-blog-page>
-  <section class="hub-intro">
-    <div class="wrap">
-      <div class="intro-grid">
-        <div class="intro-copy-wrap">
-          <p class="eyebrow">FCMOBILETOOLS / ARTICLES</p>
-          <h1>What matters,<br /><em>when it matters.</em></h1>
-          <p class="intro-copy">A focused FC Mobile newsroom for updates, guides, leaks and analysis. Browse by topic or search the full library without leaving the page.</p>
-          <div class="intro-points">
-            <span><i></i> Published &amp; reviewed</span>
-            <span><i></i> Uncertain info is labelled</span>
-            <span><i></i> Built for FC Mobile players</span>
+<main class="journal" data-blog-page>
+
+  <header class="wrap masthead">
+    <h1>Articles</h1>
+    <p>Updates, leaks, guides and analysis for FC Mobile players. Anything unconfirmed is labelled as such.</p>
+  </header>
+
+  {lead ? (
+    <section class="wrap hero" id="heroSection" aria-label="Featured articles">
+      <a class="cover" href={'/blog/' + lead.slug + '/'} style={'--accent:' + categoryAccent(categoryKey(lead))}>
+        {coverImage(lead)
+          ? <img src={optimizeCloudinary(coverImage(lead), 1400)} alt={lead.data.imageAlt ?? ''} width="1400" height="800" loading="eager" fetchpriority="high" decoding="async" />
+          : <span class="cover-fallback" aria-hidden="true">FC</span>}
+        <span class="cover-shade" aria-hidden="true"></span>
+        <div class="cover-body">
+          <span class="chip"><i></i>{categoryOf(lead)}</span>
+          <h2>{lead.data.title}</h2>
+          <p>{lead.data.excerpt ?? lead.data.description}</p>
+          <div class="cover-foot">
+            <span class="btn">Read the story</span>
+            <span class="meta"><time datetime={isoDate(lead.data.publishedAt)}>{fmtDate(lead.data.publishedAt,{month:'long',day:'numeric',year:'numeric'})}</time><span>{readingTime(lead)} min read</span></span>
           </div>
         </div>
-        <div class="library-stats" aria-label="Article library stats">
-          <article>
-            <span>LIBRARY</span>
-            <strong>{posts.length}</strong>
-            <small>published articles</small>
-          </article>
-          <article>
-            <span>TOPICS</span>
-            <strong>{categoryLabels.filter((label) => categoryCounts[label.toLowerCase()] > 0).length}</strong>
-            <small>active sections</small>
-          </article>
-        </div>
-      </div>
-    </div>
-  </section>
+      </a>
 
-  <section class="wrap discovery-shell">
-    <div class="discovery-bar" aria-label="Article discovery controls">
-      <div class="topic-list" role="tablist" aria-label="Filter articles by topic">
-        {categoryLinks.map((item) => (
-          <a
-            class:list={{ topic: true, active: item.key === 'all', disabled: item.key !== 'all' && categoryCounts[item.key] === 0 }}
-            data-topic={item.key}
-            href={item.href}
-            role="tab"
-            aria-selected={item.key === 'all' ? 'true' : 'false'}
-            aria-disabled={item.key !== 'all' && categoryCounts[item.key] === 0 ? 'true' : 'false'}
-          >
-            <span>{item.label}</span>
-            <b>{item.key !== 'all' ? categoryCounts[item.key] : posts.length}</b>
-          </a>
-        ))}
-      </div>
-
-      <label class="article-search" for="articleSearch">
-        <span class="search-icon" aria-hidden="true">⌕</span>
-        <input id="articleSearch" type="search" placeholder="Search articles" autocomplete="off" aria-label="Search articles" />
-        <kbd>/</kbd>
-        <button id="clearSearch" type="button" aria-label="Clear article search" hidden>×</button>
-      </label>
-    </div>
-
-    <div class="discovery-status">
-      <div><span class="eyebrow">ARTICLE LIBRARY</span><strong id="resultLabel">Showing all published articles</strong></div>
-      <span id="resultCount">{posts.length} stories</span>
-    </div>
-
-    <section class="editorial-section" id="editorialSection" aria-labelledby="featuredHeading">
-      <div class="section-label">
-        <div>
-          <span class="eyebrow">01 / EDITOR'S DESK</span>
-          <h2 id="featuredHeading">Start with the stories<br /><em>worth opening.</em></h2>
-        </div>
-        <p>Hand-picked highlights sit above the live feed so the page has a clear editorial hierarchy instead of a wall of equal cards.</p>
-      </div>
-
-      {featuredLead ? (
-        <div class="editorial-grid">
-          <a
-            class="lead-story story-card"
-            href={'/blog/' + featuredLead.slug + '/'}
-            data-story
-            data-category={categoryKey(featuredLead)}
-            data-title={(featuredLead.data.title + ' ' + (featuredLead.data.description ?? '') + ' ' + categoryOf(featuredLead)).toLowerCase()}
-            style={'--accent:' + categoryAccent(categoryKey(featuredLead))}
-          >
-            <div class="lead-media">
-              {coverImage(featuredLead) ? <img src={optimizeCloudinary(coverImage(featuredLead), 1100)} alt={featuredLead.data.imageAlt ?? ''} width="1100" height="620" loading="eager" fetchpriority="high" decoding="async" /> : <span>FC</span>}
-              <span class="feature-tag">FEATURED</span>
-              <span class="image-fade" aria-hidden="true"></span>
-            </div>
-            <div class="lead-copy">
-              <div class="story-meta"><span class="category-label">{categoryOf(featuredLead)}</span><time>{featuredLead.data.publishedAt?.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</time><span>{readingTime(featuredLead)} min read</span></div>
-              <h2>{featuredLead.data.title}</h2>
-              {featuredLead.data.subtitle ? <p class="lead-subtitle">{featuredLead.data.subtitle}</p> : null}
-              <p class="story-description">{featuredLead.data.excerpt ?? featuredLead.data.description}</p>
-              <span class="story-link">Open story <b>↗</b></span>
-            </div>
-          </a>
-
-          {featuredSupport.map((post, index) => (
-            <a
-              class="support-story story-card"
-              href={'/blog/' + post.slug + '/'}
-              data-story
-              data-category={categoryKey(post)}
-              data-title={(post.data.title + ' ' + (post.data.description ?? '') + ' ' + categoryOf(post)).toLowerCase()}
-              style={'--accent:' + categoryAccent(categoryKey(post))}
-            >
-              <div class="support-media">
-                {coverImage(post) ? <img src={optimizeCloudinary(coverImage(post), 760)} alt={post.data.imageAlt ?? ''} width="760" height="430" loading="lazy" decoding="async" /> : <span>FC</span>}
-                <span class="support-index">0{index + 2}</span>
-              </div>
-              <div class="support-copy">
-                <div class="story-meta"><span class="category-label">{categoryOf(post)}</span><time>{post.data.publishedAt?.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</time></div>
+      {side.length > 0 ? (
+        <div class="hero-side">
+          {side.map((post) => (
+            <a class="mini" href={'/blog/' + post.slug + '/'} style={'--accent:' + categoryAccent(categoryKey(post))}>
+              {coverImage(post)
+                ? <img src={optimizeCloudinary(coverImage(post), 800)} alt={post.data.imageAlt ?? ''} width="800" height="450" loading="lazy" decoding="async" />
+                : <span class="cover-fallback" aria-hidden="true">FC</span>}
+              <span class="cover-shade" aria-hidden="true"></span>
+              <div class="mini-body">
+                <span class="chip"><i></i>{categoryOf(post)}</span>
                 <h3>{post.data.title}</h3>
-                <span class="story-link">Read ↗</span>
+                <span class="meta"><time datetime={isoDate(post.data.publishedAt)}>{fmtDate(post.data.publishedAt,{month:'short',day:'numeric'})}</time><span>{readingTime(post)} min read</span></span>
               </div>
             </a>
           ))}
         </div>
       ) : null}
     </section>
+  ) : null}
 
-    <section class="latest-section" id="latestSection" aria-labelledby="latestHeading">
-      <div class="section-label latest-label">
-        <div>
-          <span class="eyebrow">02 / THE LATEST</span>
-          <h2 id="latestHeading">Fresh from the desk.</h2>
-        </div>
-        <p>Every published story appears here. Search and topic filters update the feed instantly.</p>
-      </div>
-
-      <div class="latest-grid" id="articleStream">
-        {latest.map((post) => (
-          <a
-            class="latest-card story-card"
-            href={'/blog/' + post.slug + '/'}
-            data-story
-            data-category={categoryKey(post)}
-            data-title={(post.data.title + ' ' + (post.data.description ?? '') + ' ' + (post.data.excerpt ?? '') + ' ' + categoryOf(post)).toLowerCase()}
-            style={'--accent:' + categoryAccent(categoryKey(post))}
-          >
-            <div class="latest-media">
-              {coverImage(post) ? <img src={optimizeCloudinary(coverImage(post), 760)} alt={post.data.imageAlt ?? ''} width="760" height="430" loading="lazy" decoding="async" /> : <span>FC</span>}
-              <span class="media-shade" aria-hidden="true"></span>
-              <span class="card-arrow" aria-hidden="true">↗</span>
-            </div>
-            <div class="latest-body">
-              <div class="story-meta">
-                <span class="category-label">{categoryOf(post)}</span>
-                <time>{post.data.publishedAt?.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</time>
-                <span>{readingTime(post)} min</span>
-              </div>
-              <h3>{post.data.title}</h3>
-              <p>{post.data.excerpt ?? post.data.description}</p>
-            </div>
+  <div class="bar-wrap">
+    <div class="wrap bar">
+      <nav class="topics" aria-label="Filter articles by topic">
+        {categoryLinks.map((item) => (
+          <a class:list={['topic', { active: item.key === 'all' }]} data-topic={item.key} href={item.href} aria-current={item.key === 'all' ? 'true' : undefined} style={item.key !== 'all' ? '--accent:' + categoryAccent(item.key) : undefined}>
+            {item.key !== 'all' ? <i></i> : null}{item.label}<b>{item.count}</b>
           </a>
         ))}
-      </div>
+      </nav>
+      <label class="search" for="articleSearch">
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="M13.5 13.5 17 17"/></svg>
+        <input id="articleSearch" type="search" placeholder="Search articles" autocomplete="off" aria-label="Search articles" />
+        <kbd aria-hidden="true">/</kbd>
+        <button id="clearSearch" type="button" aria-label="Clear search" hidden>×</button>
+      </label>
+    </div>
+  </div>
 
-      <div class="empty-state" id="emptyState" hidden aria-live="polite"></div>
-    </section>
+  <section class="wrap feed" aria-labelledby="feedHeading">
+    <div class="feed-head">
+      <h2 id="feedHeading"><span id="resultLabel">Latest articles</span></h2>
+      <span class="count" id="resultCount" aria-live="polite">{posts.length} articles</span>
+    </div>
 
-    <section class="archive-strip" aria-label="Browse article topics">
-      <div>
-        <span class="eyebrow">03 / BROWSE TOPICS</span>
-        <h2>Find the section<br /><em>you need.</em></h2>
-      </div>
-      <div class="topic-directory">
-        {categoryLabels.filter((label) => categoryCounts[label.toLowerCase()] > 0).map((label) => (
-          <a href={categoryHref(label)} style={'--accent:' + categoryAccent(label.toLowerCase())}>
-            <span class="directory-count">{String(categoryCounts[label.toLowerCase()]).padStart(2,'0')}</span>
-            <span><b>{label}</b><small>Explore {label.toLowerCase()}</small></span>
-            <strong>↗</strong>
-          </a>
-        ))}
-      </div>
-    </section>
+    <div class="grid" id="articleStream">
+      {posts.map((post) => (
+        <a
+          class="card"
+          href={'/blog/' + post.slug + '/'}
+          data-story
+          data-hero={heroSeen.has(post.slug) ? 'true' : 'false'}
+          data-category={categoryKey(post)}
+          data-title={searchText(post)}
+          style={'--accent:' + categoryAccent(categoryKey(post))}
+        >
+          <div class="thumb">
+            {coverImage(post)
+              ? <img src={optimizeCloudinary(coverImage(post), 760)} alt={post.data.imageAlt ?? ''} width="760" height="475" loading="lazy" decoding="async" />
+              : <span class="cover-fallback" aria-hidden="true">FC</span>}
+          </div>
+          <div class="card-body">
+            <span class="chip"><i></i>{categoryOf(post)}</span>
+            <h3>{post.data.title}</h3>
+            <p>{post.data.excerpt ?? post.data.description}</p>
+            <span class="meta"><time datetime={isoDate(post.data.publishedAt)}>{fmtDate(post.data.publishedAt,{month:'short',day:'numeric',year:'numeric'})}</time><span>{readingTime(post)} min read</span></span>
+          </div>
+        </a>
+      ))}
+    </div>
+
+    <div class="empty" id="emptyState" hidden aria-live="polite">
+      <strong>No articles match.</strong>
+      <span>Try a different topic or clear the search.</span>
+      <button type="button" id="resetFilters">Show all articles</button>
+    </div>
   </section>
 </main>
 
 <script is:inline>
-const blogRoot = document.querySelector('[data-blog-page]');
-const storyCards = [...(blogRoot?.querySelectorAll('[data-story]') || [])];
-const search = blogRoot?.querySelector('#articleSearch');
-const clearSearch = blogRoot?.querySelector('#clearSearch');
-const count = blogRoot?.querySelector('#resultCount');
-const resultLabel = blogRoot?.querySelector('#resultLabel');
-const empty = blogRoot?.querySelector('#emptyState');
-const editorialSection = blogRoot?.querySelector('#editorialSection');
-let activeTopic = 'all';
+(() => {
+  const root = document.querySelector('[data-blog-page]');
+  if (!root) return;
+  const cards = [...root.querySelectorAll('[data-story]')];
+  const topics = [...root.querySelectorAll('[data-topic]')];
+  const search = root.querySelector('#articleSearch');
+  const clear = root.querySelector('#clearSearch');
+  const count = root.querySelector('#resultCount');
+  const label = root.querySelector('#resultLabel');
+  const empty = root.querySelector('#emptyState');
+  const hero = root.querySelector('#heroSection');
+  const reset = root.querySelector('#resetFilters');
+  let topic = 'all';
 
-const setQueryUrl = () => {
-  const params = new URLSearchParams();
-  if (activeTopic !== 'all') params.set('topic', activeTopic);
-  const query = (search?.value || '').trim();
-  if (query) params.set('q', query);
-  const next = params.toString();
-  window.history?.replaceState({}, '', next ? '/blog?' + next : '/blog');
-};
+  const pushUrl = () => {
+    const p = new URLSearchParams();
+    if (topic !== 'all') p.set('topic', topic);
+    const q = (search.value || '').trim();
+    if (q) p.set('q', q);
+    const s = p.toString();
+    history.replaceState({}, '', s ? '/blog?' + s : '/blog');
+  };
 
-const updateResults = ({ updateUrl = true } = {}) => {
-  const query = (search?.value || '').trim().toLowerCase();
-  let visible = 0;
-  let visibleEditorial = 0;
-
-  storyCards.forEach((card) => {
-    const matchesTopic = activeTopic === 'all' || card.dataset.category === activeTopic;
-    const matchesSearch = !query || (card.dataset.title || card.textContent || '').toLowerCase().includes(query);
-    const show = matchesTopic && matchesSearch;
-    card.hidden = !show;
-    if (show) {
-      visible++;
-      if (card.closest('.editorial-section')) visibleEditorial++;
-    }
-  });
-
-  if (editorialSection) editorialSection.hidden = visibleEditorial === 0;
-  if (count) count.textContent = visible + ' stor' + (visible === 1 ? 'y' : 'ies');
-
-  if (resultLabel) {
-    resultLabel.textContent =
-      query
-        ? 'Matching “' + query + '”'
-        : activeTopic === 'all'
-          ? 'Showing all published articles'
-          : 'Showing ' + activeTopic[0].toUpperCase() + activeTopic.slice(1);
-  }
-
-  if (clearSearch) clearSearch.hidden = !query;
-
-  if (empty) {
-    empty.hidden = visible > 0;
-    if (visible === 0) {
-      empty.innerHTML = '<strong>No stories match this view.</strong><span>Try another topic or clear your search.</span>';
-    }
-  }
-
-  if (updateUrl) setQueryUrl();
-};
-
-blogRoot?.querySelectorAll('[data-topic]').forEach((link) => {
-  link.addEventListener('click', (event) => {
-    if (link.classList.contains('disabled')) {
-      event.preventDefault();
-      return;
-    }
-    event.preventDefault();
-    activeTopic = link.dataset.topic || 'all';
-    blogRoot.querySelectorAll('[data-topic]').forEach((item) => {
-      const active = item === link;
-      item.classList.toggle('active', active);
-      item.setAttribute('aria-selected', active ? 'true' : 'false');
+  const setTopic = (key) => {
+    topic = key;
+    topics.forEach((t) => {
+      const on = t.dataset.topic === key;
+      t.classList.toggle('active', on);
+      if (on) t.setAttribute('aria-current', 'true'); else t.removeAttribute('aria-current');
     });
-    updateResults();
+  };
+
+  const render = (updateUrl = true) => {
+    const q = (search.value || '').trim().toLowerCase();
+    const filtered = topic !== 'all' || !!q;
+    let shown = 0;
+    cards.forEach((c) => {
+      const okTopic = topic === 'all' || c.dataset.category === topic;
+      const okQuery = !q || (c.dataset.title || '').includes(q);
+      // when unfiltered, stories already in the hero are not repeated in the grid
+      const show = okTopic && okQuery && (filtered || c.dataset.hero !== 'true');
+      c.hidden = !show;
+      if (show) shown++;
+    });
+    if (hero) hero.hidden = filtered;
+    count.textContent = shown + (shown === 1 ? ' article' : ' articles');
+    label.textContent = q ? 'Results for “' + search.value.trim() + '”'
+      : topic === 'all' ? 'Latest articles'
+      : topic[0].toUpperCase() + topic.slice(1);
+    clear.hidden = !q;
+    empty.hidden = shown > 0;
+    if (updateUrl) pushUrl();
+  };
+
+  topics.forEach((t) => t.addEventListener('click', (e) => {
+    e.preventDefault();
+    setTopic(t.dataset.topic || 'all');
+    render();
+  }));
+  search.addEventListener('input', () => render());
+  clear.addEventListener('click', () => { search.value = ''; search.focus(); render(); });
+  reset?.addEventListener('click', () => { search.value = ''; setTopic('all'); render(); });
+
+  addEventListener('keydown', (e) => {
+    const tag = document.activeElement?.tagName;
+    if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(tag)) { e.preventDefault(); search.focus(); }
+    if (e.key === 'Escape' && document.activeElement === search) { search.value = ''; render(); search.blur(); }
   });
-});
 
-search?.addEventListener('input', () => updateResults());
-clearSearch?.addEventListener('click', () => {
-  if (!search) return;
-  search.value = '';
-  search.focus();
-  updateResults();
-});
-
-window.addEventListener('keydown', (event) => {
-  if (event.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) {
-    event.preventDefault();
-    search?.focus();
-  }
-  if (event.key === 'Escape' && document.activeElement === search) {
-    search.value = '';
-    updateResults();
-  }
-});
-
-const initialParams = new URLSearchParams(window.location.search);
-const initialTopic = initialParams.get('topic') || initialParams.get('type');
-const initialQuery = initialParams.get('q') || '';
-
-if (initialTopic && blogRoot?.querySelector('[data-topic="' + CSS.escape(initialTopic) + '"]')) {
-  activeTopic = initialTopic;
-  const selected = blogRoot.querySelector('[data-topic="' + CSS.escape(initialTopic) + '"]');
-  blogRoot.querySelectorAll('[data-topic]').forEach((item) => {
-    const active = item === selected;
-    item.classList.toggle('active', active);
-    item.setAttribute('aria-selected', active ? 'true' : 'false');
-  });
-}
-if (search && initialQuery) search.value = initialQuery;
-updateResults({ updateUrl: false });
+  const params = new URLSearchParams(location.search);
+  const t0 = params.get('topic') || params.get('type');
+  if (t0 && topics.some((t) => t.dataset.topic === t0)) setTopic(t0);
+  if (params.get('q')) search.value = params.get('q');
+  render(false);
+})();
 </script>
 
 <style>
-.blog-hub{position:relative;min-height:70vh;background:var(--bg);overflow:hidden}
-.blog-hub:before{content:"";position:absolute;inset:0 0 auto;height:660px;pointer-events:none;background:radial-gradient(circle at 82% 8%,#55c7f21b,transparent 31%),radial-gradient(circle at 8% 28%,#55c7f209,transparent 26%);opacity:.9}
-.wrap{position:relative;width:min(1240px,calc(100% - 36px));margin:auto}
-.hub-intro{position:relative;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#06121a,#061018 92%,transparent);padding:76px 0 52px}
-.intro-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:64px;align-items:end}
-.eyebrow{display:block;margin:0;color:var(--blue);font:900 8px var(--mono);letter-spacing:.17em;text-transform:uppercase}
-.intro-copy-wrap h1{max-width:890px;margin:17px 0 18px;font-size:clamp(56px,7.4vw,94px);line-height:.88;letter-spacing:-.085em}
-.intro-copy-wrap h1 em,.section-label h2 em,.archive-strip h2 em{font-style:normal;color:var(--blue)}
-.intro-copy{max-width:690px;margin:0;color:#8ea2ac;font-size:13px;line-height:1.85}
-.intro-points{display:flex;gap:18px;flex-wrap:wrap;margin-top:21px;color:#607883;font:800 7px var(--mono);letter-spacing:.03em}
-.intro-points i{display:inline-block;width:5px;height:5px;margin-right:6px;border-radius:50%;background:#6fe0a7;box-shadow:0 0 0 4px #6fe0a711}
-.library-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.library-stats article{padding:17px;border:1px solid #203744;border-radius:18px;background:linear-gradient(145deg,#0a1820,#071219);box-shadow:0 24px 60px #0008}
-.library-stats span,.library-stats small{display:block;color:#5d7681;font:800 7px var(--mono);letter-spacing:.12em;text-transform:uppercase}
-.library-stats strong{display:block;margin:7px 0 3px;color:#dff8ff;font:800 34px var(--display);letter-spacing:-.06em}
-.discovery-shell{padding:26px 0 110px}
-.discovery-bar{position:sticky;top:64px;z-index:30;display:flex;align-items:center;gap:12px;padding:10px 0 16px;background:linear-gradient(180deg,var(--bg) 74%,transparent);backdrop-filter:blur(10px)}
-.topic-list{display:flex;align-items:center;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}
-.topic-list::-webkit-scrollbar{display:none}
-.topic{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:8px 10px;border:1px solid #213540;border-radius:999px;color:#728894;text-decoration:none;background:#071118;box-shadow:inset 0 1px 0 #fff009;transition:.2s}
-.topic span{font:800 7px var(--mono);letter-spacing:.05em;text-transform:uppercase}
-.topic b{min-width:15px;text-align:center;color:#4f6b78;font:900 7px var(--mono)}
-.topic:hover,.topic.active{border-color:#3d6c80;background:#0b1b24;color:#e4f9ff;box-shadow:0 0 0 1px #55c7f211,0 10px 30px #0005}
-.topic.active b{color:var(--blue)}
-.topic.disabled{cursor:not-allowed;opacity:.42}
-.article-search{position:relative;display:flex;align-items:center;gap:8px;flex:0 0 255px;height:38px;padding:0 9px;border:1px solid #26404d;border-radius:999px;background:#08141b;box-shadow:inset 0 1px 0 #fff008,0 12px 28px #0004}
-.search-icon{color:#68828e;font:900 15px var(--mono)}
-.article-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#d7edf3;font:700 9px var(--mono)}
-.article-search input::placeholder{color:#536b77}
-.article-search kbd{display:grid;place-items:center;width:19px;height:19px;border:1px solid #304a56;border-radius:6px;color:#64808c;font:800 7px var(--mono)}
-.article-search button{width:20px;height:20px;padding:0;border:0;border-radius:50%;background:#12303d;color:#a9ddec;font:900 14px/1 var(--mono);cursor:pointer}
-.discovery-status{display:flex;justify-content:space-between;align-items:end;gap:20px;padding:10px 0 24px}
-.discovery-status strong{display:block;margin-top:6px;color:#d9eaf0;font-size:12px;font-weight:700}
-.discovery-status>span{color:#5f7783;font:900 7px var(--mono);letter-spacing:.08em;text-transform:uppercase}
-.section-label{display:flex;justify-content:space-between;align-items:end;gap:40px;padding:6px 0 18px}
-.section-label h2{margin:9px 0 0;font-size:clamp(32px,4vw,48px);line-height:.94;letter-spacing:-.065em}
-.section-label>p{max-width:390px;margin:0;color:#6e858f;font-size:10px;line-height:1.75}
-.editorial-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(290px,.65fr);grid-template-rows:1fr 1fr;gap:11px}
-.story-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:20px;background:#09141b;color:var(--text);text-decoration:none;transition:transform .28s,border-color .28s,box-shadow .28s}
-.story-card:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--accent) 11%,transparent),transparent 48%);opacity:0;transition:opacity .25s;z-index:3}
-.story-card:hover{border-color:color-mix(in srgb,var(--accent) 50%,#203944);box-shadow:0 26px 70px #0008}
-.story-card:hover:before{opacity:1}
-.lead-story{grid-row:1 / span 2;display:grid;grid-template-rows:auto 1fr}
-.lead-media,.support-media,.latest-media{position:relative;overflow:hidden;background:#0a181f;aspect-ratio:16/9}
-.lead-media{min-height:0}
-.lead-media img,.support-media img,.latest-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s cubic-bezier(.2,.7,.2,1),filter .35s}
-.story-card:hover .lead-media img,.story-card:hover .support-media img,.story-card:hover .latest-media img{transform:scale(1.045);filter:saturate(1.08)}
-.lead-media:after,.support-media:after,.media-shade{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(180deg,transparent,#061017e8)}
-.image-fade{position:absolute;inset:0;background:linear-gradient(120deg,#04101810 30%,#04101880 100%)}
-.feature-tag{position:absolute;left:16px;top:16px;padding:7px 9px;border:1px solid color-mix(in srgb,var(--accent) 50%,#29424d);border-radius:999px;background:#07131dd9;color:#bdefff;font:900 7px var(--mono);letter-spacing:.1em;z-index:2}
-.lead-copy{position:relative;padding:23px 24px 24px;z-index:4}
-.story-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:#657d88;font:800 7px var(--mono);letter-spacing:.02em;text-transform:uppercase}
-.category-label{color:var(--accent)!important}
-.lead-copy h2{margin:12px 0 8px;max-width:760px;font-size:clamp(30px,3vw,45px);line-height:.98;letter-spacing:-.06em}
-.story-description,.lead-subtitle{margin:0;color:#7f949e;font-size:10px;line-height:1.7}
-.lead-subtitle{margin-bottom:6px;color:#b8cbd2;font-weight:700}
-.story-link{display:inline-flex;align-items:center;gap:7px;margin-top:16px;color:#c8effa;font:900 7px var(--mono);letter-spacing:.05em;text-transform:uppercase}
-.story-link b{font-size:13px}
-.support-story{display:grid;grid-template-rows:auto 1fr;min-height:0}
-.support-media{min-height:0}
-.support-media img{aspect-ratio:16/9}
-.support-index{position:absolute;left:10px;bottom:10px;color:#d9f8ff;font:900 9px var(--mono);z-index:2;text-shadow:0 2px 12px #000}
-.support-copy{display:flex;flex-direction:column;justify-content:center;padding:17px;z-index:4}
-.support-copy h3{margin:9px 0 0;font-size:18px;line-height:1.06;letter-spacing:-.035em}
-.latest-section{margin-top:66px}
-.latest-label{padding-bottom:18px;border-bottom:1px solid #1a2c35}
-.latest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
-.latest-card{display:grid;grid-template-rows:auto 1fr;min-height:0}
-.latest-media{min-height:0;aspect-ratio:16/9}
-.latest-media img{height:100%}
-.card-arrow{position:absolute;right:13px;top:13px;display:grid;place-items:center;width:30px;height:30px;border:1px solid #ffffff1c;border-radius:50%;background:#07131bd1;color:#9edff0;font:900 12px var(--mono);z-index:2;transition:.2s}
-.story-card:hover .card-arrow{transform:translate(2px,-2px);background:#0b202a;color:#d7f9ff}
-.latest-body{padding:18px 18px 19px;z-index:4}
-.latest-body h3{margin:11px 0 8px;font-size:20px;line-height:1.08;letter-spacing:-.035em}
-.latest-body p{margin:0;color:#7d939d;font-size:10px;line-height:1.7}
-.empty-state{display:grid;gap:5px;padding:35px;margin-top:12px;border:1px dashed #2c4754;border-radius:16px;text-align:center;color:#6d858f;background:#08141b}
-.empty-state strong{color:#cceaf1;font-size:13px}
-.empty-state span{font-size:9px}
-.archive-strip{display:grid;grid-template-columns:290px minmax(0,1fr);gap:45px;margin-top:76px;padding:32px 0 10px;border-top:1px solid #1a2b34}
-.archive-strip h2{margin:9px 0 0;font-size:clamp(31px,3.6vw,45px);line-height:.94;letter-spacing:-.06em}
-.topic-directory{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.topic-directory a{display:grid;grid-template-columns:38px 1fr 20px;align-items:center;gap:12px;padding:12px;border:1px solid #1b303a;border-radius:14px;background:#08131a;color:var(--text);text-decoration:none;transition:.2s}
-.topic-directory a:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 50%,#20343d);background:#0a171f}
-.directory-count{color:var(--accent);font:900 10px var(--mono)}
-.topic-directory b{display:block;font-size:11px}
-.topic-directory small{display:block;margin-top:3px;color:#607983;font:700 7px var(--mono);text-transform:uppercase}
-.topic-directory strong{color:#63808c;font:900 13px var(--mono)}
+.journal{--accent:var(--blue,#67dbff);position:relative;background:var(--bg);color:var(--text);padding-bottom:120px;overflow:clip}
+.journal:before{content:"";position:absolute;inset:0 0 auto;height:720px;pointer-events:none;background:radial-gradient(60% 55% at 85% 0%,#55c7f224,transparent 70%),radial-gradient(40% 40% at 0% 30%,#7a6bff10,transparent 70%)}
+.wrap{position:relative;width:min(1240px,calc(100% - 40px));margin-inline:auto}
+
+/* masthead */
+.masthead{padding:64px 0 32px;display:flex;align-items:end;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.masthead h1{margin:0;font-size:clamp(44px,6vw,76px);line-height:1;letter-spacing:-.04em;font-weight:800}
+.masthead p{margin:0;max-width:44ch;color:#8fa5af;font-size:16px;line-height:1.6}
+
+/* shared bits */
+.chip{display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.01em}
+.chip i,.topic i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;color:#7c929c;font-size:13px}
+.meta > span + span:before,.meta time + span:before{content:"";display:inline-block;width:3px;height:3px;margin-right:14px;border-radius:50%;background:#48616c;vertical-align:middle}
+.cover-fallback{position:absolute;inset:0;display:grid;place-items:center;color:#1d3846;font-size:64px;font-weight:900;letter-spacing:-.05em;background:linear-gradient(135deg,#0c1e29,#08131a)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(280px,1fr);gap:16px}
+.cover,.mini{position:relative;display:block;overflow:hidden;border:1px solid #1d3441;border-radius:24px;background:#08131a;color:#fff;text-decoration:none;isolation:isolate}
+.cover{min-height:560px;display:flex;align-items:end}
+.cover img,.mini img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform 1.1s cubic-bezier(.2,.7,.2,1)}
+.cover img{animation:settle 1.6s cubic-bezier(.2,.7,.2,1) both}
+@keyframes settle{from{transform:scale(1.07)}to{transform:scale(1)}}
+.cover:hover img,.mini:hover img{transform:scale(1.035)}
+.cover-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#04101800 25%,#041018cc 68%,#041018f5 100%)}
+.cover-body{width:100%;max-width:780px;padding:40px}
+.cover-body h2{margin:14px 0 12px;font-size:clamp(30px,4vw,52px);line-height:1.04;letter-spacing:-.035em;font-weight:800;text-wrap:balance}
+.cover-body p{margin:0 0 24px;max-width:60ch;color:#bfd0d7;font-size:16px;line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cover-foot{display:flex;align-items:center;flex-wrap:wrap;gap:12px 22px}
+.btn{display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:999px;background:var(--accent);color:#04121a;font-size:14px;font-weight:800;transition:transform .2s,box-shadow .2s}
+.cover:hover .btn{transform:translateY(-1px);box-shadow:0 10px 30px color-mix(in srgb,var(--accent) 40%,transparent)}
+.cover .meta{color:#a9bcc5}
+.hero-side{display:grid;grid-auto-rows:1fr;gap:16px}
+.mini{display:flex;align-items:end;min-height:272px}
+.mini .cover-shade{background:linear-gradient(180deg,#04101815 15%,#041018f0 100%)}
+.mini-body{padding:22px}
+.mini-body h3{margin:10px 0 12px;font-size:21px;line-height:1.18;letter-spacing:-.02em;font-weight:750;text-wrap:balance;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mini .meta{color:#a9bcc5}
+
+/* filter bar */
+.bar-wrap{position:sticky;top:64px;z-index:30;margin-top:44px;background:linear-gradient(180deg,var(--bg) 70%,transparent);backdrop-filter:blur(12px)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0}
+.topics{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.topics::-webkit-scrollbar{display:none}
+.topic{display:inline-flex;align-items:center;gap:8px;flex:none;height:40px;padding:0 15px;border:1px solid #1f3743;border-radius:999px;background:#08141b;color:#9bb0ba;font-size:14px;font-weight:600;text-decoration:none;transition:background .2s,border-color .2s,color .2s}
+.topic b{color:#5d7782;font-size:12px;font-weight:700}
+.topic:hover{border-color:#34596b;color:#e3f6fc}
+.topic.active{background:#e6f9ff;border-color:#e6f9ff;color:#06141c}
+.topic.active b{color:#3d6577}
+.topic.active i{box-shadow:none}
+.search{display:flex;align-items:center;gap:10px;flex:0 0 280px;height:40px;padding:0 12px 0 14px;border:1px solid #26414e;border-radius:999px;background:#08141b;color:#6f8893;transition:border-color .2s,box-shadow .2s}
+.search:focus-within{border-color:var(--blue,#67dbff);box-shadow:0 0 0 3px #67dbff22}
+.search input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#e0f2f8;font:500 14px inherit;font-family:inherit}
+.search input::placeholder{color:#5c7580}
+.search kbd{display:grid;place-items:center;width:22px;height:22px;border:1px solid #2f4b58;border-radius:6px;color:#6f8893;font:700 12px inherit;font-family:inherit}
+.search input:focus ~ kbd{display:none}
+.search button{width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#15323f;color:#bfe6f3;font-size:16px;line-height:1;cursor:pointer}
+.search:has(button:not([hidden])) kbd{display:none}
+.topic:focus-visible,.card:focus-visible,.cover:focus-visible,.mini:focus-visible,.search button:focus-visible,.empty button:focus-visible{outline:2px solid var(--blue,#67dbff);outline-offset:3px}
+
+/* feed */
+.feed{padding-top:28px}
+.feed-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:22px}
+.feed-head h2{margin:0;font-size:clamp(24px,2.6vw,32px);letter-spacing:-.03em;font-weight:800}
+.count{color:#7c929c;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.card{display:flex;flex-direction:column;overflow:hidden;border:1px solid #1a2f3a;border-radius:20px;background:linear-gradient(180deg,#0a1720,#08121a);color:var(--text);text-decoration:none;transition:transform .3s,border-color .3s,box-shadow .3s}
+.card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--accent) 45%,#1a2f3a);box-shadow:0 24px 60px #0009,0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent)}
+.thumb{position:relative;aspect-ratio:16/10;overflow:hidden;background:#0a181f}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.card:hover .thumb img{transform:scale(1.05)}
+.card-body{display:flex;flex-direction:column;gap:10px;flex:1;padding:20px 22px 22px}
+.card-body h3{margin:0;font-size:21px;line-height:1.22;letter-spacing:-.02em;font-weight:750;text-wrap:balance}
+.card-body p{margin:0;color:#8fa5af;font-size:15px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card-body .meta{margin-top:auto;padding-top:8px}
+
+.empty{display:grid;justify-items:center;gap:8px;margin-top:8px;padding:56px 24px;border:1px dashed #2c4754;border-radius:20px;background:#08141b;text-align:center;color:#8fa5af}
+.empty strong{color:#e0f2f8;font-size:18px}
+.empty button{margin-top:10px;height:40px;padding:0 18px;border:1px solid #34596b;border-radius:999px;background:transparent;color:#d7f3fb;font:700 14px inherit;font-family:inherit;cursor:pointer}
+.empty button:hover{background:#0d2430}
 [hidden]{display:none!important}
+
 @media(max-width:1020px){
-  .intro-grid{grid-template-columns:1fr}
-  .library-stats{max-width:380px}
-  .discovery-bar{align-items:stretch;flex-direction:column}
-  .article-search{flex:1 1 auto;width:min(100%,360px)}
-  .editorial-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
-  .lead-story{grid-column:1 / -1;grid-row:auto}
-  .support-story{min-height:0}
-  .archive-strip{grid-template-columns:1fr}
+  .hero{grid-template-columns:1fr}
+  .hero-side{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
+  .cover{min-height:480px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bar{flex-direction:column;align-items:stretch}
+  .search{flex:none;width:100%}
 }
-@media(max-width:720px){
-  .wrap{width:min(calc(100% - 28px),1240px)}
-  .hub-intro{padding:58px 0 42px}
-  .intro-copy-wrap h1{font-size:clamp(45px,12vw,72px)}
-  .library-stats{grid-template-columns:1fr 1fr}
-  .discovery-shell{padding-top:16px}
-  .discovery-bar{top:58px}
-  .topic-list{margin-right:-2px}
-  .article-search{width:100%}
-  .discovery-status{align-items:start;flex-direction:column;gap:8px}
-  .section-label{align-items:start;flex-direction:column;gap:12px}
-  .editorial-grid{grid-template-columns:1fr}
-  .lead-story{grid-column:auto}
-  .support-story{min-height:155px}
-  .latest-grid{grid-template-columns:1fr}
-  .archive-strip{gap:24px}
-}
-@media(max-width:520px){
-  .wrap{width:calc(100% - 20px)}
-  .intro-points{display:grid;gap:8px}
-  .topic{padding:8px 9px}
+@media(max-width:680px){
+  .wrap{width:calc(100% - 28px)}
+  .masthead{padding:44px 0 24px}
+  .cover{min-height:440px}
+  .cover-body{padding:24px}
+  .hero-side{grid-template-columns:1fr}
+  .mini{min-height:230px}
+  .bar-wrap{top:58px;margin-top:32px}
+  .grid{grid-template-columns:1fr}
   .topic b{display:none}
-  .lead-media{min-height:0}
-  .lead-copy{padding:19px}
-  .lead-copy h2{font-size:29px}
-  .support-story{grid-template-rows:auto 1fr}
-  .support-copy{padding:14px}
-  .support-copy h3{font-size:15px}
-  .latest-card{grid-template-rows:auto 1fr;min-height:0}
-  .latest-media{min-height:0;aspect-ratio:16/9}
-  .latest-body{padding:15px}
-  .latest-body h3{font-size:18px}
-  .topic-directory{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){
-  .story-card,.lead-media img,.support-media img,.latest-media img,.card-arrow{transition:none}
+  .cover img{animation:none}
+  .cover img,.mini img,.thumb img,.card,.btn{transition:none}
+  .card:hover{transform:none}
 }
 </style>
-</main>
 </BaseLayout>
