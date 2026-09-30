@@ -55,17 +55,12 @@ Those future chapters are not live yet, so they should not be presented as guara
 
 ## Quick status
 
-
-
 | Status | Current information |
 | :--- | :--- |
-| <strong>Live now</strong> | Stellar: Libra |
-| <strong>Community reports</strong> | More Zodiac chapters |
-| <strong>Pattern</strong> | Zodiac timing |
-| <strong>Not confirmed</strong> | Future player pools and exact schedules |
-
-
-
+| **Live now** | Stellar: Libra |
+| **Community reports** | More Zodiac chapters |
+| **Pattern** | Zodiac timing |
+| **Not confirmed** | Future player pools and exact schedules |
 
 # What's confirmed
 
@@ -119,25 +114,20 @@ The expectation around Scorpio is mostly based on the pattern created by the fir
 
 ## The calendar lines up
 
-
-
 | Zodiac Sign | Traditional Zodiac Period |
 | :--- | :--- |
-| <strong>Libra</strong> | Sep 23 – Oct 22 |
-| <strong>Scorpio</strong> | Oct 23 – Nov 21 |
-| <strong>Sagittarius</strong> | Nov 22 – Dec 21 |
-| <strong>Capricorn</strong> | Dec 22 – Jan 19 |
-| <strong>Aquarius</strong> | Jan 20 – Feb 18 |
-| <strong>Pisces</strong> | Feb 19 – Mar 20 |
-| <strong>Aries</strong> | Mar 21 – Apr 19 |
-| <strong>Taurus</strong> | Apr 20 – May 20 |
-| <strong>Gemini</strong> | May 21 – Jun 20 |
-| <strong>Cancer</strong> | Jun 21 – Jul 22 |
-| <strong>Leo</strong> | Jul 23 – Aug 22 |
-| <strong>Virgo</strong> | Aug 23 – Sep 22 |
-
-
-
+| **Libra** | Sep 23 – Oct 22 |
+| **Scorpio** | Oct 23 – Nov 21 |
+| **Sagittarius** | Nov 22 – Dec 21 |
+| **Capricorn** | Dec 22 – Jan 19 |
+| **Aquarius** | Jan 20 – Feb 18 |
+| **Pisces** | Feb 19 – Mar 20 |
+| **Aries** | Mar 21 – Apr 19 |
+| **Taurus** | Apr 20 – May 20 |
+| **Gemini** | May 21 – Jun 20 |
+| **Cancer** | Jun 21 – Jul 22 |
+| **Leo** | Jul 23 – Aug 22 |
+| **Virgo** | Aug 23 – Sep 22 |
 
 The first Stellar chapter already lines up closely with this calendar.
 
@@ -157,19 +147,14 @@ EA can change event timing, extend content, overlap chapters, or use a completel
 
 The following is a planning model based on Zodiac timing rather than a confirmed EA roadmap.
 
-
-
 | Chapter | Possible window | Current status |
 | :--- | :--- | :--- |
-| <strong>Libra</strong> | Sep 24 – Oct 22 | <strong>Live</strong> |
-| <strong>Scorpio</strong> | Late Oct – Late Nov | <strong>Reported / plausible</strong> |
-| <strong>Sagittarius</strong> | Late Nov – Late Dec | <strong>Reported / plausible</strong> |
-| <strong>Capricorn</strong> | Late Dec – Jan | <strong>Unconfirmed</strong> |
-| <strong>Aquarius</strong> | Jan – Feb | <strong>Unconfirmed</strong> |
-| <strong>Pisces</strong> | Feb – Mar | <strong>Unconfirmed</strong> |
-
-
-
+| **Libra** | Sep 24 – Oct 22 | **Live** |
+| **Scorpio** | Late Oct – Late Nov | **Reported / plausible** |
+| **Sagittarius** | Late Nov – Late Dec | **Reported / plausible** |
+| **Capricorn** | Late Dec – Jan | **Unconfirmed** |
+| **Aquarius** | Jan – Feb | **Unconfirmed** |
+| **Pisces** | Feb – Mar | **Unconfirmed** |
 
 The important word here is **possible**.
 
@@ -289,16 +274,11 @@ The pattern is interesting, but it is still a **pattern rather than an official 
 
 This is the simplest way to follow Stellar without mixing different levels of evidence.
 
-
-
 | Category | What belongs here |
 | :--- | :--- |
-| <strong>Confirmed</strong> | Stellar Libra is live, Libra launched on September 24, Libra uses Zodiac branding, Stellar Draft exists |
-| <strong>Reported</strong> | Community reporting describes Scorpio, Sagittarius and additional possible Zodiac chapters |
-| <strong>Not confirmed</strong> | Future player lists, exact release dates, future Token names, voucher distribution and future mechanics |
-
-
-
+| **Confirmed** | Stellar Libra is live, Libra launched on September 24, Libra uses Zodiac branding, Stellar Draft exists |
+| **Reported** | Community reporting describes Scorpio, Sagittarius and additional possible Zodiac chapters |
+| **Not confirmed** | Future player lists, exact release dates, future Token names, voucher distribution and future mechanics |
 
 Keeping these categories separate is especially important for a live game because plans can change before a future chapter reaches the live client.
 
