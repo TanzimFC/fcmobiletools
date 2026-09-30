@@ -39,18 +39,13 @@ Players need **700 Numero Tokens** to claim him.
 
 The other major rewards are:
 
-
-
 | Reward | Cost |
 | :--- | ---: |
 | 6M Coins + 1,500 Gems | 400 Tokens |
 | 500 Rank Up Points | 500 Tokens |
 | 2 FC Draft Vouchers | 500 Tokens |
 | 1,000 Star Shards | 600 Tokens |
-| <strong>117 OVR CB Van Dijk</strong> | <strong>700 Tokens</strong> |
-
-
-
+| **117 OVR CB Van Dijk** | **700 Tokens** |
 
 The full set of major rewards requires around **2,700 Numero Tokens** if you want to claim everything.
 
@@ -82,17 +77,12 @@ Week 2 also introduces a temporary login reward section called **The 4hield**.
 
 You simply need to log in on four different days.
 
-
-
 | Login | Reward |
 | :--- | :--- |
 | Day 1 | 4s Profile Banner |
 | Day 2 | 444 Rank Up Points |
 | Day 3 | 114–119 OVR Numero Player |
 | Day 4 | 444 Star Shards |
-
-
-
 
 This is probably the easiest part of Week 2 to complete because it doesn't require significant gameplay grinding.
 
