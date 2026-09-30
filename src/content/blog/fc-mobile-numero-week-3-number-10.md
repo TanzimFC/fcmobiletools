@@ -48,42 +48,19 @@ Rooney costs **700 Numero Tokens**.
 
 The rest of the reward path includes:
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Reward</th>
-    <th scope="col" style="text-align:right">Cost</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left">6,000,000 Coins + 1,500 Gems</td>
-      <td style="text-align:right">400 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">400 Star Shards</td>
-      <td style="text-align:right">200 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">500 Rank Up Points</td>
-      <td style="text-align:right">500 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">FC Draft Voucher</td>
-      <td style="text-align:right">250 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">FC Draft Voucher</td>
-      <td style="text-align:right">250 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">600 Star Shards</td>
-      <td style="text-align:right">400 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>117 OVR ST Rooney</strong></td>
-      <td style="text-align:right"><strong>700 Tokens</strong></td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Reward | Cost |
+| :--- | ---: |
+| 6,000,000 Coins + 1,500 Gems | 400 Tokens |
+| 400 Star Shards | 200 Tokens |
+| 500 Rank Up Points | 500 Tokens |
+| FC Draft Voucher | 250 Tokens |
+| FC Draft Voucher | 250 Tokens |
+| 600 Star Shards | 400 Tokens |
+| <strong>117 OVR ST Rooney</strong> | <strong>700 Tokens</strong> |
+
+
 
 
 The basic reward structure is similar to the previous Numero chapters, but the featured player changes to Rooney.
@@ -155,58 +132,28 @@ Week 3 also brings a new set of Draft pools.
 
 ### Numero 10 A Draft
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Player</th>
-    <th scope="col" style="text-align:right">OVR</th>
-    <th scope="col" style="text-align:left">Position</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Zidane</strong></td>
-      <td style="text-align:right">122</td>
-      <td style="text-align:left">CM</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Hazard</strong></td>
-      <td style="text-align:right">121</td>
-      <td style="text-align:left">LW</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Matheus Cunha</strong></td>
-      <td style="text-align:right">120</td>
-      <td style="text-align:left">CAM</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Player | OVR | Position |
+| :--- | ---: | :--- |
+| <strong>Zidane</strong> | 122 | CM |
+| <strong>Hazard</strong> | 121 | LW |
+| <strong>Matheus Cunha</strong> | 120 | CAM |
+
+
 
 
 ### Numero 10 B Draft
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Player</th>
-    <th scope="col" style="text-align:right">OVR</th>
-    <th scope="col" style="text-align:left">Position</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Dembélé</strong></td>
-      <td style="text-align:right">122</td>
-      <td style="text-align:left">ST</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Bergkamp</strong></td>
-      <td style="text-align:right">121</td>
-      <td style="text-align:left">ST</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Musiala</strong></td>
-      <td style="text-align:right">120</td>
-      <td style="text-align:left">CAM</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Player | OVR | Position |
+| :--- | ---: | :--- |
+| <strong>Dembélé</strong> | 122 | ST |
+| <strong>Bergkamp</strong> | 121 | ST |
+| <strong>Musiala</strong> | 120 | CAM |
+
+
 
 
 These are arguably some of the most attacking-oriented Draft pools of the Numero event so far.
@@ -229,64 +176,20 @@ The Week 3 player pool also contains several other high-rated players available 
 
 The currently reported shard costs include:
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Player</th>
-    <th scope="col" style="text-align:right">OVR</th>
-    <th scope="col" style="text-align:left">Position</th>
-    <th scope="col" style="text-align:right">Shards</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Zidane</strong></td>
-      <td style="text-align:right">122</td>
-      <td style="text-align:left">CM</td>
-      <td style="text-align:right">68,310</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Dembélé</strong></td>
-      <td style="text-align:right">122</td>
-      <td style="text-align:left">ST</td>
-      <td style="text-align:right">61,755</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Hazard</strong></td>
-      <td style="text-align:right">121</td>
-      <td style="text-align:left">LW</td>
-      <td style="text-align:right">29,210</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Bergkamp</strong></td>
-      <td style="text-align:right">121</td>
-      <td style="text-align:left">ST</td>
-      <td style="text-align:right">21,390</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Musiala</strong></td>
-      <td style="text-align:right">120</td>
-      <td style="text-align:left">CAM</td>
-      <td style="text-align:right">17,135</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Matheus Cunha</strong></td>
-      <td style="text-align:right">120</td>
-      <td style="text-align:left">CAM</td>
-      <td style="text-align:right">14,720</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Carrasco</strong></td>
-      <td style="text-align:right">119</td>
-      <td style="text-align:left">LW</td>
-      <td style="text-align:right">5,300</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Nico Paz</strong></td>
-      <td style="text-align:right">118</td>
-      <td style="text-align:left">CAM</td>
-      <td style="text-align:right">2,500</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Player | OVR | Position | Shards |
+| :--- | ---: | :--- | ---: |
+| <strong>Zidane</strong> | 122 | CM | 68,310 |
+| <strong>Dembélé</strong> | 122 | ST | 61,755 |
+| <strong>Hazard</strong> | 121 | LW | 29,210 |
+| <strong>Bergkamp</strong> | 121 | ST | 21,390 |
+| <strong>Musiala</strong> | 120 | CAM | 17,135 |
+| <strong>Matheus Cunha</strong> | 120 | CAM | 14,720 |
+| <strong>Carrasco</strong> | 119 | LW | 5,300 |
+| <strong>Nico Paz</strong> | 118 | CAM | 2,500 |
+
+
 
 
 Pelé is listed separately as the Premium Box-exclusive player.
