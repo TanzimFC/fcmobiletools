@@ -22,7 +22,7 @@ const checks = [
   [lexical.includes('$patchStyleText'), 'font/color/highlight styling must use Lexical style patching'],
   [!blog.includes('cacheTtl:15') && blog.includes("cache:'no-store'"), 'public Supabase reads must not use the old edge cache'],
   [!blog.includes("Authorization:'Bearer '"), 'public Supabase reads must use the publishable-key API contract'],
-  [!worker.includes('\\\\\\\\') , 'Worker must not contain doubled backslash regex escapes'],
+  [!worker.includes('\\\\') , 'Worker must not contain doubled backslash regex escapes'],
   [worker.includes("'cache-control':'no-store'"), 'editorial API responses must be uncacheable']
 ];
 
