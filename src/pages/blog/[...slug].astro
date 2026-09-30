@@ -7,6 +7,7 @@ import { relatedTo, resolveTools, seriesIn, img, fmtDate, iso, hostOf, initial }
 import { getPublishedPosts } from '../../lib/blog-supabase.js';
 
 export const prerender = false;
+Astro.response.headers.set('Cache-Control','public, max-age=0, s-maxage=15, stale-while-revalidate=60');
 
 const posts = await getPublishedPosts();
 const slug = String(Astro.params.slug || '').replace(/\/$/,'');
