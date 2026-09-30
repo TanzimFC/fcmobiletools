@@ -1,12 +1,12 @@
 ---
+export const prerender = false;
+Astro.response.headers.set('Cache-Control','public, max-age=0, s-maxage=15, stale-while-revalidate=60');
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import { getPublishedPosts } from '../lib/blog-supabase.js';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
 import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
 
-const latestArticles = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft))
-  .sort((a, b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0))
-  .slice(0, 5);
+const latestArticles = (await getPublishedPosts()).slice(0, 5);
 
 const activeCodes = REDEEM_CODES.filter((item) => item.status === 'active');
 const featuredCode = activeCodes[0] ?? REDEEM_CODES[0] ?? null;
