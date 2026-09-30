@@ -3,19 +3,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostCard from '../../components/blog/PostCard.astro';
 import BlogEffects from '../../components/blog/BlogEffects.astro';
 import '../../styles/blog.css';
-import { relatedTo, resolveTools, seriesIn, img, fmtDate, iso, hostOf, initial } from '../../lib/blog.js';
-import { getPosts } from '../../lib/blog.js';
+import { render } from 'astro:content';
+import { relatedTo, resolveTools, seriesIn, img, fmtDate, iso, hostOf, initial, getPosts } from '../../lib/blog.js';
 
 
 export async function getStaticPaths() {
   const posts = await getPosts();
-  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { slug: post.slug } }));
 }
 
 const posts = await getPosts();
-const slug = String(Astro.params.slug || '').replace(/\/$/,'');
-const foundPost = Astro.props?.post || posts.find((p) => p.slug === slug);
-if (!foundPost) Astro.response.status = 404;
+const slug = String(Astro.props?.slug || Astro.params.slug || '').replace(/\/$/,'');
+const foundPost = posts.find((p) => p.slug === slug);
+if (!foundPost) throw new Error('Local article not found: ' + slug);
+const { Content, headings } = await render(foundPost.entry);
 const post = foundPost || {
   slug,
   href:'/blog/'+slug+'/',
@@ -34,7 +35,7 @@ const post = foundPost || {
   toc:[],bodyHtml:''
 };
 const d = post.entry.data;
-const toc = post?.toc ?? [];
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3).map((h) => ({ text: h.text, id: h.slug, depth: h.depth }));
 const tools = post ? resolveTools(d.relatedTools) : [];
 const related = post ? relatedTo(post, posts, 3) : [];
 
@@ -175,7 +176,7 @@ const breadcrumbSchema = {
 
         <div class="bl-prose" id="blProse">
           {/* Articles saved with front matter only would otherwise render a blank page */}
-          {foundPost ? (post.words > 0 ? <div set:html={post.bodyHtml}></div> : <p>{post.description}</p>) : <div class="bl-empty"><strong>Article not found.</strong><span>This article may have been unpublished or moved.</span><a class="bl-btn" href="/blog">Browse all articles</a></div>}
+          <Content />
         </div>
 
         {tools.length ? (
