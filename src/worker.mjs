@@ -1004,5 +1004,5 @@ export default { async fetch(request,env) {
     if(creator && url.pathname === '/admin/dashboard.html') return env.ASSETS.fetch(request);
     return new Response('Not found',{status:404});
   }
-  return env.ASSETS.fetch(request);
+  return astroApp.fetch(request,env,ctx);
 } };
