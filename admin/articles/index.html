@@ -466,12 +466,36 @@ function articleEditor(item) {
     if(!file)return;
     event.preventDefault();event.stopPropagation();uploadArticleImage(file,false);
   });
-  document.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{dirty=true;$('#saveHint').textContent='Unsaved changes';}));
-  const save=async status=>{
+  let autosaveTimer=null;
+  let autosaveBusy=false;
+  const setDirty=()=>{
+    dirty=true;
+    $('#saveHint').textContent='Unsaved changes';
+  };
+  const scheduleAutosave=()=>{
+    clearTimeout(autosaveTimer);
+    autosaveTimer=setTimeout(async()=>{
+      if(!dirty || autosaveBusy || !$('#articleTitle')?.value.trim())return;
+      const currentStatus=$('#articleStatus')?.value||'draft';
+      if(currentStatus==='published')return;
+      autosaveBusy=true;
+      try{
+        await save(currentStatus==='review'?'review':'draft',{silent:true});
+      }finally{
+        autosaveBusy=false;
+      }
+    },3500);
+  };
+  window.articleScheduleAutosave=scheduleAutosave;
+  document.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{setDirty();scheduleAutosave();}));
+  const save=async(status,{silent=false}={})=>{
     const title=$('#articleTitle').value.trim();
-    if(!title){state('Article title is required',false);$('#articleTitle').focus();return;}
+    if(!title){
+      if(!silent){state('Article title is required',false);$('#articleTitle').focus();}
+      return false;
+    }
     const button=status==='published'?$('#articlePublish'):status==='review'?$('#articleReview'):$('#articleSave');
-    busy(button,true);
+    if(!silent)busy(button,true);
     try{
       const payload={...a,title,subtitle:$('#articleSubtitle').value.trim(),category:$('#articleType').selectedOptions[0]?.textContent||'Guides',type:$('#articleType').value,featured:workspaceRole==='admin'?Boolean($('#articleFeatured')?.checked):Boolean(a.featured),tags:$('#articleTags').value.split(',').map(x=>x.trim()).filter(Boolean),description:$('#articleDescription').value.trim(),image:$('#articleImagePreview img')?.src||a.image||'',slug:$('#articleSlug').value.trim()||title,author:$('#articleAuthor').value.trim()||'TanzimFC',status,bodyHtml:lexicalEditor?lexicalEditor.getHTML():editor.innerHTML,contentJson:lexicalEditor?lexicalEditor.getJSON():{},body:lexicalEditor?lexicalEditor.getHTML():editor.innerHTML,
         imageAlt:$('#articleImageAlt').value.trim(),
@@ -479,10 +503,25 @@ function articleEditor(item) {
         seoTitle:$('#articleSeoTitle').value.trim(),
         seoDescription:$('#articleSeoDescription').value.trim(),
         createOnly:!item};
-      const endpoint=workspaceRole==='creator'?(item?'/articles/'+item.data.id:'/articles'):'/articles';await api(endpoint,{method:item&&workspaceRole==='creator'?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
-      dirty=false;$('#saveHint').textContent=status==='published'?'Published':'Saved just now';state(status==='published'?'Article published':status==='review'?'Sent to approval queue':'Draft saved');
-      await articlesSection(status==='published'?'published':status==='review'?'review':'draft'); refreshInboxBadge();
-    }catch(err){state(err.message,false)}finally{busy(button,false);}
+      const endpoint=workspaceRole==='creator'?(item?'/articles/'+item.data.id:'/articles'):'/articles';
+      await api(endpoint,{method:item&&workspaceRole==='creator'?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+      dirty=false;
+      if(silent){
+        $('#saveHint').textContent='Saved automatically';
+      }else{
+        $('#saveHint').textContent=status==='published'?'Published':'Saved just now';
+        state(status==='published'?'Article published':status==='review'?'Sent to approval queue':'Draft saved');
+        await articlesSection(status==='published'?'published':status==='review'?'review':'draft');
+        refreshArticleInboxBadge();
+      }
+      return true;
+    }catch(err){
+      if(!silent)state(err.message,false);
+      else $('#saveHint').textContent='Autosave failed — changes still local';
+      return false;
+    }finally{
+      if(!silent)busy(button,false);
+    }
   };
   $('#articleSave').onclick=()=>save('draft');
   $('#articleReview').onclick=()=>save('review');
