@@ -1,7 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
-const posts=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft)).sort((a,b)=>(b.data.publishedAt?.valueOf()??0)-(a.data.publishedAt?.valueOf()??0)).slice(0,6);
+import { getPublishedPosts } from '../../lib/blog-supabase.js';
+const remotePosts=await getPublishedPosts();
+const posts=remotePosts.slice(0,6);
 ---
 <BaseLayout title="Creators — FCMOBILETOOLS" description="Creators and community contributors behind FCMOBILETOOLS.">
 <main class="creator-page">
