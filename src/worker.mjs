@@ -103,6 +103,7 @@ async function authenticated(request, env) {
     return true;
   } catch { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'VALIDATION_EXCEPTION'}); return false; }
 }
+// Deployment retrigger: 2026-09-30T20:46+06:00
 const SUPABASE_DEFAULT_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
 
 function supabaseConfig(env){
