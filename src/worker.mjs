@@ -959,7 +959,7 @@ async function adminDashboard(request, env, url) {
   return new Response(patched,{status:asset.status,statusText:asset.statusText,headers});
 }
 
-export default { async fetch(request,env) {
+export default { async fetch(request,env,ctx) {
   const url=new URL(request.url);
   const hostHeader=(request.headers.get('host')||'').split(':')[0].toLowerCase();
 
