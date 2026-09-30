@@ -21,7 +21,7 @@ const optimizeCloudinary = (url, width) => {
 };
 
 const readingTime = (post) =>
-  post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
+  post.entry?.data?.readingTime ?? post.minutes ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
 
 const fmtDate = (d) =>
   d
@@ -282,15 +282,15 @@ const jsonLd = {
               <article class="editorial-feature">
                 <a href={`/blog/${latestArticles[0].slug}/`}>
                   <div class="editorial-feature__image">
-                    {latestArticles[0].data.image ? (
-                      <img src={optimizeCloudinary(latestArticles[0].data.image, 1100)} alt={latestArticles[0].data.title} width="1100" height="619" loading="lazy" decoding="async" />
+                    {latestArticles[0].cover ? (
+                      <img src={optimizeCloudinary(latestArticles[0].cover, 1100)} alt={latestArticles[0].title} width="1100" height="619" loading="lazy" decoding="async" />
                     ) : <span>FCM</span>}
                     <i>FEATURED</i>
                   </div>
                   <div class="editorial-feature__body">
-                    <div class="editorial-meta"><span>{latestArticles[0].data.category}</span>{latestArticles[0].data.publishedAt && <time datetime={new Date(latestArticles[0].data.publishedAt).toISOString()}>{fmtDate(latestArticles[0].data.publishedAt)}</time>}</div>
-                    <h3>{latestArticles[0].data.title}</h3>
-                    <p>{latestArticles[0].data.excerpt ?? latestArticles[0].data.description}</p>
+                    <div class="editorial-meta"><span>{latestArticles[0].category}</span>{latestArticles[0].date && <time datetime={new Date(latestArticles[0].date).toISOString()}>{fmtDate(latestArticles[0].date)}</time>}</div>
+                    <h3>{latestArticles[0].title}</h3>
+                    <p>{latestArticles[0].excerpt ?? latestArticles[0].description}</p>
                     <span class="premium-link">Read article <b>↗</b></span>
                   </div>
                 </a>
@@ -302,11 +302,11 @@ const jsonLd = {
                 <article class="editorial-row">
                   <a href={`/blog/${post.slug}/`}>
                     <div class="editorial-row__image">
-                      {post.data.image ? <img src={optimizeCloudinary(post.data.image, 420)} alt="" width="420" height="236" loading="lazy" decoding="async" /> : <span>FCM</span>}
+                      {post.cover ? <img src={optimizeCloudinary(post.cover, 420)} alt="" width="420" height="236" loading="lazy" decoding="async" /> : <span>FCM</span>}
                     </div>
                     <div class="editorial-row__body">
-                      <div class="editorial-meta"><span>{post.data.category}</span>{post.data.publishedAt && <time datetime={new Date(post.data.publishedAt).toISOString()}>{fmtDate(post.data.publishedAt)}</time>}</div>
-                      <h3>{post.data.title}</h3>
+                      <div class="editorial-meta"><span>{post.category}</span>{post.date && <time datetime={new Date(post.date).toISOString()}>{fmtDate(post.date)}</time>}</div>
+                      <h3>{post.title}</h3>
                       <b aria-hidden="true">↗</b>
                     </div>
                   </a>
