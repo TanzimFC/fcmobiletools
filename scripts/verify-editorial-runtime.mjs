@@ -15,7 +15,7 @@ const checks = [
   [admin.includes('createModal') || admin.includes('openModal') && admin.includes('editorLinkApply'), 'article link insertion must use the in-app link UI'],
   [admin.includes('currentArticleId') && admin.includes('result?.articleId'), 'new articles must adopt their database ID after first save'],
   [lexical.includes("lexical@0.50.0"), 'editor must use the verified Lexical runtime version'],
-  [lexical.includes('registerLink(editor)'), 'Lexical link plugin must be registered'],
+  [/registerLink\(editor,/.test(lexical), 'Lexical link plugin must be registered'],
   [lexical.includes('registerTablePlugin(editor)'), 'Lexical table plugin must be registered'],
   [lexical.includes('registerTableSelectionObserver(editor,true)'), 'Lexical table selection observer must be registered'],
   [lexical.includes('$insertTableRowAtSelection') && lexical.includes('$insertTableColumnAtSelection'), 'table row/column actions must use Lexical table utilities'],
