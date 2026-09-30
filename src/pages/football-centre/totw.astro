@@ -1,45 +1,289 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+
+/* ───────── EDIT THIS EACH WEEK ─────────
+   Players are listed in formation order (4-3-3):
+   GK, LB, CB, CB, RB, CM, CM, CM, LW, ST, RW → then bench.
+   Stats: pac, sho, pas, dri, def, phy (numbers). Leave null if unknown.
+   Set `bench: true` for subs. */
+const p = (pos, name = 'Add player', extra = {}) => ({
+  pos, name, ovr: null, club: '', nation: '',
+  pac: null, sho: null, pas: null, dri: null, def: null, phy: null,
+  skill: '', wf: '', note: '', bench: false, ...extra,
+});
+
+const weeks = [
+  {
+    id: 'w1',
+    label: 'Week 1',
+    date: 'Add date',
+    video: 'KvgulT3RtFE',
+    formation: '4-3-3',
+    players: [
+      p('GK'), p('LB'), p('CB'), p('CB'), p('RB'),
+      p('CM'), p('CM'), p('CM'),
+      p('LW'), p('ST'), p('RW'),
+      p('SUB', 'Add player', { bench: true }),
+      p('SUB', 'Add player', { bench: true }),
+    ],
+  },
+];
 ---
-<BaseLayout title="Football Centre · TOTW" description="FC Mobile Team of the Week tracker and player guide.">
+<BaseLayout title="Football Centre · TOTW" description="FC Mobile Team of the Week: squad, ratings, stats and comparison.">
   <main class="totw-page">
-    <section class="totw-hero">
+    <header class="top">
       <div>
-        <span class="eyebrow">TEAM OF THE WEEK</span>
-        <h1>TOTW <span>Player Hub</span></h1>
-        <p>Track the latest Team of the Week update, inspect player roles, and keep an eye on the release before spending your FC Mobile resources.</p>
-        <div class="totw-actions">
-          <a href="https://www.youtube.com/watch?v=KvgulT3RtFE" target="_blank" rel="noopener noreferrer">Watch the latest update ↗</a>
-          <span class="status-pill"><i></i> Update reference</span>
-        </div>
+        <span class="label">TEAM OF THE WEEK</span>
+        <h1>TOTW <span>Tracker</span></h1>
       </div>
-      <div class="totw-orb" aria-hidden="true"><b>TOTW</b><span>PLAYER<br/>HUB</span></div>
+      <div class="weeks" id="weeks" role="tablist" aria-label="Select week"></div>
+    </header>
+
+    <section class="toolbar card">
+      <input id="q" type="search" placeholder="Search player, club or nation…" aria-label="Search players" />
+      <div class="chips" id="posChips"></div>
+      <select id="sort" aria-label="Sort players">
+        <option value="squad">Sort: Squad order</option>
+        <option value="ovr">Sort: OVR</option>
+        <option value="pac">Sort: PAC</option>
+        <option value="sho">Sort: SHO</option>
+        <option value="pas">Sort: PAS</option>
+        <option value="dri">Sort: DRI</option>
+        <option value="def">Sort: DEF</option>
+        <option value="phy">Sort: PHY</option>
+      </select>
     </section>
 
-    <section class="totw-video card">
-      <div class="section-head"><div><span class="label">LATEST VIDEO</span><h2>What changed?</h2></div><span class="chip">VIDEO UPDATE</span></div>
-      <div class="video-frame"><iframe src="https://www.youtube.com/embed/KvgulT3RtFE" title="FC Mobile TOTW update" loading="lazy" allowfullscreen></iframe></div>
+    <section class="main-grid">
+      <div class="left">
+        <div class="pitch card" id="pitch" aria-label="Team of the Week formation"></div>
+        <div class="bench card"><span class="label">BENCH</span><div id="bench" class="bench-row"></div></div>
+      </div>
+
+      <aside class="right">
+        <div class="detail card" id="detail"></div>
+        <div class="compare card">
+          <div class="cmp-head"><span class="label">COMPARE</span><button id="clearCmp" type="button">Clear</button></div>
+          <div id="cmp"><p class="muted">Tick two players in the table to compare them side by side.</p></div>
+        </div>
+      </aside>
     </section>
 
-    <section class="section-head standalone"><div><span class="label">PLAYER FOCUS</span><h2>Build your shortlist</h2><p>Use this area for the players you actually care about instead of a long unverified card dump.</p></div></section>
-    <section class="player-grid">
-      <article class="player-card card"><div class="player-badge">LW</div><div><span class="label">ATTACK</span><h3>Best attacker</h3><p>Track the highest-impact forward once the weekly squad is confirmed.</p></div><span class="rating">—</span></article>
-      <article class="player-card card"><div class="player-badge">CM</div><div><span class="label">MIDFIELD</span><h3>Best creator</h3><p>Compare passing, pace and work rate before choosing a midfield upgrade.</p></div><span class="rating">—</span></article>
-      <article class="player-card card"><div class="player-badge">CB</div><div><span class="label">DEFENCE</span><h3>Best defender</h3><p>Watch for strong defensive stats, pace and useful in-game body types.</p></div><span class="rating">—</span></article>
-      <article class="player-card card"><div class="player-badge">GK</div><div><span class="label">GOALKEEPER</span><h3>Best keeper</h3><p>Compare handling, reflexes and height before committing your resources.</p></div><span class="rating">—</span></article>
+    <section class="card table-wrap">
+      <div class="table-head"><span class="label">ALL PLAYERS</span><span class="count" id="count"></span></div>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr><th></th><th>POS</th><th>Player</th><th>OVR</th><th>PAC</th><th>SHO</th><th>PAS</th><th>DRI</th><th>DEF</th><th>PHY</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
     </section>
 
-    <section class="totw-guide grid-two">
-      <article class="card"><span class="label">HOW TO USE</span><h3>1. Check the update</h3><p>Watch the linked update first, then confirm that the players are actually available in game.</p></article>
-      <article class="card"><span class="label">THEN COMPARE</span><h3>2. Pick for your squad</h3><p>Prioritize positions you need. A higher OVR is not automatically a better fit for every squad.</p></article>
-      <article class="card"><span class="label">RESOURCE CHECK</span><h3>3. Spend carefully</h3><p>Check your coins, points and upgrade path before buying or ranking a player.</p></article>
-      <article class="card"><span class="label">WEEKLY RESET</span><h3>4. Revisit each TOTW</h3><p>This hub is designed to be refreshed weekly as new Team of the Week information becomes available.</p></article>
+    <section class="card video">
+      <div class="table-head"><span class="label">UPDATE VIDEO</span><a id="videoLink" target="_blank" rel="noopener noreferrer">Open on YouTube ↗</a></div>
+      <div class="video-frame"><iframe id="vid" title="FC Mobile TOTW update" loading="lazy" allowfullscreen></iframe></div>
     </section>
   </main>
 
   <style>
-    .totw-page{width:min(1180px,calc(100% - 40px));margin:auto;padding:34px 0 90px}.totw-hero{min-height:360px;border:1px solid var(--border);border-radius:24px;background:radial-gradient(circle at 82% 35%,#55c7f222,transparent 28%),linear-gradient(145deg,#0e1a24,#091016);padding:54px;display:flex;align-items:center;justify-content:space-between;gap:30px;overflow:hidden}.totw-hero h1{font-size:clamp(42px,6vw,76px);line-height:.95;letter-spacing:-.055em;margin:12px 0 18px}.totw-hero h1 span{color:var(--blue)}.totw-hero p{max-width:620px;color:var(--muted);font-size:14px;line-height:1.75}.eyebrow,.label{font:800 9px var(--mono);letter-spacing:.15em;color:var(--blue)}.totw-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:24px}.totw-actions>a{display:inline-flex;align-items:center;min-height:42px;padding:10px 15px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#04131c;font-size:11px;font-weight:850}.status-pill,.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:9px 12px;color:var(--muted);font:700 8px var(--mono);letter-spacing:.08em}.status-pill i{width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 4px #55c7f21a}.totw-orb{width:220px;height:220px;flex:0 0 220px;border:1px solid #55c7f244;border-radius:50%;display:grid;place-items:center;text-align:center;background:radial-gradient(circle,#55c7f21c,#081018 65%);box-shadow:inset 0 0 50px #55c7f20f}.totw-orb b{font:900 40px var(--mono);color:var(--blue)}.totw-orb span{position:absolute;margin-top:125px;font:800 8px var(--mono);letter-spacing:.16em;color:#8291a2}.totw-video{margin-top:18px;padding:22px}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}.section-head h2{margin:5px 0 0;font-size:25px;letter-spacing:-.03em}.video-frame{aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:#05070a}.video-frame iframe{width:100%;height:100%;border:0}.standalone{margin:48px 0 18px}.standalone p{color:var(--muted);font-size:12px;margin:6px 0 0}.player-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.player-card{min-height:150px;padding:22px;display:grid;grid-template-columns:58px 1fr auto;align-items:center;gap:16px}.player-badge{width:58px;height:72px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,#12354a,#0d1118);border:1px solid #55c7f233;color:var(--blue);font:900 12px var(--mono)}.player-card h3{margin:6px 0 5px;font-size:18px}.player-card p,.totw-guide p{margin:0;color:var(--muted);font-size:11px;line-height:1.65}.rating{font:900 18px var(--mono);color:#718094}.grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}.grid-two .card{padding:22px}.grid-two h3{margin:7px 0 6px;font-size:17px}.card{border:1px solid var(--border);border-radius:18px;background:var(--surface)}
-    @media(max-width:700px){.totw-page{width:calc(100% - 18px);padding-top:14px}.totw-hero{min-height:0;padding:30px 22px;align-items:flex-start}.totw-orb{width:125px;height:125px;flex-basis:125px}.totw-orb b{font-size:21px}.totw-orb span{margin-top:74px;font-size:6px}.totw-hero h1{font-size:42px}.totw-hero p{font-size:12px}.player-grid,.grid-two{grid-template-columns:1fr}.player-card{grid-template-columns:50px 1fr auto;padding:18px}.player-badge{width:50px;height:62px}.section-head{align-items:flex-start}.totw-video{padding:15px}.totw-actions>a{width:100%;justify-content:center}}
-    @media(max-width:460px){.totw-orb{display:none}.totw-hero{padding:28px 20px}.totw-hero h1{font-size:38px}.totw-hero p{font-size:11px}.player-card{grid-template-columns:46px 1fr}.player-card .rating{display:none}}
+    .totw-page{width:min(1180px,calc(100% - 40px));margin:auto;padding:30px 0 90px}
+    .card{border:1px solid var(--border);border-radius:18px;background:var(--surface)}
+    .label{font:800 9px var(--mono);letter-spacing:.15em;color:var(--blue)}
+    .muted{color:var(--muted);font-size:12px;line-height:1.6;margin:0}
+    .top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+    .top h1{font-size:clamp(34px,5vw,56px);letter-spacing:-.05em;line-height:1;margin:8px 0 0}
+    .top h1 span{color:var(--blue)}
+    .weeks{display:flex;gap:6px;flex-wrap:wrap}
+    .weeks button,.chips button,.cmp-head button{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:8px 13px;font:700 10px var(--mono);letter-spacing:.06em;cursor:pointer}
+    .weeks button.on,.chips button.on{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#04131c;border-color:transparent}
+    .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px}
+    .toolbar input,.toolbar select{background:#0a1118;border:1px solid var(--border);color:inherit;border-radius:10px;padding:10px 12px;font-size:12px}
+    .toolbar input{flex:1 1 220px;min-width:0}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .main-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:14px;margin-top:14px;align-items:start}
+    .pitch{position:relative;aspect-ratio:4/5;background:
+      linear-gradient(#ffffff08 1px,transparent 1px) 0 0/100% 12.5%,
+      radial-gradient(circle at 50% 50%,#55c7f214,transparent 55%),
+      linear-gradient(180deg,#0b2130,#08141d);overflow:hidden}
+    .pitch::before{content:"";position:absolute;inset:4%;border:1px solid #55c7f22e;border-radius:8px}
+    .pitch::after{content:"";position:absolute;left:4%;right:4%;top:50%;border-top:1px solid #55c7f22e}
+    .slot{position:absolute;transform:translate(-50%,-50%);width:17%;min-width:58px;text-align:center;cursor:pointer;background:none;border:0;color:inherit;padding:0;z-index:1}
+    .slot .face{aspect-ratio:3/4;border-radius:10px;border:1px solid #55c7f244;background:linear-gradient(150deg,#14405a,#0b1219);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:.15s}
+    .slot:hover .face,.slot.sel .face{border-color:var(--blue);box-shadow:0 0 0 2px #55c7f240}
+    .slot.dim{opacity:.25}
+    .slot .ovr{font:900 clamp(14px,2.6vw,22px) var(--mono);color:var(--blue)}
+    .slot .ps{font:800 8px var(--mono);color:#8fa3b8;letter-spacing:.08em}
+    .slot .nm{margin-top:5px;font-size:clamp(9px,1.5vw,11px);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bench{margin-top:14px;padding:14px}
+    .bench-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .chip-p{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:8px 12px;background:#0a1118;cursor:pointer;color:inherit}
+    .chip-p.sel{border-color:var(--blue)}
+    .chip-p b{font:900 15px var(--mono);color:var(--blue)}
+    .chip-p span{font-size:12px;font-weight:700}
+    .detail{padding:20px}
+    .d-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .d-top h2{margin:6px 0 4px;font-size:22px;letter-spacing:-.03em}
+    .d-sub{color:var(--muted);font-size:11px}
+    .d-ovr{font:900 44px var(--mono);color:var(--blue);line-height:1}
+    .bars{margin-top:18px;display:grid;gap:9px}
+    .bar{display:grid;grid-template-columns:34px 1fr 28px;gap:10px;align-items:center;font:800 10px var(--mono);color:#8fa3b8}
+    .bar i{display:block;height:6px;border-radius:99px;background:#ffffff0d;overflow:hidden}
+    .bar i s{display:block;height:100%;background:linear-gradient(90deg,var(--blue2),var(--blue));border-radius:99px}
+    .bar em{font-style:normal;color:inherit;text-align:right}
+    .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+    .meta div{border:1px solid var(--border);border-radius:10px;padding:9px 11px;background:#0a1118}
+    .meta small{display:block;font:800 8px var(--mono);letter-spacing:.1em;color:#718094;margin-bottom:3px}
+    .meta span{font-size:12px;font-weight:700}
+    .note{margin:14px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+    .compare{margin-top:14px;padding:16px}
+    .cmp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .cmp-row{display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;font:800 11px var(--mono);padding:5px 0;border-bottom:1px solid #ffffff08;text-align:center}
+    .cmp-row .k{color:#718094;font-size:9px}
+    .cmp-row .win{color:var(--blue)}
+    .cmp-names{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;font-weight:800;text-align:center;margin-bottom:8px}
+    .table-wrap{margin-top:14px;padding:16px}
+    .table-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .count{font:700 9px var(--mono);color:#718094}
+    .scroll{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;min-width:560px}
+    th{font:800 9px var(--mono);letter-spacing:.1em;color:#718094;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+    td{padding:10px;font-size:12px;border-bottom:1px solid #ffffff08}
+    tbody tr{cursor:pointer}
+    tbody tr:hover,tbody tr.sel{background:#55c7f210}
+    td.pos{font:800 10px var(--mono);color:var(--blue)}
+    td.num{font:800 12px var(--mono)}
+    td.num.top{color:var(--blue)}
+    td .nm{font-weight:700}
+    td .cl{display:block;color:#718094;font-size:10px;margin-top:2px}
+    input[type=checkbox]{accent-color:#55c7f2}
+    .video{margin-top:14px;padding:16px}
+    .video a{font:700 10px var(--mono);color:var(--blue)}
+    .video-frame{aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:#05070a}
+    .video-frame iframe{width:100%;height:100%;border:0}
+    @media(max-width:860px){.main-grid{grid-template-columns:1fr}}
+    @media(max-width:560px){.totw-page{width:calc(100% - 18px);padding-top:14px}.toolbar select{width:100%}}
   </style>
+
+  <script define:vars={{ weeks }}>
+    const STATS = ['pac','sho','pas','dri','def','phy'];
+    const POS_FILTERS = ['ALL','GK','DEF','MID','ATT'];
+    const GROUP = { GK:'GK', LB:'DEF', CB:'DEF', RB:'DEF', LWB:'DEF', RWB:'DEF', CDM:'MID', CM:'MID', CAM:'MID', LM:'MID', RM:'MID', LW:'ATT', RW:'ATT', ST:'ATT', CF:'ATT', SUB:'MID' };
+    const COORDS = [[50,90],[15,72],[38,75],[62,75],[85,72],[28,50],[50,55],[72,50],[18,22],[50,15],[82,22]];
+
+    const $ = (id) => document.getElementById(id);
+    let wk = weeks[0], filterPos = 'ALL', query = '', sortKey = 'squad', selected = 0, cmp = [];
+
+    const txt = (v) => (v === null || v === undefined || v === '' ? '—' : String(v));
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const grp = (pl) => GROUP[pl.pos] || 'MID';
+    const matches = (pl) => {
+      if (filterPos !== 'ALL' && grp(pl) !== filterPos) return false;
+      const q = query.trim().toLowerCase();
+      return !q || [pl.name, pl.club, pl.nation].some((v) => (v || '').toLowerCase().includes(q));
+    };
+    const indexed = () => wk.players.map((pl, i) => ({ ...pl, i }));
+
+    function renderWeeks() {
+      $('weeks').innerHTML = weeks.map((w) =>
+        `<button type="button" role="tab" class="${w.id === wk.id ? 'on' : ''}" data-w="${w.id}">${esc(w.label)}</button>`).join('');
+      $('weeks').querySelectorAll('button').forEach((b) => b.onclick = () => {
+        wk = weeks.find((w) => w.id === b.dataset.w); selected = 0; cmp = []; renderAll();
+      });
+    }
+
+    function renderChips() {
+      $('posChips').innerHTML = POS_FILTERS.map((f) =>
+        `<button type="button" class="${f === filterPos ? 'on' : ''}" data-f="${f}">${f}</button>`).join('');
+      $('posChips').querySelectorAll('button').forEach((b) => b.onclick = () => { filterPos = b.dataset.f; renderChips(); renderLists(); });
+    }
+
+    function renderPitch() {
+      const xi = indexed().filter((pl) => !pl.bench).slice(0, 11);
+      $('pitch').innerHTML = xi.map((pl, k) => {
+        const [x, y] = COORDS[k] || [50, 50];
+        const dim = !matches(pl) ? ' dim' : '';
+        return `<button type="button" class="slot${dim}${pl.i === selected ? ' sel' : ''}" style="left:${x}%;top:${y}%" data-i="${pl.i}">
+          <div class="face"><span class="ovr">${txt(pl.ovr)}</span><span class="ps">${esc(pl.pos)}</span></div>
+          <div class="nm">${esc(pl.name)}</div></button>`;
+      }).join('');
+      $('pitch').querySelectorAll('.slot').forEach((b) => b.onclick = () => { selected = +b.dataset.i; renderAll(); });
+
+      const bench = indexed().filter((pl) => pl.bench);
+      $('bench').innerHTML = bench.length
+        ? bench.map((pl) => `<button type="button" class="chip-p${pl.i === selected ? ' sel' : ''}" data-i="${pl.i}"><b>${txt(pl.ovr)}</b><span>${esc(pl.name)}</span></button>`).join('')
+        : '<p class="muted">No bench players listed.</p>';
+      $('bench').querySelectorAll('.chip-p').forEach((b) => b.onclick = () => { selected = +b.dataset.i; renderAll(); });
+    }
+
+    function renderDetail() {
+      const pl = wk.players[selected];
+      if (!pl) { $('detail').innerHTML = '<p class="muted">Select a player.</p>'; return; }
+      $('detail').innerHTML = `
+        <div class="d-top">
+          <div><span class="label">${esc(pl.pos)} · ${esc(wk.label.toUpperCase())}</span><h2>${esc(pl.name)}</h2>
+          <div class="d-sub">${esc(pl.club || 'Club —')} · ${esc(pl.nation || 'Nation —')}</div></div>
+          <div class="d-ovr">${txt(pl.ovr)}</div>
+        </div>
+        <div class="bars">${STATS.map((s) => `
+          <div class="bar"><span>${s.toUpperCase()}</span><i><s style="width:${Math.min(100, pl[s] || 0)}%"></s></i><em>${txt(pl[s])}</em></div>`).join('')}
+        </div>
+        <div class="meta">
+          <div><small>SKILL MOVES</small><span>${txt(pl.skill)}</span></div>
+          <div><small>WEAK FOOT</small><span>${txt(pl.wf)}</span></div>
+        </div>
+        ${pl.note ? `<p class="note">${esc(pl.note)}</p>` : ''}`;
+    }
+
+    function renderRows() {
+      let list = indexed().filter(matches);
+      if (sortKey !== 'squad') list.sort((a, b) => (b[sortKey] ?? -1) - (a[sortKey] ?? -1));
+      $('count').textContent = `${list.length} PLAYER${list.length === 1 ? '' : 'S'}`;
+      const best = {};
+      STATS.concat('ovr').forEach((k) => best[k] = Math.max(...wk.players.map((x) => x[k] ?? -1)));
+      $('rows').innerHTML = list.map((pl) => `
+        <tr class="${pl.i === selected ? 'sel' : ''}" data-i="${pl.i}">
+          <td><input type="checkbox" data-c="${pl.i}" ${cmp.includes(pl.i) ? 'checked' : ''} aria-label="Compare ${esc(pl.name)}"/></td>
+          <td class="pos">${esc(pl.pos)}</td>
+          <td><span class="nm">${esc(pl.name)}</span><span class="cl">${esc(pl.club || '')}</span></td>
+          ${['ovr', ...STATS].map((k) => `<td class="num${pl[k] !== null && pl[k] === best[k] ? ' top' : ''}">${txt(pl[k])}</td>`).join('')}
+        </tr>`).join('') || '<tr><td colspan="10" class="muted">No players match your filters.</td></tr>';
+      $('rows').querySelectorAll('tr[data-i]').forEach((tr) => tr.onclick = (e) => {
+        if (e.target.matches('input')) return;
+        selected = +tr.dataset.i; renderAll();
+      });
+      $('rows').querySelectorAll('input[data-c]').forEach((cb) => cb.onchange = () => {
+        const i = +cb.dataset.c;
+        cmp = cb.checked ? [...cmp, i].slice(-2) : cmp.filter((x) => x !== i);
+        renderRows(); renderCompare();
+      });
+    }
+
+    function renderCompare() {
+      if (cmp.length < 2) {
+        $('cmp').innerHTML = `<p class="muted">${cmp.length ? 'Pick one more player.' : 'Tick two players in the table to compare them side by side.'}</p>`;
+        return;
+      }
+      const [a, b] = cmp.map((i) => wk.players[i]);
+      const row = (k) => {
+        const av = a[k], bv = b[k];
+        return `<div class="cmp-row"><span class="${av > bv ? 'win' : ''}">${txt(av)}</span><span class="k">${k.toUpperCase()}</span><span class="${bv > av ? 'win' : ''}">${txt(bv)}</span></div>`;
+      };
+      $('cmp').innerHTML = `<div class="cmp-names"><span>${esc(a.name)}</span><span>${esc(b.name)}</span></div>${['ovr', ...STATS].map(row).join('')}`;
+    }
+
+    function renderVideo() {
+      $('vid').src = wk.video ? `https://www.youtube.com/embed/${wk.video}` : '';
+      $('videoLink').href = wk.video ? `https://www.youtube.com/watch?v=${wk.video}` : '#';
+    }
+
+    function renderLists() { renderPitch(); renderRows(); }
+    function renderAll() { renderWeeks(); renderChips(); renderPitch(); renderDetail(); renderRows(); renderCompare(); renderVideo(); }
+
+    $('q').oninput = (e) => { query = e.target.value; renderLists(); };
+    $('sort').onchange = (e) => { sortKey = e.target.value; renderRows(); };
+    $('clearCmp').onclick = () => { cmp = []; renderRows(); renderCompare(); };
+    renderAll();
+  </script>
 </BaseLayout>
