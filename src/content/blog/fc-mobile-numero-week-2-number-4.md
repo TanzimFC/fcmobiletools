@@ -39,34 +39,17 @@ Players need **700 Numero Tokens** to claim him.
 
 The other major rewards are:
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Reward</th>
-    <th scope="col" style="text-align:right">Cost</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left">6M Coins + 1,500 Gems</td>
-      <td style="text-align:right">400 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">500 Rank Up Points</td>
-      <td style="text-align:right">500 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">2 FC Draft Vouchers</td>
-      <td style="text-align:right">500 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">1,000 Star Shards</td>
-      <td style="text-align:right">600 Tokens</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>117 OVR CB Van Dijk</strong></td>
-      <td style="text-align:right"><strong>700 Tokens</strong></td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Reward | Cost |
+| :--- | ---: |
+| 6M Coins + 1,500 Gems | 400 Tokens |
+| 500 Rank Up Points | 500 Tokens |
+| 2 FC Draft Vouchers | 500 Tokens |
+| 1,000 Star Shards | 600 Tokens |
+| <strong>117 OVR CB Van Dijk</strong> | <strong>700 Tokens</strong> |
+
+
 
 
 The full set of major rewards requires around **2,700 Numero Tokens** if you want to claim everything.
@@ -99,30 +82,16 @@ Week 2 also introduces a temporary login reward section called **The 4hield**.
 
 You simply need to log in on four different days.
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Login</th>
-    <th scope="col" style="text-align:left">Reward</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left">Day 1</td>
-      <td style="text-align:left">4s Profile Banner</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">Day 2</td>
-      <td style="text-align:left">444 Rank Up Points</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">Day 3</td>
-      <td style="text-align:left">114–119 OVR Numero Player</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">Day 4</td>
-      <td style="text-align:left">444 Star Shards</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Login | Reward |
+| :--- | :--- |
+| Day 1 | 4s Profile Banner |
+| Day 2 | 444 Rank Up Points |
+| Day 3 | 114–119 OVR Numero Player |
+| Day 4 | 444 Star Shards |
+
+
 
 
 This is probably the easiest part of Week 2 to complete because it doesn't require significant gameplay grinding.
