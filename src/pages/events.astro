@@ -6,6 +6,7 @@ const anniversary = FOOTBALL_CENTRE_CONTENT.eventCountdown ?? {};
 const secondary = FOOTBALL_CENTRE_CONTENT.secondaryEvent ?? {};
 const rivals = FOOTBALL_CENTRE_CONTENT.divisionRivalsReset ?? {};
 const schedule = FOOTBALL_CENTRE_CONTENT.schedule ?? {};
+const upcomingEvents = Array.isArray(FOOTBALL_CENTRE_CONTENT.upcomingEvents) ? FOOTBALL_CENTRE_CONTENT.upcomingEvents : [];
 
 const anniversaryBanner = (anniversary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323719/fc-mobile-tools/qrtvtote0squixmcts6u.jpg')
   .replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1600/');
@@ -17,14 +18,14 @@ const pageSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
   name: 'FC Mobile Events & Reset | FCMOBILETOOLS',
-  description: 'Live FC Mobile Anniversary Event, Unbreakable countdown, Daily Reset and Division Rivals season reset in one place.',
+  description: 'FC Mobile event schedule covering Anniversary, Unbreakable, CONMEBOL Libertadores, Ballon d’Or, Daily Reset and the October 22 season reset.',
   url: new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.online').href,
   publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
 };
 ---
 <BaseLayout
   title="FC Mobile Events & Reset | FCMOBILETOOLS"
-  description="Live FC Mobile Anniversary Event, Unbreakable countdown, Daily Reset and Division Rivals season reset in one place."
+  description="FC Mobile event schedule covering Anniversary, Unbreakable, CONMEBOL Libertadores, Ballon d’Or, Daily Reset and the October 22 season reset."
 >
 <script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
 
@@ -60,8 +61,8 @@ const pageSchema = {
     <section class="status-strip" aria-label="FC Mobile live event status">
       <div class="status-strip-lead"><span class="status-strip-dot"></span><div><strong>Anniversary is live.</strong><span>FC Mobile 27 is running now with the next major event and reset already scheduled.</span></div></div>
       <div class="status-pill live">LIVE · ANNIVERSARY</div>
-      <div class="status-pill upcoming">15 OCT · UNBREAKABLE</div>
-      <div class="status-pill reset">22 OCT · SEASON RESET</div>
+      <div class="status-pill upcoming">15 OCT · UNBREAKABLE + LIBERTADORES</div>
+      <div class="status-pill reset">22 OCT · BALLON D'OR + SEASON RESET</div>
     </section>
 
     <section class="featured-grid" aria-label="Featured events">
@@ -154,6 +155,44 @@ const pageSchema = {
       </article>
     </section>
 
+    <section class="section-bar upcoming-heading">
+      <div>
+        <span class="section-kicker">UPCOMING SCHEDULE</span>
+        <h2>Two more dates on the calendar.</h2>
+      </div>
+      <span>OCTOBER 2026</span>
+    </section>
+
+    <section class="schedule-grid" aria-label="Upcoming FC Mobile event schedule">
+      <article class="schedule-card" data-event-id="conmebol-libertadores">
+        <div class="schedule-visual">
+          <img src={((upcomingEvents.find((event) => event.id === 'conmebol-libertadores')?.banner || '')).replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_900/')} alt="CONMEBOL Libertadores" loading="lazy" decoding="async" />
+          <div class="schedule-shade"></div>
+          <div class="schedule-topline"><span>15 OCT</span><b>UPCOMING</b></div>
+        </div>
+        <div class="schedule-copy">
+          <span class="copy-label">NEXT EVENT</span>
+          <h3>CONMEBOL Libertadores</h3>
+          <p>Scheduled for the same October 15 date as Unbreakable.</p>
+          <div class="schedule-bottom"><strong data-countdown>--:--:--</strong><span>15 OCT 2026</span></div>
+        </div>
+      </article>
+
+      <article class="schedule-card" data-event-id="ballon-dor">
+        <div class="schedule-visual">
+          <img src={((upcomingEvents.find((event) => event.id === 'ballon-dor')?.banner || '')).replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_900/')} alt="Ballon d'Or" loading="lazy" decoding="async" />
+          <div class="schedule-shade"></div>
+          <div class="schedule-topline"><span>22 OCT</span><b>UPCOMING</b></div>
+        </div>
+        <div class="schedule-copy">
+          <span class="copy-label">UPCOMING EVENT</span>
+          <h3>Ballon d'Or</h3>
+          <p>Scheduled for October 22 alongside the Season Reset date.</p>
+          <div class="schedule-bottom"><strong data-countdown>--:--:--</strong><span>22 OCT 2026</span></div>
+        </div>
+      </article>
+    </section>
+
     <section class="section-bar">
       <div>
         <span class="section-kicker">RESET TRACKER</span>
@@ -231,6 +270,7 @@ const pageSchema = {
   rivalsAnchorUtc: rivals.anchorUtc,
   rivalsCycleDays: rivals.cycleDays,
   dailyResetUtc: schedule.dailyResetUtc || "01:00",
+  upcomingEventsData: upcomingEvents,
 }}>
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -276,6 +316,7 @@ const pageSchema = {
     rivalsAnchorUtc,
     rivalsCycleDays: Number(rivalsCycleDays) || 28,
     dailyResetUtc,
+    upcomingEvents: Array.isArray(upcomingEventsData) ? upcomingEventsData : [],
   };
 
   const set = (id, value) => {
@@ -334,6 +375,18 @@ const pageSchema = {
     set('dailyLocal', localDate.format(new Date(daily)));
     set('dailyUtc', utcDate.format(new Date(daily)));
 
+    document.querySelectorAll('.schedule-card[data-event-id]').forEach((card) => {
+      const id = card.getAttribute('data-event-id');
+      const event = cfg.upcomingEvents.find((item) => item.id === id);
+      const countdown = card.querySelector('[data-countdown]');
+      if (!event || !countdown) return;
+      const start = Date.parse(event.startUtc || '');
+      if (!Number.isFinite(start)) return;
+      countdown.textContent = now >= start ? 'LIVE NOW' : formatCountdown(start - now);
+      const state = card.querySelector('.schedule-topline b');
+      if (state) state.textContent = now >= start ? 'LIVE NOW' : 'UPCOMING';
+    });
+
     const rivals = nextRivalsReset(now);
     if (Number.isFinite(rivals)) {
       set('rivalsCountdown', formatCountdown(rivals - now));
@@ -385,6 +438,7 @@ const pageSchema = {
       }
 
       if (content.schedule?.dailyResetUtc) cfg.dailyResetUtc = content.schedule.dailyResetUtc;
+      if (Array.isArray(content.upcomingEvents)) cfg.upcomingEvents = content.upcomingEvents;
       set('syncLabel', '● LIVE · SYNCED');
     } catch {
       set('syncLabel', '● LIVE · AUTO CLOCK');
@@ -492,6 +546,7 @@ const pageSchema = {
 .season-status{display:flex;gap:8px;align-items:center;margin:23px 0 19px;padding:12px;border:1px solid #1f3d35;border-radius:10px;background:#071a16;color:#bdeed9}
 .season-status i{width:7px;height:7px;border-radius:999px;background:var(--hub-green);box-shadow:0 0 12px rgba(88,224,166,.6)}
 .season-status strong{font:900 7px/1 var(--mono)}
+.upcoming-heading{margin-top:38px}.schedule-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.schedule-card{display:grid;grid-template-columns:44% 56%;min-height:235px;border:1px solid var(--hub-line);border-radius:15px;background:linear-gradient(145deg,#0b1820,#071116);overflow:hidden;box-shadow:0 22px 60px rgba(0,0,0,.22)}.schedule-visual{position:relative;min-height:100%;background:#071117;overflow:hidden}.schedule-visual img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .7s ease}.schedule-card:hover .schedule-visual img{transform:scale(1.03)}.schedule-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,10,14,.08),rgba(4,10,14,.76))}.schedule-topline{position:absolute;top:13px;left:13px;right:13px;display:flex;justify-content:space-between;gap:8px}.schedule-topline span,.schedule-topline b{padding:6px 7px;border-radius:999px;background:rgba(4,13,18,.72);border:1px solid rgba(255,255,255,.14);font:900 6px/1 var(--mono);letter-spacing:.08em}.schedule-topline span{color:#eaf9fd}.schedule-topline b{color:var(--hub-cyan);font-style:normal}.schedule-copy{padding:20px}.schedule-copy h3{margin:9px 0 6px;font-size:26px;line-height:.95;letter-spacing:-.05em}.schedule-copy p{margin:0;color:#708a95;font-size:8px;line-height:1.55}.schedule-bottom{display:flex;justify-content:space-between;align-items:end;gap:8px;margin-top:24px;padding-top:11px;border-top:1px solid #17313b}.schedule-bottom strong{font:900 18px/1 var(--mono);letter-spacing:-.05em;color:#eaf9fd}.schedule-bottom span{font:900 6px/1 var(--mono);letter-spacing:.09em;color:#597580;text-align:right}
 .compact-info{display:grid;grid-template-columns:1.15fr repeat(3,1fr);gap:1px;margin-top:12px;border:1px solid var(--hub-line);border-radius:13px;overflow:hidden;background:#142731}
 .compact-info>div{padding:16px;background:#071219}
 .compact-info>div:first-child{background:linear-gradient(130deg,#0b1d24,#071219)}
@@ -505,6 +560,8 @@ const pageSchema = {
   .reset-grid{grid-template-columns:1fr 1fr}
   .season-card{grid-column:1/-1}
   .compact-info{grid-template-columns:1fr 1fr}
+  .schedule-grid{grid-template-columns:1fr}
+  .schedule-card{grid-template-columns:42% 58%}
 }
 @media(max-width:760px){
   .events-hub{padding:22px 13px 55px}
@@ -522,6 +579,9 @@ const pageSchema = {
   .reset-grid{grid-template-columns:1fr}
   .season-card{grid-column:auto}
   .compact-info{grid-template-columns:1fr}
+  .schedule-grid{grid-template-columns:1fr}
+  .schedule-card{grid-template-columns:1fr}
+  .schedule-visual{height:200px}
 }
 @media(max-width:480px){
   .hub-title h1{font-size:52px}
