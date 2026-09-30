@@ -31,8 +31,8 @@ jobs:
       - name: Editorial regression checks
         run: node scripts/verify-editorial-runtime.mjs
 
-      - name: Astro Cloudflare build
-        run: npm run astro:build
+      - name: Production Cloudflare build
+        run: node scripts/build-static.mjs
 
       - name: Verify generated worker
         run: node -e "const fs=require('node:fs');if(!fs.existsSync('dist/_worker.js/index.js')){console.error('Missing dist/_worker.js/index.js');process.exit(1)};console.log('Generated Cloudflare worker verified.')"
