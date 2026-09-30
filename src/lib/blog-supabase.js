@@ -62,8 +62,8 @@ function tocFromHtml(html){
 
 async function getJson(path){
   const response=await fetch(SUPABASE_URL+'/rest/v1/'+path,{
-    headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY,Accept:'application/json'},
-    cf:{cacheTtl:15,cacheEverything:true}
+    headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Accept:'application/json','cache-control':'no-cache'},
+    cache:'no-store'
   });
   if(!response.ok) throw new Error('Unable to load published editorial content.');
   return response.json();
