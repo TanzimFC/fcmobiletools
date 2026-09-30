@@ -75,6 +75,40 @@ const pageSchema = {
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5SG8X4YV03"></script>
+  <script is:inline>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+
+    // Google Consent Mode defaults. Analytics starts only after the visitor
+    // grants analytics consent in the site's privacy controls.
+    gtag('consent','default',{
+      ad_storage:'denied',
+      analytics_storage:'denied',
+      ad_user_data:'denied',
+      ad_personalization:'denied',
+      wait_for_update:500
+    });
+
+    gtag('js', new Date());
+    gtag('config', 'G-5SG8X4YV03');
+    
+    window.FCMOBILETOOLS_OPEN_PRIVACY_CHOICES=()=>{
+      if(window.googlefc?.callbackQueue && typeof window.googlefc.showRevocationMessage==='function'){
+        window.googlefc.callbackQueue.push(window.googlefc.showRevocationMessage);
+        return true;
+      }
+      if(window.googlefc?.callbackQueue){
+        window.googlefc.callbackQueue.push(()=>{
+          if(typeof window.googlefc?.showRevocationMessage==='function') window.googlefc.showRevocationMessage();
+        });
+        return true;
+      }
+      window.dispatchEvent(new CustomEvent('fcmobiletools:privacy-unavailable'));
+      return false;
+    };
+  </script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#071018" />
@@ -122,40 +156,7 @@ const pageSchema = {
     <script type="application/ld+json" set:html={JSON.stringify(siteSchema)}></script>
     <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)}></script>
   </> : <script type="application/ld+json" set:html={JSON.stringify(pageSchema)}></script>}
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5SG8X4YV03"></script>
-  <script is:inline>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
 
-    // Google Consent Mode defaults. Analytics starts only after the visitor
-    // grants analytics consent in the site's privacy controls.
-    gtag('consent','default',{
-      ad_storage:'denied',
-      analytics_storage:'denied',
-      ad_user_data:'denied',
-      ad_personalization:'denied',
-      wait_for_update:500
-    });
-
-    gtag('js', new Date());
-    gtag('config', 'G-5SG8X4YV03');
-    
-    window.FCMOBILETOOLS_OPEN_PRIVACY_CHOICES=()=>{
-      if(window.googlefc?.callbackQueue && typeof window.googlefc.showRevocationMessage==='function'){
-        window.googlefc.callbackQueue.push(window.googlefc.showRevocationMessage);
-        return true;
-      }
-      if(window.googlefc?.callbackQueue){
-        window.googlefc.callbackQueue.push(()=>{
-          if(typeof window.googlefc?.showRevocationMessage==='function') window.googlefc.showRevocationMessage();
-        });
-        return true;
-      }
-      window.dispatchEvent(new CustomEvent('fcmobiletools:privacy-unavailable'));
-      return false;
-    };
-  </script>
 </head>
 <body>
   <div id="site-loader" class="site-loader" aria-hidden="true">
