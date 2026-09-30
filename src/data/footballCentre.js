@@ -203,6 +203,24 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "status": "AUTO",
     "note": "Status and date are calculated automatically from the configured start time."
   },
+  "upcomingEvents": [
+    {
+      "id": "conmebol-libertadores",
+      "title": "CONMEBOL Libertadores",
+      "subtitle": "Upcoming FC Mobile event",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790755003/fc-mobile-tools/ivcmoudljmftrau8bc2o.jpg",
+      "startUtc": "2026-10-15T00:00:00.000Z",
+      "dateLabel": "15 OCT 2026"
+    },
+    {
+      "id": "ballon-dor",
+      "title": "Ballon d'Or",
+      "subtitle": "Upcoming FC Mobile event",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790754887/fc-mobile-tools/iek8oibsiahmut3qefuf.jpg",
+      "startUtc": "2026-10-22T00:00:00.000Z",
+      "dateLabel": "22 OCT 2026"
+    }
+  ],
   "divisionRivalsReset": {
     "enabled": true,
     "title": "Division Rivals Anniversary Season",
