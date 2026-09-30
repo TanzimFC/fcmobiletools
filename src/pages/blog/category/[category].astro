@@ -10,7 +10,7 @@ import { getPublishedPosts } from '../../../lib/blog-supabase.js';
 export const prerender = false;
 
 const posts = await getPublishedPosts();
-const requestedSlug = String(Astro.params.category || '').replace(/\\/$/,'');
+const requestedSlug = String(Astro.params.category || '').replace(/\/$/,'');
 const pages = categoryPages(posts);
 const known = Object.values(SECTIONS).find((s) => s.slug === requestedSlug);
 const page = pages.find((c) => c.slug === requestedSlug) || {slug:requestedSlug,label:known?.label||requestedSlug.replaceAll('-',' '),accent:known?.accent||sectionOf('guide').accent,blurb:known?.blurb||`Every published article filed under ${requestedSlug.replaceAll('-',' ')}.`,posts:[]};
