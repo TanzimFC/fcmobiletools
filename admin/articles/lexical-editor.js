@@ -5,6 +5,7 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', ini
     richText,
     history,
     link,
+    extension,
     list,
     table,
     code,
@@ -15,6 +16,7 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', ini
     import('https://esm.sh/@lexical/rich-text@0.50.0'),
     import('https://esm.sh/@lexical/history@0.50.0'),
     import('https://esm.sh/@lexical/link@0.50.0'),
+    import('https://esm.sh/@lexical/extension@0.50.0'),
     import('https://esm.sh/@lexical/list@0.50.0'),
     import('https://esm.sh/@lexical/table@0.50.0'),
     import('https://esm.sh/@lexical/code@0.50.0'),
@@ -35,6 +37,7 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', ini
   const {registerList, ListNode, ListItemNode} = list;
   const {createEmptyHistoryState, registerHistory} = history;
   const {LinkNode, TOGGLE_LINK_COMMAND, $isLinkNode, registerLink} = link;
+  const {namedSignals} = extension;
   const {
     TableNode, TableRowNode, TableCellNode,
     $createTableNodeWithDimensions, $isTableNode, $isTableCellNode,
@@ -127,7 +130,10 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', ini
   const cleanup = [];
   cleanup.push(registerRichText(editor));
   if(registerList) cleanup.push(registerList(editor));
-  cleanup.push(registerLink(editor));
+  cleanup.push(registerLink(editor,namedSignals({
+    attributes:{},
+    validateUrl:(url)=>/^https?:/i.test(url)
+  })));
   cleanup.push(registerTablePlugin(editor));
   cleanup.push(registerTableSelectionObserver(editor,true));
 
