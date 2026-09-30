@@ -77,6 +77,8 @@ function remoteEntry(row){
   };
   const entry={slug:row.slug,data,body:prepared.html};
   const post=decorate(entry);
+  post.data=data;
+  post.body=prepared.html;
   post.bodyHtml=prepared.html;
   post.toc=prepared.toc;
   post.entry=entry;
