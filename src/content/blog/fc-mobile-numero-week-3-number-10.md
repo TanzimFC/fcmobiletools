@@ -48,8 +48,6 @@ Rooney costs **700 Numero Tokens**.
 
 The rest of the reward path includes:
 
-
-
 | Reward | Cost |
 | :--- | ---: |
 | 6,000,000 Coins + 1,500 Gems | 400 Tokens |
@@ -58,10 +56,7 @@ The rest of the reward path includes:
 | FC Draft Voucher | 250 Tokens |
 | FC Draft Voucher | 250 Tokens |
 | 600 Star Shards | 400 Tokens |
-| <strong>117 OVR ST Rooney</strong> | <strong>700 Tokens</strong> |
-
-
-
+| **117 OVR ST Rooney** | **700 Tokens** |
 
 The basic reward structure is similar to the previous Numero chapters, but the featured player changes to Rooney.
 
@@ -132,29 +127,19 @@ Week 3 also brings a new set of Draft pools.
 
 ### Numero 10 A Draft
 
-
-
 | Player | OVR | Position |
 | :--- | ---: | :--- |
-| <strong>Zidane</strong> | 122 | CM |
-| <strong>Hazard</strong> | 121 | LW |
-| <strong>Matheus Cunha</strong> | 120 | CAM |
-
-
-
+| **Zidane** | 122 | CM |
+| **Hazard** | 121 | LW |
+| **Matheus Cunha** | 120 | CAM |
 
 ### Numero 10 B Draft
 
-
-
 | Player | OVR | Position |
 | :--- | ---: | :--- |
-| <strong>Dembélé</strong> | 122 | ST |
-| <strong>Bergkamp</strong> | 121 | ST |
-| <strong>Musiala</strong> | 120 | CAM |
-
-
-
+| **Dembélé** | 122 | ST |
+| **Bergkamp** | 121 | ST |
+| **Musiala** | 120 | CAM |
 
 These are arguably some of the most attacking-oriented Draft pools of the Numero event so far.
 
@@ -176,21 +161,16 @@ The Week 3 player pool also contains several other high-rated players available 
 
 The currently reported shard costs include:
 
-
-
 | Player | OVR | Position | Shards |
 | :--- | ---: | :--- | ---: |
-| <strong>Zidane</strong> | 122 | CM | 68,310 |
-| <strong>Dembélé</strong> | 122 | ST | 61,755 |
-| <strong>Hazard</strong> | 121 | LW | 29,210 |
-| <strong>Bergkamp</strong> | 121 | ST | 21,390 |
-| <strong>Musiala</strong> | 120 | CAM | 17,135 |
-| <strong>Matheus Cunha</strong> | 120 | CAM | 14,720 |
-| <strong>Carrasco</strong> | 119 | LW | 5,300 |
-| <strong>Nico Paz</strong> | 118 | CAM | 2,500 |
-
-
-
+| **Zidane** | 122 | CM | 68,310 |
+| **Dembélé** | 122 | ST | 61,755 |
+| **Hazard** | 121 | LW | 29,210 |
+| **Bergkamp** | 121 | ST | 21,390 |
+| **Musiala** | 120 | CAM | 17,135 |
+| **Matheus Cunha** | 120 | CAM | 14,720 |
+| **Carrasco** | 119 | LW | 5,300 |
+| **Nico Paz** | 118 | CAM | 2,500 |
 
 Pelé is listed separately as the Premium Box-exclusive player.
 
