@@ -84,10 +84,11 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', onC
   editor.setRootElement(editorEl);
   registerRichText(editor);
   if(registerList) registerList(editor);
+  let initialized=false;
   const historyState=createEmptyHistoryState();
   const unregisterHistory=registerHistory(editor,historyState,300);
   const unregisterUpdate=editor.registerUpdateListener(({editorState,dirtyElements,dirtyLeaves})=>{
-    if(dirtyElements.size || dirtyLeaves.size) onChange();
+    if(initialized && (dirtyElements.size || dirtyLeaves.size)) onChange();
   });
 
   editorEl.setAttribute('spellcheck','true');
@@ -104,6 +105,7 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', onC
     root.append(...nodes);
     if(!root.getFirstChild()) root.append($createParagraphNode());
   },{tag:'initial-load'});
+  initialized=true;
 
   const run=(fn)=>{ editor.update(fn); return api; };
   const api={
