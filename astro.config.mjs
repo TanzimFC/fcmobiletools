@@ -15,7 +15,7 @@ const nationRedirects = Object.fromEntries(
 
 export default defineConfig({
   site: 'https://fcmobiletools.online',
-  output: 'hybrid',
+  output: 'static',
   adapter: cloudflare(),
   build: { format: 'directory' },
   integrations: [sitemap({
