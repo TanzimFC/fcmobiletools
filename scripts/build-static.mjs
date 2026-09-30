@@ -9,6 +9,8 @@ await rm(path.join(publicDir,'trivia'),{recursive:true,force:true});
 await exec('node',['scripts/apply-admin-content.mjs'],{cwd:root});
 await exec('node',['scripts/prepare-legacy.mjs'],{cwd:root});
 await exec('astro',['build'],{cwd:root});
+await access(path.join(distDir,'_worker.js','index.js'));
+console.log('Astro Cloudflare worker entry verified.');
 await cp(path.join(root,'admin'),path.join(distDir,'admin'),{recursive:true,force:true});
 for(const file of ['dashboard.html','login.html','rank-up.html','fc-mobile-27.html']) await access(path.join(distDir,'admin',file));
 console.log('Astro build complete. Admin assets verified in dist/admin.');
