@@ -237,6 +237,7 @@ async function creatorEditorialRoute(request,env,path){
 }
 
 async function editorialApi(request,env,path){
+  try{
   const identity=await editorialIdentity(request,env);
   if(!identity) return json({error:'Unauthorized.'},401);
 
@@ -381,6 +382,9 @@ async function editorialApi(request,env,path){
   }
 
   return json({error:'Editorial endpoint not found.'},404);
+  }catch(error){
+    return json({error:error?.message||'Editorial backend failed.'},500);
+  }
 }
 
 
