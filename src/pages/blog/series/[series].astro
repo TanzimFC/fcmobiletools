@@ -42,14 +42,17 @@ const schema = {
   </HubHero>
 
   <section class="bl-wrap bl-block" aria-label={(series?.name || 'Series') + ' parts'}>
-    
-      {(series?.parts || []).map((p, i) => (
-        <li class="bl-part" data-reveal>
-          <span class="bl-part-no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-          <PostCard post={p} variant="row" />
-        </li>
-      ))}
-    </ol>
-  </section>
-</main>
+    {(series?.parts || []).length ? (
+      <ol class="bl-parts">
+        {(series?.parts || []).map((p, i) => (
+          <li class="bl-part" data-reveal>
+            <span class="bl-part-no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <PostCard post={p} variant="row" />
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <div class="bl-empty"><strong>Series not found.</strong><span>There are no published articles in this series.</span><a class="bl-btn" href="/blog">Browse all articles</a></div>
+    )}
+  </section>/main>
 </BaseLayout>
