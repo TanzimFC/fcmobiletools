@@ -4,11 +4,9 @@ import PostCard from '../../components/blog/PostCard.astro';
 import BlogEffects from '../../components/blog/BlogEffects.astro';
 import '../../styles/blog.css';
 import { sectionsIn, seriesIn, TOOLS, fmtDate, iso } from '../../lib/blog.js';
-import { getPublishedPosts } from '../../lib/blog-supabase.js';
+import { getPosts } from '../../lib/blog.js';
 
-export const prerender = false;
-Astro.response.headers.set('Cache-Control','no-store, max-age=0, must-revalidate');
-const posts = await getPublishedPosts();
+const posts = await getPosts();
 const sections = sectionsIn(posts);
 const series = seriesIn(posts).filter((s) => s.count > 1);
 
