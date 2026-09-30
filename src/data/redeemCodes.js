@@ -5,9 +5,9 @@ export const REDEEM_CODES = [
     "reward": "1x Draft Voucher + 100x Rank Up Tokens",
     "status": "active",
     "releaseDate": "2026-09-26",
-    "expiryDate": null,
+    "expiryDate": "2026-09-29",
     "region": "Global",
-    "lastVerified": "2026-09-26",
+    "lastVerified": "2026-09-30",
     "notes": ""
   },
   {
