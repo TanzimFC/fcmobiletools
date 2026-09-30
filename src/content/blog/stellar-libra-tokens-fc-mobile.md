@@ -58,16 +58,11 @@ That makes it different from familiar currencies and items such as Coins, Gems a
 
 These two items are related to the same event, but they do different jobs.
 
-
-
 | Item | Purpose |
 | :--- | :--- |
-| <strong>Stellar Libra Token</strong> | Event progression and reward path |
-| <strong>Stellar Draft Voucher</strong> | Entry for the Stellar Draft |
-| <strong>Regular Draft Voucher</strong> | Entry for the standard Draft system |
-
-
-
+| **Stellar Libra Token** | Event progression and reward path |
+| **Stellar Draft Voucher** | Entry for the Stellar Draft |
+| **Regular Draft Voucher** | Entry for the standard Draft system |
 
 If you are trying to open the Stellar Draft, look at the Draft requirement.
 
