@@ -1,3 +1,4 @@
+// Emergency public static mode: keep public traffic on the known-good asset path.
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import remarkGfm from 'remark-gfm';
