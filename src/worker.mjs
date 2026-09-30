@@ -221,11 +221,28 @@ async function editorialInbox(env,identity){
   return rows||[];
 }
 
+async function creatorEditorialRoute(request,env,path){
+  if(path==='/me' && request.method==='GET'){
+    const creator=await creatorRecord(request,env);
+    if(!creator) return json({error:'Authentication required.'},401);
+    return json({creator:{id:creator.id,username:creator.username,displayName:creator.display_name,role:creator.role}});
+  }
+  if(path==='/logout' && request.method==='POST'){
+    return json({ok:true},200,{'set-cookie':CREATOR_SESSION_COOKIE+'=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict'});
+  }
+  return null;
+}
+
 async function editorialApi(request,env,path){
   const identity=await editorialIdentity(request,env);
   if(!identity) return json({error:'Unauthorized.'},401);
 
   if(path==='/articles' && request.method==='GET') return json({articles:await editorialArticles(env,identity)});
+  if(path==='/articles/trash' && request.method==='GET'){
+    if(identity.role!=='admin') return json({articles:[]});
+    const rows=await supabaseRest(env,'articles?status=eq.trash&order=updated_at.desc&limit=100');
+    return json({articles:(rows||[]).map(row=>editorialRow({...row,category_name:row.category}))});
+  }
   if(path==='/inbox' && request.method==='GET') return json({items:await editorialInbox(env,identity)});
 
   const revisionsMatch=path.match(/^\/articles\/(\d+)\/revisions$/);
@@ -236,7 +253,13 @@ async function editorialApi(request,env,path){
       const own=await supabaseRest(env,"articles?id=eq."+id+"&owner_key=eq."+encodeURIComponent(identity.ownerKey)+"&select=id&limit=1");
       if(!own?.length) return json({error:'Article not found.'},404);
     }
-    return json({revisions:rows||[]});
+    const normalized=(rows||[]).map(row=>({
+      ...row,
+      editor_role:row.editor_role||'editorial',
+      review_status:row.review_status||row.action||'save',
+      snapshot:JSON.stringify({content:row.content_html||'',metadata:row.metadata||{},contentJson:row.content_json||{}})
+    }));
+    return json({revisions:normalized});
   }
 
   const actionMatch=path.match(/^\/articles\/(\d+)\/(approve|request-changes)$/);
@@ -285,7 +308,8 @@ async function editorialApi(request,env,path){
     const body=await request.json().catch(()=>({}));
     const id=Number(body.id);
     if(!Number.isInteger(id)||id<1) return json({error:'Invalid inbox item.'},400);
-    await supabaseRest(env,"editorial_inbox?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({read_at:new Date().toISOString()})});
+    const readFilter=identity.role==='writer'?"&recipient_key=eq."+encodeURIComponent(identity.ownerKey):'';
+    await supabaseRest(env,"editorial_inbox?id=eq."+id+readFilter,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({read_at:new Date().toISOString()})});
     return json({ok:true});
   }
 
@@ -993,6 +1017,7 @@ export default { async fetch(request,env) {
   }
   if(url.pathname.startsWith('/api/admin/articles') || url.pathname.startsWith('/api/admin/inbox')) return editorialApi(request,env,url.pathname.slice('/api/admin'.length));
   if(url.pathname.startsWith('/api/creator/articles') || url.pathname.startsWith('/api/creator/inbox')) return editorialApi(request,env,url.pathname.slice('/api/creator'.length));
+  if(url.pathname.startsWith('/api/creator/')) { const creatorRoute=await creatorEditorialRoute(request,env,url.pathname.slice('/api/creator'.length)); if(creatorRoute) return creatorRoute; }
   if(url.pathname.startsWith('/api/admin/')) return api(request,env,url.pathname.slice('/api/admin'.length));
   if(isAdminEntry) {
     if(await authenticated(request,env) || await creatorAuthenticated(request,env)) return adminDashboard(request,env,url);
