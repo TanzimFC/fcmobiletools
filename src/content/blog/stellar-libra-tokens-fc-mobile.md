@@ -46,7 +46,7 @@ This guide focuses on the Token itself and the practical checks you can make on 
 
 ## What is the Stellar Libra Token?
 
-<div class="article-inline-icon"><img src="https://res.cloudinary.com/b0qikv7n/image/upload/v1790528952/fc-mobile-tools/ub8pjpygijyy6a4qcdyd.png" alt="Stellar Libra Token icon" loading="lazy" style="width:96px;max-width:96px;height:96px;max-height:96px;object-fit:contain;margin:18px 0 8px;border:0;background:transparent;box-shadow:none" /></div>
+<div class="article-inline-icon"><img src="https://res.cloudinary.com/b0qikv7n/image/upload/v1790528952/fc-mobile-tools/ub8pjpygijyy6a4qcdyd.png" alt="Stellar Libra Token icon" loading="lazy" /></div>
 
 The Libra Token is a **Stellar: Libra event currency**.
 
