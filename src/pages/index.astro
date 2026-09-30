@@ -1,10 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import { REDEEM_CODES } from '../data/redeemCodes.js';
+import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
 
 const latestArticles = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft))
   .sort((a, b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0))
-  .slice(0, 4);
+  .slice(0, 5);
+
+const activeCodes = REDEEM_CODES.filter((item) => item.status === 'active');
+const featuredCode = activeCodes[0] ?? REDEEM_CODES[0] ?? null;
 
 const optimizeCloudinary = (url, width) => {
   const value = String(url ?? '');
@@ -12,322 +17,1976 @@ const optimizeCloudinary = (url, width) => {
     ? value.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_' + width + '/')
     : value;
 };
+
 const readingTime = (post) =>
   post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '');
+
+const fmtDate = (d) =>
+  d
+    ? new Date(d).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC',
+      })
+    : '';
 
 const SITE = 'https://fcmobiletools.com';
 const title = 'FC Mobile Tools, Redeem Codes, Calculators & Guides';
 const description =
-  'FCMOBILETOOLS is your FC Mobile hub: live daily reset and event timers in your local time, redeem codes, Team OVR, training and rank up calculators, Gauntlet planner and the latest guides';
+  'FCMOBILETOOLS is the FC Mobile hub for live events, redeem codes, calculators, planners, guides and practical resources built for daily play.';
 
-// Tools are data so you can add one line and the grid updates
 const tools = [
-  { href: '/redeem-codes', tag: 'Codes', name: 'Redeem Codes', text: 'Check current codes and jump straight to redemption', cls: 'w7 hot' },
-  { href: '/team-ovr', tag: 'Calculator', name: 'Team OVR', text: 'Squad OVR from player ratings and upgrades', cls: 'w5' },
-  { href: '/training-calculator', tag: 'Calculator', name: 'Training Calculator', text: 'Plan XP, fodder, levels and excess XP', cls: 'w4' },
-  { href: '/rank-up-calculator', tag: 'Calculator', name: 'Rank Up Calculator', text: 'Rank Up Points, OVR gain and Skill Points', cls: 'w4' },
-  { href: '/football-centre', tag: 'Tracker', name: 'Football Centre', text: 'Matches, points, rewards and event resources', cls: 'w4' },
-  { href: '/gauntlet-planner', tag: 'Planner', name: 'Gauntlet Mode Planner', text: 'Match by match rotations with player availability', cls: 'w4' },
-  { href: '/a-nations-story', tag: 'Guide', name: "A Nation's Story", text: 'Event answers without digging', cls: 'w4' },
-  { href: '/fc-mobile-27', tag: 'Update', name: 'FC Mobile 27', text: 'Season 27 changes, features and official Android install', cls: 'w4' },
+  { href: '/redeem-codes', label: 'Live', type: 'Codes', name: 'Redeem Codes', text: 'Find current codes, see rewards and head to the official EA redemption page', icon: 'ticket' },
+  { href: '/team-ovr', label: '01', type: 'Calculator', name: 'Team OVR', text: 'Check your squad rating before you commit to upgrades', icon: 'spark' },
+  { href: '/training-calculator', label: '02', type: 'Calculator', name: 'Training Calculator', text: 'Plan XP, fodder, levels and excess XP with less guesswork', icon: 'bolt' },
+  { href: '/rank-up-calculator', label: '03', type: 'Calculator', name: 'Rank Up Calculator', text: 'See Rank Up Points, OVR gain and Skill Point changes before spending', icon: 'arrow' },
+  { href: '/gauntlet-planner', label: '04', type: 'Planner', name: 'Gauntlet Mode Planner', text: 'Map match rotations and player availability in one place', icon: 'grid' },
+  { href: '/football-centre', label: 'Live', type: 'Tracker', name: 'Football Centre', text: 'Track matches, points, rewards and the current event cycle', icon: 'pulse' },
+  { href: '/a-nations-story', label: 'Guide', type: 'Answers', name: "A Nation's Story", text: 'Reach the exact answer instead of searching through long pages', icon: 'book' },
+  { href: '/fc-mobile-27', label: 'Update', type: 'Season', name: 'FC Mobile 27', text: 'Follow season changes, features and the latest update coverage', icon: 'star' },
 ];
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'WebSite', '@id': SITE + '/#website', url: SITE + '/', name: 'FCMOBILETOOLS', description, inLanguage: 'en' },
-    { '@type': 'CollectionPage', '@id': SITE + '/#webpage', url: SITE + '/', name: title, isPartOf: { '@id': SITE + '/#website' }, description },
+    {
+      '@type': 'CollectionPage',
+      '@id': SITE + '/#homepage',
+      url: SITE + '/',
+      name: title,
+      description,
+      isPartOf: { '@id': SITE + '/#website' },
+    },
     {
       '@type': 'ItemList',
-      name: 'FC Mobile tools',
-      itemListElement: tools.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: t.name, url: SITE + t.href })),
+      name: 'FC Mobile tools and resources',
+      itemListElement: tools.map((tool, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: tool.name,
+        url: SITE + tool.href,
+      })),
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'What can I find on FCMOBILETOOLS',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'FCMOBILETOOLS brings together FC Mobile redeem codes, live event information, calculators, planners, guides and practical daily resources.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Where can I check FC Mobile redeem codes',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'The Redeem Codes section lists current code status and rewards and links players to the official EA redemption flow.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Which FC Mobile calculators are available',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'The site includes Team OVR, Training, Rank Up and other planning tools designed around common FC Mobile decisions.',
+          },
+        },
+      ],
     },
   ],
 };
+
+const secondaryEvent = FOOTBALL_CENTRE_CONTENT.secondaryEvent ?? {};
 ---
+
 <BaseLayout title={title} description={description}>
-<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
-<main class="home" id="main">
+  <main class="home-v2" id="main">
+    <section class="hero-v2" aria-labelledby="hero-title">
+      <div class="hero-v2__backdrop" aria-hidden="true"></div>
+      <div class="hero-v2__art" aria-hidden="true">
+        <img src="/assets/images/herobeli.png" alt="" width="1600" height="900" fetchpriority="high" decoding="async" />
+      </div>
+      <div class="hero-v2__grid" aria-hidden="true"></div>
+      <div class="hero-v2__orb orb-a" aria-hidden="true"></div>
+      <div class="hero-v2__orb orb-b" aria-hidden="true"></div>
 
-  <!-- HERO -->
-  <section class="hero" aria-labelledby="hero-title">
-    <picture class="hero-media" aria-hidden="true">
-      <source media="(max-width: 600px)" srcset="/assets/images/herobeli.png" type="image/png" />
-      <img src="/assets/images/herobeli.png" alt="" width="1600" height="900" fetchpriority="high" decoding="async" sizes="100vw" />
-    </picture>
-    <div class="hero-shade" aria-hidden="true"></div>
-    <div class="hero-glow" aria-hidden="true"></div>
-    <div class="hero-grain" aria-hidden="true"></div>
+      <div class="wrap-v2 hero-v2__inner">
+        <div class="hero-v2__copy">
+          <p class="eyebrow-v2 enter" style="--delay:.02s"><span class="signal"></span> FC MOBILE 27 · LIVE HUB</p>
+          <h1 id="hero-title">
+            <span class="hero-line enter" style="--delay:.08s">Everything useful</span>
+            <span class="hero-line hero-line--accent enter" style="--delay:.15s">starts here</span>
+          </h1>
+          <p class="hero-v2__lead enter" style="--delay:.24s">
+            Live event timing, redeem codes, calculators, planners and guides built around the things FC Mobile players actually need
+          </p>
 
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
-        <p class="pill rise" style="--d:.05s"><i></i> Live and synced to UTC</p>
-        <h1 id="hero-title">
-          <span class="mask"><span class="line" style="--d:.15s">Everything useful</span></span>
-          <span class="mask"><span class="line grad" style="--d:.3s">starts here</span></span>
-        </h1>
-        <p class="lead rise" style="--d:.55s">Live events, redeem codes and the calculators you actually use, all in your local time</p>
-        <div class="actions rise" style="--d:.7s">
-          <a class="btn primary" href="/events">Open Events and Reset</a>
-          <a class="btn ghost" href="/redeem-codes">Redeem Codes</a>
+          <div class="hero-actions enter" style="--delay:.32s">
+            <a class="hero-btn hero-btn--primary" href="/events">
+              <span>Open live hub</span>
+              <b aria-hidden="true">↗</b>
+            </a>
+            <a class="hero-btn hero-btn--soft" href="/redeem-codes">
+              <span>Latest redeem code</span>
+              <b aria-hidden="true">→</b>
+            </a>
+          </div>
+
+          <div class="hero-proof enter" style="--delay:.4s" aria-label="Homepage coverage">
+            <span><i></i> Local time aware</span>
+            <span><i></i> Live code status</span>
+            <span><i></i> Practical tools</span>
+          </div>
+        </div>
+
+        <aside class="hero-board enter" style="--delay:.2s" aria-label="FC Mobile live status">
+          <div class="board-top">
+            <div>
+              <span class="board-kicker">LIVE BOARD</span>
+              <strong>FC Mobile 27</strong>
+            </div>
+            <span class="board-state"><i></i> ONLINE</span>
+          </div>
+
+          <div class="board-main">
+            <div class="board-main__head">
+              <span>Daily reset</span>
+              <b id="reset-local-label">YOUR LOCAL TIME</b>
+            </div>
+            <div class="board-clock" id="reset-time-v2">--:--:--</div>
+            <div class="board-track"><b id="reset-bar-v2"></b></div>
+            <div class="board-times">
+              <span><small>UTC</small><b id="utc-now-v2">--:--</b></span>
+              <span><small>LOCAL</small><b id="local-now-v2">--:--</b></span>
+            </div>
+          </div>
+
+          <div class="board-event">
+            <div class="board-event__visual">
+              <span class="event-dot"></span>
+              <span>NOW LIVE</span>
+            </div>
+            <div>
+              <strong>Anniversary season</strong>
+              <p>FC Mobile 27 is live now</p>
+            </div>
+            <a href="/events" aria-label="Open events and reset">↗</a>
+          </div>
+        </aside>
+      </div>
+
+      <a class="hero-scroll" href="#live" aria-label="Scroll to live status">
+        <span>SCROLL TO EXPLORE</span>
+        <b>↓</b>
+      </a>
+    </section>
+
+    <section class="live-section" id="live" aria-labelledby="live-title">
+      <div class="wrap-v2">
+        <div class="section-intro reveal">
+          <div>
+            <p class="eyebrow-v2">RIGHT NOW</p>
+            <h2 id="live-title">Know what matters next</h2>
+          </div>
+          <a class="text-link" href="/events">View all events <b>↗</b></a>
+        </div>
+
+        <div class="live-grid reveal">
+          <article class="live-card live-card--feature">
+            <div class="live-card__noise" aria-hidden="true"></div>
+            <div class="live-card__head">
+              <span class="live-pill"><i></i> LIVE NOW</span>
+              <span>SEASON 27</span>
+            </div>
+            <div class="live-card__body">
+              <div>
+                <p class="mini-label">CURRENT EVENT</p>
+                <h3>Anniversary</h3>
+                <p class="live-card__copy">The third anniversary season is live with the next major event and season reset already on the calendar</p>
+              </div>
+              <a class="round-link" href="/events" aria-label="Open Anniversary event"><span>↗</span></a>
+            </div>
+            <div class="live-card__meta">
+              <span><small>LIVE SINCE</small><b>24 SEP 2026</b></span>
+              <span><small>NEXT EVENT</small><b>15 OCT</b></span>
+              <span><small>RESET</small><b>22 OCT</b></span>
+            </div>
+          </article>
+
+          <article class="live-card live-card--next">
+            <div class="live-card__head">
+              <span class="next-pill">UP NEXT</span>
+              <span>15 OCT 2026</span>
+            </div>
+            <div class="next-mark" aria-hidden="true">
+              <span>15</span>
+              <small>OCT</small>
+            </div>
+            <div>
+              <p class="mini-label">NEXT MAJOR EVENT</p>
+              <h3>{secondaryEvent.title || 'Unbreakable'}</h3>
+              <p class="live-card__copy">{secondaryEvent.subtitle || 'Upcoming FC Mobile major event'}</p>
+            </div>
+            <div class="countdown-row">
+              <span>COUNTDOWN</span>
+              <strong id="unbreakable-countdown">--:--:--</strong>
+            </div>
+            <a class="text-link" href="/events">See the schedule <b>↗</b></a>
+          </article>
+
+          <article class="live-card live-card--reset">
+            <div class="live-card__head">
+              <span class="reset-pill">SEASON RESET</span>
+              <span>22 OCT 2026</span>
+            </div>
+            <div class="reset-ring" aria-hidden="true"><span>27</span></div>
+            <div>
+              <p class="mini-label">DIVISION RIVALS</p>
+              <h3>Season reset</h3>
+              <p class="live-card__copy">The Anniversary Division Rivals season is scheduled to reset on October 22</p>
+            </div>
+            <a class="text-link" href="/events">Open reset center <b>↗</b></a>
+          </article>
         </div>
       </div>
+    </section>
 
-      <aside class="clock rise" style="--d:.85s" aria-label="Daily reset countdown">
-        <p class="clock-label">Daily reset in</p>
-        <p class="clock-time" id="reset-time">--:--:--</p>
-        <div class="clock-bar" aria-hidden="true"><b id="reset-bar"></b></div>
-        <dl class="clock-meta">
-          <div><dt>UTC now</dt><dd id="utc-now">--:--</dd></div>
-          <div><dt>Your time</dt><dd id="local-now">--:--</dd></div>
-        </dl>
-        <a class="clock-link" href="/events">See every countdown</a>
-      </aside>
-    </div>
-  </section>
+    <section class="code-section" aria-labelledby="code-title">
+      <div class="wrap-v2">
+        <div class="code-shell reveal">
+          <div class="code-copy">
+            <div class="code-copy__top">
+              <span class="code-live"><i></i> ACTIVE CODE</span>
+              <span>{featuredCode?.region || 'Global'}</span>
+            </div>
+            <p class="mini-label">LATEST REDEEM CODE</p>
+            <h2 id="code-title">{featuredCode?.code || 'No active code'}</h2>
+            <p class="code-reward">{featuredCode?.reward || 'Check the redeem page for the latest available code'}</p>
+            <div class="code-meta">
+              <span><small>RELEASED</small><b>{featuredCode?.releaseDate || '—'}</b></span>
+              <span><small>VERIFIED</small><b>{featuredCode?.lastVerified || '—'}</b></span>
+            </div>
+          </div>
 
-  <!-- TOOLS -->
-  <section class="wrap block" aria-labelledby="tools-title">
-    <header class="head">
-      <h2 id="tools-title">Built for the actual grind</h2>
-      <p>Fast utilities for daily play, with the most used ones up front</p>
-    </header>
-    <ul class="bento" role="list">
-      {tools.map((t) => (
-        <li class={`cell ${t.cls}`}>
-          <a href={t.href} class="tile">
-            <span class="tag">{t.tag}</span>
-            <h3>{t.name}</h3>
-            <p>{t.text}</p>
-            <span class="go" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
-            </span>
-          </a>
-        </li>
-      ))}
-    </ul>
-  </section>
-
-  <!-- LATEST -->
-  <section class="wrap block" aria-labelledby="latest-title">
-    <header class="head">
-      <h2 id="latest-title">Fresh guides</h2>
-      <a class="more" href="/blog">View all guides</a>
-    </header>
-    {latestArticles.length ? (
-      <div class="posts">
-        {latestArticles.map((post, i) => (
-          <article class={`post ${i === 0 ? 'lead-post' : ''}`}>
-            <a href={`/blog/${post.slug}/`} class="post-link">
-              <div class="thumb">
-                {post.data.image ? (
-                  <img
-                    src={optimizeCloudinary(post.data.image, i === 0 ? 900 : 480)}
-                    alt={post.data.title}
-                    width={i === 0 ? 900 : 480}
-                    height={i === 0 ? 506 : 270}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div class="ph">FC</div>
-                )}
-              </div>
-              <div class="post-body">
-                <p class="meta">
-                  <span>{post.data.category}</span>
-                  {post.data.publishedAt && <time datetime={new Date(post.data.publishedAt).toISOString()}>{fmtDate(post.data.publishedAt)}</time>}
-                  <span>{readingTime(post)} min read</span>
-                </p>
-                <h3>{post.data.title}</h3>
-                {i === 0 && <p class="ex">{post.data.excerpt ?? post.data.description}</p>}
-              </div>
+          <div class="code-action">
+            <div class="code-stamp" aria-hidden="true">
+              <span>FCM</span>
+              <b>LIVE</b>
+            </div>
+            <a class="hero-btn hero-btn--primary" href="/redeem-codes">
+              <span>View &amp; redeem</span>
+              <b aria-hidden="true">↗</b>
             </a>
-          </article>
-        ))}
+            <p>Code status is managed from the FCMOBILETOOLS redeem database</p>
+          </div>
+        </div>
       </div>
-    ) : (
-      <p class="empty">No published articles yet</p>
-    )}
-  </section>
+    </section>
 
-  <!-- CLOSING -->
-  <section class="wrap close" aria-labelledby="close-title">
-    <div class="close-card">
-      <h2 id="close-title">Less searching,<br />more playing</h2>
-      <a class="btn primary" href="/events">Start with Events and Reset</a>
-    </div>
-  </section>
-</main>
+    <section class="tools-section" id="tools" aria-labelledby="tools-title">
+      <div class="wrap-v2">
+        <div class="section-intro reveal">
+          <div>
+            <p class="eyebrow-v2">THE TOOLBOX</p>
+            <h2 id="tools-title">Built for the grind</h2>
+          </div>
+          <p class="section-note">Open a tool, make the decision, get back to the game</p>
+        </div>
+
+        <div class="tool-grid reveal">
+          {tools.map((tool, index) => (
+            <a class:list={['tool-card', index === 0 ? 'tool-card--featured' : '', index === 5 ? 'tool-card--wide' : '']} href={tool.href}>
+              <span class="tool-number">{tool.label}</span>
+              <span class="tool-icon" aria-hidden="true">
+                {tool.icon === 'ticket' && <svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 15.5z"/><path d="M8 6v12M16 10h.01M16 14h.01"/></svg>}
+                {tool.icon === 'spark' && <svg viewBox="0 0 24 24"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z"/></svg>}
+                {tool.icon === 'bolt' && <svg viewBox="0 0 24 24"><path d="M13 2 4.5 13H11l-1 9L19.5 11H13z"/></svg>}
+                {tool.icon === 'arrow' && <svg viewBox="0 0 24 24"><path d="M4 18 10 12l4 4 6-6"/><path d="M14 10h6v6"/></svg>}
+                {tool.icon === 'grid' && <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>}
+                {tool.icon === 'pulse' && <svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>}
+                {tool.icon === 'book' && <svg viewBox="0 0 24 24"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H20v16H7.5A2.5 2.5 0 0 0 5 21z"/><path d="M5 5.5V21M9 7h7M9 11h7"/></svg>}
+                {tool.icon === 'star' && <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>}
+              </span>
+              <span class="tool-type">{tool.type}</span>
+              <h3>{tool.name}</h3>
+              <p>{tool.text}</p>
+              <span class="tool-go" aria-hidden="true">↗</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="articles-section" aria-labelledby="articles-title">
+      <div class="wrap-v2">
+        <div class="section-intro reveal">
+          <div>
+            <p class="eyebrow-v2">FROM THE EDITORIAL DESK</p>
+            <h2 id="articles-title">Latest from FCMOBILETOOLS</h2>
+          </div>
+          <a class="text-link" href="/blog">Browse all articles <b>↗</b></a>
+        </div>
+
+        {latestArticles.length ? (
+          <div class="article-layout reveal">
+            {latestArticles[0] && (
+              <article class="article-feature">
+                <a href={`/blog/${latestArticles[0].slug}/`}>
+                  <div class="article-image">
+                    {latestArticles[0].data.image ? (
+                      <img
+                        src={optimizeCloudinary(latestArticles[0].data.image, 1100)}
+                        alt={latestArticles[0].data.title}
+                        width="1100"
+                        height="619"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span>FCM</span>
+                    )}
+                    <span class="article-image__label">FEATURED</span>
+                  </div>
+                  <div class="article-feature__body">
+                    <div class="article-meta">
+                      <span>{latestArticles[0].data.category}</span>
+                      {latestArticles[0].data.publishedAt && <time datetime={new Date(latestArticles[0].data.publishedAt).toISOString()}>{fmtDate(latestArticles[0].data.publishedAt)}</time>}
+                      <span>{readingTime(latestArticles[0])} min read</span>
+                    </div>
+                    <h3>{latestArticles[0].data.title}</h3>
+                    <p>{latestArticles[0].data.excerpt ?? latestArticles[0].data.description}</p>
+                    <span class="text-link">Read article <b>↗</b></span>
+                  </div>
+                </a>
+              </article>
+            )}
+
+            <div class="article-list">
+              {latestArticles.slice(1).map((post) => (
+                <article class="article-row">
+                  <a href={`/blog/${post.slug}/`}>
+                    <div class="article-row__thumb">
+                      {post.data.image ? (
+                        <img
+                          src={optimizeCloudinary(post.data.image, 360)}
+                          alt=""
+                          width="360"
+                          height="203"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <span>FCM</span>
+                      )}
+                    </div>
+                    <div class="article-row__body">
+                      <div class="article-meta">
+                        <span>{post.data.category}</span>
+                        {post.data.publishedAt && <time datetime={new Date(post.data.publishedAt).toISOString()}>{fmtDate(post.data.publishedAt)}</time>}
+                      </div>
+                      <h3>{post.data.title}</h3>
+                      <span class="row-arrow" aria-hidden="true">↗</span>
+                    </div>
+                  </a>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p class="empty-state">New articles are on the way</p>
+        )}
+      </div>
+    </section>
+
+    <section class="seo-section" aria-labelledby="seo-title">
+      <div class="wrap-v2 seo-grid">
+        <div>
+          <p class="eyebrow-v2">ONE PLACE FOR THE DAILY GRIND</p>
+          <h2 id="seo-title">FC Mobile tools that save time</h2>
+        </div>
+        <div class="seo-copy">
+          <p>
+            FCMOBILETOOLS is a fan-made FC Mobile resource hub for players who want useful information without jumping between scattered pages
+          </p>
+          <p>
+            Check live event schedules and reset timers, find current redeem codes, calculate squad and training decisions, plan Rank Up resources, and follow FC Mobile updates and guides
+          </p>
+          <a class="text-link" href="/legal/about">Learn more about FCMOBILETOOLS <b>↗</b></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section" aria-labelledby="faq-title">
+      <div class="wrap-v2">
+        <div class="section-intro reveal">
+          <div>
+            <p class="eyebrow-v2">QUICK ANSWERS</p>
+            <h2 id="faq-title">Start here</h2>
+          </div>
+        </div>
+        <div class="faq-grid reveal">
+          <details>
+            <summary>What can I find on FCMOBILETOOLS <span>+</span></summary>
+            <p>Redeem codes, live events, reset timers, calculators, planners, guides and FC Mobile updates are all collected here in one place</p>
+          </details>
+          <details>
+            <summary>Where are the current redeem codes <span>+</span></summary>
+            <p>Open the Redeem Codes page to see current status, rewards and the official EA redemption route</p>
+          </details>
+          <details>
+            <summary>Which calculators are available <span>+</span></summary>
+            <p>Team OVR, Training and Rank Up calculators are available alongside additional planning tools</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-section">
+      <div class="wrap-v2">
+        <div class="final-card reveal">
+          <div>
+            <p class="eyebrow-v2">YOUR NEXT MOVE</p>
+            <h2>Everything useful<br /><span>starts here</span></h2>
+          </div>
+          <div class="final-actions">
+            <a class="hero-btn hero-btn--primary" href="/events"><span>Open live hub</span><b>↗</b></a>
+            <a class="hero-btn hero-btn--soft" href="#tools"><span>Explore tools</span><b>↓</b></a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 </BaseLayout>
 
 <script>
-  // Daily reset countdown. Change RESET_HOUR_UTC if your reset time differs
   const RESET_HOUR_UTC = 0;
   const $ = (id) => document.getElementById(id);
-  const t = $('reset-time'), bar = $('reset-bar'), utc = $('utc-now'), loc = $('local-now');
-  const pad = (n) => String(n).padStart(2, '0');
+  const resetTime = $('reset-time-v2');
+  const resetBar = $('reset-bar-v2');
+  const utcNow = $('utc-now-v2');
+  const localNow = $('local-now-v2');
+  const localLabel = $('reset-local-label');
+  const unbreakable = $('unbreakable-countdown');
   const DAY = 86400000;
-  function tick() {
+  const pad = (value) => String(value).padStart(2, '0');
+
+  function tickReset() {
     const now = new Date();
     const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), RESET_HOUR_UTC));
     if (next <= now) next.setTime(next.getTime() + DAY);
-    const ms = next - now;
-    const s = Math.floor(ms / 1000);
-    if (t) t.textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
-    if (bar) bar.style.transform = `scaleX(${1 - ms / DAY})`;
-    if (utc) utc.textContent = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
-    if (loc) loc.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-  tick();
-  setInterval(tick, 1000);
 
-  // Pointer glow on hero and tiles (skipped on touch and reduced motion)
-  if (matchMedia('(hover:hover)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const glow = document.querySelector('.hero-glow');
-    document.querySelector('.hero')?.addEventListener('pointermove', (e) => {
-      const r = e.currentTarget.getBoundingClientRect();
-      glow?.style.setProperty('--x', e.clientX - r.left + 'px');
-      glow?.style.setProperty('--y', e.clientY - r.top + 'px');
-    });
-    document.querySelectorAll('.tile').forEach((el) =>
-      el.addEventListener('pointermove', (e) => {
-        const r = el.getBoundingClientRect();
-        el.style.setProperty('--mx', e.clientX - r.left + 'px');
-        el.style.setProperty('--my', e.clientY - r.top + 'px');
-      })
-    );
+    const remaining = next.getTime() - now.getTime();
+    const seconds = Math.max(0, Math.floor(remaining / 1000));
+
+    if (resetTime) {
+      resetTime.textContent = `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor((seconds % 3600) / 60))}:${pad(seconds % 60)}`;
+    }
+    if (resetBar) {
+      resetBar.style.transform = `scaleX(${Math.min(1, Math.max(0, 1 - remaining / DAY))})`;
+    }
+    if (utcNow) {
+      utcNow.textContent = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+    }
+    if (localNow) {
+      localNow.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    if (localLabel && Intl.DateTimeFormat().resolvedOptions().timeZone) {
+      localLabel.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, ' ');
+    }
   }
+
+  function tickUnbreakable() {
+    const now = new Date();
+    const target = new Date('2026-10-15T00:00:00Z');
+    const ms = target.getTime() - now.getTime();
+    if (!unbreakable) return;
+
+    if (ms <= 0) {
+      unbreakable.textContent = 'LIVE NOW';
+      return;
+    }
+
+    const seconds = Math.floor(ms / 1000);
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    unbreakable.textContent = `${days}d ${pad(hours)}:${pad(minutes)}`;
+  }
+
+  tickReset();
+  tickUnbreakable();
+  setInterval(tickReset, 1000);
+  setInterval(tickUnbreakable, 1000);
+
+  const reveal = () => {
+    const items = document.querySelectorAll('.reveal');
+    if (!items.length) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+      items.forEach((item) => item.classList.add('is-visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries, io) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        io.unobserve(entry.target);
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+
+    items.forEach((item) => observer.observe(item));
+  };
+
+  reveal();
 </script>
 
 <style is:global>
-  .home {
-    --c: var(--blue, #38d6f5);
-    --bg0: var(--bg, #05090d);
-    --ink: var(--text, #eef7fa);
-    --dim: var(--muted, #8798a6);
-    --line: var(--border, #16252f);
-    --card: var(--surface, #09121a);
-    background: var(--bg0);
-    color: var(--ink);
+  .home-v2 {
+    --home-bg: #061018;
+    --home-surface: #0a1720;
+    --home-surface-2: #0d1c27;
+    --home-border: rgba(124, 188, 214, .15);
+    --home-border-strong: rgba(87, 205, 246, .34);
+    --home-text: #eef9fc;
+    --home-muted: #88a0ad;
+    --home-soft: #b5c8d0;
+    --home-accent: #55d5ff;
+    --home-accent-2: #7aeecb;
+    background:
+      radial-gradient(900px 520px at 12% 8%, rgba(47, 173, 214, .11), transparent 62%),
+      radial-gradient(840px 560px at 88% 28%, rgba(64, 112, 218, .09), transparent 64%),
+      var(--home-bg);
+    color: var(--home-text);
     overflow: clip;
+    position: relative;
   }
-  .home .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
-  .home h1, .home h2, .home h3 { margin: 0; font-weight: 800; }
-  .home p { margin: 0; }
-  .home a { color: inherit; text-decoration: none; }
-  .home :focus-visible { outline: 2px solid var(--c); outline-offset: 3px; border-radius: 6px; }
+
+  .home-v2,
+  .home-v2 * { box-sizing: border-box; }
+
+  .home-v2 .wrap-v2 {
+    width: min(1180px, calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .home-v2 a { color: inherit; text-decoration: none; }
+  .home-v2 p,
+  .home-v2 h1,
+  .home-v2 h2,
+  .home-v2 h3 { margin: 0; }
+  .home-v2 h1,
+  .home-v2 h2,
+  .home-v2 h3 { font-family: "Space Grotesk", var(--font-display, sans-serif); }
+  .home-v2 :focus-visible {
+    outline: 2px solid var(--home-accent);
+    outline-offset: 4px;
+  }
+
+  .eyebrow-v2,
+  .mini-label,
+  .board-kicker,
+  .tool-type,
+  .article-meta,
+  .live-card__head,
+  .code-copy__top,
+  .code-meta,
+  .hero-proof,
+  .hero-scroll,
+  .board-state {
+    font-family: "Inter", var(--font-body, sans-serif);
+    text-transform: uppercase;
+    letter-spacing: .11em;
+    font-weight: 800;
+  }
 
   /* Hero */
-  .hero { position: relative; min-height: min(92svh, 820px); display: grid; align-items: center; isolation: isolate; border-bottom: 1px solid var(--line); }
-  .hero-media, .hero-media img { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .hero-media img { object-fit: cover; opacity: .55; transform: scale(1.06); animation: settle 2.2s cubic-bezier(.2,.7,.2,1) forwards; }
-  .hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #05090df5 8%, #05090da0 55%, #05090d70), linear-gradient(0deg, var(--bg0), transparent 45%); }
-  .hero-glow { position: absolute; inset: 0; --x: 30%; --y: 40%; background: radial-gradient(520px circle at var(--x) var(--y), color-mix(in srgb, var(--c) 20%, transparent), transparent 70%); pointer-events: none; }
-  .hero-grain { position: absolute; inset: 0; opacity: .07; mix-blend-mode: overlay; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-  .hero-grid { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 320px; gap: 48px; align-items: center; padding: 110px 0 80px; }
-  .pill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 14px; border: 1px solid #ffffff1c; border-radius: 99px; background: #ffffff0a; backdrop-filter: blur(10px); font-size: 13px; color: #b8c8d2; }
-  .pill i { width: 7px; height: 7px; border-radius: 50%; background: #5ff0a5; box-shadow: 0 0 0 0 #5ff0a566; animation: ping 2s infinite; }
-  .hero h1 { margin-top: 26px; font-size: clamp(46px, 8.2vw, 104px); line-height: .96; letter-spacing: -.045em; }
-  .mask { display: block; overflow: hidden; padding-bottom: .08em; }
-  .line { display: block; transform: translateY(105%); animation: up .95s cubic-bezier(.2,.8,.15,1) var(--d) forwards; }
-  .grad { background: linear-gradient(100deg, var(--c), #7af0d0 60%, #fff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .lead { max-width: 560px; margin-top: 26px; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.65; color: #aebdc7; }
-  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 15px 24px; border-radius: 12px; font-weight: 700; font-size: 15px; border: 1px solid transparent; transition: transform .25s, box-shadow .25s, background .25s; }
-  .btn.primary { background: var(--c); color: #04141b; box-shadow: 0 10px 30px -10px var(--c); }
-  .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -10px var(--c); }
-  .btn.ghost { border-color: #ffffff26; background: #ffffff0a; backdrop-filter: blur(10px); }
-  .btn.ghost:hover { border-color: var(--c); transform: translateY(-2px); }
-  .rise { opacity: 0; transform: translateY(16px); animation: fade .8s cubic-bezier(.2,.8,.2,1) var(--d) forwards; }
+  .hero-v2 {
+    min-height: min(860px, 92svh);
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    align-items: center;
+    border-bottom: 1px solid var(--home-border);
+    background: #061018;
+  }
 
-  /* Reset clock */
-  .clock { padding: 24px; border: 1px solid #ffffff1c; border-radius: 22px; background: linear-gradient(160deg, #ffffff12, #ffffff05); backdrop-filter: blur(18px); box-shadow: 0 30px 80px -30px #000; }
-  .clock-label { font-size: 13px; color: var(--dim); }
-  .clock-time { margin-top: 6px; font-size: 46px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-  .clock-bar { height: 4px; margin: 18px 0; border-radius: 9px; background: #ffffff14; overflow: hidden; }
-  .clock-bar b { display: block; height: 100%; background: linear-gradient(90deg, var(--c), #7af0d0); transform-origin: left; transform: scaleX(0); transition: transform 1s linear; }
-  .clock-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0; }
-  .clock-meta dt { font-size: 12px; color: var(--dim); }
-  .clock-meta dd { margin: 3px 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .clock-link { display: inline-block; margin-top: 18px; font-size: 14px; font-weight: 700; color: var(--c); }
-  .clock-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .hero-v2__art {
+    position: absolute;
+    inset: 0;
+    z-index: -3;
+    overflow: hidden;
+  }
+
+  .hero-v2__art img {
+    position: absolute;
+    right: -7%;
+    top: -4%;
+    width: min(78vw, 1220px);
+    height: 108%;
+    max-width: none;
+    object-fit: cover;
+    object-position: center;
+    opacity: .48;
+    transform: scale(1.045);
+    filter: saturate(.92) contrast(1.02);
+    animation: heroSettle 2s cubic-bezier(.2,.75,.2,1) both;
+  }
+
+  .hero-v2__backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background:
+      linear-gradient(90deg, #061018 0%, rgba(6,16,24,.96) 24%, rgba(6,16,24,.68) 55%, rgba(6,16,24,.20) 100%),
+      linear-gradient(180deg, rgba(6,16,24,.24), #061018 94%);
+  }
+
+  .hero-v2__grid {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: .18;
+    background-image:
+      linear-gradient(rgba(145,205,225,.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(145,205,225,.055) 1px, transparent 1px);
+    background-size: 74px 74px;
+    mask-image: linear-gradient(90deg, rgba(0,0,0,.72), rgba(0,0,0,.06));
+  }
+
+  .hero-v2__orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(2px);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .orb-a {
+    width: 430px;
+    height: 430px;
+    right: 8%;
+    top: 4%;
+    background: radial-gradient(circle, rgba(85,213,255,.13), transparent 68%);
+    animation: floatA 9s ease-in-out infinite;
+  }
+
+  .orb-b {
+    width: 320px;
+    height: 320px;
+    left: -120px;
+    bottom: 4%;
+    background: radial-gradient(circle, rgba(122,238,203,.08), transparent 68%);
+    animation: floatB 11s ease-in-out infinite;
+  }
+
+  .hero-v2__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.18fr) minmax(320px, 410px);
+    gap: clamp(50px, 7vw, 100px);
+    align-items: center;
+    padding: 108px 0 90px;
+  }
+
+  .hero-v2__copy { max-width: 700px; }
+  .eyebrow-v2 {
+    color: #73dfff;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  .hero-v2__copy .eyebrow-v2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .signal,
+  .live-pill i,
+  .code-live i,
+  .board-state i,
+  .hero-proof i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    background: #67efb0;
+    box-shadow: 0 0 0 0 rgba(103,239,176,.42);
+    animation: ping 2.1s infinite;
+  }
+
+  .hero-v2 h1 {
+    margin-top: 28px;
+    font-size: clamp(56px, 8vw, 106px);
+    line-height: .9;
+    letter-spacing: -.06em;
+    max-width: 820px;
+  }
+
+  .hero-line {
+    display: block;
+    opacity: 0;
+    transform: translateY(34px);
+    animation: heroUp .95s cubic-bezier(.2,.78,.2,1) var(--delay) forwards;
+  }
+
+  .hero-line--accent {
+    background: linear-gradient(100deg, var(--home-accent), #7aeecb 68%, #eafff9);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .hero-v2__lead {
+    max-width: 650px;
+    margin-top: 28px;
+    color: var(--home-soft);
+    font-size: clamp(16px, 1.45vw, 19px);
+    line-height: 1.7;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 11px;
+    margin-top: 34px;
+  }
+
+  .hero-btn {
+    min-height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 0 17px 0 19px;
+    border-radius: 13px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 800;
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease, background .25s ease;
+  }
+
+  .hero-btn b {
+    font-size: 17px;
+    line-height: 1;
+    font-weight: 500;
+  }
+
+  .hero-btn--primary {
+    color: #05212a !important;
+    background: linear-gradient(110deg, var(--home-accent), #7aeecb);
+    box-shadow: 0 16px 40px rgba(68, 210, 245, .18);
+  }
+
+  .hero-btn--primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 22px 55px rgba(68, 210, 245, .25);
+  }
+
+  .hero-btn--soft {
+    background: rgba(255,255,255,.055);
+    border-color: rgba(255,255,255,.12);
+    color: var(--home-text) !important;
+    backdrop-filter: blur(14px);
+  }
+
+  .hero-btn--soft:hover {
+    transform: translateY(-3px);
+    border-color: var(--home-border-strong);
+    background: rgba(85,213,255,.08);
+  }
+
+  .hero-proof {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px 18px;
+    margin-top: 24px;
+    color: #708895;
+    font-size: 9px;
+  }
+
+  .hero-proof span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .hero-proof i {
+    width: 4px;
+    height: 4px;
+    box-shadow: none;
+    animation: none;
+    background: #55d5ff;
+  }
+
+  .enter {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: fadeUp .8s cubic-bezier(.2,.8,.2,1) var(--delay) forwards;
+  }
+
+  .hero-board {
+    border: 1px solid rgba(159,215,234,.19);
+    border-radius: 26px;
+    padding: 12px;
+    background: linear-gradient(160deg, rgba(20,42,55,.80), rgba(5,19,28,.74));
+    backdrop-filter: blur(22px);
+    box-shadow: 0 35px 90px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.035);
+  }
+
+  .board-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 13px 17px;
+  }
+
+  .board-kicker {
+    display: block;
+    color: #5f7c89;
+    font-size: 8px;
+  }
+
+  .board-top strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 15px;
+  }
+
+  .board-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 8px;
+    color: #9fecc7;
+    font-size: 7px;
+    border: 1px solid rgba(103,239,176,.15);
+    border-radius: 999px;
+    background: rgba(103,239,176,.045);
+  }
+
+  .board-main {
+    padding: 18px;
+    border-radius: 19px;
+    background:
+      radial-gradient(500px circle at 88% 0%, rgba(85,213,255,.11), transparent 55%),
+      rgba(3,13,20,.56);
+    border: 1px solid rgba(255,255,255,.055);
+  }
+
+  .board-main__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: #7f98a4;
+    font-size: 10px;
+  }
+
+  .board-main__head b {
+    color: #4e6b77;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: .08em;
+  }
+
+  .board-clock {
+    margin-top: 8px;
+    font-size: clamp(40px, 5vw, 54px);
+    line-height: 1;
+    letter-spacing: -.055em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .board-track {
+    height: 3px;
+    margin-top: 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.075);
+    overflow: hidden;
+  }
+
+  .board-track b {
+    display: block;
+    width: 0;
+    height: 100%;
+    transform-origin: left;
+    background: linear-gradient(90deg, var(--home-accent), var(--home-accent-2));
+    box-shadow: 0 0 18px rgba(85,213,255,.5);
+  }
+
+  .board-times {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 15px;
+  }
+
+  .board-times span { display: block; }
+  .board-times small {
+    display: block;
+    color: #53717e;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: .12em;
+  }
+
+  .board-times b {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .board-event {
+    display: grid;
+    grid-template-columns: auto minmax(0,1fr) auto;
+    gap: 10px;
+    align-items: center;
+    margin-top: 9px;
+    padding: 13px 14px;
+    border: 1px solid rgba(103,239,176,.13);
+    border-radius: 17px;
+    background: rgba(103,239,176,.03);
+  }
+
+  .board-event__visual {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    min-width: 46px;
+    color: #79e7b7;
+    font-size: 6px;
+    letter-spacing: .1em;
+    font-weight: 900;
+  }
+
+  .event-dot {
+    width: 25px;
+    height: 25px;
+    display: block;
+    border-radius: 50%;
+    border: 1px solid rgba(103,239,176,.28);
+    background: radial-gradient(circle at 50% 35%, rgba(103,239,176,.35), rgba(103,239,176,.07));
+  }
+
+  .board-event strong { display: block; font-size: 11px; }
+  .board-event p { margin-top: 3px; color: #708995; font-size: 9px; }
+  .board-event > a {
+    width: 31px;
+    height: 31px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 50%;
+    color: #89dff4;
+    transition: transform .2s ease, border-color .2s ease, background .2s ease;
+  }
+  .board-event > a:hover {
+    transform: translate(2px,-2px);
+    border-color: var(--home-border-strong);
+    background: rgba(85,213,255,.07);
+  }
+
+  .hero-scroll {
+    position: absolute;
+    left: 50%;
+    bottom: 25px;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #597583;
+    font-size: 7px;
+    z-index: 2;
+  }
+
+  .hero-scroll b {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--home-border);
+    border-radius: 50%;
+    font-size: 14px;
+    color: #88d9ec;
+  }
 
   /* Sections */
-  .block { padding: 96px 0 0; }
-  .head { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 30px; }
-  .head h2 { font-size: clamp(32px, 4.6vw, 56px); line-height: 1; letter-spacing: -.045em; }
-  .head p { max-width: 340px; color: var(--dim); font-size: 15px; line-height: 1.6; }
-  .more { color: var(--c); font-weight: 700; font-size: 14px; white-space: nowrap; }
-  .more:hover { text-decoration: underline; text-underline-offset: 4px; }
-
-  /* Bento */
-  .bento { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
-  .cell { grid-column: span 4; }
-  .cell.w7 { grid-column: span 7; } .cell.w5 { grid-column: span 5; }
-  .tile { --mx: 50%; --my: 0%; position: relative; display: flex; flex-direction: column; height: 100%; min-height: 210px; padding: 26px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); overflow: hidden; transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .3s; }
-  .tile::before { content: ""; position: absolute; inset: 0; background: radial-gradient(360px circle at var(--mx) var(--my), color-mix(in srgb, var(--c) 16%, transparent), transparent 65%); opacity: 0; transition: opacity .3s; }
-  .tile:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c) 45%, var(--line)); }
-  .tile:hover::before { opacity: 1; }
-  .hot .tile { min-height: 250px; background: linear-gradient(150deg, color-mix(in srgb, var(--c) 16%, var(--card)), var(--card) 70%); }
-  .tag { position: relative; align-self: flex-start; padding: 5px 11px; border-radius: 99px; background: #ffffff0d; font-size: 12px; color: var(--c); }
-  .tile h3 { position: relative; margin-top: auto; padding-top: 34px; font-size: 22px; letter-spacing: -.025em; }
-  .hot .tile h3 { font-size: 32px; }
-  .tile p { position: relative; margin-top: 8px; max-width: 420px; color: var(--dim); font-size: 14px; line-height: 1.6; }
-  .go { position: absolute; top: 22px; right: 22px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); color: var(--dim); transition: .3s; }
-  .tile:hover .go { background: var(--c); border-color: var(--c); color: #04141b; transform: rotate(45deg); }
-
-  /* Posts */
-  .posts { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; }
-  .post-link { display: grid; height: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--card); transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .3s; }
-  .post-link:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c) 45%, var(--line)); }
-  .lead-post { grid-row: span 3; }
-  .post:not(.lead-post) .post-link { grid-template-columns: 150px 1fr; align-items: stretch; }
-  .thumb { overflow: hidden; background: #0b1a23; }
-  .thumb img, .ph { width: 100%; height: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; transition: transform .7s cubic-bezier(.2,.8,.2,1); }
-  .post:not(.lead-post) .thumb img, .post:not(.lead-post) .ph { aspect-ratio: auto; }
-  .post-link:hover .thumb img { transform: scale(1.05); }
-  .ph { display: grid; place-items: center; font-weight: 800; font-size: 34px; color: var(--c); }
-  .post-body { padding: 22px; }
-  .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--dim); }
-  .meta span:first-child { color: var(--c); font-weight: 700; }
-  .post h3 { margin-top: 10px; font-size: 17px; line-height: 1.25; letter-spacing: -.02em; }
-  .lead-post h3 { font-size: clamp(24px, 3vw, 34px); line-height: 1.12; }
-  .ex { margin-top: 12px; color: var(--dim); font-size: 15px; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .empty { padding: 26px; border: 1px dashed var(--line); border-radius: 16px; color: var(--dim); }
-
-  /* Closing */
-  .close { padding: 96px 0 120px; }
-  .close-card { display: flex; justify-content: space-between; align-items: center; gap: 30px; padding: clamp(32px, 6vw, 72px); border: 1px solid color-mix(in srgb, var(--c) 30%, var(--line)); border-radius: 30px; background: radial-gradient(700px circle at 100% 0, color-mix(in srgb, var(--c) 22%, transparent), transparent 60%), var(--card); }
-  .close-card h2 { font-size: clamp(38px, 5.6vw, 72px); line-height: .98; letter-spacing: -.05em; }
-
-  @keyframes up { to { transform: none; } }
-  @keyframes fade { to { opacity: 1; transform: none; } }
-  @keyframes settle { to { transform: scale(1); } }
-  @keyframes ping { 70% { box-shadow: 0 0 0 9px #5ff0a500; } 100% { box-shadow: 0 0 0 0 #5ff0a500; } }
-
-  @media (max-width: 980px) {
-    .hero-grid { grid-template-columns: 1fr; padding: 96px 0 56px; }
-    .clock { max-width: 380px; }
-    .cell, .cell.w7, .cell.w5 { grid-column: span 6; }
-    .posts { grid-template-columns: 1fr; }
-    .lead-post { grid-row: auto; }
+  .live-section,
+  .tools-section,
+  .articles-section,
+  .seo-section,
+  .faq-section,
+  .code-section {
+    padding-top: 105px;
   }
-  @media (max-width: 600px) {
-    .home .wrap { width: calc(100% - 28px); }
-    .cell, .cell.w7, .cell.w5 { grid-column: 1 / -1; }
-    .tile, .hot .tile { min-height: 190px; }
-    .head { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .post:not(.lead-post) .post-link { grid-template-columns: 110px 1fr; }
-    .post-body { padding: 16px; }
-    .close-card { flex-direction: column; align-items: flex-start; }
-    .block { padding-top: 72px; }
+
+  .final-section {
+    padding: 105px 0 125px;
   }
+
+  .section-intro {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+
+  .section-intro h2 {
+    margin-top: 9px;
+    font-size: clamp(34px, 5vw, 58px);
+    line-height: .96;
+    letter-spacing: -.05em;
+  }
+
+  .text-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #85def4 !important;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .text-link b {
+    font-size: 15px;
+    font-weight: 500;
+    transition: transform .2s ease;
+  }
+
+  .text-link:hover b { transform: translate(2px,-2px); }
+
+  .section-note {
+    max-width: 340px;
+    color: #738995;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1);
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Live board */
+  .live-grid {
+    display: grid;
+    grid-template-columns: 1.24fr .88fr .88fr;
+    gap: 13px;
+  }
+
+  .live-card {
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--home-border);
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgba(13,28,39,.97), rgba(8,19,28,.98));
+    transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+  }
+
+  .live-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(85,213,255,.28);
+    box-shadow: 0 24px 65px rgba(0,0,0,.18);
+  }
+
+  .live-card__noise {
+    position: absolute;
+    width: 340px;
+    height: 340px;
+    top: -170px;
+    right: -120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(85,213,255,.13), transparent 67%);
+    pointer-events: none;
+  }
+
+  .live-card__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: #58727e;
+    font-size: 8px;
+  }
+
+  .live-pill,
+  .next-pill,
+  .reset-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 9px;
+    border-radius: 999px;
+  }
+
+  .live-pill {
+    color: #86efbd;
+    border: 1px solid rgba(103,239,176,.15);
+    background: rgba(103,239,176,.04);
+  }
+
+  .next-pill {
+    color: #7fdffc;
+    border: 1px solid rgba(85,213,255,.16);
+    background: rgba(85,213,255,.04);
+  }
+
+  .reset-pill {
+    color: #c7b5ff;
+    border: 1px solid rgba(167,139,250,.16);
+    background: rgba(167,139,250,.05);
+  }
+
+  .live-card__body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 18px;
+    margin-top: auto;
+    margin-bottom: 24px;
+  }
+
+  .mini-label {
+    color: #52707d;
+    font-size: 8px;
+  }
+
+  .live-card h3 {
+    margin-top: 7px;
+    font-size: clamp(32px, 4vw, 50px);
+    letter-spacing: -.055em;
+    line-height: .95;
+  }
+
+  .live-card__copy {
+    max-width: 430px;
+    margin-top: 10px !important;
+    color: #8098a4;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .round-link {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--home-border);
+    border-radius: 50%;
+    color: #89e1f4;
+    transition: .25s ease;
+  }
+
+  .round-link:hover {
+    background: var(--home-accent);
+    border-color: var(--home-accent);
+    color: #06202a;
+    transform: rotate(45deg);
+  }
+
+  .live-card__meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    border-top: 1px solid var(--home-border);
+    padding-top: 16px;
+  }
+
+  .live-card__meta span { min-width: 0; }
+  .live-card__meta small,
+  .code-meta small {
+    display: block;
+    color: #4e6976;
+    font-size: 7px;
+    letter-spacing: .1em;
+    font-weight: 800;
+  }
+  .live-card__meta b,
+  .code-meta b {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    color: #bdd3dc;
+  }
+
+  .live-card--next,
+  .live-card--reset { justify-content: space-between; }
+
+  .next-mark {
+    width: 78px;
+    height: 78px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    margin: 21px 0 6px;
+    border: 1px solid rgba(85,213,255,.17);
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at 50% 30%, rgba(85,213,255,.15), transparent 65%),
+      rgba(85,213,255,.035);
+  }
+
+  .next-mark span {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: .9;
+    letter-spacing: -.06em;
+  }
+
+  .next-mark small {
+    margin-top: 3px;
+    color: #72d9ef;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .12em;
+  }
+
+  .countdown-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid var(--home-border);
+    color: #597380;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .11em;
+  }
+
+  .countdown-row strong {
+    color: var(--home-text);
+    font-size: 16px;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reset-ring {
+    width: 78px;
+    height: 78px;
+    display: grid;
+    place-items: center;
+    margin: 21px 0 6px;
+    border-radius: 50%;
+    border: 1px solid rgba(167,139,250,.19);
+    background:
+      radial-gradient(circle, rgba(167,139,250,.11), transparent 63%);
+    box-shadow: inset 0 0 0 10px rgba(167,139,250,.025), 0 0 0 1px rgba(167,139,250,.04);
+  }
+
+  .reset-ring span {
+    font-size: 27px;
+    letter-spacing: -.05em;
+  }
+
+  /* Redeem code */
+  .code-shell {
+    display: grid;
+    grid-template-columns: 1fr 270px;
+    gap: 30px;
+    align-items: center;
+    padding: clamp(30px, 5vw, 48px);
+    border: 1px solid rgba(85,213,255,.2);
+    border-radius: 28px;
+    background:
+      radial-gradient(500px 260px at 0 50%, rgba(85,213,255,.11), transparent 70%),
+      radial-gradient(460px 240px at 100% 0%, rgba(122,238,203,.08), transparent 72%),
+      linear-gradient(145deg, #0b1c27, #07131c);
+    box-shadow: 0 25px 80px rgba(0,0,0,.16);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .code-shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 0 45%, rgba(255,255,255,.035) 50%, transparent 55%);
+    transform: translateX(-115%);
+    animation: sweep 7s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .code-copy__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    color: #547180;
+    font-size: 8px;
+  }
+
+  .code-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #86efbd;
+  }
+
+  .code-copy > .mini-label { margin-top: 30px; }
+
+  .code-copy h2 {
+    margin-top: 7px;
+    font-family: "Space Grotesk", var(--font-display, sans-serif);
+    font-size: clamp(46px, 6vw, 72px);
+    line-height: .9;
+    letter-spacing: .055em;
+    color: #f4fbfe;
+  }
+
+  .code-reward {
+    margin-top: 13px !important;
+    color: #a7c2cc;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .code-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 24px;
+  }
+
+  .code-action {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    padding: 18px;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 22px;
+    background: rgba(4,14,21,.42);
+  }
+
+  .code-action .hero-btn { width: 100%; }
+  .code-action p {
+    color: #5f7b88;
+    text-align: center;
+    font-size: 9px;
+    line-height: 1.55;
+  }
+
+  .code-stamp {
+    width: 84px;
+    height: 84px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    border-radius: 22px;
+    background:
+      linear-gradient(160deg, rgba(85,213,255,.18), rgba(122,238,203,.08)),
+      #0a1a24;
+    border: 1px solid rgba(85,213,255,.25);
+    box-shadow: 0 0 32px rgba(85,213,255,.1);
+  }
+
+  .code-stamp span {
+    color: #8de7f6;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: -.04em;
+  }
+
+  .code-stamp b {
+    margin-top: 3px;
+    color: #76b4c4;
+    font-size: 7px;
+    letter-spacing: .15em;
+  }
+
+  /* Tool grid */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 12px;
+  }
+
+  .tool-card {
+    grid-column: span 3;
+    min-height: 245px;
+    padding: 21px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--home-border);
+    border-radius: 21px;
+    background: linear-gradient(145deg, rgba(12,27,38,.97), rgba(7,18,26,.98));
+    transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+  }
+
+  .tool-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(85,213,255,.28);
+    box-shadow: 0 24px 55px rgba(0,0,0,.18);
+  }
+
+  .tool-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(260px circle at 90% 0, rgba(85,213,255,.13), transparent 70%);
+    opacity: .75;
+  }
+
+  .tool-card--featured {
+    grid-column: span 6;
+    min-height: 245px;
+    background:
+      radial-gradient(420px circle at 100% 0, rgba(85,213,255,.16), transparent 60%),
+      linear-gradient(145deg, #0d2531, #091923 66%);
+  }
+
+  .tool-card--wide { grid-column: span 6; }
+
+  .tool-number,
+  .tool-icon,
+  .tool-type,
+  .tool-card h3,
+  .tool-card p,
+  .tool-go { position: relative; z-index: 1; }
+
+  .tool-number {
+    align-self: flex-end;
+    color: #3f5b68;
+    font-size: 8px;
+    letter-spacing: .12em;
+    font-weight: 800;
+  }
+
+  .tool-icon {
+    width: 40px;
+    height: 40px;
+    margin-top: 10px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(85,213,255,.16);
+    border-radius: 12px;
+    background: rgba(85,213,255,.045);
+    color: #79ddf4;
+  }
+
+  .tool-icon svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.55;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tool-type {
+    margin-top: auto;
+    padding-top: 18px;
+    color: #5e7b88;
+    font-size: 8px;
+  }
+
+  .tool-card h3 {
+    margin-top: 6px;
+    font-size: 22px;
+    letter-spacing: -.035em;
+  }
+
+  .tool-card--featured h3,
+  .tool-card--wide h3 { font-size: 27px; }
+
+  .tool-card p {
+    margin-top: 7px !important;
+    max-width: 440px;
+    color: #76909d;
+    font-size: 11px;
+    line-height: 1.65;
+  }
+
+  .tool-go {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 50%;
+    color: #72909d;
+    transition: .25s ease;
+  }
+
+  .tool-card:hover .tool-go {
+    background: var(--home-accent);
+    border-color: var(--home-accent);
+    color: #06202a;
+    transform: rotate(45deg);
+  }
+
+  /* Articles */
+  .article-layout {
+    display: grid;
+    grid-template-columns: 1.12fr .88fr;
+    gap: 13px;
+  }
+
+  .article-feature > a {
+    display: grid;
+    height: 100%;
+    grid-template-rows: auto 1fr;
+    border: 1px solid var(--home-border);
+    border-radius: 24px;
+    overflow: hidden;
+    background: linear-gradient(145deg, #0c1d28, #08131c);
+    transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+  }
+
+  .article-feature > a:hover {
+    transform: translateY(-5px);
+    border-color: rgba(85,213,255,.28);
+    box-shadow: 0 25px 65px rgba(0,0,0,.18);
+  }
+
+  .article-image {
+    position: relative;
+    min-height: 320px;
+    overflow: hidden;
+    background: #07131b;
+  }
+
+  .article-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .7s cubic-bezier(.2,.8,.2,1);
+  }
+
+  .article-feature > a:hover .article-image img { transform: scale(1.045); }
+
+  .article-image > span:last-child {
+    position: absolute;
+    left: 18px;
+    top: 18px;
+    padding: 7px 9px;
+    border-radius: 999px;
+    color: #8be2f3;
+    background: rgba(6,16,24,.72);
+    border: 1px solid rgba(85,213,255,.2);
+    backdrop-filter: blur(10px);
+    font-size: 7px;
+    letter-spacing: .12em;
+    font-weight: 800;
+  }
+
+  .article-image > span:first-child {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: #5ad8f4;
+    font-size: 44px;
+    font-weight: 900;
+  }
+
+  .article-feature__body {
+    padding: 25px 25px 27px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 13px;
+    color: #597480;
+    font-size: 8px;
+  }
+
+  .article-meta span:first-child { color: #6ddcf3; }
+
+  .article-feature h3 {
+    margin-top: 12px;
+    font-size: clamp(26px, 3.3vw, 38px);
+    line-height: 1.08;
+    letter-spacing: -.045em;
+  }
+
+  .article-feature__body > p {
+    margin-top: 12px !important;
+    color: #78909c;
+    font-size: 12px;
+    line-height: 1.7;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .article-feature__body > .text-link { margin-top: 18px; }
+
+  .article-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .article-row {
+    min-height: 0;
+    border: 1px solid var(--home-border);
+    border-radius: 18px;
+    background: #091721;
+    overflow: hidden;
+    transition: transform .3s ease, border-color .3s ease;
+  }
+
+  .article-row:hover {
+    transform: translateY(-3px);
+    border-color: rgba(85,213,255,.27);
+  }
+
+  .article-row > a {
+    display: grid;
+    grid-template-columns: 132px 1fr;
+    min-height: 130px;
+  }
+
+  .article-row__thumb {
+    background: #07131a;
+    overflow: hidden;
+  }
+
+  .article-row__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .55s ease;
+  }
+
+  .article-row:hover img { transform: scale(1.05); }
+
+  .article-row__thumb span {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: #4ab9d1;
+    font-weight: 900;
+  }
+
+  .article-row__body {
+    position: relative;
+    padding: 17px 42px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .article-row h3 {
+    margin-top: 7px;
+    font-size: 16px;
+    line-height: 1.25;
+    letter-spacing: -.02em;
+  }
+
+  .row-arrow {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #5f7e8b;
+    transition: transform .2s ease, color .2s ease;
+  }
+
+  .article-row:hover .row-arrow {
+    transform: translate(2px,-12px);
+    color: #86e0f3;
+  }
+
+  .empty-state {
+    padding: 45px;
+    border: 1px dashed var(--home-border);
+    border-radius: 18px;
+    color: #748d99;
+  }
+
+  /* SEO */
+  .seo-section {
+    border-top: 1px solid var(--home-border);
+    margin-top: 106px;
+    padding-bottom: 0;
+  }
+
+  .seo-grid {
+    display: grid;
+    grid-template-columns: .8fr 1.2fr;
+    gap: clamp(42px, 8vw, 120px);
+    padding-top: 58px;
+  }
+
+  .seo-grid h2 {
+    margin-top: 9px;
+    font-size: clamp(34px, 4.5vw, 54px);
+    line-height: 1;
+    letter-spacing: -.05em;
+  }
+
+  .seo-copy p {
+    max-width: 700px;
+    color: #77909c;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  .seo-copy p + p { margin-top: 15px; }
+  .seo-copy .text-link { margin-top: 20px; }
+
+  /* FAQ */
+  .faq-section {
+    padding-bottom: 0;
+  }
+
+  .faq-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .faq-grid details {
+    border: 1px solid var(--home-border);
+    border-radius: 17px;
+    background: #091721;
+    padding: 17px 18px;
+    transition: border-color .25s ease, background .25s ease;
+  }
+
+  .faq-grid details[open] {
+    border-color: rgba(85,213,255,.25);
+    background: #0a1a24;
+  }
+
+  .faq-grid summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    cursor: pointer;
+    color: #dcecf1;
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .faq-grid summary::-webkit-details-marker { display: none; }
+
+  .faq-grid summary span {
+    flex: 0 0 auto;
+    color: #6adcf4;
+    font-size: 20px;
+    font-weight: 400;
+    transition: transform .2s ease;
+  }
+
+  .faq-grid details[open] summary span { transform: rotate(45deg); }
+
+  .faq-grid details p {
+    padding-top: 13px;
+    color: #76909c;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  /* Final CTA */
+  .final-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 30px;
+    align-items: center;
+    padding: clamp(31px, 5vw, 52px);
+    border: 1px solid rgba(85,213,255,.22);
+    border-radius: 28px;
+    background:
+      radial-gradient(660px circle at 100% 0, rgba(85,213,255,.12), transparent 66%),
+      linear-gradient(145deg, #0c202b, #08151e);
+    overflow: hidden;
+  }
+
+  .final-card h2 {
+    margin-top: 8px;
+    font-size: clamp(38px, 5.6vw, 70px);
+    line-height: .96;
+    letter-spacing: -.055em;
+  }
+
+  .final-card h2 span { color: #6eddf2; }
+
+  .final-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Motion */
+  @keyframes heroSettle { to { transform: scale(1); } }
+  @keyframes heroUp { to { opacity: 1; transform: none; } }
+  @keyframes fadeUp { to { opacity: 1; transform: none; } }
+  @keyframes ping { 70% { box-shadow: 0 0 0 8px rgba(103,239,176,0); } 100% { box-shadow: 0 0 0 0 rgba(103,239,176,0); } }
+  @keyframes floatA { 50% { transform: translate3d(-13px, 10px, 0) scale(1.04); } }
+  @keyframes floatB { 50% { transform: translate3d(20px, -10px, 0) scale(.96); } }
+  @keyframes sweep {
+    0%, 60% { transform: translateX(-115%); }
+    76%, 100% { transform: translateX(115%); }
+  }
+
+  /* Responsive */
+  @media (max-width: 1020px) {
+    .hero-v2__inner {
+      grid-template-columns: 1fr;
+      gap: 42px;
+      padding-top: 95px;
+    }
+    .hero-board { width: min(520px, 100%); }
+    .live-grid { grid-template-columns: 1.1fr .9fr; }
+    .live-card--reset { grid-column: 1 / -1; min-height: 250px; }
+    .tool-card,
+    .tool-card--wide { grid-column: span 4; }
+    .tool-card--featured { grid-column: span 8; }
+    .article-layout { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 760px) {
+    .home-v2 .wrap-v2 { width: calc(100% - 28px); }
+
+    .hero-v2 { min-height: 760px; }
+    .hero-v2__inner {
+      padding: 86px 0 90px;
+      align-content: center;
+    }
+    .hero-v2__art img {
+      width: 130%;
+      right: -35%;
+      opacity: .34;
+    }
+    .hero-v2__backdrop {
+      background:
+        linear-gradient(180deg, #061018 0%, rgba(6,16,24,.82) 28%, rgba(6,16,24,.92) 78%, #061018 100%);
+    }
+    .hero-v2 h1 { font-size: clamp(52px, 15vw, 80px); }
+    .hero-v2__lead { font-size: 15px; }
+    .hero-actions { width: 100%; }
+    .hero-btn { min-height: 52px; }
+    .hero-actions .hero-btn { flex: 1 1 210px; }
+    .hero-board { width: 100%; }
+    .hero-scroll { display: none; }
+
+    .live-section,
+    .tools-section,
+    .articles-section,
+    .seo-section,
+    .faq-section,
+    .code-section { padding-top: 80px; }
+
+    .final-section { padding: 80px 0 92px; }
+
+    .section-intro { align-items: flex-start; flex-direction: column; gap: 11px; }
+    .section-intro h2 { font-size: 37px; }
+
+    .live-grid { grid-template-columns: 1fr; }
+    .live-card--reset { grid-column: auto; }
+    .live-card { min-height: 290px; }
+    .live-card--reset { min-height: 290px; }
+
+    .code-shell { grid-template-columns: 1fr; }
+    .code-action { max-width: 330px; }
+
+    .tool-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .tool-card,
+    .tool-card--featured,
+    .tool-card--wide { grid-column: auto; }
+    .tool-card--featured,
+    .tool-card--wide { min-height: 220px; }
+
+    .faq-grid { grid-template-columns: 1fr; }
+
+    .seo-grid { grid-template-columns: 1fr; gap: 26px; padding-top: 45px; }
+
+    .final-card {
+      grid-template-columns: 1fr;
+      align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .hero-v2 h1 { font-size: 51px; }
+    .hero-v2__lead { font-size: 14px; }
+    .hero-proof { gap: 8px 12px; font-size: 8px; }
+    .board-clock { font-size: 40px; }
+
+    .live-card__meta { grid-template-columns: 1fr; gap: 10px; }
+    .live-card__meta span + span { border-top: 1px solid var(--home-border); padding-top: 9px; }
+
+    .code-shell { padding: 26px 20px; }
+    .code-copy h2 { font-size: 46px; word-break: break-word; }
+    .code-reward { font-size: 14px; }
+
+    .tool-grid { grid-template-columns: 1fr; }
+    .tool-card,
+    .tool-card--featured,
+    .tool-card--wide { min-height: 190px; }
+
+    .article-row > a { grid-template-columns: 108px 1fr; min-height: 122px; }
+    .article-feature__body { padding: 21px 19px 23px; }
+
+    .final-card h2 { font-size: 46px; }
+    .final-actions { width: 100%; }
+    .final-actions .hero-btn { flex: 1 1 100%; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .line, .rise, .hero-media img { animation: none; opacity: 1; transform: none; }
-    .pill i { animation: none; }
-    .tile, .post-link, .btn, .thumb img { transition: none; }
+    .hero-v2__art img,
+    .orb-a,
+    .orb-b,
+    .signal,
+    .live-pill i,
+    .code-live i,
+    .board-state i,
+    .hero-line,
+    .enter,
+    .reveal,
+    .code-shell::after {
+      animation: none !important;
+      transition: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .hero-btn,
+    .tool-card,
+    .live-card,
+    .article-feature > a,
+    .article-row,
+    .round-link { transition: none; }
   }
 </style>
