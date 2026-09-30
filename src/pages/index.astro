@@ -101,6 +101,9 @@ const jsonLd = {
 };
 
 const secondaryEvent = FOOTBALL_CENTRE_CONTENT.secondaryEvent ?? {};
+const dailyResetUtc = String(FOOTBALL_CENTRE_CONTENT.schedule?.dailyResetUtc || '01:00');
+const resetHourUtc = Number(dailyResetUtc.split(':')[0]) || 1;
+const unbreakableStartUtc = secondaryEvent.startUtc || '2026-10-15T00:00:00.000Z';
 ---
 
 <BaseLayout title={title} description={description}>
@@ -464,8 +467,8 @@ const secondaryEvent = FOOTBALL_CENTRE_CONTENT.secondaryEvent ?? {};
   </main>
 </BaseLayout>
 
-<script>
-  const RESET_HOUR_UTC = 0;
+<script define:vars={{ resetHourUtc, unbreakableStartUtc }}>
+  const RESET_HOUR_UTC = resetHourUtc;
   const $ = (id) => document.getElementById(id);
   const resetTime = $('reset-time-v2');
   const resetBar = $('reset-bar-v2');
@@ -503,7 +506,7 @@ const secondaryEvent = FOOTBALL_CENTRE_CONTENT.secondaryEvent ?? {};
 
   function tickUnbreakable() {
     const now = new Date();
-    const target = new Date('2026-10-15T00:00:00Z');
+    const target = new Date(unbreakableStartUtc);
     const ms = target.getTime() - now.getTime();
     if (!unbreakable) return;
 
