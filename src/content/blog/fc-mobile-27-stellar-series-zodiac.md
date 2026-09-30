@@ -55,30 +55,16 @@ Those future chapters are not live yet, so they should not be presented as guara
 
 ## Quick status
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Status</th>
-    <th scope="col" style="text-align:left">Current information</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Live now</strong></td>
-      <td style="text-align:left">Stellar: Libra</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Community reports</strong></td>
-      <td style="text-align:left">More Zodiac chapters</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Pattern</strong></td>
-      <td style="text-align:left">Zodiac timing</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Not confirmed</strong></td>
-      <td style="text-align:left">Future player pools and exact schedules</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Status | Current information |
+| :--- | :--- |
+| <strong>Live now</strong> | Stellar: Libra |
+| <strong>Community reports</strong> | More Zodiac chapters |
+| <strong>Pattern</strong> | Zodiac timing |
+| <strong>Not confirmed</strong> | Future player pools and exact schedules |
+
+
 
 
 # What's confirmed
@@ -133,62 +119,24 @@ The expectation around Scorpio is mostly based on the pattern created by the fir
 
 ## The calendar lines up
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Zodiac Sign</th>
-    <th scope="col" style="text-align:left">Traditional Zodiac Period</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Libra</strong></td>
-      <td style="text-align:left">Sep 23 – Oct 22</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Scorpio</strong></td>
-      <td style="text-align:left">Oct 23 – Nov 21</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Sagittarius</strong></td>
-      <td style="text-align:left">Nov 22 – Dec 21</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Capricorn</strong></td>
-      <td style="text-align:left">Dec 22 – Jan 19</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Aquarius</strong></td>
-      <td style="text-align:left">Jan 20 – Feb 18</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Pisces</strong></td>
-      <td style="text-align:left">Feb 19 – Mar 20</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Aries</strong></td>
-      <td style="text-align:left">Mar 21 – Apr 19</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Taurus</strong></td>
-      <td style="text-align:left">Apr 20 – May 20</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Gemini</strong></td>
-      <td style="text-align:left">May 21 – Jun 20</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Cancer</strong></td>
-      <td style="text-align:left">Jun 21 – Jul 22</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Leo</strong></td>
-      <td style="text-align:left">Jul 23 – Aug 22</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Virgo</strong></td>
-      <td style="text-align:left">Aug 23 – Sep 22</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Zodiac Sign | Traditional Zodiac Period |
+| :--- | :--- |
+| <strong>Libra</strong> | Sep 23 – Oct 22 |
+| <strong>Scorpio</strong> | Oct 23 – Nov 21 |
+| <strong>Sagittarius</strong> | Nov 22 – Dec 21 |
+| <strong>Capricorn</strong> | Dec 22 – Jan 19 |
+| <strong>Aquarius</strong> | Jan 20 – Feb 18 |
+| <strong>Pisces</strong> | Feb 19 – Mar 20 |
+| <strong>Aries</strong> | Mar 21 – Apr 19 |
+| <strong>Taurus</strong> | Apr 20 – May 20 |
+| <strong>Gemini</strong> | May 21 – Jun 20 |
+| <strong>Cancer</strong> | Jun 21 – Jul 22 |
+| <strong>Leo</strong> | Jul 23 – Aug 22 |
+| <strong>Virgo</strong> | Aug 23 – Sep 22 |
+
+
 
 
 The first Stellar chapter already lines up closely with this calendar.
@@ -209,45 +157,18 @@ EA can change event timing, extend content, overlap chapters, or use a completel
 
 The following is a planning model based on Zodiac timing rather than a confirmed EA roadmap.
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Chapter</th>
-    <th scope="col" style="text-align:left">Possible window</th>
-    <th scope="col" style="text-align:left">Current status</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Libra</strong></td>
-      <td style="text-align:left">Sep 24 – Oct 22</td>
-      <td style="text-align:left"><strong>Live</strong></td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Scorpio</strong></td>
-      <td style="text-align:left">Late Oct – Late Nov</td>
-      <td style="text-align:left"><strong>Reported / plausible</strong></td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Sagittarius</strong></td>
-      <td style="text-align:left">Late Nov – Late Dec</td>
-      <td style="text-align:left"><strong>Reported / plausible</strong></td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Capricorn</strong></td>
-      <td style="text-align:left">Late Dec – Jan</td>
-      <td style="text-align:left"><strong>Unconfirmed</strong></td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Aquarius</strong></td>
-      <td style="text-align:left">Jan – Feb</td>
-      <td style="text-align:left"><strong>Unconfirmed</strong></td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Pisces</strong></td>
-      <td style="text-align:left">Feb – Mar</td>
-      <td style="text-align:left"><strong>Unconfirmed</strong></td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Chapter | Possible window | Current status |
+| :--- | :--- | :--- |
+| <strong>Libra</strong> | Sep 24 – Oct 22 | <strong>Live</strong> |
+| <strong>Scorpio</strong> | Late Oct – Late Nov | <strong>Reported / plausible</strong> |
+| <strong>Sagittarius</strong> | Late Nov – Late Dec | <strong>Reported / plausible</strong> |
+| <strong>Capricorn</strong> | Late Dec – Jan | <strong>Unconfirmed</strong> |
+| <strong>Aquarius</strong> | Jan – Feb | <strong>Unconfirmed</strong> |
+| <strong>Pisces</strong> | Feb – Mar | <strong>Unconfirmed</strong> |
+
+
 
 
 The important word here is **possible**.
@@ -368,26 +289,15 @@ The pattern is interesting, but it is still a **pattern rather than an official 
 
 This is the simplest way to follow Stellar without mixing different levels of evidence.
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Category</th>
-    <th scope="col" style="text-align:left">What belongs here</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Confirmed</strong></td>
-      <td style="text-align:left">Stellar Libra is live, Libra launched on September 24, Libra uses Zodiac branding, Stellar Draft exists</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Reported</strong></td>
-      <td style="text-align:left">Community reporting describes Scorpio, Sagittarius and additional possible Zodiac chapters</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Not confirmed</strong></td>
-      <td style="text-align:left">Future player lists, exact release dates, future Token names, voucher distribution and future mechanics</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Category | What belongs here |
+| :--- | :--- |
+| <strong>Confirmed</strong> | Stellar Libra is live, Libra launched on September 24, Libra uses Zodiac branding, Stellar Draft exists |
+| <strong>Reported</strong> | Community reporting describes Scorpio, Sagittarius and additional possible Zodiac chapters |
+| <strong>Not confirmed</strong> | Future player lists, exact release dates, future Token names, voucher distribution and future mechanics |
+
+
 
 
 Keeping these categories separate is especially important for a live game because plans can change before a future chapter reaches the live client.
