@@ -107,7 +107,7 @@ async function authenticated(request, env) {
 const SUPABASE_DEFAULT_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
 
 function supabaseConfig(env){
-  const base=String(env.SUPABASE_URL||SUPABASE_DEFAULT_URL).replace(/\\/$/,'');
+  const base=String(env.SUPABASE_URL||SUPABASE_DEFAULT_URL).replace(/\/$/,'');
   const key=String(env.SUPABASE_SECRET_KEY||'').trim();
   if(!key) throw new Error('SUPABASE_SECRET_KEY is not configured in the Worker.');
   return {base,key};
