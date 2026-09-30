@@ -8,6 +8,7 @@ import { initial } from '../../../lib/blog.js';
 import { getPublishedPosts } from '../../../lib/blog-supabase.js';
 
 export const prerender = false;
+Astro.response.headers.set('Cache-Control','public, max-age=0, s-maxage=15, stale-while-revalidate=60');
 
 const posts = await getPublishedPosts();
 const requestedSlug = String(Astro.params.author || '').replace(/\/$/,'');
