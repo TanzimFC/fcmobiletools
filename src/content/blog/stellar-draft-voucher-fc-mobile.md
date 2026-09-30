@@ -52,16 +52,11 @@ It was introduced for the Stellar Series, beginning with the Libra chapter. The 
 
 In simple terms:
 
-
-
 | Item | Main role |
 | :--- | :--- |
-| <strong>Stellar Draft Voucher</strong> | Entry item for the Stellar Draft system |
-| <strong>Regular Draft Voucher</strong> | Entry item for the standard Draft system |
-| <strong>Stellar Libra Token</strong> | Event progression and reward currency |
-
-
-
+| **Stellar Draft Voucher** | Entry item for the Stellar Draft system |
+| **Regular Draft Voucher** | Entry item for the standard Draft system |
+| **Stellar Libra Token** | Event progression and reward currency |
 
 The three items are different. A Libra Token is not a Draft Voucher, and a regular Draft Voucher is not the same item as the Stellar Draft Voucher.
 
@@ -77,20 +72,15 @@ The Libra chapter currently has its own player pool, with cards ranging from **1
 
 The current Stellar: Libra player list includes:
 
-
-
 | Player | OVR | Position |
 | :--- | ---: | :--- |
-| <strong>Bobby Charlton</strong> | 122 | CAM |
-| <strong>Antonio Di Natale</strong> | 121 | ST |
-| <strong>Tim Ream</strong> | 121 | CB |
-| <strong>Xherdan Shaqiri</strong> | 121 | RW |
-| <strong>Abbosbek Fayzullaev</strong> | 120 | RM |
-| <strong>Alexander Nübel</strong> | 120 | GK |
-| <strong>Emil Forsberg</strong> | 120 | CAM |
-
-
-
+| **Bobby Charlton** | 122 | CAM |
+| **Antonio Di Natale** | 121 | ST |
+| **Tim Ream** | 121 | CB |
+| **Xherdan Shaqiri** | 121 | RW |
+| **Abbosbek Fayzullaev** | 120 | RM |
+| **Alexander Nübel** | 120 | GK |
+| **Emil Forsberg** | 120 | CAM |
 
 We are keeping this list in table form because player versions and presentation can change while the live event is active.
 
