@@ -163,6 +163,7 @@ const $=s=>document.querySelector(s),app=$('#app'),modal=$('#modal'),dialog=$('#
 $('#sideToggle').onclick=()=>{const collapsed=$('#adminLayout').classList.toggle('nav-collapsed');$('#sideToggle').setAttribute('aria-expanded',collapsed?'false':'true');};
 const mobileMenuToggle=$('#mobileMenuToggle'),mobileMenu=$('#mobileAdminMenu'),logoutTop=$('#logoutTop');const closeMobileMenu=()=>{document.body.classList.remove('mobile-menu-open');mobileMenuToggle?.setAttribute('aria-expanded','false')};mobileMenuToggle?.addEventListener('click',e=>{e.stopPropagation();const open=document.body.classList.toggle('mobile-menu-open');mobileMenuToggle.setAttribute('aria-expanded',open?'true':'false')});document.addEventListener('click',e=>{if(document.body.classList.contains('mobile-menu-open')&&!mobileMenu?.contains(e.target)&&!mobileMenuToggle?.contains(e.target))closeMobileMenu()});mobileMenu?.addEventListener('click',e=>{if(e.target.closest('[data-section]'))closeMobileMenu()});
 
+function refreshInboxBadge(){api('/inbox').then(out=>{const count=(out.items||[]).length,badge=$('#inboxBadge');if(badge){badge.textContent=count;badge.hidden=count<1;}}).catch(()=>{});}
 async function creatorsSection(){
   const out=await api('/creators'); const list=out.creators||[];
   app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> CREATOR CONTROL</div><h2>Creators</h2><p>Manage editorial accounts and access without leaving the admin workspace.</p></div><button class="btn primary" id="creatorNew">＋ New creator</button></div>'
