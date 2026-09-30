@@ -10,7 +10,7 @@ import { getPublishedPosts } from '../../../lib/blog-supabase.js';
 export const prerender = false;
 
 const posts = await getPublishedPosts();
-const requestedSlug = String(Astro.params.author || '').replace(/\\/$/,'');
+const requestedSlug = String(Astro.params.author || '').replace(/\/$/,'');
 const items = posts.filter((p) => p.authorSlug === requestedSlug);
 const name = items[0]?.author || requestedSlug.replaceAll('-',' ') || 'FCMOBILETOOLS';
 const [lead, ...rest] = items;
@@ -26,7 +26,7 @@ const accent = lead?.section?.accent || '#67dbff';
     title={name}
     blurb={'Articles, guides and updates published by ' + name + '.'}
     accent={accent}
-    crumbs={[{ href: '/blog/author/' + Astro.props.slug + '/', label: name }]}
+    crumbs={[{ href: '/blog/author/' + requestedSlug + '/', label: name }]}
     stats={[
       { value: items.length, label: items.length === 1 ? 'Article' : 'Articles' },
       { value: sectionCount, label: sectionCount === 1 ? 'Section' : 'Sections' },
