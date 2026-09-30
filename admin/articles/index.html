@@ -252,7 +252,7 @@ function articlesSection(filter='all') {
       ||'<div class="empty">Nothing in this view yet.</div>')
     +'</div></div>';
   document.querySelectorAll('[data-af]').forEach(b=>b.onclick=()=>articlesSection(b.dataset.af));
-  document.querySelectorAll('[data-open-article]').forEach(b=>b.onclick=()=>articleEditor(list.find(a=>a.path===b.dataset.openArticle)));
+  document.querySelectorAll('[data-open-article]').forEach(b=>b.onclick=()=>openArticleEditor(list.find(a=>a.path===b.dataset.openArticle)));
   document.querySelectorAll('[data-trash-article]').forEach(b=>b.onclick=async e=>{e.stopPropagation();if(!confirm('Move this article to Trash?'))return;try{await api('/articles/'+b.dataset.trashArticle+'/trash',{method:'POST'});state('Article moved to Trash');await articlesSection(filter)}catch(err){state(err.message,false)}});
   document.querySelectorAll('[data-restore-article]').forEach(b=>b.onclick=async e=>{e.stopPropagation();try{await api('/articles/'+b.dataset.restoreArticle+'/restore',{method:'POST'});state('Article restored');await articlesSection('all')}catch(err){state(err.message,false)}});
   $('#articleNew').onclick=()=>articleEditor(null);
@@ -518,7 +518,7 @@ async function inboxSection(){
     +'<div class="card section"><div class="inbox-toolbar"><div><h3>Needs your attention</h3><p>New submissions arrive here with a live red notification indicator.</p></div><span class="pill active">'+items.length+' waiting</span></div><div class="inbox-list">'
     +(items.map(x=>'<article class="inbox-item pending"><i class="inbox-dot"></i><div class="inbox-copy"><b>'+esc(x.title||'Untitled')+'</b><small>'+esc(x.author_name||'Creator')+' · revision '+esc(x.revision_no||'1')+' · '+new Date(x.created_at).toLocaleString()+(x.note?' · '+esc(x.note):'')+'</small></div><div class="inbox-actions"><button class="btn" data-inbox-open="'+esc(x.article_id)+'">Open</button><button class="btn" data-inbox-change="'+esc(x.article_id)+'">Request changes</button><button class="btn primary" data-inbox-approve="'+esc(x.article_id)+'">Approve &amp; publish</button></div></article>').join('')||'<div class="empty">Your approval inbox is clear.</div>')
     +'</div></div>';
-  document.querySelectorAll('[data-inbox-open]').forEach(b=>b.onclick=async()=>{const out=await api('/articles');articleEditor((out.articles||[]).find(a=>String(a.data?.id)===b.dataset.inboxOpen));});
+  document.querySelectorAll('[data-inbox-open]').forEach(b=>b.onclick=async()=>{const out=await api('/articles');openArticleEditor((out.articles||[]).find(a=>String(a.data?.id)===b.dataset.inboxOpen));});
   document.querySelectorAll('[data-inbox-approve]').forEach(b=>b.onclick=async()=>{if(!confirm('Approve and publish this article?'))return;try{await api('/articles/'+b.dataset.inboxApprove+'/approve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({note:'Approved from inbox'})});state('Article approved and published');await inboxSection();refreshInboxBadge();}catch(e){state(e.message,false)}});
   document.querySelectorAll('[data-inbox-change]').forEach(b=>b.onclick=async()=>{const note=prompt('What should the creator change?', 'Please revise the article and resubmit.');if(note===null)return;try{await api('/articles/'+b.dataset.inboxChange+'/request-changes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({note})});state('Changes requested');await inboxSection();refreshInboxBadge();}catch(e){state(e.message,false)}});
 }
