@@ -122,12 +122,14 @@ const pageSchema = {
     <script type="application/ld+json" set:html={JSON.stringify(siteSchema)}></script>
     <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)}></script>
   </> : <script type="application/ld+json" set:html={JSON.stringify(pageSchema)}></script>}
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5SG8X4YV03"></script>
   <script is:inline>
-    window.dataLayer=window.dataLayer||[];
-    window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
 
-    // Default all non-essential Google storage to denied until a consent signal
-    // is supplied by Google Privacy & Messaging / another configured CMP.
+    // Google Consent Mode defaults. Analytics starts only after the visitor
+    // grants analytics consent in the site's privacy controls.
     gtag('consent','default',{
       ad_storage:'denied',
       analytics_storage:'denied',
@@ -135,12 +137,10 @@ const pageSchema = {
       ad_personalization:'denied',
       wait_for_update:500
     });
-    gtag('js',new Date());
-    gtag('config','G-5SG8X4YV03');
 
-    // Google Privacy & Messaging exposes the revocation flow through googlefc.
-    // Keeping this bridge site-wide gives the footer one stable "Privacy Choices"
-    // entry point while the actual consent UI remains provider-managed.
+    gtag('js', new Date());
+    gtag('config', 'G-5SG8X4YV03');
+    
     window.FCMOBILETOOLS_OPEN_PRIVACY_CHOICES=()=>{
       if(window.googlefc?.callbackQueue && typeof window.googlefc.showRevocationMessage==='function'){
         window.googlefc.callbackQueue.push(window.googlefc.showRevocationMessage);
@@ -155,22 +155,6 @@ const pageSchema = {
       window.dispatchEvent(new CustomEvent('fcmobiletools:privacy-unavailable'));
       return false;
     };
-
-    const loadAnalytics=()=>{
-      if(window.__FCMOBILETOOLS_GTAG_LOADED__) return;
-      window.__FCMOBILETOOLS_GTAG_LOADED__=true;
-      const script=document.createElement('script');
-      script.src='https://www.googletagmanager.com/gtag/js?id=G-5SG8X4YV03';
-      script.async=true;
-      document.head.appendChild(script);
-    };
-    window.addEventListener('load',()=>{
-      if('requestIdleCallback' in window){
-        window.requestIdleCallback(loadAnalytics,{timeout:3000});
-      }else{
-        window.setTimeout(loadAnalytics,1200);
-      }
-    },{once:true});
   </script>
 </head>
 <body>
