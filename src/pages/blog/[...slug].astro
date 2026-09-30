@@ -10,9 +10,26 @@ export const prerender = false;
 
 const posts = await getPublishedPosts();
 const slug = String(Astro.params.slug || '').replace(/\/$/,'');
-const post = posts.find((p) => p.slug === slug);
-if (!post) Astro.response.status = 404;
-const d = post?.entry?.data ?? { title:'Article not found', description:'This article is not available.', type:'guide', category:'Guides', author:'FCMOBILETOOLS', tags:[], relatedTools:[], sources:[], factStatus:'verified' };
+const foundPost = posts.find((p) => p.slug === slug);
+if (!foundPost) Astro.response.status = 404;
+const post = foundPost || {
+  slug,
+  href:'/blog/'+slug+'/',
+  title:'Article not found',
+  subtitle:'',
+  description:'This article is not available.',
+  cover:'',
+  imageAlt:'',
+  imageCaption:'',
+  author:'FCMOBILETOOLS',
+  authorSlug:'tanzimfc',
+  section:{key:'guide',label:'Guides',slug:'guides',accent:'#72e1ad'},
+  category:'Guides',tags:[],featured:false,series:'',seriesOrder:null,
+  date:null,updated:null,minutes:1,words:0,fact:null,sources:[],lastReviewed:null,
+  entry:{data:{title:'Article not found',description:'This article is not available.',type:'guide',category:'Guides',author:'FCMOBILETOOLS',tags:[],relatedTools:[],sources:[],factStatus:'verified'},body:''},
+  toc:[],bodyHtml:''
+};
+const d = post.entry.data;
 const toc = post?.toc ?? [];
 const tools = post ? resolveTools(d.relatedTools) : [];
 const related = post ? relatedTo(post, posts, 3) : [];
@@ -154,7 +171,7 @@ const breadcrumbSchema = {
 
         <div class="bl-prose" id="blProse">
           {/* Articles saved with front matter only would otherwise render a blank page */}
-          {post ? (post.words > 0 ? <div set:html={post.bodyHtml}></div> : <p>{post.description}</p>) : <div class="bl-empty"><strong>Article not found.</strong><span>This article may have been unpublished or moved.</span><a class="bl-btn" href="/blog">Browse all articles</a></div>}
+          {foundPost ? (post.words > 0 ? <div set:html={post.bodyHtml}></div> : <p>{post.description}</p>) : <div class="bl-empty"><strong>Article not found.</strong><span>This article may have been unpublished or moved.</span><a class="bl-btn" href="/blog">Browse all articles</a></div>}
         </div>
 
         {tools.length ? (
