@@ -345,17 +345,17 @@ async function articlesSection(filter='all') {
     +'</div>'
     +'<div class="article-library-panel"><div class="library-head"><div><span>CONTENT LIBRARY</span><h3>'+ (filter==='review'?'Approval queue':filter==='published'?'Published articles':filter==='draft'?'Draft articles':filter==='trash'?'Trash':'All articles') +'</h3><p>Everything stays in the same editorial workspace.</p></div><label class="article-search-admin">⌕ <input class="input" id="articleSearch" placeholder="Search title, author, category"></label></div>'
     +'<div class="article-admin-list">'
-    +(visible.map(a=>'<div class="article-admin-row" data-article-path="'+esc(a.path)+'"><span class="article-admin-thumb">'+(a.data?.image?'<img src="'+esc(a.data.image)+'" alt="">':'FC')+'</span><span><b>'+esc(a.data?.title||a.path)+'</b><small>'+esc(a.data?.category||'Guides')+' · '+esc(a.data?.author||'')+'</small></span><i class="article-status">'+esc(filter==='trash'?'trashed':a.data?.status||'draft')+'</i><span class="article-row-actions">'+(filter==='trash'?'<button class="btn" data-restore-article="'+esc(a.data?.id)+'">Restore</button>':'<button class="btn" data-open-article="'+esc(a.path)+'">Open</button><button class="btn danger-btn" data-trash-article="'+esc(a.data?.id)+'">Trash</button>')+'</span></div>').join('')
+    +(visible.map(a=>'<div class="article-admin-row" data-article-id="'+esc(a.data?.id||'')+'"><span class="article-admin-thumb">'+(a.data?.image?'<img src="'+esc(a.data.image)+'" alt="">':'FC')+'</span><span><b>'+esc(a.data?.title||a.path)+'</b><small>'+esc(a.data?.category||'Guides')+' · '+esc(a.data?.author||'')+'</small></span><i class="article-status">'+esc(filter==='trash'?'trashed':a.data?.status||'draft')+'</i><span class="article-row-actions">'+(filter==='trash'?'<button class="btn" data-restore-article="'+esc(a.data?.id)+'">Restore</button>':'<button class="btn" data-open-article="'+esc(a.path)+'">Open</button><button class="btn danger-btn" data-trash-article="'+esc(a.data?.id)+'">Trash</button>')+'</span></div>').join('')
       ||'<div class="empty">Nothing in this view yet.</div>')
     +'</div></div>';
   document.querySelectorAll('[data-af]').forEach(b=>b.onclick=()=>articlesSection(b.dataset.af));
-  document.querySelectorAll('[data-open-article]').forEach(b=>b.onclick=()=>openArticleEditor(list.find(a=>a.path===b.dataset.openArticle)));
+  document.querySelectorAll('[data-open-article]').forEach(b=>b.onclick=()=>openArticleEditor(list.find(a=>String(a.data?.id)===String(b.dataset.openArticle))));
   document.querySelectorAll('[data-trash-article]').forEach(b=>b.onclick=async e=>{e.stopPropagation();if(!confirm('Move this article to Trash?'))return;try{await api('/articles/'+b.dataset.trashArticle+'/trash',{method:'POST'});state('Article moved to Trash');await articlesSection(filter)}catch(err){state(err.message,false)}});
   document.querySelectorAll('[data-restore-article]').forEach(b=>b.onclick=async e=>{e.stopPropagation();try{await api('/articles/'+b.dataset.restoreArticle+'/restore',{method:'POST'});state('Article restored');await articlesSection('all')}catch(err){state(err.message,false)}});
   $('#articleNew').onclick=()=>articleEditor(null);
   $('#articleSearch').oninput=e=>{
     const q=e.target.value.toLowerCase();
-    document.querySelectorAll('[data-article-path]').forEach(row=>row.style.display=row.textContent.toLowerCase().includes(q)?'':'none');
+    document.querySelectorAll('[data-article-id]').forEach(row=>row.style.display=row.textContent.toLowerCase().includes(q)?'':'none');
   };
 }
 async function articleMediaPicker(callback) {
