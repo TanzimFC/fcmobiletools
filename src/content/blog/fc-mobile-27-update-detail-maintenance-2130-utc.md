@@ -66,8 +66,6 @@ Use the schedule below to find the expected maintenance window in your region.
 
 ### Middle East
 
-
-
 | Location | Start | Expected End |
 | :--- | ---: | ---: |
 | 🇸🇦 Saudi Arabia | 12:30 AM | 5:00 AM |
@@ -79,12 +77,7 @@ Use the schedule below to find the expected maintenance window in your region.
 | 🇦🇪 UAE | 1:30 AM | 6:00 AM |
 | 🇴🇲 Oman | 1:30 AM | 6:00 AM |
 
-
-
-
 ### Africa
-
-
 
 | Location | Start | Expected End |
 | :--- | ---: | ---: |
@@ -95,12 +88,7 @@ Use the schedule below to find the expected maintenance window in your region.
 | 🇬🇭 Ghana | 9:30 PM | 2:00 AM |
 | 🇲🇦 Morocco | 9:30 PM | 2:00 AM |
 
-
-
-
 ### Europe — Part 1
-
-
 
 | Location | Start | Expected End |
 | :--- | ---: | ---: |
@@ -111,12 +99,7 @@ Use the schedule below to find the expected maintenance window in your region.
 | 🇫🇷 France | 11:30 PM | 4:00 AM |
 | 🇩🇪 Germany | 11:30 PM | 4:00 AM |
 
-
-
-
 ### Europe — Part 2
-
-
 
 | Location | Start | Expected End |
 | :--- | ---: | ---: |
@@ -128,12 +111,7 @@ Use the schedule below to find the expected maintenance window in your region.
 | 🇷🇴 Romania | 12:30 AM | 5:00 AM |
 | 🇹🇷 Türkiye | 12:30 AM | 5:00 AM |
 
-
-
-
 ### North America
-
-
 
 | Location | Start | Expected End |
 | :--- | ---: | ---: |
@@ -145,12 +123,7 @@ Use the schedule below to find the expected maintenance window in your region.
 | 🇨🇦 Vancouver | 2:30 PM | 7:00 PM |
 | 🇲🇽 Mexico City | 3:30 PM | 8:00 PM |
 
-
-
-
 ### South America
-
-
 
 | Location | Start | Expected End |
 | :--- | ---: | ---: |
@@ -161,12 +134,7 @@ Use the schedule below to find the expected maintenance window in your region.
 | 🇵🇪 Peru | 4:30 PM | 9:00 PM |
 | 🇪🇨 Ecuador | 4:30 PM | 9:00 PM |
 
-
-
-
 ### Oceania
-
-
 
 | Location | Start | Expected End |
 | :--- | ---: | ---: |
@@ -175,23 +143,15 @@ Use the schedule below to find the expected maintenance window in your region.
 | 🇦🇺 Brisbane | 6:30 AM | 11:00 AM |
 | 🇳🇿 New Zealand | 9:30 AM | 2:00 PM |
 
-
-
-
 ### South Asia
 
 For players in Bangladesh and nearby regions, the UTC schedule converts to:
-
-
 
 | Location | Start | Expected End |
 | :--- | ---: | ---: |
 | 🇧🇩 Bangladesh | 3:30 AM | 8:00 AM |
 | 🇮🇳 India | 3:00 AM | 7:30 AM |
 | 🇵🇰 Pakistan | 2:30 AM | 7:00 AM |
-
-
-
 
 ## What if FC Mobile is still down after 02:00 UTC?
 
