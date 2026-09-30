@@ -222,7 +222,7 @@ function articleHTMLToMarkdown(html) {
   return [...root.childNodes].map(walk).join('').replace(/\n{3,}/g,'\n\n').trim();
 }
 
-function articlesSection(filter='all') {
+async function articlesSection(filter='all') {
   const out=await api('/articles');
   const list=out.articles||[];
   const trashOut=workspaceRole==='admin'?await api('/articles/trash').catch(()=>({articles:[]})):{articles:list.filter(a=>a.data?.deletedAt)};
