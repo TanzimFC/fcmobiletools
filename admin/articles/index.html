@@ -492,34 +492,58 @@ function articleEditor(item) {
 async function refreshInboxBadge(){try{const out=await api('/inbox');const count=(out.items||[]).length;const badge=$('#inboxBadge');if(badge){badge.textContent=count;badge.hidden=count<1;}}catch{}}
 async function inboxSection(){
   const out=await api('/inbox'); const items=out.items||[];
+  const isWriter=workspaceRole==='creator';
+  const unread=isWriter?items.filter(x=>!x.read_at).length:items.length;
+  if(isWriter){
+    app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> EDITORIAL INBOX</div><h2>Your editorial inbox</h2><p>Updates from editors about your article submissions, approvals and requested changes.</p></div><div class="hero-tools"><div class="hero-badge"><i></i> '+unread+' unread</div></div></div>'
+      +'<div class="card section"><div class="inbox-toolbar"><div><h3>Updates</h3><p>Editor feedback stays attached to the article workflow.</p></div><span class="pill active">'+items.length+' messages</span></div><div class="inbox-list">'
+      +(items.map(x=>'<article class="inbox-item '+(x.read_at?'':'pending')+'"><i class="inbox-dot"></i><div class="inbox-copy"><b>'+esc(x.title||'Editorial update')+'</b><small>'+esc(x.message||'')+' · '+new Date(x.created_at).toLocaleString()+'</small></div><div class="inbox-actions"><button class="btn" data-writer-open="'+esc(x.article_id||'')+'">Open article</button>'+(x.read_at?'':'<button class="btn" data-inbox-read="'+esc(x.id)+'">Mark read</button>')+'</div></article>').join('')||'<div class="empty">Your editorial inbox is clear.</div>')
+      +'</div></div>';
+    document.querySelectorAll('[data-writer-open]').forEach(b=>b.onclick=async()=>{
+      if(!b.dataset.writerOpen)return;
+      const articlesOut=await api('/articles'); const item=(articlesOut.articles||[]).find(a=>String(a.data?.id)===b.dataset.writerOpen);
+      if(item)openArticleEditor(item);
+    });
+    document.querySelectorAll('[data-inbox-read]').forEach(b=>b.onclick=async()=>{
+      try{await api('/inbox/read',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:Number(b.dataset.inboxRead)})});await inboxSection();refreshArticleInboxBadge();}catch(e){state(e.message,false)}
+    });
+    return;
+  }
   app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> EDITORIAL INBOX</div><h2>Approval inbox</h2><p>Review creator submissions, request changes, and publish without losing the revision trail.</p></div><div class="hero-tools"><div class="hero-badge"><i></i> '+items.length+' pending</div></div></div>'
     +'<div class="card section"><div class="inbox-toolbar"><div><h3>Needs your attention</h3><p>New submissions arrive here with a live red notification indicator.</p></div><span class="pill active">'+items.length+' waiting</span></div><div class="inbox-list">'
     +(items.map(x=>'<article class="inbox-item pending"><i class="inbox-dot"></i><div class="inbox-copy"><b>'+esc(x.title||'Untitled')+'</b><small>'+esc(x.author_name||'Creator')+' · revision '+esc(x.revision_no||'1')+' · '+new Date(x.created_at).toLocaleString()+(x.note?' · '+esc(x.note):'')+'</small></div><div class="inbox-actions"><button class="btn" data-inbox-open="'+esc(x.article_id)+'">Open</button><button class="btn" data-inbox-change="'+esc(x.article_id)+'">Request changes</button><button class="btn primary" data-inbox-approve="'+esc(x.article_id)+'">Approve &amp; publish</button></div></article>').join('')||'<div class="empty">Your approval inbox is clear.</div>')
     +'</div></div>';
   document.querySelectorAll('[data-inbox-open]').forEach(b=>b.onclick=async()=>{const out=await api('/articles');openArticleEditor((out.articles||[]).find(a=>String(a.data?.id)===b.dataset.inboxOpen));});
-  document.querySelectorAll('[data-inbox-approve]').forEach(b=>b.onclick=async()=>{if(!confirm('Approve and publish this article?'))return;try{await api('/articles/'+b.dataset.inboxApprove+'/approve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({note:'Approved from inbox'})});state('Article approved and published');await inboxSection();refreshInboxBadge();}catch(e){state(e.message,false)}});
-  document.querySelectorAll('[data-inbox-change]').forEach(b=>b.onclick=async()=>{const note=prompt('What should the creator change?', 'Please revise the article and resubmit.');if(note===null)return;try{await api('/articles/'+b.dataset.inboxChange+'/request-changes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({note})});state('Changes requested');await inboxSection();refreshInboxBadge();}catch(e){state(e.message,false)}});
+  document.querySelectorAll('[data-inbox-approve]').forEach(b=>b.onclick=async()=>{if(!confirm('Approve and publish this article?'))return;try{await api('/articles/'+b.dataset.inboxApprove+'/approve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({note:'Approved from inbox'})});state('Article approved and published');await inboxSection();refreshArticleInboxBadge();}catch(e){state(e.message,false)}});
+  document.querySelectorAll('[data-inbox-change]').forEach(b=>b.onclick=async()=>{const note=prompt('What should the creator change?', 'Please revise the article and resubmit.');if(note===null)return;try{await api('/articles/'+b.dataset.inboxChange+'/request-changes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({note})});state('Changes requested');await inboxSection();refreshArticleInboxBadge();}catch(e){state(e.message,false)}});
 }
 async function revisionHistory(id){try{const out=await api('/articles/'+id+'/revisions');const rows=out.revisions||[];openModal('<div class="dialoghead"><div><h3>Revision history</h3><div class="muted">Every save and review action stays recorded.</div></div><button class="close" data-close>×</button></div><div class="dialogbody"><div class="revision-list">'+(rows.map(r=>'<div class="revision-row"><strong>Revision '+esc(r.revision_no)+' · '+esc(r.action)+'</strong><small>'+esc(r.editor_role)+' · '+esc(r.review_status)+' · '+new Date(r.created_at).toLocaleString()+(r.note?' · '+esc(r.note):'')+'</small></div>').join('')||'<div class="empty">No revisions yet.</div>')+'</div></div>');}catch(e){state(e.message,false)}}
 
 function openArticleEditor(item){const id=item?.data?.id;const url=new URL(location.href);url.searchParams.delete('new');url.searchParams.delete('edit');if(id)url.searchParams.set('edit',String(id));else url.searchParams.set('new','1');history.pushState({article:true,id:id||null},'',url.pathname+url.search+url.hash);articleEditor(item);updateArticleNav();}
 function updateArticleNav(){const inbox=location.hash==='#inbox';document.querySelectorAll('#adminNav .nav-external').forEach(a=>a.classList.remove('active'));document.querySelector('#adminNav a[href="/admin/articles/"]')?.classList.toggle('active',!inbox);document.querySelector('#inboxNav')?.classList.toggle('active',inbox);}
-function refreshArticleInboxBadge(){api('/inbox').then(out=>{const count=(out.items||[]).length,badge=$('#inboxBadge');if(badge){badge.textContent=count;badge.hidden=count<1;}}).catch(()=>{});}
+function refreshArticleInboxBadge(){api('/inbox').then(out=>{const items=out.items||[];const count=workspaceRole==='creator'?items.filter(x=>!x.read_at).length:items.length,badge=$('#inboxBadge');if(badge){badge.textContent=count;badge.hidden=count<1;}}).catch(()=>{});}
 function showAuthError(message){app.innerHTML='<div class="error"><b>Admin session required</b><br>'+esc(message)+'</div><div style="margin-top:14px"><a class="btn primary" href="/admin/">Return to admin login</a></div>';state('Session verification failed',false);}
 async function bootArticleWorkspace(){
   try{
-    const response=await fetch('/api/admin/me',{credentials:'same-origin',cache:'no-store'});
-    if(!response.ok){showAuthError('Your admin session could not be verified.');return;}
-    const admin=await response.json();
-    if(admin?.role!=='admin'){showAuthError('This workspace is available to administrators only.');return;}
-    workspaceRole='admin';workspaceUser=admin;
+    const adminResponse=await fetch('/api/admin/me',{credentials:'same-origin',cache:'no-store'});
+    if(adminResponse.ok){
+      const admin=await adminResponse.json();
+      workspaceRole='admin';workspaceUser=admin;
+    }else{
+      const creatorResponse=await fetch('/api/creator/me',{credentials:'same-origin',cache:'no-store'});
+      if(!creatorResponse.ok){showAuthError('Your writer/editor session could not be verified.');return;}
+      const creator=await creatorResponse.json();
+      if(!creator?.creator){showAuthError('Your writer/editor session could not be verified.');return;}
+      workspaceRole='creator';workspaceUser=creator.creator;
+      document.querySelectorAll('[data-admin-only]').forEach(x=>x.remove());
+    }
     $('#sideToggle').onclick=()=>{const collapsed=$('#adminLayout').classList.toggle('nav-collapsed');$('#sideToggle').setAttribute('aria-expanded',collapsed?'false':'true');};
     const mobileMenuToggle=$('#mobileMenuToggle'),mobileMenu=$('#adminNav'),logoutTop=$('#logoutTop');
     const closeMobileMenu=()=>{document.body.classList.remove('mobile-menu-open');mobileMenuToggle?.setAttribute('aria-expanded','false')};
     mobileMenuToggle?.addEventListener('click',e=>{e.stopPropagation();const open=document.body.classList.toggle('mobile-menu-open');mobileMenuToggle.setAttribute('aria-expanded',open?'true':'false')});
     document.addEventListener('click',e=>{if(document.body.classList.contains('mobile-menu-open')&&!mobileMenu?.contains(e.target)&&!mobileMenuToggle?.contains(e.target))closeMobileMenu()});
     mobileMenu?.addEventListener('click',e=>{if(e.target.closest('a'))closeMobileMenu()});
-    const signOut=async()=>{try{await api('/logout',{method:'POST'})}finally{location.replace('/admin/')}};
+    const signOut=async()=>{try{await api('/logout',{method:'POST'})}finally{try{await fetch(workspaceRole==='creator'?'/api/creator/logout':'/api/admin/logout',{method:'POST',credentials:'same-origin'})}catch{} location.replace('/admin/')}};
     $('#logout').onclick=signOut;$('#logoutTop').onclick=signOut;
     const params=new URLSearchParams(location.search),editId=params.get('edit'),isNew=params.get('new')==='1';
     if(location.hash==='#inbox')await inboxSection();
