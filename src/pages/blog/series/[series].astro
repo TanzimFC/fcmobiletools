@@ -10,7 +10,7 @@ import { getPublishedPosts } from '../../../lib/blog-supabase.js';
 export const prerender = false;
 
 const posts = await getPublishedPosts();
-const requestedSlug = String(Astro.params.series || '').replace(/\\/$/,'');
+const requestedSlug = String(Astro.params.series || '').replace(/\/$/,'');
 const series = seriesIn(posts).find((s) => s.slug === requestedSlug);
 const first = series?.parts?.[0];
 const site = Astro.site ?? new URL('https://fcmobiletools.online');
@@ -18,11 +18,11 @@ const schema = {
   '@context': 'https://schema.org',
   '@type': 'CreativeWorkSeries',
   name: series?.name || 'Series',
-  url: new URL('/blog/series/' + series.slug + '/', site).toString(),
+  url: new URL('/blog/series/' + requestedSlug + '/', site).toString(),
   hasPart: (series?.parts || []).map((p) => ({ '@type': 'Article', headline: p.title, url: new URL(p.href, site).toString() }))
 };
 ---
-<BaseLayout title={(series?.name || 'Article series') + ' — FC Mobile Series'} description={'The ' + (series?.name || 'requested') + ' article series on FCMOBILETOOLS: ' + series.count + ' ' + (series.count === 1 ? 'part' : 'parts') + ' to read in order.'}>
+<BaseLayout title={(series?.name || 'Article series') + ' — FC Mobile Series'} description={'The ' + (series?.name || 'requested') + ' article series on FCMOBILETOOLS: ' + (series?.count || 0) + ' ' + ((series?.count || 0) === 1 ? 'part' : 'parts') + ' to read in order.'}>
 <script type="application/ld+json" set:html={JSON.stringify(schema)}></script>
 <main class="bl bl-series-page" style={'--bl-accent:' + (series?.accent || '#67dbff')}>
   <BlogEffects />
@@ -30,17 +30,17 @@ const schema = {
     eyebrow="Article series"
     title={series?.name || 'Series not found'}
     blurb="Read the story in order, from the first announcement to the latest details."
-    accent={series.accent}
-    crumbs={[{ href: '/blog/series/' + series.slug + '/', label: series.name }]}
+    accent={series?.accent || '#67dbff'}
+    crumbs={[{ href: '/blog/series/' + requestedSlug + '/', label: series?.name || 'Series' }]}
     stats={[
-      { value: series.count, label: series.count === 1 ? 'Part' : 'Parts' },
+      { value: series?.count || 0, label: (series?.count || 0) === 1 ? 'Part' : 'Parts' },
       { value: series?.minutes || 0, label: 'Minutes in total' }
     ]}
   >
     {first ? <a slot="actions" class="bl-btn bl-btn--primary" href={first.href}>Start with part 1 →</a> : null}
   </HubHero>
 
-  <section class="bl-wrap bl-block" aria-label={series.name + ' parts'}>
+  <section class="bl-wrap bl-block" aria-label={(series?.name || 'Series') + ' parts'}>
     <ol class="bl-parts">
       (series?.parts || []).map((p, i) => (
         <li class="bl-part" data-reveal>
