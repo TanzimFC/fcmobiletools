@@ -58,26 +58,15 @@ That makes it different from familiar currencies and items such as Coins, Gems a
 
 These two items are related to the same event, but they do different jobs.
 
-<table class="article-source-table">
-  <thead><tr>
-    <th scope="col" style="text-align:left">Item</th>
-    <th scope="col" style="text-align:left">Purpose</th>
-  </tr></thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left"><strong>Stellar Libra Token</strong></td>
-      <td style="text-align:left">Event progression and reward path</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Stellar Draft Voucher</strong></td>
-      <td style="text-align:left">Entry for the Stellar Draft</td>
-    </tr>
-    <tr>
-      <td style="text-align:left"><strong>Regular Draft Voucher</strong></td>
-      <td style="text-align:left">Entry for the standard Draft system</td>
-    </tr>
-  </tbody>
-</table>
+
+
+| Item | Purpose |
+| :--- | :--- |
+| <strong>Stellar Libra Token</strong> | Event progression and reward path |
+| <strong>Stellar Draft Voucher</strong> | Entry for the Stellar Draft |
+| <strong>Regular Draft Voucher</strong> | Entry for the standard Draft system |
+
+
 
 
 If you are trying to open the Stellar Draft, look at the Draft requirement.
