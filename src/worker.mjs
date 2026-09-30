@@ -278,10 +278,13 @@ async function editorialApi(request,env,path){
     const update={status:next,updated_at:new Date().toISOString()};
     if(action==='approve') update.published_at=article.published_at||new Date().toISOString();
     await supabaseRest(env,"articles?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(update)});
-    await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
-      article_id:Number(id),reviewer_id:null,reviewer_name:identity.name,
-      status:action==='approve'?'approved':'changes_requested',comment:note
-    }])});
+    const submitted=await supabaseRest(env,"article_reviews?article_id=eq."+id+"&status=eq.submitted&select=id&order=created_at.desc&limit=1");
+    const reviewPayload={status:action==='approve'?'approved':'changes_requested',comment:note,reviewer_name:identity.name};
+    if(submitted?.[0]?.id){
+      await supabaseRest(env,"article_reviews?id=eq."+submitted[0].id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(reviewPayload)});
+    }else{
+      await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{article_id:Number(id),reviewer_id:null,...reviewPayload}])});
+    }
     await editorialRevision(env,Number(id),{action:action==='approve'?'approve':'request_changes',note},identity.name);
 
     if(action==='approve'){
@@ -374,11 +377,23 @@ async function editorialApi(request,env,path){
     },identity.name);
 
     if(status==='in_review'){
-      await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
-        article_id:savedRow.id,reviewer_id:null,reviewer_name:'',status:'submitted',comment:''
-      }])});
+      const pending=await supabaseRest(env,"article_reviews?article_id=eq."+encodeURIComponent(savedRow.id)+"&status=eq.submitted&select=id&limit=1");
+      if(!pending?.length){
+        await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+          article_id:savedRow.id,reviewer_id:null,reviewer_name:'',status:'submitted',comment:''
+        }])});
+      }
     }
-    return json({ok:true,articleId:savedRow.id,slug:savedRow.slug,action:existingId?'updated':'created',revisionNo});
+    return json({
+      ok:true,
+      articleId:savedRow.id,
+      slug:savedRow.slug,
+      action:existingId?'updated':'created',
+      revisionNo,
+      status:editorialUiStatus(savedRow.status),
+      updatedAt:savedRow.updated_at,
+      contentLength:String(savedRow.content_html||'').length
+    });
   }
 
   return json({error:'Editorial endpoint not found.'},404);
