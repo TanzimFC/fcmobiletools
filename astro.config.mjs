@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import remarkGfm from 'remark-gfm';
+import cloudflare from '@astrojs/cloudflare';
 
 const nationRedirects = Object.fromEntries(
   ['japan', 'netherlands', 'mexico', 'france', 'brazil'].flatMap((country) => [
@@ -14,7 +15,8 @@ const nationRedirects = Object.fromEntries(
 
 export default defineConfig({
   site: 'https://fcmobiletools.online',
-  output: 'static',
+  output: 'hybrid',
+  adapter: cloudflare(),
   build: { format: 'directory' },
   integrations: [sitemap({
     filter: (page) => !new URL(page).pathname.startsWith('/admin')
