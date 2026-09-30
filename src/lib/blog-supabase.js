@@ -128,12 +128,12 @@ function remoteEntry(row){
 }
 
 export async function getPublishedPosts(){
-  const rows=await getJson('articles?select=*&status=eq.published&order=published_at.desc,updated_at.desc&limit=100');
+  const rows=await getJson('articles?select=id,slug,title,subtitle,excerpt,description,content_html,author_name,type,category,tags,cover_image,image_alt,image_caption,featured,seo_title,seo_description,canonical_url,fact_status,last_reviewed,sources,related_articles,related_tools,series,series_order,reading_time,created_at,updated_at,published_at&status=eq.published&order=published_at.desc,updated_at.desc&limit=100');
   return (rows||[]).map(remoteEntry).sort((a,b)=>(b.date?.valueOf()||0)-(a.date?.valueOf()||0));
 }
 
 export async function getPublishedPost(slug){
-  const rows=await getJson('articles?select=*&status=eq.published&slug=eq.'+encodeURIComponent(String(slug||''))+'&limit=1');
+  const rows=await getJson('articles?select=id,slug,title,subtitle,excerpt,description,content_html,author_name,type,category,tags,cover_image,image_alt,image_caption,featured,seo_title,seo_description,canonical_url,fact_status,last_reviewed,sources,related_articles,related_tools,series,series_order,reading_time,created_at,updated_at,published_at&status=eq.published&slug=eq.'+encodeURIComponent(String(slug||''))+'&limit=1');
   return rows?.[0] ? remoteEntry(rows[0]) : null;
 }
 
