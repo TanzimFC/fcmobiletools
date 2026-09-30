@@ -290,6 +290,7 @@ async function loadLexical(editorEl, initialHTML){
     lexicalEditor=await module.createLexicalArticleEditor(editorEl,initialHTML,()=>{
       $('#saveHint').textContent='Unsaved changes';
       dirty=true;
+      window.articleScheduleAutosave?.();
     });
     return lexicalEditor;
   }catch(err){
