@@ -1,28 +1,333 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
-const latestArticles=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft)).sort((a,b)=>(b.data.publishedAt?.valueOf()??0)-(a.data.publishedAt?.valueOf()??0)).slice(0,4);
-const optimizeCloudinary=(url,width)=>{const value=String(url??'');return value.includes('res.cloudinary.com')&&value.includes('/image/upload/')?value.replace('/image/upload/','/image/upload/f_auto,q_auto,dpr_auto,w_'+width+'/'):value;};
-const readingTime=post=>post.data.readingTime??Math.max(1,Math.ceil((post.body?.split(/\\s+/).filter(Boolean).length??0)/220));
+
+const latestArticles = (await getCollection('blog', ({ data }) => data.status === 'published' && !data.draft))
+  .sort((a, b) => (b.data.publishedAt?.valueOf() ?? 0) - (a.data.publishedAt?.valueOf() ?? 0))
+  .slice(0, 4);
+
+const optimizeCloudinary = (url, width) => {
+  const value = String(url ?? '');
+  return value.includes('res.cloudinary.com') && value.includes('/image/upload/')
+    ? value.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_' + width + '/')
+    : value;
+};
+const readingTime = (post) =>
+  post.data.readingTime ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '');
+
+const SITE = 'https://fcmobiletools.com';
+const title = 'FC Mobile Tools, Redeem Codes, Calculators & Guides';
+const description =
+  'FCMOBILETOOLS is your FC Mobile hub: live daily reset and event timers in your local time, redeem codes, Team OVR, training and rank up calculators, Gauntlet planner and the latest guides';
+
+// Tools are data so you can add one line and the grid updates
+const tools = [
+  { href: '/redeem-codes', tag: 'Codes', name: 'Redeem Codes', text: 'Check current codes and jump straight to redemption', cls: 'w7 hot' },
+  { href: '/team-ovr', tag: 'Calculator', name: 'Team OVR', text: 'Squad OVR from player ratings and upgrades', cls: 'w5' },
+  { href: '/training-calculator', tag: 'Calculator', name: 'Training Calculator', text: 'Plan XP, fodder, levels and excess XP', cls: 'w4' },
+  { href: '/rank-up-calculator', tag: 'Calculator', name: 'Rank Up Calculator', text: 'Rank Up Points, OVR gain and Skill Points', cls: 'w4' },
+  { href: '/football-centre', tag: 'Tracker', name: 'Football Centre', text: 'Matches, points, rewards and event resources', cls: 'w4' },
+  { href: '/gauntlet-planner', tag: 'Planner', name: 'Gauntlet Mode Planner', text: 'Match by match rotations with player availability', cls: 'w4' },
+  { href: '/a-nations-story', tag: 'Guide', name: "A Nation's Story", text: 'Event answers without digging', cls: 'w4' },
+  { href: '/fc-mobile-27', tag: 'Update', name: 'FC Mobile 27', text: 'Season 27 changes, features and official Android install', cls: 'w4' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'WebSite', '@id': SITE + '/#website', url: SITE + '/', name: 'FCMOBILETOOLS', description, inLanguage: 'en' },
+    { '@type': 'CollectionPage', '@id': SITE + '/#webpage', url: SITE + '/', name: title, isPartOf: { '@id': SITE + '/#website' }, description },
+    {
+      '@type': 'ItemList',
+      name: 'FC Mobile tools',
+      itemListElement: tools.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: t.name, url: SITE + t.href })),
+    },
+  ],
+};
 ---
-<BaseLayout title="FC Mobile Tools, Codes & Guides" description="FCMOBILETOOLS is your FC Mobile hub for live events, redeem codes, player tools, calculators, guides and the latest game updates.">
-<main class="home">
-<section class="home-hero"><picture class="hero-media"><source media="(max-width: 600px)" srcset="/assets/images/herobeli.png" type="image/png" /><img class="hero-bg" src="/assets/images/herobeli.png" alt="" width="1600" height="900" fetchpriority="high" decoding="async" sizes="100vw" /></picture><div class="hero-shade"></div><div class="wrap hero-inner"><div class="hero-copy"><p class="eyebrow">FCMOBILETOOLS</p><h1>Everything useful<br /><em>starts here</em></h1><p>Check what is live, see the next reset in your local time, redeem codes and use the calculators you actually need</p><div class="hero-actions"><a class="btn primary" href="/events">Open Events and Reset <span>↗</span></a><a class="btn" href="/redeem-codes">Redeem Codes <span>↗</span></a></div><div class="hero-points"><span><i></i> UTC synced</span><span><i></i> Local time aware</span><span><i></i> Live updates</span></div></div></div></section>
-<section class="wrap live-section"><div class="section-head"><div><p class="eyebrow">01 / LIVE</p><h2>Know what happens <em>next</em></h2></div><p>One place for the daily reset, Anniversary Event and Division Rivals cycle</p></div><a class="live-panel" href="/events"><div><span class="live-mark"><i></i> EVENTS AND RESET</span><h3>Daily reset · Anniversary Event · Division Rivals</h3><p>Open the unified countdown center with UTC reference, automatic local-time conversion and animated progress</p></div><b>OPEN CENTER ↗</b></a></section>
-<section class="wrap tools-section"><div class="section-head"><div><p class="eyebrow">02 / TOOLS</p><h2>Built for the <em>actual grind</em></h2></div><p>Fast utilities without pushing secondary tools into the spotlight</p></div><div class="tool-grid">
-<a class="tool-card featured cyan" href="/redeem-codes"><span>01 / REDEEM</span><h3>Redeem Codes</h3><p>Check current codes and move straight to redemption</p><strong>CHECK CODES →</strong></a>
-<a class="tool-card featured" href="/team-ovr"><span>02 / CALCULATOR</span><h3>Team OVR</h3><p>Calculate squad OVR from player ratings and upgrades</p><strong>CALCULATE →</strong></a>
-<a class="tool-card" href="/training-calculator"><span>03</span><h3>Training Calculator</h3><p>Plan XP, fodder, levels and excess XP</p><strong>OPEN →</strong></a>
-<a class="tool-card" href="/rank-up-calculator"><span>04</span><h3>Rank Up Calculator</h3><p>Calculate Rank Up Points, OVR gain and Skill Points</p><strong>OPEN →</strong></a>
-<a class="tool-card" href="/football-centre"><span>05</span><h3>Football Centre</h3><p>Track matches, points, rewards and event resources</p><strong>OPEN →</strong></a>
-<a class="tool-card" href="/gauntlet-planner"><span>06</span><h3>Gauntlet Mode Planner</h3><p>Build match-by-match squad rotations and track player availability</p><strong>PLAN ROTATION →</strong></a>
-<a class="tool-card" href="/a-nations-story"><span>07</span><h3>A Nation's Story</h3><p>Find event answers without digging</p><strong>FIND ANSWERS →</strong></a>
-<a class="tool-card" href="/fc-mobile-27"><span>08</span><h3>FC Mobile 27 Update</h3><p>Season 27 changes, feature guide and official Android install</p><strong>READ UPDATE →</strong></a>
-</div></section>
-<section class="wrap latest-section"><div class="section-head"><div><p class="eyebrow">03 / LATEST</p><h2>Fresh <em>guides</em></h2></div><a class="section-link" href="/blog">VIEW ALL →</a></div>{latestArticles.length?<div class="article-grid">{latestArticles.map(post=><a class="article-card" href={`/blog/${post.slug}/`}>{post.data.image?<img src={optimizeCloudinary(post.data.image,680)} alt="" width="680" height="350" loading="lazy" decoding="async" />:<div class="placeholder">FC</div>}<div><div class="meta"><span>{post.data.category}</span><span>{readingTime(post)} MIN</span></div><h3>{post.data.title}</h3><p>{post.data.excerpt??post.data.description}</p><strong>READ ARTICLE →</strong></div></a>)}</div>:<div class="empty">No published articles yet</div>}</section>
-<section class="wrap closing"><div><p class="eyebrow">04 / FCMOBILETOOLS</p><h2>Less searching<br /><em>more playing</em></h2></div><a href="/events">Make the Events and Reset your starting point <span>↗</span></a></section>
+<BaseLayout title={title} description={description}>
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+<main class="home" id="main">
+
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <picture class="hero-media" aria-hidden="true">
+      <source media="(max-width: 600px)" srcset="/assets/images/herobeli.png" type="image/png" />
+      <img src="/assets/images/herobeli.png" alt="" width="1600" height="900" fetchpriority="high" decoding="async" sizes="100vw" />
+    </picture>
+    <div class="hero-shade" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-grain" aria-hidden="true"></div>
+
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="pill rise" style="--d:.05s"><i></i> Live and synced to UTC</p>
+        <h1 id="hero-title">
+          <span class="mask"><span class="line" style="--d:.15s">Everything useful</span></span>
+          <span class="mask"><span class="line grad" style="--d:.3s">starts here</span></span>
+        </h1>
+        <p class="lead rise" style="--d:.55s">Live events, redeem codes and the calculators you actually use, all in your local time</p>
+        <div class="actions rise" style="--d:.7s">
+          <a class="btn primary" href="/events">Open Events and Reset</a>
+          <a class="btn ghost" href="/redeem-codes">Redeem Codes</a>
+        </div>
+      </div>
+
+      <aside class="clock rise" style="--d:.85s" aria-label="Daily reset countdown">
+        <p class="clock-label">Daily reset in</p>
+        <p class="clock-time" id="reset-time">--:--:--</p>
+        <div class="clock-bar" aria-hidden="true"><b id="reset-bar"></b></div>
+        <dl class="clock-meta">
+          <div><dt>UTC now</dt><dd id="utc-now">--:--</dd></div>
+          <div><dt>Your time</dt><dd id="local-now">--:--</dd></div>
+        </dl>
+        <a class="clock-link" href="/events">See every countdown</a>
+      </aside>
+    </div>
+  </section>
+
+  <!-- TOOLS -->
+  <section class="wrap block" aria-labelledby="tools-title">
+    <header class="head">
+      <h2 id="tools-title">Built for the actual grind</h2>
+      <p>Fast utilities for daily play, with the most used ones up front</p>
+    </header>
+    <ul class="bento" role="list">
+      {tools.map((t) => (
+        <li class={`cell ${t.cls}`}>
+          <a href={t.href} class="tile">
+            <span class="tag">{t.tag}</span>
+            <h3>{t.name}</h3>
+            <p>{t.text}</p>
+            <span class="go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- LATEST -->
+  <section class="wrap block" aria-labelledby="latest-title">
+    <header class="head">
+      <h2 id="latest-title">Fresh guides</h2>
+      <a class="more" href="/blog">View all guides</a>
+    </header>
+    {latestArticles.length ? (
+      <div class="posts">
+        {latestArticles.map((post, i) => (
+          <article class={`post ${i === 0 ? 'lead-post' : ''}`}>
+            <a href={`/blog/${post.slug}/`} class="post-link">
+              <div class="thumb">
+                {post.data.image ? (
+                  <img
+                    src={optimizeCloudinary(post.data.image, i === 0 ? 900 : 480)}
+                    alt={post.data.title}
+                    width={i === 0 ? 900 : 480}
+                    height={i === 0 ? 506 : 270}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div class="ph">FC</div>
+                )}
+              </div>
+              <div class="post-body">
+                <p class="meta">
+                  <span>{post.data.category}</span>
+                  {post.data.publishedAt && <time datetime={new Date(post.data.publishedAt).toISOString()}>{fmtDate(post.data.publishedAt)}</time>}
+                  <span>{readingTime(post)} min read</span>
+                </p>
+                <h3>{post.data.title}</h3>
+                {i === 0 && <p class="ex">{post.data.excerpt ?? post.data.description}</p>}
+              </div>
+            </a>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <p class="empty">No published articles yet</p>
+    )}
+  </section>
+
+  <!-- CLOSING -->
+  <section class="wrap close" aria-labelledby="close-title">
+    <div class="close-card">
+      <h2 id="close-title">Less searching,<br />more playing</h2>
+      <a class="btn primary" href="/events">Start with Events and Reset</a>
+    </div>
+  </section>
 </main>
 </BaseLayout>
-<style>
-.home{background:var(--bg);color:var(--text);overflow:hidden}.home .wrap{width:min(1180px,calc(100% - 36px));margin:auto}.home .eyebrow{margin:0;color:var(--blue);font:900 9px var(--mono);letter-spacing:.16em}.home-hero{position:relative;min-height:670px;border-bottom:1px solid var(--border);overflow:hidden;background:#060d13}.hero-media{position:absolute;inset:0;display:block}.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.7}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,#05090df7 0%,#05090dd2 43%,#05090d66 76%,#05090dc0 100%),linear-gradient(0deg,#05090df4 0%,transparent 50%,#05090d55 100%)}.hero-inner{position:relative;z-index:2;min-height:670px;display:flex;align-items:center;padding:90px 0 60px}.hero-copy{max-width:760px}.hero-copy .eyebrow span{color:var(--muted);margin:0 5px}.hero-copy h1{font-size:clamp(56px,8vw,98px);line-height:.86;letter-spacing:-.07em;margin:19px 0}.hero-copy h1 em,.section-head h2 em,.closing h2 em{font-style:normal;color:var(--blue)}.hero-copy>p{max-width:680px;color:#a7b7c1;font-size:14px;line-height:1.8;margin:0}.hero-actions{display:flex;gap:9px;margin-top:30px}.btn{display:inline-flex;gap:10px;align-items:center;padding:14px 17px;border:1px solid #314250;border-radius:9px;background:#091017b8;color:#eef7fa;text-decoration:none;font:900 8px var(--mono);transition:.2s}.btn.primary{background:var(--blue);border-color:var(--blue);color:#061018}.btn:hover{transform:translateY(-2px);border-color:var(--blue)}.hero-points{display:flex;gap:15px;margin-top:22px;color:#728596;font:800 7px var(--mono);letter-spacing:.04em}.hero-points i{display:inline-block;width:5px;height:5px;border-radius:50%;background:#63e3a1;margin-right:5px}.live-section,.tools-section,.latest-section{padding:80px 0;content-visibility:auto;contain-intrinsic-size:520px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:35px;margin-bottom:22px}.section-head h2{font-size:clamp(32px,4.5vw,53px);line-height:.94;letter-spacing:-.06em;margin:10px 0 0}.section-head>p{max-width:370px;color:var(--muted);font-size:10px;line-height:1.7;margin:0}.live-panel{display:flex;justify-content:space-between;align-items:center;gap:25px;padding:26px;border:1px solid #1e394a;border-radius:17px;background:linear-gradient(120deg,#091721,#081117);color:var(--text);text-decoration:none;transition:.25s}.live-panel:hover{transform:translateY(-4px);border-color:#3a6b84;box-shadow:0 24px 55px #0007}.live-mark{display:inline-flex;align-items:center;gap:7px;color:#72e3a2;font:900 8px var(--mono);letter-spacing:.13em}.live-mark i{width:6px;height:6px;border-radius:50%;background:#62e3a1;box-shadow:0 0 0 5px #62e3a111;animation:blink 1.4s infinite}.live-panel h3{font-size:23px;letter-spacing:-.035em;margin:13px 0 7px}.live-panel p{margin:0;color:#7f91a2;font-size:10px}.live-panel>b{color:var(--blue);font:900 8px var(--mono);white-space:nowrap}.tool-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px}.tool-card{grid-column:span 2;position:relative;min-height:190px;padding:21px;border:1px solid var(--border);border-radius:15px;background:var(--surface);color:var(--text);text-decoration:none;transition:.2s}.tool-card.featured{grid-column:span 3;min-height:235px;background:linear-gradient(145deg,#0c1c27,#081219)}.tool-card.cyan{background:linear-gradient(145deg,#0d1d25,#081219)}.tool-card:hover{transform:translateY(-4px);border-color:#36596a;box-shadow:0 20px 45px #0005}.tool-card>span{font:900 8px var(--mono);letter-spacing:.13em;color:var(--blue)}.tool-card h3{font-size:20px;letter-spacing:-.03em;margin:37px 0 8px}.tool-card.featured h3{font-size:27px;margin-top:48px}.tool-card p{max-width:440px;color:var(--muted);font-size:10px;line-height:1.7;margin:0}.tool-card strong{position:absolute;left:21px;bottom:19px;color:var(--blue);font:900 8px var(--mono)}.latest-section{border-bottom:1px solid var(--border)}.section-link{color:var(--blue);text-decoration:none;font:900 8px var(--mono)}.article-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.article-card{display:grid;grid-template-rows:auto 1fr;overflow:hidden;border:1px solid var(--border);border-radius:15px;background:var(--surface);color:var(--text);text-decoration:none;transition:.2s}.article-card:hover{transform:translateY(-3px);border-color:#36596a;box-shadow:0 20px 45px #0005}.article-card img,.article-card .placeholder{width:100%;aspect-ratio:16/9;height:auto;display:block;object-fit:cover}.article-card .placeholder{display:grid;place-items:center;background:#0b1c25;color:var(--blue);font:900 34px var(--mono)}.article-card>div:last-child{padding:17px}.meta{display:flex;gap:10px;color:var(--blue);font:900 7px var(--mono)}.meta span:last-child{color:#6e8490}.article-card h3{font-size:16px;line-height:1.1;margin:10px 0 7px}.article-card p{color:var(--muted);font-size:9px;line-height:1.6;margin:0}.article-card strong{display:block;color:var(--blue);font:900 7px var(--mono);margin-top:12px}.empty{padding:25px;border:1px dashed #263744;border-radius:12px;color:var(--muted);font-size:10px}.closing{display:flex;justify-content:space-between;align-items:end;gap:40px;padding:80px 0 100px}.closing h2{font-size:clamp(42px,5vw,64px);line-height:.9;letter-spacing:-.065em;margin:11px 0}.closing>a{padding:15px 17px;border:1px solid #244354;border-radius:10px;background:#09151c;color:#9fdff2;text-decoration:none;font:800 8px var(--mono)}.closing>a span{margin-left:15px}@keyframes blink{50%{opacity:.35;transform:scale(.8)}}@media(max-width:850px){.tool-grid{grid-template-columns:1fr 1fr}.tool-card,.tool-card.featured{grid-column:span 1}.tool-card.featured{min-height:220px}.article-grid{grid-template-columns:1fr}.closing{align-items:start;flex-direction:column}}@media(max-width:560px){.home .wrap{width:calc(100% - 28px)}.home-hero,.hero-inner{min-height:620px}.hero-inner{padding:75px 0 40px}.hero-copy h1{font-size:clamp(49px,14vw,72px)}.tool-grid{grid-template-columns:1fr}.tool-card,.tool-card.featured{min-height:200px}.section-head{align-items:start;flex-direction:column;gap:12px}.live-panel{align-items:start;flex-direction:column}.hero-points{flex-wrap:wrap}.article-card{grid-template-rows:auto 1fr}}
+
+<script>
+  // Daily reset countdown. Change RESET_HOUR_UTC if your reset time differs
+  const RESET_HOUR_UTC = 0;
+  const $ = (id) => document.getElementById(id);
+  const t = $('reset-time'), bar = $('reset-bar'), utc = $('utc-now'), loc = $('local-now');
+  const pad = (n) => String(n).padStart(2, '0');
+  const DAY = 86400000;
+  function tick() {
+    const now = new Date();
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), RESET_HOUR_UTC));
+    if (next <= now) next.setTime(next.getTime() + DAY);
+    const ms = next - now;
+    const s = Math.floor(ms / 1000);
+    if (t) t.textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+    if (bar) bar.style.transform = `scaleX(${1 - ms / DAY})`;
+    if (utc) utc.textContent = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+    if (loc) loc.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // Pointer glow on hero and tiles (skipped on touch and reduced motion)
+  if (matchMedia('(hover:hover)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const glow = document.querySelector('.hero-glow');
+    document.querySelector('.hero')?.addEventListener('pointermove', (e) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      glow?.style.setProperty('--x', e.clientX - r.left + 'px');
+      glow?.style.setProperty('--y', e.clientY - r.top + 'px');
+    });
+    document.querySelectorAll('.tile').forEach((el) =>
+      el.addEventListener('pointermove', (e) => {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--mx', e.clientX - r.left + 'px');
+        el.style.setProperty('--my', e.clientY - r.top + 'px');
+      })
+    );
+  }
+</script>
+
+<style is:global>
+  .home {
+    --c: var(--blue, #38d6f5);
+    --bg0: var(--bg, #05090d);
+    --ink: var(--text, #eef7fa);
+    --dim: var(--muted, #8798a6);
+    --line: var(--border, #16252f);
+    --card: var(--surface, #09121a);
+    background: var(--bg0);
+    color: var(--ink);
+    overflow: clip;
+  }
+  .home .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+  .home h1, .home h2, .home h3 { margin: 0; font-weight: 800; }
+  .home p { margin: 0; }
+  .home a { color: inherit; text-decoration: none; }
+  .home :focus-visible { outline: 2px solid var(--c); outline-offset: 3px; border-radius: 6px; }
+
+  /* Hero */
+  .hero { position: relative; min-height: min(92svh, 820px); display: grid; align-items: center; isolation: isolate; border-bottom: 1px solid var(--line); }
+  .hero-media, .hero-media img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero-media img { object-fit: cover; opacity: .55; transform: scale(1.06); animation: settle 2.2s cubic-bezier(.2,.7,.2,1) forwards; }
+  .hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #05090df5 8%, #05090da0 55%, #05090d70), linear-gradient(0deg, var(--bg0), transparent 45%); }
+  .hero-glow { position: absolute; inset: 0; --x: 30%; --y: 40%; background: radial-gradient(520px circle at var(--x) var(--y), color-mix(in srgb, var(--c) 20%, transparent), transparent 70%); pointer-events: none; }
+  .hero-grain { position: absolute; inset: 0; opacity: .07; mix-blend-mode: overlay; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .hero-grid { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 320px; gap: 48px; align-items: center; padding: 110px 0 80px; }
+  .pill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 14px; border: 1px solid #ffffff1c; border-radius: 99px; background: #ffffff0a; backdrop-filter: blur(10px); font-size: 13px; color: #b8c8d2; }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: #5ff0a5; box-shadow: 0 0 0 0 #5ff0a566; animation: ping 2s infinite; }
+  .hero h1 { margin-top: 26px; font-size: clamp(46px, 8.2vw, 104px); line-height: .96; letter-spacing: -.045em; }
+  .mask { display: block; overflow: hidden; padding-bottom: .08em; }
+  .line { display: block; transform: translateY(105%); animation: up .95s cubic-bezier(.2,.8,.15,1) var(--d) forwards; }
+  .grad { background: linear-gradient(100deg, var(--c), #7af0d0 60%, #fff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { max-width: 560px; margin-top: 26px; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.65; color: #aebdc7; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 15px 24px; border-radius: 12px; font-weight: 700; font-size: 15px; border: 1px solid transparent; transition: transform .25s, box-shadow .25s, background .25s; }
+  .btn.primary { background: var(--c); color: #04141b; box-shadow: 0 10px 30px -10px var(--c); }
+  .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -10px var(--c); }
+  .btn.ghost { border-color: #ffffff26; background: #ffffff0a; backdrop-filter: blur(10px); }
+  .btn.ghost:hover { border-color: var(--c); transform: translateY(-2px); }
+  .rise { opacity: 0; transform: translateY(16px); animation: fade .8s cubic-bezier(.2,.8,.2,1) var(--d) forwards; }
+
+  /* Reset clock */
+  .clock { padding: 24px; border: 1px solid #ffffff1c; border-radius: 22px; background: linear-gradient(160deg, #ffffff12, #ffffff05); backdrop-filter: blur(18px); box-shadow: 0 30px 80px -30px #000; }
+  .clock-label { font-size: 13px; color: var(--dim); }
+  .clock-time { margin-top: 6px; font-size: 46px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .clock-bar { height: 4px; margin: 18px 0; border-radius: 9px; background: #ffffff14; overflow: hidden; }
+  .clock-bar b { display: block; height: 100%; background: linear-gradient(90deg, var(--c), #7af0d0); transform-origin: left; transform: scaleX(0); transition: transform 1s linear; }
+  .clock-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0; }
+  .clock-meta dt { font-size: 12px; color: var(--dim); }
+  .clock-meta dd { margin: 3px 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .clock-link { display: inline-block; margin-top: 18px; font-size: 14px; font-weight: 700; color: var(--c); }
+  .clock-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+  /* Sections */
+  .block { padding: 96px 0 0; }
+  .head { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 30px; }
+  .head h2 { font-size: clamp(32px, 4.6vw, 56px); line-height: 1; letter-spacing: -.045em; }
+  .head p { max-width: 340px; color: var(--dim); font-size: 15px; line-height: 1.6; }
+  .more { color: var(--c); font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .more:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+  /* Bento */
+  .bento { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+  .cell { grid-column: span 4; }
+  .cell.w7 { grid-column: span 7; } .cell.w5 { grid-column: span 5; }
+  .tile { --mx: 50%; --my: 0%; position: relative; display: flex; flex-direction: column; height: 100%; min-height: 210px; padding: 26px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); overflow: hidden; transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .3s; }
+  .tile::before { content: ""; position: absolute; inset: 0; background: radial-gradient(360px circle at var(--mx) var(--my), color-mix(in srgb, var(--c) 16%, transparent), transparent 65%); opacity: 0; transition: opacity .3s; }
+  .tile:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c) 45%, var(--line)); }
+  .tile:hover::before { opacity: 1; }
+  .hot .tile { min-height: 250px; background: linear-gradient(150deg, color-mix(in srgb, var(--c) 16%, var(--card)), var(--card) 70%); }
+  .tag { position: relative; align-self: flex-start; padding: 5px 11px; border-radius: 99px; background: #ffffff0d; font-size: 12px; color: var(--c); }
+  .tile h3 { position: relative; margin-top: auto; padding-top: 34px; font-size: 22px; letter-spacing: -.025em; }
+  .hot .tile h3 { font-size: 32px; }
+  .tile p { position: relative; margin-top: 8px; max-width: 420px; color: var(--dim); font-size: 14px; line-height: 1.6; }
+  .go { position: absolute; top: 22px; right: 22px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); color: var(--dim); transition: .3s; }
+  .tile:hover .go { background: var(--c); border-color: var(--c); color: #04141b; transform: rotate(45deg); }
+
+  /* Posts */
+  .posts { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; }
+  .post-link { display: grid; height: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--card); transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .3s; }
+  .post-link:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c) 45%, var(--line)); }
+  .lead-post { grid-row: span 3; }
+  .post:not(.lead-post) .post-link { grid-template-columns: 150px 1fr; align-items: stretch; }
+  .thumb { overflow: hidden; background: #0b1a23; }
+  .thumb img, .ph { width: 100%; height: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+  .post:not(.lead-post) .thumb img, .post:not(.lead-post) .ph { aspect-ratio: auto; }
+  .post-link:hover .thumb img { transform: scale(1.05); }
+  .ph { display: grid; place-items: center; font-weight: 800; font-size: 34px; color: var(--c); }
+  .post-body { padding: 22px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--dim); }
+  .meta span:first-child { color: var(--c); font-weight: 700; }
+  .post h3 { margin-top: 10px; font-size: 17px; line-height: 1.25; letter-spacing: -.02em; }
+  .lead-post h3 { font-size: clamp(24px, 3vw, 34px); line-height: 1.12; }
+  .ex { margin-top: 12px; color: var(--dim); font-size: 15px; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .empty { padding: 26px; border: 1px dashed var(--line); border-radius: 16px; color: var(--dim); }
+
+  /* Closing */
+  .close { padding: 96px 0 120px; }
+  .close-card { display: flex; justify-content: space-between; align-items: center; gap: 30px; padding: clamp(32px, 6vw, 72px); border: 1px solid color-mix(in srgb, var(--c) 30%, var(--line)); border-radius: 30px; background: radial-gradient(700px circle at 100% 0, color-mix(in srgb, var(--c) 22%, transparent), transparent 60%), var(--card); }
+  .close-card h2 { font-size: clamp(38px, 5.6vw, 72px); line-height: .98; letter-spacing: -.05em; }
+
+  @keyframes up { to { transform: none; } }
+  @keyframes fade { to { opacity: 1; transform: none; } }
+  @keyframes settle { to { transform: scale(1); } }
+  @keyframes ping { 70% { box-shadow: 0 0 0 9px #5ff0a500; } 100% { box-shadow: 0 0 0 0 #5ff0a500; } }
+
+  @media (max-width: 980px) {
+    .hero-grid { grid-template-columns: 1fr; padding: 96px 0 56px; }
+    .clock { max-width: 380px; }
+    .cell, .cell.w7, .cell.w5 { grid-column: span 6; }
+    .posts { grid-template-columns: 1fr; }
+    .lead-post { grid-row: auto; }
+  }
+  @media (max-width: 600px) {
+    .home .wrap { width: calc(100% - 28px); }
+    .cell, .cell.w7, .cell.w5 { grid-column: 1 / -1; }
+    .tile, .hot .tile { min-height: 190px; }
+    .head { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .post:not(.lead-post) .post-link { grid-template-columns: 110px 1fr; }
+    .post-body { padding: 16px; }
+    .close-card { flex-direction: column; align-items: flex-start; }
+    .block { padding-top: 72px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .line, .rise, .hero-media img { animation: none; opacity: 1; transform: none; }
+    .pill i { animation: none; }
+    .tile, .post-link, .btn, .thumb img { transition: none; }
+  }
 </style>
