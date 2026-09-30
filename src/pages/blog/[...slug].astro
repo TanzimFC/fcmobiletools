@@ -4,14 +4,17 @@ import PostCard from '../../components/blog/PostCard.astro';
 import BlogEffects from '../../components/blog/BlogEffects.astro';
 import '../../styles/blog.css';
 import { relatedTo, resolveTools, seriesIn, img, fmtDate, iso, hostOf, initial } from '../../lib/blog.js';
-import { getPublishedPosts } from '../../lib/blog-supabase.js';
+import { getPosts } from '../../lib/blog.js';
 
-export const prerender = false;
-Astro.response.headers.set('Cache-Control','no-store, max-age=0, must-revalidate');
 
-const posts = await getPublishedPosts();
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}
+
+const posts = await getPosts();
 const slug = String(Astro.params.slug || '').replace(/\/$/,'');
-const foundPost = posts.find((p) => p.slug === slug);
+const foundPost = Astro.props?.post || posts.find((p) => p.slug === slug);
 if (!foundPost) Astro.response.status = 404;
 const post = foundPost || {
   slug,
