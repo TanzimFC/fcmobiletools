@@ -317,8 +317,10 @@ async function editorialApi(request,env,path){
     return json({ok:true});
   }
 
-  if(path==='/articles' && request.method==='POST'){
+  const articleUpdateMatch=path.match(/^\/articles\/(\d+)$/);
+  if((path==='/articles' && request.method==='POST') || (articleUpdateMatch && (request.method==='PUT'||request.method==='PATCH'))){
     const input=await request.json().catch(()=>({}));
+    if(articleUpdateMatch) input.id=Number(articleUpdateMatch[1]);
     const title=String(input.title||'').trim();
     const slug=String(input.slug||title).trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,160);
     if(!title||!slug) return json({error:'Article title is required.'},400);
