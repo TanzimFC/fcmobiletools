@@ -975,6 +975,19 @@ export default { async fetch(request,env,ctx) {
 
   // Permanently redirect every request received on the former Worker hostname.
   // Check both URL.hostname and Host because the Worker may receive a normalized host.
+  const legacyRedirects = {
+    '/about': '/legal/about/',
+    '/about/': '/legal/about/',
+    '/blog/category/event guides': '/blog/category/event-guides/',
+    '/blog/category/event guides/': '/blog/category/event-guides/',
+    '/blog/category/fc mobile 27 news': '/blog/category/fc-mobile-27-news/',
+    '/blog/category/fc mobile 27 news/': '/blog/category/fc-mobile-27-news/'
+  };
+  let decodedPath = url.pathname;
+  try { decodedPath = decodeURIComponent(url.pathname); } catch {}
+  const legacyTarget = legacyRedirects[decodedPath];
+  if (legacyTarget) return Response.redirect(new URL(legacyTarget, url), 301);
+
   if(url.hostname === 'tanzimfc.fcmobiletools.workers.dev' || hostHeader === 'tanzimfc.fcmobiletools.workers.dev') {
     const destination='https://fcmobiletools.online' + url.pathname + url.search;
     return new Response(null,{
