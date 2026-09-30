@@ -15,9 +15,9 @@ export const REDEEM_CODES = [
     "reward": "117 Zlatan Player Item",
     "status": "expired",
     "releaseDate": "2026-09-15",
-    "expiryDate": null,
+    "expiryDate": "2026-09-18",
     "region": "Global",
-    "lastVerified": "2026-09-25",
+    "lastVerified": "2026-09-27",
     "notes": ""
   },
   {
