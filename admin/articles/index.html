@@ -399,6 +399,7 @@ async function loadLexical(editorEl, initialHTML, initialJSON){
 function articleEditor(item) {
   ensureEditorFonts();
   if(lexicalEditor){try{lexicalEditor.destroy()}catch{}lexicalEditor=null;}
+  let currentArticleId=Number(item?.data?.id||0)||null;
   const a=item?.data||{};
   const statusOptions=workspaceRole==='creator'?['draft','review']:['draft','review','published','archived'];
   app.innerHTML='<div class="article-screen">'
@@ -649,9 +650,19 @@ function articleEditor(item) {
         seoTitle:$('#articleSeoTitle').value.trim(),
         seoDescription:$('#articleSeoDescription').value.trim(),
         autosave:silent,
-        createOnly:!item};
-      const endpoint=workspaceRole==='creator'?(item?'/articles/'+item.data.id:'/articles'):'/articles';
-      await api(endpoint,{method:item&&workspaceRole==='creator'?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+        createOnly:!currentArticleId};
+      const endpoint=workspaceRole==='creator'?(currentArticleId?'/articles/'+currentArticleId:'/articles'):'/articles';
+      const result=await api(endpoint,{method:currentArticleId&&workspaceRole==='creator'?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+      if(!currentArticleId && result?.articleId){
+        currentArticleId=Number(result.articleId);
+        a.id=currentArticleId;
+        if(!item){
+          const url=new URL(location.href);
+          url.searchParams.delete('new');
+          url.searchParams.set('edit',String(currentArticleId));
+          history.replaceState({article:true,id:currentArticleId},'',url.pathname+url.search+url.hash);
+        }
+      }
       dirty=false;
       if(silent){
         $('#saveHint').textContent='Saved automatically';
@@ -674,12 +685,12 @@ function articleEditor(item) {
   $('#articleReview').onclick=()=>save('review');
   $('#articlePublish')?.addEventListener('click',()=>save('published'));
 
-  if(item?.data?.id){
+  if(currentArticleId){
     statusPollTimer=setInterval(async()=>{
       if(dirty||autosaveBusy)return;
       try{
         const freshOut=await api('/articles');
-        const fresh=(freshOut.articles||[]).find(x=>String(x.data?.id)===String(item.data.id));
+        const fresh=(freshOut.articles||[]).find(x=>String(x.data?.id)===String(currentArticleId));
         const freshStatus=fresh?.data?.status;
         const current=$('#articleStatus')?.value;
         if(freshStatus&&current&&freshStatus!==current){
