@@ -186,7 +186,7 @@ function creatorDialog(c){
     closeModal();state(c?'Creator updated':'Creator created');await creatorsSection();
   }catch(e){state(e.message,false)}finally{busy(b,false)}};
 }
-async async function accountSection(){
+async function accountSection(){
   const out=await api('/account'); const a=out.account||{};
   app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> ACCOUNT</div><h2>Account settings</h2><p>Update your profile details and change your password without leaving the workspace.</p></div></div>'
     +'<div class="account-grid"><div class="card section"><div class="head"><div><h3>Profile</h3><p>@'+esc(a.username||workspaceUser?.username||'')+'</p></div></div><label class="field"><span>Display name</span><input class="input" id="accountName" value="'+esc(a.displayName||workspaceUser?.displayName||'')+'"></label>'
