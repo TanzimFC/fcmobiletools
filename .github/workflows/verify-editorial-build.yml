@@ -1,0 +1,38 @@
+name: Verify Supabase Editorial Build
+
+on:
+  push:
+    branches:
+      - supabase-lexical-editorial
+      - supabase-lexical-editorial-v2
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Worker syntax
+        run: node scripts/check-worker-syntax.mjs
+
+      - name: Editorial regression checks
+        run: node scripts/verify-editorial-runtime.mjs
+
+      - name: Production Cloudflare build
+        run: node scripts/build-static.mjs
+
+      - name: Verify generated worker
+        run: node -e "const fs=require('node:fs');if(!fs.existsSync('dist/_worker.js/index.js')){console.error('Missing dist/_worker.js/index.js');process.exit(1)};console.log('Generated Cloudflare worker verified.')"

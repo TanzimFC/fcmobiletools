@@ -1,0 +1,11 @@
+alter table public.articles add column if not exists type text not null default 'guide';
+alter table public.articles add column if not exists category text not null default 'Guides';
+alter table public.articles add column if not exists fact_status text not null default 'verified';
+alter table public.articles add column if not exists last_reviewed date;
+alter table public.articles add column if not exists sources jsonb not null default '[]'::jsonb;
+alter table public.articles add column if not exists related_articles text[] not null default '{}';
+alter table public.articles add column if not exists related_tools text[] not null default '{}';
+alter table public.articles add column if not exists series_order integer;
+alter table public.articles add column if not exists author_slug text;
+create index if not exists idx_articles_type_status on public.articles(type,status);
+create index if not exists idx_articles_author_slug_status on public.articles(author_slug,status);
