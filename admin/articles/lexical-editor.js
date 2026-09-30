@@ -1,4 +1,4 @@
-/* TanzimFC editorial editor — Lexical, no TipTap dependency. */
+/* TanzimFC editorial editor — Lexical. */
 export async function createLexicalArticleEditor(editorEl, initialHTML = '', onChange = () => {}) {
   const [
     lexical,
@@ -33,6 +33,7 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', onC
   } = lexical;
 
   const {registerRichText} = richText;
+  const {registerList} = list;
   const {createEmptyHistoryState, registerHistory} = history;
   const {LinkNode, TOGGLE_LINK_COMMAND, $isLinkNode} = link;
   const {
@@ -82,10 +83,12 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', onC
 
   editor.setRootElement(editorEl);
   registerRichText(editor);
+  if(registerList) registerList(editor);
+  let initialized=false;
   const historyState=createEmptyHistoryState();
   const unregisterHistory=registerHistory(editor,historyState,300);
   const unregisterUpdate=editor.registerUpdateListener(({editorState,dirtyElements,dirtyLeaves})=>{
-    if(dirtyElements.size || dirtyLeaves.size) onChange();
+    if(initialized && (dirtyElements.size || dirtyLeaves.size)) onChange();
   });
 
   editorEl.setAttribute('spellcheck','true');
@@ -102,6 +105,7 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', onC
     root.append(...nodes);
     if(!root.getFirstChild()) root.append($createParagraphNode());
   },{tag:'initial-load'});
+  initialized=true;
 
   const run=(fn)=>{ editor.update(fn); return api; };
   const api={
@@ -125,10 +129,22 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', onC
       clear(){commands.push(()=>editor.dispatchCommand(FORMAT_TEXT_COMMAND,''));return this;},
       toggleBulletList(){commands.push(()=>editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND,undefined));return this;},
       toggleOrderedList(){commands.push(()=>editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND,undefined));return this;},
-      toggleHeading({level=2}={}){commands.push(()=>run(()=>{const s=$getSelection();if(!$isRangeSelection(s))return;const nodes=s.getNodes();nodes.forEach(n=>{const block=n.getTopLevelElementOrThrow?.();if(block?.replace)block.replace($createHeadingNode('h'+Math.min(3,Math.max(1,level))));});}));return this;},
-      toggleBlockquote(){commands.push(()=>run(()=>{const s=$getSelection();if(!$isRangeSelection(s))return;const n=s.anchor.getNode()?.getTopLevelElementOrThrow?.();if(n?.replace)n.replace($createQuoteNode());}));return this;},
+      toggleHeading({level=2}={}){commands.push(()=>run(()=>{const s=$getSelection();if(!$isRangeSelection(s))return;const nodes=s.getNodes();nodes.forEach(n=>{const block=n.getTopLevelElementOrThrow?.();if(block?.replace){
+          const heading=$createHeadingNode('h'+Math.min(3,Math.max(1,level)));
+          heading.append(...block.getChildren());
+          block.replace(heading);
+        }});}));return this;},
+      toggleBlockquote(){commands.push(()=>run(()=>{const s=$getSelection();if(!$isRangeSelection(s))return;const n=s.anchor.getNode()?.getTopLevelElementOrThrow?.();if(n?.replace){
+          const quote=$createQuoteNode();
+          quote.append(...n.getChildren());
+          n.replace(quote);
+        }}));return this;},
       setHorizontalRule(){commands.push(()=>run(()=>{const s=$getSelection();if($isRangeSelection(s))s.insertNodes([$createHorizontalRuleNode()]);}));return this;},
-      toggleCodeBlock(){commands.push(()=>run(()=>{const s=$getSelection();if(!$isRangeSelection(s))return;const n=s.anchor.getNode()?.getTopLevelElementOrThrow?.();if(n?.replace)n.replace($createCodeNode());}));return this;},
+      toggleCodeBlock(){commands.push(()=>run(()=>{const s=$getSelection();if(!$isRangeSelection(s))return;const n=s.anchor.getNode()?.getTopLevelElementOrThrow?.();if(n?.replace){
+          const codeBlock=$createCodeNode();
+          codeBlock.append(...n.getChildren());
+          n.replace(codeBlock);
+        }}));return this;},
       unsetAllMarks(){commands.push(()=>editor.dispatchCommand(FORMAT_TEXT_COMMAND,''));return this;},
       setTextAlign(value){commands.push(()=>run(()=>{const s=$getSelection();if($isRangeSelection(s)){const nodes=s.getNodes();nodes.forEach(n=>{const el=n.getParent?.();if(el?.setFormat)el.setFormat(value);});}}));return this;},
       setLink(payload){commands.push(()=>editor.dispatchCommand(TOGGLE_LINK_COMMAND,payload?.href||null));return this;},
