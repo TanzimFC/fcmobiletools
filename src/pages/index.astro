@@ -1,12 +1,10 @@
 ---
-export const prerender = false;
-Astro.response.headers.set('Cache-Control','no-store, max-age=0, must-revalidate');
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPublishedPosts } from '../lib/blog-supabase.js';
+import { getPosts } from '../lib/blog.js';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
 import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
 
-const latestArticles = (await getPublishedPosts()).slice(0, 5);
+const latestArticles = (await getPosts()).slice(0, 5);
 
 const activeCodes = REDEEM_CODES.filter((item) => item.status === 'active');
 const featuredCode = activeCodes[0] ?? REDEEM_CODES[0] ?? null;
@@ -35,7 +33,7 @@ const fmtDate = (d) =>
       })
     : '';
 
-const SITE = 'https://fcmobiletools.com';
+const SITE = 'https://fcmobiletools.online';
 const title = 'FC Mobile Tools, Redeem Codes, Calculators & Guides';
 const description =
   'FCMOBILETOOLS is the FC Mobile hub for redeem codes, live events, reset times, calculators, planners, guides and the latest Season 27 updates.';
