@@ -8,440 +8,238 @@ const rivals = FOOTBALL_CENTRE_CONTENT.divisionRivalsReset ?? {};
 const schedule = FOOTBALL_CENTRE_CONTENT.schedule ?? {};
 const upcomingEvents = Array.isArray(FOOTBALL_CENTRE_CONTENT.upcomingEvents) ? FOOTBALL_CENTRE_CONTENT.upcomingEvents : [];
 
-const anniversaryBanner = (anniversary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323719/fc-mobile-tools/qrtvtote0squixmcts6u.jpg')
-  .replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1600/');
-const unbreakableBanner = (secondary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg')
-  .replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1100/');
+const cl = (url, w) => (url || '').replace('/image/upload/', `/image/upload/f_auto,q_auto,dpr_auto,w_${w}/`);
+const banner = (id) => upcomingEvents.find((e) => e.id === id)?.banner || '';
+
+const anniversaryBanner = cl(anniversary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323719/fc-mobile-tools/qrtvtote0squixmcts6u.jpg', 1800);
+const unbreakableBanner = cl(secondary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg', 1000);
 const anniversaryLogo = anniversary.logo || 'https://sappurit.github.io/s10img/png/2026-09-17/anniversary27_topup_ANNI27_LOGO.png';
 
+// All upcoming events share one card design and one size.
+const upcoming = [
+  { id: 'unbreakable', title: secondary.title || 'Unbreakable', text: secondary.subtitle || 'Major FC Mobile event.', day: '15', month: 'Oct', img: unbreakableBanner, acc: '#8b93ff' },
+  { id: 'conmebol-libertadores', title: 'CONMEBOL Libertadores', text: 'Starts on the same day as Unbreakable.', day: '15', month: 'Oct', img: cl(banner('conmebol-libertadores'), 1000), acc: '#4fe3a3' },
+  { id: 'ballon-dor', title: "Ballon d'Or", text: 'Starts on Season Reset day.', day: '22', month: 'Oct', img: cl(banner('ballon-dor'), 1000), acc: '#ffd36e' },
+];
+
+const desc = 'FC Mobile event schedule covering Anniversary, Unbreakable, CONMEBOL Libertadores, Ballon d’Or, Daily Reset and the October 22 season reset.';
 const pageSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
   name: 'FC Mobile Events & Reset | FCMOBILETOOLS',
-  description: 'FC Mobile event schedule covering Anniversary, Unbreakable, CONMEBOL Libertadores, Ballon d’Or, Daily Reset and the October 22 season reset.',
+  description: desc,
   url: new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.online').href,
   publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
 };
 ---
-<BaseLayout
-  title="FC Mobile Events & Reset | FCMOBILETOOLS"
-  description="FC Mobile event schedule covering Anniversary, Unbreakable, CONMEBOL Libertadores, Ballon d’Or, Daily Reset and the October 22 season reset."
->
+<BaseLayout title="FC Mobile Events & Reset | FCMOBILETOOLS" description={desc}>
 <script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
 
-<main class="events-hub">
-  <div class="hub-glow glow-a"></div>
-  <div class="hub-glow glow-b"></div>
+<main class="hub">
+  <div class="wrap">
 
-  <div class="hub-shell">
-    <header class="hub-header">
-      <div class="hub-kicker">
-        <span class="live-dot"></span>
-        FC MOBILE 27
-        <b>EVENTS &amp; RESET</b>
+    <header class="top">
+      <div class="top-copy">
+        <p class="tag"><i class="dot"></i>FC Mobile 27 · Events &amp; reset</p>
+        <h1>Every date that matters,<br />in one place.</h1>
+        <p class="lede">Live events, the October drops and the next resets, all counted down to the second in your own time zone.</p>
       </div>
-
-      <div class="hub-header-row">
-        <div class="hub-title">
-          <h1>What’s live <em>right now.</em></h1>
-          <p>Everything important is above the fold: live events, the next major drop, and the next Division Rivals reset.</p>
-        </div>
-
-        <div class="clock-card" aria-label="Current local and UTC time">
-          <span>YOUR TIME</span>
-          <strong id="localClock">--:--:--</strong>
-          <small id="zoneLabel">LOCAL</small>
-          <i></i>
-          <span>UTC</span>
-          <b id="utcClock">--:--:--</b>
-        </div>
+      <div class="clock" aria-label="Current local and UTC time">
+        <div><small>Your time</small><strong id="localClock">--:--:--</strong><em id="zoneLabel">Local</em></div>
+        <div><small>UTC</small><strong id="utcClock">--:--:--</strong></div>
       </div>
     </header>
 
-    <section class="status-strip" aria-label="FC Mobile live event status">
-      <div class="status-strip-lead"><span class="status-strip-dot"></span><div><strong>Anniversary is live.</strong><span>FC Mobile 27 is running now with the next major event and reset already scheduled.</span></div></div>
-      <div class="status-pill live">LIVE · ANNIVERSARY</div>
-      <div class="status-pill upcoming">15 OCT · UNBREAKABLE + LIBERTADORES</div>
-      <div class="status-pill reset">22 OCT · BALLON D'OR + SEASON RESET</div>
-    </section>
-
-    <section class="featured-grid" aria-label="Featured events">
-      <article class="feature-card anniversary-card" id="anniversaryCard">
-        <div class="feature-visual">
-          <img
-            id="anniversaryImage"
-            src={anniversaryBanner}
-            alt="FC Mobile 3rd Anniversary"
-            width="1600"
-            height="900"
-            loading="eager"
-            fetchpriority="high"
-            decoding="async"
-          />
-          <div class="feature-shade"></div>
-          <img
-            id="anniversaryLogo"
-            class="anniversary-logo"
-            src={anniversaryLogo}
-            alt="FC Mobile Anniversary 27 logo"
-            loading="eager"
-            decoding="async"
-          />
-          <div class="feature-topline">
-            <span class="status-live">LIVE NOW</span>
-            <span>SEASON 27</span>
-          </div>
+    <!-- LIVE -->
+    <article class="hero" id="anniversaryCard">
+      <img id="anniversaryImage" class="hero-img" src={anniversaryBanner} alt="FC Mobile 3rd Anniversary" width="1800" height="800" loading="eager" fetchpriority="high" decoding="async" />
+      <div class="hero-shade"></div>
+      <div class="hero-body">
+        <span class="badge live"><i class="dot"></i><span id="anniversaryState">LIVE NOW</span></span>
+        <img id="anniversaryLogo" class="hero-logo" src={anniversaryLogo} alt="FC Mobile Anniversary 27 logo" decoding="async" />
+        <h2>Anniversary Event</h2>
+        <p id="anniversarySubtitle">Live alongside the FC Mobile 27 Season Update.</p>
+        <div class="hero-foot">
+          <div><small>Started</small><strong id="anniversaryStart">24 Sep 2026</strong></div>
+          <a href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary" target="_blank" rel="noopener noreferrer">Read the EA announcement ↗</a>
         </div>
-        <div class="feature-copy">
-          <div class="copy-label">03RD ANNIVERSARY</div>
-          <h2>Anniversary Event</h2>
-          <p id="anniversarySubtitle">Live alongside the FC Mobile 27 Season Update.</p>
-          <div class="feature-meta">
-            <div>
-              <span>STATUS</span>
-              <strong id="anniversaryState">LIVE NOW</strong>
-            </div>
-            <div>
-              <span>STARTED</span>
-              <strong id="anniversaryStart">24 SEP 2026</strong>
-            </div>
-          </div>
-          <div class="source-row">
-            <span>EA confirms the third-anniversary celebration launched with the FC Mobile 27 update.</span>
-            <a href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary" target="_blank" rel="noopener noreferrer">EA announcement ↗</a>
-          </div>
-        </div>
-      </article>
-
-      <article class="feature-card unbreakable-card" id="unbreakableCard">
-        <div class="feature-visual">
-          <img
-            id="unbreakableImage"
-            src={unbreakableBanner}
-            alt="FC Mobile Unbreakable"
-            width="1100"
-            height="619"
-            loading="lazy"
-            decoding="async"
-          />
-          <div class="feature-shade"></div>
-          <div class="feature-topline">
-            <span class="status-upcoming">UPCOMING</span>
-            <span>MAJOR EVENT</span>
-          </div>
-          <div class="image-date">15 <small>OCT</small></div>
-        </div>
-        <div class="feature-copy">
-          <div class="copy-label">NEXT EVENT</div>
-          <h2>{secondary.title || 'Unbreakable'}</h2>
-          <p id="unbreakableSubtitle">{secondary.subtitle || 'Upcoming FC Mobile event'}</p>
-
-          <div class="event-countdown">
-            <span>COUNTDOWN</span>
-            <strong id="unbreakableCountdown">--:--:--</strong>
-          </div>
-
-          <div class="feature-meta">
-            <div>
-              <span>DATE</span>
-              <strong id="unbreakableDate">15 OCT 2026</strong>
-            </div>
-            <div>
-              <span>STATE</span>
-              <strong id="unbreakableState">UPCOMING</strong>
-            </div>
-          </div>
-        </div>
-      </article>
-    </section>
-
-    <section class="section-bar upcoming-heading">
-      <div>
-        <span class="section-kicker">UPCOMING SCHEDULE</span>
-        <h2>Two more dates on the calendar.</h2>
       </div>
-      <span>OCTOBER 2026</span>
-    </section>
+    </article>
 
-    <section class="schedule-grid" aria-label="Upcoming FC Mobile event schedule">
-      <article class="schedule-card" data-event-id="conmebol-libertadores">
-        <div class="schedule-visual">
-          <img src={((upcomingEvents.find((event) => event.id === 'conmebol-libertadores')?.banner || '')).replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_900/')} alt="CONMEBOL Libertadores" loading="lazy" decoding="async" />
-          <div class="schedule-shade"></div>
-          <div class="schedule-topline"><span>15 OCT</span><b>UPCOMING</b></div>
-        </div>
-        <div class="schedule-copy">
-          <span class="copy-label">NEXT EVENT</span>
-          <h3>CONMEBOL Libertadores</h3>
-          <p>Scheduled for the same October 15 date as Unbreakable.</p>
-          <div class="schedule-bottom"><strong data-countdown>--:--:--</strong><span>15 OCT 2026</span></div>
-        </div>
-      </article>
-
-      <article class="schedule-card" data-event-id="ballon-dor">
-        <div class="schedule-visual">
-          <img src={((upcomingEvents.find((event) => event.id === 'ballon-dor')?.banner || '')).replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_900/')} alt="Ballon d'Or" loading="lazy" decoding="async" />
-          <div class="schedule-shade"></div>
-          <div class="schedule-topline"><span>22 OCT</span><b>UPCOMING</b></div>
-        </div>
-        <div class="schedule-copy">
-          <span class="copy-label">UPCOMING EVENT</span>
-          <h3>Ballon d'Or</h3>
-          <p>Scheduled for October 22 alongside the Season Reset date.</p>
-          <div class="schedule-bottom"><strong data-countdown>--:--:--</strong><span>22 OCT 2026</span></div>
-        </div>
-      </article>
-    </section>
-
-    <section class="section-bar">
-      <div>
-        <span class="section-kicker">RESET TRACKER</span>
-        <h2>The next resets, without the clutter.</h2>
+    <!-- UPCOMING: three equal cards -->
+    <section class="block" aria-labelledby="upTitle">
+      <div class="block-head">
+        <h2 id="upTitle">Coming in October</h2>
+        <p>Three launches, two dates.</p>
       </div>
-      <span id="syncLabel">● LIVE · SYNCING</span>
-    </section>
 
-    <section class="reset-grid" aria-label="Reset countdowns">
-      <article class="reset-card daily-card">
-        <div class="reset-card-head">
-          <div class="mini-icon">24H</div>
-          <span>AUTO</span>
-        </div>
-        <div class="reset-label">DAILY RESET</div>
-        <h3>Daily Reset</h3>
-        <p>Repeats every day at 01:00 UTC.</p>
-        <strong class="big-count" id="dailyCountdown">--:--:--</strong>
-        <div class="reset-date"><span>NEXT</span><b id="dailyLocal">—</b></div>
-        <small id="dailyUtc">—</small>
-      </article>
-
-      <article class="reset-card rivals-card">
-        <div class="reset-card-head">
-          <div class="mini-icon">DR</div>
-          <span>22 OCT</span>
-        </div>
-        <div class="reset-label">DIVISION RIVALS</div>
-        <h3>Anniversary Season</h3>
-        <p>Current anniversary season resets on October 22.</p>
-        <strong class="big-count" id="rivalsCountdown">--:--:--</strong>
-        <div class="reset-date"><span>RESET</span><b id="rivalsLocal">22 Oct 2026</b></div>
-        <small id="rivalsUtc">22 Oct 2026 · 01:00 UTC</small>
-      </article>
-
-      <article class="reset-card season-card">
-        <div class="reset-card-head">
-          <div class="mini-icon">27</div>
-          <span>LIVE</span>
-        </div>
-        <div class="reset-label">CURRENT SEASON</div>
-        <h3>FC Mobile 27</h3>
-        <p>The new season launched with the third-anniversary celebration.</p>
-        <div class="season-status">
-          <i></i>
-          <strong>SEASON 27 IS LIVE</strong>
-        </div>
-        <div class="reset-date"><span>ANNIVERSARY</span><b>LIVE</b></div>
-        <small>Updated for 24 Sep 2026 launch</small>
-      </article>
-    </section>
-
-    <section class="compact-info">
-      <div>
-        <span class="section-kicker">AT A GLANCE</span>
-        <strong>Anniversary is live.</strong>
+      <div class="cards">
+        {upcoming.map((e) => (
+          <article class="card" data-event-id={e.id} style={`--acc:${e.acc}`}>
+            <div class="card-media">
+              {e.img && <img src={e.img} alt={e.title} loading="lazy" decoding="async" />}
+              <div class="card-fade"></div>
+              <div class="card-date"><b>{e.day}</b><span>{e.month}</span></div>
+              <span class="badge soon" data-state>Upcoming</span>
+            </div>
+            <div class="card-body">
+              <h3>{e.title}</h3>
+              <p>{e.text}</p>
+              <div class="card-count">
+                <small>Starts in</small>
+                <strong data-countdown>--:--:--</strong>
+              </div>
+            </div>
+          </article>
+        ))}
       </div>
-      <div><span>NEXT MAJOR EVENT</span><b>15 OCT · UNBREAKABLE</b></div>
-      <div><span>DIVISION RIVALS</span><b>22 OCT · SEASON RESET</b></div>
-      <div><span>TIME BASIS</span><b>UTC + YOUR LOCAL TIME</b></div>
     </section>
+
+    <!-- RESETS -->
+    <section class="block" aria-labelledby="rsTitle">
+      <div class="block-head">
+        <h2 id="rsTitle">Resets</h2>
+        <p id="syncLabel" class="sync">Syncing…</p>
+      </div>
+
+      <div class="resets">
+        <article class="reset">
+          <div class="reset-top"><h3>Daily reset</h3><span>Every day · 01:00 UTC</span></div>
+          <strong class="big" id="dailyCountdown">--:--:--</strong>
+          <dl>
+            <div><dt>Your time</dt><dd id="dailyLocal">—</dd></div>
+            <div><dt>UTC</dt><dd id="dailyUtc">—</dd></div>
+          </dl>
+        </article>
+
+        <article class="reset accent">
+          <div class="reset-top"><h3>Division Rivals · Season reset</h3><span>22 Oct</span></div>
+          <strong class="big" id="rivalsCountdown">--:--:--</strong>
+          <dl>
+            <div><dt>Your time</dt><dd id="rivalsLocal">22 Oct 2026</dd></div>
+            <div><dt>UTC</dt><dd id="rivalsUtc">22 Oct 2026 · 01:00 UTC</dd></div>
+          </dl>
+        </article>
+      </div>
+    </section>
+
   </div>
 </main>
 
 <script define:vars={{
   anniversaryStartUtc: anniversary.startUtc,
-  anniversaryTitle: anniversary.title,
   anniversarySubtitle: anniversary.subtitle,
-  anniversaryBanner,
-  anniversaryLogo,
   unbreakableStartUtc: secondary.startUtc,
-  unbreakableTitle: secondary.title,
-  unbreakableSubtitle: secondary.subtitle,
-  unbreakableBanner,
   rivalsAnchorUtc: rivals.anchorUtc,
   rivalsCycleDays: rivals.cycleDays,
-  dailyResetUtc: schedule.dailyResetUtc || "01:00",
+  dailyResetUtc: schedule.dailyResetUtc || '01:00',
   upcomingEventsData: upcomingEvents,
 }}>
 (() => {
   const $ = (id) => document.getElementById(id);
+  const set = (id, v) => { const n = $(id); if (n) n.textContent = v; };
   const DAY = 86400000;
-
-  const pad = (value) => String(Math.max(0, Math.floor(Number(value) || 0))).padStart(2, '0');
-  const formatCountdown = (ms) => {
-    let total = Math.max(0, Math.floor(ms / 1000));
-    const days = Math.floor(total / 86400);
-    total %= 86400;
-    const hours = Math.floor(total / 3600);
-    total %= 3600;
-    const mins = Math.floor(total / 60);
-    const secs = total % 60;
-    return days > 0
-      ? days + 'd ' + pad(hours) + ':' + pad(mins) + ':' + pad(secs)
-      : pad(hours) + ':' + pad(mins) + ':' + pad(secs);
+  const pad = (v) => String(Math.max(0, Math.floor(Number(v) || 0))).padStart(2, '0');
+  const fmt = (ms) => {
+    let t = Math.max(0, Math.floor(ms / 1000));
+    const d = Math.floor(t / 86400); t %= 86400;
+    const h = Math.floor(t / 3600); t %= 3600;
+    const m = Math.floor(t / 60), s = t % 60;
+    return (d > 0 ? d + 'd ' : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
   };
 
-  const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const localClock = new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
-  });
-  const localDate = new Intl.DateTimeFormat(undefined, {
-    weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
-  });
-  const utcDate = new Intl.DateTimeFormat('en-GB', {
-    weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short'
-  });
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const localClock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+  const utcClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
+  const localDate = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+  const utcDate = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
 
   let cfg = {
-    anniversaryStartUtc,
-    anniversaryTitle,
-    anniversarySubtitle,
-    anniversaryBanner,
-    anniversaryLogo,
-    unbreakableStartUtc,
-    unbreakableTitle,
-    unbreakableSubtitle,
-    unbreakableBanner,
-    rivalsAnchorUtc,
-    rivalsCycleDays: Number(rivalsCycleDays) || 28,
+    anniversaryStartUtc, anniversarySubtitle, unbreakableStartUtc,
+    rivalsAnchorUtc, rivalsCycleDays: Number(rivalsCycleDays) || 28,
     dailyResetUtc,
     upcomingEvents: Array.isArray(upcomingEventsData) ? upcomingEventsData : [],
   };
 
-  const set = (id, value) => {
-    const node = $(id);
-    if (node) node.textContent = value;
+  const nextDaily = (now) => {
+    const p = String(cfg.dailyResetUtc || '01:00').split(':').map(Number);
+    const h = Number.isFinite(p[0]) ? Math.max(0, Math.min(23, p[0])) : 1;
+    const m = Number.isFinite(p[1]) ? Math.max(0, Math.min(59, p[1])) : 0;
+    const d = new Date(now);
+    const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m);
+    return now < t ? t : t + DAY;
   };
-
-  const validTime = (value) => Number.isFinite(Date.parse(value || ''));
-
-  const nextDailyReset = (now) => {
-    const parts = String(cfg.dailyResetUtc || '01:00').split(':').map(Number);
-    const hour = Number.isFinite(parts[0]) ? Math.max(0, Math.min(23, parts[0])) : 1;
-    const minute = Number.isFinite(parts[1]) ? Math.max(0, Math.min(59, parts[1])) : 0;
-    const date = new Date(now);
-    const target = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hour, minute);
-    return now < target ? target : target + DAY;
+  const nextRivals = (now) => {
+    const a = Date.parse(cfg.rivalsAnchorUtc || '');
+    const c = Math.max(1, Number(cfg.rivalsCycleDays) || 28) * DAY;
+    if (!Number.isFinite(a)) return NaN;
+    return now < a ? a : a + (Math.floor((now - a) / c) + 1) * c;
   };
-
-  const nextRivalsReset = (now) => {
-    const anchor = Date.parse(cfg.rivalsAnchorUtc || '');
-    const cycle = Math.max(1, Number(cfg.rivalsCycleDays) || 28) * DAY;
-    if (!Number.isFinite(anchor)) return NaN;
-    return now < anchor ? anchor : anchor + (Math.floor((now - anchor) / cycle) + 1) * cycle;
+  const startFor = (id) => {
+    const raw = id === 'unbreakable' ? cfg.unbreakableStartUtc : cfg.upcomingEvents.find((e) => e.id === id)?.startUtc;
+    return Date.parse(raw || '');
   };
 
   const render = () => {
     const now = Date.now();
+    set('localClock', localClock.format(now));
+    set('utcClock', utcClock.format(now));
+    set('zoneLabel', zone);
 
-    set('localClock', localClock.format(new Date(now)));
-    set('utcClock', new Intl.DateTimeFormat('en-GB', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      timeZone: 'UTC', timeZoneName: 'short'
-    }).format(new Date(now)));
-    set('zoneLabel', localZone);
-
-    const anniversaryStart = Date.parse(cfg.anniversaryStartUtc || '');
-    const anniversaryLive = Number.isFinite(anniversaryStart) && now >= anniversaryStart;
-    set('anniversaryState', anniversaryLive ? 'LIVE NOW' : 'UPCOMING');
+    const a = Date.parse(cfg.anniversaryStartUtc || '');
+    set('anniversaryState', Number.isFinite(a) && now < a ? 'UPCOMING' : 'LIVE NOW');
     set('anniversarySubtitle', cfg.anniversarySubtitle || 'Third Anniversary celebration.');
-    if (Number.isFinite(anniversaryStart)) {
-      set('anniversaryStart', localDate.format(new Date(anniversaryStart)).replace(',', ''));
-    }
+    if (Number.isFinite(a)) set('anniversaryStart', localDate.format(a).replace(',', ''));
 
-    const unbreakable = Date.parse(cfg.unbreakableStartUtc || '');
-    if (Number.isFinite(unbreakable)) {
-      const live = now >= unbreakable;
-      set('unbreakableCountdown', live ? 'LIVE NOW' : formatCountdown(unbreakable - now));
-      set('unbreakableState', live ? 'LIVE NOW' : 'UPCOMING');
-      set('unbreakableDate', new Intl.DateTimeFormat('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC'
-      }).format(new Date(unbreakable)).toUpperCase());
-    }
-
-    const daily = nextDailyReset(now);
-    set('dailyCountdown', formatCountdown(daily - now));
-    set('dailyLocal', localDate.format(new Date(daily)));
-    set('dailyUtc', utcDate.format(new Date(daily)));
-
-    document.querySelectorAll('.schedule-card[data-event-id]').forEach((card) => {
-      const id = card.getAttribute('data-event-id');
-      const event = cfg.upcomingEvents.find((item) => item.id === id);
-      const countdown = card.querySelector('[data-countdown]');
-      if (!event || !countdown) return;
-      const start = Date.parse(event.startUtc || '');
+    document.querySelectorAll('.card[data-event-id]').forEach((card) => {
+      const start = startFor(card.getAttribute('data-event-id'));
       if (!Number.isFinite(start)) return;
-      countdown.textContent = now >= start ? 'LIVE NOW' : formatCountdown(start - now);
-      const state = card.querySelector('.schedule-topline b');
-      if (state) state.textContent = now >= start ? 'LIVE NOW' : 'UPCOMING';
+      const live = now >= start;
+      const c = card.querySelector('[data-countdown]');
+      const s = card.querySelector('[data-state]');
+      if (c) c.textContent = live ? 'LIVE NOW' : fmt(start - now);
+      if (s) { s.textContent = live ? 'Live now' : 'Upcoming'; s.classList.toggle('live', live); }
     });
 
-    const rivals = nextRivalsReset(now);
-    if (Number.isFinite(rivals)) {
-      set('rivalsCountdown', formatCountdown(rivals - now));
-      set('rivalsLocal', localDate.format(new Date(rivals)));
-      set('rivalsUtc', utcDate.format(new Date(rivals)));
+    const d = nextDaily(now);
+    set('dailyCountdown', fmt(d - now));
+    set('dailyLocal', localDate.format(d));
+    set('dailyUtc', utcDate.format(d));
+
+    const r = nextRivals(now);
+    if (Number.isFinite(r)) {
+      set('rivalsCountdown', fmt(r - now));
+      set('rivalsLocal', localDate.format(r));
+      set('rivalsUtc', utcDate.format(r));
     }
   };
 
   const sync = async () => {
     try {
-      const response = await fetch('/api/football?live=' + Date.now(), {
-        cache: 'no-store',
-        credentials: 'same-origin'
-      });
-      if (!response.ok) throw new Error('sync');
-      const content = (await response.json())?.content || {};
-
-      if (content.eventCountdown) {
-        cfg = {
-          ...cfg,
-          anniversaryStartUtc: content.eventCountdown.startUtc || cfg.anniversaryStartUtc,
-          anniversaryTitle: content.eventCountdown.title || cfg.anniversaryTitle,
-          anniversarySubtitle: content.eventCountdown.subtitle || cfg.anniversarySubtitle,
-          anniversaryBanner: content.eventCountdown.banner || cfg.anniversaryBanner,
-          anniversaryLogo: content.eventCountdown.logo || cfg.anniversaryLogo,
-        };
-        if (content.eventCountdown.banner && $('anniversaryImage')) $('anniversaryImage').src = content.eventCountdown.banner.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1600/');
-        if (content.eventCountdown.logo && $('anniversaryLogo')) $('anniversaryLogo').src = content.eventCountdown.logo;
+      const res = await fetch('/api/football?live=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' });
+      if (!res.ok) throw new Error('sync');
+      const c = (await res.json())?.content || {};
+      const ec = c.eventCountdown, se = c.secondaryEvent, dr = c.divisionRivalsReset;
+      if (ec) {
+        cfg.anniversaryStartUtc = ec.startUtc || cfg.anniversaryStartUtc;
+        cfg.anniversarySubtitle = ec.subtitle || cfg.anniversarySubtitle;
+        if (ec.banner && $('anniversaryImage')) $('anniversaryImage').src = ec.banner.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1800/');
+        if (ec.logo && $('anniversaryLogo')) $('anniversaryLogo').src = ec.logo;
       }
-
-      if (content.secondaryEvent) {
-        cfg = {
-          ...cfg,
-          unbreakableStartUtc: content.secondaryEvent.startUtc || cfg.unbreakableStartUtc,
-          unbreakableTitle: content.secondaryEvent.title || cfg.unbreakableTitle,
-          unbreakableSubtitle: content.secondaryEvent.subtitle || cfg.unbreakableSubtitle,
-          unbreakableBanner: content.secondaryEvent.banner || cfg.unbreakableBanner,
-        };
-        if (content.secondaryEvent.banner && $('unbreakableImage')) $('unbreakableImage').src = content.secondaryEvent.banner.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1100/');
-        set('unbreakableSubtitle', cfg.unbreakableSubtitle || 'Upcoming FC Mobile event');
+      if (se) {
+        cfg.unbreakableStartUtc = se.startUtc || cfg.unbreakableStartUtc;
+        const img = document.querySelector('[data-event-id="unbreakable"] img');
+        if (se.banner && img) img.src = se.banner.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1000/');
       }
-
-      if (content.divisionRivalsReset) {
-        cfg = {
-          ...cfg,
-          rivalsAnchorUtc: content.divisionRivalsReset.anchorUtc || cfg.rivalsAnchorUtc,
-          rivalsCycleDays: Number(content.divisionRivalsReset.cycleDays) || cfg.rivalsCycleDays,
-        };
+      if (dr) {
+        cfg.rivalsAnchorUtc = dr.anchorUtc || cfg.rivalsAnchorUtc;
+        cfg.rivalsCycleDays = Number(dr.cycleDays) || cfg.rivalsCycleDays;
       }
-
-      if (content.schedule?.dailyResetUtc) cfg.dailyResetUtc = content.schedule.dailyResetUtc;
-      if (Array.isArray(content.upcomingEvents)) cfg.upcomingEvents = content.upcomingEvents;
-      set('syncLabel', '● LIVE · SYNCED');
+      if (c.schedule?.dailyResetUtc) cfg.dailyResetUtc = c.schedule.dailyResetUtc;
+      if (Array.isArray(c.upcomingEvents)) cfg.upcomingEvents = c.upcomingEvents;
+      set('syncLabel', 'Live · synced');
     } catch {
-      set('syncLabel', '● LIVE · AUTO CLOCK');
+      set('syncLabel', 'Live · auto clock');
     }
     render();
   };
@@ -450,153 +248,118 @@ const pageSchema = {
   sync();
   setInterval(render, 1000);
   setInterval(sync, 30000);
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      render();
-      sync();
-    }
-  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); sync(); } });
 })();
 </script>
 
 <style>
-.events-hub{
-  --hub-bg:#061017;
-  --hub-panel:#0a151c;
-  --hub-panel-2:#0d1a22;
-  --hub-line:#1b3944;
-  --hub-line-soft:#16303a;
-  --hub-text:#effaff;
-  --hub-muted:#78949f;
-  --hub-dim:#52717d;
-  --hub-cyan:#67ddff;
-  --hub-green:#58e0a6;
-  --hub-gold:#ffd36e;
+.hub{
+  --bg:#060d13; --panel:#0b171f; --line:#183542; --ink:#f1fbff; --mute:#87a2ad; --cyan:#62d9ff; --green:#58e0a6; --gold:#ffd36e;
+  --num:var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   background:
-    radial-gradient(circle at 8% 3%, rgba(40,180,230,.12), transparent 30%),
-    radial-gradient(circle at 92% 18%, rgba(90,120,255,.09), transparent 25%),
-    linear-gradient(180deg,#050c11 0%,#061017 100%);
-  color:var(--hub-text);
-  min-height:100vh;
-  overflow:hidden;
-  padding:30px 22px 70px;
-  position:relative;
+    radial-gradient(900px 500px at 8% -5%, rgba(50,185,235,.14), transparent 60%),
+    radial-gradient(800px 500px at 100% 30%, rgba(110,100,255,.09), transparent 60%),
+    var(--bg);
+  color:var(--ink); min-height:100vh; padding:48px 24px 96px; overflow:hidden;
 }
-.hub-shell{max-width:1240px;margin:0 auto;position:relative;z-index:1}
-.hub-glow{position:absolute;border-radius:999px;filter:blur(95px);pointer-events:none;opacity:.18}
-.glow-a{width:420px;height:420px;left:-250px;top:240px;background:#00c7ff}
-.glow-b{width:430px;height:430px;right:-250px;top:820px;background:#594dff}
-.hub-header{padding:8px 0 22px;border-bottom:1px solid rgba(102,190,220,.13)}
-.hub-kicker{display:flex;align-items:center;gap:9px;color:#5f8290;font:900 8px/1 var(--mono);letter-spacing:.12em}
-.hub-kicker b{border-left:1px solid #2a4b58;padding-left:11px;color:#8aa9b5;font-size:7px}
-.live-dot{width:7px;height:7px;border-radius:999px;background:var(--hub-green);box-shadow:0 0 0 5px rgba(88,224,166,.08),0 0 15px rgba(88,224,166,.35)}
-.hub-header-row{display:grid;grid-template-columns:minmax(0,1fr) 230px;align-items:end;gap:34px;margin-top:18px}
-.hub-title h1{margin:0;font-size:clamp(48px,7vw,88px);line-height:.88;letter-spacing:-.07em}
-.hub-title h1 em{font-style:normal;color:var(--hub-cyan)}
-.hub-title p{max-width:680px;margin:14px 0 0;color:var(--hub-muted);font-size:10px;line-height:1.7}
-.clock-card{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;padding:13px;border:1px solid var(--hub-line);border-radius:14px;background:rgba(8,19,26,.86);box-shadow:0 18px 55px rgba(0,0,0,.22)}
-.clock-card span,.clock-card small{font:900 6px/1 var(--mono);color:#628390;letter-spacing:.12em}
-.clock-card strong,.clock-card b{font:900 12px/1 var(--mono);color:#d9eff5}
-.clock-card i{grid-column:1/-1;height:1px;background:#193039;margin:4px 0}
-.status-strip{display:grid;grid-template-columns:minmax(240px,1.4fr) auto auto auto;align-items:center;gap:8px;margin-top:16px;padding:12px;border:1px solid rgba(103,221,255,.14);border-radius:15px;background:linear-gradient(110deg,rgba(9,29,38,.9),rgba(9,17,24,.92));box-shadow:0 18px 50px rgba(0,0,0,.18)}.status-strip-lead{display:flex;align-items:center;gap:11px;min-width:0}.status-strip-lead>div span{display:block;margin-top:4px;color:#6f8994;font-size:8px;line-height:1.45}.status-strip-dot{width:9px;height:9px;flex:none;border-radius:999px;background:var(--hub-green);box-shadow:0 0 0 6px rgba(88,224,166,.07),0 0 18px rgba(88,224,166,.32)}.status-pill{padding:8px 9px;border-radius:999px;font:900 6px/1 var(--mono);white-space:nowrap}.status-pill.live{color:#91ebbe;background:rgba(88,224,166,.06);border:1px solid rgba(88,224,166,.18)}.status-pill.upcoming{color:#aeeeff;background:rgba(103,221,255,.055);border:1px solid rgba(103,221,255,.16)}.status-pill.reset{color:#dec7ff;background:rgba(154,125,255,.055);border:1px solid rgba(154,125,255,.14)}
-.claim-strip{display:none!important}.status-strip strong{font:900 9px/1 var(--mono);letter-spacing:.03em}
-.featured-grid{display:grid;grid-template-columns:1.18fr .82fr;gap:14px;margin-top:16px}
-.feature-card{min-height:490px;border:1px solid var(--hub-line);border-radius:18px;background:linear-gradient(145deg,rgba(13,28,37,.94),rgba(7,16,22,.98));overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.28)}
-.feature-visual{position:relative;height:290px;background:#071117;overflow:hidden}
-.feature-visual>img:first-child{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .7s ease}
-.feature-card:hover .feature-visual>img:first-child{transform:scale(1.025)}
-.feature-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,10,14,.08) 0%,rgba(5,10,14,.16) 42%,rgba(5,10,14,.94) 100%)}
-.anniversary-logo{position:absolute;left:26px;bottom:25px;width:min(52%,300px);max-height:120px;object-fit:contain;object-position:left bottom;filter:drop-shadow(0 10px 26px rgba(0,0,0,.35))}
-.feature-topline{position:absolute;top:17px;left:17px;right:17px;display:flex;justify-content:space-between;gap:8px;align-items:center}
-.feature-topline span{padding:7px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(4,13,18,.7);font:900 6px/1 var(--mono);letter-spacing:.12em;color:#b7d3db}
-.status-live{color:var(--hub-green)!important;border-color:rgba(88,224,166,.25)!important}
-.status-upcoming{color:var(--hub-cyan)!important;border-color:rgba(103,221,255,.22)!important}
-.image-date{position:absolute;right:22px;bottom:20px;font:900 58px/.82 var(--mono);letter-spacing:-.08em;color:#fff;text-shadow:0 10px 30px rgba(0,0,0,.45)}
-.image-date small{font-size:11px;letter-spacing:.1em;color:#9ec0ca}
-.feature-copy{padding:23px 24px 25px}
-.copy-label,.section-kicker,.reset-label{font:900 6px/1 var(--mono);letter-spacing:.16em;color:#5fc7e1}
-.feature-copy h2{margin:9px 0 7px;font-size:clamp(31px,4vw,49px);line-height:.9;letter-spacing:-.06em}
-.feature-copy p{margin:0;color:#78929d;font-size:8px;line-height:1.6}
-.feature-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:17px}
-.feature-meta>div{padding:10px;border:1px solid var(--hub-line-soft);border-radius:9px;background:#071219}
-.feature-meta span,.event-countdown span,.reset-date span,.compact-info span{display:block;color:#577783;font:900 5px/1 var(--mono);letter-spacing:.12em}
-.feature-meta strong{display:block;margin-top:5px;font:900 8px/1.2 var(--mono);color:#d7edf2}
-.source-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-top:14px;padding-top:12px;border-top:1px solid #152d36}
-.source-row span{color:#58727c;font-size:6px;line-height:1.5;max-width:70%}
-.source-row a{color:#78b9c8;font:900 6px/1 var(--mono);text-decoration:none;white-space:nowrap}
-.event-countdown{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-top:18px;padding:12px;border:1px solid #183642;border-radius:10px;background:#071219}
-.event-countdown strong{font:900 25px/1 var(--mono);letter-spacing:-.06em;color:#ebf8fb}
-.reset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.section-bar{display:flex;justify-content:space-between;align-items:end;margin:42px 0 14px}
-.section-bar h2{margin:7px 0 0;font-size:28px;letter-spacing:-.05em}
-.section-bar>span{font:900 6px/1 var(--mono);color:#5bbf98}
-.reset-card{min-height:270px;padding:20px;border:1px solid var(--hub-line);border-radius:15px;background:linear-gradient(150deg,#0a151c,#071016);box-shadow:0 22px 60px rgba(0,0,0,.24)}
-.reset-card-head{display:flex;justify-content:space-between;align-items:center}
-.reset-card-head>span{padding:5px 7px;border:1px solid #213d48;border-radius:999px;color:#6f8f9b;font:900 5px/1 var(--mono)}
-.mini-icon{font:900 17px/1 var(--mono);color:#355966}
-.reset-label{margin-top:23px}
-.reset-card h3{margin:8px 0 5px;font-size:24px;letter-spacing:-.05em}
-.reset-card p{margin:0;color:#6e8791;font-size:8px;line-height:1.55;min-height:25px}
-.big-count{display:block;margin:23px 0 16px;font:900 34px/.95 var(--mono);letter-spacing:-.07em;color:#ecfbff}
-.reset-date{display:flex;justify-content:space-between;gap:12px;align-items:end;padding-top:11px;border-top:1px solid #17313b}
-.reset-date b{font:900 8px/1.25 var(--mono);text-align:right;color:#d7ecf1}
-.reset-card>small{display:block;margin-top:8px;color:#56737e;font:800 5px/1.3 var(--mono);text-align:right}
-.rivals-card{border-color:#245161;background:linear-gradient(145deg,#0b1b24,#071218)}
-.rivals-card .big-count{color:var(--hub-cyan)}
-.season-status{display:flex;gap:8px;align-items:center;margin:23px 0 19px;padding:12px;border:1px solid #1f3d35;border-radius:10px;background:#071a16;color:#bdeed9}
-.season-status i{width:7px;height:7px;border-radius:999px;background:var(--hub-green);box-shadow:0 0 12px rgba(88,224,166,.6)}
-.season-status strong{font:900 7px/1 var(--mono)}
-.upcoming-heading{margin-top:38px}.schedule-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.schedule-card{display:grid;grid-template-columns:44% 56%;min-height:235px;border:1px solid var(--hub-line);border-radius:15px;background:linear-gradient(145deg,#0b1820,#071116);overflow:hidden;box-shadow:0 22px 60px rgba(0,0,0,.22)}.schedule-visual{position:relative;min-height:100%;background:#071117;overflow:hidden}.schedule-visual img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .7s ease}.schedule-card:hover .schedule-visual img{transform:scale(1.03)}.schedule-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,10,14,.08),rgba(4,10,14,.76))}.schedule-topline{position:absolute;top:13px;left:13px;right:13px;display:flex;justify-content:space-between;gap:8px}.schedule-topline span,.schedule-topline b{padding:6px 7px;border-radius:999px;background:rgba(4,13,18,.72);border:1px solid rgba(255,255,255,.14);font:900 6px/1 var(--mono);letter-spacing:.08em}.schedule-topline span{color:#eaf9fd}.schedule-topline b{color:var(--hub-cyan);font-style:normal}.schedule-copy{padding:20px}.schedule-copy h3{margin:9px 0 6px;font-size:26px;line-height:.95;letter-spacing:-.05em}.schedule-copy p{margin:0;color:#708a95;font-size:8px;line-height:1.55}.schedule-bottom{display:flex;justify-content:space-between;align-items:end;gap:8px;margin-top:24px;padding-top:11px;border-top:1px solid #17313b}.schedule-bottom strong{font:900 18px/1 var(--mono);letter-spacing:-.05em;color:#eaf9fd}.schedule-bottom span{font:900 6px/1 var(--mono);letter-spacing:.09em;color:#597580;text-align:right}
-.compact-info{display:grid;grid-template-columns:1.15fr repeat(3,1fr);gap:1px;margin-top:12px;border:1px solid var(--hub-line);border-radius:13px;overflow:hidden;background:#142731}
-.compact-info>div{padding:16px;background:#071219}
-.compact-info>div:first-child{background:linear-gradient(130deg,#0b1d24,#071219)}
-.compact-info strong{display:block;margin-top:6px;font-size:14px;letter-spacing:-.03em}
-.compact-info b{display:block;margin-top:7px;color:#d2e8ee;font:900 7px/1.3 var(--mono)}
-.compact-info span{color:#5f7d88}
-@media(max-width:1000px){
-  .hub-header-row{grid-template-columns:1fr 210px}
-  .featured-grid{grid-template-columns:1fr 1fr}
-  .feature-visual{height:245px}
-  .reset-grid{grid-template-columns:1fr 1fr}
-  .season-card{grid-column:1/-1}
-  .compact-info{grid-template-columns:1fr 1fr}
-  .schedule-grid{grid-template-columns:1fr}
-  .schedule-card{grid-template-columns:42% 58%}
+.wrap{max-width:1180px;margin:0 auto}
+.hub :is(h1,h2,h3,p,dl,dd){margin:0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(88,224,166,.12),0 0 14px rgba(88,224,166,.5)}
+
+/* header */
+.top{display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end;padding-bottom:36px}
+.tag{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:13px;letter-spacing:.02em}
+.top h1{margin-top:18px;font-size:clamp(38px,6vw,76px);line-height:1;letter-spacing:-.045em;font-weight:800}
+.lede{margin-top:18px;max-width:52ch;color:var(--mute);font-size:16px;line-height:1.6}
+.clock{display:grid;gap:0;min-width:230px;border:1px solid var(--line);border-radius:18px;background:rgba(11,23,31,.7);backdrop-filter:blur(8px);overflow:hidden}
+.clock>div{display:grid;gap:6px;padding:16px 20px}
+.clock>div+div{border-top:1px solid var(--line)}
+.clock small{color:var(--mute);font-size:12px}
+.clock strong{font:700 24px/1 var(--num);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.clock em{font-style:normal;color:#5d7f8c;font-size:12px}
+
+/* hero */
+.hero{position:relative;min-height:440px;border-radius:26px;overflow:hidden;border:1px solid rgba(98,217,255,.28);box-shadow:0 40px 100px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.02) inset;isolation:isolate}
+.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.hero-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(4,10,15,.92) 0%,rgba(4,10,15,.55) 45%,rgba(4,10,15,.05) 100%),linear-gradient(0deg,rgba(4,10,15,.7),transparent 50%)}
+.hero-body{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:14px;min-height:440px;padding:40px;max-width:640px}
+.hero-logo{width:min(70%,280px);max-height:110px;object-fit:contain;object-position:left;filter:drop-shadow(0 8px 24px rgba(0,0,0,.4))}
+.hero h2{font-size:clamp(30px,4vw,48px);letter-spacing:-.04em;line-height:1}
+.hero p{color:#b8ced6;font-size:16px;line-height:1.55;max-width:44ch}
+.hero-foot{display:flex;flex-wrap:wrap;align-items:center;gap:14px 32px;margin-top:8px;padding-top:18px;border-top:1px solid rgba(255,255,255,.14);width:100%}
+.hero-foot small{display:block;color:#8ba7b1;font-size:12px}
+.hero-foot strong{display:block;margin-top:5px;font:700 14px/1 var(--num)}
+.hero-foot a{color:var(--cyan);font-size:14px;text-decoration:none;border-bottom:1px solid rgba(98,217,255,.35);padding-bottom:2px}
+.hero-foot a:hover{border-color:var(--cyan)}
+.hero-foot a:focus-visible,.card:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.06em;background:rgba(5,12,17,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(6px);color:#d5e8ee}
+.badge.live{color:#9af0c6;border-color:rgba(88,224,166,.4)}
+
+/* sections */
+.block{margin-top:72px}
+.block-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:24px}
+.block-head h2{font-size:clamp(26px,3vw,36px);letter-spacing:-.04em}
+.block-head p{color:var(--mute);font-size:14px}
+.sync{color:#5bbf98!important}
+
+/* event cards: identical structure and size, own accent colour */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{--acc:var(--cyan);position:relative;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;background:linear-gradient(170deg,#0e1d27,#08131a);border:1px solid var(--line);transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--acc),transparent);z-index:2}
+.card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--acc) 55%,var(--line));box-shadow:0 30px 70px rgba(0,0,0,.4),0 0 40px color-mix(in srgb,var(--acc) 14%,transparent)}
+.card-media{position:relative;aspect-ratio:16/10;background:#071117;overflow:hidden}
+.card-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s ease}
+.card:hover .card-media img{transform:scale(1.04)}
+.card-fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,13,19,.15) 0%,rgba(6,13,19,.05) 40%,rgba(8,19,26,.96) 100%)}
+.card-date{position:absolute;left:20px;bottom:14px;display:flex;align-items:baseline;gap:8px}
+.card-date b{font:800 56px/.9 var(--num);letter-spacing:-.06em;color:#fff;text-shadow:0 8px 28px rgba(0,0,0,.5)}
+.card-date span{font-size:15px;font-weight:700;color:var(--acc)}
+.card .badge{position:absolute;top:16px;right:16px}
+.card .badge.soon{color:var(--acc);border-color:color-mix(in srgb,var(--acc) 40%,transparent)}
+.card .badge.live{color:#9af0c6}
+.card-body{display:flex;flex-direction:column;gap:8px;flex:1;padding:22px 22px 24px}
+.card-body h3{font-size:24px;letter-spacing:-.035em;line-height:1.1}
+.card-body p{color:var(--mute);font-size:14px;line-height:1.55;min-height:44px}
+.card-count{margin-top:auto;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.card-count small{color:var(--mute);font-size:12px}
+.card-count strong{font:800 26px/1 var(--num);letter-spacing:-.05em;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* resets */
+.resets{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.reset{padding:28px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(160deg,#0d1b24,#08131a)}
+.reset.accent{border-color:rgba(98,217,255,.35);background:linear-gradient(160deg,#0c2230,#08151d)}
+.reset-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.reset-top h3{font-size:19px;letter-spacing:-.02em}
+.reset-top span{color:var(--mute);font-size:13px}
+.big{display:block;margin:22px 0 24px;font:800 clamp(38px,5vw,56px)/1 var(--num);letter-spacing:-.06em;font-variant-numeric:tabular-nums}
+.accent .big{color:var(--cyan)}
+.reset dl{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-top:18px;border-top:1px solid var(--line)}
+.reset dt{color:#5f8290;font-size:12px}
+.reset dd{margin-top:6px;font:600 13px/1.4 var(--num);color:#d6eaf0}
+
+@media (max-width:980px){
+  .cards{grid-template-columns:1fr 1fr}
+  .cards .card:last-child{grid-column:1/-1}
+  .cards .card:last-child .card-media{aspect-ratio:21/9}
 }
-@media(max-width:760px){
-  .events-hub{padding:22px 13px 55px}
-  .hub-header-row{grid-template-columns:1fr;gap:16px}
-  .clock-card{max-width:260px}
-  .status-strip{grid-template-columns:1fr 1fr}.status-strip-lead{grid-column:1/-1}.status-pill{text-align:center}
-  .claim-items{grid-column:1/-1;justify-content:flex-start}
-  .claim-strip>a{grid-column:2;justify-self:start}
-  .featured-grid{grid-template-columns:1fr}
-  .feature-card{min-height:0}
-  .feature-visual{height:270px}
-  .section-bar{align-items:flex-start;gap:12px}
-  .section-bar h2{font-size:25px}
-  .section-bar>span{text-align:right}
-  .reset-grid{grid-template-columns:1fr}
-  .season-card{grid-column:auto}
-  .compact-info{grid-template-columns:1fr}
-  .schedule-grid{grid-template-columns:1fr}
-  .schedule-card{grid-template-columns:1fr}
-  .schedule-visual{height:200px}
+@media (max-width:760px){
+  .hub{padding:32px 16px 72px}
+  .top{grid-template-columns:1fr;gap:24px}
+  .clock{grid-template-columns:1fr 1fr;min-width:0}
+  .clock>div+div{border-top:0;border-left:1px solid var(--line)}
+  .hero,.hero-body{min-height:400px}
+  .hero-body{padding:26px 22px}
+  .hero-shade{background:linear-gradient(0deg,rgba(4,10,15,.95) 0%,rgba(4,10,15,.55) 60%,rgba(4,10,15,.2) 100%)}
+  .cards,.resets{grid-template-columns:1fr}
+  .cards .card:last-child .card-media{aspect-ratio:16/10}
+  .block{margin-top:56px}
+  .reset dl{grid-template-columns:1fr}
 }
-@media(max-width:480px){
-  .hub-title h1{font-size:52px}
-  .hub-title p{font-size:9px}
-  .status-strip{grid-template-columns:1fr;gap:7px}.status-strip-lead{grid-column:auto}.status-pill{text-align:left}
-  .claim-copy span{font-size:7px}
-  .claim-items span{font-size:5px}
-  .feature-visual{height:235px}
-  .anniversary-logo{left:18px;bottom:18px;max-width:72%;width:250px}
-  .image-date{font-size:45px}
-  .feature-copy{padding:20px 18px 21px}
-  .feature-meta{grid-template-columns:1fr}
-  .source-row{display:block}
-  .source-row span{display:block;max-width:100%;margin-bottom:9px}
-  .reset-card{min-height:250px}
-  .big-count{font-size:31px}
+@media (prefers-reduced-motion:reduce){
+  .card,.card-media img{transition:none}
+  .card:hover{transform:none}
+  .card:hover .card-media img{transform:none}
 }
 </style>
+</BaseLayout>
