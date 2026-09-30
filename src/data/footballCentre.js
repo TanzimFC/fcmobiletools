@@ -9,135 +9,95 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "matchesPerWeek": 2
   },
   "clubs": {
-    "mu": {
-      "name": "Manchester United",
-      "short": "Man United",
-      "logo": "https://media.api-sports.io/football/teams/33.png"
+    "team-a": {
+      "name": "Team A",
+      "short": "Team A",
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2361c7f5%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2317364a%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%226%22%20y%3D%226%22%20width%3D%2284%22%20height%3D%2284%22%20rx%3D%2224%22%20fill%3D%22%230b141c%22%20stroke%3D%22%2361c7f5%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M20%2028h56v40H20z%22%20fill%3D%22url(%23g)%22%20opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M26%2022h44v52H26z%22%20fill%3D%22none%22%20stroke%3D%22%23bfefff%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2258%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22900%22%20fill%3D%22%23fff%22%3EA%3C%2Ftext%3E%3C%2Fsvg%3E"
     },
-    "mc": {
-      "name": "Manchester City",
-      "short": "Man City",
-      "logo": "https://media.api-sports.io/football/teams/50.png"
+    "team-b": {
+      "name": "Team B",
+      "short": "Team B",
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2361c7f5%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2317364a%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%226%22%20y%3D%226%22%20width%3D%2284%22%20height%3D%2284%22%20rx%3D%2224%22%20fill%3D%22%230b141c%22%20stroke%3D%22%2361c7f5%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M20%2028h56v40H20z%22%20fill%3D%22url(%23g)%22%20opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M26%2022h44v52H26z%22%20fill%3D%22none%22%20stroke%3D%22%23bfefff%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2258%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22900%22%20fill%3D%22%23fff%22%3EB%3C%2Ftext%3E%3C%2Fsvg%3E"
     },
-    "ren": {
-      "name": "Stade Rennais FC",
-      "short": "Stade Rennais",
-      "logo": "https://media.api-sports.io/football/teams/94.png"
+    "team-c": {
+      "name": "Team C",
+      "short": "Team C",
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2361c7f5%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2317364a%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%226%22%20y%3D%226%22%20width%3D%2284%22%20height%3D%2284%22%20rx%3D%2224%22%20fill%3D%22%230b141c%22%20stroke%3D%22%2361c7f5%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M20%2028h56v40H20z%22%20fill%3D%22url(%23g)%22%20opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M26%2022h44v52H26z%22%20fill%3D%22none%22%20stroke%3D%22%23bfefff%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2258%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22900%22%20fill%3D%22%23fff%22%3EC%3C%2Ftext%3E%3C%2Fsvg%3E"
     },
-    "mar": {
-      "name": "Olympique de Marseille",
-      "short": "Marseille",
-      "logo": "https://media.api-sports.io/football/teams/81.png"
+    "team-d": {
+      "name": "Team D",
+      "short": "Team D",
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2361c7f5%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2317364a%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%226%22%20y%3D%226%22%20width%3D%2284%22%20height%3D%2284%22%20rx%3D%2224%22%20fill%3D%22%230b141c%22%20stroke%3D%22%2361c7f5%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M20%2028h56v40H20z%22%20fill%3D%22url(%23g)%22%20opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M26%2022h44v52H26z%22%20fill%3D%22none%22%20stroke%3D%22%23bfefff%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2258%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22900%22%20fill%3D%22%23fff%22%3ED%3C%2Ftext%3E%3C%2Fsvg%3E"
     },
-    "ars": {
-      "name": "Arsenal",
-      "short": "Arsenal",
-      "logo": "https://media.api-sports.io/football/teams/42.png"
+    "team-e": {
+      "name": "Team E",
+      "short": "Team E",
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2361c7f5%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2317364a%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%226%22%20y%3D%226%22%20width%3D%2284%22%20height%3D%2284%22%20rx%3D%2224%22%20fill%3D%22%230b141c%22%20stroke%3D%22%2361c7f5%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M20%2028h56v40H20z%22%20fill%3D%22url(%23g)%22%20opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M26%2022h44v52H26z%22%20fill%3D%22none%22%20stroke%3D%22%23bfefff%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2258%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22900%22%20fill%3D%22%23fff%22%3EE%3C%2Ftext%3E%3C%2Fsvg%3E"
     },
-    "liv": {
-      "name": "Liverpool",
-      "short": "Liverpool",
-      "logo": "https://media.api-sports.io/football/teams/40.png"
+    "team-f": {
+      "name": "Team F",
+      "short": "Team F",
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2361c7f5%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2317364a%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%226%22%20y%3D%226%22%20width%3D%2284%22%20height%3D%2284%22%20rx%3D%2224%22%20fill%3D%22%230b141c%22%20stroke%3D%22%2361c7f5%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M20%2028h56v40H20z%22%20fill%3D%22url(%23g)%22%20opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M26%2022h44v52H26z%22%20fill%3D%22none%22%20stroke%3D%22%23bfefff%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2258%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22900%22%20fill%3D%22%23fff%22%3EF%3C%2Ftext%3E%3C%2Fsvg%3E"
     },
-    "bar": {
-      "name": "FC Barcelona",
-      "short": "Barcelona",
-      "logo": "https://media.api-sports.io/football/teams/529.png"
+    "team-g": {
+      "name": "Team G",
+      "short": "Team G",
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2361c7f5%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2317364a%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%226%22%20y%3D%226%22%20width%3D%2284%22%20height%3D%2284%22%20rx%3D%2224%22%20fill%3D%22%230b141c%22%20stroke%3D%22%2361c7f5%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M20%2028h56v40H20z%22%20fill%3D%22url(%23g)%22%20opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M26%2022h44v52H26z%22%20fill%3D%22none%22%20stroke%3D%22%23bfefff%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2258%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22900%22%20fill%3D%22%23fff%22%3EG%3C%2Ftext%3E%3C%2Fsvg%3E"
     },
-    "rma": {
-      "name": "Real Madrid",
-      "short": "Real Madrid",
-      "logo": "https://media.api-sports.io/football/teams/541.png"
-    },
-    "bay": {
-      "name": "Bayern Munich",
-      "short": "Bayern",
-      "logo": "https://media.api-sports.io/football/teams/157.png"
-    },
-    "dor": {
-      "name": "Borussia Dortmund",
-      "short": "Dortmund",
-      "logo": "https://media.api-sports.io/football/teams/165.png"
-    },
-    "psg": {
-      "name": "Paris Saint-Germain",
-      "short": "PSG",
-      "logo": "https://media.api-sports.io/football/teams/85.png"
-    },
-    "lyon": {
-      "name": "Olympique Lyonnais",
-      "short": "Lyon",
-      "logo": "https://media.api-sports.io/football/teams/80.png"
-    },
-    "inter": {
-      "name": "Inter Milan",
-      "short": "Inter",
-      "logo": "https://media.api-sports.io/football/teams/505.png"
-    },
-    "milan": {
-      "name": "AC Milan",
-      "short": "AC Milan",
-      "logo": "https://media.api-sports.io/football/teams/489.png"
-    },
-    "juve": {
-      "name": "Juventus",
-      "short": "Juventus",
-      "logo": "https://media.api-sports.io/football/teams/496.png"
-    },
-    "nap": {
-      "name": "Napoli",
-      "short": "Napoli",
-      "logo": "https://media.api-sports.io/football/teams/492.png"
+    "team-h": {
+      "name": "Team H",
+      "short": "Team H",
+      "logo": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2361c7f5%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2317364a%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%226%22%20y%3D%226%22%20width%3D%2284%22%20height%3D%2284%22%20rx%3D%2224%22%20fill%3D%22%230b141c%22%20stroke%3D%22%2361c7f5%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M20%2028h56v40H20z%22%20fill%3D%22url(%23g)%22%20opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M26%2022h44v52H26z%22%20fill%3D%22none%22%20stroke%3D%22%23bfefff%22%20stroke-opacity%3D%22.65%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2258%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2234%22%20font-weight%3D%22900%22%20fill%3D%22%23fff%22%3EH%3C%2Ftext%3E%3C%2Fsvg%3E"
     }
   },
   "matches": [
     {
       "id": "showdown-01",
       "week": 1,
-      "home": "mu",
-      "away": "mc"
+      "home": "team-a",
+      "away": "team-b"
     },
     {
       "id": "showdown-02",
       "week": 1,
-      "home": "ren",
-      "away": "mar"
+      "home": "team-c",
+      "away": "team-d"
     },
     {
       "id": "showdown-03",
       "week": 2,
-      "home": "ars",
-      "away": "liv"
+      "home": "team-e",
+      "away": "team-f"
     },
     {
       "id": "showdown-04",
       "week": 2,
-      "home": "bar",
-      "away": "rma"
+      "home": "team-g",
+      "away": "team-h"
     },
     {
       "id": "showdown-05",
       "week": 3,
-      "home": "bay",
-      "away": "dor"
+      "home": "team-a",
+      "away": "team-c"
     },
     {
       "id": "showdown-06",
       "week": 3,
-      "home": "psg",
-      "away": "lyon"
+      "home": "team-b",
+      "away": "team-d"
     },
     {
       "id": "showdown-07",
       "week": 4,
-      "home": "inter",
-      "away": "milan"
+      "home": "team-e",
+      "away": "team-g"
     },
     {
       "id": "showdown-08",
       "week": 4,
-      "home": "juve",
-      "away": "nap"
+      "home": "team-f",
+      "away": "team-h"
     }
   ],
   "analysis": {
@@ -146,21 +106,53 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "warning": "⚠ Pick at your own risk. Analysis is informational only and is not a guarantee. Football is unpredictable. No prediction here is certain.",
     "videoEmbedUrl": "https://www.youtube.com/embed/KvgulT3RtFE",
     "videoWatchUrl": "https://www.youtube.com/watch?v=KvgulT3RtFE",
-    "videoTitle": "Release timing video",
+    "videoTitle": "TOTW release update",
     "videoBody": "This video contains information about the expected timing of the TOTW release. The content shown may not be in the game yet.",
-    "videoWarning": "Do not treat timing as a confirmed in-game release until the content is actually available."
+    "videoWarning": "Do not treat timing as a confirmed in-game release until the content is actually available.",
+    "videos": [
+      {
+        "id": "totw-update",
+        "label": "TOTW UPDATE",
+        "title": "TOTW release update",
+        "description": "Watch the latest Team of the Week update and release timing discussion. TOTW is shown as unavailable until the content is actually in the game.",
+        "videoId": "KvgulT3RtFE",
+        "embedUrl": "https://www.youtube.com/embed/KvgulT3RtFE",
+        "watchUrl": "https://www.youtube.com/watch?v=KvgulT3RtFE"
+      },
+      {
+        "id": "beginners-guide",
+        "label": "BEGINNER GUIDE",
+        "title": "Football Centre beginner's guide: 4,000 points",
+        "description": "A beginner-friendly walkthrough of how to use Football Centre and work toward the 4,000-point reward target.",
+        "videoId": "2HvVKlGxZgk",
+        "embedUrl": "https://www.youtube.com/embed/2HvVKlGxZgk",
+        "watchUrl": "https://www.youtube.com/watch?v=2HvVKlGxZgk"
+      },
+      {
+        "id": "play-button-fix",
+        "label": "TROUBLESHOOTING",
+        "title": "How to fix the Football Centre Play button",
+        "description": "Troubleshooting guide for the FC Mobile Football Centre Play button not working problem.",
+        "videoId": "3nwQKmxTelI",
+        "embedUrl": "https://www.youtube.com/embed/3nwQKmxTelI",
+        "watchUrl": "https://www.youtube.com/watch?v=3nwQKmxTelI"
+      }
+    ]
   },
   "totw": {
     "label": "TEAM OF THE WEEK",
-    "title": "TOTW release tracker",
-    "description": "Use the analysis video for timing context. This page does not claim a TOTW is live until the content is actually available.",
-    "chip": "LIVE CHECK",
-    "statusLabel": "RELEASE STATUS",
-    "statusTitle": "Check before claiming",
-    "statusBody": "There is no fake player list here. When the official TOTW content is confirmed, this section can be populated without changing the Football Centre scoring system.",
-    "safetyLabel": "SAFETY NOTE",
-    "safetyTitle": "No guaranteed predictions",
-    "safetyBody": "Analysis and timing information are informational only. Football Centre rewards are based on your recorded match outcomes."
+    "title": "TOTW tracker",
+    "description": "The TOTW section stays clear until the Team of the Week content is actually available in FC Mobile.",
+    "chip": "NOT IN GAME YET",
+    "statusLabel": "CURRENT STATUS",
+    "statusTitle": "TOTW is not in the game yet",
+    "statusBody": "No placeholder player list is shown. Once the content is live, the weekly squad can be added without changing the Football Centre match and reward tools.",
+    "safetyLabel": "UPDATE VIDEO",
+    "safetyTitle": "Watch the latest TOTW update",
+    "safetyBody": "The latest TOTW video is available in the Analysis archive. Use it for timing and context, not as confirmation that the content is already live.",
+    "videoId": "KvgulT3RtFE",
+    "videoEmbedUrl": "https://www.youtube.com/embed/KvgulT3RtFE",
+    "videoWatchUrl": "https://www.youtube.com/watch?v=KvgulT3RtFE"
   },
   "settings": {
     "cycleId": "2026-09",
