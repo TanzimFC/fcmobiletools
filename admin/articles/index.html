@@ -447,7 +447,7 @@ function articleEditor(item) {
     const input=document.createElement('input');input.type='file';input.accept='image/*';input.click();
     input.onchange=()=>{const file=input.files?.[0];if(file)uploadArticleImage(file,true);};
   };
-  $('#articleBack').onclick=()=>{if(dirty&&!confirm('You have unsaved article changes. Leave without saving?'))return;window.articleEditorDirty=null;articlesSection(item?.data?.status||'all');};
+  $('#articleBack').onclick=()=>{if(autosaveTimer)clearTimeout(autosaveTimer);window.articleScheduleAutosave=null;if(dirty&&!confirm('You have unsaved article changes. Leave without saving?'))return;window.articleEditorDirty=null;articlesSection(item?.data?.status||'all');};
   $('#articlePreview').onclick=()=>{
     openModal('<div class="dialoghead"><div><h3>Article preview</h3><div class="muted">A quick look before publishing</div></div><button class="close" data-close>×</button></div><div class="dialogbody article-preview"><p class="eyebrow">'+esc($('#articleType').selectedOptions[0]?.textContent||'Article')+'</p><h1>'+esc($('#articleTitle').value)+'</h1><p>'+esc($('#articleDescription').value)+'</p>'+($('#articleImagePreview img')?.outerHTML||'')+'<div>'+editor.innerHTML+'</div></div>');
   };
@@ -503,6 +503,7 @@ function articleEditor(item) {
         imageCaption:$('#articleImageCaption').value.trim(),
         seoTitle:$('#articleSeoTitle').value.trim(),
         seoDescription:$('#articleSeoDescription').value.trim(),
+        autosave:silent,
         createOnly:!item};
       const endpoint=workspaceRole==='creator'?(item?'/articles/'+item.data.id:'/articles'):'/articles';
       await api(endpoint,{method:item&&workspaceRole==='creator'?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
