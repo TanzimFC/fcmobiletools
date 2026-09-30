@@ -19,11 +19,18 @@ sources: []
 
 # Article title
 
-Write the article in Markdown. Use headings, paragraphs, lists, tables, quotes, images and links normally.
+Write the article in Markdown. Use headings, paragraphs, lists, GFM Markdown tables, quotes, images and links normally. Prefer GFM tables like the example below. Do not hand-write HTML `<table>` blocks.
 
 ## First section
 
 Replace this template with your content, then set `status: published` when it is ready.
+
+## Example table
+
+| Item | Status |
+| :--- | :--- |
+| Example item | Confirmed |
+| Another item | Reported |
 
 ## Timeline
 
