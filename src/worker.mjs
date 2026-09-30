@@ -120,7 +120,6 @@ async function supabaseRest(env,path,options={}){
     ...options,
     headers:{
       apikey:key,
-      Authorization:'Bearer '+key,
       Accept:'application/json',
       ...(options.body?{'content-type':'application/json'}:{}),
       ...(options.headers||{})
