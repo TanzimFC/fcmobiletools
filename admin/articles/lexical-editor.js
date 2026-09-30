@@ -1,4 +1,4 @@
-/* TanzimFC editorial editor — Lexical, no TipTap dependency. */
+/* TanzimFC editorial editor — Lexical. */
 export async function createLexicalArticleEditor(editorEl, initialHTML = '', onChange = () => {}) {
   const [
     lexical,
