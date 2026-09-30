@@ -1,0 +1,22 @@
+---
+// Shared header for category / author / series pages.
+const { eyebrow = '', title, blurb = '', accent = '#67dbff', stats = [], crumbs = [] } = Astro.props;
+---
+<header class="bl-hub" style={`--bl-accent:${accent}`}>
+  <div class="bl-wrap bl-hub-inner">
+    <nav class="bl-crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span aria-hidden="true">/</span><a href="/blog">Articles</a>
+      {crumbs.map((c) => <><span aria-hidden="true">/</span><a href={c.href}>{c.label}</a></>)}
+    </nav>
+    <div class="bl-hub-grid">
+      <div class="bl-hub-copy">
+        {eyebrow ? <p class="bl-eyebrow"><i></i>{eyebrow}</p> : null}
+        <h1>{title}</h1>
+        {blurb ? <p class="bl-hub-blurb">{blurb}</p> : null}
+        {stats.length ? <ul class="bl-stats">{stats.map((s) => <li><b>{s.value}</b><span>{s.label}</span></li>)}</ul> : null}
+        <slot name="actions" />
+      </div>
+      <div class="bl-hub-aside"><slot name="aside" /></div>
+    </div>
+  </div>
+</header>

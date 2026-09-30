@@ -1,0 +1,40 @@
+---
+import Cover from './Cover.astro';
+import { fmtDate, iso, initial } from '../../lib/blog.js';
+// variant: card (default) | lead (large overlay) | tile (compact overlay) | row (horizontal)
+const { post, variant = 'card', eager = false, filterable = false } = Astro.props;
+const overlay = variant === 'lead' || variant === 'tile';
+const dims = variant === 'lead' ? [1400, 900, '(min-width:1024px) 62vw, 94vw'] : variant === 'tile' ? [900, 600, '(min-width:1024px) 34vw, 94vw'] : variant === 'row' ? [520, 330, '(min-width:720px) 260px, 92vw'] : [760, 475, '(min-width:1024px) 400px, (min-width:640px) 46vw, 94vw'];
+---
+<a
+  class={`bl-card bl-card--${variant}`}
+  href={post.href}
+  style={`--bl-accent:${post.section.accent}`}
+  data-spot
+  data-post={filterable ? '' : undefined}
+  data-slug={filterable ? post.slug : undefined}
+  data-section={filterable ? post.section.slug : undefined}
+  data-search={filterable ? post.search : undefined}
+>
+  <span class="bl-card-media">
+    <Cover src={post.thumb} alt={post.imageAlt} width={dims[0]} height={dims[1]} sizes={dims[2]} eager={eager} />
+    {overlay ? <span class="bl-card-shade" aria-hidden="true"></span> : null}
+  </span>
+  <span class="bl-card-body">
+    <span class="bl-card-top">
+      <span class="bl-chip"><i></i>{post.section.label}</span>
+      {post.fact && post.fact.tone !== 'verified' ? <span class={`bl-fact-pill bl-fact-pill--${post.fact.tone}`}>{post.fact.label}</span> : null}
+    </span>
+    {variant === 'lead' ? <h2 class="bl-card-title">{post.title}</h2> : <h3 class="bl-card-title">{post.title}</h3>}
+    {variant !== 'tile' ? <p class="bl-card-excerpt">{post.excerpt}</p> : null}
+    <span class="bl-card-meta">
+      <span class="bl-avatar" aria-hidden="true">{initial(post.author)}</span>
+      <span>{post.author}</span>
+      <i aria-hidden="true"></i>
+      <time datetime={iso(post.date)}>{fmtDate(post.date, variant === 'card' || variant === 'row' ? 'medium' : 'short')}</time>
+      <i aria-hidden="true"></i>
+      <span>{post.minutes} min</span>
+    </span>
+    {variant === 'lead' ? <span class="bl-card-cta">Read the story <b aria-hidden="true">→</b></span> : null}
+  </span>
+</a>

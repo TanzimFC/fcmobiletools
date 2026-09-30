@@ -24,6 +24,8 @@ export default defineConfig({
     '/about': '/legal/about/',
     '/about/': '/legal/about/',
     '/trivia': '/a-nations-story/',
+    '/blog/category/event guides': '/blog/category/event-guides/',
+    '/blog/category/fc mobile 27 news': '/blog/category/fc-mobile-27-news/',
     ...nationRedirects
   },
   experimental: {

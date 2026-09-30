@@ -1,0 +1,31 @@
+---
+// Article artwork. Falls back to a branded pitch graphic instead of a bare "FC" tile.
+import { img, srcset } from '../../lib/blog.js';
+const { src = '', alt = '', width = 760, height = 475, sizes = '(min-width:1024px) 400px, 92vw', eager = false } = Astro.props;
+const widths = [Math.round(width * 0.55), width, Math.round(width * 1.5)];
+---
+{src ? (
+  <img
+    class="bl-cover-img"
+    src={img(src, width)}
+    srcset={srcset(src, widths)}
+    sizes={srcset(src, widths) ? sizes : undefined}
+    alt={alt}
+    width={width}
+    height={height}
+    loading={eager ? 'eager' : 'lazy'}
+    fetchpriority={eager ? 'high' : undefined}
+    decoding="async"
+  />
+) : (
+  <span class="bl-cover-fallback" aria-hidden="true">
+    <svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" stroke-width="1">
+      <rect x="6" y="6" width="148" height="88" rx="2" />
+      <path d="M80 6v88" />
+      <circle cx="80" cy="50" r="15" />
+      <circle cx="80" cy="50" r="1.4" fill="currentColor" />
+      <path d="M6 30h20v40H6M154 30h-20v40h20" />
+      <path d="M6 41h8v18H6M154 41h-8v18h8" />
+    </svg>
+  </span>
+)}

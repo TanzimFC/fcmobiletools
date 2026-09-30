@@ -1,0 +1,37 @@
+---
+// One small progressive-enhancement layer shared by every blog page:
+// pointer spotlight on cards and scroll reveals. Nothing here is required for content to show.
+---
+<script is:inline>
+  document.documentElement.classList.add('bl-js');
+</script>
+<script>
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!reduce && matchMedia('(hover: hover)').matches) {
+    addEventListener('pointermove', (e) => {
+      const card = (e.target as Element | null)?.closest?.('[data-spot]') as HTMLElement | null;
+      if (!card) return;
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', ((e.clientX - r.left) / r.width) * 100 + '%');
+      card.style.setProperty('--my', ((e.clientY - r.top) / r.height) * 100 + '%');
+    }, { passive: true });
+  }
+
+  const targets = [...document.querySelectorAll<HTMLElement>('[data-reveal]')];
+  if (!targets.length) {
+    // nothing to do
+  } else if (reduce || !('IntersectionObserver' in window)) {
+    targets.forEach((t) => t.classList.add('is-in'));
+  } else {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('is-in'); io.unobserve(entry.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+    targets.forEach((t) => {
+      // already scrolled past (e.g. reload mid-page): show immediately instead of waiting for a re-entry
+      if (t.getBoundingClientRect().bottom < 0) t.classList.add('is-in'); else io.observe(t);
+    });
+  }
+</script>

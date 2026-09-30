@@ -1,54 +1,66 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import HubHero from '../../../components/blog/HubHero.astro';
+import PostCard from '../../../components/blog/PostCard.astro';
+import BlogEffects from '../../../components/blog/BlogEffects.astro';
+import '../../../styles/blog.css';
+import { getPosts, categoryPages, sectionsIn, fmtDate } from '../../../lib/blog.js';
 
-const labels={updates:'Updates',leaks:'Leaks',guides:'Guides','event-guides':'Event Guides',analysis:'Analysis',reviews:'Reviews',tactics:'Tactics',rankings:'Rankings'};
-const typeMap={updates:'news',leaks:'leaks',guides:'guide','event-guides':'event-guide',analysis:'analysis',reviews:'player-review',tactics:'opinion',rankings:'ranking'};
-export async function getStaticPaths(){
-  const postsForPaths=await getCollection('blog',({data})=>data.status==='published'&&!data.draft);
-  const categories=[...new Set(postsForPaths.map((post)=>post.data.category).filter(Boolean))];
-  return categories.map((category)=>({params:{category:String(category).toLowerCase().replace(/\\s+/g,'-')},props:{category}}));
+// One page per canonical section AND per free-text category in use, so older URLs keep working.
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return categoryPages(posts).map((c) => ({ params: { category: c.slug }, props: { slug: c.slug } }));
 }
-const posts=(await getCollection('blog',({data})=>data.status==='published'&&!data.draft)).sort((a,b)=>(b.data.publishedAt?.valueOf()??0)-(a.data.publishedAt?.valueOf()??0));
-const {category}=Astro.props;
-const label=labels[category]??category;
-const type=typeMap[category];
-const items=posts.filter((post)=>String(post.data.category??'').toLowerCase()===label.toLowerCase()||post.data.type===type);
-const featured=posts.filter((post)=>post.data.featured).slice(0,4);
-const firstInlineImage=(post)=>String(post.body??'').match(/!\[[^\]]*\]\(([^)]+)\)/)?.[1]??'';
-const coverImage=(post)=>post.data.image||firstInlineImage(post);
-const readingTime=(post)=>post.data.readingTime??Math.max(1,Math.ceil((post.body?.split(/\s+/).filter(Boolean).length??0)/220));
+
+const posts = await getPosts();
+const page = categoryPages(posts).find((c) => c.slug === Astro.props.slug);
+const sections = sectionsIn(posts);
+const [lead, ...rest] = page.posts;
+const minutes = page.posts.reduce((n, p) => n + p.minutes, 0);
+const site = Astro.site ?? new URL('https://fcmobiletools.online');
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: page.label + ' — FC Mobile Articles',
+  url: new URL('/blog/category/' + page.slug + '/', site).toString(),
+  mainEntity: { '@type': 'ItemList', itemListElement: page.posts.slice(0, 20).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: new URL(p.href, site).toString(), name: p.title })) }
+};
 ---
-<BaseLayout title={label + ' — FC Mobile Articles'} description={'FC Mobile ' + label.toLowerCase() + ' from FCMOBILETOOLS.'}>
-<main class="category-hub">
-  <section class="category-hero"><div class="wrap"><p class="eyebrow">ARTICLES / {label.toUpperCase()}</p><h1>{label}</h1><p>{items.length} published {items.length===1?'article':'articles'} in this section.</p></div></section>
-  <div class="wrap category-layout">
-    <section>
-      <div class="section-top"><div><p class="eyebrow">LATEST IN THIS SECTION</p><h2>What’s here</h2></div><a href="/blog">All articles ↗</a></div>
-      <div class="category-stream">
-        {items.map((post)=><a class="category-card spotlight" href={'/blog/' + post.slug + '/'} data-card>
-          <div class="thumb">{coverImage(post)?<img src={coverImage(post)} alt={post.data.imageAlt??''} loading="lazy" />:<span>FC</span>}</div>
-          <div class="copy"><div class="meta"><span>{post.data.author}</span><span>{readingTime(post)} min</span></div><h3>{post.data.title}</h3><p>{post.data.excerpt??post.data.description}</p></div>
-          <b>↗</b>
-        </a>)}
-        {!items.length?<div class="empty">No published articles in this section yet.</div>:null}
-      </div>
-    </section>
-    <aside class="sidebar">
-      <div class="sidebox"><span>EXPLORE</span><a href="/blog">All articles</a><a href="/blog/category/updates/">Updates</a><a href="/blog/category/leaks/">Leaks</a><a href="/blog/category/guides/">Guides</a><a href="/creator">Creators</a></div>
-      {featured.length?<div class="sidebox"><span>EDITOR'S PICKS</span>{featured.map((post)=><a class="side-article" href={'/blog/' + post.slug + '/'}><small>{post.data.category}</small><b>{post.data.title}</b></a>)}</div>:null}
-    </aside>
+<BaseLayout title={page.label + ' — FC Mobile Articles'} description={'FC Mobile ' + page.label.toLowerCase() + ' from FCMOBILETOOLS. ' + page.blurb}>
+<script type="application/ld+json" set:html={JSON.stringify(schema)}></script>
+<main class="bl bl-category" style={'--bl-accent:' + page.accent}>
+  <BlogEffects />
+  <HubHero
+    eyebrow="Section"
+    title={page.label}
+    blurb={page.blurb}
+    accent={page.accent}
+    crumbs={[{ href: '/blog/category/' + page.slug + '/', label: page.label }]}
+    stats={[
+      { value: page.posts.length, label: page.posts.length === 1 ? 'Article' : 'Articles' },
+      { value: minutes, label: 'Minutes of reading' },
+      { value: fmtDate(page.posts[0]?.date, 'short') || '—', label: 'Latest' }
+    ]}
+  />
+
+  <div class="bl-wrap">
+    <nav class="bl-switch" aria-label="Sections">
+      <a class="bl-topic" href="/blog">All articles</a>
+      {sections.map((s) => (
+        <a class="bl-topic" href={'/blog/category/' + s.slug + '/'} aria-current={s.slug === page.slug ? 'page' : undefined} style={'--bl-accent:' + s.accent}><i></i>{s.label}<b>{s.count}</b></a>
+      ))}
+    </nav>
   </div>
-</main>
-<script is:inline>
-document.querySelectorAll('[data-card]').forEach((card)=>card.addEventListener('pointermove',(event)=>{
-  const rect=card.getBoundingClientRect();
-  card.style.setProperty('--mx',((event.clientX-rect.left)/rect.width*100)+'%');
-  card.style.setProperty('--my',((event.clientY-rect.top)/rect.height*100)+'%');
-}));
-</script>
-<style>
-.category-hub{background:var(--bg);min-height:70vh;overflow:hidden}.wrap{width:min(1160px,calc(100% - 28px));margin:auto}.category-hero{border-bottom:1px solid var(--border);background:radial-gradient(circle at 80% 0,#55c7f21a,transparent 35%),#07131b}.category-hero .wrap{padding:72px 0}.eyebrow{margin:0;color:var(--blue);font:900 8px var(--mono);letter-spacing:.16em;text-transform:uppercase}.category-hero h1{font-size:clamp(54px,7vw,88px);line-height:.9;letter-spacing:-.075em;margin:15px 0 8px}.category-hero p:last-child{color:#8298a4;font-size:11px}.category-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:34px;padding:38px 0 90px}.section-top{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:16px}.section-top h2{margin:7px 0 0;font-size:29px;letter-spacing:-.05em}.section-top>a{color:#8cdffc;text-decoration:none;font:800 7px var(--mono)}.category-stream{display:grid;gap:9px}.category-card{display:grid;grid-template-columns:minmax(0,1fr) 32px;grid-template-rows:auto 1fr;position:relative;overflow:hidden;border:1px solid var(--border);border-radius:16px;background:#09141b;color:var(--text);text-decoration:none;transition:.23s}.category-card:before{content:"";position:absolute;inset:0;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),#55c7f212,transparent 44%);pointer-events:none}.category-card:hover{transform:translateX(3px);border-color:#385f72;box-shadow:0 18px 55px #0007}.thumb{grid-column:1/-1;position:relative;background:#09171e;overflow:hidden;aspect-ratio:16/9}.thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:.5s}.category-card:hover img{transform:scale(1.04)}.thumb span{height:100%;display:grid;place-items:center;color:var(--blue);font:900 27px var(--mono)}.copy{position:relative;padding:16px;z-index:1}.meta{display:flex;gap:10px;color:#67818e;font:800 7px var(--mono);text-transform:uppercase}.meta span:first-child{color:var(--blue)}.copy h3{margin:9px 0 7px;font-size:16px;line-height:1.08}.copy p{margin:0;color:#7f949f;font-size:9px;line-height:1.65}.category-card>b{position:relative;align-self:end;justify-self:end;margin:0 13px 15px;color:#72909f;font:900 14px var(--mono)}.sidebar{display:grid;gap:11px;align-content:start}.sidebox{display:grid;gap:4px;padding:15px;border:1px solid var(--border);border-radius:15px;background:#09131a}.sidebox>span{color:#5e7785;font:900 7px var(--mono);letter-spacing:.14em;margin-bottom:4px}.sidebox>a{padding:8px 6px;border-radius:8px;color:#8398a3;text-decoration:none;font:800 8.5px var(--mono)}.sidebox>a:hover{color:#e1f7fd;background:#55c7f208}.side-article{display:grid!important;gap:4px!important;border-top:1px solid #1a2b34;padding:10px 0!important;border-radius:0!important}.side-article small{color:var(--blue);font:800 6.5px var(--mono)}.side-article b{color:#d0e0e6;font-size:9.5px;line-height:1.35}.empty{padding:35px;border:1px dashed #2d4654;border-radius:13px;color:#708792;font-size:10px;text-align:center}.spotlight{position:relative}@media(max-width:820px){.category-layout{grid-template-columns:1fr}.sidebar{grid-template-columns:1fr 1fr}}@media(max-width:540px){.category-layout{padding-top:25px}.sidebar{grid-template-columns:1fr}.category-card{grid-template-columns:minmax(0,1fr) 28px}.copy{padding:14px}.category-card>b{margin:0 10px 12px}}
-</style>
+
+  <section class="bl-wrap bl-block" aria-label={page.label + ' articles'}>
+    {lead ? (
+      <div class="bl-lead-grid">
+        <PostCard post={lead} variant="lead" eager />
+        {rest.length ? <div class="bl-grid" data-reveal>{rest.map((p) => <PostCard post={p} />)}</div> : null}
+      </div>
+    ) : (
+      <div class="bl-empty"><strong>Nothing here yet.</strong><span>No published articles in this section.</span><a class="bl-btn" href="/blog">Browse all articles</a></div>
+    )}
+  </section>
 </main>
 </BaseLayout>
