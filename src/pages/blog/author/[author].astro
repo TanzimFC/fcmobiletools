@@ -4,20 +4,20 @@ import HubHero from '../../../components/blog/HubHero.astro';
 import PostCard from '../../../components/blog/PostCard.astro';
 import BlogEffects from '../../../components/blog/BlogEffects.astro';
 import '../../../styles/blog.css';
-import { getPosts, initial } from '../../../lib/blog.js';
+import { initial } from '../../../lib/blog.js';
+import { getPublishedPosts } from '../../../lib/blog-supabase.js';
 
-export async function getStaticPaths() {
-  const posts = await getPosts();
-  return [...new Set(posts.map((p) => p.authorSlug))].map((slug) => ({ params: { author: slug }, props: { slug } }));
-}
+export const prerender = false;
+Astro.response.headers.set('Cache-Control','public, max-age=0, s-maxage=15, stale-while-revalidate=60');
 
-const posts = await getPosts();
-const items = posts.filter((p) => p.authorSlug === Astro.props.slug);
-const name = items[0].author;
+const posts = await getPublishedPosts();
+const requestedSlug = String(Astro.params.author || '').replace(/\/$/,'');
+const items = posts.filter((p) => p.authorSlug === requestedSlug);
+const name = items[0]?.author || requestedSlug.replaceAll('-',' ') || 'FCMOBILETOOLS';
 const [lead, ...rest] = items;
 const minutes = items.reduce((n, p) => n + p.minutes, 0);
 const sectionCount = new Set(items.map((p) => p.section.key)).size;
-const accent = lead.section.accent;
+const accent = lead?.section?.accent || '#67dbff';
 ---
 <BaseLayout title={name + ' — FC Mobile Articles'} description={'Articles, guides and updates written by ' + name + ' on FCMOBILETOOLS.'} author={name}>
 <main class="bl bl-author" style={'--bl-accent:' + accent}>
@@ -27,7 +27,7 @@ const accent = lead.section.accent;
     title={name}
     blurb={'Articles, guides and updates published by ' + name + '.'}
     accent={accent}
-    crumbs={[{ href: '/blog/author/' + Astro.props.slug + '/', label: name }]}
+    crumbs={[{ href: '/blog/author/' + requestedSlug + '/', label: name }]}
     stats={[
       { value: items.length, label: items.length === 1 ? 'Article' : 'Articles' },
       { value: sectionCount, label: sectionCount === 1 ? 'Section' : 'Sections' },
@@ -40,7 +40,7 @@ const accent = lead.section.accent;
 
   <section class="bl-wrap bl-block" aria-label={'Articles by ' + name}>
     <div class="bl-lead-grid">
-      <PostCard post={lead} variant="lead" eager />
+      {lead ? <PostCard post={lead} variant="lead" eager /> : <div class="bl-empty"><strong>No published articles yet.</strong><span>This author does not have a published article under this name.</span><a class="bl-btn" href="/blog">Browse all articles</a></div>}
       {rest.length ? <div class="bl-grid" data-reveal>{rest.map((p) => <PostCard post={p} />)}</div> : null}
     </div>
   </section>
