@@ -1052,5 +1052,8 @@ export default { async fetch(request,env,ctx) {
     if(creator && url.pathname === '/admin/dashboard.html') return env.ASSETS.fetch(request);
     return new Response('Not found',{status:404});
   }
-  return astroApp.fetch(request,env,ctx);
+  // Public site is built as static assets. Serve it directly instead of routing
+  // every public request through Astro's generated runtime wrapper. This avoids
+  // runtime failures on the static production site while preserving Worker APIs.
+  return env.ASSETS.fetch(request);
 } };
