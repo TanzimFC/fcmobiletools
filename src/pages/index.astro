@@ -110,10 +110,19 @@ const jsonLd = {
 
   <main class="home-premium" id="main">
     <section class="hero-premium" aria-labelledby="hero-title">
-      <div class="hero-premium__wash" aria-hidden="true"></div>
+      <div class="hero-premium__image" aria-hidden="true">
+        <img
+          src="/assets/images/herobeli.png"
+          alt=""
+          width="1600"
+          height="900"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </div>
+      <div class="hero-premium__overlay" aria-hidden="true"></div>
       <div class="hero-premium__texture" aria-hidden="true"></div>
       <div class="hero-premium__light hero-premium__light--one" aria-hidden="true"></div>
-      <div class="hero-premium__light hero-premium__light--two" aria-hidden="true"></div>
 
       <div class="wrap-premium hero-premium__inner">
         <div class="hero-premium__copy">
@@ -149,18 +158,6 @@ const jsonLd = {
             <span><i></i> Local-time friendly</span>
             <span><i></i> Built for daily play</span>
           </div>
-        </div>
-
-        <div class="hero-art hero-enter" style="--delay:.12s" aria-hidden="true">
-          <div class="hero-art__halo"></div>
-          <div class="hero-art__frame">
-            <div class="hero-art__scan"></div>
-            <img src="/assets/images/herobeli.png" alt="" width="1600" height="900" fetchpriority="high" decoding="async" />
-            <div class="hero-art__edge"></div>
-          </div>
-          <div class="hero-art__badge hero-art__badge--top">FC MOBILE</div>
-          <div class="hero-art__badge hero-art__badge--bottom">TOOLS / LIVE / GUIDES</div>
-          <div class="hero-art__number">27</div>
         </div>
       </div>
 
@@ -479,58 +476,69 @@ const jsonLd = {
     border-bottom: 1px solid var(--hp-border);
   }
 
-  .hero-premium__wash {
+  .hero-premium__image {
     position: absolute;
     inset: 0;
-    z-index: -5;
+    z-index: -4;
+    overflow: hidden;
+    background: #07131b;
+  }
+
+  .hero-premium__image img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
+    object-position: center center;
+    transform: scale(1.035);
+    filter: saturate(.98) contrast(1.04);
+    opacity: .62;
+    animation: heroImageEnter 1.8s cubic-bezier(.2,.72,.2,1) both;
+  }
+
+  .hero-premium__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: -3;
     background:
-      linear-gradient(90deg, rgba(6,16,24,.99) 0%, rgba(6,16,24,.96) 38%, rgba(6,16,24,.70) 63%, rgba(6,16,24,.22) 100%),
-      linear-gradient(180deg, rgba(6,16,24,.10), #061018 96%);
+      linear-gradient(90deg, rgba(6,16,24,.985) 0%, rgba(6,16,24,.93) 30%, rgba(6,16,24,.58) 55%, rgba(6,16,24,.16) 100%),
+      linear-gradient(180deg, rgba(6,16,24,.18) 0%, rgba(6,16,24,.18) 50%, #061018 100%);
   }
 
   .hero-premium__texture {
     position: absolute;
     inset: 0;
-    z-index: -4;
-    opacity: .13;
+    z-index: -2;
+    opacity: .12;
     background-image:
-      linear-gradient(rgba(193, 231, 240, .05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(193, 231, 240, .05) 1px, transparent 1px);
+      linear-gradient(rgba(193,231,240,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(193,231,240,.05) 1px, transparent 1px);
     background-size: 88px 88px;
-    mask-image: linear-gradient(90deg, rgba(0,0,0,.62), transparent 82%);
+    mask-image: linear-gradient(90deg, rgba(0,0,0,.58), transparent 78%);
   }
 
   .hero-premium__light {
     position: absolute;
     border-radius: 50%;
     pointer-events: none;
-    z-index: -2;
+    z-index: -1;
   }
 
   .hero-premium__light--one {
-    width: 520px;
-    height: 520px;
-    right: -90px;
-    top: -120px;
-    background: radial-gradient(circle, rgba(86,219,255,.12), transparent 68%);
+    width: 620px;
+    height: 620px;
+    right: -160px;
+    top: -170px;
+    background: radial-gradient(circle, rgba(86,219,255,.14), transparent 68%);
     animation: heroLightOne 11s ease-in-out infinite;
-  }
-
-  .hero-premium__light--two {
-    width: 360px;
-    height: 360px;
-    left: -150px;
-    bottom: -130px;
-    background: radial-gradient(circle, rgba(118,239,206,.08), transparent 67%);
-    animation: heroLightTwo 13s ease-in-out infinite;
   }
 
   .hero-premium__inner {
     min-height: 820px;
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(420px, .92fr);
-    gap: clamp(25px, 5vw, 70px);
     align-items: center;
     padding: 108px 0 78px;
   }
@@ -538,7 +546,8 @@ const jsonLd = {
   .hero-premium__copy {
     position: relative;
     z-index: 3;
-    max-width: 720px;
+    max-width: 760px;
+    padding: 24px 0;
   }
 
   .hero-kicker {
@@ -562,7 +571,7 @@ const jsonLd = {
   .hero-kicker__rule {
     width: 36px;
     height: 1px;
-    background: rgba(122, 190, 210, .24);
+    background: rgba(122,190,210,.24);
   }
 
   .hero-premium h1 {
@@ -588,7 +597,7 @@ const jsonLd = {
   }
 
   .hero-premium__lead {
-    max-width: 630px;
+    max-width: 625px;
     margin-top: 28px !important;
     color: var(--hp-soft);
     font: 400 clamp(16px, 1.5vw, 19px)/1.72 "Inter", sans-serif;
@@ -625,16 +634,16 @@ const jsonLd = {
   .premium-btn--primary {
     color: #06202a !important;
     background: linear-gradient(110deg, #56dbff, #76efce);
-    box-shadow: 0 17px 46px rgba(78, 212, 242, .16);
+    box-shadow: 0 17px 46px rgba(78,212,242,.16);
   }
 
   .premium-btn--primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 23px 60px rgba(78, 212, 242, .25);
+    box-shadow: 0 23px 60px rgba(78,212,242,.25);
   }
 
   .premium-btn--outline {
-    border-color: rgba(161, 208, 222, .18);
+    border-color: rgba(161,208,222,.18);
     background: rgba(255,255,255,.035);
     color: var(--hp-text) !important;
     backdrop-filter: blur(12px);
@@ -671,120 +680,15 @@ const jsonLd = {
     animation: fadeEnter .8s cubic-bezier(.2,.8,.2,1) var(--delay) forwards;
   }
 
-  /* Hero artwork is intentionally positioned as a right-side focal object, not centered */
-  .hero-art {
-    --px: 0px;
-    --py: 0px;
-    position: relative;
-    z-index: 1;
-    min-height: 610px;
-    display: grid;
-    place-items: center;
-    transform: translate3d(var(--px), var(--py), 0);
-    transition: transform .28s ease-out;
-  }
-
-  .hero-art__halo {
-    position: absolute;
-    width: 580px;
-    height: 580px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(86,219,255,.13), rgba(86,219,255,.02) 40%, transparent 70%);
-    filter: blur(3px);
-    animation: artworkHalo 7s ease-in-out infinite;
-  }
-
-  .hero-art__frame {
-    position: relative;
-    width: min(620px, 51vw);
-    aspect-ratio: 1 / .82;
-    border-radius: 32px;
-    overflow: hidden;
-    border: 1px solid rgba(126, 210, 232, .18);
-    background: rgba(5, 17, 25, .32);
-    box-shadow: 0 55px 110px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.035);
-    transform: rotate(3.2deg);
-    animation: artworkFloat 8s ease-in-out infinite;
-  }
-
-  .hero-art__frame::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: linear-gradient(125deg, rgba(255,255,255,.08), transparent 26%, transparent 70%, rgba(83,219,246,.08));
-    pointer-events: none;
-  }
-
-  .hero-art__frame img {
-    position: absolute;
-    inset: -3%;
-    width: 106%;
-    height: 106%;
-    max-width: none;
-    object-fit: cover;
-    object-position: 68% center;
-    opacity: .94;
-    filter: saturate(.96) contrast(1.03);
-  }
-
-  .hero-art__scan {
-    position: absolute;
-    left: -10%;
-    top: 0;
-    width: 3px;
-    height: 100%;
-    z-index: 4;
-    background: linear-gradient(180deg, transparent, rgba(110,235,255,.65), transparent);
-    box-shadow: 0 0 24px rgba(86,219,255,.45);
-    animation: scanMove 5.6s cubic-bezier(.25,.8,.25,1) infinite;
-  }
-
-  .hero-art__edge {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    background: linear-gradient(90deg, rgba(6,16,24,.10), transparent 36%, transparent 100%);
-    pointer-events: none;
-  }
-
-  .hero-art__badge {
-    position: absolute;
-    z-index: 5;
-    padding: 8px 10px;
-    border: 1px solid rgba(145,209,224,.14);
-    border-radius: 999px;
-    background: rgba(6,16,24,.62);
-    backdrop-filter: blur(14px);
-    color: #88cfdf;
-    font: 800 7px/1 "Inter", sans-serif;
-    letter-spacing: .13em;
-    text-transform: uppercase;
-    box-shadow: 0 12px 30px rgba(0,0,0,.16);
-  }
-
-  .hero-art__badge--top { top: 13%; right: -2%; }
-  .hero-art__badge--bottom { bottom: 14%; left: -4%; color: #6e9baa; }
-
-  .hero-art__number {
-    position: absolute;
-    right: -3%;
-    bottom: -5%;
-    z-index: 0;
-    color: rgba(122, 238, 203, .045);
-    font: 900 clamp(170px, 21vw, 250px)/.75 var(--hp-display);
-    letter-spacing: -.11em;
-    user-select: none;
-  }
-
   .hero-floor {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 180px;
+    height: 190px;
     z-index: -1;
-    background: linear-gradient(180deg, transparent, rgba(5,14,21,.76));
+    background: linear-gradient(180deg, transparent, rgba(5,14,21,.92));
+    pointer-events: none;
   }
 
   .hero-scrollmark {
@@ -805,7 +709,7 @@ const jsonLd = {
     display: block;
     width: 21px;
     height: 33px;
-    border: 1px solid rgba(137, 192, 207, .22);
+    border: 1px solid rgba(137,192,207,.22);
     border-radius: 99px;
     position: relative;
   }
@@ -1017,6 +921,7 @@ const jsonLd = {
   .reveal { opacity: 0; transform: translateY(24px); transition: opacity .72s ease, transform .72s cubic-bezier(.2,.82,.2,1); }
   .reveal.is-visible { opacity: 1; transform: none; }
 
+  @keyframes heroImageEnter { from { opacity: 0; transform: scale(1.08); } to { opacity: .62; transform: scale(1.035); } }
   @keyframes titleEnter { to { opacity: 1; transform: none; } }
   @keyframes fadeEnter { to { opacity: 1; transform: none; } }
   @keyframes heroLightOne { 50% { transform: translate3d(-22px,18px,0) scale(1.05); } }
@@ -1122,12 +1027,9 @@ const jsonLd = {
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .hero-premium__image img,
     .hero-premium__light--one,
-    .hero-premium__light--two,
     .hero-kicker__dot,
-    .hero-art__halo,
-    .hero-art__frame,
-    .hero-art__scan,
     .hero-scrollmark span::after,
     .code-premium__shine,
     .code-orbit::before,
