@@ -10,7 +10,7 @@ const worker = read('src/worker.mjs');
 
 const checks = [
   [!admin.includes("marked@"), 'admin article hydration must not reparse Supabase HTML with marked'],
-  [admin.includes('contentJson') && admin.includes('createLexicalArticleEditor(editor,html,contentJson'), 'admin editor must hydrate Lexical JSON when available'],
+  [admin.includes('contentJson') && admin.includes('loadLexical(editor,html,contentJson'), 'admin editor must hydrate Lexical JSON when available'],
   [admin.includes('setFontSize') && admin.includes('setFontFamily'), 'admin font controls must use the Lexical style API'],
   [admin.includes('createModal') || admin.includes('openModal') && admin.includes('editorLinkApply'), 'article link insertion must use the in-app link UI'],
   [admin.includes('currentArticleId') && admin.includes('result?.articleId'), 'new articles must adopt their database ID after first save'],
