@@ -160,12 +160,6 @@ function editorialRow(row){
     }
   };
 }
-async function editorialArticles(env,identity){
-  let path="articles?select=*&order=updated_at.desc&limit=100";
-  if(identity?.role==='writer') path+="&owner_key=eq."+encodeURIComponent(identity.ownerKey);
-  const rows=await supabaseRest(env,path);
-  return (rows||[]).map(editorialRow);
-}
 async function editorialRevision(env,articleId,input,actorName='TanzimFC'){
   const existing=await supabaseRest(env,"article_revisions?select=revision_no&article_id=eq."+encodeURIComponent(articleId)+"&order=revision_no.desc&limit=1");
   const revisionNo=Number(existing?.[0]?.revision_no||0)+1;
@@ -177,15 +171,6 @@ async function editorialRevision(env,articleId,input,actorName='TanzimFC'){
     content_html:article.content_html||'',metadata:{title:article.title,subtitle:article.subtitle,slug:article.slug,tags:article.tags||[],featured:Boolean(article.featured)}
   }])});
   return revisionNo;
-}
-async function editorialInbox(env){
-  const reviews=await supabaseRest(env,"article_reviews?select=*,articles(id,title,slug,author_name,status)&status=eq.submitted&order=created_at.asc&limit=100");
-  const items=[];
-  for(const review of reviews||[]){
-    const revisions=await supabaseRest(env,"article_revisions?select=revision_no,note,created_at&article_id=eq."+encodeURIComponent(review.article_id)+"&order=revision_no.desc&limit=1");
-    items.push({id:review.id,article_id:review.article_id,revision_no:revisions?.[0]?.revision_no||1,note:review.comment||'',created_at:review.created_at,title:review.articles?.title||'Untitled',slug:review.articles?.slug||'',status:review.articles?.status||'in_review',author_name:review.articles?.author_name||'Writer'});
-  }
-  return items;
 }
 async function editorialIdentity(request,env){
   if(await authenticated(request,env)){
