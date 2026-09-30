@@ -187,12 +187,12 @@ async function editorialApi(request,env,path){
   if(!isAdmin) return json({error:'Unauthorized.'},401);
   if(path==='/articles' && request.method==='GET') return json({articles:await editorialArticles(env)});
   if(path==='/inbox' && request.method==='GET') return json({items:await editorialInbox(env)});
-  const revisionsMatch=path.match(/^\\/articles\\/(\\d+)\\/revisions$/);
+  const revisionsMatch=path.match(/^\/articles\/(\d+)\/revisions$/);
   if(revisionsMatch && request.method==='GET'){
     const rows=await supabaseRest(env,"article_revisions?article_id=eq."+revisionsMatch[1]+"&select=*&order=revision_no.desc");
     return json({revisions:rows||[]});
   }
-  const actionMatch=path.match(/^\\/articles\\/(\\d+)\\/(approve|request-changes)$/);
+  const actionMatch=path.match(/^\/articles\/(\d+)\/(approve|request-changes)$/);
   if(actionMatch && request.method==='POST'){
     const id=actionMatch[1],action=actionMatch[2],body=await request.json().catch(()=>({})),note=String(body.note||'').trim();
     const article=(await supabaseRest(env,"articles?id=eq."+id+"&select=id,title,slug,author_name,status&limit=1"))?.[0];
@@ -210,7 +210,7 @@ async function editorialApi(request,env,path){
     }
     return json({ok:true,action:action==='approve'?'approved':'changes_requested'});
   }
-  const trashMatch=path.match(/^\\/articles\\/(\\d+)\\/(trash|restore)$/);
+  const trashMatch=path.match(/^\/articles\/(\d+)\/(trash|restore)$/);
   if(trashMatch && request.method==='POST'){
     const id=trashMatch[1],action=trashMatch[2];
     await supabaseRest(env,"articles?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:action==='trash'?'trash':'draft',updated_at:new Date().toISOString()})});
