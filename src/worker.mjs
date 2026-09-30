@@ -184,81 +184,175 @@ async function editorialInbox(env){
   }
   return items;
 }
+async function editorialIdentity(request,env){
+  if(await authenticated(request,env)){
+    return {role:'admin',name:String(env.ADMIN_DISPLAY_NAME||env.ADMIN_USERNAME||'TanzimFC'),ownerKey:'admin'};
+  }
+  const creator=await creatorRecord(request,env);
+  if(!creator) return null;
+  return {role:'writer',name:String(creator.display_name||creator.username||'Writer'),ownerKey:'creator:'+String(creator.id),creator};
+}
+
+async function editorialArticles(env,identity){
+  let path="articles?select=*&order=updated_at.desc&limit=100";
+  if(identity?.role==='writer') path+="&owner_key=eq."+encodeURIComponent(identity.ownerKey);
+  const rows=await supabaseRest(env,path);
+  return (rows||[]).map(row=>{
+    const mapped=editorialRow({...row,category_name:row.category});
+    return mapped;
+  });
+}
+
+async function editorialInbox(env,identity){
+  if(identity?.role==='admin'){
+    const reviews=await supabaseRest(env,"article_reviews?select=*,articles(id,title,slug,author_name,status)&status=eq.submitted&order=created_at.asc&limit=100");
+    const items=[];
+    for(const review of reviews||[]){
+      const revisions=await supabaseRest(env,"article_revisions?select=revision_no,note,created_at&article_id=eq."+encodeURIComponent(review.article_id)+"&order=revision_no.desc&limit=1");
+      items.push({
+        id:review.id,article_id:review.article_id,revision_no:revisions?.[0]?.revision_no||1,note:review.comment||'',
+        created_at:review.created_at,title:review.articles?.title||'Untitled',slug:review.articles?.slug||'',
+        status:review.articles?.status||'in_review',author_name:review.articles?.author_name||'Writer'
+      });
+    }
+    return items;
+  }
+  const rows=await supabaseRest(env,"editorial_inbox?recipient_key=eq."+encodeURIComponent(identity.ownerKey)+"&order=created_at.desc&limit=100");
+  return rows||[];
+}
+
 async function editorialApi(request,env,path){
-  const isAdmin=await authenticated(request,env);
-  if(!isAdmin) return json({error:'Unauthorized.'},401);
-  if(path==='/articles' && request.method==='GET') return json({articles:await editorialArticles(env)});
-  if(path==='/inbox' && request.method==='GET') return json({items:await editorialInbox(env)});
-  const revisionsMatch=path.match(/^\\/articles\\/(\\d+)\\/revisions$/);
+  const identity=await editorialIdentity(request,env);
+  if(!identity) return json({error:'Unauthorized.'},401);
+
+  if(path==='/articles' && request.method==='GET') return json({articles:await editorialArticles(env,identity)});
+  if(path==='/inbox' && request.method==='GET') return json({items:await editorialInbox(env,identity)});
+
+  const revisionsMatch=path.match(/^\/articles\/(\d+)\/revisions$/);
   if(revisionsMatch && request.method==='GET'){
-    const rows=await supabaseRest(env,"article_revisions?article_id=eq."+revisionsMatch[1]+"&select=*&order=revision_no.desc");
+    const id=revisionsMatch[1];
+    const rows=await supabaseRest(env,"article_revisions?article_id=eq."+id+"&select=*&order=revision_no.desc");
+    if(identity.role==='writer'){
+      const own=await supabaseRest(env,"articles?id=eq."+id+"&owner_key=eq."+encodeURIComponent(identity.ownerKey)+"&select=id&limit=1");
+      if(!own?.length) return json({error:'Article not found.'},404);
+    }
     return json({revisions:rows||[]});
   }
-  const actionMatch=path.match(/^\\/articles\\/(\\d+)\\/(approve|request-changes)$/);
+
+  const actionMatch=path.match(/^\/articles\/(\d+)\/(approve|request-changes)$/);
   if(actionMatch && request.method==='POST'){
-    const id=actionMatch[1],action=actionMatch[2],body=await request.json().catch(()=>({})),note=String(body.note||'').trim();
-    const article=(await supabaseRest(env,"articles?id=eq."+id+"&select=id,title,slug,author_name,status&limit=1"))?.[0];
+    if(identity.role!=='admin') return json({error:'Only editors can approve or request changes.'},403);
+    const id=actionMatch[1],action=actionMatch[2];
+    const body=await request.json().catch(()=>({})),note=String(body.note||'').trim();
+    const article=(await supabaseRest(env,"articles?id=eq."+id+"&select=id,title,slug,author_name,status,owner_key,published_at&limit=1"))?.[0];
     if(!article) return json({error:'Article not found.'},404);
+
     const next=action==='approve'?'published':'changes_requested';
     const update={status:next,updated_at:new Date().toISOString()};
     if(action==='approve') update.published_at=article.published_at||new Date().toISOString();
     await supabaseRest(env,"articles?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(update)});
-    await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{article_id:Number(id),reviewer_id:null,reviewer_name:String(env.ADMIN_USERNAME||'TanzimFC'),status:action==='approve'?'approved':'changes_requested',comment:note}])});
-    await editorialRevision(env,Number(id),{action:action==='approve'?'approve':'request_changes',note},String(env.ADMIN_USERNAME||'TanzimFC'));
-    if(action==='request-changes'){
-      const articleRows=await supabaseRest(env,"articles?id=eq."+id+"&select=author_id");
-      const recipient=articleRows?.[0]?.author_id;
-      if(recipient) await supabaseRest(env,'editorial_inbox',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{recipient_id:recipient,actor_id:null,article_id:Number(id),kind:'changes_requested',title:'Changes requested',message:note}])});
+    await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+      article_id:Number(id),reviewer_id:null,reviewer_name:identity.name,
+      status:action==='approve'?'approved':'changes_requested',comment:note
+    }])});
+    await editorialRevision(env,Number(id),{action:action==='approve'?'approve':'request_changes',note},identity.name);
+
+    if(action==='approve'){
+      await supabaseRest(env,'editorial_inbox',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+        recipient_id:null,recipient_key:article.owner_key||null,actor_id:null,article_id:Number(id),
+        kind:'published',title:'Article published',message:'Your article has been approved and published.'
+      }])});
+    }else{
+      await supabaseRest(env,'editorial_inbox',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+        recipient_id:null,recipient_key:article.owner_key||null,actor_id:null,article_id:Number(id),
+        kind:'changes_requested',title:'Changes requested',message:note
+      }])});
     }
     return json({ok:true,action:action==='approve'?'approved':'changes_requested'});
   }
-  const trashMatch=path.match(/^\\/articles\\/(\\d+)\\/(trash|restore)$/);
+
+  const trashMatch=path.match(/^\/articles\/(\d+)\/(trash|restore)$/);
   if(trashMatch && request.method==='POST'){
+    if(identity.role!=='admin') return json({error:'Only editors can manage article trash.'},403);
     const id=trashMatch[1],action=trashMatch[2];
-    await supabaseRest(env,"articles?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:action==='trash'?'trash':'draft',updated_at:new Date().toISOString()})});
+    await supabaseRest(env,"articles?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+      status:action==='trash'?'trash':'draft',updated_at:new Date().toISOString()
+    })});
     return json({ok:true,action});
   }
+
+  if(path==='/inbox/read' && request.method==='POST'){
+    const body=await request.json().catch(()=>({}));
+    const id=Number(body.id);
+    if(!Number.isInteger(id)||id<1) return json({error:'Invalid inbox item.'},400);
+    await supabaseRest(env,"editorial_inbox?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({read_at:new Date().toISOString()})});
+    return json({ok:true});
+  }
+
   if(path==='/articles' && request.method==='POST'){
     const input=await request.json().catch(()=>({}));
     const title=String(input.title||'').trim();
     const slug=String(input.slug||title).trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,160);
     if(!title||!slug) return json({error:'Article title is required.'},400);
-    const status=editorialStatus(input.status);
-    const rows=await supabaseRest(env,"articles?slug=eq."+encodeURIComponent(slug)+"&select=id&limit=1");
-    const existing=input.id?Number(input.id):(rows?.[0]?.id||null);
+    let status=editorialStatus(input.status);
+    if(identity.role==='writer' && status==='published') status='in_review';
+
+    const bySlug=await supabaseRest(env,"articles?slug=eq."+encodeURIComponent(slug)+"&select=id,owner_key,status&limit=1");
+    const existingId=input.id?Number(input.id):(bySlug?.[0]?.id||null);
+    let existing=null;
+    if(existingId){
+      existing=(await supabaseRest(env,"articles?id=eq."+existingId+"&select=*&limit=1"))?.[0]||null;
+      if(!existing) return json({error:'Article not found.'},404);
+      if(identity.role==='writer' && existing.owner_key!==identity.ownerKey) return json({error:'You can only edit your own articles.'},403);
+      if(identity.role==='writer' && !['draft','changes_requested','in_review'].includes(existing.status)) return json({error:'This article is locked after publication.'},409);
+    }else if(bySlug?.length && identity.role==='writer' && bySlug[0].owner_key!==identity.ownerKey){
+      return json({error:'An article with this slug already exists.'},409);
+    }
+
     const payload={
       slug,title,subtitle:String(input.subtitle||''),excerpt:String(input.description||input.excerpt||''),
       description:String(input.description||input.excerpt||''),content_html:String(input.bodyHtml||input.body||''),
       content_json:input.contentJson&&typeof input.contentJson==='object'?input.contentJson:{},
-      author_name:String(input.author||'TanzimFC'),status,cover_image:String(input.image||''),
-      image_alt:String(input.imageAlt||''),image_caption:String(input.imageCaption||''),featured:Boolean(input.featured),
-      type:String(input.type||'guide'),category:String(input.category||'Guides'),
-      tags:Array.isArray(input.tags)?input.tags:[],seo_title:String(input.seoTitle||title),
-      seo_description:String(input.seoDescription||input.description||''),canonical_url:String(input.canonicalUrl||''),
-      fact_status:String(input.factStatus||'verified'),last_reviewed:input.lastReviewed?String(input.lastReviewed):null,
-      sources:Array.isArray(input.sources)?input.sources:[],related_articles:Array.isArray(input.relatedArticles)?input.relatedArticles:[],
-      related_tools:Array.isArray(input.relatedTools)?input.relatedTools:[],series:String(input.series||''),series_order:Number.isFinite(Number(input.seriesOrder))?Number(input.seriesOrder):null,
-      author_slug:String(input.authorSlug||input.author||'TanzimFC').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),
-      reading_time:Number(input.readingTime||1),
-      published_at:status==='published'?new Date().toISOString():null,updated_at:new Date().toISOString()
+      author_name:identity.role==='writer'?identity.name:String(input.author||identity.name||'TanzimFC'),
+      author_slug:String(input.authorSlug||identity.name||'TanzimFC').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),
+      status,owner_key:existing?.owner_key||identity.ownerKey,author_key:existing?.author_key||identity.ownerKey,
+      cover_image:String(input.image||''),image_alt:String(input.imageAlt||''),image_caption:String(input.imageCaption||''),
+      featured:identity.role==='admin'?Boolean(input.featured):Boolean(existing?.featured),
+      type:String(input.type||existing?.type||'guide'),category:String(input.category||existing?.category||'Guides'),
+      tags:Array.isArray(input.tags)?input.tags:(existing?.tags||[]),
+      seo_title:String(input.seoTitle||title),seo_description:String(input.seoDescription||input.description||''),
+      canonical_url:String(input.canonicalUrl||existing?.canonical_url||''),
+      fact_status:String(input.factStatus||existing?.fact_status||'verified'),last_reviewed:input.lastReviewed?String(input.lastReviewed):(existing?.last_reviewed||null),
+      sources:Array.isArray(input.sources)?input.sources:(existing?.sources||[]),
+      related_articles:Array.isArray(input.relatedArticles)?input.relatedArticles:(existing?.related_articles||[]),
+      related_tools:Array.isArray(input.relatedTools)?input.relatedTools:(existing?.related_tools||[]),
+      series:String(input.series||existing?.series||''),series_order:Number.isFinite(Number(input.seriesOrder))?Number(input.seriesOrder):existing?.series_order||null,
+      reading_time:Number(input.readingTime||existing?.reading_time||1),
+      published_at:status==='published'?(existing?.published_at||new Date().toISOString()):null,
+      updated_at:new Date().toISOString()
     };
+
     let saved;
-    if(existing){
-      saved=await supabaseRest(env,"articles?id=eq."+existing,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
-    }else{
-      payload.created_by=null;
-      saved=await supabaseRest(env,'articles',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([payload])});
-    }
+    if(existingId) saved=await supabaseRest(env,"articles?id=eq."+existingId,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
+    else saved=await supabaseRest(env,'articles',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([payload])});
+
     const savedRow=saved?.[0];
     if(!savedRow) return json({error:'Article could not be saved.'},500);
-    const revisionNo=await editorialRevision(env,savedRow.id,{action:status==='published'?'publish':status==='in_review'?'submit':'save'},String(input.author||env.ADMIN_USERNAME||'TanzimFC'));
+    const revisionNo=await editorialRevision(env,savedRow.id,{
+      action:status==='published'?'publish':status==='in_review'?'submit':'save'
+    },identity.name);
+
     if(status==='in_review'){
-      await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{article_id:savedRow.id,reviewer_id:null,reviewer_name:'',status:'submitted',comment:''}])});
+      await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+        article_id:savedRow.id,reviewer_id:null,reviewer_name:'',status:'submitted',comment:''
+      }])});
     }
-    return json({ok:true,articleId:savedRow.id,slug:savedRow.slug,action:existing?'updated':'created',revisionNo});
+    return json({ok:true,articleId:savedRow.id,slug:savedRow.slug,action:existingId?'updated':'created',revisionNo});
   }
+
   return json({error:'Editorial endpoint not found.'},404);
 }
+
 
 async function github(env, path, options = {}) {
   const [owner, repo] = (env.GITHUB_REPO || 'TanzimFC/fcmobiletools').split('/');
@@ -1053,6 +1147,7 @@ export default { async fetch(request,env) {
     return new Response(await asset.arrayBuffer(),{status:asset.status,statusText:asset.statusText,headers});
   }
   if(url.pathname.startsWith('/api/admin/articles') || url.pathname.startsWith('/api/admin/inbox')) return editorialApi(request,env,url.pathname.slice('/api/admin'.length));
+  if(url.pathname.startsWith('/api/creator/articles') || url.pathname.startsWith('/api/creator/inbox')) return editorialApi(request,env,url.pathname.slice('/api/creator'.length));
   if(url.pathname.startsWith('/api/admin/')) return api(request,env,url.pathname.slice('/api/admin'.length));
   if(isAdminEntry) {
     if(await authenticated(request,env) || await creatorAuthenticated(request,env)) return adminDashboard(request,env,url);
