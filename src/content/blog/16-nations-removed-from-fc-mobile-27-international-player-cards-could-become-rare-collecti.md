@@ -2,8 +2,8 @@
 id: 3
 slug: "16-nations-removed-from-fc-mobile-27-international-player-cards-could-become-rare-collecti"
 title: "16 Nations Removed From FC Mobile 27? International Player Cards Could Become Rare Collectibles"
-subtitle: ""
-description: ""
+subtitle: "What the reported FC27 national-team database changes could mean for international Player Items"
+description: "A breakdown of 16 national-team database changes reported in FC27 data and what they could mean for international Player Items in FC Mobile 27."
 type: "news"
 category: "Updates"
 author: "TanzimFC"
@@ -13,11 +13,11 @@ createdAt: "2026-09-19T07:33:23.201Z"
 updatedAt: "2026-09-19T07:35:21.275Z"
 publishedAt: "2026-09-19T07:34:13.230Z"
 image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1789803003/fc-mobile-tools/fezkwvxksloq9kgyi8ld.png"
-imageAlt: ""
+imageAlt: "FC Mobile 27 international player cards and national teams"
 imageCaption: ""
 thumbnail: ""
-excerpt: ""
-tags: []
+excerpt: "A breakdown of 16 national-team database changes reported in FC27 data and what they could mean for international Player Items in FC Mobile 27."
+tags: ["FC Mobile 27", "FC27", "International Teams", "Player Items", "The World’s Game"]
 relatedPlayers: []
 relatedEvents: []
 relatedArticles: []
@@ -26,10 +26,10 @@ relatedCodes: []
 featured: true
 readingTime: 1
 seoTitle: "16 Nations Removed From FC Mobile 27? International Player Cards Could Become Rare Collectibles"
-seoDescription: ""
+seoDescription: "A breakdown of 16 national-team database changes reported in FC27 data and what they could mean for international Player Items in FC Mobile 27."
 canonicalUrl: ""
 sources: []
-factStatus: "verified"
+factStatus: "partially-verified"
 lastReviewed: ""
 series: ""
 ---
@@ -50,7 +50,24 @@ A player being from a particular country does not mean every card of that player
 
 The following 16 national teams have been identified in FC27 data as removed compared with the previous setup:
 
-#Nation1Côte d’Ivoire2Senegal3Cape Verde4Algeria*5Ecuador6Canada7Bosnia & Herzegovina8Iran*9Iraq*10Tunisia11Panama12Curaçao*13South Africa14Haiti15Uzbekistan16Jordan*
+| # | Nation |
+| :--- | :--- |
+| 1 | Côte d’Ivoire |
+| 2 | Senegal |
+| 3 | Cape Verde |
+| 4 | Algeria* |
+| 5 | Ecuador |
+| 6 | Canada |
+| 7 | Bosnia & Herzegovina |
+| 8 | Iran* |
+| 9 | Iraq* |
+| 10 | Tunisia |
+| 11 | Panama |
+| 12 | Curaçao* |
+| 13 | South Africa |
+| 14 | Haiti |
+| 15 | Uzbekistan |
+| 16 | Jordan* |
 
 *The starred nations were represented with generic national teams in the relevant FC27 data rather than fully licensed national-team implementations. The 16-team list comes from community analysis of FC27 data rather than an EA-published FC Mobile announcement.
 
@@ -114,19 +131,15 @@ If the international versions are removed from the active FC Mobile 27 database,
 
 That would mean:
 
-- 
 
 Existing tradeable copies could remain with their owners.
 
-- 
 
 New copies would no longer be generated normally.
 
-- 
 
 Market supply could eventually fall to zero.
 
-- 
 
 A card could become effectively a legacy item.
 
@@ -237,6 +250,5 @@ Your card may not vanish.
 
 ### Important note
 
-- 
 
 The 16-nation removal list is based on FC27 data and community analysis. EA has officially confirmed FC Mobile's international Player Item system and The World's Game national-team structure, but has not, at the time of writing, published a detailed FC Mobile 27 announcement confirming each of these 16 removals and exactly how every Market, Draft, Star Signings and Exchange interaction will work at launch.
