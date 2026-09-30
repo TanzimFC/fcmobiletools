@@ -18,7 +18,19 @@ const safeHtml = (html) => {
   value=value.replace(/<!--[\\s\\S]*?-->/g,'');
   value=value.replace(/<\\/?(?:script|style|template|object|embed|form|input|textarea|button)[^>]*>/gi,'');
   value=value.replace(/\\s+on[a-z]+\\s*=\\s*(?:"[^"]*"|'[^']*'|[^\\s>]+)/gi,'');
-  value=value.replace(/\\s+(?:href|src)\\s*=\\s*(['"])\\s*javascript:[\\s\\S]*?\\1/gi,'');
+  value=value.replace(/\\s+(?:href|src)\\s*=\\s*(['"])\\s*(?:javascript:|vbscript:|data:text/html)[\\s\\S]*?\\1/gi,'');
+  value=value.replace(/\\s+(?:src|href)\\s*=\\s*(['"])([^'"]+)\\1/gi,(full,q,url)=>{
+    const attr=/^\\s*src/i.test(full.trim())?'src':'href';
+    if(/^data:/i.test(url) || /^javascript:/i.test(url) || /^vbscript:/i.test(url)) return '';
+    return full;
+  });
+  value=value.replace(/<img([^>]+)>/gi,(full,attrs)=>{
+    const match=attrs.match(/\\s+src\\s*=\\s*(['"])([^'"]+)\\1/i);
+    if(!match) return '<img'+attrs+'>';
+    try{ const u=new URL(match[2]); if(!['http:','https:'].includes(u.protocol)) return ''; }
+    catch{return '';}
+    return '<img'+attrs+'>';
+  });
   value=value.replace(/<iframe([^>]+)>/gi,(full,attrs)=>{
     const match=attrs.match(/\\s+src\\s*=\\s*(['"])([^'"]+)\\1/i);
     if(!match) return '';
