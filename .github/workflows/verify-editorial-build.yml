@@ -25,5 +25,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build
-        run: npm run build
+      - name: Worker syntax
+        run: node scripts/check-worker-syntax.mjs
+
+      - name: Editorial regression checks
+        run: node scripts/verify-editorial-runtime.mjs
+
+      - name: Astro Cloudflare build
+        run: npm run astro:build
+
+      - name: Verify generated worker
+        run: node -e "const fs=require('node:fs');if(!fs.existsSync('dist/_worker.js/index.js')){console.error('Missing dist/_worker.js/index.js');process.exit(1)};console.log('Generated Cloudflare worker verified.')"
