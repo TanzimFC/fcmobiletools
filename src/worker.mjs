@@ -238,6 +238,13 @@ function validateFootball(content) {
   if(!content.settings.cycleId) throw new Error('Football Centre cycle ID is required.');
   if(!Number.isFinite(Number(content.settings.startingBalance)) || Number(content.settings.startingBalance)<0) throw new Error('Starting balance must be a non-negative number.');
   if(!content.analysis.videoEmbedUrl || !content.analysis.videoWatchUrl) throw new Error('Analysis video URLs are required.');
+  if(Array.isArray(content.analysis.videos)) {
+    if(!content.analysis.videos.length) throw new Error('Analysis video archive cannot be empty.');
+    for(const [i,v] of content.analysis.videos.entries()) {
+      if(!v || !String(v.title||'').trim() || !String(v.embedUrl||'').trim() || !String(v.watchUrl||'').trim()) throw new Error('Analysis video '+(i+1)+' is incomplete.');
+      if(!/^https:\/\/www\.youtube(?:-nocookie)?\.com\/embed\/[^/]+/i.test(String(v.embedUrl))) throw new Error('Analysis video '+(i+1)+' must use a YouTube /embed/ URL.');
+    }
+  }
   if(!content.videoEmbedUrl || !content.videoWatchUrl) { content.videoEmbedUrl=content.analysis.videoEmbedUrl; content.videoWatchUrl=content.analysis.videoWatchUrl; }
 }
 
