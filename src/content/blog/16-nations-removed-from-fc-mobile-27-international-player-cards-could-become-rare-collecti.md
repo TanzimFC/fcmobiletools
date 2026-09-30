@@ -51,7 +51,7 @@ A player being from a particular country does not mean every card of that player
 The following 16 national teams have been identified in FC27 data as removed compared with the previous setup:
 
 | # | Nation |
-| :--- | :--- |
+| :---: | :--- |
 | 1 | Côte d’Ivoire |
 | 2 | Senegal |
 | 3 | Cape Verde |
@@ -131,15 +131,11 @@ If the international versions are removed from the active FC Mobile 27 database,
 
 That would mean:
 
-
 Existing tradeable copies could remain with their owners.
-
 
 New copies would no longer be generated normally.
 
-
 Market supply could eventually fall to zero.
-
 
 A card could become effectively a legacy item.
 
@@ -249,6 +245,5 @@ Your card may not vanish.
 **The ability to obtain another one may.**
 
 ### Important note
-
 
 The 16-nation removal list is based on FC27 data and community analysis. EA has officially confirmed FC Mobile's international Player Item system and The World's Game national-team structure, but has not, at the time of writing, published a detailed FC Mobile 27 announcement confirming each of these 16 removals and exactly how every Market, Draft, Star Signings and Exchange interaction will work at launch.

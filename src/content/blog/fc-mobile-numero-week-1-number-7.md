@@ -45,8 +45,6 @@ The trivia section allows players to earn **Numero Tokens**, which can then be e
 
 The main Week 1 exchange rewards include:
 
-
-
 | Reward | Token Cost |
 | :--- | ---: |
 | 6,000,000 Coins + 1,500 Gems | 400 |
@@ -54,9 +52,6 @@ The main Week 1 exchange rewards include:
 | 2 Draft Vouchers | 500 |
 | 1,000 Star Shards | 600 |
 | 117 OVR ST Dalglish | 700 |
-
-
-
 
 The standout reward is **117 OVR ST Kenny Dalglish**, making the token-saving decision particularly important for players who want a usable player rather than simply taking the resource rewards.
 

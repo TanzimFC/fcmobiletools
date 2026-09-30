@@ -197,7 +197,7 @@ The May 2026 PlayStyles Deep Dive then brought the system into the main FC Mobil
 FC Mobile 27 adds another four tested PlayStyles:
 
 | PlayStyle | Main effect |
-|---|---|
+| --- | --- |
 | Incisive Through Pass | Better through-ball targeting and lead distance |
 | Dead Ball | Improved free-kick curl, pace, dip and control |
 | Driven Lob Through | Improved lobbed through-ball curve, control and lead distance |
@@ -285,7 +285,7 @@ The exact live reward structure, exchange requirements and every individual even
 Here is the confirmed FC Mobile 27 timeline:
 
 | Date | FC Mobile 27 milestone |
-|---|---|
+| --- | --- |
 | August 25 | Limited Beta begins |
 | August 28 | EA announces the third anniversary and September 24 Season 27 update |
 | September 1 | Anniversary Event Hub opens and retro soundtrack voting begins |
@@ -298,8 +298,6 @@ Here is the confirmed FC Mobile 27 timeline:
 | October 12 | Selected FC 27 soundtrack tracks scheduled to arrive |
 
 The beta and live Season 27 dates are separate. The beta was a testing environment and ended before the live Season 27 update.
-
-
 
 ## The FC Mobile LIVE preview is coming during maintenance
 
@@ -537,7 +535,7 @@ Updated squads are confirmed, but a single official database containing every FC
 ## FC Mobile 27: confirmed, beta, leaked and live-preview status
 
 | Feature / information | Status |
-|---|---|
+| --- | --- |
 | September 24 Season 27 update | **EA confirmed** |
 | No traditional season reset | **EA confirmed** |
 | Updated squads | **EA confirmed** |
@@ -587,8 +585,6 @@ The biggest things to watch are:
 12. **Anything EA has not previously documented**
 
 That stream should be treated as the final pre-launch source for details shown directly by EA.
-
-
 
 ## The final pre-launch announcement: FC Mobile LIVE
 
@@ -753,7 +749,7 @@ For TanzimFC, we will treat this category as **data-derived leak information**, 
 ## The leak timeline
 
 | Date / period | Source | Report |
-|---|---|---|
+| --- | --- | --- |
 | Early September | MadridistaaFC | Week 1 Anniversary draft structure |
 | Mid September | Sappurit | Week 2 Anniversary draft structure |
 | Mid September | Sappurit | 122 OVR ceiling, countdown gifts, Gauntlet and event components |
@@ -850,7 +846,7 @@ A leaked player card can turn out to be correct. A leaked event structure can al
 ## FC Mobile 27 leak watchlist
 
 | Report | Current status | What to watch |
-|---|---|---|
+| --- | --- | --- |
 | Anniversary Week 1 player lists | Reported leak | Final live cards and OVRs |
 | Anniversary Week 2 player lists | Reported leak | Final player pool and card versions |
 | Third PlayStyle slot | Unconfirmed leak | Whether a third slot appears on live Player Items |
@@ -950,7 +946,7 @@ Check the Bernabéu and the other visual changes introduced with the update.
 ## FC Mobile 27 confirmed vs unconfirmed
 
 | Feature | Status as of September 23 |
-|---|---|
+| --- | --- |
 | September 24 Season 27 update | **Confirmed** |
 | No season reset | **Confirmed** |
 | Updated squads | **Confirmed** |

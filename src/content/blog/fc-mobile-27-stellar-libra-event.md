@@ -163,7 +163,7 @@ The Libra player pool is currently made up of the seven players listed above.
 
 ## What is the Stellar Draft Voucher?
 
-<div class="article-inline-icon"><img src="https://res.cloudinary.com/b0qikv7n/image/upload/v1790528955/fc-mobile-tools/kac9t1aomu9fohcx9ln7.png" alt="Stellar Draft Voucher icon" loading="lazy" style="width:96px;max-width:96px;height:96px;max-height:96px;object-fit:contain;margin:18px 0 8px;border:0;background:transparent;box-shadow:none" /></div>
+<div class="article-inline-icon"><img src="https://res.cloudinary.com/b0qikv7n/image/upload/v1790528955/fc-mobile-tools/kac9t1aomu9fohcx9ln7.png" alt="Stellar Draft Voucher icon" loading="lazy" /></div>
 
 The **Stellar Draft Voucher** is a special item associated with the Stellar Draft.
 
@@ -175,7 +175,7 @@ For a full explanation, see the [**Stellar Draft Voucher Guide**](/blog/stellar-
 
 ## Stellar Libra Tokens
 
-<div class="article-inline-icon"><img src="https://res.cloudinary.com/b0qikv7n/image/upload/v1790528952/fc-mobile-tools/ub8pjpygijyy6a4qcdyd.png" alt="Stellar Libra Token icon" loading="lazy" style="width:96px;max-width:96px;height:96px;max-height:96px;object-fit:contain;margin:18px 0 8px;border:0;background:transparent;box-shadow:none" /></div>
+<div class="article-inline-icon"><img src="https://res.cloudinary.com/b0qikv7n/image/upload/v1790528952/fc-mobile-tools/ub8pjpygijyy6a4qcdyd.png" alt="Stellar Libra Token icon" loading="lazy" /></div>
 
 **Libra Tokens** are the event-specific progression currency used by Stellar: Libra.
 
