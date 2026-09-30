@@ -122,7 +122,7 @@ export async function createLexicalArticleEditor(editorEl, initialHTML = '', onC
       toggleItalic(){commands.push(()=>editor.dispatchCommand(FORMAT_TEXT_COMMAND,'italic'));return this;},
       toggleUnderline(){commands.push(()=>editor.dispatchCommand(FORMAT_TEXT_COMMAND,'underline'));return this;},
       toggleStrike(){commands.push(()=>editor.dispatchCommand(FORMAT_TEXT_COMMAND,'strikethrough'));return this;},
-      clear(){commands.push(()=>editor.dispatchCommand(FORMAT_TEXT_COMMAND,'');return this;},
+      clear(){commands.push(()=>editor.dispatchCommand(FORMAT_TEXT_COMMAND,''));return this;},
       toggleBulletList(){commands.push(()=>editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND,undefined));return this;},
       toggleOrderedList(){commands.push(()=>editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND,undefined));return this;},
       setTextAlign(value){commands.push(()=>run(()=>{const s=$getSelection();if($isRangeSelection(s)){const nodes=s.getNodes();nodes.forEach(n=>{const el=n.getParent?.();if(el?.setFormat)el.setFormat(value);});}}));return this;},
