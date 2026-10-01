@@ -1,3 +1,6 @@
+import { TOURNAMENT_FORMATS, getTournamentFormat } from './tournaments/formats.js';
+import { buildTournamentStructure } from './tournaments/engine.js';
+
 const TOURNAMENT_COOKIE='fcm_tournament_session';
 const SESSION_MAX_AGE=60*60*8;
 const DEFAULT_SUPABASE_URL='https://moczgrwxtfexdbjthxpd.supabase.co';
