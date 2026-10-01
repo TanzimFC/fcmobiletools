@@ -191,11 +191,9 @@ export function buildTournamentStructure(tournament, players) {
 
   switch (format.key) {
     case 'single_elimination':
-      return [buildKnockout(players, { bestOf: Number(cfg.matchMode === 'best_of_5' ? 5 : cfg.matchMode === 'best_of_3' ? 3 : 1) })];
+      return [buildKnockout(players, { twoLeg: cfg.matchMode === 'home_away' })];
     case 'single_elimination_two_leg':
       return [buildKnockout(players, { twoLeg: true })];
-    case 'best_of_series':
-      return [buildKnockout(players, { bestOf: Number(cfg.matchMode === 'best_of_5' ? 5 : 3) })];
     case 'round_robin':
       return [buildRoundRobin(players)];
     case 'home_away_round_robin':
