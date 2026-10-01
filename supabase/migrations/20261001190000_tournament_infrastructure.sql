@@ -126,3 +126,8 @@ begin
 end $$;
 revoke all on function public.save_tournament_draft(jsonb),public.generate_tournament_bracket(bigint),public.record_tournament_result(bigint,integer,integer) from public,anon,authenticated;
 grant execute on function public.save_tournament_draft(jsonb),public.generate_tournament_bracket(bigint),public.record_tournament_result(bigint,integer,integer) to service_role;
+
+create index if not exists tournament_matches_player1_idx on public.tournament_matches(player1_id);
+create index if not exists tournament_matches_player2_idx on public.tournament_matches(player2_id);
+create index if not exists tournament_matches_winner_idx on public.tournament_matches(winner_player_id);
+create index if not exists tournament_matches_next_match_idx on public.tournament_matches(next_match_id);
