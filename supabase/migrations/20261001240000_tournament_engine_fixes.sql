@@ -1,22 +1,19 @@
--- Tournament engine consistency fixes and current function definitions.
+-- Current advanced tournament engine definitions and legacy-constraint cleanup.
 alter table public.tournaments drop constraint if exists tournaments_format_check;
 alter table public.tournaments add constraint tournaments_format_check check (format between 2 and 5000);
 alter table public.tournaments drop constraint if exists tournaments_participant_count_check;
 alter table public.tournaments add constraint tournaments_participant_count_check check (participant_count between 2 and 5000);
-
 alter table public.tournament_players drop constraint if exists tournament_players_slot_check;
 alter table public.tournament_players add constraint tournament_players_slot_check check (slot between 1 and 5000);
 alter table public.tournament_players drop constraint if exists tournament_players_seed_check;
 alter table public.tournament_players add constraint tournament_players_seed_check check (seed is null or seed between 1 and 5000);
-
 alter table public.tournament_matches drop constraint if exists tournament_matches_round_number_check;
 alter table public.tournament_matches add constraint tournament_matches_round_number_check check (round_number between 1 and 20);
 alter table public.tournament_matches drop constraint if exists tournament_matches_match_number_check;
 alter table public.tournament_matches add constraint tournament_matches_match_number_check check (match_number between 1 and 5000);
-
 alter table public.tournament_matches drop constraint if exists tournament_matches_tournament_id_round_number_match_number_key;
 alter table public.tournament_matches drop constraint if exists tournament_matches_stage_round_match_key;
-alter table public.tournament_matches add constraint tournament_matches_stage_round_match_key unique (tournament_id, stage_id, round_number, match_number);
+alter table public.tournament_matches add constraint tournament_matches_stage_round_match_key unique (tournament_id,stage_id,round_number,match_number);
 
 CREATE OR REPLACE FUNCTION public.advance_tournament_stage(p_tournament_id bigint)
  RETURNS jsonb
@@ -26,22 +23,33 @@ AS $function$
 declare
   current_stage public.tournament_stages%rowtype;
   next_stage public.tournament_stages%rowtype;
+  league_stage public.tournament_stages%rowtype;
   g record;
   q record;
+  t record;
   qualifiers bigint[] := '{}';
+  direct_players bigint[] := '{}';
+  playoff_winners bigint[] := '{}';
+  interleaved bigint[] := '{}';
   next_count integer := 0;
+  direct_count integer := 0;
+  rank_from integer;
+  rank_to integer;
   bracket_size integer;
   original_size integer;
+  round_count integer;
   round integer;
+  matches_in_round integer;
   i integer;
   pair_a bigint;
   pair_b bigint;
-  t_id bigint;
+  tie_id bigint;
   tie_no integer;
   next_match_count integer := 0;
   has_existing boolean;
   qual_per_group integer;
   stage_qualifiers integer;
+  match_no integer;
 begin
   select s.* into current_stage
   from public.tournament_stages s
@@ -50,26 +58,42 @@ begin
     and not exists(select 1 from public.tournament_matches m where m.stage_id=s.id and m.status<>'completed')
   order by s.stage_order
   limit 1;
-  if not found then return jsonb_build_object('ok',false,'advanced',false,'reason','No completed stage is ready to advance.'); end if;
+
+  if not found then
+    return jsonb_build_object('ok',false,'advanced',false,'reason','No completed stage is ready to advance.');
+  end if;
 
   select s.* into next_stage
   from public.tournament_stages s
-  where s.tournament_id=p_tournament_id and s.stage_order=current_stage.stage_order+1
+  where s.tournament_id=p_tournament_id
+    and s.stage_order=current_stage.stage_order+1
   limit 1;
-  if not found then return jsonb_build_object('ok',true,'advanced',false,'reason','No next stage configured.'); end if;
+
+  if not found then
+    return jsonb_build_object('ok',true,'advanced',false,'reason','No next stage configured.');
+  end if;
 
   select exists(select 1 from public.tournament_matches m where m.stage_id=next_stage.id) into has_existing;
-  if has_existing then return jsonb_build_object('ok',true,'advanced',false,'reason','Next stage already initialized.'); end if;
+  if has_existing then
+    return jsonb_build_object('ok',true,'advanced',false,'reason','Next stage already initialized.');
+  end if;
 
+  -- Determine qualifiers from the completed stage.
   if current_stage.stage_type='group' then
-    if coalesce(next_stage.config->>'qualifierMode','')='group-winners-and-runners-up' then
-      qual_per_group:=2;
-    else
-      qual_per_group:=coalesce(current_stage.advance_per_group,2);
-    end if;
-    for g in select id,group_number from public.tournament_groups where stage_id=current_stage.id order by group_number loop
+    qual_per_group := case
+      when coalesce(next_stage.config->>'qualifierMode','')='group-winners-and-runners-up' then 2
+      else coalesce(current_stage.advance_per_group,2)
+    end;
+
+    for g in
+      select id,group_number
+      from public.tournament_groups
+      where stage_id=current_stage.id
+      order by group_number
+    loop
       for q in
-        select player_id from public.tournament_standings
+        select player_id
+        from public.tournament_standings
         where stage_id=current_stage.id and group_id=g.id
         order by points desc,goal_difference desc,goals_for desc,player_id
         limit qual_per_group
@@ -77,111 +101,276 @@ begin
         qualifiers:=array_append(qualifiers,q.player_id);
       end loop;
     end loop;
+
   elsif current_stage.stage_type in ('league','swiss') then
-    stage_qualifiers:=coalesce((next_stage.config->>'qualifiers')::integer,next_stage.advance_per_group,8);
-    select coalesce(array_agg(player_id order by points desc,goal_difference desc,goals_for desc,player_id),'{}'::bigint[])
-    into qualifiers
-    from (
-      select player_id,points,goal_difference,goals_for
+    if coalesce(next_stage.config->>'qualification','')='league-rank'
+       and jsonb_typeof(next_stage.config->'seededRange')='array' then
+      rank_from:=coalesce((next_stage.config->'seededRange'->>0)::integer,1);
+      rank_to:=coalesce((next_stage.config->'seededRange'->>1)::integer,rank_from);
+      select coalesce(array_agg(player_id order by rank),'{}'::bigint[])
+      into qualifiers
       from public.tournament_standings
+      where stage_id=current_stage.id and rank between rank_from and rank_to;
+
+    else
+      stage_qualifiers:=coalesce((next_stage.config->>'qualifiers')::integer,next_stage.advance_per_group,8);
+      select coalesce(array_agg(player_id order by points desc,goal_difference desc,goals_for desc,player_id),'{}'::bigint[])
+      into qualifiers
+      from (
+        select player_id,points,goal_difference,goals_for
+        from public.tournament_standings
+        where stage_id=current_stage.id
+        order by points desc,goal_difference desc,goals_for desc,player_id
+        limit stage_qualifiers
+      ) ranked;
+    end if;
+
+  elsif current_stage.stage_type in ('playoff','knockout') then
+    -- Champions League-style: direct top finishers plus play-off winners.
+    if coalesce(next_stage.config->>'seededPairing','')='direct-top-vs-playoff-winners' then
+      direct_count:=coalesce((next_stage.config->>'directCount')::integer,8);
+
+      select s.* into league_stage
+      from public.tournament_stages s
+      where s.tournament_id=p_tournament_id
+        and s.stage_type='league'
+      order by s.stage_order
+      limit 1;
+
+      if league_stage.id is not null then
+        select coalesce(array_agg(player_id order by rank),'{}'::bigint[])
+        into direct_players
+        from (
+          select player_id,rank
+          from public.tournament_standings
+          where stage_id=league_stage.id and group_id is null and rank is not null
+          order by rank
+          limit direct_count
+        ) top_direct;
+      end if;
+
+      select coalesce(array_agg(winner_player_id order by tie_number) filter (where winner_player_id is not null),'{}'::bigint[])
+      into playoff_winners
+      from public.tournament_ties
+      where stage_id=current_stage.id and status='completed';
+
+      if array_length(playoff_winners,1) is null or array_length(playoff_winners,1)=0 then
+        select coalesce(array_agg(winner_player_id order by match_number) filter (where winner_player_id is not null),'{}'::bigint[])
+        into playoff_winners
+        from public.tournament_matches
+        where stage_id=current_stage.id
+          and round_number=(select max(round_number) from public.tournament_matches where stage_id=current_stage.id)
+          and status='completed';
+      end if;
+
+      if array_length(direct_players,1) is not null and array_length(playoff_winners,1) is not null then
+        for i in 1..least(array_length(direct_players,1),array_length(playoff_winners,1)) loop
+          interleaved:=array_append(interleaved,direct_players[i]);
+          interleaved:=array_append(interleaved,playoff_winners[i]);
+        end loop;
+      end if;
+      qualifiers:=interleaved;
+
+    elsif exists(select 1 from public.tournament_ties where stage_id=current_stage.id) then
+      select coalesce(array_agg(winner_player_id order by tie_number) filter (where winner_player_id is not null),'{}'::bigint[])
+      into qualifiers
+      from public.tournament_ties
+      where stage_id=current_stage.id and status='completed';
+
+    else
+      select coalesce(array_agg(winner_player_id order by match_number) filter (where winner_player_id is not null),'{}'::bigint[])
+      into qualifiers
+      from public.tournament_matches
       where stage_id=current_stage.id
-      order by points desc,goal_difference desc,goals_for desc,player_id
-      limit stage_qualifiers
-    ) ranked;
+        and round_number=(select max(round_number) from public.tournament_matches where stage_id=current_stage.id)
+        and status='completed';
+    end if;
   end if;
 
   next_count:=coalesce(array_length(qualifiers,1),0);
-  if next_count<2 then raise exception 'Not enough qualified participants to initialize the next stage.'; end if;
+  if next_count<2 then
+    raise exception 'Not enough qualified participants to initialize the next stage.';
+  end if;
 
   if next_stage.stage_type in ('knockout','playoff') then
     tie_no:=coalesce((select max(tie_number) from public.tournament_ties where tournament_id=p_tournament_id),0)+1;
 
+    -- Two-team final.
     if next_count=2 then
       if next_stage.match_mode='home_away' then
-        insert into public.tournament_ties(tournament_id,stage_id,round_number,tie_number,player1_id,player2_id,legs_required,status)
-        values(p_tournament_id,next_stage.id,1,tie_no,qualifiers[1],qualifiers[2],2,'ready') returning id into t_id;
-        insert into public.tournament_matches(tournament_id,stage_id,tie_id,round_number,match_number,leg_number,player1_id,player2_id,status)
-        values(p_tournament_id,next_stage.id,t_id,1,1,1,qualifiers[1],qualifiers[2],'ready');
-        insert into public.tournament_matches(tournament_id,stage_id,tie_id,round_number,match_number,leg_number,player1_id,player2_id,status)
-        values(p_tournament_id,next_stage.id,t_id,1,2,2,qualifiers[2],qualifiers[1],'ready');
+        insert into public.tournament_ties(
+          tournament_id,stage_id,round_number,tie_number,player1_id,player2_id,legs_required,status
+        ) values(
+          p_tournament_id,next_stage.id,1,tie_no,qualifiers[1],qualifiers[2],2,'ready'
+        ) returning id into tie_id;
+
+        insert into public.tournament_matches(
+          tournament_id,stage_id,tie_id,round_number,match_number,leg_number,
+          player1_id,player2_id,status
+        ) values(
+          p_tournament_id,next_stage.id,tie_id,1,1,1,qualifiers[1],qualifiers[2],'ready'
+        );
+
+        insert into public.tournament_matches(
+          tournament_id,stage_id,tie_id,round_number,match_number,leg_number,
+          player1_id,player2_id,status
+        ) values(
+          p_tournament_id,next_stage.id,tie_id,1,2,2,qualifiers[2],qualifiers[1],'ready'
+        );
         next_match_count:=2;
       else
-        insert into public.tournament_matches(tournament_id,stage_id,round_number,match_number,player1_id,player2_id,status)
-        values(p_tournament_id,next_stage.id,1,1,qualifiers[1],qualifiers[2],'ready');
+        insert into public.tournament_matches(
+          tournament_id,stage_id,round_number,match_number,player1_id,player2_id,status
+        ) values(p_tournament_id,next_stage.id,1,1,qualifiers[1],qualifiers[2],'ready');
         next_match_count:=1;
       end if;
-    elsif next_stage.config->>'thirdPlace'='true' and next_count>=4 then
-      insert into public.tournament_matches(tournament_id,stage_id,round_number,match_number,player1_id,player2_id,status)
-      values(p_tournament_id,next_stage.id,1,1,qualifiers[1],qualifiers[2],'ready');
-      insert into public.tournament_matches(tournament_id,stage_id,round_number,match_number,player1_id,player2_id,status)
-      values(p_tournament_id,next_stage.id,1,2,qualifiers[3],qualifiers[4],'ready');
+
+    -- FIFA ASEAN-style final + bronze match.
+    elsif next_stage.config->>'thirdPlace'='true' and next_count>=4
+      and coalesce(next_stage.config->>'qualifierMode','')='group-winners-and-runners-up' then
+
+      insert into public.tournament_matches(
+        tournament_id,stage_id,round_number,match_number,player1_id,player2_id,status
+      ) values(
+        p_tournament_id,next_stage.id,1,1,qualifiers[1],qualifiers[3],'ready'
+      );
+
+      insert into public.tournament_matches(
+        tournament_id,stage_id,round_number,match_number,player1_id,player2_id,status
+      ) values(
+        p_tournament_id,next_stage.id,1,2,qualifiers[2],qualifiers[4],'ready'
+      );
       next_match_count:=2;
+
     else
       original_size:=next_count;
       bracket_size:=1;
-      while bracket_size<original_size loop bracket_size:=bracket_size*2; end loop;
+      while bracket_size<original_size loop
+        bracket_size:=bracket_size*2;
+      end loop;
 
-      for round in 1..floor(log(bracket_size::numeric)/log(2::numeric))::integer loop
+      round_count:=floor(log(bracket_size::numeric)/log(2::numeric));
+      match_no:=1;
+
+      for round in 1..round_count loop
+        matches_in_round:=bracket_size/power(2,round)::integer;
+
         if round=1 then
-          for i in 1..(bracket_size/2) loop
+          for i in 1..matches_in_round loop
             pair_a:=case when (i*2-1)<=original_size then qualifiers[i*2-1] else null end;
             pair_b:=case when (i*2)<=original_size then qualifiers[i*2] else null end;
+
             if next_stage.match_mode='home_away' then
-              insert into public.tournament_ties(tournament_id,stage_id,round_number,tie_number,player1_id,player2_id,legs_required,status)
-              values(p_tournament_id,next_stage.id,round,tie_no,pair_a,pair_b,2,case when pair_a is not null and pair_b is not null then 'ready' else 'scheduled' end)
-              returning id into t_id;
-              insert into public.tournament_matches(tournament_id,stage_id,tie_id,round_number,match_number,leg_number,player1_id,player2_id,status)
-              values(p_tournament_id,next_stage.id,t_id,round,(i*2)-1,1,pair_a,pair_b,case when pair_a is not null and pair_b is not null then 'ready' else 'scheduled' end);
-              insert into public.tournament_matches(tournament_id,stage_id,tie_id,round_number,match_number,leg_number,player1_id,player2_id,status)
-              values(p_tournament_id,next_stage.id,t_id,round,i*2,2,pair_b,pair_a,case when pair_a is not null and pair_b is not null then 'ready' else 'scheduled' end);
-              tie_no:=tie_no+1; next_match_count:=next_match_count+2;
+              insert into public.tournament_ties(
+                tournament_id,stage_id,round_number,tie_number,player1_id,player2_id,legs_required,status
+              ) values(
+                p_tournament_id,next_stage.id,round,tie_no,pair_a,pair_b,2,
+                case when pair_a is not null and pair_b is not null then 'ready' else 'scheduled' end
+              ) returning id into tie_id;
+
+              insert into public.tournament_matches(
+                tournament_id,stage_id,tie_id,round_number,match_number,leg_number,player1_id,player2_id,status
+              ) values(
+                p_tournament_id,next_stage.id,tie_id,round,(i*2)-1,1,pair_a,pair_b,
+                case when pair_a is not null and pair_b is not null then 'ready' else 'scheduled' end
+              );
+
+              insert into public.tournament_matches(
+                tournament_id,stage_id,tie_id,round_number,match_number,leg_number,player1_id,player2_id,status
+              ) values(
+                p_tournament_id,next_stage.id,tie_id,round,i*2,2,pair_b,pair_a,
+                case when pair_a is not null and pair_b is not null then 'ready' else 'scheduled' end
+              );
+
+              tie_no:=tie_no+1;
+              next_match_count:=next_match_count+2;
             else
-              insert into public.tournament_matches(tournament_id,stage_id,round_number,match_number,player1_id,player2_id,status)
-              values(p_tournament_id,next_stage.id,round,i,pair_a,pair_b,case when pair_a is not null and pair_b is not null then 'ready' else 'scheduled' end);
+              insert into public.tournament_matches(
+                tournament_id,stage_id,round_number,match_number,player1_id,player2_id,status
+              ) values(
+                p_tournament_id,next_stage.id,round,i,pair_a,pair_b,
+                case when pair_a is not null and pair_b is not null then 'ready' else 'scheduled' end
+              );
               next_match_count:=next_match_count+1;
             end if;
           end loop;
         else
-          for i in 1..(bracket_size/power(2,round))::integer loop
+          for i in 1..matches_in_round loop
             if next_stage.match_mode='home_away' then
-              insert into public.tournament_ties(tournament_id,stage_id,round_number,tie_number,legs_required,status)
-              values(p_tournament_id,next_stage.id,round,tie_no,2,'scheduled') returning id into t_id;
-              insert into public.tournament_matches(tournament_id,stage_id,tie_id,round_number,match_number,leg_number,status)
-              values(p_tournament_id,next_stage.id,t_id,round,(i*2)-1,1,'scheduled');
-              insert into public.tournament_matches(tournament_id,stage_id,tie_id,round_number,match_number,leg_number,status)
-              values(p_tournament_id,next_stage.id,t_id,round,i*2,2,'scheduled');
-              tie_no:=tie_no+1; next_match_count:=next_match_count+2;
+              insert into public.tournament_ties(
+                tournament_id,stage_id,round_number,tie_number,legs_required,status
+              ) values(
+                p_tournament_id,next_stage.id,round,tie_no,2,'scheduled'
+              ) returning id into tie_id;
+
+              insert into public.tournament_matches(
+                tournament_id,stage_id,tie_id,round_number,match_number,leg_number,status
+              ) values(p_tournament_id,next_stage.id,tie_id,round,(i*2)-1,1,'scheduled');
+
+              insert into public.tournament_matches(
+                tournament_id,stage_id,tie_id,round_number,match_number,leg_number,status
+              ) values(p_tournament_id,next_stage.id,tie_id,round,i*2,2,'scheduled');
+
+              tie_no:=tie_no+1;
+              next_match_count:=next_match_count+2;
             else
-              insert into public.tournament_matches(tournament_id,stage_id,round_number,match_number,status)
-              values(p_tournament_id,next_stage.id,round,i,'scheduled');
+              insert into public.tournament_matches(
+                tournament_id,stage_id,round_number,match_number,status
+              ) values(p_tournament_id,next_stage.id,round,i,'scheduled');
               next_match_count:=next_match_count+1;
             end if;
           end loop;
         end if;
-        bracket_size:=case when round=1 then original_size else greatest(1,bracket_size/2) end;
       end loop;
+
+      if next_stage.match_mode='home_away' then
+        with pos as (
+          select id,round_number,row_number() over(partition by round_number order by tie_number) as pos
+          from public.tournament_ties
+          where stage_id=next_stage.id
+        ),
+        map as (
+          select p.id,n.id next_id,p.pos
+          from pos p
+          join pos n on n.round_number=p.round_number+1
+            and n.pos=ceil(p.pos/2.0)
+        )
+        update public.tournament_ties t
+        set next_tie_id=map.next_id,
+            next_slot=case when map.pos%2=1 then 1 else 2 end,
+            updated_at=now()
+        from map
+        where t.id=map.id;
+      else
+        update public.tournament_matches a
+        set next_match_id=b.id,
+            next_slot=case when a.match_number%2=1 then 1 else 2 end,
+            updated_at=now()
+        from public.tournament_matches b
+        where a.stage_id=next_stage.id
+          and b.stage_id=next_stage.id
+          and a.round_number+1=b.round_number
+          and b.match_number=ceil(a.match_number/2.0)::smallint;
+      end if;
     end if;
 
-    if next_stage.match_mode='home_away' then
-      with pos as (
-        select id,round_number,row_number() over(partition by round_number order by tie_number) as pos
-        from public.tournament_ties where stage_id=next_stage.id
-      ), map as (
-        select p.id,n.id as next_id,p.round_number,p.pos
-        from pos p join pos n on n.round_number=p.round_number+1 and n.pos=ceil(p.pos/2.0)
-      )
-      update public.tournament_ties t set next_tie_id=map.next_id,next_slot=case when map.pos%2=1 then 1 else 2 end,updated_at=now()
-      from map where t.id=map.id;
-    else
-      update public.tournament_matches a set next_match_id=b.id,next_slot=case when a.match_number%2=1 then 1 else 2 end,updated_at=now()
-      from public.tournament_matches b
-      where a.stage_id=next_stage.id and b.stage_id=next_stage.id and a.round_number+1=b.round_number
-        and b.match_number=ceil(a.match_number/2.0)::smallint and a.match_number is not null;
-    end if;
+    -- Process any deterministic first-round byes immediately.
+    perform public.link_tournament_progression(p_tournament_id);
+  else
+    raise exception 'Stage advancement for % is not implemented yet.',next_stage.stage_type;
   end if;
 
-  update public.tournaments set status='in_progress',updated_at=now() where id=p_tournament_id;
-  return jsonb_build_object('ok',true,'advanced',true,'fromStage',current_stage.stage_key,'toStage',next_stage.stage_key,'qualifiers',next_count,'matchesCreated',next_match_count);
+  update public.tournaments
+  set status='in_progress',updated_at=now()
+  where id=p_tournament_id;
+
+  return jsonb_build_object(
+    'ok',true,'advanced',true,
+    'fromStage',current_stage.stage_key,
+    'toStage',next_stage.stage_key,
+    'qualifiers',next_count,
+    'matchesCreated',next_match_count
+  );
 end;
 $function$
 
@@ -226,33 +415,55 @@ begin
 
   with tie_rounds as (
     select t.id,t.stage_id,min(m.round_number) round_number,t.tie_number
-    from public.tournament_ties t join public.tournament_matches m on m.tie_id=t.id
-    where t.tournament_id=p_tournament_id group by t.id,t.stage_id,t.tie_number
-  ), pos as (
+    from public.tournament_ties t
+    join public.tournament_matches m on m.tie_id=t.id
+    where t.tournament_id=p_tournament_id
+    group by t.id,t.stage_id,t.tie_number
+  ),
+  pos as (
     select id,stage_id,round_number,row_number() over(partition by stage_id,round_number order by tie_number) pos
     from tie_rounds
-  ), map as (
-    select p.id,n.id next_id,p.pos from pos p join pos n
+  ),
+  map as (
+    select p.id,n.id next_id,p.pos
+    from pos p join pos n
       on n.stage_id=p.stage_id and n.round_number=p.round_number+1 and n.pos=ceil(p.pos/2.0)
   )
   update public.tournament_ties t
   set next_tie_id=map.next_id,next_slot=case when map.pos%2=1 then 1 else 2 end,updated_at=now()
-  from map where t.id=map.id;
+  from map
+  where t.id=map.id;
+
+  -- Automatic byes for two-leg ties when only one qualifier reaches a tie.
+  update public.tournament_ties t
+  set winner_player_id=coalesce(t.player1_id,t.player2_id),
+      status='completed',
+      updated_at=now()
+  where t.tournament_id=p_tournament_id
+    and t.status<>'completed'
+    and ((t.player1_id is not null and t.player2_id is null)
+      or (t.player1_id is null and t.player2_id is not null));
 
   for i in 1..10 loop
     update public.tournament_ties nt
     set player1_id=case when source.next_slot=1 then source.winner_player_id else nt.player1_id end,
         player2_id=case when source.next_slot=2 then source.winner_player_id else nt.player2_id end,
-        status=case when (case when source.next_slot=1 then source.winner_player_id else nt.player1_id end) is not null
-                       and (case when source.next_slot=2 then source.winner_player_id else nt.player2_id end) is not null
-                  then 'ready' else nt.status end,
+        status=case
+          when (case when source.next_slot=1 then source.winner_player_id else nt.player1_id end) is not null
+           and (case when source.next_slot=2 then source.winner_player_id else nt.player2_id end) is not null
+          then 'ready' else nt.status end,
         updated_at=now()
     from public.tournament_ties source
-    where source.tournament_id=p_tournament_id and source.status='completed'
-      and source.winner_player_id is not null and source.next_tie_id=nt.id;
+    where source.tournament_id=p_tournament_id
+      and source.status='completed'
+      and source.winner_player_id is not null
+      and source.next_tie_id=nt.id;
 
     update public.tournament_matches m
-    set player1_id=t.player1_id,player2_id=t.player2_id,status='ready',updated_at=now()
+    set player1_id=case when m.leg_number=2 then t.player2_id else t.player1_id end,
+        player2_id=case when m.leg_number=2 then t.player1_id else t.player2_id end,
+        status='ready',
+        updated_at=now()
     from public.tournament_ties t
     where m.tournament_id=p_tournament_id and m.tie_id=t.id
       and t.status='ready' and t.player1_id is not null and t.player2_id is not null
@@ -643,5 +854,5 @@ end;
 $function$
 
 
-revoke all on function public.save_tournament_draft(jsonb), public.save_tournament_structure(jsonb), public.link_tournament_progression(bigint), public.advance_tournament_stage(bigint), public.record_tournament_match_result_v2(bigint,integer,integer,bigint) from public,anon,authenticated;
-grant execute on function public.save_tournament_draft(jsonb), public.save_tournament_structure(jsonb), public.link_tournament_progression(bigint), public.advance_tournament_stage(bigint), public.record_tournament_match_result_v2(bigint,integer,integer,bigint) to service_role;
+revoke all on function public.save_tournament_draft(jsonb),public.save_tournament_structure(jsonb),public.link_tournament_progression(bigint),public.advance_tournament_stage(bigint),public.record_tournament_match_result_v2(bigint,integer,integer,bigint) from public,anon,authenticated;
+grant execute on function public.save_tournament_draft(jsonb),public.save_tournament_structure(jsonb),public.link_tournament_progression(bigint),public.advance_tournament_stage(bigint),public.record_tournament_match_result_v2(bigint,integer,integer,bigint) to service_role;
