@@ -77,19 +77,110 @@ async function makeAdminCompatSession(env,username){
 function slugify(value){
   return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'tournament';
 }
-function normalizeTournament(row,players=[],matches=[]){
-  const p=players.filter(x=>Number(x.tournament_id)===Number(row.id)).sort((a,b)=>a.slot-b.slot);
-  const ms=matches.filter(x=>Number(x.tournament_id)===Number(row.id)).sort((a,b)=>a.round_number-b.round_number||a.match_number-b.match_number);
+function normalizeTournament(row,players=[],matches=[],stages=[],standings=[]){
+  const p=players.filter(x=>Number(x.tournament_id)===Number(row.id)).sort((a,b)=>Number(a.slot)-Number(b.slot));
+  const ms=matches.filter(x=>Number(x.tournament_id)===Number(row.id)).sort((a,b)=>
+    Number(a.matchday||0)-Number(b.matchday||0) ||
+    Number(a.stage_id||0)-Number(b.stage_id||0) ||
+    Number(a.round_number||0)-Number(b.round_number||0) ||
+    Number(a.match_number||0)-Number(b.match_number||0) ||
+    Number(a.leg_number||1)-Number(b.leg_number||1)
+  );
   const byId=new Map(p.map(x=>[Number(x.id),x]));
-  const rounds=[];
-  for(const m of ms){
-    let round=rounds.find(x=>x.number===m.round_number);
-    if(!round){round={number:m.round_number,name:m.round_number===1?'Round of '+row.format/2:m.round_number===Math.log2(row.format)?'Final':'Round '+m.round_number,matches:[]};rounds.push(round);}
-    round.matches.push({id:m.id,matchNumber:m.match_number,status:m.status,player1:byId.get(Number(m.player1_id))?{id:m.player1_id,displayName:byId.get(Number(m.player1_id)).display_name,playerTag:byId.get(Number(m.player1_id)).player_tag}:null,player2:byId.get(Number(m.player2_id))?{id:m.player2_id,displayName:byId.get(Number(m.player2_id)).display_name,playerTag:byId.get(Number(m.player2_id)).player_tag}:null,player1Score:m.player1_score,player2Score:m.player2_score,winner:m.winner_player_id?{id:m.winner_player_id}:null});
-  }
-  const final=ms.length?ms.reduce((a,b)=>b.round_number>a.round_number?b:a):null;
-  const winner=final?.winner_player_id?byId.get(Number(final.winner_player_id)):null;
-  return {id:row.id,slug:row.slug,name:row.name,description:row.description,format:row.format,status:row.status,isPublic:row.is_public,startsAt:row.starts_at?new Date(row.starts_at).toISOString().slice(0,16):null,players:p.map(x=>({id:x.id,slot:x.slot,seed:x.seed,displayName:x.display_name,playerTag:x.player_tag,avatarUrl:x.avatar_url})),rounds,winner:winner?{id:winner.id,displayName:winner.display_name,playerTag:winner.player_tag}:null,publishedAt:row.published_at};
+  const mappedMatches=ms.map(m=>{
+    const p1=byId.get(Number(m.player1_id)),p2=byId.get(Number(m.player2_id));
+    return {
+      id:Number(m.id),
+      matchNumber:Number(m.match_number),
+      roundNumber:Number(m.round_number||1),
+      legNumber:Number(m.leg_number||1),
+      matchday:m.matchday==null?null:Number(m.matchday),
+      stageId:m.stage_id==null?null:Number(m.stage_id),
+      groupId:m.group_id==null?null:Number(m.group_id),
+      tieId:m.tie_id==null?null:Number(m.tie_id),
+      status:m.status,
+      player1:p1?{id:Number(p1.id),displayName:p1.display_name,playerTag:p1.player_tag}:null,
+      player2:p2?{id:Number(p2.id),displayName:p2.display_name,playerTag:p2.player_tag}:null,
+      player1Score:m.player1_score==null?m.home_score:m.player1_score,
+      player2Score:m.player2_score==null?m.away_score:m.player2_score,
+      winnerPlayerId:m.winner_player_id==null?null:Number(m.winner_player_id),
+      extraTime:Boolean(m.extra_time),
+      penaltiesHome:m.penalties_home==null?null:Number(m.penalties_home),
+      penaltiesAway:m.penalties_away==null?null:Number(m.penalties_away)
+    };
+  });
+
+  const mappedStandings=(standings||[]).map(s=>{
+    const player=byId.get(Number(s.player_id));
+    return {
+      id:Number(s.id),
+      stageId:Number(s.stage_id),
+      groupId:s.group_id==null?null:Number(s.group_id),
+      playerId:Number(s.player_id),
+      player:player?{id:Number(player.id),displayName:player.display_name,playerTag:player.player_tag,avatarUrl:player.avatar_url}:null,
+      played:Number(s.played||0),
+      wins:Number(s.wins||0),
+      draws:Number(s.draws||0),
+      losses:Number(s.losses||0),
+      goalsFor:Number(s.goals_for||0),
+      goalsAgainst:Number(s.goals_against||0),
+      goalDifference:Number(s.goal_difference||0),
+      points:Number(s.points||0),
+      rank:s.rank==null?null:Number(s.rank)
+    };
+  });
+
+  const mappedStages=(stages||[]).slice().sort((a,b)=>Number(a.stage_order)-Number(b.stage_order)).map(s=>({
+    id:Number(s.id),
+    order:Number(s.stage_order),
+    key:s.stage_key,
+    name:s.name,
+    type:s.stage_type,
+    matchMode:s.match_mode,
+    groupCount:s.group_count==null?null:Number(s.group_count),
+    teamsPerGroup:s.teams_per_group==null?null:Number(s.teams_per_group),
+    advancePerGroup:s.advance_per_group==null?null:Number(s.advance_per_group),
+    rounds:s.rounds==null?null:Number(s.rounds),
+    config:s.config||{},
+    groups:[],
+    standings:mappedStandings.filter(x=>x.stageId===Number(s.id)).sort((a,b)=>
+      (a.rank??999999)-(b.rank??999999) || b.points-a.points || b.goalDifference-a.goalDifference
+    ),
+    matches:mappedMatches.filter(x=>x.stageId===Number(s.id))
+  }));
+
+  const finalMatch=ms.length?ms.reduce((a,b)=>
+    Number(b.round_number||0)>Number(a.round_number||0) ||
+    (Number(b.round_number||0)===Number(a.round_number||0)&&Number(b.match_number||0)>Number(a.match_number||0))?b:a
+  ):null;
+  const winnerId=finalMatch?.winner_player_id!=null?Number(finalMatch.winner_player_id):null;
+  const winner=winnerId?byId.get(winnerId):null;
+
+  return {
+    id:Number(row.id),
+    slug:row.slug,
+    name:row.name,
+    description:row.description,
+    format:Number(row.format),
+    formatKey:row.format_key||'single_elimination',
+    participantCount:Number(row.participant_count||row.format),
+    formatConfig:row.format_config||{},
+    status:row.status,
+    isPublic:Boolean(row.is_public),
+    startsAt:row.starts_at?new Date(row.starts_at).toISOString().slice(0,16):null,
+    players:p.map(x=>({
+      id:Number(x.id),
+      slot:Number(x.slot),
+      seed:Number(x.seed||x.slot),
+      displayName:x.display_name,
+      playerTag:x.player_tag||'',
+      avatarUrl:x.avatar_url||''
+    })),
+    stages:mappedStages,
+    rounds:mappedStages.flatMap(s=>s.matches.length?[{number:s.order,name:s.name,matches:s.matches}]:[]),
+    winner:winner?{id:Number(winner.id),displayName:winner.display_name,playerTag:winner.player_tag||''}:null,
+    publishedAt:row.published_at
+  };
 }
 async function getTournament(env,id) {
   const rows = await sb(env,'tournaments?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1');
