@@ -66,6 +66,8 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
           tieNumber,
           player1Id: a,
           player2Id: b,
+          tiePlayer1Id: a,
+          tiePlayer2Id: b,
           status: a && b ? 'ready' : 'completed',
           legsRequired: 2,
           winnerPlayerId: a && !b ? a : null
@@ -77,6 +79,8 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
           tieNumber,
           player1Id: b,
           player2Id: a,
+          tiePlayer1Id: a,
+          tiePlayer2Id: b,
           status: a && b ? 'ready' : 'completed',
           legsRequired: 2,
           winnerPlayerId: a && !b ? a : null,
