@@ -972,8 +972,20 @@ export default { async fetch(request,env,ctx) {
   const url=new URL(request.url);
   const hostHeader=(request.headers.get('host')||'').split(':')[0].toLowerCase();
 
-  // Permanently redirect every request received on the former Worker hostname.
-  // Check both URL.hostname and Host because the Worker may receive a normalized host.
+  // The workers.dev hostname is NEVER a public site origin.
+  // Redirect it before any other path handling so every request makes a single
+  // hop to the real domain, including old/unknown paths and query strings.
+  if(url.hostname === 'tanzimfc.fcmobiletools.workers.dev' || hostHeader === 'tanzimfc.fcmobiletools.workers.dev') {
+    const destination=new URL(url.pathname + url.search, 'https://fcmobiletools.online');
+    return new Response(null,{
+      status:308,
+      headers:{
+        location:destination.toString(),
+        'cache-control':'public, max-age=86400'
+      }
+    });
+  }
+
   const legacyRedirects = {
     '/about': '/legal/about/',
     '/about/': '/legal/about/',
@@ -987,16 +999,6 @@ export default { async fetch(request,env,ctx) {
   const legacyTarget = legacyRedirects[decodedPath];
   if (legacyTarget) return Response.redirect(new URL(legacyTarget, url), 301);
 
-  if(url.hostname === 'tanzimfc.fcmobiletools.workers.dev' || hostHeader === 'tanzimfc.fcmobiletools.workers.dev') {
-    const destination='https://fcmobiletools.online' + url.pathname + url.search;
-    return new Response(null,{
-      status:301,
-      headers:{
-        location:destination,
-        'cache-control':'public, max-age=3600, s-maxage=3600'
-      }
-    });
-  }
 
   if(url.pathname === '/players' || url.pathname.startsWith('/players/') || url.pathname === '/player' || url.pathname.startsWith('/player/')) return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});
   if(url.pathname === '/fc-mobile-beta' || url.pathname === '/fc-mobile-beta/' || url.pathname === '/legacy/fc-mobile-beta.html') {
