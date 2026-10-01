@@ -110,16 +110,6 @@ export const TOURNAMENT_FORMATS = [
     defaults: { qualifiers: 8, playoffLegs: 2, knockoutMatchMode: 'home_away' }
   },
   {
-    key: 'best_of_series',
-    category: 'Series',
-    name: 'Best-of Series Knockout',
-    summary: 'Knockout where each tie is best-of-3 or best-of-5.',
-    participantMin: 2,
-    participantMax: 512,
-    matchModes: ['best_of_3', 'best_of_5'],
-    defaults: { matchMode: 'best_of_3' }
-  },
-  {
     key: 'custom_builder',
     category: 'Custom',
     name: 'Custom Competition',
