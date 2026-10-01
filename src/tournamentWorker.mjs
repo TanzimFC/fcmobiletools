@@ -164,37 +164,52 @@ export async function tournamentWorkerRoute(request,env,url){
     if(!me)return json({error:'Authentication required.'},401);
     try{
       if(path==='/api/tournament/me'&&request.method==='GET')return json(me);
+      if(path==='/api/tournament/formats'&&request.method==='GET'){
+        return json({formats:TOURNAMENT_FORMATS});
+      }
       if(path==='/api/tournament/list'&&request.method==='GET'){
         const rows=await sb(env,'tournaments?select=*&order=updated_at.desc&limit=100');
         const list=[];for(const r of rows||[])list.push(await getTournament(env,r.id));
         return json({tournaments:list,identity:me});
       }
       if(path==='/api/tournament/save'&&request.method==='POST'){
-        const input=await request.json().catch(()=>({})),name=String(input.name||'').trim(),format=Number(input.format);
-        if(!name||![8,16,32].includes(format))return json({error:'Tournament name and a valid 8/16/32 format are required.'},400);
+        const input=await request.json().catch(()=>({}));
+        const name=String(input.name||'').trim();
+        const formatKey=String(input.formatKey||'single_elimination');
+        const format=getTournamentFormat(formatKey);
+        const participantCount=Number(input.participantCount);
         const players=Array.isArray(input.players)?input.players:[];
-        if(players.length!==format||players.some((p,i)=>!String(p.displayName||'').trim()||Number(p.slot)!==i+1))return json({error:'Every tournament slot must have a player name.'},400);
+        if(!name)return json({error:'Tournament name is required.'},400);
+        if(!Number.isInteger(participantCount)||participantCount<format.participantMin||participantCount>format.participantMax)return json({error:`${format.name} supports ${format.participantMin}–${format.participantMax} participants.`},400);
+        if(players.length!==participantCount||players.some((p,i)=>!String(p.displayName||'').trim()||Number(p.slot)!==i+1))return json({error:'Every participant slot must have a player name.'},400);
         const slug=slugify(input.slug||name);
-        const payload={id:input.id||null,slug,name,description:String(input.description||''),format,isPublic:Boolean(input.isPublic),startsAt:input.startsAt||null,ownerKey:me.actorKey,players:players.map((p,i)=>({slot:i+1,displayName:String(p.displayName).trim(),playerTag:String(p.playerTag||'').trim(),avatarUrl:String(p.avatarUrl||''),seed:i+1}))};
+        const payload={
+          id:input.id||null,slug,name,description:String(input.description||''),format:participantCount,
+          formatKey,participantCount,formatConfig:input.formatConfig||format.defaults,
+          isPublic:Boolean(input.isPublic),startsAt:input.startsAt||null,ownerKey:me.actorKey,
+          players:players.map((p,i)=>({slot:i+1,displayName:String(p.displayName).trim(),playerTag:String(p.playerTag||'').trim(),avatarUrl:String(p.avatarUrl||''),seed:Number(p.seed||i+1)}))
+        };
         const result=await rpc(env,'save_tournament_draft',{p_payload:payload});
         const id=Array.isArray(result)?result[0]:result;
-        await sb(env,'tournament_audit_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:id,actor_key:me.actorKey,actor_role:me.role,action:'save',payload:{format,name}}])});
+        await sb(env,'tournament_audit_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:id,actor_key:me.actorKey,actor_role:me.role,action:'save',payload:{formatKey,participantCount,name}}])});
         return json({ok:true,tournament:await getTournament(env,id)});
       }
-      const idMatch=path.match(/^\/api\/tournament\/(bracket|result|publish)\/(\d+)$/);
+      const idMatch=path.match(/^\/api\/tournament\/(structure|result|publish)\/(\d+)$/);
       if(idMatch&&request.method==='POST'){
         const action=idMatch[1],id=Number(idMatch[2]);
-        if(action==='bracket'){
-          await rpc(env,'generate_tournament_bracket',{p_tournament_id:id});
-          await sb(env,'tournament_audit_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:id,actor_key:me.actorKey,actor_role:me.role,action:'generate_bracket',payload:{}}])});
+        if(action==='structure'){
+          const current=await getTournament(env,id);if(!current)return json({error:'Tournament not found.'},404);
+          const structure=buildTournamentStructure(current,current.players||[]);
+          await rpc(env,'save_tournament_structure',{p_payload:{tournamentId:id,stages:structure}});
+          await sb(env,'tournament_audit_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:id,actor_key:me.actorKey,actor_role:me.role,action:'generate_structure',payload:{formatKey:current.formatKey,participantCount:current.participantCount,stageCount:structure.length}}])});
           return json({ok:true,tournament:await getTournament(env,id)});
         }
         if(action==='result'){
           const input=await request.json().catch(()=>({}));const matchId=id;
           if(!Number.isInteger(Number(input.player1Score))||!Number.isInteger(Number(input.player2Score)))return json({error:'Enter whole-number scores.'},400);
-          const result=await rpc(env,'record_tournament_result',{p_match_id:matchId,p_player1_score:Number(input.player1Score),p_player2_score:Number(input.player2Score)});
+          const result=await rpc(env,'record_tournament_match_result_v2',{p_match_id:matchId,p_player1_score:Number(input.player1Score),p_player2_score:Number(input.player2Score),p_deciding_winner_player_id:input.decidingWinnerPlayerId?Number(input.decidingWinnerPlayerId):null});
           const r=Array.isArray(result)?result[0]:result;
-          await sb(env,'tournament_audit_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:r.tournamentId,actor_key:me.actorKey,actor_role:me.role,action:'record_result',payload:{matchId,player1Score:Number(input.player1Score),player2Score:Number(input.player2Score),winnerPlayerId:r.winnerPlayerId}}])});
+          await sb(env,'tournament_audit_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:r.tournamentId,actor_key:me.actorKey,actor_role:me.role,action:'record_result',payload:{matchId,player1Score:Number(input.player1Score),player2Score:Number(input.player2Score),winnerPlayerId:r.winnerPlayerId||null}}])});
           return json({ok:true,...r,tournament:await getTournament(env,r.tournamentId)});
         }
         if(action==='publish'){
