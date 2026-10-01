@@ -1,4 +1,4 @@
--- Current advanced tournament engine definitions and legacy-constraint cleanup.
+-- Current advanced tournament engine definitions and legacy constraint cleanup.
 alter table public.tournaments drop constraint if exists tournaments_format_check;
 alter table public.tournaments add constraint tournaments_format_check check (format between 2 and 5000);
 alter table public.tournaments drop constraint if exists tournaments_participant_count_check;
