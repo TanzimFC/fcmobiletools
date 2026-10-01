@@ -201,6 +201,7 @@ export async function tournamentWorkerRoute(request,env,url){
           const current=await getTournament(env,id);if(!current)return json({error:'Tournament not found.'},404);
           const structure=buildTournamentStructure(current,current.players||[]);
           await rpc(env,'save_tournament_structure',{p_payload:{tournamentId:id,stages:structure}});
+          await rpc(env,'link_tournament_progression',{p_tournament_id:id});
           await sb(env,'tournament_audit_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:id,actor_key:me.actorKey,actor_role:me.role,action:'generate_structure',payload:{formatKey:current.formatKey,participantCount:current.participantCount,stageCount:structure.length}}])});
           return json({ok:true,tournament:await getTournament(env,id)});
         }
