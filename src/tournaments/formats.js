@@ -20,16 +20,6 @@ export const TOURNAMENT_FORMATS = [
     defaults: { matchMode: 'home_away', awayGoalsRule: false, extraTimeOnSecondLeg: true, penaltiesOnSecondLeg: true }
   },
   {
-    key: 'legacy_unused_double_elimination',
-    category: 'Knockout',
-    name: 'Double Elimination',
-    summary: 'Two-loss bracket with winners and losers paths.',
-    participantMin: 4,
-    participantMax: 1024,
-    matchModes: ['single', 'best_of_3'],
-    defaults: { matchMode: 'single', grandFinalReset: false }
-  },
-  {
     key: 'round_robin',
     category: 'League',
     name: 'Round Robin',
@@ -100,16 +90,6 @@ export const TOURNAMENT_FORMATS = [
     defaults: { groups: 4, teamsPerGroup: 4, advancePerGroup: 2, groupHomeAway: false, knockoutMatchMode: 'home_away' }
   },
   {
-    key: 'asean_cup',
-    category: 'Football Presets',
-    name: 'ASEAN Cup Style',
-    summary: 'Qualifying play-off, groups, then two-legged semi-finals and final.',
-    participantMin: 6,
-    participantMax: 64,
-    matchModes: ['single', 'home_away'],
-    defaults: { qualifying: false, groups: 2, teamsPerGroup: 5, advancePerGroup: 2, groupHomeAway: false, knockoutMatchMode: 'home_away' }
-  },
-  {
     key: 'champions_league',
     category: 'Football Presets',
     name: 'Champions League Style',
@@ -118,26 +98,6 @@ export const TOURNAMENT_FORMATS = [
     participantMax: 500,
     matchModes: ['single', 'home_away'],
     defaults: { leagueRounds: 8, leagueMatchesPerTeam: 8, topDirect: 8, playoffFrom: 9, playoffTo: 24, playoffMatchMode: 'home_away', knockoutMatchMode: 'home_away' }
-  },
-  {
-    key: 'legacy_unused_swiss_system',
-    category: 'League',
-    name: 'Swiss System',
-    summary: 'Fixed number of rounds. Participants are paired by current standings.',
-    participantMin: 8,
-    participantMax: 2000,
-    matchModes: ['single', 'home_away'],
-    defaults: { rounds: 6, scoreWin: 1, scoreDraw: 0.5, scoreLoss: 0, avoidRepeatOpponents: true }
-  },
-  {
-    key: 'legacy_unused_swiss_to_knockout',
-    category: 'Hybrid',
-    name: 'Swiss + Knockout',
-    summary: 'Swiss rounds decide seeding for a final knockout bracket.',
-    participantMin: 8,
-    participantMax: 2000,
-    matchModes: ['single', 'best_of_3'],
-    defaults: { rounds: 6, qualifiers: 16, knockoutMatchMode: 'single' }
   },
   {
     key: 'league_to_knockout',
