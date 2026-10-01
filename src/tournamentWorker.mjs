@@ -84,15 +84,30 @@ function normalizeTournament(row,players=[],matches=[]){
   const winner=final?.winner_player_id?byId.get(Number(final.winner_player_id)):null;
   return {id:row.id,slug:row.slug,name:row.name,description:row.description,format:row.format,status:row.status,isPublic:row.is_public,startsAt:row.starts_at?new Date(row.starts_at).toISOString().slice(0,16):null,players:p.map(x=>({id:x.id,slot:x.slot,seed:x.seed,displayName:x.display_name,playerTag:x.player_tag,avatarUrl:x.avatar_url})),rounds,winner:winner?{id:winner.id,displayName:winner.display_name,playerTag:winner.player_tag}:null,publishedAt:row.published_at};
 }
-async function getTournament(env,id){
-  const rows=await sb(env,'tournaments?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1');
-  if(!rows?.[0])return null;
-  const [players,matches]=await Promise.all([
+async function getTournament(env,id) {
+  const rows = await sb(env,'tournaments?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1');
+  if (!rows?.[0]) return null;
+  const [players,matches,stages,standings] = await Promise.all([
     sb(env,'tournament_players?tournament_id=eq.'+encodeURIComponent(id)+'&select=*&order=slot.asc'),
-    sb(env,'tournament_matches?tournament_id=eq.'+encodeURIComponent(id)+'&select=*&order=round_number.asc,match_number.asc')
+    sb(env,'tournament_matches?tournament_id=eq.'+encodeURIComponent(id)+'&select=*&order=matchday.asc,round_number.asc,match_number.asc'),
+    sb(env,'tournament_stages?tournament_id=eq.'+encodeURIComponent(id)+'&select=*&order=stage_order.asc'),
+    sb(env,'tournament_standings?tournament_id=eq.'+encodeURIComponent(id)+'&select=*&order=rank.asc,points.desc').catch(() => [])
   ]);
-  return normalizeTournament(rows[0],players||[],matches||[]);
+  const stageIds = (stages || []).map((x) => Number(x.id)).filter(Number.isInteger);
+  const groups = stageIds.length
+    ? await sb(env,'tournament_groups?stage_id=in.('+stageIds.join(',')+')&select=*&order=group_number.asc').catch(() => [])
+    : [];
+  const normalized = normalizeTournament(rows[0],players||[],matches||[],stages||[],standings||[]);
+  const groupsByStage = new Map();
+  for (const g of groups || []) {
+    const key = Number(g.stage_id);
+    if (!groupsByStage.has(key)) groupsByStage.set(key, []);
+    groupsByStage.get(key).push({id:g.id,groupNumber:g.group_number,name:g.name});
+  }
+  normalized.stages = normalized.stages.map((s) => ({ ...s, groups: groupsByStage.get(Number(s.id)) || [] }));
+  return normalized;
 }
+
 async function getTournamentBySlug(env,slug){
   const rows=await sb(env,'tournaments?slug=eq.'+encodeURIComponent(slug)+'&select=*&limit=1');
   if(!rows?.[0])return null;
