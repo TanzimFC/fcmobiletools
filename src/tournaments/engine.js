@@ -174,6 +174,7 @@ function buildGroupStage(players, groups, teamsPerGroup, groupHomeAway = false) 
         });
       }
     }));
+  });
   return stage;
 }
 
