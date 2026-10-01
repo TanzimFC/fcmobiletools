@@ -181,7 +181,7 @@ export async function tournamentWorkerRoute(request,env,url){
         const players=Array.isArray(input.players)?input.players:[];
         if(!name)return json({error:'Tournament name is required.'},400);
         if(!Number.isInteger(participantCount)||participantCount<format.participantMin||participantCount>format.participantMax)return json({error:`${format.name} supports ${format.participantMin}–${format.participantMax} participants.`},400);
-        if(players.length!==participantCount||players.some((p,i)=>!String(p.displayName||'').trim()||Number(p.slot)!==i+1))return json({error:'Every participant slot must have a player name.'},400);
+        if(players.length>participantCount||players.some((p,i)=>!String(p.displayName||'').trim()||Number(p.slot)!==i+1))return json({error:'Participant slots must be sequential and cannot exceed the configured participant count.'},400);
         const slug=slugify(input.slug||name);
         const payload={
           id:input.id||null,slug,name,description:String(input.description||''),format:participantCount,
