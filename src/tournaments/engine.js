@@ -104,9 +104,9 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
   return stage;
 }
 
-function buildRoundRobin(players, { homeAway = false, stageKey = 'league', stageName = 'League Phase' } = {}) {
+function buildRoundRobin(players, { homeAway = false, stageKey = 'league', stageName = 'League Phase', roundLimit = null } = {}) {
   const ids = seedPlayers(players).map(playerId);
-  const rounds = circleRounds(ids);
+  const rounds = roundLimit ? limitedLeagueRounds(ids, roundLimit) : circleRounds(ids);
   const stage = stageBase(1, stageKey, stageName, stageKey === 'swiss' ? 'swiss' : 'league', homeAway ? 'home_away' : 'single', {
     standingsPlayerIds: ids,
     matchesPerTeam: homeAway ? rounds.length * 2 : rounds.length,
@@ -229,9 +229,7 @@ export function buildTournamentStructure(tournament, players) {
       return [groupStage, final];
     }
     case 'champions_league': {
-      const league = buildRoundRobin(players, { stageKey: 'league_phase', stageName: 'League Phase' });
-      const roundsToUse = Math.min(Number(cfg.leagueRounds || 8), league.matches.length);
-      league.matches = league.matches.filter((m) => Number(m.matchday) <= roundsToUse);
+      const league = buildRoundRobin(players, { stageKey: 'league_phase', stageName: 'League Phase', roundLimit: Number(cfg.leagueRounds || 8) });
       league.config = {
         ...league.config,
         preset: 'Champions League style',
@@ -242,13 +240,15 @@ export function buildTournamentStructure(tournament, players) {
       };
       const playoffs = stageBase(2, 'knockout_playoff', 'Knockout Play-offs', 'playoff', cfg.playoffMatchMode || 'home_away', {
         qualification: 'league-rank',
-        seededRange: [Number(cfg.playoffFrom || 9), Math.min(Number(cfg.playoffTo || 24), count)]
+        qualifiers: Math.max(0, Math.min(Number(cfg.playoffTo || 24), count) - Number(cfg.playoffFrom || 9) + 1),
+        seededRange: [Number(cfg.playoffFrom || 9), Math.min(Number(cfg.playoffTo || 24), count)],
+        seededPairing: 'rank-half-vs-rank-half'
       });
       const knockout = buildKnockout([], { twoLeg: true });
       knockout.stageOrder = 3;
       knockout.stageKey = 'final_knockout';
       knockout.name = 'Round of 16 to Final';
-      knockout.config = { startsAfterPlayoff: true };
+      knockout.config = { startsAfterPlayoff: true, seededPairing: 'direct-top-vs-playoff-winners', qualifiers: Number(cfg.topDirect || 8) * 2 };
       return [league, playoffs, knockout];
     }
     case 'league_to_knockout': {
