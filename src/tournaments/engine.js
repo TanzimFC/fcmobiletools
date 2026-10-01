@@ -22,6 +22,7 @@ function stageBase(stageOrder, key, name, stageType, matchMode, config = {}) {
     advancePerGroup: config.advancePerGroup ?? null,
     config,
     groups: [],
+    standingsPlayerIds: [],
     matches: []
   };
 }
@@ -65,8 +66,9 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
           tieNumber,
           player1Id: a,
           player2Id: b,
-          status: a && b ? 'ready' : 'scheduled',
-          legsRequired: 2
+          status: a && b ? 'ready' : 'completed',
+          legsRequired: 2,
+          winnerPlayerId: a && !b ? a : null
         });
         stage.matches.push({
           roundNumber: r + 1,
@@ -75,8 +77,9 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
           tieNumber,
           player1Id: b,
           player2Id: a,
-          status: a && b ? 'ready' : 'scheduled',
+          status: a && b ? 'ready' : 'completed',
           legsRequired: 2,
+          winnerPlayerId: a && !b ? a : null,
           config: { returnLeg: true }
         });
         matchNumber += 2;
@@ -88,7 +91,8 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
           legNumber: 1,
           player1Id: a,
           player2Id: b,
-          status: a && b ? 'ready' : 'scheduled'
+          status: a && b ? 'ready' : 'completed',
+          winnerPlayerId: a && !b ? a : null
         });
         matchNumber++;
       }
@@ -100,8 +104,9 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
 function buildRoundRobin(players, { homeAway = false, stageKey = 'league', stageName = 'League Phase' } = {}) {
   const ids = seedPlayers(players).map(playerId);
   const rounds = circleRounds(ids);
-  const stage = stageBase(1, stageKey, stageName, 'league', homeAway ? 'home_away' : 'single', {
-    matchesPerTeam: rounds.length,
+  const stage = stageBase(1, stageKey, stageName, stageKey === 'swiss' ? 'swiss' : 'league', homeAway ? 'home_away' : 'single', {
+    standingsPlayerIds: ids,
+    matchesPerTeam: homeAway ? rounds.length * 2 : rounds.length,
     points: { win: 3, draw: 1, loss: 0 }
   });
   let matchNumber = 1;
@@ -127,6 +132,7 @@ function buildRoundRobin(players, { homeAway = false, stageKey = 'league', stage
       });
     }
   }));
+  stage.standingsPlayerIds = ids;
   return stage;
 }
 
@@ -141,7 +147,7 @@ function buildGroupStage(players, groups, teamsPerGroup, groupHomeAway = false) 
   const buckets = Array.from({ length: groupCount }, () => []);
   seeded.forEach((p, index) => buckets[index % groupCount].push(playerId(p)));
   buckets.forEach((bucket, index) => {
-    stage.groups.push({ groupNumber: index + 1, name: `Group ${String.fromCharCode(65 + (index % 26))}` });
+    stage.groups.push({ groupNumber: index + 1, name: `Group ${String.fromCharCode(65 + (index % 26))}`, playerIds: bucket });
     const rounds = circleRounds(bucket);
     let matchNumber = stage.matches.length + 1;
     rounds.forEach((fixtures, roundIndex) => fixtures.forEach((fixture) => {
@@ -168,7 +174,6 @@ function buildGroupStage(players, groups, teamsPerGroup, groupHomeAway = false) 
         });
       }
     }));
-  });
   return stage;
 }
 
