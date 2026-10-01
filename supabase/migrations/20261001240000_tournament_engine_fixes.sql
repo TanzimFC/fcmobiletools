@@ -1,4 +1,4 @@
--- Current advanced tournament engine definitions and legacy constraint cleanup.
+-- Final advanced tournament engine state.
 alter table public.tournaments drop constraint if exists tournaments_format_check;
 alter table public.tournaments add constraint tournaments_format_check check (format between 2 and 5000);
 alter table public.tournaments drop constraint if exists tournaments_participant_count_check;
@@ -26,7 +26,6 @@ declare
   league_stage public.tournament_stages%rowtype;
   g record;
   q record;
-  t record;
   qualifiers bigint[] := '{}';
   direct_players bigint[] := '{}';
   playoff_winners bigint[] := '{}';
@@ -249,7 +248,7 @@ begin
         bracket_size:=bracket_size*2;
       end loop;
 
-      round_count:=floor(log(bracket_size::numeric)/log(2::numeric));
+      round_count:=case when coalesce((next_stage.config->>'singleRound')::boolean,false) then 1 else floor(log(bracket_size::numeric)/log(2::numeric)) end;
       match_no:=1;
 
       for round in 1..round_count loop
