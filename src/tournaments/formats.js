@@ -20,7 +20,7 @@ export const TOURNAMENT_FORMATS = [
     defaults: { matchMode: 'home_away', awayGoalsRule: false, extraTimeOnSecondLeg: true, penaltiesOnSecondLeg: true }
   },
   {
-    key: 'double_elimination',
+    key: 'legacy_unused_double_elimination',
     category: 'Knockout',
     name: 'Double Elimination',
     summary: 'Two-loss bracket with winners and losers paths.',
@@ -60,6 +60,46 @@ export const TOURNAMENT_FORMATS = [
     defaults: { groups: 4, teamsPerGroup: 4, advancePerGroup: 2, groupHomeAway: false, knockoutMatchMode: 'single' }
   },
   {
+    key: 'fifa_asean_cup',
+    category: 'Football Presets',
+    name: 'FIFA ASEAN Cup Style',
+    summary: 'Two groups with single-round matches, group winners to a final, optional third-place match.',
+    participantMin: 6,
+    participantMax: 64,
+    matchModes: ['single'],
+    defaults: { groups: 2, teamsPerGroup: 4, advancePerGroup: 1, groupHomeAway: false, thirdPlace: true, knockoutMatchMode: 'single' }
+  },
+  {
+    key: 'asean_championship',
+    category: 'Football Presets',
+    name: 'ASEAN Championship Style',
+    summary: 'Two groups followed by home-and-away semi-finals and a home-and-away final.',
+    participantMin: 6,
+    participantMax: 64,
+    matchModes: ['single', 'home_away'],
+    defaults: { groups: 2, teamsPerGroup: 5, advancePerGroup: 2, groupHomeAway: false, knockoutMatchMode: 'home_away' }
+  },
+  {
+    key: 'world_cup_style',
+    category: 'Football Presets',
+    name: 'World Cup Style',
+    summary: 'Groups followed by a seeded knockout bracket with configurable qualification.',
+    participantMin: 8,
+    participantMax: 5000,
+    matchModes: ['single', 'home_away'],
+    defaults: { groups: 8, teamsPerGroup: 4, advancePerGroup: 2, groupHomeAway: false, knockoutMatchMode: 'single' }
+  },
+  {
+    key: 'groups_home_away_knockout',
+    category: 'Hybrid',
+    name: 'Groups + Two-Leg Knockout',
+    summary: 'Round-robin groups followed by aggregate home-and-away knockout ties.',
+    participantMin: 8,
+    participantMax: 5000,
+    matchModes: ['single', 'home_away'],
+    defaults: { groups: 4, teamsPerGroup: 4, advancePerGroup: 2, groupHomeAway: false, knockoutMatchMode: 'home_away' }
+  },
+  {
     key: 'asean_cup',
     category: 'Football Presets',
     name: 'ASEAN Cup Style',
@@ -80,7 +120,7 @@ export const TOURNAMENT_FORMATS = [
     defaults: { leagueRounds: 8, leagueMatchesPerTeam: 8, topDirect: 8, playoffFrom: 9, playoffTo: 24, playoffMatchMode: 'home_away', knockoutMatchMode: 'home_away' }
   },
   {
-    key: 'swiss_system',
+    key: 'legacy_unused_swiss_system',
     category: 'League',
     name: 'Swiss System',
     summary: 'Fixed number of rounds. Participants are paired by current standings.',
@@ -90,7 +130,7 @@ export const TOURNAMENT_FORMATS = [
     defaults: { rounds: 6, scoreWin: 1, scoreDraw: 0.5, scoreLoss: 0, avoidRepeatOpponents: true }
   },
   {
-    key: 'swiss_to_knockout',
+    key: 'legacy_unused_swiss_to_knockout',
     category: 'Hybrid',
     name: 'Swiss + Knockout',
     summary: 'Swiss rounds decide seeding for a final knockout bracket.',
