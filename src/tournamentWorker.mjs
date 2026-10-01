@@ -30,19 +30,6 @@ async function sb(env,path,options={}){
 }
 async function rpc(env,name,args){return sb(env,'rpc/'+name,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(args)});}
 
-function adminIdentity(request,env){
-  if(!env.ADMIN_SESSION_SECRET)return null;
-  const match=(request.headers.get('cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('fcm_admin_session='));
-  if(!match)return null;
-  try{
-    const token=match.slice('fcm_admin_session='.length),dot=token.indexOf('.');
-    if(dot<1)return null;
-    const payload=ub64(token.slice(0,dot)),signature=token.slice(dot+1);
-    const sep=payload.lastIndexOf('|'),username=sep>0?payload.slice(0,sep):'',exp=sep>0?Number(payload.slice(sep+1)):0;
-    if(!username||!exp||exp<=Date.now()||username!==String(env.ADMIN_USERNAME||'').trim())return null;
-    return null===signature||signature!==(await sign(env.ADMIN_SESSION_SECRET,payload))?null:{role:'admin',username,actorKey:'admin'};
-  }catch{return null;}
-}
 async function verifyAdmin(request,env){
   if(!env.ADMIN_SESSION_SECRET)return null;
   const match=(request.headers.get('cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('fcm_admin_session='));
