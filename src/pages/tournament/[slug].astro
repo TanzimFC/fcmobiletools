@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { TOURNAMENT_PUBLICATIONS } from '../../data/tournaments.js';
+export function getStaticPaths(){ return TOURNAMENT_PUBLICATIONS.filter((t)=>t.isPublic).map((t)=>({params:{slug:t.slug},props:{tournament:t}})); }
+const { tournament } = Astro.props;
+const rounds = tournament?.rounds || [];
+---
+<BaseLayout title={tournament ? `${tournament.name} | FCMOBILETOOLS Tournaments` : 'Tournament'} description={tournament?.description || 'FCMOBILETOOLS tournament bracket.'}>
+  {tournament ? (
+    <main class="tournament-page">
+      <section class="tour-head">
+        <div><span>FCMOBILETOOLS ORGANIZED · {tournament.format} PLAYERS</span><h1>{tournament.name}</h1><p>{tournament.description}</p></div>
+        <div class="status">{String(tournament.status).replace('_',' ')}</div>
+      </section>
+      <section class="bracket-shell">
+        {rounds.map((round,ri)=><div class="round"><div class="round-title">{round.name || `Round ${ri+1}`}</div>{round.matches.map((m)=><article class:list={['match',m.status]}><div class:list={{player:true,winner:m.winner===m.player1?.id}}><span>{m.player1?.displayName || 'TBD'}</span><b>{m.player1Score ?? '—'}</b></div><div class:list={{player:true,winner:m.winner===m.player2?.id}}><span>{m.player2?.displayName || 'TBD'}</span><b>{m.player2Score ?? '—'}</b></div>{m.status==='completed' ? <small>FINAL</small> : null}</article>)}</div>)}
+      </section>
+      {tournament.winner ? <section class="winner"><span>TOURNAMENT CHAMPION</span><strong>{tournament.winner.displayName}</strong></section> : null}
+    </main>
+  ) : <main class="not-found"><h1>Tournament not found</h1><p>This tournament is not currently published.</p></main>}
+</BaseLayout>
+<style>
+.tournament-page{max-width:1450px;margin:0 auto;padding:120px 24px 90px}.tour-head{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:28px}.tour-head>div:first-child>span,.round-title,.status,.winner span{font:700 9px/1.2 'Space Grotesk';letter-spacing:.13em;text-transform:uppercase;color:#4cc9ff}.tour-head h1{margin:8px 0;font:700 clamp(38px,6vw,68px)/.95 'Space Grotesk';letter-spacing:-.055em}.tour-head p{max-width:760px;margin:0;color:#a7b4c3}.status{padding:10px 13px;border:1px solid #294150;border-radius:999px;color:#47d16c;background:#0c1815}.bracket-shell{display:flex;gap:20px;overflow:auto;padding:24px 8px 35px;border:1px solid rgba(255,255,255,.08);border-radius:22px;background:linear-gradient(145deg,#0b151f,#071018)}.round{min-width:245px;flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:14px}.round-title{padding:0 4px;color:#718497}.match{position:relative;padding:9px;border:1px solid #1d303d;border-radius:13px;background:#0f1a26;box-shadow:0 12px 30px #0003}.player{display:flex;justify-content:space-between;gap:10px;padding:9px 8px;border-radius:8px;color:#dbe6ee}.player+ .player{border-top:1px solid #1d303d}.player b{font-variant-numeric:tabular-nums;color:#a7b4c3}.player.winner{background:#10252b;color:#f5f8fb}.player.winner b{color:#4cc9ff}.match small{display:block;margin:7px 7px 2px;color:#47d16c;font:700 8px 'Space Grotesk';letter-spacing:.1em}.not-found{max-width:900px;margin:0 auto;padding:150px 24px}.winner{margin:20px auto 0;max-width:500px;padding:24px;text-align:center;border:1px solid #2a6476;border-radius:18px;background:#0d1d25}.winner strong{display:block;margin-top:7px;font:700 30px 'Space Grotesk';color:#f5f8fb}
+</style>
