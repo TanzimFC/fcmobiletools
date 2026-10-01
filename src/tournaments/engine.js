@@ -52,53 +52,52 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
     bestOf
   });
 
-  let matchNumber = 1;
   let tieNumber = 1;
   for (let r = 0; r < rounds.length; r++) {
+    let roundMatchNumber = 1;
     for (let i = 0; i < rounds[r].length; i++) {
       const a = rounds[r][i][0] ? playerId(rounds[r][i][0]) : null;
       const b = rounds[r][i][1] ? playerId(rounds[r][i][1]) : null;
       if (twoLeg) {
         stage.matches.push({
           roundNumber: r + 1,
-          matchNumber,
+          matchNumber: roundMatchNumber,
           legNumber: 1,
           tieNumber,
-          player1Id: a,
-          player2Id: b,
           tiePlayer1Id: a,
           tiePlayer2Id: b,
+          player1Id: a,
+          player2Id: b,
           status: a && b ? 'ready' : 'completed',
           legsRequired: 2,
           winnerPlayerId: a && !b ? a : null
         });
         stage.matches.push({
           roundNumber: r + 1,
-          matchNumber: matchNumber + 1,
+          matchNumber: roundMatchNumber + 1,
           legNumber: 2,
           tieNumber,
-          player1Id: b,
-          player2Id: a,
           tiePlayer1Id: a,
           tiePlayer2Id: b,
+          player1Id: b,
+          player2Id: a,
           status: a && b ? 'ready' : 'completed',
           legsRequired: 2,
           winnerPlayerId: a && !b ? a : null,
           config: { returnLeg: true }
         });
-        matchNumber += 2;
+        roundMatchNumber += 2;
         tieNumber++;
       } else {
         stage.matches.push({
           roundNumber: r + 1,
-          matchNumber,
+          matchNumber: roundMatchNumber++,
           legNumber: 1,
           player1Id: a,
           player2Id: b,
           status: a && b ? 'ready' : 'completed',
           winnerPlayerId: a && !b ? a : null
         });
-        matchNumber++;
       }
     }
   }
