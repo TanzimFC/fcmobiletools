@@ -66,6 +66,10 @@ async function makeSession(env,role,username){
   const payload=JSON.stringify({role,username,exp:Date.now()+SESSION_MAX_AGE*1000});
   return b64(payload)+'.'+await sign(env.ADMIN_SESSION_SECRET,payload);
 }
+async function makeAdminCompatSession(env,username){
+  const payload=username+'|'+(Date.now()+SESSION_MAX_AGE*1000);
+  return b64(payload)+'.'+await sign(env.ADMIN_SESSION_SECRET,payload);
+}
 
 function slugify(value){
   return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'tournament';
@@ -153,7 +157,14 @@ export async function tournamentWorkerRoute(request,env,url){
     if(!role)return json({error:'Invalid username or password.'},401);
     if(!env.ADMIN_SESSION_SECRET)return json({error:'Tournament session signing is not configured.'},503);
     const token=await makeSession(env,role,u);
-    return json({ok:true,role},200,{'set-cookie':TOURNAMENT_COOKIE+'='+token+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Lax'});
+    const cookies=[
+      TOURNAMENT_COOKIE+'='+token+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Lax'
+    ];
+    if(role==='admin'){
+      const adminToken=await makeAdminCompatSession(env,u);
+      cookies.push('fcm_admin_session='+adminToken+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Lax');
+    }
+    return json({ok:true,role},200,{'set-cookie':cookies});
   }
   if(path==='/api/tournament/logout'&&request.method==='POST')return json({ok:true},200,{'set-cookie':TOURNAMENT_COOKIE+'=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict'});
   if(path==='/api/tournament/public'&&request.method==='GET'){
