@@ -6,8 +6,8 @@ export const TOURNAMENT_FORMATS = [
     summary: 'Straight knockout. Lose once and you are out.',
     participantMin: 2,
     participantMax: 5000,
-    matchModes: ['single', 'home_away', 'best_of_3', 'best_of_5'],
-    defaults: { matchMode: 'single', thirdPlace: false }
+    matchModes: ['home_away', 'single'],
+    defaults: { matchMode: 'home_away', thirdPlace: false }
   },
   {
     key: 'single_elimination_two_leg',
@@ -15,7 +15,7 @@ export const TOURNAMENT_FORMATS = [
     name: 'Two-Leg Knockout',
     summary: 'Home-and-away ties decided on aggregate.',
     participantMin: 2,
-    participantMax: 1024,
+    participantMax: 5000,
     matchModes: ['home_away'],
     defaults: { matchMode: 'home_away', awayGoalsRule: false, extraTimeOnSecondLeg: true, penaltiesOnSecondLeg: true }
   },
@@ -95,7 +95,7 @@ export const TOURNAMENT_FORMATS = [
     name: 'Champions League Style',
     summary: 'Single league phase, limited fixtures per team, play-off path and knockout rounds.',
     participantMin: 8,
-    participantMax: 500,
+    participantMax: 5000,
     matchModes: ['single', 'home_away'],
     defaults: { leagueRounds: 8, leagueMatchesPerTeam: 8, topDirect: 8, playoffFrom: 9, playoffTo: 24, playoffMatchMode: 'home_away', knockoutMatchMode: 'home_away' }
   },
@@ -116,8 +116,6 @@ export const TOURNAMENT_FORMATS = [
     summary: 'Build the competition from multiple configurable stages.',
     participantMin: 2,
     participantMax: 5000,
-    matchModes: ['single', 'home_away', 'best_of_3', 'best_of_5'],
-    defaults: { stages: [] }
   }
 ];
 
