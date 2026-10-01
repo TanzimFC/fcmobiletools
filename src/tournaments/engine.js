@@ -139,13 +139,14 @@ function buildRoundRobin(players, { homeAway = false, stageKey = 'league', stage
   return stage;
 }
 
-function buildGroupStage(players, groups, teamsPerGroup, groupHomeAway = false) {
+function buildGroupStage(players, groups, teamsPerGroup, groupHomeAway = false, advancePerGroup = 2) {
   const seeded = seedPlayers(players);
   const groupCount = Number(groups);
   const actualTeamsPerGroup = teamsPerGroup || Math.ceil(seeded.length / groupCount);
   const stage = stageBase(1, 'group_stage', 'Group Stage', 'group', groupHomeAway ? 'home_away' : 'single', {
     groups: groupCount,
-    teamsPerGroup: actualTeamsPerGroup
+    teamsPerGroup: actualTeamsPerGroup,
+    advancePerGroup: Number(advancePerGroup || 2)
   });
   const buckets = Array.from({ length: groupCount }, () => []);
   seeded.forEach((p, index) => buckets[index % groupCount].push(playerId(p)));
@@ -202,7 +203,7 @@ export function buildTournamentStructure(tournament, players) {
     case 'groups_home_away_knockout':
     case 'asean_championship': {
 
-      const groupStage = buildGroupStage(players, Number(cfg.groups || 2), Number(cfg.teamsPerGroup || 4), Boolean(cfg.groupHomeAway));
+      const groupStage = buildGroupStage(players, Number(cfg.groups || 2), Number(cfg.teamsPerGroup || 4), Boolean(cfg.groupHomeAway), Number(cfg.advancePerGroup || 2));
       if (format.key === 'asean_championship') {
         groupStage.config = { ...groupStage.config, preset: 'ASEAN Championship style', advancePerGroup: Number(cfg.advancePerGroup || 2) };
       }
@@ -217,7 +218,7 @@ export function buildTournamentStructure(tournament, players) {
       return [groupStage, knockout];
     }
     case 'fifa_asean_cup': {
-      const groupStage = buildGroupStage(players, Number(cfg.groups || 2), Number(cfg.teamsPerGroup || 4), false);
+      const groupStage = buildGroupStage(players, Number(cfg.groups || 2), Number(cfg.teamsPerGroup || 4), false, 1);
       groupStage.config = { ...groupStage.config, preset: 'FIFA ASEAN Cup style', advancePerGroup: 1 };
       const final = stageBase(2, 'fifa_final', 'Final & Third Place', 'knockout', 'single', {
         advancePerGroup: 1,
