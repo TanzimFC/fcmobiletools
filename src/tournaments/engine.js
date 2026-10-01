@@ -261,16 +261,6 @@ export function buildTournamentStructure(tournament, players) {
       return [league, playoff];
     }
 
-      const rounds = Number(cfg.rounds || 6);
-      const league = buildRoundRobin(players, { stageKey: 'swiss', stageName: 'Swiss Rounds' });
-      league.matches = league.matches.filter((m) => Number(m.matchday) <= rounds);
-      league.config = { type: 'swiss', rounds, avoidRepeatOpponents: Boolean(cfg.avoidRepeatOpponents) };
-      if (format.key === 'swiss_system') return [league];
-      const ko = buildKnockout([], { bestOf: cfg.knockoutMatchMode === 'best_of_3' ? 3 : 1 });
-      ko.stageOrder = 2; ko.stageKey = 'swiss_knockout'; ko.name = 'Swiss Playoffs';
-      ko.config = { qualifiers: Number(cfg.qualifiers || 16), seededBy: 'swiss-standing' };
-      return [league, ko];
-    }
     case 'custom_builder':
       return (cfg.stages || []).map((stage, index) => ({ ...stage, stageOrder: index + 1, groups: stage.groups || [], matches: stage.matches || [] }));
     default:
