@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { TOURNAMENT_PUBLICATIONS } from '../../data/tournaments.js';
+
+export function getStaticPaths() {
+  return TOURNAMENT_PUBLICATIONS.filter((t) => t.isPublic).map((t) => ({
+    params: { slug: t.slug },
+    props: { tournament: t }
+  }));
+}
+
+const { tournament } = Astro.props;
+const formatLabel = String(tournament?.formatKey || 'single_elimination').replaceAll('_', ' ');
+---
+<BaseLayout title={tournament ? `${tournament.name} | FCMOBILETOOLS Tournaments` : 'Tournament'} description={tournament?.description || 'FCMOBILETOOLS tournament bracket.'}>
+  {tournament ? (
+    <main class="tournament-page">
+      <header class="tour-head">
+        <div>
+          <span>FCMOBILETOOLS ORGANIZED · {formatLabel} · {tournament.participantCount} PARTICIPANTS</span>
+          <h1>{tournament.name}</h1>
+          <p>{tournament.description}</p>
+        </div>
+        <div class="status">{String(tournament.status).replace('_',' ')}</div>
+      </header>
+
+      {tournament.winner ? (
+        <section class="winner"><span>TOURNAMENT CHAMPION</span><strong>{tournament.winner.displayName}</strong>{tournament.winner.playerTag ? <small>{tournament.winner.playerTag}</small> : null}</section>
+      ) : null}
+
+      <section class="stages">
+        {(tournament.stages || []).map((stage) => (
+          <article class="stage">
+            <div class="stage-head">
+              <div><span>STAGE {stage.order}</span><h2>{stage.name}</h2></div>
+              <b>{stage.type} · {stage.matchMode.replaceAll('_',' ')}</b>
+            </div>
+
+            {stage.standings?.length ? (
+              <div class="standings-wrap">
+                <table class="standings">
+                  <thead><tr><th>#</th><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
+                  <tbody>
+                    {stage.standings.slice(0,100).map((row) => (
+                      <tr><td>{row.rank || '—'}</td><td><strong>{row.player?.displayName || 'TBD'}</strong><small>{row.player?.playerTag}</small></td><td>{row.played}</td><td>{row.wins}</td><td>{row.draws}</td><td>{row.losses}</td><td>{row.goalDifference}</td><td><strong>{row.points}</strong></td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+
+            <div class="matches">
+              {(stage.matches || []).map((m) => (
+                <article class="match">
+                  <div class="match-meta"><span>Match {m.matchNumber}{m.legNumber > 1 ? ` · Leg ${m.legNumber}` : ''}</span><b>{m.status}</b></div>
+                  <div class:list={['player', { winner: m.winnerPlayerId && m.winnerPlayerId === m.player1?.id }]}>
+                    <span>{m.player1?.displayName || 'TBD'}</span><strong>{m.player1Score ?? '—'}</strong>
+                  </div>
+                  <div class:list={['player', { winner: m.winnerPlayerId && m.winnerPlayerId === m.player2?.id }]}>
+                    <span>{m.player2?.displayName || 'TBD'}</span><strong>{m.player2Score ?? '—'}</strong>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        ))}
+      </section>
+    </main>
+  ) : (
+    <main class="not-found"><h1>Tournament not found</h1><p>This tournament is not currently published.</p></main>
+  )}
+</BaseLayout>
+
+<style>
+.tournament-page{max-width:1450px;margin:0 auto;padding:120px 24px 90px}.tour-head{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:24px}.tour-head>div:first-child>span,.stage-head>div>span,.status,.winner span{font:800 9px/1.2 'Space Grotesk';letter-spacing:.13em;text-transform:uppercase;color:#4cc9ff}.tour-head h1{margin:8px 0;font:700 clamp(38px,6vw,68px)/.95 'Space Grotesk';letter-spacing:-.055em}.tour-head p{max-width:780px;margin:0;color:#a7b4c3}.status{padding:10px 13px;border:1px solid #294150;border-radius:999px;color:#47d16c;background:#0c1815}.winner{max-width:620px;margin:0 0 22px;padding:20px 22px;border:1px solid #2a6476;border-radius:18px;background:#0d1d25}.winner strong{display:block;margin-top:6px;font:700 30px 'Space Grotesk';color:#f5f8fb}.winner small{display:block;margin-top:3px;color:#8fa1b1}.stages{display:grid;gap:18px}.stage{border:1px solid rgba(255,255,255,.08);border-radius:20px;background:linear-gradient(145deg,#0b151f,#071018);overflow:hidden}.stage-head{display:flex;justify-content:space-between;align-items:end;gap:16px;padding:20px 22px;border-bottom:1px solid #1d303d}.stage-head h2{margin:6px 0 0;font:700 24px 'Space Grotesk'}.stage-head b{padding:7px 9px;border:1px solid #263b4a;border-radius:999px;color:#8fa1b1;font-size:9px;text-transform:uppercase}.standings-wrap{padding:0 22px;overflow:auto}.standings{width:100%;border-collapse:collapse;font-size:10px}.standings th,.standings td{padding:10px 7px;border-bottom:1px solid #1b2b37;text-align:left}.standings th{color:#718497;font-size:8px;text-transform:uppercase}.standings td small{display:block;color:#718497;margin-top:2px}.matches{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:10px;padding:20px 22px}.match{padding:11px;border:1px solid #1d303d;border-radius:12px;background:#0f1a26}.match-meta{display:flex;justify-content:space-between;color:#718497;font-size:8px;text-transform:uppercase}.match-meta b{color:#47d16c}.player{display:flex;justify-content:space-between;gap:10px;padding:9px 7px;color:#dbe6ee}.player+.player{border-top:1px solid #1d303d}.player strong{color:#a7b4c3}.player.winner{background:#10252b;color:#f5f8fb;border-radius:8px}.player.winner strong{color:#4cc9ff}.not-found{max-width:900px;margin:0 auto;padding:150px 24px}@media(max-width:750px){.tour-head{align-items:start;flex-direction:column}.stage-head{align-items:start;flex-direction:column}}
+</style>
