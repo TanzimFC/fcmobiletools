@@ -1,0 +1,261 @@
+import { nextPowerOfTwo, circleRounds, limitedLeagueRounds, normalizeParticipantCount } from './schedule.js';
+import { getTournamentFormat } from './formats.js';
+
+function playerId(p) {
+  return Number(p.id || p.playerId);
+}
+
+function seedPlayers(players) {
+  return [...players].sort((a, b) => Number(a.seed || a.slot) - Number(b.seed || b.slot));
+}
+
+function stageBase(stageOrder, key, name, stageType, matchMode, config = {}) {
+  return {
+    stageOrder,
+    stageKey: key,
+    name,
+    stageType,
+    matchMode,
+    rounds: config.rounds ?? null,
+    groupCount: config.groups ?? null,
+    teamsPerGroup: config.teamsPerGroup ?? null,
+    advancePerGroup: config.advancePerGroup ?? null,
+    config,
+    groups: [],
+    matches: []
+  };
+}
+
+function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
+  const seeded = seedPlayers(players);
+  const slots = [];
+  const bracketSize = nextPowerOfTwo(seeded.length);
+  for (let i = 0; i < bracketSize; i++) slots.push(seeded[i] || null);
+
+  const rounds = [];
+  let size = bracketSize;
+  let firstRound = [];
+  for (let i = 0; i < size / 2; i++) {
+    firstRound.push([slots[i * 2], slots[i * 2 + 1]]);
+  }
+  rounds.push(firstRound);
+  while (size > 2) {
+    size /= 2;
+    rounds.push(Array.from({ length: size / 2 }, () => [null, null]));
+  }
+
+  const stage = stageBase(1, 'knockout', 'Knockout Stage', 'knockout', twoLeg ? 'home_away' : (bestOf > 1 ? `best_of_${bestOf}` : 'single'), {
+    bracketSize,
+    participantCount: seeded.length,
+    byes: bracketSize - seeded.length,
+    bestOf
+  });
+
+  let matchNumber = 1;
+  let tieNumber = 1;
+  for (let r = 0; r < rounds.length; r++) {
+    for (let i = 0; i < rounds[r].length; i++) {
+      const a = rounds[r][i][0] ? playerId(rounds[r][i][0]) : null;
+      const b = rounds[r][i][1] ? playerId(rounds[r][i][1]) : null;
+      if (twoLeg) {
+        stage.matches.push({
+          roundNumber: r + 1,
+          matchNumber,
+          legNumber: 1,
+          tieNumber,
+          player1Id: a,
+          player2Id: b,
+          status: a && b ? 'ready' : 'scheduled',
+          legsRequired: 2
+        });
+        stage.matches.push({
+          roundNumber: r + 1,
+          matchNumber: matchNumber + 1,
+          legNumber: 2,
+          tieNumber,
+          player1Id: b,
+          player2Id: a,
+          status: a && b ? 'ready' : 'scheduled',
+          legsRequired: 2,
+          config: { returnLeg: true }
+        });
+        matchNumber += 2;
+        tieNumber++;
+      } else {
+        stage.matches.push({
+          roundNumber: r + 1,
+          matchNumber,
+          legNumber: 1,
+          player1Id: a,
+          player2Id: b,
+          status: a && b ? 'ready' : 'scheduled'
+        });
+        matchNumber++;
+      }
+    }
+  }
+  return stage;
+}
+
+function buildRoundRobin(players, { homeAway = false, stageKey = 'league', stageName = 'League Phase' } = {}) {
+  const ids = seedPlayers(players).map(playerId);
+  const rounds = circleRounds(ids);
+  const stage = stageBase(1, stageKey, stageName, 'league', homeAway ? 'home_away' : 'single', {
+    matchesPerTeam: rounds.length,
+    points: { win: 3, draw: 1, loss: 0 }
+  });
+  let matchNumber = 1;
+  rounds.forEach((fixtures, roundIndex) => fixtures.forEach((fixture) => {
+    stage.matches.push({
+      roundNumber: 1,
+      matchNumber: matchNumber++,
+      matchday: roundIndex + 1,
+      player1Id: fixture.player1Id,
+      player2Id: fixture.player2Id,
+      legNumber: 1,
+      status: 'ready'
+    });
+    if (homeAway) {
+      stage.matches.push({
+        roundNumber: 1,
+        matchNumber: matchNumber++,
+        matchday: rounds.length + roundIndex + 1,
+        player1Id: fixture.player2Id,
+        player2Id: fixture.player1Id,
+        legNumber: 2,
+        status: 'ready'
+      });
+    }
+  }));
+  return stage;
+}
+
+function buildGroupStage(players, groups, teamsPerGroup, groupHomeAway = false) {
+  const seeded = seedPlayers(players);
+  const groupCount = Number(groups);
+  const actualTeamsPerGroup = teamsPerGroup || Math.ceil(seeded.length / groupCount);
+  const stage = stageBase(1, 'group_stage', 'Group Stage', 'group', groupHomeAway ? 'home_away' : 'single', {
+    groups: groupCount,
+    teamsPerGroup: actualTeamsPerGroup
+  });
+  const buckets = Array.from({ length: groupCount }, () => []);
+  seeded.forEach((p, index) => buckets[index % groupCount].push(playerId(p)));
+  buckets.forEach((bucket, index) => {
+    stage.groups.push({ groupNumber: index + 1, name: `Group ${String.fromCharCode(65 + (index % 26))}` });
+    const rounds = circleRounds(bucket);
+    let matchNumber = stage.matches.length + 1;
+    rounds.forEach((fixtures, roundIndex) => fixtures.forEach((fixture) => {
+      stage.matches.push({
+        roundNumber: 1,
+        matchNumber: matchNumber++,
+        matchday: roundIndex + 1,
+        groupNumber: index + 1,
+        player1Id: fixture.player1Id,
+        player2Id: fixture.player2Id,
+        legNumber: 1,
+        status: 'ready'
+      });
+      if (groupHomeAway) {
+        stage.matches.push({
+          roundNumber: 1,
+          matchNumber: matchNumber++,
+          matchday: rounds.length + roundIndex + 1,
+          groupNumber: index + 1,
+          player1Id: fixture.player2Id,
+          player2Id: fixture.player1Id,
+          legNumber: 2,
+          status: 'ready'
+        });
+      }
+    }));
+  });
+  return stage;
+}
+
+export function buildTournamentStructure(tournament, players) {
+  const format = getTournamentFormat(tournament.formatKey || 'single_elimination');
+  const count = normalizeParticipantCount(players.length);
+  if (count !== Number(tournament.participantCount || count)) {
+    throw new Error(`Expected ${tournament.participantCount} participants, received ${count}.`);
+  }
+  const cfg = { ...format.defaults, ...(tournament.formatConfig || {}) };
+
+  switch (format.key) {
+    case 'single_elimination':
+      return [buildKnockout(players, { bestOf: Number(cfg.matchMode === 'best_of_5' ? 5 : cfg.matchMode === 'best_of_3' ? 3 : 1) })];
+    case 'single_elimination_two_leg':
+      return [buildKnockout(players, { twoLeg: true })];
+    case 'best_of_series':
+      return [buildKnockout(players, { bestOf: Number(cfg.matchMode === 'best_of_5' ? 5 : 3) })];
+    case 'round_robin':
+      return [buildRoundRobin(players)];
+    case 'home_away_round_robin':
+      return [buildRoundRobin(players, { homeAway: true })];
+    case 'group_knockout':
+    case 'asean_cup': {
+      const groupStage = buildGroupStage(players, Number(cfg.groups || 2), Number(cfg.teamsPerGroup || 4), Boolean(cfg.groupHomeAway));
+      if (format.key === 'asean_cup') {
+        groupStage.config = { ...groupStage.config, preset: 'ASEAN Cup style', advancePerGroup: Number(cfg.advancePerGroup || 2) };
+      }
+      const knockout = stageBase(2, 'knockout', format.key === 'asean_cup' ? 'Semi-finals & Final' : 'Knockout Stage', 'knockout', cfg.knockoutMatchMode || 'single', {
+        startsAfterStage: 1,
+        advancePerGroup: Number(cfg.advancePerGroup || 2),
+        legs: cfg.knockoutMatchMode === 'home_away' ? 2 : 1
+      });
+      return [groupStage, knockout];
+    }
+    case 'champions_league': {
+      const league = buildRoundRobin(players, { stageKey: 'league_phase', stageName: 'League Phase' });
+      const roundsToUse = Math.min(Number(cfg.leagueRounds || 8), league.matches.length);
+      league.matches = league.matches.filter((m) => Number(m.matchday) <= roundsToUse);
+      league.config = {
+        ...league.config,
+        preset: 'Champions League style',
+        matchesPerTeam: Number(cfg.leagueMatchesPerTeam || 8),
+        topDirect: Number(cfg.topDirect || 8),
+        playoffFrom: Number(cfg.playoffFrom || 9),
+        playoffTo: Number(cfg.playoffTo || 24)
+      };
+      const playoffs = stageBase(2, 'knockout_playoff', 'Knockout Play-offs', 'playoff', cfg.playoffMatchMode || 'home_away', {
+        qualification: 'league-rank',
+        seededRange: [Number(cfg.playoffFrom || 9), Math.min(Number(cfg.playoffTo || 24), count)]
+      });
+      const knockout = buildKnockout([], { twoLeg: true });
+      knockout.stageOrder = 3;
+      knockout.stageKey = 'final_knockout';
+      knockout.name = 'Round of 16 to Final';
+      knockout.config = { startsAfterPlayoff: true };
+      return [league, playoffs, knockout];
+    }
+    case 'league_to_knockout': {
+      const league = buildRoundRobin(players, { stageKey: 'league', stageName: 'League Phase' });
+      league.config = { ...league.config, qualifiers: Number(cfg.qualifiers || 8) };
+      const playoff = buildKnockout([], { twoLeg: Number(cfg.playoffLegs || 2) === 2 });
+      playoff.stageOrder = 2;
+      playoff.stageKey = 'playoffs';
+      playoff.name = 'Playoffs';
+      return [league, playoff];
+    }
+    case 'swiss_system':
+    case 'swiss_to_knockout': {
+      const rounds = Number(cfg.rounds || 6);
+      const league = buildRoundRobin(players, { stageKey: 'swiss', stageName: 'Swiss Rounds' });
+      league.matches = league.matches.filter((m) => Number(m.matchday) <= rounds);
+      league.config = { type: 'swiss', rounds, avoidRepeatOpponents: Boolean(cfg.avoidRepeatOpponents) };
+      if (format.key === 'swiss_system') return [league];
+      const ko = buildKnockout([], { bestOf: cfg.knockoutMatchMode === 'best_of_3' ? 3 : 1 });
+      ko.stageOrder = 2; ko.stageKey = 'swiss_knockout'; ko.name = 'Swiss Playoffs';
+      ko.config = { qualifiers: Number(cfg.qualifiers || 16), seededBy: 'swiss-standing' };
+      return [league, ko];
+    }
+    case 'double_elimination': {
+      const stage = buildKnockout(players, { bestOf: cfg.matchMode === 'best_of_3' ? 3 : 1 });
+      stage.config = { ...stage.config, bracketType: 'double-elimination', grandFinalReset: Boolean(cfg.grandFinalReset) };
+      return [stage];
+    }
+    case 'custom_builder':
+      return (cfg.stages || []).map((stage, index) => ({ ...stage, stageOrder: index + 1, groups: stage.groups || [], matches: stage.matches || [] }));
+    default:
+      throw new Error(`Format ${format.key} is not supported.`);
+  }
+}
