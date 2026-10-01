@@ -201,17 +201,32 @@ export function buildTournamentStructure(tournament, players) {
     case 'home_away_round_robin':
       return [buildRoundRobin(players, { homeAway: true })];
     case 'group_knockout':
-    case 'asean_cup': {
+    case 'groups_home_away_knockout':
+    case 'asean_championship': {
+
       const groupStage = buildGroupStage(players, Number(cfg.groups || 2), Number(cfg.teamsPerGroup || 4), Boolean(cfg.groupHomeAway));
-      if (format.key === 'asean_cup') {
-        groupStage.config = { ...groupStage.config, preset: 'ASEAN Cup style', advancePerGroup: Number(cfg.advancePerGroup || 2) };
+      if (format.key === 'asean_championship') {
+        groupStage.config = { ...groupStage.config, preset: 'ASEAN Championship style', advancePerGroup: Number(cfg.advancePerGroup || 2) };
       }
-      const knockout = stageBase(2, 'knockout', format.key === 'asean_cup' ? 'Semi-finals & Final' : 'Knockout Stage', 'knockout', cfg.knockoutMatchMode || 'single', {
+      if (format.key === 'groups_home_away_knockout') {
+        groupStage.config = { ...groupStage.config, preset: 'Groups + two-leg knockout' };
+      }
+      const knockout = stageBase(2, 'knockout', format.key === 'asean_championship' ? 'Semi-finals & Final' : 'Knockout Stage', 'knockout', cfg.knockoutMatchMode || 'single', {
         startsAfterStage: 1,
         advancePerGroup: Number(cfg.advancePerGroup || 2),
         legs: cfg.knockoutMatchMode === 'home_away' ? 2 : 1
       });
       return [groupStage, knockout];
+    }
+    case 'fifa_asean_cup': {
+      const groupStage = buildGroupStage(players, Number(cfg.groups || 2), Number(cfg.teamsPerGroup || 4), false);
+      groupStage.config = { ...groupStage.config, preset: 'FIFA ASEAN Cup style', advancePerGroup: 1 };
+      const final = stageBase(2, 'fifa_final', 'Final & Third Place', 'knockout', 'single', {
+        advancePerGroup: 1,
+        thirdPlace: Boolean(cfg.thirdPlace),
+        qualifierMode: 'group-winners-and-runners-up'
+      });
+      return [groupStage, final];
     }
     case 'champions_league': {
       const league = buildRoundRobin(players, { stageKey: 'league_phase', stageName: 'League Phase' });
@@ -245,8 +260,7 @@ export function buildTournamentStructure(tournament, players) {
       playoff.name = 'Playoffs';
       return [league, playoff];
     }
-    case 'swiss_system':
-    case 'swiss_to_knockout': {
+
       const rounds = Number(cfg.rounds || 6);
       const league = buildRoundRobin(players, { stageKey: 'swiss', stageName: 'Swiss Rounds' });
       league.matches = league.matches.filter((m) => Number(m.matchday) <= rounds);
@@ -256,11 +270,6 @@ export function buildTournamentStructure(tournament, players) {
       ko.stageOrder = 2; ko.stageKey = 'swiss_knockout'; ko.name = 'Swiss Playoffs';
       ko.config = { qualifiers: Number(cfg.qualifiers || 16), seededBy: 'swiss-standing' };
       return [league, ko];
-    }
-    case 'double_elimination': {
-      const stage = buildKnockout(players, { bestOf: cfg.matchMode === 'best_of_3' ? 3 : 1 });
-      stage.config = { ...stage.config, bracketType: 'double-elimination', grandFinalReset: Boolean(cfg.grandFinalReset) };
-      return [stage];
     }
     case 'custom_builder':
       return (cfg.stages || []).map((stage, index) => ({ ...stage, stageOrder: index + 1, groups: stage.groups || [], matches: stage.matches || [] }));
