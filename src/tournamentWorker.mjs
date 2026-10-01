@@ -237,7 +237,7 @@ export async function tournamentWorkerRoute(request,env,url){
     }catch(error){return json({error:error?.message||'Tournament operation failed.'},500)}
   }
   if(path==='/admin/tournament'||path==='/admin/tournament/'||path==='/admin/tournament/index.html'){
-    if(await identity(request,env))return env.ASSETS.fetch(new Request(new URL('/admin/tournament/index.html',url),request));
+    if(await identity(request,env))return env.ASSETS.fetch(new Request(new URL('/admin/tournament/',url),request));
     return new Response(LOGIN_HTML,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }
   return null;
