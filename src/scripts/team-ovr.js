@@ -1,333 +1,906 @@
 import {
+  BASE_OVR_MAX,
+  BASE_OVR_MIN,
+  DEFAULT_FORMATION,
+  FORMATIONS,
+  MAX_BADGE_SLOTS,
+  MAX_BENCH_SIZE,
+  MAX_SQUAD_SIZE,
+  RANK_OPTIONS,
+  STARTING_XI_SIZE,
+  calculateBadgeBonus,
   calculateTeamOVR,
+  getFormation,
+  isPlayerFilled,
   isValidBaseOVR,
   isValidRank,
-  STARTING_XI_SIZE,
-  MAX_SQUAD_SIZE,
-  MAX_BADGE_SLOTS,
-  BASE_OVR_MIN,
-  BASE_OVR_MAX,
-  RANK_OPTIONS,
 } from '../lib/teamOvr.js';
 
-const formation = document.getElementById('formation');
-const subsEl = document.getElementById('subs');
-const addSub = document.getElementById('add-sub');
-const reset = document.getElementById('reset');
+const root = document.getElementById('tovr');
+if (!root) {
+  // The script can be included by Astro on other pages during development.
+} else {
+  const $ = (id) => document.getElementById(id);
+  const chipsEl = $('chips');
+  const benchGrid = $('bench-grid');
+  const editor = $('editor');
+  const formationSelect = $('formation-select');
+  const quickDialog = $('quick-dialog');
 
-if (formation && subsEl && addSub && reset) {
+  const STORAGE_KEY = 'fcmobiletools:team-ovr:v2';
+  const SHARE_PREFIX = '#team-ovr=';
+
   const state = {
-    starters: Array.from(formation.querySelectorAll('.card')).map(() => ({ baseOVR: null, rank: 0 })),
-    subs: [],
+    formation: DEFAULT_FORMATION,
+    starters: Array.from({ length: STARTING_XI_SIZE }, () => ({ baseOVR: null, rank: 0 })),
+    bench: Array.from({ length: MAX_BENCH_SIZE }, () => ({ baseOVR: null, rank: 0 })),
     badges: Array(MAX_BADGE_SLOTS).fill(false),
+    selected: { group: 'starter', index: 0 },
   };
 
-  const $ = (id) => document.getElementById(id);
-  const valid = (player) => isValidBaseOVR(player.baseOVR) && isValidRank(player.rank);
-  const maxSubs = MAX_SQUAD_SIZE - STARTING_XI_SIZE;
-  const allPlayers = () => [...state.starters, ...state.subs];
-  const badgeSelection = () => state.badges.map((enabled) => ({ enabled }));
-  const sum = (players, key) => players.reduce((total, player) => total + player[key], 0);
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const isValidNumber = (value) => Number.isInteger(value) && isValidBaseOVR(value);
+  const allSlots = () => [
+    ...state.starters.map((player, index) => ({ player, group: 'starter', index })),
+    ...state.bench.map((player, index) => ({ player, group: 'bench', index })),
+  ];
+  const includedBench = () => state.bench.filter((player) => isValidNumber(player.baseOVR) && isValidRank(player.rank));
+  const includedPlayers = () => [...state.starters, ...includedBench()];
+  const selectedPlayer = () => state[state.selected.group][state.selected.index];
+  const selectedSlot = () => {
+    const slot = getFormation(state.formation).slots[state.selected.index];
+    return slot ?? { pos: state.selected.group === 'starter' ? 'POS' : `SUB ${state.selected.index + 1}`, x: 50, y: 50 };
+  };
 
-  const pitch = formation.closest('.pitch');
-  if (pitch) pitch.style.aspectRatio = '2 / 3';
-
-  function playerLabel(index) {
-    return `Player ${index + 1}`;
+  function playerOvr(player) {
+    return isValidNumber(player?.baseOVR) && isValidRank(player?.rank) ? player.baseOVR + player.rank : null;
   }
 
-  formation.querySelectorAll('.card').forEach((card, index) => {
-    const number = card.querySelector('.card-top span:last-child');
-    if (number) number.textContent = `P${index + 1}`;
-  });
+  function tierForOvr(ovr) {
+    if (ovr === null) return 'empty';
+    if (ovr >= 125) return 'gold';
+    if (ovr >= 120) return 'cyan';
+    if (ovr >= 110) return 'mint';
+    return 'slate';
+  }
+
+  function normalizePlayer(player) {
+    const baseOVR = isValidNumber(player?.baseOVR) ? player.baseOVR : null;
+    const rank = isValidRank(player?.rank) ? player.rank : 0;
+    return { baseOVR, rank };
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        formation: state.formation,
+        starters: state.starters,
+        bench: state.bench,
+        badges: state.badges,
+      }));
+      const saved = $('saved');
+      if (saved) saved.setAttribute('data-saved', 'true');
+    } catch {
+      // Storage can be unavailable in private browsing. The calculator still works.
+    }
+  }
+
+  function encodeShareState() {
+    const payload = JSON.stringify({
+      formation: state.formation,
+      starters: state.starters,
+      bench: state.bench,
+      badges: state.badges,
+    });
+    return btoa(unescape(encodeURIComponent(payload)));
+  }
+
+  function decodeShareState(value) {
+    try {
+      const payload = decodeURIComponent(escape(atob(value)));
+      return JSON.parse(payload);
+    } catch {
+      return null;
+    }
+  }
+
+  function loadState() {
+    let saved = null;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) saved = JSON.parse(raw);
+    } catch {
+      saved = null;
+    }
+
+    const hashValue = window.location.hash.startsWith(SHARE_PREFIX)
+      ? window.location.hash.slice(SHARE_PREFIX.length)
+      : '';
+    const shared = hashValue ? decodeShareState(hashValue) : null;
+    const source = shared ?? saved;
+
+    if (source) {
+      const formation = getFormation(source.formation)?.id ?? DEFAULT_FORMATION;
+      state.formation = formation;
+      state.starters = Array.from({ length: STARTING_XI_SIZE }, (_, index) => normalizePlayer(source.starters?.[index]));
+      state.bench = Array.from({ length: MAX_BENCH_SIZE }, (_, index) => normalizePlayer(source.bench?.[index]));
+      state.badges = Array.from({ length: MAX_BADGE_SLOTS }, (_, index) => Boolean(source.badges?.[index]));
+    }
+  }
+
+  function setEditorOpen(open) {
+    editor.dataset.open = open ? 'true' : 'false';
+    root.classList.toggle('sheet-open', open);
+    if (open) {
+      renderEditor();
+      requestAnimationFrame(() => $('ed-base')?.focus());
+    }
+  }
+
+  function openEditor(group, index) {
+    state.selected = { group, index };
+    setEditorOpen(true);
+    updateSelectionClasses();
+  }
+
+  function cycleEditor(direction) {
+    const count = STARTING_XI_SIZE + MAX_BENCH_SIZE;
+    let flatIndex = state.selected.group === 'starter'
+      ? state.selected.index
+      : STARTING_XI_SIZE + state.selected.index;
+    flatIndex = (flatIndex + direction + count) % count;
+    state.selected = flatIndex < STARTING_XI_SIZE
+      ? { group: 'starter', index: flatIndex }
+      : { group: 'bench', index: flatIndex - STARTING_XI_SIZE };
+    renderEditor();
+    updateSelectionClasses();
+  }
+
+  function renderFormation() {
+    const formation = getFormation(state.formation);
+    if (!formation || !chipsEl) return;
+
+    const starterChips = chipsEl.querySelectorAll('.chip[data-group="starter"]');
+    starterChips.forEach((chip, index) => {
+      const slot = formation.slots[index];
+      if (!slot) return;
+      chip.style.setProperty('--x', slot.x);
+      chip.style.setProperty('--y', slot.y);
+      const pos = chip.querySelector('[data-pos]');
+      if (pos) pos.textContent = slot.pos;
+      chip.setAttribute('aria-label', `Starter ${index + 1}, ${slot.pos}`);
+    });
+
+    formationSelect.value = formation.id;
+  }
+
+  function renderChip(chip, player, group, index) {
+    const position = group === 'starter'
+      ? getFormation(state.formation).slots[index]?.pos ?? 'POS'
+      : `SUB ${index + 1}`;
+    const ovr = playerOvr(player);
+    const chipOvr = chip.querySelector('[data-ovr]');
+    const chipPos = chip.querySelector('[data-pos]');
+    const pips = chip.querySelectorAll('.chip-pips i');
+
+    if (chipPos) chipPos.textContent = position;
+    if (chipOvr) chipOvr.textContent = ovr ?? (isValidNumber(player.baseOVR) ? player.baseOVR : '--');
+    chip.dataset.tier = tierForOvr(ovr ?? (isValidNumber(player.baseOVR) ? player.baseOVR : null));
+    chip.classList.toggle('is-weak', false);
+    chip.setAttribute('aria-label', `${group === 'starter' ? 'Starter' : 'Substitute'} ${index + 1}, ${position}, ${ovr ?? (isValidNumber(player.baseOVR) ? player.baseOVR : 'empty')}`);
+    pips.forEach((pip, pipIndex) => pip.classList.toggle('on', isValidRank(player.rank) && pipIndex < player.rank));
+  }
+
+  function renderChips() {
+    if (chipsEl) {
+      chipsEl.querySelectorAll('.chip[data-group="starter"]').forEach((chip, index) => {
+        renderChip(chip, state.starters[index], 'starter', index);
+      });
+    }
+    if (benchGrid) {
+      benchGrid.querySelectorAll('.chip[data-group="bench"]').forEach((chip, index) => {
+        renderChip(chip, state.bench[index], 'bench', index);
+      });
+    }
+  }
+
+  function setSelectedRank(rank) {
+    const player = selectedPlayer();
+    player.rank = isValidRank(rank) ? rank : 0;
+    renderEditor();
+    renderAll();
+  }
+
+  function updateSelectionClasses() {
+    document.querySelectorAll('.chip.is-selected').forEach((chip) => chip.classList.remove('is-selected'));
+    const selector = `.chip[data-group="${state.selected.group}"][data-index="${state.selected.index}"]`;
+    document.querySelector(selector)?.classList.add('is-selected');
+  }
+
+  function renderEditor() {
+    const player = selectedPlayer();
+    const slot = selectedSlot();
+    const base = $('ed-base');
+    const title = $('ed-title');
+    const kicker = $('ed-kicker');
+    const preview = $('ed-ovr');
+    const msg = $('ed-msg');
+
+    if (!player || !base || !title || !kicker || !preview || !msg) return;
+
+    const label = state.selected.group === 'starter'
+      ? `STARTER ${state.selected.index + 1}`
+      : `SUBSTITUTE ${state.selected.index + 1}`;
+
+    kicker.textContent = label;
+    title.textContent = slot.pos;
+    base.value = player.baseOVR ?? '';
+
+    document.querySelectorAll('#ed-rank [data-rank]').forEach((button) => {
+      const active = Number(button.dataset.rank) === player.rank;
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+
+    const ovr = playerOvr(player);
+    preview.textContent = ovr ?? '--';
+    preview.dataset.tier = tierForOvr(ovr);
+
+    msg.textContent = player.baseOVR === null
+      ? `Between ${BASE_OVR_MIN} and ${BASE_OVR_MAX}. Press Enter for the next player.`
+      : isValidNumber(player.baseOVR)
+        ? `Player OVR: ${player.baseOVR} + Rank ${player.rank}. Press Enter for the next player.`
+        : `Base OVR must be between ${BASE_OVR_MIN} and ${BASE_OVR_MAX}.`;
+    msg.dataset.bad = player.baseOVR !== null && !isValidNumber(player.baseOVR) ? 'true' : 'false';
+    base.setAttribute('aria-invalid', player.baseOVR !== null && !isValidNumber(player.baseOVR) ? 'true' : 'false');
+  }
+
+  function baseAverage(players) {
+    return players.length ? Math.ceil(players.reduce((sum, player) => sum + player.baseOVR, 0) / players.length) : null;
+  }
+
+  function rankAverage(players) {
+    return players.length ? Math.ceil(players.reduce((sum, player) => sum + player.rank, 0) / players.length) : null;
+  }
+
+  function playerLabel(group, index) {
+    return group === 'starter' ? `Starter ${index + 1}` : `Sub ${index + 1}`;
+  }
+
+  function setMetric(id, value) {
+    const element = $(id);
+    if (element) element.textContent = value;
+  }
+
+  function currentMetrics() {
+    const startersEntered = state.starters.filter((player) => isValidNumber(player.baseOVR));
+    const subsEntered = includedBench();
+    const players = [...startersEntered.map((player) => normalizePlayer(player)), ...subsEntered.map((player) => normalizePlayer(player))];
+    const complete = players.length >= STARTING_XI_SIZE && players.length <= MAX_SQUAD_SIZE &&
+      players.length === STARTING_XI_SIZE + state.bench.filter((player) => isValidNumber(player.baseOVR)).length &&
+      players.every(isPlayerFilled);
+
+    const badges = state.badges.filter(Boolean).length;
+    const bAvg = baseAverage(players);
+    const rAvg = rankAverage(players);
+    const estimate = bAvg === null ? null : bAvg + (rAvg ?? 0) + badges;
+    const exactResult = complete
+      ? calculateTeamOVR({ players, selectedBadges: state.badges.map((enabled) => ({ enabled })), requiredCount: players.length })
+      : null;
+
+    return {
+      players,
+      startersEntered,
+      subsEntered,
+      complete,
+      badges,
+      baseAverage: exactResult?.baseAverage ?? bAvg,
+      rankAverage: exactResult?.rankAverage ?? rAvg,
+      estimate,
+      result: exactResult,
+    };
+  }
+
+  function updateHero(metrics) {
+    const value = metrics.result?.teamOVR ?? metrics.estimate;
+    setMetric('hero-number', value ?? '--');
+    setMetric('eq-base', metrics.baseAverage ?? '--');
+    setMetric('eq-rank', metrics.rankAverage ?? '--');
+    setMetric('eq-badge', String(metrics.badges));
+    setMetric('eq-base-sub', metrics.baseAverage === null ? 'avg --' : 'rounded average');
+    setMetric('eq-rank-sub', metrics.rankAverage === null ? 'avg --' : 'rounded average');
+    setMetric('eq-badge-sub', `${metrics.badges} of ${MAX_BADGE_SLOTS}`);
+
+    const stateEl = $('hero-state');
+    const hero = $('hero');
+    if (stateEl) {
+      stateEl.dataset.state = metrics.result ? 'exact' : value === null ? 'empty' : 'estimate';
+      stateEl.textContent = metrics.result ? `${metrics.players.length}-player exact squad` : value === null ? 'Waiting for players' : 'Live estimate';
+    }
+    if (hero) hero.dataset.state = metrics.result ? 'exact' : value === null ? 'empty' : 'estimate';
+
+    const arc = $('ring-arc');
+    if (arc) {
+      const pct = value === null ? 0 : clamp(((value - BASE_OVR_MIN) / (BASE_OVR_MAX + RANK_OPTIONS[RANK_OPTIONS.length - 1] + MAX_BADGE_SLOTS - BASE_OVR_MIN)) * 100, 0, 100);
+      arc.style.strokeDasharray = `${Math.max(0, pct)} 100`;
+    }
+
+    const hint = $('next-text');
+    if (hint) {
+      hint.innerHTML = '';
+      const text = metrics.result
+        ? 'Set a target below to see the cheapest route from this finished squad.'
+        : metrics.estimate === null
+          ? 'Enter a Base OVR to start the live estimate.'
+          : `Keep entering players. The estimate is currently ${metrics.estimate}; the exact result appears when every included player is complete.`;
+      hint.textContent = text;
+    }
+    const planButton = $('next-plan');
+    if (planButton) planButton.hidden = !metrics.result;
+  }
+
+  function renderBadges(metrics) {
+    document.querySelectorAll('.badge[data-badge]').forEach((button, index) => {
+      button.setAttribute('aria-pressed', state.badges[index] ? 'true' : 'false');
+    });
+    setMetric('badge-total', `+${metrics.badges}`);
+  }
+
+  function renderList() {
+    const list = $('list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    const makeGroup = (label) => {
+      const heading = document.createElement('div');
+      heading.className = 'l-group';
+      heading.textContent = label;
+      list.appendChild(heading);
+    };
+
+    const makeRow = (group, index, player) => {
+      const row = document.createElement('div');
+      row.className = 'lrow';
+      row.dataset.group = group;
+      row.dataset.index = String(index);
+
+      const who = document.createElement('div');
+      who.className = 'l-name';
+      const name = document.createElement('b');
+      name.textContent = playerLabel(group, index);
+      const pos = document.createElement('small');
+      pos.textContent = group === 'starter' ? getFormation(state.formation).slots[index].pos : 'SUBSTITUTE';
+      who.append(name, pos);
+
+      const base = document.createElement('input');
+      base.type = 'text';
+      base.inputMode = 'numeric';
+      base.maxLength = 3;
+      base.placeholder = 'Base';
+      base.value = player.baseOVR ?? '';
+      base.setAttribute('aria-label', `${name.textContent} Base OVR`);
+      base.setAttribute('aria-invalid', player.baseOVR !== null && !isValidNumber(player.baseOVR) ? 'true' : 'false');
+
+      const rank = document.createElement('div');
+      rank.className = 'l-rank';
+      const minus = document.createElement('button');
+      minus.type = 'button';
+      minus.textContent = '−';
+      minus.setAttribute('aria-label', `Lower ${name.textContent} rank`);
+      const rankOutput = document.createElement('output');
+      rankOutput.textContent = String(player.rank);
+      const plus = document.createElement('button');
+      plus.type = 'button';
+      plus.textContent = '+';
+      plus.setAttribute('aria-label', `Raise ${name.textContent} rank`);
+      rank.append(minus, rankOutput, plus);
+
+      const ovr = document.createElement('strong');
+      ovr.className = 'l-ovr';
+      ovr.dataset.tier = tierForOvr(playerOvr(player));
+      ovr.textContent = playerOvr(player) ?? '--';
+
+      row.append(who, base, rank, ovr);
+      list.appendChild(row);
+
+      const setBaseFromInput = () => {
+        const digits = base.value.replace(/\D/g, '').slice(0, 3);
+        base.value = digits;
+        player.baseOVR = digits ? Number(digits) : null;
+        base.setAttribute('aria-invalid', player.baseOVR !== null && !isValidNumber(player.baseOVR) ? 'true' : 'false');
+        renderAll();
+      };
+
+      base.addEventListener('input', setBaseFromInput);
+      base.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          openEditor(group, index);
+        }
+      });
+      minus.addEventListener('click', () => {
+        player.rank = clamp(player.rank - 1, 0, 5);
+        renderAll();
+      });
+      plus.addEventListener('click', () => {
+        player.rank = clamp(player.rank + 1, 0, 5);
+        renderAll();
+      });
+      row.addEventListener('click', (event) => {
+        if (event.target instanceof HTMLInputElement || event.target.closest('button')) return;
+        openEditor(group, index);
+      });
+    };
+
+    makeGroup('STARTING XI');
+    state.starters.forEach((player, index) => makeRow('starter', index, player));
+    if (includedBench().length || state.bench.some((player) => isValidNumber(player.baseOVR))) {
+      makeGroup('BENCH');
+      state.bench.forEach((player, index) => makeRow('bench', index, player));
+    }
+  }
+
+  function markWeakest(metrics) {
+    const entered = allSlots()
+      .filter(({ player }) => isValidNumber(player.baseOVR))
+      .sort((a, b) => a.player.baseOVR - b.player.baseOVR);
+
+    const lowest = entered[0]?.player.baseOVR ?? null;
+
+    document.querySelectorAll('.chip.is-weak').forEach((chip) => chip.classList.remove('is-weak'));
+    if (lowest !== null) {
+      entered
+        .filter(({ player }) => player.baseOVR === lowest)
+        .forEach(({ group, index }) => {
+          document.querySelector(`.chip[data-group="${group}"][data-index="${index}"]`)?.classList.add('is-weak');
+        });
+    }
+
+    const list = $('weak-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!entered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'p-empty';
+      empty.textContent = 'Enter a Base OVR to identify the weakest links.';
+      list.appendChild(empty);
+      return;
+    }
+
+    entered.slice(0, 5).forEach(({ group, index, player }) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'w-row';
+      row.classList.toggle('is-lowest', player.baseOVR === lowest);
+      const rank = document.createElement('span');
+      rank.className = 'w-rank';
+      rank.textContent = String(index + 1);
+      const who = document.createElement('span');
+      who.className = 'w-who';
+      const name = document.createElement('b');
+      name.textContent = playerLabel(group, index);
+      const detail = document.createElement('small');
+      detail.textContent = group === 'starter' ? getFormation(state.formation).slots[index].pos : 'Bench';
+      who.append(name, detail);
+      const ovr = document.createElement('strong');
+      ovr.className = 'w-ovr';
+      ovr.textContent = String(player.baseOVR);
+      row.append(rank, who, ovr);
+      row.addEventListener('click', () => openEditor(group, index));
+      list.appendChild(row);
+    });
+  }
 
   function allocation(players, key, amount) {
-    let remaining = amount;
+    let remaining = Math.max(0, amount);
     const result = [];
-    [...players]
+    players
       .map((player, index) => ({ player, index }))
       .sort((a, b) => a.player[key] - b.player[key])
       .forEach(({ player, index }) => {
         if (remaining <= 0) return;
-        const max = key === 'baseOVR' ? BASE_OVR_MAX : 5;
-        const room = max - player[key];
+        const maximum = key === 'baseOVR' ? BASE_OVR_MAX : 5;
+        const room = maximum - player[key];
         const add = Math.min(room, remaining);
         if (add > 0) {
           result.push({ player, index, add });
           remaining -= add;
         }
       });
-    return result;
+    return { result, remaining };
   }
 
-  function findBaseDelta(players, target, badges) {
+  function baseDelta(players, target, badges) {
+    if (!players.length) return null;
     const n = players.length;
-    if (!n) return null;
-    const baseTotal = sum(players, 'baseOVR');
-    const rankPart = Math.ceil(sum(players, 'rank') / n);
-    const needed = (target - badges - rankPart - 1) * n + 1 - baseTotal;
-    const capacity = players.reduce((total, player) => total + BASE_OVR_MAX - player.baseOVR, 0);
+    const rankPart = Math.ceil(players.reduce((sum, player) => sum + player.rank, 0) / n);
+    const baseTotal = players.reduce((sum, player) => sum + player.baseOVR, 0);
+    const threshold = target - badges - rankPart;
+    const needed = (threshold - 1) * n + 1 - baseTotal;
+    const capacity = players.reduce((sum, player) => sum + BASE_OVR_MAX - player.baseOVR, 0);
     return needed <= 0 ? 0 : needed <= capacity ? needed : null;
   }
 
-  function findRankDelta(players, target, badges, basePlayers = players) {
+  function rankDelta(players, target, badges) {
+    if (!players.length) return null;
     const n = players.length;
-    if (!n || !basePlayers.length) return null;
-    const basePart = Math.ceil(sum(basePlayers, 'baseOVR') / basePlayers.length);
-    const rankTotal = sum(players, 'rank');
-    const needed = (target - badges - basePart - 1) * n + 1 - rankTotal;
-    const capacity = players.reduce((total, player) => total + 5 - player.rank, 0);
+    const basePart = Math.ceil(players.reduce((sum, player) => sum + player.baseOVR, 0) / n);
+    const rankTotal = players.reduce((sum, player) => sum + player.rank, 0);
+    const threshold = target - badges - basePart;
+    const needed = (threshold - 1) * n + 1 - rankTotal;
+    const capacity = players.reduce((sum, player) => sum + 5 - player.rank, 0);
     return needed <= 0 ? 0 : needed <= capacity ? needed : null;
   }
 
-  function findMixed(players, target, badges) {
-    const basePlayers = players.filter((player) => isValidBaseOVR(player.baseOVR));
-    const rankPlayers = players.filter((player) => isValidRank(player.rank));
-    if (!basePlayers.length) return null;
-    const nBase = basePlayers.length;
-    const nRank = rankPlayers.length;
-    const baseTotal = sum(basePlayers, 'baseOVR');
-    const rankTotal = nRank ? sum(rankPlayers, 'rank') : 0;
-    const baseCapacity = basePlayers.reduce((total, player) => total + BASE_OVR_MAX - player.baseOVR, 0);
-    const rankCapacity = rankPlayers.reduce((total, player) => total + 5 - player.rank, 0);
+  function mixedDelta(players, target, badges) {
+    if (!players.length) return null;
+    const n = players.length;
+    const baseTotal = players.reduce((sum, player) => sum + player.baseOVR, 0);
+    const rankTotal = players.reduce((sum, player) => sum + player.rank, 0);
+    const baseCapacity = players.reduce((sum, player) => sum + BASE_OVR_MAX - player.baseOVR, 0);
+    const rankCapacity = players.reduce((sum, player) => sum + 5 - player.rank, 0);
     let best = null;
-    for (let baseDelta = 0; baseDelta <= baseCapacity; baseDelta += 1) {
-      const basePart = Math.ceil((baseTotal + baseDelta) / nBase);
-      if (!nRank) {
-        if (basePart + badges >= target) {
-          best = { baseDelta, rankDelta: 0 };
-          break;
-        }
-        continue;
-      }
-      const neededRank = (target - badges - basePart - 1) * nRank + 1 - rankTotal;
-      const rankDelta = Math.max(0, neededRank);
-      if (rankDelta > rankCapacity) continue;
-      if (!best || baseDelta + rankDelta < best.baseDelta + best.rankDelta) {
-        best = { baseDelta, rankDelta };
-      }
+
+    for (let delta = 0; delta <= baseCapacity; delta += 1) {
+      const basePart = Math.ceil((baseTotal + delta) / n);
+      const neededRank = (target - badges - basePart - 1) * n + 1 - rankTotal;
+      const rankAdd = Math.max(0, neededRank);
+      if (rankAdd > rankCapacity) continue;
+      const total = delta + rankAdd;
+      if (!best || total < best.total) best = { baseDelta: delta, rankDelta: rankAdd, total };
+      if (best && best.total === 0) break;
     }
     return best;
   }
 
-  function routeText(kind, delta, players, sourceIndices = null) {
-    if (delta === 0) return 'No upgrade is required for this route.';
-    const key = kind === 'base' ? 'baseOVR' : 'rank';
-    return allocation(players, key, delta).map(({ player, index, add }) => {
-      const displayIndex = sourceIndices?.[index] ?? index;
-      return kind === 'base'
-        ? `${playerLabel(displayIndex)}: ${player.baseOVR} → ${player.baseOVR + add} Base OVR`
-        : `${playerLabel(displayIndex)}: Rank ${player.rank} → Rank ${player.rank + add}`;
-    }).join('\n');
-  }
+  function makeRoute(name, cost, text, best = false) {
+    const article = document.createElement('details');
+    article.className = `route${best ? ' is-best' : ''}`;
+    if (best) article.open = true;
 
-  function renderSubs() {
-    subsEl.innerHTML = '';
-    state.subs.forEach((player, index) => {
-      const card = document.createElement('article');
-      card.className = 'sub';
-      card.innerHTML = `<div class="sub-top"><div class="sub-top-left"><small>SQUAD DEPTH</small><b>SUB ${index + 1}</b></div><span class="sub-status">IN TEAM AVERAGE</span><button class="sub-remove" type="button" aria-label="Remove substitute">×</button></div><div class="sub-field"><label>BASE OVR<input data-base type="number" min="${BASE_OVR_MIN}" max="${BASE_OVR_MAX}" inputmode="numeric" placeholder="Base OVR"></label></div><div class="sub-field"><label>RANK<select data-rank><option value="">Rank</option>${RANK_OPTIONS.map((rank) => `<option value="${rank}">Rank ${rank}</option>`).join('')}</select></label></div><div class="sub-foot"><div class="sub-foot-copy"><span>PLAYER OVR</span><small>Added to squad average when complete</small></div><strong data-sub-ovr>--</strong></div>`;
-      const base = card.querySelector('[data-base]');
-      const rank = card.querySelector('[data-rank]');
-      const subOvr = card.querySelector('[data-sub-ovr]');
-      base.value = player.baseOVR ?? '';
-      rank.value = String(player.rank ?? 0);
-      subOvr.textContent = valid(player) ? player.baseOVR + player.rank : '--';
-      base.addEventListener('input', () => { player.baseOVR = base.value === '' ? null : Number(base.value); subOvr.textContent = valid(player) ? player.baseOVR + player.rank : isValidBaseOVR(player.baseOVR) ? player.baseOVR : '--'; recompute(); });
-      rank.addEventListener('change', () => { player.rank = rank.value === '' ? null : Number(rank.value); subOvr.textContent = valid(player) ? player.baseOVR + player.rank : '--'; recompute(); });
-      card.querySelector('.sub-remove').addEventListener('click', () => { state.subs.splice(index, 1); renderSubs(); recompute(); });
-      subsEl.appendChild(card);
+    const summary = document.createElement('summary');
+    const nameWrap = document.createElement('span');
+    nameWrap.className = 'route-name';
+    const title = document.createElement('b');
+    title.textContent = name;
+    if (best) {
+      const tag = document.createElement('span');
+      tag.className = 'route-badge';
+      tag.textContent = 'BEST';
+      title.append(tag);
+    }
+    const sub = document.createElement('small');
+    sub.textContent = 'fewest total rating-point changes';
+    nameWrap.append(title, sub);
+
+    const total = document.createElement('span');
+    total.className = 'route-total';
+    const strong = document.createElement('strong');
+    strong.textContent = String(cost);
+    const unit = document.createElement('span');
+    unit.textContent = 'TOTAL';
+    total.append(strong, unit);
+    summary.append(nameWrap, total);
+
+    const body = document.createElement('div');
+    body.className = 'route-body';
+    const group = document.createElement('div');
+    group.className = 'r-group';
+    const heading = document.createElement('h4');
+    heading.textContent = 'Changes';
+    const list = document.createElement('ul');
+    list.className = 'r-list';
+    text.forEach((line) => {
+      const item = document.createElement('li');
+      const left = document.createElement('span');
+      left.textContent = line;
+      item.append(left);
+      list.appendChild(item);
     });
-    const emptyState = $('sub-empty');
-    if (emptyState) emptyState.hidden = state.subs.length > 0;
-    const count = $('sub-count');
-    if (count) count.textContent = String(state.subs.length);
-    const atLimit = state.subs.length >= maxSubs;
-    addSub.disabled = atLimit;
-    addSub.innerHTML = atLimit
-      ? '<span class="add-icon">✓</span><span class="add-copy"><b>Substitutes Full</b><small>Maximum of 7 included</small></span><span class="add-max">7 / 7</span>'
-      : '<span class="add-icon">+</span><span class="add-copy"><b>Add Substitute</b><small>Add a player to the squad average</small></span><span class="add-max">MAX 7</span>';
+    group.append(heading, list);
+    body.appendChild(group);
+    article.append(summary, body);
+    return article;
   }
 
-  function renderPlanner(target, players, current, badges) {
-    const box = $('planner');
-    if (!box) return;
-    if (players.length < STARTING_XI_SIZE || players.length > MAX_SQUAD_SIZE || players.some((player) => !valid(player))) {
-      box.innerHTML = '<div class="planner-empty">Complete every included player to unlock exact upgrade routes.</div>';
+  function renderPlanner(metrics) {
+    const routesEl = $('routes');
+    if (!routesEl) return;
+    routesEl.innerHTML = '';
+
+    if (metrics.players.length < STARTING_XI_SIZE || !metrics.players.every(isPlayerFilled)) {
+      const empty = document.createElement('div');
+      empty.className = 'p-empty';
+      empty.innerHTML = '<b>Complete every included player.</b> Add all 11 starters and any bench player you want included, with Base OVR and Rank set.';
+      routesEl.appendChild(empty);
       return;
     }
+
+    const target = clamp(Number.parseInt($('t-input')?.value || '120', 10) || 120, STARTING_XI_SIZE, BASE_OVR_MAX + RANK_OPTIONS[RANK_OPTIONS.length - 1] + MAX_BADGE_SLOTS);
+    const current = metrics.result?.teamOVR ?? metrics.estimate ?? 0;
     if (target <= current) {
-      box.innerHTML = `<div class="route best"><div class="route-title"><span>TARGET REACHED</span><b>${current} OVR</b></div><p>Your squad is already at or above the selected target.</p></div>`;
+      const done = document.createElement('div');
+      done.className = 'p-empty p-done';
+      done.textContent = `Target reached. Your current Team OVR is ${current}.`;
+      routesEl.appendChild(done);
       return;
     }
-    const baseDelta = findBaseDelta(players, target, badges);
-    const rankDelta = findRankDelta(players, target, badges);
-    const mixed = findMixed(players, target, badges);
+
+    const base = baseDelta(metrics.players, target, metrics.badges);
+    const rank = rankDelta(metrics.players, target, metrics.badges);
+    const mixed = mixedDelta(metrics.players, target, metrics.badges);
     const routes = [];
-    const rankPlayers = players.map((player, index) => ({ player, index })).filter(({ player }) => isValidRank(player.rank));
-    const rankValues = rankPlayers.map(({ player }) => player);
-    const rankIndices = rankPlayers.map(({ index }) => index);
-    if (baseDelta !== null) routes.push({ name: 'Base OVR', cost: baseDelta, text: routeText('base', baseDelta, players) });
-    if (rankDelta !== null) routes.push({ name: 'Rank', cost: rankDelta, text: routeText('rank', rankDelta, rankValues, rankIndices) });
-    if (mixed) routes.push({ name: 'Mixed', cost: mixed.baseDelta + mixed.rankDelta, text: `${mixed.baseDelta ? `+${mixed.baseDelta} total Base OVR` : 'No Base OVR change'}\n${mixed.rankDelta ? `+${mixed.rankDelta} total Rank` : 'No Rank change'}` });
+
+    if (base !== null) {
+      const changes = allocation(metrics.players, 'baseOVR', base).result.map(({ player, index, add }) => `${playerLabel(index < STARTING_XI_SIZE ? 'starter' : 'bench', index < STARTING_XI_SIZE ? index : index - STARTING_XI_SIZE)}: ${player.baseOVR} → ${player.baseOVR + add}`);
+      routes.push({ name: 'Base OVR', cost: base, changes: changes.length ? changes : ['No change needed.'] });
+    }
+    if (rank !== null) {
+      const changes = allocation(metrics.players, 'rank', rank).result.map(({ player, index, add }) => `${playerLabel(index < STARTING_XI_SIZE ? 'starter' : 'bench', index < STARTING_XI_SIZE ? index : index - STARTING_XI_SIZE)}: Rank ${player.rank} → Rank ${player.rank + add}`);
+      routes.push({ name: 'Rank', cost: rank, changes: changes.length ? changes : ['No change needed.'] });
+    }
+    if (mixed !== null) {
+      const changes = [];
+      if (mixed.baseDelta) changes.push(`Base OVR: +${mixed.baseDelta} total`);
+      if (mixed.rankDelta) changes.push(`Rank: +${mixed.rankDelta} total`);
+      if (!changes.length) changes.push('No change needed.');
+      routes.push({ name: 'Mixed', cost: mixed.total, changes });
+    }
+
     routes.sort((a, b) => a.cost - b.cost);
-    box.innerHTML = routes.length ? routes.map((route, index) => `<div class="route ${index === 0 ? 'best' : ''}"><div class="route-title"><span>${index === 0 ? 'BEST ROUTE · ' : ''}${route.name}</span><b>${route.cost} TOTAL</b></div><p>${route.text.replaceAll('\n', '<br>')}</p></div>`).join('') : '<div class="planner-empty">No route is possible within the current Base OVR and Rank limits.</div>';
-  }
-
-  // Rebuilt from scratch: this feature never waits for a complete squad.
-  // It uses whatever valid values have already been entered and updates on every input.
-  function renderNext() {
-    const number = $('next-number');
-    const needed = $('next-needed');
-    const routes = $('next-routes');
-    const fill = $('meter-fill');
-    if (!number || !needed || !routes || !fill) return;
-
-    const players = allPlayers();
-    const basePlayers = players.filter((player) => isValidBaseOVR(player.baseOVR));
-    const rankPlayers = players.filter((player) => isValidRank(player.rank));
-    const badges = state.badges.filter(Boolean).length;
-
-    if (!basePlayers.length) {
-      number.textContent = '--';
-      needed.textContent = 'Enter a Base OVR';
-      routes.textContent = 'The next OVR starts calculating as soon as the first Base OVR is entered.';
-      fill.style.width = '0%';
+    if (!routes.length) {
+      const empty = document.createElement('div');
+      empty.className = 'p-empty';
+      empty.textContent = 'No route is possible within the current OVR and Rank limits.';
+      routesEl.appendChild(empty);
       return;
     }
 
-    const basePart = Math.ceil(sum(basePlayers, 'baseOVR') / basePlayers.length);
-    const rankPart = rankPlayers.length ? Math.ceil(sum(rankPlayers, 'rank') / rankPlayers.length) : 0;
-    const currentLive = basePart + rankPart + badges;
-    const target = currentLive + 1;
-    const baseDelta = findBaseDelta(basePlayers, target, badges);
-    const rankDelta = findRankDelta(rankPlayers, target, badges, basePlayers);
-    const mixed = findMixed(players, target, badges);
-    const costs = [baseDelta, rankDelta, mixed ? mixed.baseDelta + mixed.rankDelta : null].filter((value) => value !== null);
-
-    number.textContent = target;
-    if (!costs.length) {
-      needed.textContent = 'No route available';
-      routes.textContent = `The entered players are at the current Base OVR and Rank ceiling.`;
-      fill.style.width = '100%';
-      return;
-    }
-
-    const cheapest = Math.min(...costs);
-    needed.textContent = `Minimum change: ${cheapest}`;
-    const labels = [];
-    if (baseDelta !== null) labels.push(`Base +${baseDelta}`);
-    if (rankDelta !== null) labels.push(`Rank +${rankDelta}`);
-    if (mixed) labels.push(`Mixed +${mixed.baseDelta + mixed.rankDelta}`);
-    routes.textContent = `Next live OVR: ${target} · ${basePlayers.length} Base OVR entered${rankPlayers.length ? ` · ${rankPlayers.length} Rank values entered` : ''}. ${labels.join(' · ')}.`;
-    fill.style.width = `${Math.max(10, Math.min(100, 100 / Math.max(1, cheapest)))}%`;
+    routes.forEach((route, index) => routesEl.appendChild(makeRoute(route.name, route.cost, route.changes, index === 0)));
   }
 
-  // Rebuilt from scratch: bottleneck is Base OVR only, so one player is enough.
-  // It immediately shows every player tied for the lowest entered Base OVR.
-  function renderBottleneck() {
-    const box = $('bottleneck');
-    if (!box) return;
+  function renderNextHint(metrics) {
+    const target = $('t-input');
+    const value = metrics.result?.teamOVR ?? metrics.estimate;
+    if (target && !target.value) target.value = String(clamp((value ?? 119) + 1, 11, BASE_OVR_MAX + 5 + MAX_BADGE_SLOTS));
 
-    const players = allPlayers();
-    const entered = players
-      .map((player, index) => ({ player, index }))
-      .filter(({ player }) => isValidBaseOVR(player.baseOVR));
-
-    if (!entered.length) {
-      box.innerHTML = '<div class="planner-empty">Enter a Base OVR to find the lowest player. Rank is not required.</div>';
-      return;
-    }
-
-    const lowest = Math.min(...entered.map(({ player }) => player.baseOVR));
-    const lowestPlayers = entered.filter(({ player }) => player.baseOVR === lowest);
-    const names = lowestPlayers.map(({ index }) => playerLabel(index)).join(', ');
-    const nextHigher = Math.min(...entered.filter(({ player }) => player.baseOVR > lowest).map(({ player }) => player.baseOVR).concat(BASE_OVR_MAX));
-    const gap = nextHigher > lowest && nextHigher < BASE_OVR_MAX ? nextHigher - lowest : 0;
-
-    box.innerHTML = `<div class="bottleneck-card"><div class="bottleneck-ovr">${lowest}</div><div><strong>${names}</strong><p>Lowest entered Base OVR. ${lowestPlayers.length === 1 ? 'This player is the current bottleneck.' : 'These players are tied for the current bottleneck.'}${gap ? ` Next entered Base OVR is ${nextHigher}, a ${gap}-point gap.` : ''}</p></div></div>`;
+    const nextValue = value === null || value === undefined ? null : value + 1;
+    const nextPlan = $('next-plan');
+    if (nextPlan) nextPlan.hidden = nextValue === null;
   }
 
-  function recompute() {
-    const players = allPlayers();
-    const validBase = players.filter((player) => isValidBaseOVR(player.baseOVR));
-    const validRank = players.filter((player) => isValidRank(player.rank));
-    const complete = players.filter(valid);
-    const badgeBonus = state.badges.filter(Boolean).length;
-    const baseAverage = validBase.length ? Math.ceil(sum(validBase, 'baseOVR') / validBase.length) : null;
-    const rankAverage = validRank.length ? Math.ceil(sum(validRank, 'rank') / validRank.length) : null;
-    const exact = players.length >= STARTING_XI_SIZE && players.length <= MAX_SQUAD_SIZE && complete.length === players.length;
-    const result = exact ? calculateTeamOVR({ players, selectedBadges: badgeSelection(), requiredCount: players.length }) : null;
-    const estimate = baseAverage === null ? null : baseAverage + (rankAverage ?? 0) + badgeBonus;
+  function renderAll() {
+    const metrics = currentMetrics();
 
-    $('starter-count').textContent = `${state.starters.filter(valid).length} / ${STARTING_XI_SIZE}`;
-    $('sub-count').textContent = String(state.subs.length);
-    $('badge-total').textContent = `+${badgeBonus} OVR`;
-    $('base-avg').textContent = result?.baseAverage ?? baseAverage ?? '--';
-    $('rank-avg').textContent = result?.rankAverage ?? rankAverage ?? '--';
-    $('badge-avg').textContent = `+${badgeBonus}`;
-    $('result-number').textContent = result?.teamOVR ?? estimate ?? '--';
-    $('result-label').textContent = exact ? 'YOUR TEAM OVR' : 'LIVE ESTIMATE';
-    $('result-status').textContent = exact ? `${players.length}-player squad · Exact formula` : `Based on ${validBase.length} Base OVR${validBase.length === 1 ? '' : 's'} entered so far`;
-    $('break-base').textContent = result?.baseAverage ?? baseAverage ?? '--';
-    $('break-rank').textContent = result?.rankAverage ?? rankAverage ?? '--';
-    $('break-badge').textContent = `+${badgeBonus}`;
-    $('break-total').textContent = result?.teamOVR ?? estimate ?? '--';
-    $('planner-current').textContent = result?.teamOVR ?? estimate ?? '--';
+    renderFormation();
+    renderChips();
+    renderList();
+    renderBadges(metrics);
+    updateHero(metrics);
 
-    const enteredBaseValues = players.filter((player) => isValidBaseOVR(player.baseOVR)).map((player) => player.baseOVR);
-    const lowestBase = enteredBaseValues.length ? Math.min(...enteredBaseValues) : null;
+    setMetric('squad-count', `${metrics.startersEntered.length} / ${STARTING_XI_SIZE}`);
+    setMetric('bench-count', String(metrics.subsEntered.length));
+    setMetric('eq-base', metrics.baseAverage ?? '--');
+    setMetric('eq-rank', metrics.rankAverage ?? '--');
+    setMetric('eq-badge', String(metrics.badges));
+    setMetric('badge-total', `+${metrics.badges}`);
 
-    formation.querySelectorAll('.card').forEach((card, index) => {
-      const player = state.starters[index];
-      const cardOvr = card.querySelector('[data-card-ovr]');
-      cardOvr.textContent = valid(player) ? player.baseOVR + player.rank : isValidBaseOVR(player.baseOVR) ? player.baseOVR : '--';
-      card.classList.toggle('is-bottleneck', lowestBase !== null && isValidBaseOVR(player.baseOVR) && player.baseOVR === lowestBase);
+    renderPlanner(metrics);
+    markWeakest(metrics);
+    renderNextHint(metrics);
+
+    const dockNumber = $('dock-number');
+    const dockState = $('dock-state');
+    if (dockNumber) dockNumber.textContent = metrics.result?.teamOVR ?? metrics.estimate ?? '--';
+    if (dockState) {
+      dockState.textContent = metrics.result ? 'Exact' : 'Estimate';
+      dockState.dataset.exact = metrics.result ? 'true' : 'false';
+    }
+
+    saveState();
+    updateSelectionClasses();
+    if (editor.dataset.open === 'true') renderEditor();
+  }
+
+  function installChipListeners() {
+    document.querySelectorAll('.chip[data-group]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        openEditor(chip.dataset.group, Number(chip.dataset.index));
+      });
+    });
+  }
+
+  function installControls() {
+    formationSelect?.addEventListener('change', () => {
+      state.formation = getFormation(formationSelect.value)?.id ?? DEFAULT_FORMATION;
+      renderAll();
     });
 
-    const math = $('math');
-    if (result?.complete) {
-      math.textContent = `Base OVR\n${result.totalBase} ÷ ${result.squadSize} = ${(result.totalBase / result.squadSize).toFixed(2)} → ${result.baseAverage}\n\nRank\n${result.totalRank} ÷ ${result.squadSize} = ${(result.totalRank / result.squadSize).toFixed(2)} → ${result.rankAverage}\n\nBadges\n+${result.badgeBonus}\n\nTeam OVR\n${result.baseAverage} + ${result.rankAverage} + ${result.badgeBonus} = ${result.teamOVR}`;
-    } else {
-      math.textContent = estimate === null ? 'Enter a Base OVR to see the live calculation.' : `Live estimate\nBase average: ${baseAverage}\nRank average: ${rankAverage ?? 0}\nBadges: +${badgeBonus}\n\nEstimated Team OVR: ${estimate}`;
-    }
+    document.querySelectorAll('[data-view]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const view = button.dataset.view;
+        root.dataset.view = view;
+        document.querySelectorAll('[data-view]').forEach((other) => other.setAttribute('aria-pressed', other === button ? 'true' : 'false'));
+        const pitchView = $('view-pitch');
+        const listView = $('view-list');
+        if (pitchView) pitchView.hidden = view !== 'pitch';
+        if (listView) listView.hidden = view !== 'list';
+        if (view === 'list') setEditorOpen(false);
+      });
+    });
 
-    const target = Number($('target-ovr').value) || 120;
-    renderPlanner(target, players, result?.teamOVR ?? estimate ?? 0, badgeBonus);
-    renderNext();
-    renderBottleneck();
+    $('ed-close')?.addEventListener('click', () => setEditorOpen(false));
+    $('ed-prev')?.addEventListener('click', () => cycleEditor(-1));
+    $('ed-next-icon')?.addEventListener('click', () => cycleEditor(1));
+    $('ed-next')?.addEventListener('click', () => cycleEditor(1));
+    $('ed-clear')?.addEventListener('click', () => {
+      const player = selectedPlayer();
+      player.baseOVR = null;
+      player.rank = 0;
+      renderAll();
+      renderEditor();
+    });
+
+    $('ed-minus')?.addEventListener('click', () => {
+      const player = selectedPlayer();
+      player.baseOVR = isValidNumber(player.baseOVR) ? clamp(player.baseOVR - 1, BASE_OVR_MIN, BASE_OVR_MAX) : BASE_OVR_MIN;
+      renderAll();
+    });
+    $('ed-plus')?.addEventListener('click', () => {
+      const player = selectedPlayer();
+      player.baseOVR = isValidNumber(player.baseOVR) ? clamp(player.baseOVR + 1, BASE_OVR_MIN, BASE_OVR_MAX) : BASE_OVR_MIN;
+      renderAll();
+    });
+
+    $('ed-base')?.addEventListener('input', (event) => {
+      const player = selectedPlayer();
+      const input = event.currentTarget;
+      input.value = input.value.replace(/\D/g, '').slice(0, 3);
+      player.baseOVR = input.value === '' ? null : Number(input.value);
+      renderAll();
+      renderEditor();
+    });
+
+    $('ed-base')?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        cycleEditor(1);
+      }
+    });
+
+    document.querySelectorAll('#ed-rank [data-rank]').forEach((button) => {
+      button.addEventListener('click', () => setSelectedRank(Number(button.dataset.rank)));
+    });
+
+    $('t-minus')?.addEventListener('click', () => {
+      const input = $('t-input');
+      input.value = String(clamp((Number.parseInt(input.value || '120', 10) || 120) - 1, 11, 138));
+      renderAll();
+    });
+    $('t-plus')?.addEventListener('click', () => {
+      const input = $('t-input');
+      input.value = String(clamp((Number.parseInt(input.value || '120', 10) || 120) + 1, 11, 138));
+      renderAll();
+    });
+    $('t-input')?.addEventListener('input', () => {
+      const input = $('t-input');
+      input.value = input.value.replace(/\D/g, '').slice(0, 3);
+      renderPlanner(currentMetrics());
+    });
+    document.querySelectorAll('[data-jump]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = $('t-input');
+        const current = Number.parseInt(input.value || '120', 10) || 120;
+        input.value = String(clamp(current + Number(button.dataset.jump), 11, 138));
+        renderPlanner(currentMetrics());
+      });
+    });
+
+    document.querySelectorAll('.badge[data-badge]').forEach((button, index) => {
+      button.addEventListener('click', () => {
+        state.badges[index] = !state.badges[index];
+        renderAll();
+      });
+    });
+
+    $('reset')?.addEventListener('click', () => {
+      const reset = window.confirm('Reset the entire Team OVR squad?');
+      if (!reset) return;
+      state.starters = Array.from({ length: STARTING_XI_SIZE }, () => ({ baseOVR: null, rank: 0 }));
+      state.bench = Array.from({ length: MAX_BENCH_SIZE }, () => ({ baseOVR: null, rank: 0 }));
+      state.badges.fill(false);
+      state.formation = DEFAULT_FORMATION;
+      formationSelect.value = DEFAULT_FORMATION;
+      setEditorOpen(false);
+      renderAll();
+      showToast('Squad reset');
+    });
+
+    $('share')?.addEventListener('click', async () => {
+      const hash = `${SHARE_PREFIX}${encodeShareState()}`;
+      const url = `${window.location.origin}${window.location.pathname}${hash}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('Share link copied');
+      } catch {
+        window.history.replaceState(null, '', hash);
+        showToast('Share state added to the URL');
+      }
+    });
+
+    $('quick-open')?.addEventListener('click', () => {
+      const msg = $('quick-msg');
+      const text = $('quick-text');
+      if (msg) msg.textContent = '';
+      if (text) text.value = '';
+      quickDialog?.showModal();
+      text?.focus();
+    });
+
+    $('quick-apply')?.addEventListener('click', () => {
+      const text = $('quick-text');
+      const msg = $('quick-msg');
+      const values = text?.value.trim().split(/[\s,]+/).filter(Boolean) ?? [];
+      if (!values.length) {
+        if (msg) msg.textContent = 'Paste at least one Base OVR value.';
+        return;
+      }
+
+      const players = Array.from({ length: STARTING_XI_SIZE + MAX_BENCH_SIZE }, () => ({ baseOVR: null, rank: 0 }));
+      for (let i = 0; i < Math.min(values.length, players.length); i += 1) {
+        const match = values[i].match(/^(\d{2,3})(?:\/(\d))?$/);
+        if (!match) {
+          if (msg) msg.textContent = `Invalid value: ${values[i]}. Use 117 or 117/2.`;
+          return;
+        }
+        const baseOVR = Number(match[1]);
+        const rank = match[2] === undefined ? 0 : Number(match[2]);
+        if (!isValidNumber(baseOVR) || !isValidRank(rank)) {
+          if (msg) msg.textContent = `Value out of range: ${values[i]}.`;
+          return;
+        }
+        players[i] = { baseOVR, rank };
+      }
+
+      state.starters = players.slice(0, STARTING_XI_SIZE);
+      state.bench = [
+        ...players.slice(STARTING_XI_SIZE),
+        ...Array.from({ length: MAX_BENCH_SIZE }, () => ({ baseOVR: null, rank: 0 })),
+      ].slice(0, MAX_BENCH_SIZE);
+      quickDialog?.close();
+      setEditorOpen(false);
+      renderAll();
+      showToast('Squad filled');
+    });
   }
 
-  formation.querySelectorAll('.card').forEach((card, index) => {
-    const player = state.starters[index];
-    const base = card.querySelector('[data-field="baseOVR"]');
-    const rank = card.querySelector('[data-field="rank"]');
-    base.addEventListener('input', () => { player.baseOVR = base.value === '' ? null : Number(base.value); recompute(); });
-    rank.addEventListener('change', () => { player.rank = rank.value === '' ? null : Number(rank.value); recompute(); });
-  });
+  function showToast(message) {
+    const toast = $('toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('show');
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => toast.classList.remove('show'), 1800);
+  }
 
-  addSub.addEventListener('click', () => {
-    if (state.subs.length >= maxSubs) return;
-    state.subs.push({ id: Date.now() + Math.random(), baseOVR: null, rank: 0 });
-    renderSubs();
-    recompute();
-  });
+  function installDockObserver() {
+    const hero = $('hero');
+    const dock = $('dock');
+    if (!hero || !dock || !('IntersectionObserver' in window)) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      dock.classList.toggle('show', !entry.isIntersecting && root.dataset.view !== 'list');
+    }, { threshold: 0.15 });
+    observer.observe(hero);
+  }
 
-  document.querySelectorAll('[data-badge]').forEach((checkbox, index) => checkbox.addEventListener('change', () => { state.badges[index] = checkbox.checked; recompute(); }));
-  $('target-ovr')?.addEventListener('input', recompute);
-
-  reset.addEventListener('click', () => {
-    if (!window.confirm('Reset the squad?')) return;
-    state.starters.forEach((player) => { player.baseOVR = null; player.rank = 0; });
-    state.subs = [];
-    state.badges.fill(false);
-    formation.querySelectorAll('[data-field="baseOVR"]').forEach((input) => { input.value = ''; });
-    formation.querySelectorAll('[data-field="rank"]').forEach((select) => { select.value = '0'; });
-    document.querySelectorAll('[data-badge]').forEach((checkbox) => { checkbox.checked = false; });
-    renderSubs();
-    recompute();
-  });
-
-  renderSubs();
-  recompute();
+  loadState();
+  if (formationSelect) formationSelect.value = state.formation;
+  root.dataset.view = 'pitch';
+  $('view-pitch').hidden = false;
+  $('view-list').hidden = true;
+  renderFormation();
+  installChipListeners();
+  installControls();
+  installDockObserver();
+  renderAll();
 }
