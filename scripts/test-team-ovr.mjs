@@ -3,6 +3,10 @@ import {
   BASE_OVR_MIN,
   BASE_OVR_MAX,
   MAX_SQUAD_SIZE,
+  MAX_BENCH_SIZE,
+  DEFAULT_FORMATION,
+  FORMATIONS,
+  getFormation,
   RANK_OPTIONS,
   calculateBadgeBonus,
   calculateTeamOVR,
@@ -35,6 +39,11 @@ assert.equal(calculateTeamOVR({ players: players(11, 117, 0), selectedBadges: []
 assert.equal(isPlayerFilled({ baseOVR: 117, rank: 0 }), true);
 assert.equal(isPlayerFilled({ baseOVR: 117, rank: null }), false);
 assert.equal(RANK_OPTIONS.join(','), '0,1,2,3,4,5');
+assert.equal(MAX_BENCH_SIZE, 7);
+assert.equal(FORMATIONS.length >= 1, true);
+assert.equal(getFormation(DEFAULT_FORMATION).id, DEFAULT_FORMATION);
+assert.equal(getFormation('missing').id, DEFAULT_FORMATION);
+assert.equal(getFormation(DEFAULT_FORMATION).slots.length, STARTING_XI_SIZE);
 assert.equal(BASE_OVR_MAX, 130);
 
-console.log('Team OVR tests passed: 21 scenarios.');
+console.log('Team OVR tests passed: 26 scenarios.');
