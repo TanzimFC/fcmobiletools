@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { DEFAULT_MARKET_TAX } from '../lib/fcMobileInvestment.js';
+import { formatCoins, formatCoinsExact, parseCoinsInput } from '../lib/formatCoins.js';
 
 const title = 'FC Mobile Investment Calculator | Profit & ROI Calculator | FCMOBILETOOLS';
 const description = 'Calculate FC Mobile investment profit, market tax, break-even sell price, ROI and target sell price from your buy price, quantity and expected sale price.';
@@ -35,22 +36,22 @@ const description = 'Calculate FC Mobile investment profit, market tax, break-ev
         <div class="calc-body">
           <div class="inputs-panel">
             <div class="field-grid">
-              <label><span>BUY PRICE <small>PER CARD</small></span><div class="input-wrap"><b>◈</b><input id="buyPrice" type="number" min="1" step="1" value="1000000" inputmode="numeric" /></div></label>
-              <label><span>SELL PRICE <small>PER CARD</small></span><div class="input-wrap"><b>◈</b><input id="sellPrice" type="number" min="1" step="1" value="1250000" inputmode="numeric" /></div></label>
+              <label><span>BUY PRICE <small>PER CARD</small></span><div class="input-wrap"><b>◈</b><input id="buyPrice" type="text" inputmode="decimal" autocomplete="off" value="1M" placeholder="1M" aria-describedby="coin-input-help" /></div></label>
+              <label><span>SELL PRICE <small>PER CARD</small></span><div class="input-wrap"><b>◈</b><input id="sellPrice" type="text" inputmode="decimal" autocomplete="off" value="1.25M" placeholder="1.25M" aria-describedby="coin-input-help" /></div></label>
               <label><span>QUANTITY <small>CARDS</small></span><div class="input-wrap"><b>×</b><input id="quantity" type="number" min="1" step="1" value="1" inputmode="numeric" /></div></label>
               <label><span>MARKET TAX <small>PERCENT</small></span><div class="input-wrap"><b>%</b><input id="taxRate" type="number" min="0" max="100" step="0.1" value={DEFAULT_MARKET_TAX} inputmode="decimal" /></div></label>
             </div>
-            <div class="target-row"><div><span>WANT A TARGET PROFIT?</span><p>Set a coin target and the calculator gives you the required sell price</p></div><div class="target-input"><b>◈</b><input id="targetProfit" type="number" min="0" step="1" value="250000" inputmode="numeric" /><span>coins</span></div></div>
+            <div class="target-row"><div><span>WANT A TARGET PROFIT?</span><p id="coin-input-help">Use normal numbers or shorthand such as 750K, 12.5M or 1.25B.</p></div><div class="target-input"><b>◈</b><input id="targetProfit" type="text" inputmode="decimal" autocomplete="off" value="250K" placeholder="250K" aria-describedby="coin-input-help" /><span>coins</span></div></div>
           </div>
 
           <div class="result-panel">
             <div class="result-label">PROJECTED PROFIT</div>
-            <div class="result-profit" id="profit">+250,000</div>
+            <div class="result-profit" id="profit">+250K</div>
             <div class="result-sub"><span>after <b id="taxRateInline">10%</b> market tax</span><span id="statusPill" class="positive">PROFITABLE</span></div>
             <div class="result-stats">
-              <div><small>TOTAL COST</small><b id="totalCost">1,000,000</b></div>
-              <div><small>NET SALE</small><b id="netSale">1,125,000</b></div>
-              <div><small>TAX PAID</small><b id="taxAmount">125,000</b></div>
+              <div><small>TOTAL COST</small><b id="totalCost">1M</b></div>
+              <div><small>NET SALE</small><b id="netSale">1.13M</b></div>
+              <div><small>TAX PAID</small><b id="taxAmount">125K</b></div>
               <div><small>ROI</small><b id="roi">25.0%</b></div>
             </div>
           </div>
@@ -61,19 +62,19 @@ const description = 'Calculate FC Mobile investment profit, market tax, break-ev
 
     <section class="wrap insight-section">
       <div class="insight-grid">
-        <article class="insight-card break-even"><div class="insight-head"><span>BREAK-EVEN</span><i>01</i></div><strong id="breakEven">1,111,111</strong><p>Minimum sell price per card to recover your buy price after the selected market tax.</p><div class="micro"><span>PRICE MOVE REQUIRED</span><b id="breakEvenMove">+11.1%</b></div></article>
-        <article class="insight-card target"><div class="insight-head"><span>TARGET SELL PRICE</span><i>02</i></div><strong id="targetSell">1,388,889</strong><p>Sell price per card needed to reach your target profit after tax.</p><div class="micro"><span>YOUR TARGET</span><b id="targetValue">250,000</b></div></article>
-        <article class="insight-card exposure"><div class="insight-head"><span>CAPITAL AT RISK</span><i>03</i></div><strong id="exposure">1,000,000</strong><p>Total coins committed to this position before any sale happens.</p><div class="micro"><span>QUANTITY</span><b id="quantityValue">1 CARD</b></div></article>
+        <article class="insight-card break-even"><div class="insight-head"><span>BREAK-EVEN</span><i>01</i></div><strong id="breakEven">1.11M</strong><p>Minimum sell price per card to recover your buy price after the selected market tax.</p><div class="micro"><span>PRICE MOVE REQUIRED</span><b id="breakEvenMove">+11.1%</b></div></article>
+        <article class="insight-card target"><div class="insight-head"><span>TARGET SELL PRICE</span><i>02</i></div><strong id="targetSell">1.39M</strong><p>Sell price per card needed to reach your target profit after tax.</p><div class="micro"><span>YOUR TARGET</span><b id="targetValue">250,000</b></div></article>
+        <article class="insight-card exposure"><div class="insight-head"><span>CAPITAL AT RISK</span><i>03</i></div><strong id="exposure">1M</strong><p>Total coins committed to this position before any sale happens.</p><div class="micro"><span>QUANTITY</span><b id="quantityValue">1 CARD</b></div></article>
       </div>
     </section>
 
     <section class="wrap explain-section">
       <div class="section-intro"><span class="eyebrow">02 / READ THE DEAL</span><h2>Profit is not the<br /><em>listing price</em></h2><p>The market tax is taken from the sale. This calculator works from the money you actually receive, not the headline market price.</p></div>
       <div class="flow">
-        <div class="flow-step"><b>01</b><span>BUY</span><strong id="flowBuy">1,000,000</strong><small>Your total acquisition cost</small></div>
-        <i>→</i><div class="flow-step tax"><b>02</b><span>SELL</span><strong id="flowSell">1,250,000</strong><small>Gross market sale value</small></div>
-        <i>→</i><div class="flow-step net"><b>03</b><span>AFTER TAX</span><strong id="flowNet">1,125,000</strong><small>Coins that come back to you</small></div>
-        <i>→</i><div class="flow-step profit"><b>04</b><span>RETURN</span><strong id="flowProfit">+125,000</strong><small>Actual profit on the position</small></div>
+        <div class="flow-step"><b>01</b><span>BUY</span><strong id="flowBuy">1M</strong><small>Your total acquisition cost</small></div>
+        <i>→</i><div class="flow-step tax"><b>02</b><span>SELL</span><strong id="flowSell">1.25M</strong><small>Gross market sale value</small></div>
+        <i>→</i><div class="flow-step net"><b>03</b><span>AFTER TAX</span><strong id="flowNet">1.13M</strong><small>Coins that come back to you</small></div>
+        <i>→</i><div class="flow-step profit"><b>04</b><span>RETURN</span><strong id="flowProfit">+125K</strong><small>Actual profit on the position</small></div>
       </div>
     </section>
 
@@ -102,33 +103,49 @@ const description = 'Calculate FC Mobile investment profit, market tax, break-ev
 <script>
 import { calculateInvestment, DEFAULT_MARKET_TAX } from '../lib/fcMobileInvestment.js';
 const $ = (id) => document.getElementById(id);
-const fmt = (n) => Math.round(Number(n) || 0).toLocaleString('en-US');
+const fmt = (n) => formatCoins(n);
+const exact = (n) => formatCoinsExact(n);
 const money = (n) => `${n < 0 ? '-' : ''}${fmt(Math.abs(n))}`;
+const setCoinOutput = (id, value) => {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = fmt(value);
+  el.title = `${exact(value)} coins`;
+};
 const fields = ['buyPrice','sellPrice','quantity','taxRate','targetProfit'].map($);
 function render(){
-  const d = calculateInvestment({ buyPrice: $('buyPrice').value, sellPrice: $('sellPrice').value, quantity: $('quantity').value, taxRate: $('taxRate').value, targetProfit: $('targetProfit').value });
+  const d = calculateInvestment({
+    buyPrice: parseCoinsInput($('buyPrice').value),
+    sellPrice: parseCoinsInput($('sellPrice').value),
+    quantity: $('quantity').value,
+    taxRate: $('taxRate').value,
+    targetProfit: parseCoinsInput($('targetProfit').value)
+  });
   const signed = d.profit >= 0 ? `+${money(d.profit)}` : `-${money(d.profit)}`;
   $('profit').textContent = signed;
+  $('profit').title = `${d.profit < 0 ? '-' : ''}${exact(Math.abs(d.profit))} coins`;
   $('heroProfit').textContent = signed;
+  $('heroProfit').title = `${d.profit < 0 ? '-' : ''}${exact(Math.abs(d.profit))} coins`;
   $('heroRoi').textContent = `${d.roi.toFixed(1)}% ROI`;
-  $('totalCost').textContent = fmt(d.totalCost);
-  $('netSale').textContent = fmt(d.netSale);
-  $('taxAmount').textContent = fmt(d.taxAmount);
+  setCoinOutput('totalCost', d.totalCost);
+  setCoinOutput('netSale', d.netSale);
+  setCoinOutput('taxAmount', d.taxAmount);
   $('roi').textContent = `${d.roi.toFixed(1)}%`;
   $('taxBadge').textContent = `${d.taxRate}%`;
   $('taxRateInline').textContent = `${d.taxRate}%`;
-  $('breakEven').textContent = fmt(d.breakEvenSell);
-  $('heroBreakEven').textContent = fmt(d.breakEvenSell);
-  $('targetSell').textContent = fmt(d.targetSell);
-  $('targetValue').textContent = fmt(d.targetProfit);
-  $('exposure').textContent = fmt(d.totalCost);
+  setCoinOutput('breakEven', d.breakEvenSell);
+  setCoinOutput('heroBreakEven', d.breakEvenSell);
+  setCoinOutput('targetSell', d.targetSell);
+  setCoinOutput('targetValue', d.targetProfit);
+  setCoinOutput('exposure', d.totalCost);
   $('quantityValue').textContent = `${d.quantity.toLocaleString('en-US')} CARD${d.quantity === 1 ? '' : 'S'}`;
   const breakMove = d.buy > 0 ? ((d.breakEvenSell / d.buy - 1) * 100) : 0;
   $('breakEvenMove').textContent = `+${breakMove.toFixed(1)}%`;
-  $('flowBuy').textContent = fmt(d.totalCost);
-  $('flowSell').textContent = fmt(d.grossSale);
-  $('flowNet').textContent = fmt(d.netSale);
+  setCoinOutput('flowBuy', d.totalCost);
+  setCoinOutput('flowSell', d.grossSale);
+  setCoinOutput('flowNet', d.netSale);
   $('flowProfit').textContent = signed;
+  $('flowProfit').title = `${d.profit < 0 ? '-' : ''}${exact(Math.abs(d.profit))} coins`;
   $('refMultiplier').textContent = d.buy > 0 ? `${(d.breakEvenSell / d.buy).toFixed(3)}×` : '—';
   $('margin').textContent = `${d.margin.toFixed(1)}%`;
   $('priceMove').textContent = `${d.priceChange >= 0 ? '+' : ''}${d.priceChange.toFixed(1)}%`;
@@ -138,7 +155,20 @@ function render(){
   $('heroProfit').classList.toggle('loss', d.profit < 0);
 }
 fields.forEach((field) => field.addEventListener('input', render));
-$('reset').addEventListener('click', () => { $('buyPrice').value='1000000'; $('sellPrice').value='1250000'; $('quantity').value='1'; $('taxRate').value=String(DEFAULT_MARKET_TAX); $('targetProfit').value='250000'; render(); });
+['buyPrice','sellPrice','targetProfit'].forEach((id) => $(id).addEventListener('blur', (event) => {
+  const raw = event.target.value.trim();
+  if (!raw) return;
+  const parsed = parseCoinsInput(raw);
+  if (parsed > 0) event.target.value = formatCoins(parsed);
+}));
+$('reset').addEventListener('click', () => {
+  $('buyPrice').value='1M';
+  $('sellPrice').value='1.25M';
+  $('quantity').value='1';
+  $('taxRate').value=String(DEFAULT_MARKET_TAX);
+  $('targetProfit').value='250K';
+  render();
+});
 render();
 </script>
 
