@@ -235,13 +235,8 @@ async function publishSnapshot(env){
   const body=await github(env,'contents/src/data/tournaments.js',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({message:'tournament: publish public tournament snapshot',content:encodeGithub(source),sha:file.sha,branch:'main'})});
   const commitSha=body.commit?.sha||null;
   for(const t of snapshot){
-    const existing=await sb(env,'tournament_publications?tournament_id=eq.'+encodeURIComponent(t.id)+'&select=id&limit=1');
-    const payload={git_commit_sha:commitSha,published_at:new Date().toISOString(),updated_at:new Date().toISOString()};
-    if(existing?.length){
-      await sb(env,'tournament_publications?tournament_id=eq.'+encodeURIComponent(t.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)});
-    }else{
-      await sb(env,'tournament_publications',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:t.id,...payload}])});
-    }
+    const payload={tournament_id:t.id,git_commit_sha:commitSha,published_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    await sb(env,'tournament_publications?on_conflict=tournament_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([payload])});
     await sb(env,'tournaments?id=eq.'+t.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:t.status==='completed'?'completed':'published',published_at:new Date().toISOString(),updated_at:new Date().toISOString()})});
   }
   return {commitSha,count:snapshot.length,unchanged:false};
