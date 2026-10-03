@@ -14,6 +14,8 @@ export interface Props {
   modifiedTime?: string;
   section?: string;
   author?: string;
+  robots?: string;
+  googlebot?: string;
 }
 
 const {
@@ -25,6 +27,8 @@ const {
   modifiedTime,
   section,
   author = 'FCMOBILETOOLS',
+  robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
+  googlebot = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
 } = Astro.props;
 
 const siteOrigin = Astro.site ?? new URL('https://fcmobiletools.online');
@@ -122,9 +126,9 @@ const pageSchema = {
   <meta name="theme-color" content="#071018" />
   <meta name="description" content={description} />
   <meta name="author" content={author ?? 'FCMOBILETOOLS'} />
-  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <meta name="robots" content={robots} />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <meta name="googlebot" content={googlebot} />
   <meta name="google-adsense-account" content="ca-pub-2527295119501596" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2527295119501596" crossorigin="anonymous"></script>
   <link rel="canonical" href={canonical} />

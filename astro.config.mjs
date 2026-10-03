@@ -20,7 +20,17 @@ export default defineConfig({
   adapter: cloudflare(),
   build: { format: 'directory' },
   integrations: [sitemap({
-    filter: (page) => !new URL(page).pathname.startsWith('/admin')
+    filter: (page) => {
+      const pathname = new URL(page).pathname;
+      return ![
+        '/admin',
+        '/admin/',
+        '/creator/login',
+        '/creator/login/',
+        '/reset-center',
+        '/reset-center/'
+      ].includes(pathname);
+    }
   })],
   markdown: { remarkPlugins: [remarkGfm] },
   redirects: {

@@ -1075,14 +1075,15 @@ async function redeemPage(request, env, ctx, url) {
 
 export default { async fetch(request,env,ctx) {
   const url=new URL(request.url);
-  const tournamentRoute=await tournamentWorkerRoute(request,env,url);
-  if(tournamentRoute) return tournamentRoute;
   const hostHeader=(request.headers.get('host')||'').split(':')[0].toLowerCase();
 
-  // The workers.dev hostname is NEVER a public site origin.
-  // Redirect it before any other path handling so every request makes a single
-  // hop to the real domain, including old/unknown paths and query strings.
-  if(url.hostname === 'tanzimfc.fcmobiletools.workers.dev' || hostHeader === 'tanzimfc.fcmobiletools.workers.dev') {
+  // Never expose a second public origin. Redirect the legacy workers.dev host
+  // and the www hostname to the one canonical public origin before any route,
+  // auth, or tournament handling can return content.
+  if(
+    url.hostname === 'tanzimfc.fcmobiletools.workers.dev' ||
+    hostHeader === 'tanzimfc.fcmobiletools.workers.dev'
+  ) {
     const destination=new URL(url.pathname + url.search, 'https://fcmobiletools.online');
     return new Response(null,{
       status:308,
@@ -1092,6 +1093,37 @@ export default { async fetch(request,env,ctx) {
       }
     });
   }
+
+  if(
+    url.hostname === 'www.fcmobiletools.online' ||
+    hostHeader === 'www.fcmobiletools.online'
+  ) {
+    const destination=new URL(url.pathname + url.search, 'https://fcmobiletools.online');
+    return new Response(null,{
+      status:308,
+      headers:{
+        location:destination.toString(),
+        'cache-control':'public, max-age=86400'
+      }
+    });
+  }
+
+  // Keep crawl-control files on the static asset path with explicit cache
+  // headers. These routes must never fall through to application routing.
+  if(
+    url.pathname === '/robots.txt' ||
+    url.pathname === '/sitemap-index.xml' ||
+    /^\/sitemap-\\d+\\.xml$/.test(url.pathname)
+  ) {
+    const asset=await env.ASSETS.fetch(new Request(url,request));
+    if(!asset.ok) return asset;
+    const headers=new Headers(asset.headers);
+    headers.set('cache-control','public, max-age=3600, must-revalidate');
+    return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
+  }
+
+  const tournamentRoute=await tournamentWorkerRoute(request,env,url);
+  if(tournamentRoute) return tournamentRoute;
 
   const legacyRedirects = {
     '/about': '/legal/about/',
