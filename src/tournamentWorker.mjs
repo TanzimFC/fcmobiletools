@@ -237,7 +237,7 @@ async function publishSnapshot(env){
   for(const t of snapshot){
     const payload={tournament_id:t.id,git_commit_sha:commitSha,published_at:new Date().toISOString(),updated_at:new Date().toISOString()};
     await sb(env,'tournament_publications?on_conflict=tournament_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([payload])});
-    await sb(env,'tournaments?id=eq.'+t.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:t.status==='completed'?'completed':'published',published_at:new Date().toISOString(),updated_at:new Date().toISOString()})});
+    await sb(env,'tournaments?id=eq.'+t.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:t.status,published_at:new Date().toISOString(),updated_at:new Date().toISOString()})});
   }
   return {commitSha,count:snapshot.length,unchanged:false};
 }
