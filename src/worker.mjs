@@ -1113,7 +1113,7 @@ export default { async fetch(request,env,ctx) {
   if(
     url.pathname === '/robots.txt' ||
     url.pathname === '/sitemap-index.xml' ||
-    /^\/sitemap-\\d+\\.xml$/.test(url.pathname)
+    /^\/sitemap-\d+\.xml$/.test(url.pathname)
   ) {
     const asset=await env.ASSETS.fetch(new Request(url,request));
     if(!asset.ok) return asset;
