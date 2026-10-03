@@ -949,7 +949,7 @@ async function adminDashboard(request, env, url) {
 /* ------------------------------------------------------------------ */
 
 const PUBLIC_REDEEM_PATH = '/api/public/redeem-codes';
-const PUBLIC_REDEEM_TTL = 20; // seconds the edge keeps one snapshot
+const PUBLIC_REDEEM_TTL = 60; // seconds the edge keeps one snapshot; admin writes purge this cache
 
 async function redeemIdentity(request, env) {
   if (await authenticated(request, env)) return { role: 'admin', actor: 'admin' };
