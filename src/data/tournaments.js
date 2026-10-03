@@ -280,7 +280,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 688,
               "displayName": "TanzimFC",
@@ -291,9 +291,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "FCMPro",
               "playerTag": "PRO"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 4,
+            "player2Score": 0,
+            "winnerPlayerId": 688,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -307,7 +307,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 690,
               "displayName": "DhakaFC",
@@ -318,9 +318,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "Nova",
               "playerTag": "NOVA"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 5,
+            "player2Score": 0,
+            "winnerPlayerId": 690,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -334,7 +334,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 692,
               "displayName": "RivalsX",
@@ -345,9 +345,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "Blaze",
               "playerTag": "BLZ"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 0,
+            "player2Score": 0,
+            "winnerPlayerId": 693,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -361,7 +361,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 694,
               "displayName": "Storm",
@@ -372,9 +372,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "Phoenix",
               "playerTag": "PHX"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 0,
+            "player2Score": 0,
+            "winnerPlayerId": 695,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -388,9 +388,17 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "scheduled",
-            "player1": null,
-            "player2": null,
+            "status": "ready",
+            "player1": {
+              "id": 688,
+              "displayName": "TanzimFC",
+              "playerTag": "TZFC"
+            },
+            "player2": {
+              "id": 690,
+              "displayName": "DhakaFC",
+              "playerTag": "DHK"
+            },
             "player1Score": null,
             "player2Score": null,
             "winnerPlayerId": null,
@@ -407,9 +415,17 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "scheduled",
-            "player1": null,
-            "player2": null,
+            "status": "ready",
+            "player1": {
+              "id": 693,
+              "displayName": "Blaze",
+              "playerTag": "BLZ"
+            },
+            "player2": {
+              "id": 695,
+              "displayName": "Phoenix",
+              "playerTag": "PHX"
+            },
             "player1Score": null,
             "player2Score": null,
             "winnerPlayerId": null,
@@ -453,7 +469,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 688,
               "displayName": "TanzimFC",
@@ -464,9 +480,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "FCMPro",
               "playerTag": "PRO"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 4,
+            "player2Score": 0,
+            "winnerPlayerId": 688,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -480,7 +496,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 690,
               "displayName": "DhakaFC",
@@ -491,9 +507,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "Nova",
               "playerTag": "NOVA"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 5,
+            "player2Score": 0,
+            "winnerPlayerId": 690,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -507,7 +523,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 692,
               "displayName": "RivalsX",
@@ -518,9 +534,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "Blaze",
               "playerTag": "BLZ"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 0,
+            "player2Score": 0,
+            "winnerPlayerId": 693,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -534,7 +550,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 694,
               "displayName": "Storm",
@@ -545,9 +561,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "Phoenix",
               "playerTag": "PHX"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 0,
+            "player2Score": 0,
+            "winnerPlayerId": 695,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -561,9 +577,17 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "scheduled",
-            "player1": null,
-            "player2": null,
+            "status": "ready",
+            "player1": {
+              "id": 688,
+              "displayName": "TanzimFC",
+              "playerTag": "TZFC"
+            },
+            "player2": {
+              "id": 690,
+              "displayName": "DhakaFC",
+              "playerTag": "DHK"
+            },
             "player1Score": null,
             "player2Score": null,
             "winnerPlayerId": null,
@@ -580,9 +604,17 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "scheduled",
-            "player1": null,
-            "player2": null,
+            "status": "ready",
+            "player1": {
+              "id": 693,
+              "displayName": "Blaze",
+              "playerTag": "BLZ"
+            },
+            "player2": {
+              "id": 695,
+              "displayName": "Phoenix",
+              "playerTag": "PHX"
+            },
             "player1Score": null,
             "player2Score": null,
             "winnerPlayerId": null,
