@@ -613,6 +613,6 @@ export const TOURNAMENT_PUBLICATIONS = [
       }
     ],
     "winner": null,
-    "publishedAt": null
+    "publishedAt": "2026-10-01T17:48:44.791+00:00"
   }
 ];
