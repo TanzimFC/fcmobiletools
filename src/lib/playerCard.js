@@ -1,3 +1,5 @@
+import { formatCoins, formatCoinsExact } from './formatCoins.js';
+
 const esc = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const imagePath = (value) => {
   const url = String(value || '').trim();
@@ -21,6 +23,10 @@ export function renderPlayerCard(player = {}) {
   const portrait = image
     ? `<img class="player-card-image" src="${esc(image)}" alt="${esc(name)} player card" loading="lazy" decoding="async" onerror="this.remove();this.closest('.player-card-art')?.classList.add('image-missing')">`
     : '';
+  const sellPrice = Number(player.sell_price?.current_sell_price);
+  const price = Number.isFinite(sellPrice) && sellPrice >= 0
+    ? `<span class="player-card-price" title="${esc(formatCoinsExact(sellPrice))} coins"><img src="/assets/player-ui/coins.svg" alt="" loading="lazy">${esc(formatCoins(sellPrice))}</span>`
+    : '';
   const shards = player.shard_cost
     ? `<span class="player-card-shards"><img src="/assets/player-ui/shards.svg" alt="" loading="lazy">${Number(player.shard_cost.shard_cost).toLocaleString()}</span>`
     : '';
@@ -35,6 +41,7 @@ export function renderPlayerCard(player = {}) {
       </div>
       <div class="player-card-identity"><strong>${esc(name)}</strong><span>${esc(event)}</span></div>
       <div class="player-card-footline"><span>FCMOBILETOOLS</span><span>${esc(player.position || 'PLAYER')}</span></div>
+      ${price}
       ${shards}
     </div>
     <div class="player-card-copy"><h2>${esc(name)}</h2><p>${esc(event)}</p></div>
