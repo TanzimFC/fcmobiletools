@@ -7,7 +7,7 @@
 
 const API = '/api/public/redeem-codes';
 const EA_URL = 'https://redeem.fcm.ea.com/';
-const POLL_MS = 45_000;
+const POLL_MS = 120_000;
 const PAGE_SIZE = 20;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -49,6 +49,8 @@ function boot() {
     ? new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}), timeZone: 'UTC' })
     : '—';
 
+  let refreshInFlight = null;
+
   const state = {
     codes: [],
     serverDate: new Date().toISOString().slice(0, 10),
@@ -61,6 +63,7 @@ function boot() {
     lastSync: 0,
     online: true,
     firstRender: true,
+    etag: null,
   };
 
   const age = (iso) => {
@@ -397,15 +400,32 @@ function boot() {
   }
 
   async function refresh({ announce = true } = {}) {
-    try {
-      const response = await fetch(API, { headers: { accept: 'application/json' } });
-      if (!response.ok) throw new Error(String(response.status));
-      apply(await response.json(), { announce });
-      return true;
-    } catch {
-      setSync(false);
-      return false;
-    }
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = (async () => {
+      try {
+        const headers = { accept: 'application/json' };
+        if (state.etag) headers['if-none-match'] = state.etag;
+
+        const response = await fetch(API, { headers, cache: 'no-store' });
+
+        if (response.status === 304) {
+          state.lastSync = Date.now();
+          setSync(true);
+          return true;
+        }
+        if (!response.ok) throw new Error(String(response.status));
+
+        state.etag = response.headers.get('etag') || state.etag;
+        apply(await response.json(), { announce });
+        return true;
+      } catch {
+        setSync(false);
+        return false;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+    return refreshInFlight;
   }
 
   function readBootstrap() {
@@ -570,10 +590,12 @@ function boot() {
     });
   }
 
-  setInterval(paintSync, 10_000);
+  setInterval(paintSync, 30_000);
   setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, POLL_MS);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && Date.now() - state.lastSync > 20_000) refresh();
+    if (document.visibilityState === 'visible' && Date.now() - state.lastSync > 90_000) refresh();
   });
-  window.addEventListener('online', () => refresh());
+  window.addEventListener('online', () => {
+    if (Date.now() - state.lastSync > 90_000) refresh();
+  });
 }
