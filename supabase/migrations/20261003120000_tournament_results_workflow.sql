@@ -273,7 +273,7 @@ begin
           where tournament_id=m.tournament_id and id=any(dep_tie_ids);
         end if;
 
-        perform public.link_tournament_progression(m.tournament_id);
+        null;
       end if;
     else
       if old_winner is distinct from new_winner and m.next_match_id is not null then
@@ -319,7 +319,7 @@ begin
           where id=dep.id;
         end loop;
 
-        perform public.link_tournament_progression(m.tournament_id);
+        null;
       end if;
     end if;
   end if;
