@@ -5,8 +5,8 @@
 | Piece | Where | Notes |
 |---|---|---|
 | Storage | Cloudflare D1, table `redeem_codes` | Created and seeded automatically on first request (`src/lib/redeem.js`). |
-| Public API | `GET /api/public/redeem-codes` | ETag + 20 s edge cache. Cache is purged on every admin write. |
-| Public page | `src/pages/redeem-codes.astro` + `src/scripts/redeem-page.js` | Static HTML. The Worker injects the live snapshot and JSON-LD via `HTMLRewriter`, then the page polls every 45 s. |
+| Public API | `GET /api/public/redeem-codes` | ETag + 60 s edge cache. Cache is purged on every admin write. |
+| Public page | `src/pages/redeem-codes.astro` + `src/scripts/redeem-page.js` | Static HTML. The Worker injects the live snapshot and JSON-LD via `HTMLRewriter`, then the page polls every 120 s and uses ETags to skip unchanged re-renders. |
 | Admin API | `/api/admin/redeem*` and `/api/creator/redeem*` | Admins: full access. Creators: create / edit / expire / verify. Only admins can delete. |
 | Admin UI | "Redeem Codes" section of `admin/dashboard.html` | Quick publish, bulk add, bulk actions, live preview, CSV export. |
 
