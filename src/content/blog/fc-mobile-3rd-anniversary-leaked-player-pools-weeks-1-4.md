@@ -124,7 +124,7 @@ For players already running a stacked midfield, Bellingham is the card that chan
 | :--- | ---: | :--- |
 | **Cristiano Ronaldo** | **122** | ST |
 | Pepe | 121 | CB |
-| Extended Pool B Players | 120 | Extended pool |
+| Sandro Tonali | 120 | CDM |
 
 Ronaldo is the obvious headline in Draft B.
 
@@ -294,54 +294,11 @@ For a player who already spends FC Points, the no-duplicate structure makes the 
 
 That does not automatically make every Box worth clearing. It just means the spending outcome is more predictable than a pure repeatable pack system.
 
-## The leak also changes how you should think about the Market
+## How to read these leaks
 
-Big anniversary cards can affect the FC Mobile market, but the leak alone is not enough to predict a Market Crash or a card's exact price path.
+The reported lists are best used as a quick reference for the weekly player pool. A card being listed here does not guarantee that its final OVR, position, availability or event requirements will stay unchanged in the live game.
 
-There are several things that still matter:
-
-- Whether the card is tradeable
-- How many copies enter the economy
-- The actual Draft and Box costs
-- What players can earn for free
-- Whether supply hits the market at the same time
-- Whether another event drops a better card for the same position
-
-So do not dump a player or stack coins purely because a 122 OVR leak appeared.
-
-A leaked card can look incredible on paper and still turn out to be a bad market move once the live supply, Rank-Up path and demand are known.
-
-The same goes for investment cards. Before moving a large coin balance, check the live event, the market price and the actual player availability.
-
-## What about Rank-Ups and Training Transfer?
-
-This four-week leak is mostly about acquisition, but the usual squad-building questions still apply.
-
-A 122 OVR card is not automatically the right upgrade for your team.
-
-Look at the card's **position, Rank-Up cost, Training Transfer plan and role in your formation**.
-
-A player like a 122 OVR ST can be brilliant if you actually need a striker. It is much less useful when your starting XI already has two attackers that fit your playstyle and your real bottleneck is at CDM or CB.
-
-The same logic applies to the Box. A 122 OVR defender may save you from a future Rank-Up spend in a way another attacker does not.
-
-And yes, skill moves still matter. A card that looks insane on the database can feel very different in actual H2H depending on work rates, body type, skill moves and how you build your attack.
-
-## Which weeks stand out on paper?
-
-Without turning a leak into a ranking, the four weeks have clear themes.
-
-**Week 1** is built around Mbappé, Blanc, Zambrotta and Ginola, with a strong spread across ST, CB, RB and LW.
-
-**Week 2** puts Bellingham and Ronaldo on the front page, with Vieira and Roberto Carlos leading the Box.
-
-**Week 3** leans heavily into attacking legends and creators, led by Messi, Agüero, Zidane and Henry.
-
-**Week 4** brings a midfield and defensive icon-heavy finish with Beckham, Jairzinho, Gullit and Maldini.
-
-The most useful way to read that is by **position need**, not by hype alone.
-
-## Full reported Draft pools
+For now, the useful details are the names, OVRs, positions and reported week. The live Anniversary event remains the final check.\n\n## Full reported Draft pools
 
 Here is the complete reported four-week table in one place.
 
@@ -358,7 +315,7 @@ Here is the complete reported four-week table in one place.
 | 2 | A | John Arne Riise | 120 | LB |
 | 2 | B | Cristiano Ronaldo | 122 | ST |
 | 2 | B | Pepe | 121 | CB |
-| 2 | B | Extended Pool B Players | 120 | Extended pool |
+| 2 | B | Sandro Tonali | 120 | CDM |
 | 3 | A | Lionel Messi | 122 | RW / ST |
 | 3 | A | Kevin De Bruyne | 121 | CAM / CM |
 | 3 | A | Pierre-Emerick Aubameyang | 120 | ST |
@@ -372,17 +329,9 @@ Here is the complete reported four-week table in one place.
 | 4 | B | Mario Balotelli | 121 | ST |
 | 4 | B | Daniel Sturridge | 120 | ST |
 
-## A few things to keep an eye on
+## Leak status
 
-First, watch for **OVR or position changes**. Leaks can be pulled from builds where values are not final.
-
-Second, watch the **actual Draft requirement** when each week opens. A leaked pool tells you who may be there, not necessarily the full cost structure around it.
-
-Third, keep an eye on the **Box contents and FC Point pricing** before deciding whether to spend beyond the free pull.
-
-And finally, do not assume a leaked 122 OVR automatically kills the market for an older card. Meta demand, formation fit, Rank-Ups and supply all move differently.
-
-## Bottom line
+**Updated October 3, 2026:** Week 2 Draft B's reported 120 OVR slot is now identified as **Sandro Tonali, CDM**. The rest of the player pools in this article remain based on the reported leak list above.\n\n## Bottom line
 
 The reported FC Mobile 3rd Anniversary player pool is loaded from Week 1 through Week 4.
 
@@ -390,6 +339,6 @@ The Draft side reportedly rotates through major names including **Mbappé, Blanc
 
 The Box is the part to read carefully: **one free attempt, 11 FC Point attempts, 12 total slots and no duplicates according to the reported structure**. Clear the Box and the featured 122 OVR reward is reportedly guaranteed.
 
-For now, treat every player, OVR, position and Box rule in this article as **community-reported leak information**. The live Anniversary event is the final source of truth.
+Everything in this article is **community-reported leak information**. The live Anniversary event is the final source of truth.
 
 **Last reviewed: October 3, 2026**
