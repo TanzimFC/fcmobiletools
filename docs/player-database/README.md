@@ -1,46 +1,96 @@
-# Player database status and import
+# Player database architecture
 
-The player catalog is served by the existing Astro site and its Cloudflare Worker. Supabase/Postgres stores the full records; the browser only receives an indexed, paginated slice from `GET /api/players` (48 by default, 100 maximum). Individual SEO pages are generated from the small `src/data/playerPageCatalog.json` route index and load the current record from `GET /api/players/:slug`.
+The public player catalog is powered by the Zenith FC Mobile API through the existing Cloudflare Worker. Supabase remains available as an optional persistence/cache layer, but the public catalog does not depend on a successful bulk import.
 
-## Initial catalog
+## Public data flow
 
-The first populated slice contains 580 Star Signings players with player/asset ID, name, OVR, position, alternate positions, program, Star Shard requirement, and a player-card image URL. The source catalog advertised 580 rows; duplicate IDs and required-field validation passed. The observation date recorded in Supabase is September 16, 2026. The public source is [FC Mobile Squad's Star Shards catalog](https://fcmobilesquad.com/star-signings-players).
-
-Source-reported values are kept as dated observations with their source URL. Missing information stays null; no player stats, rank modifiers, PlayStyles, traits, club details, or coin prices were fabricated. The first slice is useful for browsing the Star Signings roster, not a complete all-card database.
-
-## Routes and API
-
-- `/players/` — database-backed pagination, search, position/club/league/nation/event/OVR filters, and OVR/name sorting. Custom card frames render from the stored player fields even when artwork cannot load.
-- `/player/<slug>/` — statically rendered title/description/canonical metadata for each indexed player, with record details fetched from the API.
-- `GET /api/players` — search, filters, sort, limit/offset pagination, image mapping, and latest shard/price observations.
-- `GET /api/players/filters` — distinct position, club, league, nation, and event facets from a bounded Postgres aggregate RPC.
-- `GET /api/players/:slug` — metadata, stats, ranks, abilities, assets, and latest observations.
-
-The Worker uses the project's Supabase publishable key, never a service-role key. Postgres RLS limits public reads to active player rows and associated public records; admin writes require the `app_metadata.role=admin` claim.
-
-## Import tools
-
-```sh
-node scripts/player-data/fetch-star-shards.mjs /tmp/star-shards.json
-node scripts/player-data/normalize-player-import.mjs /tmp/star-shards.json /tmp/star-shards-preview.json
+```text
+Zenith API
+   ↓
+Cloudflare Worker /api/players
+   ↓
+FCMobiletools /players/
+   ↓
+/player/<slug>
 ```
 
-Fetch is sequential and throttled. The normalizer validates IDs, slugs, OVR, positions, URLs, source attribution, permissions, stats objects, prices, and shard costs. Review normalized output before any import. Initial rows were loaded in batches into Supabase after validation; the public admin CRUD/import interface is not included yet.
+The Worker requests only the page needed by the visitor and keeps a small in-memory cache per Worker isolate. The browser never receives a Supabase server-side secret.
 
+## Build-time player index
 
+`scripts/player-data/generate-top-players.mjs` refreshes `src/data/top-players.json` from Zenith before each production build.
 
-## Admin and import setup
+The index stores stable player IDs rather than duplicating the full player database. The player detail route uses that index to pre-render the configured top-player tier.
 
-The existing Worker admin login protects `/admin/players/` and every `/api/admin/player-database` request. Configure the Cloudflare Worker secret `SUPABASE_SERVICE_ROLE_KEY` (the Supabase project's server-side secret key) before using write actions. Keep this value out of `wrangler.toml`, source files, and browser bundles. The site continues to use the publishable key for public read-only APIs. The worker returns a clear `503` configuration error when the server-side secret is absent.
+Default limits:
 
-Single records are edited as JSON in the admin page. Bulk files may be JSON arrays, JSON objects with a `players` array, or CSV. CSV headers include `player_id,name,ovr,position,event,club,league,nation`; structured columns such as `stats,ranks,playstyles,traits,assets,alternate_positions` accept JSON values (alternate positions may also use a pipe-separated list). Uploads are previewed, validated again by the Worker, limited to 200 records per request, and sent in batches of 100. Source and reuse metadata are retained for asset mappings. Archiving sets `is_active=false` so public pages stop listing the card while its record remains recoverable.
+- Top-player index: 10,000 IDs
+- Player detail pre-render: 10,000 pages
+- Public listing page size: 48 cards
+- Worker API maximum listing request: 100 cards
 
-The migration also exposes `player_playstyles` and `player_traits` as RLS-aware views over the normalized ability tables, plus `player_filter_options()` so filters do not download the whole player catalog.
+The pre-render limit can be reduced for a faster validation build with:
 
-## Price freshness
+```text
+TOP_PLAYERS_PRERENDER_LIMIT=1000
+```
 
-The schema supports current sell-price and history observations separately from shard requirements. No verified FC Mobile coin price feed is connected yet, so the UI says when current sell-price data is unavailable rather than substituting shard costs or generating estimates. Add price observations only with an approved data feed and its source/update timestamp.
+The public listing can still search and paginate against Zenith records outside the pre-rendered tier. Those cards should only be treated as SEO-pre-rendered when they are included in the current build index.
 
-## Deployment
+## Player data carried from Zenith
 
-The normal Cloudflare deployment workflow builds the Astro static site and Worker on `main`. The player-database pull request includes a build check for the 580 generated SEO pages. Production routes become available after that check passes and the pull request is merged.
+The normalized player contract includes:
+
+- Stable player ID and generated slug
+- Name and full name
+- OVR, primary and alternate positions
+- Club, league, nation and event
+- Skill Moves, Weak Foot and work rates
+- Height, weight and foot information
+- Base attribute stats
+- Player render and card background URLs
+- Nation, club and league asset URLs
+- PlayStyle/skill names and trait names
+- Colour metadata and current source price when supplied
+
+Missing upstream fields remain empty. The site does not invent player stats.
+
+## PlayStyle assets
+
+Local PlayStyle graphics live in:
+
+`assets/images/playstyle/`
+
+The importer/indexing layer recognizes Zenith PlayStyle names and can map them to the local level files:
+
+```text
+*_PLAYSTYLE_<NAME>_0.png
+*_PLAYSTYLE_<NAME>_1.png
+*_PLAYSTYLE_<NAME>_2.png
+```
+
+These files are referenced from the site's own asset path rather than renamed on every import.
+
+## Supabase bulk import
+
+The mass collector and Supabase importer are still kept in the repository for archival/cache use:
+
+```text
+Zenith API
+   ↓
+collector
+   ↓
+normalization / quality gate
+   ↓
+Supabase
+```
+
+A missing GitHub Actions Supabase secret must not make the public player catalog disappear. The public site uses the live Zenith path independently.
+
+## Old 580-player pilot
+
+The former 580 Star Signings pilot is not part of the active public source of truth. It should not be mixed back into the Zenith catalog.
+
+## Security
+
+The public site uses only the Zenith API through the Worker. Supabase server-side credentials belong only in trusted Worker or GitHub Actions secrets and must never be committed to source or sent to the browser.
