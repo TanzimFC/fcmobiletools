@@ -102,7 +102,7 @@ function abilityDetails(value) {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const assetPaths = playstyleAssetIndex?.[slugify(name)] ?? [];
+    const assetPaths = PLAYSTYLE_ASSETS?.[slugify(name)] ?? [];
     const id = entry && typeof entry === 'object'
       ? String(entry.skill_id ?? entry.skillId ?? entry.id ?? '').trim()
       : '';
