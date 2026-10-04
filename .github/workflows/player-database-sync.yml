@@ -1,0 +1,29 @@
+name: Player Database Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Sync player database
+        env:
+          SUPABASE_URL: ${{ secrets.PLAYER_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLAYER_SUPABASE_SERVICE_ROLE_KEY }}
+          UPSTREAM_BASE_URL: ${{ secrets.PLAYER_UPSTREAM_BASE_URL }}
+          UPSTREAM_SEARCH_ENDPOINT: ${{ secrets.PLAYER_UPSTREAM_SEARCH_ENDPOINT }}
+          PLAYER_SOURCE_NAME: ${{ secrets.PLAYER_SOURCE_NAME }}
+          PLAYER_PAGE_SIZE: 1000
+          PLAYER_REQUEST_DELAY_MS: 500
+        run: node --experimental-strip-types scripts/player-pipeline/src/sync-v2.ts
