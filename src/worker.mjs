@@ -1,4 +1,3 @@
-import type { SSRManifest } from 'astro';
 import { App } from 'astro/app';
 import { handle } from '@astrojs/cloudflare/handler';
 import { tournamentWorkerRoute } from './tournamentWorker.mjs';
@@ -1076,7 +1075,7 @@ async function redeemPage(request, env, ctx, url) {
     .transform(new Response(asset.body, { status: asset.status, headers }));
 }
 
-export function createExports(manifest: SSRManifest) {
+export function createExports(manifest) {
   const app = new App(manifest);
   return {
     default: { async fetch(request,env,ctx) {
