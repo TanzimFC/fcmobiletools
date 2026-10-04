@@ -291,9 +291,17 @@ const statsPayload = JSON.stringify(stats);
               <h2>PlayStyles & Skills</h2>
             </div>
             <div class="chips">
-              {abilityRows.filter((item) => item.ability_type === "playstyle" || item.ability_type === "skill").map((item) => (
-                <span class="chip skill"><b>✦</b>{item.name}</span>
-              ))}
+              {abilityRows.filter((item) => item.ability_type === "playstyle" || item.ability_type === "skill").map((item) => {
+                const paths = Array.isArray(item.metadata?.asset_paths) ? item.metadata.asset_paths : [];
+                const valueLevel = Number(item.value?.level);
+                const icon = paths[Number.isInteger(valueLevel) && valueLevel >= 0 ? valueLevel : 0] ?? paths[0] ?? null;
+                return (
+                  <span class="chip skill">
+                    {icon ? <img src={icon} alt="" loading="lazy" /> : <b>✦</b>}
+                    {item.name}
+                  </span>
+                );
+              })}
               {!abilityRows.some((item) => item.ability_type === "playstyle" || item.ability_type === "skill") && <span class="muted">PlayStyles will appear after the full player import.</span>}
             </div>
           </div>
