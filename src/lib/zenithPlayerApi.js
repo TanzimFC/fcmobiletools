@@ -388,7 +388,7 @@ export async function fetchZenithPlayerDetails(playerId, rank = 0) {
   if (!player) return null;
 
   const skillSource = payload?.skills ?? raw?.skills ?? [];
-  const playstyleSource = payload?.playstyles ?? payload?.playStyles ?? raw?.playstyles ?? raw?.playStyles ?? raw?.skillStyleSkills;
+  const playstyleSource = payload?.playstyles ?? payload?.playStyles ?? raw?.playstyles ?? raw?.playStyles ?? raw?.skillStyleSkills ?? raw?.skills;
 
   return {
     ...player,
