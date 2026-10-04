@@ -1,5 +1,4 @@
 import type { NormalizedPlayer, RawPlayer } from "./types.ts";
-import { config } from "./config.ts";
 
 const text = (v: unknown) => v == null || v === "" ? null : String(v).trim() || null;
 const num = (v: unknown) => {
@@ -9,7 +8,7 @@ const num = (v: unknown) => {
 const first = (...v: unknown[]) => v.find(x => x != null && x !== "");
 const slug = (v: string) => v.toLowerCase()
   .normalize("NFKD")
-  .replace(/[\\u0300-\\u036f]/g, "")
+  .replace(/[\u0300-\u036f]/g, "")
   .replace(/[^a-z0-9]+/g, "-")
   .replace(/^-+|-+$/g, "");
 
@@ -52,7 +51,6 @@ export function normalize(raw: RawPlayer, observedAt = new Date().toISOString())
     weight_kg: num(first(raw.weightKg, raw.weight)),
     untradeable: raw.untradeable === true,
     active: raw.active !== false,
-    source_name: config.sourceName,
     source_url: text(raw.sourceUrl),
     source_observed_at: observedAt,
     source_checksum: text(raw.checksum),
