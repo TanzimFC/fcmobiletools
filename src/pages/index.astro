@@ -1,103 +1,141 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPosts } from '../lib/blog.js';
+import { getPosts, img, fmtDate, iso } from '../lib/blog.js';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
-import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
+import { FOOTBALL_CENTRE_CONTENT as FC } from '../data/footballCentre.js';
 
-const latestArticles = (await getPosts()).slice(0, 5);
+/* ───────────────────────── data ───────────────────────── */
+const posts = await getPosts();
+const latest = posts.slice(0, 5);
+const buildTime = Date.now();
 
-const activeCodes = REDEEM_CODES.filter((item) => item.status === 'active');
-const featuredCode = activeCodes[0] ?? REDEEM_CODES[0] ?? null;
-const secondaryEvent = FOOTBALL_CENTRE_CONTENT.secondaryEvent ?? {};
-const dailyResetUtc = String(FOOTBALL_CENTRE_CONTENT.schedule?.dailyResetUtc || '01:00');
-const resetHourUtc = Number(dailyResetUtc.split(':')[0]) || 1;
-const unbreakableStartUtc = secondaryEvent.startUtc || '2026-10-15T00:00:00.000Z';
+// Codes: only call a code "active" if its status says so AND it has not passed its expiry date.
+const isLiveCode = (c) =>
+  c.status === 'active' && (!c.expiryDate || Date.parse(c.expiryDate + 'T23:59:59Z') > buildTime);
+const liveCodes = REDEEM_CODES.filter(isLiveCode);
+const featuredCode = liveCodes[0] ?? null;
+const lastCode = featuredCode ?? REDEEM_CODES[0] ?? null;
+const lastChecked = REDEEM_CODES.map((c) => c.lastVerified).filter(Boolean).sort().pop() ?? null;
 
-const optimizeCloudinary = (url, width) => {
-  const value = String(url ?? '');
-  return value.includes('res.cloudinary.com') && value.includes('/image/upload/')
-    ? value.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_' + width + '/')
-    : value;
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(String(hex).slice(i, i + 2), 16) || 0).join(',');
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayMonth = (value) => {
+  const d = value ? new Date(value) : null;
+  return d && !Number.isNaN(d.valueOf()) ? `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}` : '';
 };
 
-const readingTime = (post) =>
-  post.entry?.data?.readingTime ?? post.minutes ?? Math.max(1, Math.ceil((post.body?.split(/\s+/).filter(Boolean).length ?? 0) / 220));
+// Reset time
+const [resetH, resetM] = String(FC.schedule?.dailyResetUtc || '01:00').split(':').map((n) => Number(n) || 0);
+const resetLabel = `${String(resetH).padStart(2, '0')}:${String(resetM).padStart(2, '0')} UTC`;
 
-const fmtDate = (d) =>
-  d
-    ? new Date(d).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'UTC',
-      })
-    : '';
+// Event radar: live event + upcoming events + next Division Rivals reset, all from the site's own data.
+const radar = [];
+const pushEvent = (e, kind) => {
+  if (!e?.title || !e.startUtc) return;
+  const start = Date.parse(e.startUtc);
+  if (Number.isNaN(start)) return;
+  if (radar.some((r) => r.title.toLowerCase() === e.title.toLowerCase())) return;
+  radar.push({ title: e.title, start, kind, label: e.accent || '' });
+};
+if (FC.eventCountdown?.enabled) pushEvent(FC.eventCountdown, 'event');
+if (FC.secondaryEvent?.enabled) pushEvent(FC.secondaryEvent, 'event');
+(FC.upcomingEvents ?? []).forEach((e) => pushEvent(e, 'event'));
+if (FC.divisionRivalsReset?.enabled) {
+  const anchor = Date.parse(FC.divisionRivalsReset.anchorUtc);
+  const cycle = (FC.divisionRivalsReset.cycleDays || 28) * 864e5;
+  if (!Number.isNaN(anchor)) {
+    let next = anchor;
+    while (next <= buildTime) next += cycle;
+    radar.push({ title: 'Division Rivals reset', start: next, kind: 'reset', label: '' });
+  }
+}
+radar.sort((a, b) => {
+  const al = a.start <= buildTime ? 0 : 1;
+  const bl = b.start <= buildTime ? 0 : 1;
+  return al - bl || a.start - b.start;
+});
+const radarRows = radar.slice(0, 5);
+
+const gift = FC.maintenanceGift?.enabled ? FC.maintenanceGift : null;
+const launchPost = posts.find((p) => p.slug === 'fc-mobile-27-launch-third-anniversary');
+const seasonHref = launchPost ? launchPost.href : '/fc-mobile-27';
+
+// Display strings (kept out of the template so the markup stays simple)
+const kicker = ['FC Mobile 27', FC.eventCountdown?.accent].filter(Boolean).join(' · ');
+radarRows.forEach((r) => {
+  r.isLive = r.start <= buildTime;
+  r.sub = r.isLive ? 'Since ' + dayMonth(r.start) : dayMonth(r.start);
+  r.initial = r.isLive ? 'Live' : dayMonth(r.start);
+});
+const recentCodes = REDEEM_CODES.slice(0, 3).map((c) => ({ code: c.code, reward: c.reward, live: isLiveCode(c) }));
+const codeFoot = featuredCode
+  ? (featuredCode.region || 'Global') + ' · verified ' + dayMonth(featuredCode.lastVerified)
+  : (lastChecked ? 'Checked ' + dayMonth(lastChecked) : 'Checked regularly');
+const codeNote = lastCode
+  ? (lastCode.expiryDate ? ' expired ' + dayMonth(lastCode.expiryDate) : ' has expired')
+  : '';
+
+/* ───────────────────────── icons ───────────────────────── */
+const ICON = {
+  arrow: '<path d="M7 17 17 7M8 7h9v9"/>',
+  ticket: '<path d="M3 9a2 2 0 0 0 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 11v2M13 17v2"/>',
+  ovr: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+  bolt: '<path d="M13 2 4.5 13H11l-1 9L19.5 11H13z"/>',
+  rank: '<path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/>',
+  shuffle: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>',
+  pulse: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
+  book: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  star: '<path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  check: '<path d="m5 12 5 5 9-10"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+  youtube: '<path d="M22 8.5a3 3 0 0 0-2.1-2.1C18 6 12 6 12 6s-6 0-7.9.4A3 3 0 0 0 2 8.5C1.7 9.7 1.6 10.8 1.6 12s.1 2.3.4 3.5a3 3 0 0 0 2.1 2.1C6 18 12 18 12 18s6 0 7.9-.4a3 3 0 0 0 2.1-2.1c.3-1.2.4-2.3.4-3.5s-.1-2.3-.4-3.5z"/><path d="m10 9 5 3-5 3z"/>',
+  discord: '<path d="M7 7c3-1.2 7-1.2 10 0 1.8 2.6 2.7 5.4 2.9 8.6-1.4 1-2.7 1.5-4 1.9l-.9-1.5c.6-.2 1.1-.5 1.6-.9-3.4 1.4-7.8 1.4-11.2 0 .5.4 1 .7 1.6.9l-.9 1.5c-1.3-.4-2.6-.9-4-1.9C4.3 12.4 5.2 9.6 7 7z"/><circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/>',
+  x: '<path d="M4 4l16 16M20 4 4 20"/>',
+};
+const svg = (name, extra = '') =>
+  `<svg class="hx-i ${extra}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICON[name]}</svg>`;
+
+/* ───────────────────────── tools ───────────────────────── */
+const CYAN = '#4CC9FF', MINT = '#6EF0C2', AMBER = '#FFC36B', VIOLET = '#A99BFF';
+const tools = [
+  { href: '/redeem-codes', tag: 'Live', name: 'Redeem Codes', text: 'Every code with its reward, region and status, plus a direct route to official redemption.', icon: 'ticket', accent: MINT, size: 'hero' },
+  { href: '/team-ovr', tag: 'Calculator', name: 'Team OVR', text: 'Check your squad rating before you upgrade.', icon: 'ovr', accent: CYAN, size: 'sm' },
+  { href: '/training-calculator', tag: 'Calculator', name: 'Training Calculator', text: 'Plan XP, fodder and training levels.', icon: 'bolt', accent: CYAN, size: 'sm' },
+  { href: '/rank-up-calculator', tag: 'Calculator', name: 'Rank Up Calculator', text: 'Compare Rank Up costs and OVR gains.', icon: 'rank', accent: CYAN, size: 'sm' },
+  { href: '/gauntlet-planner', tag: 'Planner', name: 'Gauntlet Planner', text: 'Plan rotations and player availability.', icon: 'shuffle', accent: VIOLET, size: 'sm' },
+  { href: '/football-centre', tag: 'Tracker', name: 'Football Centre', text: 'Showdown results, points progress and event resources in one live hub.', icon: 'pulse', accent: MINT, size: 'wide' },
+  { href: '/a-nations-story', tag: 'Answers', name: "A Nation's Story", text: 'Event answers without the digging.', icon: 'book', accent: AMBER, size: 'sm' },
+  { href: '/fc-mobile-27', tag: 'Season 27', name: 'FC Mobile 27', text: 'Update hub with features, install guide and coverage.', icon: 'star', accent: AMBER, size: 'sm' },
+];
+
+/* ───────────────────────── FAQ (single source for page + JSON-LD) ───────────────────────── */
+const faqs = [
+  { q: 'What is FCMOBILETOOLS?', a: 'FCMOBILETOOLS is a fan-made FC Mobile resource hub for redeem codes, live events, reset times, calculators, planners, guides and game updates. It is not affiliated with EA SPORTS or FC Mobile.' },
+  { q: 'Where can I find current FC Mobile redeem codes?', a: 'The Redeem Codes page lists the status and reward of every code and points you to the official EA redemption flow.' },
+  { q: 'Which FC Mobile calculators are available?', a: 'Team OVR, Training and Rank Up calculators, plus an Investment Calculator and a Gauntlet Mode Planner for squad rotation.' },
+  { q: 'When does the FC Mobile daily reset happen?', a: `The daily reset is at ${resetLabel}. The live countdown at the top of this page shows the time remaining and converts the reset to your own time zone.` },
+];
 
 const SITE = 'https://fcmobiletools.online';
 const title = 'FC Mobile Tools, Redeem Codes, Calculators & Guides';
 const description =
   'FCMOBILETOOLS is the FC Mobile hub for redeem codes, live events, reset times, calculators, planners, guides and the latest Season 27 updates.';
 
-const tools = [
-  { href: '/redeem-codes', eyebrow: 'LIVE', name: 'Redeem Codes', text: 'Current codes, rewards and official redemption', icon: 'ticket', featured: true },
-  { href: '/team-ovr', eyebrow: 'CALCULATOR', name: 'Team OVR', text: 'Check your squad rating before upgrades', icon: 'spark' },
-  { href: '/training-calculator', eyebrow: 'CALCULATOR', name: 'Training Calculator', text: 'Plan XP, fodder and training levels', icon: 'bolt' },
-  { href: '/rank-up-calculator', eyebrow: 'CALCULATOR', name: 'Rank Up Calculator', text: 'Compare Rank Up costs and OVR gains', icon: 'arrow' },
-  { href: '/gauntlet-planner', eyebrow: 'PLANNER', name: 'Gauntlet Mode Planner', text: 'Plan rotations and player availability', icon: 'grid' },
-  { href: '/football-centre', eyebrow: 'TRACKER', name: 'Football Centre', text: 'Matches, points and event resources', icon: 'pulse' },
-  { href: '/a-nations-story', eyebrow: 'ANSWERS', name: "A Nation's Story", text: 'Find event answers without digging', icon: 'book' },
-  { href: '/fc-mobile-27', eyebrow: 'SEASON 27', name: 'FC Mobile 27', text: 'Updates, features and current coverage', icon: 'star' },
-];
-
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
-    {
-      '@type': 'CollectionPage',
-      '@id': SITE + '/#homepage',
-      url: SITE + '/',
-      name: title,
-      description,
-      isPartOf: { '@id': SITE + '/#website' },
-    },
+    { '@type': 'CollectionPage', '@id': SITE + '/#homepage', url: SITE + '/', name: title, description, isPartOf: { '@id': SITE + '/#website' } },
     {
       '@type': 'ItemList',
       name: 'FC Mobile tools and resources',
-      itemListElement: tools.map((tool, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        name: tool.name,
-        url: SITE + tool.href,
-      })),
+      itemListElement: tools.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: t.name, url: SITE + t.href })),
     },
     {
       '@type': 'FAQPage',
-      mainEntity: [
-        {
-          '@type': 'Question',
-          name: 'What is FCMOBILETOOLS',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'FCMOBILETOOLS is a fan-made FC Mobile resource hub for redeem codes, live events, reset times, calculators, planners, guides and game updates.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: 'Where can I find current FC Mobile redeem codes',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'The Redeem Codes page lists current code status and rewards and points players to the official EA redemption flow.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: 'Which FC Mobile calculators are available',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'FCMOBILETOOLS includes Team OVR, Training and Rank Up calculators plus additional planning and event tools.',
-          },
-        },
-      ],
+      mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
     },
   ],
 };
@@ -106,938 +144,780 @@ const jsonLd = {
 <BaseLayout title={title} description={description}>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
-  <main class="home-premium" id="main">
-    <section class="hero-premium" aria-labelledby="hero-title">
-      <div class="hero-premium__image" aria-hidden="true">
-        <img
-          src="/assets/images/herobeli.png"
-          alt=""
-          width="1600"
-          height="900"
-          fetchpriority="high"
-          decoding="async"
-        />
-      </div>
-      <div class="hero-premium__overlay" aria-hidden="true"></div>
-      <div class="hero-premium__texture" aria-hidden="true"></div>
-      <div class="hero-premium__light hero-premium__light--one" aria-hidden="true"></div>
+  <main class="hx" id="main">
 
-      <div class="wrap-premium hero-premium__inner">
-        <div class="hero-premium__copy">
-          <div class="hero-kicker hero-enter" style="--delay:.03s">
-            <span class="hero-kicker__dot"></span>
-            FC MOBILE 27
-            <span class="hero-kicker__rule"></span>
-            LIVE RESOURCE HUB
-          </div>
+    <!-- ═════════════ HERO ═════════════ -->
+    <section class="hx-hero" aria-labelledby="hx-h1">
+      <picture class="hx-hero__img" aria-hidden="true">
+        <source media="(max-width: 700px)" srcset="/assets/images/hero-home-mobile.webp" type="image/webp" />
+        <img src="/assets/images/hero-home.webp" alt="" width="1918" height="820" fetchpriority="high" decoding="async" />
+      </picture>
+      <div class="hx-hero__shade" aria-hidden="true"></div>
+      <div class="hx-hero__grid" aria-hidden="true"></div>
 
-          <h1 id="hero-title">
-            <span class="hero-title__line hero-enter" style="--delay:.1s">Everything useful</span>
-            <span class="hero-title__line hero-title__line--accent hero-enter" style="--delay:.18s">starts here</span>
-          </h1>
+      <div class="hx-wrap hx-hero__inner">
+        <p class="hx-kicker hx-in" style="--d:.05s">
+          <span class="hx-live"><i></i>Live</span>
+          <span>{kicker}</span>
+        </p>
 
-          <p class="hero-premium__lead hero-enter" style="--delay:.28s">
-            Live event timing, redeem codes, calculators and guides, designed to help you find the right thing faster
-          </p>
+        <h1 id="hx-h1" class="hx-h1">
+          <span class="hx-in" style="--d:.12s">Stay ahead of</span>
+          <span class="hx-in hx-grad" style="--d:.2s">every reset.</span>
+        </h1>
 
-          <div class="hero-premium__actions hero-enter" style="--delay:.36s">
-            <a class="premium-btn premium-btn--primary" href="/events">
-              <span>Explore live events</span>
-              <b>↗</b>
-            </a>
-            <a class="premium-btn premium-btn--outline" href="/redeem-codes">
-              <span>Check redeem codes</span>
-              <b>→</b>
-            </a>
-          </div>
+        <p class="hx-lead hx-in" style="--d:.3s">
+          Live countdowns, redeem codes, calculators and guides for FC Mobile 27. Everything you check before you play, in one place.
+        </p>
 
-          <div class="hero-meta hero-enter" style="--delay:.44s" aria-label="FCMOBILETOOLS highlights">
-            <span><i></i> Updated resources</span>
-            <span><i></i> Local-time friendly</span>
-            <span><i></i> Built for daily play</span>
-          </div>
+        <div class="hx-actions hx-in" style="--d:.38s">
+          <a class="hx-btn hx-btn--primary" href="/redeem-codes"><span>Check redeem codes</span><span set:html={svg('arrow')} /></a>
+          <a class="hx-btn hx-btn--ghost" href="/events"><span>See live events</span></a>
         </div>
-      </div>
 
-      <div class="hero-floor" aria-hidden="true"></div>
-      <div class="hero-scrollmark" aria-hidden="true">
-        <span></span>
-        <b>EXPLORE</b>
+        <ul class="hx-proof hx-in" style="--d:.46s" aria-label="Site at a glance">
+          <li><b>{tools.length}</b> tools &amp; planners</li>
+          <li><b>{posts.length}</b> guides &amp; updates</li>
+          {lastChecked && <li>Codes checked <b>{dayMonth(lastChecked)}</b></li>}
+        </ul>
       </div>
     </section>
 
-    <section class="live-rail-section" aria-labelledby="live-now-title">
-      <div class="wrap-premium">
-        <div class="live-rail">
-          <div class="live-rail__label">
-            <span class="section-eyebrow">LIVE NOW</span>
-            <h2 id="live-now-title">Stay ahead of the next reset</h2>
+    <!-- ═════════════ LIVE CONSOLE ═════════════ -->
+    <section class="hx-console" aria-label="Live status">
+      <div class="hx-wrap hx-console__grid">
+
+        <!-- Reset -->
+        <article class="hx-panel hx-reset hx-reveal" style="--i:0">
+          <header class="hx-panel__head">
+            <span class="hx-label"><span set:html={svg('clock')} />Next daily reset</span>
+            <span class="hx-chip" data-hx-tz>Local time</span>
+          </header>
+          <div class="hx-clock" role="timer" aria-label="Time until next daily reset">
+            <span data-hx-h>--</span><i>:</i><span data-hx-m>--</span><i>:</i><span data-hx-s>--</span>
           </div>
+          <div class="hx-bar" aria-hidden="true"><span data-hx-bar></span></div>
+          <footer class="hx-panel__foot">
+            <span>Your time <b data-hx-local>--:--</b></span>
+            <span>{resetLabel}</span>
+          </footer>
+        </article>
 
-          <div class="live-rail__clock">
-            <span>DAILY RESET</span>
-            <strong id="reset-time-premium">--:--:--</strong>
-            <small id="reset-zone-premium">YOUR LOCAL TIME</small>
-          </div>
+        <!-- Event radar -->
+        <article class="hx-panel hx-radar hx-reveal" style="--i:1">
+          <header class="hx-panel__head">
+            <span class="hx-label"><span set:html={svg('calendar')} />Event radar</span>
+            <a class="hx-textlink" href="/events">All events <span set:html={svg('arrow')} /></a>
+          </header>
+          <ul class="hx-radar__list">
+            {radarRows.map((r) => (
+              <li>
+                <a href="/events" class:list={['hx-row', r.isLive && 'is-live']} data-hx-ts={r.start} data-hx-kind={r.kind}>
+                  <span class="hx-row__dot" aria-hidden="true"></span>
+                  <span class="hx-row__main">
+                    <b>{r.title}</b>
+                    <small>{r.sub}</small>
+                  </span>
+                  <span class="hx-row__cd" data-hx-cd>{r.initial}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </article>
 
-          <div class="live-rail__events">
-            <a class="rail-event rail-event--live" href="/events">
-              <span class="rail-event__status"><i></i> LIVE</span>
-              <b>Anniversary</b>
-              <small>24 SEP 2026</small>
-            </a>
-            <a class="rail-event" href="/events">
-              <span class="rail-event__status">UP NEXT</span>
-              <b>{secondaryEvent.title || 'Unbreakable'}</b>
-              <small>15 OCT 2026</small>
-            </a>
-            <a class="rail-event" href="/events">
-              <span class="rail-event__status rail-event__status--reset">RESET</span>
-              <b>Division Rivals</b>
-              <small>22 OCT 2026</small>
-            </a>
-          </div>
+        <!-- Redeem code -->
+        <article class:list={['hx-panel', 'hx-code', 'hx-reveal', featuredCode ? 'is-active' : 'is-none']} style="--i:2" data-hx-expires={featuredCode?.expiryDate ? Date.parse(featuredCode.expiryDate + 'T23:59:59Z') : undefined}>
+          <header class="hx-panel__head">
+            <span class="hx-label"><span set:html={svg('ticket')} />Redeem code</span>
+            <span class="hx-chip hx-chip--status" data-hx-status>{featuredCode ? 'Active' : 'None active'}</span>
+          </header>
 
-          <a class="live-rail__arrow" href="/events" aria-label="Open all live events">↗</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="code-premium-section" aria-labelledby="code-premium-title">
-      <div class="wrap-premium">
-        <div class="code-premium reveal">
-          <div class="code-premium__shine" aria-hidden="true"></div>
-          <div class="code-premium__left">
-            <div class="code-status"><i></i> ACTIVE CODE <span>{featuredCode?.region || 'GLOBAL'}</span></div>
-            <span class="section-eyebrow">LATEST REDEEM CODE</span>
-            <h2 id="code-premium-title">{featuredCode?.code || 'CHECK CODES'}</h2>
-            <p>{featuredCode?.reward || 'Open the redeem page to see the latest available reward.'}</p>
-            <div class="code-details">
-              <span><small>RELEASED</small><b>{featuredCode?.releaseDate || '—'}</b></span>
-              <span><small>VERIFIED</small><b>{featuredCode?.lastVerified || '—'}</b></span>
+          {featuredCode ? (
+            <div class="hx-code__body">
+              <button type="button" class="hx-copy" data-hx-copy={featuredCode.code} aria-label={`Copy code ${featuredCode.code}`}>
+                <strong>{featuredCode.code}</strong>
+                <span class="hx-copy__act"><span set:html={svg('copy', 'hx-copy__i')} /><em data-hx-copy-label>Copy</em></span>
+              </button>
+              <p class="hx-code__reward">{featuredCode.reward}</p>
             </div>
-          </div>
-
-          <div class="code-premium__right">
-            <div class="code-orbit" aria-hidden="true"><span>FCM</span><b>27</b></div>
-            <div>
-              <p>Current code status is pulled from the site database</p>
-              <a class="premium-btn premium-btn--primary" href="/redeem-codes"><span>Open redeem codes</span><b>↗</b></a>
+          ) : (
+            <div class="hx-code__body">
+              <p class="hx-code__none">No active code right now</p>
+              <p class="hx-code__reward">
+                {lastCode && <>Last code <b>{lastCode.code}</b>{codeNote}. </>}New codes show up here as soon as they drop.
+              </p>
             </div>
-          </div>
-        </div>
+          )}
+
+          <footer class="hx-panel__foot">
+            <span>{codeFoot}</span>
+            <a class="hx-textlink" href="/redeem-codes">Open codes <span set:html={svg('arrow')} /></a>
+          </footer>
+        </article>
       </div>
     </section>
 
-    <section class="tools-premium-section" id="tools" aria-labelledby="tools-title">
-      <div class="wrap-premium">
-        <div class="section-heading reveal">
+    <!-- ═════════════ TOOLKIT ═════════════ -->
+    <section class="hx-section" id="tools" aria-labelledby="hx-tools-h">
+      <div class="hx-wrap">
+        <header class="hx-head hx-reveal">
           <div>
-            <span class="section-eyebrow">THE TOOLKIT</span>
-            <h2 id="tools-title">Use the tool<br /><em>you need next</em></h2>
+            <span class="hx-eyebrow">The toolkit</span>
+            <h2 id="hx-tools-h">Use the tool you need <span class="hx-grad">next.</span></h2>
           </div>
-          <p>Everything is arranged around real FC Mobile decisions, from squad building to event progress</p>
-        </div>
+          <p>Built around real FC Mobile decisions, from squad building to event progress.</p>
+        </header>
 
-        <div class="tools-premium-grid">
-          {tools.map((tool, index) => (
-            <a class:list={['premium-tool', tool.featured ? 'premium-tool--featured' : '', index === 5 ? 'premium-tool--wide' : '']} href={tool.href}>
-              <div class="premium-tool__top">
-                <span>{tool.eyebrow}</span>
-                <b>{String(index + 1).padStart(2, '0')}</b>
-              </div>
-              <span class="premium-tool__icon" aria-hidden="true">
-                {tool.icon === 'ticket' && <svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 15.5z"/><path d="M8 6v12M16 10h.01M16 14h.01"/></svg>}
-                {tool.icon === 'spark' && <svg viewBox="0 0 24 24"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="m19 15 .7 2.3L22 18l-2.3.7z"/></svg>}
-                {tool.icon === 'bolt' && <svg viewBox="0 0 24 24"><path d="M13 2 4.5 13H11l-1 9L19.5 11H13z"/></svg>}
-                {tool.icon === 'arrow' && <svg viewBox="0 0 24 24"><path d="M4 18 10 12l4 4 6-6"/><path d="M14 10h6v6"/></svg>}
-                {tool.icon === 'grid' && <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>}
-                {tool.icon === 'pulse' && <svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>}
-                {tool.icon === 'book' && <svg viewBox="0 0 24 24"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H20v16H7.5A2.5 2.5 0 0 0 5 21z"/><path d="M5 5.5V21M9 7h7M9 11h7"/></svg>}
-                {tool.icon === 'star' && <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>}
+        <div class="hx-bento" data-hx-bento>
+          {tools.map((t, i) => (
+            <a class={`hx-tile hx-tile--${t.size} hx-reveal`} style={`--a:${t.accent};--ar:${rgb(t.accent)};--i:${i % 4}`} href={t.href}>
+              <span class="hx-tile__glow" aria-hidden="true"></span>
+              <span class="hx-tile__mark" aria-hidden="true" set:html={svg(t.icon)} />
+              <span class="hx-tile__top">
+                <span class="hx-tile__ico" aria-hidden="true" set:html={svg(t.icon)} />
+                <span class="hx-tile__tag">{t.tag}</span>
               </span>
-              <h3>{tool.name}</h3>
-              <p>{tool.text}</p>
-              <span class="premium-tool__go" aria-hidden="true">↗</span>
-              <span class="premium-tool__glow" aria-hidden="true"></span>
+
+              {t.size === 'hero' && (
+                <span class="hx-recent" aria-hidden="true">
+                  {recentCodes.map((c) => (
+                    <span class:list={['hx-recent__row', c.live && 'is-live']}>
+                      <b>{c.code}</b><i>{c.reward}</i><em>{c.live ? 'Active' : 'Expired'}</em>
+                    </span>
+                  ))}
+                </span>
+              )}
+
+              {t.size === 'hero' && (
+                <span class="hx-tile__stats" aria-hidden="true">
+                  <span><b>{REDEEM_CODES.length}</b>codes tracked</span>
+                  <span><b>{liveCodes.length}</b>active now</span>
+                  {lastChecked && <span><b>{dayMonth(lastChecked)}</b>last checked</span>}
+                </span>
+              )}
+
+              <span class="hx-tile__body">
+                <h3>{t.name}</h3>
+                <p>{t.text}</p>
+              </span>
+              <span class="hx-tile__go" aria-hidden="true" set:html={svg('arrow')} />
             </a>
           ))}
         </div>
       </div>
     </section>
 
-    <section class="editorial-section" aria-labelledby="editorial-title">
-      <div class="wrap-premium">
-        <div class="section-heading reveal">
-          <div>
-            <span class="section-eyebrow">THE EDITORIAL DESK</span>
-            <h2 id="editorial-title">What’s new</h2>
-          </div>
-          <a class="premium-link" href="/blog">Read all articles <b>↗</b></a>
-        </div>
+    <!-- ═════════════ SEASON 27 ═════════════ -->
+    <section class="hx-section" aria-labelledby="hx-s27-h">
+      <div class="hx-wrap">
+        <div class="hx-season hx-reveal">
+          <div class="hx-season__glow" aria-hidden="true"></div>
+          <img class="hx-season__art" src="/assets/images/hero-striker.webp" alt="" width="900" height="711" loading="lazy" decoding="async" />
 
-        {latestArticles.length ? (
-          <div class="editorial-grid reveal">
-            {latestArticles[0] && (
-              <article class="editorial-feature">
-                <a href={`/blog/${latestArticles[0].slug}/`}>
-                  <div class="editorial-feature__image">
-                    {latestArticles[0].cover ? (
-                      <img src={optimizeCloudinary(latestArticles[0].cover, 1100)} alt={latestArticles[0].title} width="1100" height="619" loading="lazy" decoding="async" />
-                    ) : <span>FCM</span>}
-                    <i>FEATURED</i>
-                  </div>
-                  <div class="editorial-feature__body">
-                    <div class="editorial-meta"><span>{latestArticles[0].category}</span>{latestArticles[0].date && <time datetime={new Date(latestArticles[0].date).toISOString()}>{fmtDate(latestArticles[0].date)}</time>}</div>
-                    <h3>{latestArticles[0].title}</h3>
-                    <p>{latestArticles[0].excerpt ?? latestArticles[0].description}</p>
-                    <span class="premium-link">Read article <b>↗</b></span>
-                  </div>
-                </a>
-              </article>
-            )}
-
-            <div class="editorial-list">
-              {latestArticles.slice(1).map((post) => (
-                <article class="editorial-row">
-                  <a href={`/blog/${post.slug}/`}>
-                    <div class="editorial-row__image">
-                      {post.cover ? <img src={optimizeCloudinary(post.cover, 420)} alt="" width="420" height="236" loading="lazy" decoding="async" /> : <span>FCM</span>}
-                    </div>
-                    <div class="editorial-row__body">
-                      <div class="editorial-meta"><span>{post.category}</span>{post.date && <time datetime={new Date(post.date).toISOString()}>{fmtDate(post.date)}</time>}</div>
-                      <h3>{post.title}</h3>
-                      <b aria-hidden="true">↗</b>
-                    </div>
-                  </a>
-                </article>
-              ))}
+          <div class="hx-season__copy">
+            <span class="hx-eyebrow">Season 27 briefing</span>
+            <h2 id="hx-s27-h">FC&nbsp;Mobile&nbsp;27 <span class="hx-grad">is&nbsp;live.</span></h2>
+            <p>The third-anniversary season landed on 24 September with Game Plans, Gauntlet Mode, PlayStyles and major optimizations, and it keeps your existing club instead of wiping it.</p>
+            <ul class="hx-pills" aria-label="What's new in FC Mobile 27">
+              <li>Game Plans</li><li>Gauntlet Mode</li><li>PlayStyles</li><li>Optimizations</li>
+            </ul>
+            <div class="hx-actions">
+              <a class="hx-btn hx-btn--primary" href={seasonHref}><span>Read the launch guide</span><span set:html={svg('arrow')} /></a>
+              <a class="hx-btn hx-btn--ghost" href="/fc-mobile-27"><span>Update hub</span></a>
             </div>
           </div>
+
+          {gift && (
+            <aside class="hx-gift" aria-label={gift.title}>
+              <span class="hx-label"><span set:html={svg('gift')} />{gift.title}</span>
+              <ul>
+                {(gift.items ?? []).map((item) => <li><span set:html={svg('check')} />{item}</li>)}
+              </ul>
+              <small>{gift.note}</small>
+            </aside>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════ EDITORIAL ═════════════ -->
+    <section class="hx-section" aria-labelledby="hx-news-h">
+      <div class="hx-wrap">
+        <header class="hx-head hx-reveal">
+          <div>
+            <span class="hx-eyebrow">The editorial desk</span>
+            <h2 id="hx-news-h">What's <span class="hx-grad">new.</span></h2>
+          </div>
+          <a class="hx-textlink hx-textlink--lg" href="/blog">All articles <span set:html={svg('arrow')} /></a>
+        </header>
+
+        {latest.length ? (
+          <div class="hx-news">
+            <a class="hx-feature hx-reveal" href={latest[0].href} style={`--a:${latest[0].section.accent};--ar:${rgb(latest[0].section.accent)}`}>
+              <span class="hx-feature__media">
+                {latest[0].cover
+                  ? <img src={img(latest[0].cover, 1100)} alt={latest[0].imageAlt || ''} width="1100" height="619" loading="lazy" decoding="async" />
+                  : <span class="hx-feature__ph">FCM</span>}
+                <span class="hx-feature__badge">Featured</span>
+              </span>
+              <span class="hx-feature__body">
+                <span class="hx-meta"><b>{latest[0].section.label}</b>{latest[0].date && <time datetime={iso(latest[0].date)}>{fmtDate(latest[0].date, 'medium')}</time>}<span>{latest[0].minutes} min read</span></span>
+                <h3>{latest[0].title}</h3>
+                <p>{latest[0].excerpt}</p>
+                <span class="hx-textlink">Read article <span set:html={svg('arrow')} /></span>
+              </span>
+            </a>
+
+            <ul class="hx-list">
+              {latest.slice(1).map((p, i) => (
+                <li class="hx-reveal" style={`--i:${i}`}>
+                  <a class="hx-item" href={p.href} style={`--a:${p.section.accent};--ar:${rgb(p.section.accent)}`}>
+                    <span class="hx-item__media">
+                      {p.cover ? <img src={img(p.cover, 360)} alt="" width="360" height="240" loading="lazy" decoding="async" /> : <span>FCM</span>}
+                    </span>
+                    <span class="hx-item__body">
+                      <span class="hx-meta"><b>{p.section.label}</b>{p.date && <time datetime={iso(p.date)}>{fmtDate(p.date, 'short')}</time>}</span>
+                      <h3>{p.title}</h3>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : (
-          <p class="empty-editorial">New articles are on the way</p>
+          <p class="hx-empty">New articles are on the way.</p>
         )}
       </div>
     </section>
 
-    <section class="seo-premium-section" aria-labelledby="seo-title">
-      <div class="wrap-premium seo-premium">
-        <div class="seo-premium__lead reveal">
-          <span class="section-eyebrow">FC MOBILE RESOURCE HUB</span>
-          <h2 id="seo-title">Less hunting<br /><em>more playing</em></h2>
+    <!-- ═════════════ FAQ ═════════════ -->
+    <section class="hx-section" aria-labelledby="hx-faq-h">
+      <div class="hx-wrap hx-faq">
+        <div class="hx-faq__lead hx-reveal">
+          <span class="hx-eyebrow">Quick answers</span>
+          <h2 id="hx-faq-h">Less hunting, <span class="hx-grad">more playing.</span></h2>
+          <p>FCMOBILETOOLS puts the useful parts of FC Mobile in one place so you can get an answer and get back to the game.</p>
+          <a class="hx-textlink hx-textlink--lg" href="/legal/about">About FCMOBILETOOLS <span set:html={svg('arrow')} /></a>
         </div>
-        <div class="seo-premium__copy reveal">
-          <p>FCMOBILETOOLS brings the useful parts of FC Mobile into one place, from live event schedules and reset timing to redeem codes, calculators, planners and current guides</p>
-          <p>Use the site when you need a quick calculation, an event answer, the latest code status or a clear update on what changed in FC Mobile 27</p>
-          <a class="premium-link" href="/legal/about">About FCMOBILETOOLS <b>↗</b></a>
+
+        <div class="hx-faq__list hx-reveal" style="--i:1">
+          {faqs.map((f, i) => (
+            <details name="hx-faq" open={i === 0}>
+              <summary><span>{f.q}</span><i aria-hidden="true"></i></summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
         </div>
       </div>
     </section>
 
-    <section class="faq-premium-section" aria-labelledby="faq-title">
-      <div class="wrap-premium">
-        <div class="section-heading reveal">
-          <div>
-            <span class="section-eyebrow">QUICK ANSWERS</span>
-            <h2 id="faq-title">Start here</h2>
+    <!-- ═════════════ CREATOR / COMMUNITY ═════════════ -->
+    <section class="hx-section hx-section--last" aria-labelledby="hx-cta-h">
+      <div class="hx-wrap">
+        <div class="hx-cta hx-reveal">
+          <img class="hx-cta__logo" src="/assets/images/creator-tf.webp" alt="TanzimFC logo" width="481" height="512" loading="lazy" decoding="async" />
+          <div class="hx-cta__copy">
+            <span class="hx-eyebrow">Built by TanzimFC</span>
+            <h2 id="hx-cta-h">Made by a player, <span class="hx-grad">for players.</span></h2>
+            <p>New tools, trackers and guides land as FC Mobile changes. Follow along and tell us what to build next.</p>
           </div>
-        </div>
-        <div class="faq-premium-grid reveal">
-          <details>
-            <summary>What is FCMOBILETOOLS <span>+</span></summary>
-            <p>A fan-made FC Mobile hub for redeem codes, live events, reset timing, calculators, planners, guides and updates</p>
-          </details>
-          <details>
-            <summary>Where are the current redeem codes <span>+</span></summary>
-            <p>Open Redeem Codes for the current status, rewards and the official EA redemption route</p>
-          </details>
-          <details>
-            <summary>Which calculators are available <span>+</span></summary>
-            <p>Team OVR, Training and Rank Up calculators are available alongside event and planning tools</p>
-          </details>
+          <div class="hx-cta__links">
+            <a class="hx-btn hx-btn--primary" href="https://discord.com/invite/B4a7AxuU69" target="_blank" rel="noopener"><span set:html={svg('discord')} /><span>Join Discord</span></a>
+            <a class="hx-btn hx-btn--ghost" href="https://www.youtube.com/@tanzimfc" target="_blank" rel="noopener"><span set:html={svg('youtube')} /><span>YouTube</span></a>
+            <a class="hx-btn hx-btn--ghost" href="https://x.com/TanzimFC" target="_blank" rel="noopener"><span set:html={svg('x')} /><span>X</span></a>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="final-premium-section">
-      <div class="wrap-premium">
-        <div class="final-premium reveal">
-          <div>
-            <span class="section-eyebrow">YOUR NEXT MOVE</span>
-            <h2>Everything useful<br /><em>starts here</em></h2>
-          </div>
-          <div class="final-premium__actions">
-            <a class="premium-btn premium-btn--primary" href="/events"><span>Explore live events</span><b>↗</b></a>
-            <a class="premium-btn premium-btn--outline" href="#tools"><span>Open the toolkit</span><b>↓</b></a>
-          </div>
-        </div>
-      </div>
-    </section>
+    <script define:vars={{ resetH, resetM }}>
+(() => {
+  const root = document.querySelector('.hx');
+  if (!root) return;
+  root.classList.add('hx-js');
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pad = (n) => String(n).padStart(2, '0');
+  const DAY = 864e5;
+
+  /* ── daily reset clock ── */
+  const elH = root.querySelector('[data-hx-h]');
+  const elM = root.querySelector('[data-hx-m]');
+  const elS = root.querySelector('[data-hx-s]');
+  const elBar = root.querySelector('[data-hx-bar]');
+  const elLocal = root.querySelector('[data-hx-local]');
+  const elTz = root.querySelector('[data-hx-tz]');
+
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (elTz && tz) elTz.textContent = tz.split('/').pop().replace(/_/g, ' ');
+  } catch (_) {}
+
+  const nextReset = (now) => {
+    const d = new Date(now);
+    let t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), resetH, resetM);
+    if (t <= now) t += DAY;
+    return t;
+  };
+
+  if (elLocal) {
+    elLocal.textContent = new Date(nextReset(Date.now())).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /* ── event radar countdowns ── */
+  const rows = [...root.querySelectorAll('[data-hx-ts]')].map((row) => ({
+    row,
+    ts: Number(row.dataset.hxTs),
+    out: row.querySelector('[data-hx-cd]'),
+  }));
+
+  const fmtLeft = (ms) => {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return d > 0 ? `${d}d ${pad(h)}h ${pad(m)}m` : `${pad(h)}:${pad(m)}:${pad(s % 60)}`;
+  };
+
+  /* ── redeem code expiry (static build, so double-check on the client) ── */
+  const codeCard = root.querySelector('.hx-code.is-active[data-hx-expires]');
+  const codeExpires = codeCard ? parseInt(codeCard.dataset.hxExpires, 10) : NaN;
+  let codeExpired = false;
+  const expireCode = () => {
+    if (codeExpired || !codeCard) return;
+    codeExpired = true;
+    codeCard.classList.remove('is-active');
+    codeCard.classList.add('is-none', 'is-expired');
+    const st = codeCard.querySelector('[data-hx-status]');
+    if (st) st.textContent = 'Expired';
+    const btn = codeCard.querySelector('[data-hx-copy]');
+    if (btn) btn.disabled = true;
+  };
+
+  const tick = () => {
+    const now = Date.now();
+
+    if (elH) {
+      const t = nextReset(now);
+      const left = t - now;
+      const s = Math.floor(left / 1000);
+      elH.textContent = pad(Math.floor(s / 3600));
+      elM.textContent = pad(Math.floor((s % 3600) / 60));
+      elS.textContent = pad(s % 60);
+      if (elBar) elBar.style.transform = `scaleX(${Math.min(1, Math.max(0, 1 - left / DAY)).toFixed(4)})`;
+    }
+
+    for (const r of rows) {
+      if (!r.out) continue;
+      if (r.ts <= now) {
+        r.row.classList.add('is-live');
+        const day = Math.floor((now - r.ts) / DAY) + 1;
+        r.out.textContent = r.row.dataset.hxKind === 'reset' ? 'Now' : `Live · Day ${day}`;
+      } else {
+        r.out.textContent = fmtLeft(r.ts - now);
+      }
+    }
+
+    if (codeCard && !Number.isNaN(codeExpires) && now > codeExpires) expireCode();
+  };
+
+  tick();
+  setInterval(tick, 1000);
+
+  /* ── copy code ── */
+  const copyBtn = root.querySelector('[data-hx-copy]');
+  if (copyBtn) {
+    const label = copyBtn.querySelector('[data-hx-copy-label]');
+    let timer;
+    copyBtn.addEventListener('click', async () => {
+      const text = copyBtn.dataset.hxCopy || '';
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch (_) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand('copy'); } catch (_) {}
+        ta.remove();
+      }
+      copyBtn.classList.toggle('is-copied', ok);
+      if (label) label.textContent = ok ? 'Copied' : 'Press Ctrl+C';
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        copyBtn.classList.remove('is-copied');
+        if (label) label.textContent = 'Copy';
+      }, 1800);
+    });
+  }
+
+  /* ── tile spotlight (pointer devices only) ── */
+  const bento = root.querySelector('[data-hx-bento]');
+  if (bento && !reduce && matchMedia('(hover: hover)').matches) {
+    bento.addEventListener('pointermove', (e) => {
+      const tile = e.target.closest('.hx-tile');
+      if (!tile) return;
+      const b = tile.getBoundingClientRect();
+      tile.style.setProperty('--mx', `${e.clientX - b.left}px`);
+      tile.style.setProperty('--my', `${e.clientY - b.top}px`);
+    }, { passive: true });
+  }
+
+  /* ── scroll reveals (content stays visible if JS or IO is unavailable) ── */
+  const items = root.querySelectorAll('.hx-reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    items.forEach((el) => el.classList.add('is-in'));
+  } else {
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) {
+        if (!en.isIntersecting) continue;
+        en.target.classList.add('is-in');
+        io.unobserve(en.target);
+      }
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    items.forEach((el) => io.observe(el));
+  }
+})();
+    </script>
   </main>
 </BaseLayout>
 
-<script define:vars={{ resetHourUtc }}>
-  const resetHour = Number(resetHourUtc) || 1;
-  const clock = document.getElementById('reset-time-premium');
-  const zone = document.getElementById('reset-zone-premium');
-  const pad = (value) => String(value).padStart(2, '0');
-  const DAY = 86400000;
-
-  function updateResetClock() {
-    const now = new Date();
-    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), resetHour));
-    if (next <= now) next.setTime(next.getTime() + DAY);
-    const remaining = Math.max(0, next.getTime() - now.getTime());
-    const sec = Math.floor(remaining / 1000);
-
-    if (clock) clock.textContent = `${pad(Math.floor(sec / 3600))}:${pad(Math.floor((sec % 3600) / 60))}:${pad(sec % 60)}`;
-    if (zone) {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'LOCAL TIME';
-      zone.textContent = tz.replace(/_/g, ' ');
-    }
-  }
-
-  updateResetClock();
-  window.setInterval(updateResetClock, 1000);
-
-  const reveals = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const observer = new IntersectionObserver((entries, io) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        io.unobserve(entry.target);
-      });
-    }, { threshold: 0.08, rootMargin: '0px 0px -5% 0px' });
-    reveals.forEach((item) => observer.observe(item));
-  } else {
-    reveals.forEach((item) => item.classList.add('is-visible'));
-  }
-
-  const art = document.querySelector('.hero-art');
-  if (art && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && window.matchMedia('(hover:hover)').matches) {
-    window.addEventListener('pointermove', (event) => {
-      const x = (event.clientX / window.innerWidth - .5) * 2;
-      const y = (event.clientY / window.innerHeight - .5) * 2;
-      art.style.setProperty('--px', (x * 4).toFixed(2) + 'px');
-      art.style.setProperty('--py', (y * 3).toFixed(2) + 'px');
-    }, { passive: true });
-  }
-</script>
-
 <style is:global>
-  .home-premium {
-    --hp-bg: #061018;
-    --hp-bg-2: #08131c;
-    --hp-surface: #0a1821;
-    --hp-surface-2: #0d202b;
-    --hp-border: rgba(144, 203, 224, .14);
-    --hp-border-strong: rgba(88, 215, 249, .34);
-    --hp-text: #eef9fc;
-    --hp-soft: #b9cbd2;
-    --hp-muted: #78909b;
-    --hp-accent: #56dbff;
-    --hp-accent-2: #76efce;
-    --hp-display: "Space Grotesk", var(--font-display, sans-serif);
-    background:
-      radial-gradient(1100px 620px at 10% 0%, rgba(46, 166, 207, .09), transparent 65%),
-      radial-gradient(900px 620px at 92% 20%, rgba(71, 114, 210, .065), transparent 62%),
-      var(--hp-bg);
-    color: var(--hp-text);
+  /* ════════════════════════════════════════════════════════════
+     HOMEPAGE — "Matchday Control Room"
+     Everything is namespaced hx-* and scoped under .hx.
+     ════════════════════════════════════════════════════════════ */
+  .hx {
+    --bg: #06111a;
+    --glass: rgba(255, 255, 255, .035);
+    --glass-2: rgba(255, 255, 255, .06);
+    --line: rgba(150, 205, 230, .14);
+    --text: #eef8fc;
+    --soft: #b6c8d2;
+    --muted: #8aa0ad;
+    --cyan: #4cc9ff;
+    --cyan-soft: #8be0ff;
+    --mint: #6ef0c2;
+    --amber: #ffc36b;
+    --violet: #a99bff;
+    --display: "Space Grotesk", var(--font-display, system-ui), system-ui, sans-serif;
+    --body: "Inter", var(--font-body, system-ui), system-ui, sans-serif;
+    --ease: cubic-bezier(.2, .8, .2, 1);
+    position: relative;
     overflow: clip;
-    position: relative;
-  }
-
-  .home-premium, .home-premium * { box-sizing: border-box; }
-  .home-premium .wrap-premium { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
-  .home-premium a { color: inherit; text-decoration: none; }
-  .home-premium p, .home-premium h1, .home-premium h2, .home-premium h3 { margin: 0; }
-  .home-premium h1, .home-premium h2, .home-premium h3 { font-family: var(--hp-display); }
-  .home-premium :focus-visible { outline: 2px solid var(--hp-accent); outline-offset: 4px; }
-  .section-eyebrow {
-    display: inline-block;
-    color: #6fdef7;
-    font: 800 9px/1 "Inter", sans-serif;
-    letter-spacing: .15em;
-    text-transform: uppercase;
-  }
-
-  /* HERO */
-  .hero-premium {
-    position: relative;
-    min-height: min(820px, 88svh);
-    display: grid;
-    align-items: center;
-    isolation: isolate;
-    overflow: hidden;
-    background: #061018;
-    border-bottom: 1px solid var(--hp-border);
-  }
-
-  .hero-premium__image {
-    position: absolute;
-    inset: 0;
-    z-index: -4;
-    overflow: hidden;
-    background: #07131b;
-  }
-
-  .hero-premium__image img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    object-fit: cover;
-    object-position: center center;
-    transform: scale(1.035);
-    filter: saturate(.98) contrast(1.04);
-    opacity: .62;
-    animation: heroImageEnter 1.8s cubic-bezier(.2,.72,.2,1) both;
-  }
-
-  .hero-premium__overlay {
-    position: absolute;
-    inset: 0;
-    z-index: -3;
+    color: var(--text);
+    font-family: var(--body);
     background:
-      linear-gradient(90deg, rgba(6,16,24,.985) 0%, rgba(6,16,24,.93) 30%, rgba(6,16,24,.58) 55%, rgba(6,16,24,.16) 100%),
-      linear-gradient(180deg, rgba(6,16,24,.18) 0%, rgba(6,16,24,.18) 50%, #061018 100%);
+      radial-gradient(1000px 600px at 90% 38%, rgba(76, 201, 255, .06), transparent 70%),
+      radial-gradient(900px 600px at 0% 62%, rgba(110, 240, 194, .04), transparent 70%),
+      var(--bg);
   }
+  .hx, .hx *, .hx *::before, .hx *::after { box-sizing: border-box; }
+  .hx :where(h1, h2, h3, p, ul) { margin: 0; padding: 0; }
+  .hx :where(ul) { list-style: none; }
+  .hx :where(a) { color: inherit; text-decoration: none; }
+  .hx :where(img) { max-width: 100%; }
+  .hx h1, .hx h2, .hx h3 { font-family: var(--display); color: var(--text); font-weight: 700; }
+  .hx :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .hx-wrap { width: min(1200px, calc(100% - 48px)); margin-inline: auto; }
+  .hx-i { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .hx-grad { background: linear-gradient(100deg, #4cc9ff 0%, #6ef0c2 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-  .hero-premium__texture {
-    position: absolute;
-    inset: 0;
-    z-index: -2;
-    opacity: .12;
-    background-image:
-      linear-gradient(rgba(193,231,240,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(193,231,240,.05) 1px, transparent 1px);
-    background-size: 88px 88px;
-    mask-image: linear-gradient(90deg, rgba(0,0,0,.58), transparent 78%);
-  }
+  /* ───────── buttons / links ───────── */
+  .hx-btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; height: 54px; padding: 0 22px; border: 1px solid transparent; border-radius: 16px; font: 700 15px/1 var(--body); white-space: nowrap; transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s, border-color .25s; }
+  .hx-btn .hx-i { font-size: 18px; transition: transform .25s var(--ease); }
+  .hx-btn:hover .hx-i { transform: translate(2px, -2px); }
+  .hx-btn--primary { color: #04202b; background: linear-gradient(110deg, #4cc9ff, #6ef0c2); box-shadow: 0 16px 40px -12px rgba(76, 201, 255, .6), inset 0 1px 0 rgba(255, 255, 255, .4); }
+  .hx-btn--primary:hover { transform: translateY(-2px); box-shadow: 0 22px 50px -12px rgba(76, 201, 255, .75), inset 0 1px 0 rgba(255, 255, 255, .4); }
+  .hx-btn--ghost { color: var(--text); background: rgba(255, 255, 255, .05); border-color: var(--line); backdrop-filter: blur(14px); }
+  .hx-btn--ghost:hover { transform: translateY(-2px); border-color: rgba(76, 201, 255, .5); background: rgba(76, 201, 255, .08); }
+  .hx-textlink { display: inline-flex; align-items: center; gap: 6px; color: var(--cyan-soft); font: 600 14px/1 var(--body); }
+  .hx-textlink .hx-i { font-size: 16px; transition: transform .2s var(--ease); }
+  .hx-textlink:hover .hx-i, a:hover > .hx-textlink .hx-i, a:hover .hx-textlink .hx-i { transform: translate(2px, -2px); }
+  .hx-textlink--lg { font-size: 15px; }
 
-  .hero-premium__light {
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  .hero-premium__light--one {
-    width: 620px;
-    height: 620px;
-    right: -160px;
-    top: -170px;
-    background: radial-gradient(circle, rgba(86,219,255,.14), transparent 68%);
-    animation: heroLightOne 11s ease-in-out infinite;
-  }
-
-  .hero-premium__inner {
-    min-height: 820px;
-    position: relative;
-    display: grid;
-    align-items: center;
-    padding: 108px 0 78px;
-  }
-
-  .hero-premium__copy {
-    position: relative;
-    z-index: 3;
-    max-width: 760px;
-    padding: 24px 0;
-  }
-
-  .hero-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: #8aa7b2;
-    font: 800 9px/1 "Inter", sans-serif;
-    letter-spacing: .13em;
-  }
-
-  .hero-kicker__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #69efb5;
-    box-shadow: 0 0 20px rgba(105,239,181,.50);
-    animation: dotPulse 2.2s ease-out infinite;
-  }
-
-  .hero-kicker__rule {
-    width: 36px;
-    height: 1px;
-    background: rgba(122,190,210,.24);
-  }
-
-  .hero-premium h1 {
-    margin-top: 25px;
-    font-size: clamp(60px, 8.4vw, 110px);
-    line-height: .87;
-    letter-spacing: -.071em;
-    max-width: 860px;
-  }
-
-  .hero-title__line {
-    display: block;
-    opacity: 0;
-    transform: translateY(36px);
-    animation: titleEnter .95s cubic-bezier(.18,.78,.2,1) var(--delay) forwards;
-  }
-
-  .hero-title__line--accent {
-    background: linear-gradient(105deg, var(--hp-accent) 0%, var(--hp-accent-2) 70%, #e9fffa 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .hero-premium__lead {
-    max-width: 625px;
-    margin-top: 28px !important;
-    color: var(--hp-soft);
-    font: 400 clamp(16px, 1.5vw, 19px)/1.72 "Inter", sans-serif;
-  }
-
-  .hero-premium__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 11px;
-    margin-top: 34px;
-  }
-
-  .premium-btn {
-    min-height: 52px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 22px;
-    padding: 0 17px 0 20px;
-    border: 1px solid transparent;
-    border-radius: 13px;
-    font: 700 13px/1 "Inter", sans-serif;
-    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease, background .25s ease;
-  }
-
-  .premium-btn b {
-    font-size: 17px;
-    font-weight: 500;
-    transition: transform .25s ease;
-  }
-
-  .premium-btn:hover b { transform: translate(2px,-2px); }
-
-  .premium-btn--primary {
-    color: #06202a !important;
-    background: linear-gradient(110deg, #56dbff, #76efce);
-    box-shadow: 0 17px 46px rgba(78,212,242,.16);
-  }
-
-  .premium-btn--primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 23px 60px rgba(78,212,242,.25);
-  }
-
-  .premium-btn--outline {
-    border-color: rgba(161,208,222,.18);
-    background: rgba(255,255,255,.035);
-    color: var(--hp-text) !important;
-    backdrop-filter: blur(12px);
-  }
-
-  .premium-btn--outline:hover {
-    transform: translateY(-3px);
-    border-color: var(--hp-border-strong);
-    background: rgba(86,219,255,.055);
-  }
-
-  .hero-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 18px;
-    margin-top: 26px;
-    color: #607a86;
-    font: 800 8px/1 "Inter", sans-serif;
-    text-transform: uppercase;
-    letter-spacing: .09em;
-  }
-
-  .hero-meta span { display: inline-flex; align-items: center; gap: 7px; }
-  .hero-meta i {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #58d9ef;
-  }
-
-  .hero-enter {
-    opacity: 0;
-    transform: translateY(14px);
-    animation: fadeEnter .8s cubic-bezier(.2,.8,.2,1) var(--delay) forwards;
-  }
-
-  .hero-floor {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 190px;
-    z-index: -1;
-    background: linear-gradient(180deg, transparent, rgba(5,14,21,.92));
-    pointer-events: none;
-  }
-
-  .hero-scrollmark {
-    position: absolute;
-    left: 50%;
-    bottom: 21px;
-    z-index: 5;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    color: #55707c;
-    font: 800 7px/1 "Inter", sans-serif;
-    letter-spacing: .15em;
-  }
-
-  .hero-scrollmark span {
-    display: block;
-    width: 21px;
-    height: 33px;
-    border: 1px solid rgba(137,192,207,.22);
-    border-radius: 99px;
-    position: relative;
-  }
-
-  .hero-scrollmark span::after {
-    content: "";
-    position: absolute;
-    top: 7px;
-    left: 50%;
-    width: 2px;
-    height: 7px;
-    border-radius: 9px;
-    background: #72dff3;
-    transform: translateX(-50%);
-    animation: scrollDot 1.8s ease-in-out infinite;
-  }
-
-  /* LIVE RAIL */
-  .live-rail-section { padding-top: 54px; }
-  .live-rail {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(260px, 1.1fr) 180px minmax(390px, 1.7fr) 48px;
-    align-items: stretch;
-    border: 1px solid var(--hp-border);
-    border-radius: 22px;
-    overflow: hidden;
-    background: linear-gradient(120deg, rgba(13,31,42,.95), rgba(7,19,27,.98));
-    box-shadow: 0 22px 60px rgba(0,0,0,.14);
-  }
-
-  .live-rail__label,
-  .live-rail__clock,
-  .live-rail__events,
-  .live-rail__arrow { min-width: 0; }
-  .live-rail__label { padding: 19px 20px; }
-  .live-rail__label h2 { margin-top: 6px; font-size: 19px; line-height: 1.06; letter-spacing: -.035em; }
-  .live-rail__clock { display: grid; place-content: center; padding: 13px 16px; border-left: 1px solid var(--hp-border); border-right: 1px solid var(--hp-border); background: rgba(255,255,255,.018); }
-  .live-rail__clock > span { color: #526f7c; font: 800 7px/1 "Inter", sans-serif; letter-spacing: .12em; }
-  .live-rail__clock strong { margin-top: 6px; color: #e8fbff; font: 800 25px/.95 var(--hp-display); font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
-  .live-rail__clock small { margin-top: 5px; color: #5f7e89; font: 700 7px/1.2 "Inter", sans-serif; }
-  .live-rail__events { display: grid; grid-template-columns: repeat(3, 1fr); }
-  .rail-event { padding: 16px 15px; display: grid; align-content: center; gap: 5px; transition: background .25s ease, padding-left .25s ease; }
-  .rail-event + .rail-event { border-left: 1px solid var(--hp-border); }
-  .rail-event:hover { background: rgba(86,219,255,.045); padding-left: 18px; }
-  .rail-event__status { color: #68cce6; font: 800 7px/1 "Inter", sans-serif; letter-spacing: .13em; }
-  .rail-event__status i, .code-status i { width: 6px; height: 6px; display: inline-block; margin-right: 5px; border-radius: 50%; background: #69efb5; box-shadow: 0 0 12px rgba(105,239,181,.48); }
-  .rail-event__status--reset { color: #b7a7f2; }
-  .rail-event b { font: 750 13px/1.2 "Inter", sans-serif; }
-  .rail-event small { color: #56727e; font: 700 7px/1 "Inter", sans-serif; letter-spacing: .08em; }
-  .live-rail__arrow { display: grid; place-items: center; border-left: 1px solid var(--hp-border); color: #7edcf0; font: 500 21px/1 "Inter", sans-serif; transition: background .2s ease, color .2s ease; }
-  .live-rail__arrow:hover { background: rgba(86,219,255,.06); color: #d9fbff; }
-
-  /* CODE */
-  .code-premium-section { padding-top: 96px; }
-  .code-premium {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1.4fr .6fr;
-    min-height: 300px;
-    overflow: hidden;
-    border: 1px solid rgba(86,219,255,.18);
-    border-radius: 28px;
+  /* ───────── HERO ───────── */
+  .hx-hero { position: relative; isolation: isolate; display: flex; align-items: center; min-height: clamp(660px, 90svh, 880px); padding: 140px 0 190px; overflow: hidden; }
+  .hx-hero__img { position: absolute; inset: 0; z-index: -3; background: #07131c; }
+  .hx-hero__img img { width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 88% 35%; animation: hxImg 1.8s var(--ease) both; }
+  .hx-hero__shade { position: absolute; inset: 0; z-index: -2;
     background:
-      radial-gradient(620px 280px at 0 50%, rgba(86,219,255,.10), transparent 70%),
-      radial-gradient(500px 250px at 100% 0, rgba(118,239,206,.08), transparent 70%),
-      linear-gradient(135deg, #0b202b, #07141d 64%);
-    box-shadow: 0 28px 80px rgba(0,0,0,.18);
+      linear-gradient(90deg, rgba(6, 17, 26, .96) 0%, rgba(6, 17, 26, .86) 24%, rgba(6, 17, 26, .46) 50%, rgba(6, 17, 26, .08) 74%, rgba(6, 17, 26, 0) 100%),
+      linear-gradient(180deg, rgba(6, 17, 26, .6) 0%, rgba(6, 17, 26, 0) 24%, rgba(6, 17, 26, 0) 58%, var(--bg) 100%); }
+  .hx-hero__grid { position: absolute; inset: 0; z-index: -1; opacity: .5; pointer-events: none;
+    background-image: linear-gradient(rgba(190, 230, 245, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(190, 230, 245, .05) 1px, transparent 1px);
+    background-size: 96px 96px; -webkit-mask-image: radial-gradient(ellipse 60% 70% at 15% 40%, #000, transparent 75%); mask-image: radial-gradient(ellipse 60% 70% at 15% 40%, #000, transparent 75%); }
+  .hx-hero__inner { position: relative; }
+  .hx-kicker { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font: 600 12.5px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
+  .hx-live { display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid rgba(110, 240, 194, .3); border-radius: 99px; background: rgba(110, 240, 194, .09); color: var(--mint); }
+  .hx-live i, .hx-row.is-live .hx-row__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 0 rgba(110, 240, 194, .6); animation: hxPulse 2s ease-out infinite; }
+  .hx-h1 { margin-top: 26px; max-width: 12ch; font-size: clamp(48px, 7.4vw, 100px); line-height: .96; letter-spacing: -.042em; }
+  .hx-h1 > span { display: block; padding-bottom: .06em; }
+  .hx h1, .hx h3 { text-wrap: balance; }
+  .hx-lead { max-width: 560px; margin-top: 26px; color: var(--soft); font: 400 clamp(16px, 1.5vw, 19px)/1.65 var(--body); }
+  .hx-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+  .hx-proof { display: flex; flex-wrap: wrap; gap: 10px 0; margin-top: 36px; color: var(--muted); font: 500 14px/1 var(--body); }
+  .hx-proof li { display: inline-flex; align-items: center; gap: 7px; }
+  .hx-proof li + li::before { content: ""; width: 4px; height: 4px; margin: 0 16px; border-radius: 50%; background: rgba(139, 224, 255, .5); }
+  .hx-proof b { color: var(--text); font: 700 15px/1 var(--display); }
+
+  .hx-in { animation: hxIn .9s var(--ease) var(--d, 0s) backwards; }
+
+  /* ───────── LIVE CONSOLE ───────── */
+  .hx-console { position: relative; z-index: 6; margin-top: -136px; }
+  .hx-console__grid { display: grid; grid-template-columns: 1fr 1.25fr 1fr; grid-template-areas: "reset radar code"; gap: 14px; }
+  .hx-reset { grid-area: reset; } .hx-radar { grid-area: radar; } .hx-code { grid-area: code; }
+  .hx-panel { position: relative; display: flex; flex-direction: column; gap: 18px; min-height: 262px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 26px;
+    background: linear-gradient(160deg, rgba(20, 42, 58, .82), rgba(8, 22, 32, .88)); -webkit-backdrop-filter: blur(24px) saturate(1.25); backdrop-filter: blur(24px) saturate(1.25);
+    box-shadow: 0 34px 80px -34px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .07); }
+  .hx-panel::before { content: ""; position: absolute; left: 24px; right: 24px; top: -1px; height: 1px; background: linear-gradient(90deg, transparent, rgba(76, 201, 255, .7), transparent); opacity: .6; }
+  .hx-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .hx-panel__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; color: var(--muted); font: 500 13px/1.3 var(--body); }
+  .hx-panel__foot b { color: var(--text); font-weight: 600; }
+  .hx-label { display: inline-flex; align-items: center; gap: 9px; color: var(--soft); font: 600 12.5px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; }
+  .hx-label .hx-i { font-size: 17px; color: var(--cyan); }
+  .hx-chip { padding: 6px 11px; border: 1px solid var(--line); border-radius: 99px; background: var(--glass-2); color: var(--soft); font: 600 12px/1 var(--body); white-space: nowrap; }
+
+  .hx-clock { display: flex; align-items: baseline; gap: 4px; margin-top: 4px; font: 700 clamp(48px, 5.2vw, 66px)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+  .hx-clock i { padding: 0 2px; color: rgba(76, 201, 255, .55); font-style: normal; animation: hxBlink 1s steps(2, jump-none) infinite; }
+  .hx-bar { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+  .hx-bar span { display: block; width: 100%; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--cyan), var(--mint)); transform: scaleX(0); transform-origin: left; transition: transform 1s linear; }
+
+  .hx-radar__list { display: grid; gap: 2px; }
+  .hx-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 14px; margin: 0 -12px; padding: 11px 12px; border-radius: 14px; transition: background .2s; }
+  .hx-row:hover { background: var(--glass-2); }
+  .hx-row__dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--amber); }
+  .hx-row[data-hx-kind="reset"] .hx-row__dot { border-color: var(--violet); }
+  .hx-row.is-live .hx-row__dot { border: 0; }
+  .hx-row__main { display: grid; gap: 4px; min-width: 0; }
+  .hx-row__main b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 15.5px/1.2 var(--body); }
+  .hx-row__main small { color: var(--muted); font: 500 12.5px/1 var(--body); }
+  .hx-row__cd { color: var(--soft); font: 600 14px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hx-row.is-live .hx-row__cd { color: var(--mint); }
+
+  .hx-code__body { display: grid; gap: 14px; }
+  .hx-copy { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 14px 16px; border: 1px dashed rgba(110, 240, 194, .45); border-radius: 16px; background: rgba(110, 240, 194, .07); color: var(--text); cursor: pointer; text-align: left; transition: background .2s, border-color .2s, transform .2s var(--ease); }
+  .hx-copy:hover:not(:disabled) { background: rgba(110, 240, 194, .12); border-style: solid; transform: translateY(-1px); }
+  .hx-copy:disabled { opacity: .5; cursor: not-allowed; }
+  .hx-copy strong { min-width: 0; overflow-wrap: anywhere; font: 700 clamp(22px, 2.3vw, 29px)/1.05 var(--display); letter-spacing: .04em; }
+  .hx-copy__act { display: inline-flex; align-items: center; gap: 7px; color: var(--mint); font: 600 12.5px/1 var(--body); white-space: nowrap; }
+  .hx-copy__act .hx-i { font-size: 16px; }
+  .hx-copy__act em { font-style: normal; }
+  .hx-copy.is-copied { border-style: solid; background: rgba(110, 240, 194, .16); }
+  .hx-code__reward { color: var(--soft); font: 400 15px/1.6 var(--body); }
+  .hx-code__reward b { color: var(--text); font-weight: 600; }
+  .hx-code__none { font: 700 24px/1.15 var(--display); letter-spacing: -.02em; }
+  .hx-code.is-active .hx-chip--status { color: var(--mint); border-color: rgba(110, 240, 194, .35); background: rgba(110, 240, 194, .1); }
+  .hx-code.is-none .hx-chip--status { color: var(--amber); border-color: rgba(255, 195, 107, .35); background: rgba(255, 195, 107, .09); }
+
+  /* ───────── sections / headings ───────── */
+  .hx-section { padding-top: clamp(76px, 10vw, 132px); }
+  .hx-section--last { padding-bottom: clamp(72px, 8vw, 112px); }
+  .hx-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; margin-bottom: 40px; }
+  .hx-head p { max-width: 340px; color: var(--muted); font: 400 15.5px/1.65 var(--body); }
+  .hx-eyebrow { display: inline-flex; align-items: center; gap: 12px; color: var(--cyan); font: 700 12.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; }
+  .hx-eyebrow::before { content: ""; width: 26px; height: 1px; background: currentColor; opacity: .6; }
+  .hx h2 { margin-top: 14px; font-size: clamp(34px, 4.8vw, 60px); line-height: 1.02; letter-spacing: -.037em; text-wrap: balance; }
+
+  /* ───────── TOOL BENTO ───────── */
+  .hx-bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(212px, auto); gap: 14px; }
+  .hx-tile { position: relative; isolation: isolate; display: flex; flex-direction: column; overflow: hidden; padding: 24px; border: 1px solid var(--line); border-radius: 26px;
+    background: linear-gradient(160deg, rgba(17, 36, 50, .92), rgba(8, 20, 30, .94)); transition: transform .35s var(--ease), border-color .3s, box-shadow .35s; }
+  .hx-tile--sm { grid-column: span 3; }
+  .hx-tile--wide { grid-column: span 6; }
+  .hx-tile--hero { grid-column: span 6; grid-row: span 2; padding: 30px; }
+  .hx-tile::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity .3s;
+    background: radial-gradient(380px circle at var(--mx, 85%) var(--my, 0%), rgba(var(--ar), .2), transparent 62%); }
+  .hx-tile:hover { transform: translateY(-5px); border-color: rgba(var(--ar), .5); box-shadow: 0 30px 70px -28px rgba(0, 0, 0, .8), 0 0 0 1px rgba(var(--ar), .12); }
+  .hx-tile:hover::before { opacity: 1; }
+  .hx-tile__glow { position: absolute; z-index: -1; right: -60px; top: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(var(--ar), .12); filter: blur(46px); }
+  .hx-tile__mark { position: absolute; z-index: -1; right: -26px; bottom: -34px; width: 190px; height: 190px; color: var(--a); opacity: .075; transition: transform .5s var(--ease), opacity .3s; pointer-events: none; }
+  .hx-tile__mark .hx-i { width: 100%; height: 100%; stroke-width: .7; }
+  .hx-tile--hero .hx-tile__mark { width: 340px; height: 340px; right: -50px; bottom: -60px; }
+  .hx-tile:hover .hx-tile__mark { opacity: .12; transform: rotate(-6deg) scale(1.06); }
+  .hx-tile__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .hx-tile__ico { display: grid; place-items: center; width: 50px; height: 50px; border: 1px solid rgba(var(--ar), .3); border-radius: 15px; background: rgba(var(--ar), .1); color: var(--a); font-size: 23px; transition: transform .35s var(--ease); }
+  .hx-tile:hover .hx-tile__ico { transform: translateY(-2px) scale(1.05); }
+  .hx-tile__tag { padding: 6px 11px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font: 700 11.5px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; }
+  .hx-tile__stats { display: flex; flex-wrap: wrap; gap: 14px 34px; margin-top: auto; padding-top: 30px; }
+  .hx-tile__stats > span { display: grid; gap: 6px; color: var(--muted); font: 500 12.5px/1 var(--body); }
+  .hx-tile__stats b { color: var(--text); font: 700 clamp(26px, 3vw, 36px)/1 var(--display); letter-spacing: -.02em; }
+  .hx-tile__body { margin-top: auto; padding-top: 28px; }
+  .hx-tile--hero .hx-tile__body { margin-top: 22px; padding-top: 0; }
+  .hx-tile__body h3 { font-size: clamp(21px, 1.9vw, 25px); line-height: 1.1; letter-spacing: -.022em; }
+  .hx-tile--hero .hx-tile__body h3 { font-size: clamp(32px, 3.4vw, 44px); letter-spacing: -.03em; }
+  .hx-tile--wide .hx-tile__body h3 { font-size: clamp(26px, 2.6vw, 32px); }
+  .hx-tile__body p { max-width: 36ch; margin-top: 9px; padding-right: 50px; color: #9cb1be; font: 400 14.5px/1.55 var(--body); }
+  .hx-tile--hero .hx-tile__body p { max-width: 44ch; font-size: 16px; }
+  .hx-tile--wide .hx-tile__body p { max-width: 46ch; font-size: 15px; }
+  .hx-tile__go { position: absolute; right: 20px; bottom: 20px; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; color: var(--soft); font-size: 18px; transition: background .3s, color .3s, border-color .3s, transform .35s var(--ease); }
+  .hx-tile--hero .hx-tile__go { right: 28px; bottom: 28px; }
+  .hx-tile:hover .hx-tile__go { background: var(--a); border-color: transparent; color: #04202b; transform: scale(1.08); }
+
+  .hx-recent { display: grid; gap: 8px; margin-top: 26px; }
+  .hx-recent__row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, .03); }
+  .hx-recent__row b { font: 700 14.5px/1 var(--display); letter-spacing: .05em; }
+  .hx-recent__row i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font: 400 13.5px/1 var(--body); font-style: normal; }
+  .hx-recent__row em { padding: 5px 9px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font: 600 11.5px/1 var(--body); font-style: normal; }
+  .hx-recent__row.is-live em { color: var(--mint); border-color: rgba(110, 240, 194, .35); background: rgba(110, 240, 194, .1); }
+
+  /* ───────── SEASON 27 ───────── */
+  .hx-season { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 32px; align-items: center; overflow: hidden; padding: clamp(32px, 5vw, 68px); border: 1px solid rgba(76, 201, 255, .22); border-radius: 34px;
+    background: radial-gradient(720px 380px at 88% 18%, rgba(76, 201, 255, .2), transparent 70%), radial-gradient(520px 320px at 0% 100%, rgba(110, 240, 194, .1), transparent 70%), linear-gradient(145deg, #0b2331, #071620 72%); }
+  .hx-season__glow { position: absolute; z-index: -1; right: 6%; top: 8%; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(76, 201, 255, .28), transparent 66%); filter: blur(24px); }
+  .hx-season__art { position: absolute; z-index: -1; right: 0; top: 50%; width: min(48%, 560px); height: auto; transform: translateY(-58%); filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .45)); pointer-events: none; }
+  .hx-season__copy p { max-width: 50ch; margin: 18px 0 22px; color: var(--soft); font: 400 clamp(16px, 1.4vw, 18px)/1.65 var(--body); }
+  .hx-season__copy .hx-actions { margin-top: 28px; }
+  .hx-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hx-pills li { padding: 8px 14px; border: 1px solid var(--line); border-radius: 99px; background: var(--glass); color: var(--soft); font: 600 13.5px/1 var(--body); }
+  .hx-gift { justify-self: end; align-self: end; width: min(100%, 350px); padding: 22px; border: 1px solid var(--line); border-radius: 24px; background: rgba(6, 17, 26, .68); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8); }
+  .hx-gift ul { margin: 14px 0 0; }
+  .hx-gift li { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); font: 600 15px/1.3 var(--body); }
+  .hx-gift li .hx-i { font-size: 17px; color: var(--mint); }
+  .hx-gift small { display: block; margin-top: 12px; color: var(--muted); font: 400 13px/1.5 var(--body); }
+
+  /* ───────── EDITORIAL ───────── */
+  .hx-news { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 18px; align-items: stretch; }
+  .hx-feature { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 30px; background: linear-gradient(160deg, rgba(17, 36, 50, .92), rgba(8, 20, 30, .94)); transition: transform .35s var(--ease), border-color .3s, box-shadow .35s; }
+  .hx-feature:hover { transform: translateY(-5px); border-color: rgba(var(--ar), .5); box-shadow: 0 34px 70px -30px rgba(0, 0, 0, .8); }
+  .hx-feature__media { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: #08161f; }
+  .hx-feature__media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s var(--ease); }
+  .hx-feature:hover .hx-feature__media img { transform: scale(1.045); }
+  .hx-feature__media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(6, 17, 26, .55)); pointer-events: none; }
+  .hx-feature__ph { display: grid; place-items: center; height: 100%; color: rgba(76, 201, 255, .5); font: 700 48px/1 var(--display); }
+  .hx-feature__badge { position: absolute; z-index: 2; left: 18px; top: 18px; padding: 8px 12px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 99px; background: rgba(6, 17, 26, .6); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: var(--text); font: 700 11.5px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; }
+  .hx-feature__body { display: grid; gap: 14px; padding: 26px 28px 30px; }
+  .hx-feature__body h3 { font-size: clamp(25px, 2.7vw, 36px); line-height: 1.08; letter-spacing: -.03em; }
+  .hx-feature__body p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--soft); font: 400 15.5px/1.65 var(--body); }
+  .hx-feature__body .hx-textlink { margin-top: 4px; }
+  .hx-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font: 600 12px/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; }
+  .hx-meta b { color: var(--a, var(--cyan)); font-weight: 700; }
+  .hx-list { display: grid; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .hx-item { display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: 16px; align-items: center; height: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 22px; background: var(--glass); transition: transform .3s var(--ease), border-color .3s, background .3s; }
+  .hx-item:hover { transform: translateX(4px); border-color: rgba(var(--ar), .45); background: var(--glass-2); }
+  .hx-item__media { display: block; aspect-ratio: 3 / 2; overflow: hidden; border-radius: 14px; background: #08161f; }
+  .hx-item__media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s var(--ease); }
+  .hx-item:hover .hx-item__media img { transform: scale(1.06); }
+  .hx-item__media > span { display: grid; place-items: center; height: 100%; color: rgba(76, 201, 255, .5); font: 700 20px/1 var(--display); }
+  .hx-item__body { display: grid; gap: 9px; min-width: 0; padding-right: 6px; }
+  .hx-item__body h3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 16.5px; line-height: 1.3; letter-spacing: -.01em; font-weight: 600; }
+  .hx-empty { padding: 48px; border: 1px dashed var(--line); border-radius: 24px; color: var(--muted); text-align: center; }
+
+  /* ───────── FAQ ───────── */
+  .hx-faq { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 100px); align-items: start; }
+  .hx-faq__lead { position: sticky; top: 120px; }
+  .hx-faq__lead p { max-width: 40ch; margin: 20px 0 24px; color: var(--muted); font: 400 16px/1.7 var(--body); }
+  .hx-faq__list { display: grid; gap: 10px; }
+  .hx-faq details { border: 1px solid var(--line); border-radius: 20px; background: var(--glass); transition: border-color .25s, background .25s; }
+  .hx-faq details[open] { border-color: rgba(76, 201, 255, .35); background: rgba(76, 201, 255, .045); }
+  .hx-faq summary { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 21px 24px; cursor: pointer; list-style: none; font: 600 17.5px/1.35 var(--display); letter-spacing: -.01em; }
+  .hx-faq summary::-webkit-details-marker { display: none; }
+  .hx-faq summary i { position: relative; flex: none; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; transition: background .25s, border-color .25s, transform .3s var(--ease); }
+  .hx-faq summary i::before, .hx-faq summary i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 1.8px; margin: -.9px 0 0 -6px; border-radius: 2px; background: var(--cyan); transition: transform .3s var(--ease); }
+  .hx-faq summary i::after { transform: rotate(90deg); }
+  .hx-faq details[open] summary i { background: rgba(76, 201, 255, .12); border-color: rgba(76, 201, 255, .4); }
+  .hx-faq details[open] summary i::after { transform: rotate(0); }
+  .hx-faq details p { padding: 0 24px 24px; max-width: 62ch; color: var(--soft); font: 400 15.5px/1.7 var(--body); }
+
+  /* ───────── CTA ───────── */
+  .hx-cta { position: relative; isolation: isolate; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(22px, 4vw, 48px); align-items: center; overflow: hidden; padding: clamp(28px, 4.5vw, 56px); border: 1px solid rgba(76, 201, 255, .22); border-radius: 34px;
+    background: radial-gradient(640px 300px at 100% 0, rgba(76, 201, 255, .16), transparent 70%), radial-gradient(420px 260px at 0 100%, rgba(169, 155, 255, .12), transparent 70%), linear-gradient(145deg, #0b2331, #071620 72%); }
+  .hx-cta__logo { width: 104px; height: auto; border-radius: 26px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 24px 60px -16px rgba(120, 90, 255, .55); }
+  .hx-cta__copy h2 { font-size: clamp(30px, 3.6vw, 48px); }
+  .hx-cta__copy p { max-width: 46ch; margin-top: 14px; color: var(--soft); font: 400 16px/1.65 var(--body); }
+  .hx-cta__links { display: grid; gap: 10px; min-width: 200px; }
+  .hx-cta__links .hx-btn { height: 50px; justify-content: flex-start; }
+  .hx-cta__links .hx-btn .hx-i { font-size: 19px; }
+
+  /* ───────── motion ───────── */
+  .hx.hx-js .hx-reveal { opacity: 0; }
+  .hx.hx-js .hx-reveal.is-in { opacity: 1; animation: hxRise .85s var(--ease) calc(var(--i, 0) * 90ms) backwards; }
+
+  @keyframes hxIn { from { opacity: 0; transform: translateY(20px); } }
+  @keyframes hxRise { from { opacity: 0; transform: translateY(26px); } }
+  @keyframes hxImg { from { opacity: 0; transform: scale(1.06); } }
+  @keyframes hxPulse { 70% { box-shadow: 0 0 0 9px rgba(110, 240, 194, 0); } 100% { box-shadow: 0 0 0 0 rgba(110, 240, 194, 0); } }
+  @keyframes hxBlink { 50% { opacity: .25; } }
+
+  /* ───────── responsive ───────── */
+  @media (max-width: 1100px) {
+    .hx-console__grid { grid-template-columns: 1fr 1fr; grid-template-areas: "reset code" "radar radar"; }
+    .hx-panel { min-height: 0; }
+    .hx-bento { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .hx-tile--sm { grid-column: span 3; }
+    .hx-tile--wide, .hx-tile--hero { grid-column: span 6; }
+    .hx-tile--hero { grid-row: auto; min-height: 330px; }
+    .hx-season { grid-template-columns: 1fr; }
+    .hx-season__art { width: min(60%, 460px); right: -6%; top: 0; transform: translateY(-12%); opacity: .5; }
+    .hx-gift { justify-self: start; }
   }
-
-  .code-premium__shine {
-    position: absolute;
-    inset: -30%;
-    background: linear-gradient(108deg, transparent 42%, rgba(255,255,255,.035) 49%, transparent 56%);
-    transform: translateX(-55%);
-    animation: codeSweep 8s ease-in-out infinite;
-    pointer-events: none;
+  @media (max-width: 900px) {
+    .hx-news, .hx-faq { grid-template-columns: 1fr; }
+    .hx-faq__lead { position: static; }
+    .hx-list { grid-template-rows: none; }
+    .hx-cta { grid-template-columns: 1fr; }
+    .hx-cta__logo { width: 84px; }
+    .hx-cta__links { grid-template-columns: repeat(3, auto); justify-content: start; }
+    .hx-head { align-items: flex-start; flex-direction: column; gap: 14px; }
   }
+  @media (max-width: 700px) {
+    .hx-wrap { width: calc(100% - 32px); }
+    .hx-hero { min-height: 0; padding: 124px 0 170px; align-items: flex-start; }
+    .hx-hero__img img { object-position: 62% 40%; }
+    .hx-hero__shade { background:
+      linear-gradient(180deg, rgba(6, 17, 26, .86) 0%, rgba(6, 17, 26, .62) 38%, rgba(6, 17, 26, .3) 62%, var(--bg) 100%),
+      linear-gradient(90deg, rgba(6, 17, 26, .55), rgba(6, 17, 26, 0) 80%); }
+    .hx-h1 { max-width: none; font-size: clamp(44px, 12.4vw, 62px); }
+    .hx-actions .hx-btn { flex: 1 1 100%; }
+    .hx-proof { gap: 10px 20px; margin-top: 28px; font-size: 13.5px; }
+    .hx-proof li + li::before { display: none; }
+    .hx-console { margin-top: -110px; }
+    .hx-console__grid { grid-template-columns: 1fr; grid-template-areas: "reset" "code" "radar"; }
+    .hx-panel { padding: 20px; border-radius: 24px; }
+    .hx-clock { font-size: clamp(46px, 15vw, 60px); }
 
-  .code-premium__left { padding: 34px 40px; position: relative; z-index: 1; }
-  .code-status { display: flex; align-items: center; gap: 7px; color: #83eebd; font: 800 7px/1 "Inter", sans-serif; letter-spacing: .13em; text-transform: uppercase; }
-  .code-status span { margin-left: auto; color: #567480; }
-  .code-premium__left > .section-eyebrow { margin-top: 31px; color: #547682; }
-  .code-premium__left h2 { margin-top: 8px; font-size: clamp(44px, 6vw, 78px); line-height: .86; letter-spacing: .06em; }
-  .code-premium__left > p { max-width: 620px; margin-top: 14px !important; color: #abc2ca; font: 400 16px/1.55 "Inter", sans-serif; }
-  .code-details { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 22px; }
-  .code-details small { display: block; color: #4c6975; font: 800 7px/1 "Inter", sans-serif; letter-spacing: .1em; }
-  .code-details b { display: block; margin-top: 5px; color: #b9cfd6; font: 700 10px/1 "Inter", sans-serif; }
-  .code-premium__right { display: grid; grid-template-columns: 115px 1fr; align-items: center; gap: 19px; padding: 35px 34px 35px 10px; border-left: 1px solid rgba(129, 203, 224, .11); background: rgba(0,0,0,.09); position: relative; z-index: 1; }
-  .code-premium__right p { margin-bottom: 13px !important; color: #607d88; font: 400 9px/1.55 "Inter", sans-serif; }
-  .code-premium__right .premium-btn { width: 100%; }
-  .code-orbit { width: 104px; height: 104px; display: grid; place-items: center; align-content: center; position: relative; border: 1px solid rgba(86,219,255,.22); border-radius: 28px; background: radial-gradient(circle, rgba(86,219,255,.12), transparent 67%), #0b1b24; box-shadow: inset 0 0 0 10px rgba(255,255,255,.012), 0 0 40px rgba(86,219,255,.09); }
-  .code-orbit::before, .code-orbit::after { content: ""; position: absolute; border: 1px solid rgba(118,239,206,.16); border-radius: 50%; }
-  .code-orbit::before { inset: 10px; animation: orbitSpin 8s linear infinite; }
-  .code-orbit::after { inset: 21px; opacity: .6; }
-  .code-orbit span { color: #8be6f4; font: 900 23px/1 var(--hp-display); letter-spacing: -.05em; }
-  .code-orbit b { margin-top: 5px; color: #5f8b98; font: 800 7px/1 "Inter", sans-serif; letter-spacing: .16em; }
+    .hx-bento { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    .hx-tile--sm, .hx-tile--wide, .hx-tile--hero { grid-column: auto; }
+    .hx-tile--sm, .hx-tile--wide { display: grid; grid-template-columns: 50px minmax(0, 1fr) 42px; align-items: center; gap: 16px; min-height: 0; padding: 18px; }
+    .hx-tile--sm .hx-tile__top, .hx-tile--wide .hx-tile__top { display: contents; }
+    .hx-tile--sm .hx-tile__tag, .hx-tile--wide .hx-tile__tag, .hx-tile--sm .hx-tile__mark, .hx-tile--wide .hx-tile__mark { display: none; }
+    .hx-tile--sm .hx-tile__body, .hx-tile--wide .hx-tile__body { margin: 0; padding: 0; }
+    .hx-tile--sm .hx-tile__go, .hx-tile--wide .hx-tile__go { position: static; }
+    .hx-tile--wide .hx-tile__body h3 { font-size: 21px; }
+    .hx-tile--sm .hx-tile__body p, .hx-tile--wide .hx-tile__body p { padding-right: 0; }
+    .hx-recent__row { grid-template-columns: minmax(0, 1fr) auto; }
+    .hx-recent__row i { display: none; }
+    .hx-recent__row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hx-tile__stats { gap: 14px 22px; }
+    .hx-row__main b { white-space: normal; }
+    .hx-tile--hero { min-height: 0; padding: 24px; }
+    .hx-tile--hero .hx-tile__mark { width: 240px; height: 240px; }
+    .hx-tile--hero .hx-tile__body { padding-right: 0; }
+    .hx-tile--hero .hx-tile__go { display: none; }
 
-  /* SECTION HEADING */
-  .tools-premium-section { padding-top: 108px; }
-  .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 35px; margin-bottom: 29px; }
-  .section-heading h2 { margin-top: 8px; font-size: clamp(38px, 5.4vw, 62px); line-height: .92; letter-spacing: -.058em; }
-  .section-heading h2 em { color: #6fd9ec; font-style: normal; }
-  .section-heading > p { max-width: 340px; color: #718995; font: 400 13px/1.7 "Inter", sans-serif; }
-
-  /* TOOLS */
-  .tools-premium-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 11px; }
-  .premium-tool {
-    grid-column: span 3;
-    position: relative;
-    min-height: 245px;
-    overflow: hidden;
-    padding: 21px;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--hp-border);
-    border-radius: 20px;
-    background: linear-gradient(150deg, #0b1b25, #07131c);
-    transition: transform .3s cubic-bezier(.2,.8,.2,1), border-color .3s ease, box-shadow .3s ease;
+    .hx-season { padding: 28px 22px; border-radius: 28px; }
+    .hx-season__art { width: 78%; right: -22%; opacity: .35; }
+    .hx-gift { width: 100%; }
+    .hx-item { grid-template-columns: 108px minmax(0, 1fr); gap: 14px; padding: 10px; }
+    .hx-item__body h3 { font-size: 15.5px; }
+    .hx-feature__body { padding: 22px 20px 26px; }
+    .hx-faq summary { padding: 18px 18px; font-size: 16.5px; }
+    .hx-faq details p { padding: 0 18px 20px; }
+    .hx-cta { padding: 28px 22px; border-radius: 28px; }
+    .hx-cta__links { grid-template-columns: 1fr; }
+    .hx-cta__links .hx-btn { justify-content: center; }
   }
-  .premium-tool::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(260px 220px at 100% 0, rgba(86,219,255,.10), transparent 70%),
-      linear-gradient(135deg, rgba(255,255,255,.025), transparent 38%);
-    opacity: .7;
+  @media (max-width: 420px) {
+    .hx-tile--sm, .hx-tile--wide { grid-template-columns: 46px minmax(0, 1fr) 38px; gap: 14px; }
+    .hx-tile__ico { width: 46px; height: 46px; }
+    .hx-tile__go { width: 38px; height: 38px; }
   }
-  .premium-tool:hover { transform: translateY(-6px); border-color: rgba(86,219,255,.28); box-shadow: 0 25px 60px rgba(0,0,0,.18); }
-  .premium-tool--featured { grid-column: span 6; min-height: 245px; background: radial-gradient(380px 260px at 100% 0, rgba(86,219,255,.16), transparent 65%), linear-gradient(150deg, #0e2734, #091822 68%); }
-  .premium-tool--wide { grid-column: span 6; }
-  .premium-tool__top, .premium-tool__icon, .premium-tool h3, .premium-tool p, .premium-tool__go, .premium-tool__glow { position: relative; z-index: 2; }
-  .premium-tool__top { display: flex; justify-content: space-between; align-items: center; color: #5b7985; font: 800 7px/1 "Inter", sans-serif; letter-spacing: .12em; }
-  .premium-tool__top b { color: #385966; font: 800 7px/1 "Inter", sans-serif; }
-  .premium-tool__icon { width: 39px; height: 39px; margin-top: 26px; display: grid; place-items: center; border: 1px solid rgba(86,219,255,.15); border-radius: 11px; color: #7bdff2; background: rgba(86,219,255,.035); transition: transform .3s ease, background .3s ease; }
-  .premium-tool__icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-  .premium-tool h3 { margin-top: auto; padding-top: 17px; font-size: 21px; line-height: 1.04; letter-spacing: -.035em; }
-  .premium-tool--featured h3, .premium-tool--wide h3 { font-size: 27px; }
-  .premium-tool p { max-width: 390px; margin-top: 8px !important; color: #6f8a96; font: 400 10px/1.6 "Inter", sans-serif; }
-  .premium-tool__go { position: absolute; right: 18px; bottom: 18px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(135, 194, 208, .12); border-radius: 50%; color: #5f808c; transition: .25s ease; }
-  .premium-tool__glow { position: absolute; width: 120px; height: 120px; right: -34px; bottom: -42px; border-radius: 50%; background: rgba(86,219,255,.13); filter: blur(32px); opacity: 0; transition: opacity .3s ease; }
-  .premium-tool:hover .premium-tool__icon { transform: translateY(-2px) scale(1.04); background: rgba(86,219,255,.07); }
-  .premium-tool:hover .premium-tool__go { background: var(--hp-accent); border-color: var(--hp-accent); color: #06202a; transform: rotate(45deg); }
-  .premium-tool:hover .premium-tool__glow { opacity: 1; }
-
-  /* EDITORIAL */
-  .editorial-section { padding-top: 110px; }
-  .premium-link { display: inline-flex; align-items: center; gap: 7px; color: #83dfef !important; font: 700 11px/1 "Inter", sans-serif; }
-  .premium-link b { font-size: 15px; font-weight: 500; transition: transform .2s ease; }
-  .premium-link:hover b { transform: translate(2px,-2px); }
-  .editorial-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 12px; }
-  .editorial-feature > a { display: grid; height: 100%; grid-template-rows: auto 1fr; overflow: hidden; border: 1px solid var(--hp-border); border-radius: 23px; background: linear-gradient(150deg,#0b1c26,#07131b); transition: transform .3s ease,border-color .3s ease,box-shadow .3s ease; }
-  .editorial-feature > a:hover { transform: translateY(-5px); border-color: rgba(86,219,255,.28); box-shadow: 0 28px 68px rgba(0,0,0,.2); }
-  .editorial-feature__image { min-height: 325px; position: relative; overflow: hidden; background: #07131a; }
-  .editorial-feature__image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .7s cubic-bezier(.2,.8,.2,1); }
-  .editorial-feature > a:hover img { transform: scale(1.045); }
-  .editorial-feature__image i { position: absolute; left: 16px; top: 16px; padding: 7px 9px; border: 1px solid rgba(86,219,255,.18); border-radius: 999px; background: rgba(6,16,24,.67); backdrop-filter: blur(10px); color: #7dddee; font: 800 7px/1 "Inter",sans-serif; font-style: normal; letter-spacing: .12em; }
-  .editorial-feature__image > span { height: 100%; display: grid; place-items: center; color: #63d5ed; font: 900 42px/1 var(--hp-display); }
-  .editorial-feature__body { padding: 24px; }
-  .editorial-meta { display: flex; flex-wrap: wrap; gap: 6px 13px; color: #54707c; font: 800 8px/1 "Inter",sans-serif; letter-spacing: .09em; text-transform: uppercase; }
-  .editorial-meta span { color: #66d8ef; }
-  .editorial-feature h3 { margin-top: 12px; font-size: clamp(25px,3.2vw,37px); line-height: 1.05; letter-spacing: -.045em; }
-  .editorial-feature__body > p { margin-top: 11px !important; color: #77919c; font: 400 11px/1.7 "Inter",sans-serif; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .editorial-feature__body > .premium-link { margin-top: 17px; }
-  .editorial-list { display: grid; gap: 9px; }
-  .editorial-row { min-height: 0; overflow: hidden; border: 1px solid var(--hp-border); border-radius: 17px; background: #091720; transition: transform .25s ease,border-color .25s ease; }
-  .editorial-row:hover { transform: translateY(-3px); border-color: rgba(86,219,255,.24); }
-  .editorial-row > a { display: grid; grid-template-columns: 130px 1fr; min-height: 133px; }
-  .editorial-row__image { overflow: hidden; background: #06121a; }
-  .editorial-row__image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .55s ease; }
-  .editorial-row:hover img { transform: scale(1.05); }
-  .editorial-row__image span { height: 100%; display: grid; place-items: center; color: #4bb9d2; font: 900 18px/1 var(--hp-display); }
-  .editorial-row__body { position: relative; padding: 17px 40px 16px 18px; display: flex; flex-direction: column; justify-content: center; }
-  .editorial-row h3 { margin-top: 7px; font-size: 16px; line-height: 1.25; letter-spacing: -.02em; }
-  .editorial-row__body > b { position: absolute; top: 50%; right: 16px; color: #5c7b87; font: 500 15px/1 "Inter",sans-serif; transform: translateY(-50%); transition: transform .2s ease,color .2s ease; }
-  .editorial-row:hover .editorial-row__body > b { transform: translate(2px,-12px); color: #8bdff0; }
-
-  /* SEO */
-  .seo-premium-section { margin-top: 110px; border-top: 1px solid var(--hp-border); padding-top: 55px; }
-  .seo-premium { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(45px, 8vw, 120px); }
-  .seo-premium__lead h2 { margin-top: 9px; font-size: clamp(40px, 5vw, 59px); line-height: .93; letter-spacing: -.055em; }
-  .seo-premium__lead h2 em { color: #6fd9ec; font-style: normal; }
-  .seo-premium__copy { max-width: 700px; }
-  .seo-premium__copy p { color: #78919c; font: 400 13px/1.8 "Inter",sans-serif; }
-  .seo-premium__copy p + p { margin-top: 15px !important; }
-  .seo-premium__copy .premium-link { margin-top: 20px; }
-
-  /* FAQ */
-  .faq-premium-section { padding-top: 105px; }
-  .faq-premium-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
-  .faq-premium-grid details { padding: 17px 18px; border: 1px solid var(--hp-border); border-radius: 16px; background: #091720; transition: border-color .25s ease, background .25s ease; }
-  .faq-premium-grid details[open] { border-color: rgba(86,219,255,.25); background: #0a1a23; }
-  .faq-premium-grid summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 15px; cursor: pointer; color: #dcecf1; font: 700 12px/1.3 "Inter",sans-serif; }
-  .faq-premium-grid summary::-webkit-details-marker { display: none; }
-  .faq-premium-grid summary span { color: #68d9ee; font: 400 19px/1 "Inter",sans-serif; transition: transform .2s ease; }
-  .faq-premium-grid details[open] summary span { transform: rotate(45deg); }
-  .faq-premium-grid details p { margin-top: 12px !important; color: #718c98; font: 400 10px/1.7 "Inter",sans-serif; }
-
-  /* FINAL */
-  .final-premium-section { padding: 105px 0 125px; }
-  .final-premium { position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: center; padding: clamp(33px, 5vw, 54px); border: 1px solid rgba(86,219,255,.20); border-radius: 28px; background: radial-gradient(650px 290px at 100% 0, rgba(86,219,255,.12), transparent 70%), linear-gradient(145deg,#0c202b,#08151e); }
-  .final-premium::before { content: ""; position: absolute; width: 360px; height: 360px; right: -130px; bottom: -180px; border-radius: 50%; background: radial-gradient(circle,rgba(118,239,206,.10),transparent 68%); filter: blur(2px); }
-  .final-premium h2 { margin-top: 8px; font-size: clamp(39px,5.7vw,71px); line-height: .94; letter-spacing: -.06em; position: relative; }
-  .final-premium h2 em { color: #6fd9ec; font-style: normal; }
-  .final-premium__actions { position: relative; display: flex; flex-wrap: wrap; gap: 10px; }
-
-  /* REVEALS / MOTION */
-  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .72s ease, transform .72s cubic-bezier(.2,.82,.2,1); }
-  .reveal.is-visible { opacity: 1; transform: none; }
-
-  @keyframes heroImageEnter { from { opacity: 0; transform: scale(1.08); } to { opacity: .62; transform: scale(1.035); } }
-  @keyframes titleEnter { to { opacity: 1; transform: none; } }
-  @keyframes fadeEnter { to { opacity: 1; transform: none; } }
-  @keyframes heroLightOne { 50% { transform: translate3d(-22px,18px,0) scale(1.05); } }
-  @keyframes heroLightTwo { 50% { transform: translate3d(24px,-18px,0) scale(.94); } }
-  @keyframes dotPulse { 70% { box-shadow: 0 0 0 8px rgba(105,239,181,0); } 100% { box-shadow: 0 0 0 0 rgba(105,239,181,0); } }
-  @keyframes artworkHalo { 50% { transform: scale(1.05); opacity: .86; } }
-  @keyframes artworkFloat { 50% { transform: rotate(2deg) translateY(-7px); } }
-  @keyframes scanMove { 0%,18% { left:-10%; opacity:0; } 22% { opacity:1; } 55% { left:105%; opacity:.55; } 63%,100% { left:105%; opacity:0; } }
-  @keyframes scrollDot { 0%,100% { transform: translate(-50%,0); opacity:1; } 50% { transform: translate(-50%,8px); opacity:.25; } }
-  @keyframes codeSweep { 0%,58% { transform: translateX(-55%); } 72%,100% { transform: translateX(55%); } }
-  @keyframes orbitSpin { to { transform: rotate(360deg); } }
-
-  @media (max-width: 1040px) {
-    .hero-premium__inner { grid-template-columns: 1fr .9fr; gap: 15px; }
-    .hero-art { min-height: 540px; }
-    .hero-art__frame { width: min(560px, 50vw); }
-    .live-rail { grid-template-columns: minmax(220px,1fr) 165px minmax(340px,1.5fr) 44px; }
-    .premium-tool { grid-column: span 4; }
-    .premium-tool--featured, .premium-tool--wide { grid-column: span 6; }
-  }
-
-  @media (max-width: 820px) {
-    .home-premium .wrap-premium { width: calc(100% - 28px); }
-
-    .hero-premium { min-height: 760px; }
-    .hero-premium__inner { min-height: 760px; grid-template-columns: 1fr; padding: 92px 0 74px; }
-    .hero-premium__copy { max-width: 720px; }
-    .hero-premium h1 { font-size: clamp(54px, 11vw, 84px); }
-    .hero-art { position: absolute; right: -12%; bottom: -6%; width: 72%; min-height: 0; height: 430px; opacity: .64; pointer-events: none; }
-    .hero-art__frame { width: 100%; transform: rotate(3deg); }
-    .hero-art__halo { width: 430px; height: 430px; }
-    .hero-art__badge--top { right: 4%; }
-    .hero-art__badge--bottom { left: 2%; }
-    .hero-art__number { right: -4%; bottom: -10%; }
-    .hero-premium__wash { background: linear-gradient(180deg, rgba(6,16,24,.98) 0%, rgba(6,16,24,.93) 44%, rgba(6,16,24,.55) 76%, #061018 100%); }
-
-    .live-rail { grid-template-columns: 1fr 150px; }
-    .live-rail__label { padding: 18px; }
-    .live-rail__clock { border-right: 0; }
-    .live-rail__events { grid-column: 1 / -1; border-top: 1px solid var(--hp-border); }
-    .live-rail__arrow { position: absolute; right: 12px; top: 12px; width: 34px; height: 34px; border: 1px solid var(--hp-border); border-radius: 50%; }
-
-    .code-premium { grid-template-columns: 1fr; }
-    .code-premium__right { grid-template-columns: 95px 1fr; padding: 0 34px 30px 40px; border-left: 0; border-top: 1px solid rgba(129,203,224,.11); }
-    .code-orbit { width: 84px; height: 84px; border-radius: 23px; }
-
-    .editorial-grid { grid-template-columns: 1fr; }
-    .seo-premium { grid-template-columns: 1fr; gap: 28px; }
-  }
-
-  @media (max-width: 620px) {
-    .hero-premium { min-height: 720px; }
-    .hero-premium__inner { padding-top: 80px; }
-    .hero-premium h1 { font-size: 51px; }
-    .hero-premium__lead { font-size: 14px; max-width: 560px; }
-    .hero-premium__actions { width: 100%; }
-    .hero-premium__actions .premium-btn { flex: 1 1 100%; }
-    .hero-meta { font-size: 7px; gap: 7px 12px; }
-
-    .hero-art { right: -28%; bottom: 0; width: 93%; height: 340px; opacity: .46; }
-    .hero-art__frame { border-radius: 24px; }
-    .hero-art__badge { display: none; }
-    .hero-art__number { font-size: 150px; right: 2%; bottom: -8%; }
-
-    .hero-scrollmark { display: none; }
-
-    .live-rail-section { padding-top: 32px; }
-    .live-rail { grid-template-columns: 1fr; }
-    .live-rail__clock { border-top: 1px solid var(--hp-border); border-bottom: 0; border-left: 0; padding: 17px 18px; }
-    .live-rail__events { grid-template-columns: 1fr; }
-    .rail-event { min-height: 75px; padding: 13px 18px; }
-    .rail-event + .rail-event { border-left: 0; border-top: 1px solid var(--hp-border); }
-
-    .code-premium-section { padding-top: 72px; }
-    .code-premium__left { padding: 27px 21px; }
-    .code-premium__left h2 { font-size: 43px; word-break: break-word; }
-    .code-premium__left > p { font-size: 14px; }
-    .code-premium__right { padding: 0 21px 23px; }
-
-    .tools-premium-section, .editorial-section { padding-top: 82px; }
-    .section-heading { align-items: flex-start; flex-direction: column; gap: 11px; }
-    .section-heading h2 { font-size: 37px; }
-
-    .tools-premium-grid { grid-template-columns: 1fr; }
-    .premium-tool, .premium-tool--featured, .premium-tool--wide { grid-column: auto; min-height: 190px; }
-    .premium-tool--featured h3, .premium-tool--wide h3 { font-size: 24px; }
-
-    .editorial-feature__image { min-height: 245px; }
-    .editorial-feature__body { padding: 21px 19px 23px; }
-    .editorial-row > a { grid-template-columns: 106px 1fr; min-height: 120px; }
-    .editorial-row__body { padding-left: 16px; }
-
-    .seo-premium-section { margin-top: 82px; }
-    .seo-premium__lead h2 { font-size: 40px; }
-    .faq-premium-section { padding-top: 82px; }
-    .faq-premium-grid { grid-template-columns: 1fr; }
-
-    .final-premium-section { padding: 82px 0 92px; }
-    .final-premium { grid-template-columns: 1fr; align-items: flex-start; padding: 28px 21px; }
-    .final-premium h2 { font-size: 46px; }
-    .final-premium__actions { width: 100%; flex-direction: column; }
-    .final-premium__actions .premium-btn { width: 100%; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .hero-premium__image img,
-    .hero-premium__light--one,
-    .hero-kicker__dot,
-    .hero-scrollmark span::after,
-    .code-premium__shine,
-    .code-orbit::before,
-    .hero-title__line,
-    .hero-enter,
-    .reveal {
-      animation: none !important;
-      transition: none !important;
-      opacity: 1 !important;
-      transform: none !important;
-    }
+    .hx *, .hx *::before, .hx *::after { animation: none !important; transition: none !important; }
+    .hx.hx-js .hx-reveal { opacity: 1; }
   }
 </style>
