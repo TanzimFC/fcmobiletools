@@ -2,6 +2,9 @@ import {
   buildZenithPlayerSlug,
   fetchZenithPlayers,
   fetchZenithPlayerById,
+  fetchZenithPlayerDetails,
+  fetchZenithTrainingBoosts,
+  fetchZenithSkillBoosts,
   normalizeZenithPlayer
 } from './zenithPlayerApi.js';
 
@@ -139,16 +142,46 @@ export async function handlePlayerRequest(request, pathname) {
     if (pathname.startsWith('/api/players/')) {
       const slug = decodeURIComponent(pathname.slice('/api/players/'.length));
       const match = slug.match(/-(\d+)$/);
+      const query = new URL(request.url).searchParams;
+      const rank = Math.min(5, Math.max(0, Number(query.get('rank')) || 0));
+
       const player = match
-        ? await fetchZenithPlayerById(match[1], 0)
+        ? await fetchZenithPlayerDetails(match[1], rank).catch(() => fetchZenithPlayerById(match[1], rank))
         : null;
 
       if (!player) return response({ error: 'Player not found.' }, 404);
 
       return response({
         ...player,
+        skills: player.skill_details || [],
+        playstyles: player.playStyles || [],
+        available_skill_points: Number(player.availableSkillPoints) || rank,
         source: 'zenith-api'
       });
+    }
+
+    if (pathname === '/api/training/boosts') {
+      const query = new URL(request.url).searchParams;
+      const position = String(query.get('position') || '').trim();
+      const level = Math.min(30, Math.max(1, Number(query.get('level')) || 1));
+      const boosts = await fetchZenithTrainingBoosts(position, level);
+      return response({
+        position: position.toUpperCase(),
+        level,
+        boosts,
+        source: 'zenith-api'
+      }, 200, { 'cache-control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=3600' });
+    }
+
+    if (pathname.startsWith('/api/skill-boosts/')) {
+      const skillId = decodeURIComponent(pathname.slice('/api/skill-boosts/'.length)).trim();
+      if (!skillId) return response({ error: 'Missing skill id.' }, 400);
+      const boosts = await fetchZenithSkillBoosts(skillId);
+      return response({
+        skill_id: skillId,
+        boosts,
+        source: 'zenith-api'
+      }, 200, { 'cache-control': 'public, max-age=600, s-maxage=1800, stale-while-revalidate=86400' });
     }
 
     return response({ error: 'Player API route not found.' }, 404);
