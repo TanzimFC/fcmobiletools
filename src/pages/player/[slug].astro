@@ -78,15 +78,20 @@ try {
   console.error(error);
 }
 
-const getAsset = (type) =>
-  assets.find((item) => item.asset_type === type && item.is_primary) ??
-  assets.find((item) => item.asset_type === type) ??
-  null;
+const getAsset = (...types) => {
+  for (const type of types) {
+    const match =
+      assets.find((item) => item.asset_type === type && item.is_primary) ??
+      assets.find((item) => item.asset_type === type);
+    if (match) return match;
+  }
+  return null;
+};
 
 const render = getAsset("player_render");
 const background = getAsset("card_background");
 const flag = getAsset("nation_flag");
-const clubLogo = getAsset("club_logo");
+const clubLogo = getAsset("club_logo", "club_badge");
 const leagueLogo = getAsset("league_logo");
 
 const baseStats =
@@ -127,6 +132,8 @@ const statsPayload = JSON.stringify(stats);
 ---
 <html lang="en">
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{player ? `${player.name} ${player.ovr ?? ""} OVR | FCMobiletools` : "Player | FCMobiletools"}</title>
   <meta name="description" content={player ? `${player.name} ${player.ovr ?? ""} OVR FC Mobile player stats, ranks, PlayStyles and card details.` : "FC Mobile player details on FCMobiletools."} />
 </head>
@@ -214,6 +221,9 @@ const statsPayload = JSON.stringify(stats);
               </div>
             ))}
           </div>
+          {!Object.keys(baseStats).length && (
+            <p class="muted data-note">Detailed stats will appear after the full Zenith import.</p>
+          )}
         </section>
 
         <section class="stat-layout">
@@ -281,10 +291,10 @@ const statsPayload = JSON.stringify(stats);
               <h2>PlayStyles & Skills</h2>
             </div>
             <div class="chips">
-              {abilityRows.filter((item) => item.ability_type === "skill").map((item) => (
+              {abilityRows.filter((item) => item.ability_type === "playstyle" || item.ability_type === "skill").map((item) => (
                 <span class="chip skill"><b>✦</b>{item.name}</span>
               ))}
-              {!abilityRows.some((item) => item.ability_type === "skill") && <span class="muted">No PlayStyles collected yet.</span>}
+              {!abilityRows.some((item) => item.ability_type === "playstyle" || item.ability_type === "skill") && <span class="muted">PlayStyles will appear after the full player import.</span>}
             </div>
           </div>
 
@@ -297,7 +307,7 @@ const statsPayload = JSON.stringify(stats);
               {abilityRows.filter((item) => item.ability_type === "trait").map((item) => (
                 <span class="chip">{item.name}</span>
               ))}
-              {!abilityRows.some((item) => item.ability_type === "trait") && <span class="muted">No Traits collected yet.</span>}
+              {!abilityRows.some((item) => item.ability_type === "trait") && <span class="muted">Traits will appear after the full player import.</span>}
             </div>
           </div>
         </section>
