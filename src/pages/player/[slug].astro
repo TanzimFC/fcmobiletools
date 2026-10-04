@@ -21,7 +21,7 @@ const RANK_ICONS = {
 export async function getStaticPaths() {
   const prerenderLimit = Math.min(
     10000,
-    Math.max(1, Number(globalThis.process?.env?.TOP_PLAYERS_PRERENDER_LIMIT || 10000))
+    Math.max(1, Number(globalThis.process?.env?.TOP_PLAYERS_PRERENDER_LIMIT || 100))
   );
   const ids = topPlayerIds.map(String).slice(0, prerenderLimit);
   const players = await fetchZenithPlayersByIds(ids, { rank: 0, chunkSize: 100 });
