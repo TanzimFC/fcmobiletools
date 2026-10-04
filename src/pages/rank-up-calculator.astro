@@ -247,6 +247,14 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
     const currentChoices = $('currentChoices');
     const targetChoices = $('targetChoices');
 
+    const params = new URLSearchParams(window.location.search);
+    const baseParam = Number(params.get('base'));
+    const currentParam = Number(params.get('current'));
+    const targetParam = Number(params.get('target'));
+    if (Number.isInteger(baseParam) && baseParam >= 0 && baseParam <= 150) base.value = String(baseParam);
+    if (Number.isInteger(currentParam) && currentParam >= 0 && currentParam <= 5) current.value = String(currentParam);
+    if (Number.isInteger(targetParam) && targetParam >= 0 && targetParam <= 5) target.value = String(targetParam);
+
     const ICONS = {
       0:'/assets/images/rankup/rankicon_25_RANK0.png',
       1:'/assets/images/rankup/rankicon_25_RANK1.png',
