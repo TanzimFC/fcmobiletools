@@ -1,4 +1,4 @@
-import playstyleAssetIndex from '../data/playstyle-assets.json';
+import { PLAYSTYLE_ASSETS } from '../data/playstyle-assets.js';
 
 const DEFAULT_BASE_URL = 'https://zenithfcm.com/api';
 
@@ -100,7 +100,7 @@ function abilityDetails(value) {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const assetPaths = playstyleAssetIndex?.[slugify(name)] ?? [];
+    const assetPaths = PLAYSTYLE_ASSETS?.[slugify(name)] ?? [];
     result.push({
       name,
       level: abilityLevel(entry),
