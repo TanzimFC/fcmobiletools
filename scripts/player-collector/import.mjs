@@ -2,16 +2,17 @@ import { readFile } from "node:fs/promises";
 
 const input=process.env.PLAYER_COLLECTION_NORMALIZED||"scripts/player-collector/data/normalized.jsonl";
 const url=(process.env.SUPABASE_URL||"").replace(/\/$/,"");
-const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
-if(!url||!key) throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required");
+const key=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;
+if(!url||!key) throw new Error("SUPABASE_URL and SUPABASE_SECRET_KEY are required");
 
 const rows=(await readFile(input,"utf8")).split("\n").filter(Boolean).map(JSON.parse);
 const headers={apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=minimal"};
 const chunks=(a,n)=>Array.from({length:Math.ceil(a.length/n)},(_,i)=>a.slice(i*n,(i+1)*n));
 
-async function post(table,data){
+async function post(table,data,onConflict=""){
   if(!data.length) return;
-  const response=await fetch(url+"/rest/v1/"+table,{method:"POST",headers,body:JSON.stringify(data)});
+  const endpoint=url+"/rest/v1/"+table+(onConflict?"?on_conflict="+encodeURIComponent(onConflict):"");
+  const response=await fetch(endpoint,{method:"POST",headers,body:JSON.stringify(data)});
   if(!response.ok) throw new Error(table+" failed "+response.status+" "+(await response.text()).slice(0,500));
 }
 
@@ -31,7 +32,7 @@ for(const batch of chunks(rows,100)){
     color_name:p.colorName||null,color_level:p.colorLevel||null,
     source_url:p.sourceUrl,source_observed_at:p.sourceObservedAt,
     source_payload_hash:p.sourcePayloadHash,data_quality_score:p.dataQualityScore
-  })));
+  })),"player_id");
   console.log("players",batch.length);
 }
 
@@ -88,12 +89,12 @@ for(const batch of chunks(rows,100)){
     for(const value of Array.isArray(p.traits)?p.traits:[]) addAbility("trait",value);
   }
 
-  await post("player_stats",stats);
-  await post("player_ranks",ranks);
-  await post("player_assets",assets);
+  await post("player_stats",stats,"player_id,rank,training");
+  await post("player_ranks",ranks,"player_id,rank,training");
+  await post("player_assets",assets,"player_id,asset_type,asset_url");
   await post("player_abilities",[...abilityMap].map(([ability_key,a])=>({
     ability_key,name:a.name,ability_type:a.type,metadata:a.metadata
-  })));
+  })),"ability_key");
 
   if(abilityMap.size){
     const keys=[...abilityMap.keys()].map(encodeURIComponent).join(",");
@@ -134,7 +135,7 @@ for(const batch of chunks(rows,100)){
         }
       }
 
-      await post("player_ability_links",links);
+      await post("player_ability_links",links,"player_id,ability_id");
     }
   }
 }
