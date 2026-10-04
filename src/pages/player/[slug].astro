@@ -1,168 +1,339 @@
 ---
-const PLAYER_SUPABASE_URL = "https://moczgrwxtfexdbjthxpd.supabase.co";
-const PLAYER_SUPABASE_KEY = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
+export const prerender = false;
 
-export async function getStaticPaths() {
-  const response = await fetch(
-    PLAYER_SUPABASE_URL + "/rest/v1/players?select=slug&active=eq.true&order=slug",
-    {
-      headers: {
-        apikey: PLAYER_SUPABASE_KEY,
-        Authorization: "Bearer " + PLAYER_SUPABASE_KEY
-      }
-    }
-  );
+import { PLAYER_SUPABASE_URL, PLAYER_SUPABASE_KEY } from "../../lib/playerSupabase.js";
 
-  if (!response.ok) {
-    throw new Error("Failed to load player slugs from Supabase: " + response.status);
+const slug = Astro.params.slug ?? "";
+const headers = {
+  apikey: PLAYER_SUPABASE_KEY,
+  Authorization: "Bearer " + PLAYER_SUPABASE_KEY
+};
+
+async function fetchRows(table, params) {
+  const url = new URL("/rest/v1/" + table, PLAYER_SUPABASE_URL);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
   }
 
-  const players = await response.json();
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new Error(table + " request failed: " + response.status);
+  }
 
-  return players
-    .filter((row) => row?.slug)
-    .map((row) => ({
-      params: { slug: row.slug }
-    }));
+  return response.json();
 }
 
-const { slug } = Astro.params;
+let player = null;
+let stats = [];
+let ranks = [];
+let assets = [];
+let loadError = null;
+
+try {
+  const players = await fetchRows("players", {
+    select: "*",
+    slug: "eq." + slug,
+    active: "eq.true",
+    limit: "1"
+  });
+
+  player = players[0] ?? null;
+
+  if (!player) {
+    loadError = "Player not found.";
+  } else {
+    [stats, ranks, assets] = await Promise.all([
+      fetchRows("player_stats", {
+        select: "rank,training,stats",
+        player_id: "eq." + player.id,
+        order: "rank,training"
+      }),
+      fetchRows("player_ranks", {
+        select: "rank,training,ovr,modifiers",
+        player_id: "eq." + player.id,
+        order: "rank"
+      }),
+      fetchRows("player_assets", {
+        select: "asset_type,asset_url",
+        player_id: "eq." + player.id
+      })
+    ]);
+  }
+} catch (error) {
+  console.error(error);
+  loadError = "Player data is temporarily unavailable.";
+}
+
+const primaryAsset = assets.find((asset) => asset.asset_type === "card") ?? assets[0];
+const baseStats = stats.find((row) => row.rank === 0 && row.training === 0)?.stats ?? stats[0]?.stats ?? {};
+const statEntries = Object.entries(baseStats);
 ---
 
 <html lang="en">
   <head>
-    <title>Player | FCMobiletools</title>
-    <meta name="description" content="FC Mobile player details on FCMobiletools." />
+    <title>{player ? player.name + " | FCMobiletools" : "Player | FCMobiletools"}</title>
+    <meta
+      name="description"
+      content={player
+        ? `${player.name} FC Mobile player details, OVR, position, ranks and stats on FCMobiletools.`
+        : "FC Mobile player details on FCMobiletools."}
+    />
   </head>
   <body>
     <main class="player-shell">
       <a class="back" href="/players/">← Back to Players</a>
-      <div id="player-config" data-slug={slug} hidden></div>
-      <div id="status">Loading player…</div>
-      <article id="player" hidden></article>
-    </main>
 
-    <script>
-      const supabaseUrl = "https://moczgrwxtfexdbjthxpd.supabase.co";
-      const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
-      const slug = document.getElementById("player-config")?.dataset.slug || "";
+      {loadError ? (
+        <section class="notice">
+          <h1>{loadError}</h1>
+          <p>The player may have been removed or the database may be temporarily unavailable.</p>
+          <a href="/players/">Return to Players</a>
+        </section>
+      ) : player ? (
+        <article>
+          <div class="head">
+            <div>
+              <p class="eyebrow">{player.event}</p>
+              <h1>{player.name}</h1>
+              <p class="lead">{player.club} · {player.league} · {player.nation}</p>
+            </div>
+            <div class="ovr">{player.ovr ?? "—"}</div>
+          </div>
 
-      const headers = {
-        apikey: supabaseKey,
-        Authorization: "Bearer " + supabaseKey
-      };
+          {primaryAsset && (
+            <div class="card-wrap">
+              <img class="card-image" src={primaryAsset.asset_url} alt={player.name + " FC Mobile card"} loading="eager" />
+            </div>
+          )}
 
-      const status = document.getElementById("status");
-      const article = document.getElementById("player");
+          <section class="facts">
+            <div><span>Position</span><strong>{player.primary_position ?? "—"}</strong></div>
+            <div><span>Skill Moves</span><strong>{player.skill_moves ?? "—"}</strong></div>
+            <div><span>Weak Foot</span><strong>{player.weak_foot ?? "—"}</strong></div>
+            <div><span>Height</span><strong>{player.height_cm ? player.height_cm + " cm" : "—"}</strong></div>
+            <div><span>Weight</span><strong>{player.weight_kg ? player.weight_kg + " kg" : "—"}</strong></div>
+            <div><span>Work Rates</span><strong>{player.attack_work_rate ?? "—"} / {player.defense_work_rate ?? "—"}</strong></div>
+          </section>
 
-      const esc = (value) => String(value ?? "—").replace(/[&<>"']/g, (m) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#039;"
-      }[m]));
-
-      async function get(path) {
-        const response = await fetch(supabaseUrl + "/rest/v1/" + path, { headers });
-        if (!response.ok) throw new Error("Database request failed");
-        return response.json();
-      }
-
-      async function load() {
-        try {
-          if (!slug) throw new Error("Missing player slug");
-
-          const encoded = encodeURIComponent(slug);
-          const rows = await get(
-            "players?select=*&slug=eq." + encoded + "&active=eq.true&limit=1"
-          );
-
-          const player = rows[0];
-          if (!player) throw new Error("Player not found");
-
-          const [stats, ranks, assets] = await Promise.all([
-            get("player_stats?select=rank,training,stats&player_id=eq." + player.id + "&order=rank,training"),
-            get("player_ranks?select=rank,training,ovr,modifiers&player_id=eq." + player.id + "&order=rank"),
-            get("player_assets?select=asset_type,asset_url&player_id=eq." + player.id)
-          ]);
-
-          const primaryAsset = assets.find((x) => x.asset_type === "card") ?? assets[0];
-
-          article.innerHTML = `
-            <div class="head">
+          <section>
+            <div class="section-heading">
               <div>
-                <p class="eyebrow">${esc(player.event)}</p>
-                <h1>${esc(player.name)}</h1>
-                <p class="lead">${esc(player.club)} · ${esc(player.league)} · ${esc(player.nation)}</p>
+                <p class="eyebrow">PROGRESSION</p>
+                <h2>Ranks</h2>
               </div>
-              <div class="ovr">${esc(player.ovr)}</div>
             </div>
 
-            <section class="facts">
-              <div><span>Position</span><strong>${esc(player.primary_position)}</strong></div>
-              <div><span>Skill Moves</span><strong>${esc(player.skill_moves)}</strong></div>
-              <div><span>Weak Foot</span><strong>${esc(player.weak_foot)}</strong></div>
-              <div><span>Height</span><strong>${player.height_cm ? esc(player.height_cm + " cm") : "—"}</strong></div>
-              <div><span>Weight</span><strong>${player.weight_kg ? esc(player.weight_kg + " kg") : "—"}</strong></div>
-              <div><span>Work Rates</span><strong>${esc(player.attack_work_rate)} / ${esc(player.defense_work_rate)}</strong></div>
-            </section>
+            {ranks.length ? (
+              <div class="rank-grid">
+                {ranks.map((rank) => (
+                  <div class="rank">
+                    <b>Rank {rank.rank}</b>
+                    <span>OVR {rank.ovr ?? player.ovr ?? "—"}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p class="muted">Rank data is not available yet.</p>
+            )}
+          </section>
 
-            ${primaryAsset ? `<img class="card-image" src="${esc(primaryAsset.asset_url)}" alt="${esc(player.name)}" loading="lazy" />` : ""}
+          <section>
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">ATTRIBUTES</p>
+                <h2>Detailed Stats</h2>
+              </div>
+            </div>
 
-            <section>
-              <h2>Ranks</h2>
-              <div class="rank-grid">${ranks.map((r) => `
-                <div class="rank">
-                  <b>Rank ${esc(r.rank)}</b>
-                  <span>OVR ${esc(r.ovr ?? player.ovr)}</span>
-                </div>
-              `).join("") || "<p>No rank data yet.</p>"}</div>
-            </section>
+            {statEntries.length ? (
+              <div class="stats-grid">
+                {statEntries.map(([key, value]) => (
+                  <div class="stat">
+                    <span>{key}</span>
+                    <b>{String(value)}</b>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p class="muted">Detailed stats are not available yet.</p>
+            )}
+          </section>
 
-            <section>
-              <h2>Detailed Stats</h2>
-              <div class="stats-grid">${stats[0]
-                ? Object.entries(stats[0].stats || {}).slice(0, 40).map(([k, v]) => `
-                    <div class="stat"><span>${esc(k)}</span><b>${esc(v)}</b></div>
-                  `).join("")
-                : "<p>Detailed stats are not available yet.</p>"}</div>
-            </section>
-          `;
-
-          article.hidden = false;
-          status.remove();
-          document.title = player.name + " | FCMobiletools";
-        } catch (error) {
-          console.error(error);
-          status.textContent = "Player not found or temporarily unavailable.";
-        }
-      }
-
-      load();
-    </script>
+          <p class="updated">
+            Data source: {player.source_name ?? "FCMobiletools player database"}
+            {player.source_observed_at ? " · Updated " + new Date(player.source_observed_at).toLocaleDateString("en-GB") : ""}
+          </p>
+        </article>
+      ) : (
+        <section class="notice">
+          <h1>Player not found</h1>
+          <p>We could not find this player in the active catalog.</p>
+          <a href="/players/">Browse Players</a>
+        </section>
+      )}
+    </main>
 
     <style>
-      :global(body) { margin: 0; background: #071018; color: #F5F8FB; font-family: Inter, system-ui, sans-serif; }
-      .player-shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 80px; }
-      .back { color: #4CC9FF; text-decoration: none; }
-      .head { display:flex; justify-content:space-between; gap:24px; align-items:flex-start; margin-top:28px; }
-      .eyebrow { margin:0 0 7px; color:#4CC9FF; text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:800; }
-      h1 { margin:0; font:700 clamp(36px,6vw,60px)/1 Space Grotesk,system-ui,sans-serif; }
-      h2 { margin-top:36px; }
-      .lead { color:#A7B4C3; }
-      .ovr { font-size:58px; font-weight:900; color:#4CC9FF; }
-      .facts { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:28px 0; }
-      .facts div,.rank,.stat { background:#0F1A26; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px; }
-      .facts span,.stat span { display:block; color:#A7B4C3; font-size:12px; }
-      .card-image { display:block; max-width:240px; max-height:330px; object-fit:contain; margin:24px auto; }
-      .rank-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-      .rank span { display:block; color:#A7B4C3; margin-top:5px; }
-      .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-      .stat { display:flex; justify-content:space-between; gap:8px; }
-      @media (max-width:700px) {
-        .facts,.rank-grid { grid-template-columns:repeat(2,1fr); }
-        .stats-grid { grid-template-columns:repeat(2,1fr); }
+      :global(body) {
+        margin: 0;
+        background: #071018;
+        color: #F5F8FB;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      .player-shell {
+        width: min(920px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 80px;
+      }
+
+      .back {
+        color: #4CC9FF;
+        text-decoration: none;
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: flex-start;
+        margin-top: 28px;
+      }
+
+      .eyebrow {
+        margin: 0 0 7px;
+        color: #4CC9FF;
+        text-transform: uppercase;
+        letter-spacing: .14em;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      h1 {
+        margin: 0;
+        font: 700 clamp(36px, 6vw, 60px)/1 Space Grotesk, system-ui, sans-serif;
+      }
+
+      h2 {
+        margin: 0;
+        font: 700 30px/1.1 Space Grotesk, system-ui, sans-serif;
+      }
+
+      .lead {
+        color: #A7B4C3;
+      }
+
+      .ovr {
+        font-size: 58px;
+        font-weight: 900;
+        color: #4CC9FF;
+      }
+
+      .card-wrap {
+        display: flex;
+        justify-content: center;
+        margin: 28px 0;
+      }
+
+      .card-image {
+        display: block;
+        width: min(240px, 60vw);
+        max-height: 330px;
+        object-fit: contain;
+      }
+
+      .facts {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 28px 0 42px;
+      }
+
+      .facts div, .rank, .stat {
+        background: #0F1A26;
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 14px;
+        padding: 14px;
+      }
+
+      .facts span, .stat span {
+        display: block;
+        color: #A7B4C3;
+        font-size: 12px;
+      }
+
+      .section-heading {
+        margin-top: 36px;
+        margin-bottom: 16px;
+      }
+
+      .rank-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .rank span {
+        display: block;
+        color: #A7B4C3;
+        margin-top: 5px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .muted, .updated {
+        color: #A7B4C3;
+      }
+
+      .updated {
+        margin-top: 30px;
+        font-size: 12px;
+      }
+
+      .notice {
+        margin-top: 40px;
+        padding: 28px;
+        background: #0F1A26;
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 18px;
+      }
+
+      .notice h1 {
+        font-size: clamp(30px, 5vw, 46px);
+      }
+
+      .notice a {
+        display: inline-block;
+        margin-top: 12px;
+        color: #4CC9FF;
+      }
+
+      @media (max-width: 700px) {
+        .facts, .rank-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .head {
+          gap: 12px;
+        }
+
+        .ovr {
+          font-size: 46px;
+        }
       }
     </style>
   </body>
