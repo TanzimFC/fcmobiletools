@@ -1,11 +1,13 @@
 ---
-const supabaseUrl = "https://moczgrwxtfexdbjthxpd.supabase.co";
-const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
+import { PLAYER_SUPABASE_URL, PLAYER_SUPABASE_KEY } from "../../lib/playerSupabase.js";
+
+const supabaseUrl = PLAYER_SUPABASE_URL;
+const supabaseKey = PLAYER_SUPABASE_KEY;
 
 export async function getStaticPaths() {
   const response = await fetch(
-    supabaseUrl + "/rest/v1/players?select=slug&active=eq.true&order=slug",
-    { headers: { apikey: supabaseKey, Authorization: "Bearer " + supabaseKey } }
+    PLAYER_SUPABASE_URL + "/rest/v1/players?select=slug&active=eq.true&order=slug",
+    { headers: { apikey: PLAYER_SUPABASE_KEY, Authorization: "Bearer " + PLAYER_SUPABASE_KEY } }
   );
   const players = response.ok ? await response.json() : [];
   return players.filter((row) => row.slug).map((row) => ({
@@ -14,7 +16,7 @@ export async function getStaticPaths() {
   }));
 }
 
-const { slug } = Astro.props;
+const { slug } = Astro.params;
 ---
 <html lang="en">
   <head>
