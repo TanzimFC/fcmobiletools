@@ -30,7 +30,13 @@ export interface NormalizedPlayer extends PlayerRecord {
   stats: Record<string, number>;
   ranks: Array<{ rank: number; training: number; ovr: number | null; modifiers: Record<string, unknown> }>;
   abilities: Array<{ key: string; name: string; type: string | null; value: unknown }>;
-  assets: Array<{ type: string; url: string; source_url: string | null }>;
+  assets: Array<{
+    type: string;
+    url: string;
+    source_url: string | null;
+    metadata: Record<string, unknown>;
+    is_primary: boolean;
+  }>;
   prices: Array<{ price: number; observed_at: string }>;
   shard_costs: Array<{ rank: number; shard_cost: number | null }>;
 }
