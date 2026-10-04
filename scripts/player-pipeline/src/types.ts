@@ -19,11 +19,10 @@ export interface PlayerRecord {
   weight_kg: number | null;
   untradeable: boolean;
   active: boolean;
-  source_name: string;
   source_url: string | null;
   source_observed_at: string;
   source_checksum: string | null;
-  source_payload_hash: string;
+  source_payload_hash: string | null;
   data_quality_score: number;
 }
 
