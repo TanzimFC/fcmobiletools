@@ -178,6 +178,8 @@ export function normalizeZenithPlayer(raw) {
   if (!playerId || !name || !ovr) return null;
 
   const alternate = splitList(raw.alternate_position ?? raw.alternatePosition ?? raw.alternate_positions);
+  const images = imageRows(raw);
+  const imageValue = (type) => images.find((item) => item.asset_type === type)?.asset_url ?? '';
 
   return {
     playerId,
@@ -216,7 +218,12 @@ export function normalizeZenithPlayer(raw) {
     playStyles: abilityDetails(raw.playStyles ?? raw.playstyles ?? raw.skillStyleSkills ?? raw.skills),
     traits: splitList(raw.traits_name ?? raw.traits),
     trait_details: abilityDetails(raw.traits_name ?? raw.traits),
-    images: imageRows(raw),
+    images,
+    playerImage: imageValue('player_render'),
+    cardBackground: imageValue('card_background'),
+    nationFlag: imageValue('nation_flag'),
+    clubLogo: imageValue('club_logo'),
+    leagueImage: imageValue('league_logo'),
     raw
   };
 }
