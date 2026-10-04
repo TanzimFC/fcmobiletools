@@ -1,0 +1,131 @@
+---
+const supabaseUrl = "https://moczgrwxtfexdbjthxpd.supabase.co";
+const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
+
+export async function getStaticPaths() {
+  const response = await fetch(
+    supabaseUrl + "/rest/v1/players?select=slug&active=eq.true&order=slug",
+    { headers: { apikey: supabaseKey, Authorization: "Bearer " + supabaseKey } }
+  );
+  const players = response.ok ? await response.json() : [];
+  return players.filter((row) => row.slug).map((row) => ({
+    params: { slug: row.slug },
+    props: { slug: row.slug }
+  }));
+}
+
+const { slug } = Astro.props;
+---
+<html lang="en">
+  <head>
+    <title>Player | FCMobiletools</title>
+    <meta name="description" content="FC Mobile player details on FCMobiletools." />
+  </head>
+  <body>
+    <main class="player-shell">
+      <a class="back" href="/players/">← Back to Players</a>
+      <div id="status">Loading player…</div>
+      <article id="player" hidden></article>
+    </main>
+
+    <script define:vars={{ supabaseUrl, supabaseKey, slug }}>
+      const headers = {
+        apikey: supabaseKey,
+        Authorization: "Bearer " + supabaseKey
+      };
+
+      const status = document.getElementById("status");
+      const article = document.getElementById("player");
+
+      const esc = (value) => String(value ?? "—").replace(/[&<>"']/g, (m) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+      }[m]));
+
+      async function get(path) {
+        const response = await fetch(supabaseUrl + "/rest/v1/" + path, { headers });
+        if (!response.ok) throw new Error("Database request failed");
+        return response.json();
+      }
+
+      async function load() {
+        try {
+          const encoded = encodeURIComponent(slug);
+          const rows = await get("players?select=*&slug=eq." + encoded + "&active=eq.true&limit=1");
+          const player = rows[0];
+
+          if (!player) throw new Error("Player not found");
+
+          const [stats, ranks, assets] = await Promise.all([
+            get("player_stats?select=rank,training,stats&player_id=eq." + player.id + "&order=rank,training"),
+            get("player_ranks?select=rank,training,ovr,modifiers&player_id=eq." + player.id + "&order=rank"),
+            get("player_assets?select=asset_type,asset_url&player_id=eq." + player.id)
+          ]);
+
+          const primaryAsset = assets.find(x => x.asset_type === "card") ?? assets[0];
+
+          article.innerHTML = `
+            <div class="head">
+              <div>
+                <p class="eyebrow">${esc(player.event)}</p>
+                <h1>${esc(player.name)}</h1>
+                <p class="lead">${esc(player.club)} · ${esc(player.league)} · ${esc(player.nation)}</p>
+              </div>
+              <div class="ovr">${esc(player.ovr)}</div>
+            </div>
+
+            <section class="facts">
+              <div><span>Position</span><strong>${esc(player.primary_position)}</strong></div>
+              <div><span>Skill Moves</span><strong>${esc(player.skill_moves)}</strong></div>
+              <div><span>Weak Foot</span><strong>${esc(player.weak_foot)}</strong></div>
+              <div><span>Height</span><strong>${player.height_cm ? esc(player.height_cm + " cm") : "—"}</strong></div>
+              <div><span>Weight</span><strong>${player.weight_kg ? esc(player.weight_kg + " kg") : "—"}</strong></div>
+              <div><span>Work Rates</span><strong>${esc(player.attack_work_rate)} / ${esc(player.defense_work_rate)}</strong></div>
+            </section>
+
+            ${primaryAsset ? `<img class="card-image" src="${esc(primaryAsset.asset_url)}" alt="${esc(player.name)}" loading="lazy" />` : ""}
+
+            <section>
+              <h2>Ranks</h2>
+              <div class="rank-grid">${ranks.map(r => `<div class="rank"><b>Rank ${esc(r.rank)}</b><span>OVR ${esc(r.ovr ?? player.ovr)}</span></div>`).join("") || "<p>No rank data yet.</p>"}</div>
+            </section>
+
+            <section>
+              <h2>Detailed Stats</h2>
+              <div class="stats-grid">${stats[0] ? Object.entries(stats[0].stats || {}).slice(0, 40).map(([k,v]) => `<div class="stat"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("") : "<p>Detailed stats are not available yet.</p>"}</div>
+            </section>
+          `;
+
+          article.hidden = false;
+          status.remove();
+          document.title = player.name + " | FCMobiletools";
+        } catch (error) {
+          console.error(error);
+          status.textContent = "Player not found or temporarily unavailable.";
+        }
+      }
+
+      load();
+    </script>
+
+    <style>
+      :global(body) { margin: 0; background: #071018; color: #F5F8FB; font-family: Inter, system-ui, sans-serif; }
+      .player-shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 80px; }
+      .back { color: #4CC9FF; text-decoration: none; }
+      .head { display:flex; justify-content:space-between; gap:24px; align-items:flex-start; margin-top:28px; }
+      .eyebrow { margin:0 0 7px; color:#4CC9FF; text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:800; }
+      h1 { margin:0; font:700 clamp(36px,6vw,60px)/1 Space Grotesk,system-ui,sans-serif; }
+      h2 { margin-top:36px; }
+      .lead { color:#A7B4C3; }
+      .ovr { font-size:58px; font-weight:900; color:#4CC9FF; }
+      .facts { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:28px 0; }
+      .facts div,.rank,.stat { background:#0F1A26; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px; }
+      .facts span,.stat span { display:block; color:#A7B4C3; font-size:12px; }
+      .card-image { display:block; max-width:240px; max-height:330px; object-fit:contain; margin:24px auto; }
+      .rank-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+      .rank span { display:block; color:#A7B4C3; margin-top:5px; }
+      .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+      .stat { display:flex; justify-content:space-between; gap:8px; }
+      @media (max-width:700px) { .facts,.rank-grid { grid-template-columns:repeat(2,1fr); } .stats-grid { grid-template-columns:repeat(2,1fr); } }
+    </style>
+  </body>
+</html>
