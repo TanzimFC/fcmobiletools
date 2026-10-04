@@ -26,6 +26,14 @@ async function lookup(ids:string[]) {
   return await response.json() as Array<{id:number;player_id:string}>;
 }
 
+async function lookupAbilities(keys:string[]) {
+  if (!keys.length) return [];
+  const value = keys.map(key => key.replace(/[^a-zA-Z0-9_.:-]/g, "")).filter(Boolean).join(",");
+  const response = await fetch(base()+"/player_abilities?select=id,ability_key&ability_key=in.("+value+")", {headers:authHeaders()});
+  if (!response.ok) throw new Error("ability lookup failed: "+response.status);
+  return await response.json() as Array<{id:number;ability_key:string}>;
+}
+
 export async function importFull(players:NormalizedPlayer[]) {
   await write("players", players.map(p => ({
     player_id:p.player_id, slug:p.slug, name:p.name, ovr:p.ovr,
@@ -42,8 +50,19 @@ export async function importFull(players:NormalizedPlayer[]) {
 
   const ids = new Map((await lookup(players.map(p=>p.player_id))).map(x=>[x.player_id,x.id]));
   const stats:any[]=[]; const ranks:any[]=[]; const prices:any[]=[]; const shards:any[]=[]; const assets:any[]=[];
+  const abilitiesByKey = new Map<string,{name:string;type:string|null;metadata:Record<string,unknown>}>();
 
   for (const p of players) {
+    for (const ability of p.abilities) {
+      if (!abilitiesByKey.has(ability.key)) {
+        abilitiesByKey.set(ability.key, {
+          name:ability.name,
+          type:ability.type,
+          metadata:{value:ability.value}
+        });
+      }
+    }
+
     const id=ids.get(p.player_id);
     if (!id) continue;
 
@@ -70,8 +89,13 @@ export async function importFull(players:NormalizedPlayer[]) {
     });
 
     for (const asset of p.assets) assets.push({
-      player_id:id, asset_type:asset.type, asset_url:asset.url,
-      source_url:asset.source_url, checksum:p.source_checksum
+      player_id:id,
+      asset_type:asset.type,
+      asset_url:asset.url,
+      source_url:asset.source_url,
+      metadata:asset.metadata,
+      is_primary:asset.is_primary,
+      checksum:p.source_checksum
     });
   }
 
@@ -81,5 +105,41 @@ export async function importFull(players:NormalizedPlayer[]) {
   await write("player_shard_costs",shards);
   await write("player_assets",assets);
 
-  return {players:players.length,stats:stats.length,ranks:ranks.length,prices:prices.length,shardCosts:shards.length,assets:assets.length};
+  const abilityRows = [...abilitiesByKey].map(([ability_key,value]) => ({
+    ability_key,
+    name:value.name,
+    ability_type:value.type,
+    metadata:value.metadata
+  }));
+  await write("player_abilities",abilityRows);
+
+  const abilityIds = new Map((await lookupAbilities([...abilitiesByKey.keys()])).map(x=>[x.ability_key,x.id]));
+  const links:any[] = [];
+
+  for (const p of players) {
+    const playerDbId=ids.get(p.player_id);
+    if (!playerDbId) continue;
+    for (const ability of p.abilities) {
+      const abilityId=abilityIds.get(ability.key);
+      if (!abilityId) continue;
+      links.push({
+        player_id:playerDbId,
+        ability_id:abilityId,
+        value:ability.value && typeof ability.value === "object" ? ability.value : {value:ability.value}
+      });
+    }
+  }
+
+  await write("player_ability_links",links);
+
+  return {
+    players:players.length,
+    stats:stats.length,
+    ranks:ranks.length,
+    prices:prices.length,
+    shardCosts:shards.length,
+    assets:assets.length,
+    abilities:abilityRows.length,
+    abilityLinks:links.length
+  };
 }
