@@ -1,3 +1,5 @@
+import playstyleAssetIndex from '../data/playstyle-assets.json';
+
 const DEFAULT_BASE_URL = 'https://zenithfcm.com/api';
 
 const memoryCache = new Map();
@@ -42,14 +44,73 @@ function asList(payload) {
 function splitList(value) {
   if (Array.isArray(value)) {
     return value.flatMap((entry) => {
-      if (entry && typeof entry === 'object') return [entry.name ?? entry.label ?? entry.title ?? ''];
+      if (entry && typeof entry === 'object') return [entry.name ?? entry.label ?? entry.title ?? entry.playstyle ?? entry.skill ?? ''];
       return [entry];
+    }).map((entry) => String(entry ?? '').trim()).filter(Boolean);
+  }
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, entry]) => {
+      if (entry && typeof entry === 'object') return [entry.name ?? entry.label ?? entry.title ?? key];
+      return [entry ?? key];
     }).map((entry) => String(entry ?? '').trim()).filter(Boolean);
   }
   return String(value ?? '')
     .split(/[|,;]+/)
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+function abilityName(value, fallback = '') {
+  if (typeof value === 'string') return value.trim();
+  if (value && typeof value === 'object') {
+    return String(value.name ?? value.label ?? value.title ?? value.playstyle ?? value.skill ?? fallback).trim();
+  }
+  return String(fallback ?? '').trim();
+}
+
+function abilityLevel(value) {
+  const raw = value && typeof value === 'object'
+    ? value.level ?? value.playstyle_level ?? value.skill_level ?? value.stars ?? value.value
+    : null;
+  const level = Number(raw);
+  return Number.isInteger(level) && level >= 0 ? level : null;
+}
+
+function abilityPlus(value) {
+  if (!value || typeof value !== 'object') return false;
+  return value.is_plus === true || value.plus === true || value.variant === '+' || /\+$/.test(String(value.name ?? ''));
+}
+
+function abilityDetails(value) {
+  const source = Array.isArray(value)
+    ? value
+    : value && typeof value === 'object'
+      ? Object.entries(value).map(([key, entry]) =>
+          entry && typeof entry === 'object' ? { ...entry, name: entry.name ?? entry.label ?? entry.title ?? key } : { name: entry ?? key }
+        )
+      : [value];
+
+  const seen = new Set();
+  const result = [];
+
+  for (const entry of source) {
+    const name = abilityName(entry);
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const assetPaths = playstyleAssetIndex?.[slugify(name)] ?? [];
+    result.push({
+      name,
+      level: abilityLevel(entry),
+      plus: abilityPlus(entry),
+      asset_paths: Array.isArray(assetPaths) ? assetPaths : [],
+      raw: entry && typeof entry === 'object' ? entry : { value: entry }
+    });
+  }
+
+  return result;
 }
 
 function toNumber(value) {
@@ -151,7 +212,10 @@ export function normalizeZenithPlayer(raw) {
     price: toNumber(raw.price),
     stats: statsFromPlayer(raw),
     skills: splitList(raw.skills),
+    skill_details: abilityDetails(raw.skills),
+    playStyles: abilityDetails(raw.playStyles ?? raw.playstyles ?? raw.skillStyleSkills ?? raw.skills),
     traits: splitList(raw.traits_name ?? raw.traits),
+    trait_details: abilityDetails(raw.traits_name ?? raw.traits),
     images: imageRows(raw),
     raw
   };
