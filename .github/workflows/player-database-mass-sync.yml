@@ -1,6 +1,11 @@
 name: Player Database Mass Sync
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/player-collector/**"
+      - ".github/workflows/player-database-mass-sync.yml"
   workflow_dispatch:
   schedule:
     - cron: "23 */12 * * *"
@@ -17,6 +22,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Check Zenith API
+        run: node -e "fetch('https://zenithfcm.com/api/players?limit=1&offset=0&rank=0&sort_by=ovr&order=desc&include_price=false').then(async r => { console.log('Zenith status:', r.status); const t=await r.text(); console.log(t.slice(0,1000)); if(!r.ok) process.exit(1); })"
 
       - name: Collect full player catalog from Zenith API
         env:
