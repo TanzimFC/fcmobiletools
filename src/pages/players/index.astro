@@ -1,0 +1,180 @@
+---
+const supabaseUrl = "https://moczgrwxtfexdbjthxpd.supabase.co";
+const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
+---
+<html lang="en">
+  <head>
+    <title>FC Mobile Players | FCMobiletools</title>
+    <meta name="description" content="Browse the FCMobiletools FC Mobile player database with OVR, positions, events, clubs and detailed player pages." />
+  </head>
+  <body>
+    <main class="players-shell">
+      <header class="hero">
+        <p class="eyebrow">FC MOBILE DATABASE</p>
+        <h1>Players</h1>
+        <p class="sub">Search the catalog by player, OVR, position or event.</p>
+      </header>
+
+      <section class="controls" aria-label="Player filters">
+        <input id="search" type="search" placeholder="Search player name..." autocomplete="off" />
+        <select id="position"><option value="">All positions</option></select>
+        <select id="event"><option value="">All events</option></select>
+        <select id="sort">
+          <option value="ovr.desc">Highest OVR</option>
+          <option value="ovr.asc">Lowest OVR</option>
+          <option value="name.asc">Name A-Z</option>
+          <option value="name.desc">Name Z-A</option>
+        </select>
+      </section>
+
+      <div id="status" class="status">Loading players…</div>
+      <section id="grid" class="grid" aria-live="polite"></section>
+
+      <nav class="pager" aria-label="Player pages">
+        <button id="prev" type="button" disabled>Previous</button>
+        <span id="pageLabel">Page 1</span>
+        <button id="next" type="button" disabled>Next</button>
+      </nav>
+    </main>
+
+    <script define:vars={{ supabaseUrl, supabaseKey }}>
+      const PAGE_SIZE = 48;
+      let page = 0;
+      let timer;
+
+      const headers = {
+        apikey: supabaseKey,
+        Authorization: "Bearer " + supabaseKey
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const grid = $("grid");
+      const status = $("status");
+      const search = $("search");
+      const position = $("position");
+      const event = $("event");
+      const sort = $("sort");
+      const prev = $("prev");
+      const next = $("next");
+      const pageLabel = $("pageLabel");
+
+      function esc(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (m) => ({
+          "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+        }[m]));
+      }
+
+      function queryUrl(extra = "") {
+        const params = new URLSearchParams({
+          select: "slug,name,ovr,primary_position,club,league,nation,event,skill_moves,weak_foot",
+          active: "eq.true",
+          limit: String(PAGE_SIZE),
+          offset: String(page * PAGE_SIZE)
+        });
+
+        const term = search.value.trim();
+        if (term) params.set("name", "ilike.*" + term.replace(/[*]/g, "") + "*");
+        if (position.value) params.set("primary_position", "eq." + position.value);
+        if (event.value) params.set("event", "eq." + event.value);
+
+        const [field, direction] = sort.value.split(".");
+        params.set("order", field + "." + direction);
+        if (extra) params.set(extra, "eq.true");
+
+        return supabaseUrl + "/rest/v1/players?" + params.toString();
+      }
+
+      function card(player) {
+        return `<a class="card" href="/player/${encodeURIComponent(player.slug)}/">
+          <div class="ovr">${esc(player.ovr ?? "—")}</div>
+          <div class="name">${esc(player.name)}</div>
+          <div class="meta">${esc(player.primary_position ?? "—")} · ${esc(player.event ?? "Unknown event")}</div>
+          <div class="meta">${esc(player.club ?? "Unknown club")} · ${esc(player.nation ?? "Unknown nation")}</div>
+        </a>`;
+      }
+
+      async function fetchJson(url) {
+        const response = await fetch(url, { headers });
+        if (!response.ok) throw new Error("Database request failed");
+        return response.json();
+      }
+
+      async function loadFacets() {
+        const [positions, events] = await Promise.all([
+          fetchJson(supabaseUrl + "/rest/v1/players?select=primary_position&active=eq.true&order=primary_position"),
+          fetchJson(supabaseUrl + "/rest/v1/players?select=event&active=eq.true&order=event")
+        ]);
+
+        for (const value of [...new Set(positions.map(x => x.primary_position).filter(Boolean))])
+          position.insertAdjacentHTML("beforeend", `<option value="${esc(value)}">${esc(value)}</option>`);
+
+        for (const value of [...new Set(events.map(x => x.event).filter(Boolean))])
+          event.insertAdjacentHTML("beforeend", `<option value="${esc(value)}">${esc(value)}</option>`);
+      }
+
+      async function load() {
+        status.textContent = "Loading players…";
+        grid.innerHTML = "";
+
+        try {
+          const players = await fetchJson(queryUrl());
+
+          if (!players.length) {
+            status.textContent = "No players match those filters.";
+            prev.disabled = page === 0;
+            next.disabled = true;
+          } else {
+            grid.innerHTML = players.map(card).join("");
+            status.textContent = "Showing " + (page * PAGE_SIZE + 1) + "–" + (page * PAGE_SIZE + players.length);
+            prev.disabled = page === 0;
+            next.disabled = players.length < PAGE_SIZE;
+          }
+
+          pageLabel.textContent = "Page " + (page + 1);
+        } catch (error) {
+          console.error(error);
+          status.textContent = "Player database is temporarily unavailable.";
+          prev.disabled = true;
+          next.disabled = true;
+        }
+      }
+
+      function resetAndLoad() {
+        clearTimeout(timer);
+        timer = setTimeout(() => { page = 0; load(); }, search === document.activeElement ? 250 : 0);
+      }
+
+      search.addEventListener("input", resetAndLoad);
+      position.addEventListener("change", () => { page = 0; load(); });
+      event.addEventListener("change", () => { page = 0; load(); });
+      sort.addEventListener("change", () => { page = 0; load(); });
+
+      prev.addEventListener("click", () => { if (page > 0) { page--; load(); } });
+      next.addEventListener("click", () => { page++; load(); });
+
+      loadFacets().then(load).catch(load);
+    </script>
+
+    <style>
+      :global(body) { margin: 0; background: #071018; color: #F5F8FB; font-family: Inter, system-ui, sans-serif; }
+      .players-shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 56px 0 80px; }
+      .eyebrow { margin: 0 0 8px; color: #4CC9FF; font-size: 12px; font-weight: 800; letter-spacing: .16em; }
+      h1 { margin: 0; font: 700 clamp(38px, 6vw, 64px)/1 Space Grotesk, system-ui, sans-serif; }
+      .sub { color: #A7B4C3; max-width: 640px; }
+      .controls { display: grid; grid-template-columns: 2fr 1fr 1.3fr 1.2fr; gap: 10px; margin: 30px 0 18px; }
+      input, select, button { width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.08); background: #0F1A26; color: #F5F8FB; border-radius: 12px; padding: 13px 14px; }
+      .status { color: #A7B4C3; min-height: 24px; margin-bottom: 16px; }
+      .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+      .card { display: block; text-decoration: none; color: inherit; padding: 16px; border: 1px solid rgba(255,255,255,.08); background: #0F1A26; border-radius: 16px; min-height: 130px; transition: transform .16s ease, border-color .16s ease; }
+      .card:hover { transform: translateY(-2px); border-color: #4CC9FF; }
+      .ovr { font-size: 28px; font-weight: 800; color: #4CC9FF; }
+      .name { font-size: 18px; font-weight: 750; margin-top: 4px; }
+      .meta { color: #A7B4C3; font-size: 13px; margin-top: 6px; }
+      .pager { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 28px; }
+      .pager button { width: auto; min-width: 110px; cursor: pointer; }
+      .pager button:not(:disabled):hover { border-color: #4CC9FF; }
+      @media (max-width: 900px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr; } }
+      @media (max-width: 620px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr; } .players-shell { width: min(100% - 20px, 1180px); padding-top: 32px; } }
+    </style>
+  </body>
+</html>
