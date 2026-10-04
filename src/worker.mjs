@@ -1,3 +1,6 @@
+import type { SSRManifest } from 'astro';
+import { App } from 'astro/app';
+import { handle } from '@astrojs/cloudflare/handler';
 import { tournamentWorkerRoute } from './tournamentWorker.mjs';
 import { argon2id, argon2Verify } from 'hash-wasm';
 import {
@@ -1073,7 +1076,10 @@ async function redeemPage(request, env, ctx, url) {
     .transform(new Response(asset.body, { status: asset.status, headers }));
 }
 
-export default { async fetch(request,env,ctx) {
+export function createExports(manifest: SSRManifest) {
+  const app = new App(manifest);
+  return {
+    default: { async fetch(request,env,ctx) {
   const url=new URL(request.url);
   const hostHeader=(request.headers.get('host')||'').split(':')[0].toLowerCase();
 
@@ -1143,7 +1149,6 @@ export default { async fetch(request,env,ctx) {
   if ((url.pathname === '/redeem-codes' || url.pathname === '/redeem-codes/') && request.method === 'GET') return redeemPage(request, env, ctx, url);
 
 
-  if(url.pathname === '/players' || url.pathname.startsWith('/players/') || url.pathname === '/player' || url.pathname.startsWith('/player/')) return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});
   if(url.pathname === '/fc-mobile-beta' || url.pathname === '/fc-mobile-beta/' || url.pathname === '/legacy/fc-mobile-beta.html') {
     return Response.redirect(new URL('/fc-mobile-27/',url),301);
   }
@@ -1196,18 +1201,10 @@ export default { async fetch(request,env,ctx) {
     if(creator && url.pathname === '/admin/dashboard.html') return env.ASSETS.fetch(request);
     return new Response('Not found',{status:404});
   }
-  // Public site is static. Explicitly resolve directory routes to index.html so
-  // Worker-first routing cannot turn valid Astro pages into 404s.
-  const candidates = [];
-  if (url.pathname === '/' || url.pathname === '') candidates.push('/index.html');
-  else {
-    candidates.push(url.pathname);
-    const clean = url.pathname.endsWith('/') ? url.pathname : url.pathname + '/';
-    candidates.push(clean + 'index.html');
-  }
-  for (const pathname of [...new Set(candidates)]) {
-    const asset = await env.ASSETS.fetch(new Request(new URL(pathname, url), request));
-    if (asset.status !== 404) return asset;
-  }
-  return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});
-} };
+  // Let Astro handle the remaining static and on-demand routes.
+  return handle(manifest, app, request, env, ctx);
+      }
+    }
+  };
+}
+
