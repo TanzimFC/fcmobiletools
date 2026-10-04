@@ -1,81 +1,68 @@
 ---
-export const prerender = false;
+import topPlayerIds from "../../data/top-players.json";
+import {
+  buildZenithPlayerSlug,
+  fetchZenithPlayerBySlug,
+  fetchZenithPlayersByIds,
+} from "../../lib/zenithPlayerApi.js";
 
-import { PLAYER_SUPABASE_URL, PLAYER_SUPABASE_KEY } from "../../lib/playerSupabase.js";
+const prerenderLimit = Math.min(
+  10000,
+  Math.max(1, Number(globalThis.process?.env?.TOP_PLAYERS_PRERENDER_LIMIT || 10000))
+);
 
-const slug = Astro.params.slug ?? "";
-const headers = {
-  apikey: PLAYER_SUPABASE_KEY,
-  Authorization: "Bearer " + PLAYER_SUPABASE_KEY
-};
+export async function getStaticPaths() {
+  const ids = topPlayerIds.map(String).slice(0, prerenderLimit);
+  const players = await fetchZenithPlayersByIds(ids, { rank: 0, chunkSize: 100 });
+  const paths = [];
+  const seen = new Set();
 
-async function fetchRows(table, params) {
-  const url = new URL("/rest/v1/" + table, PLAYER_SUPABASE_URL);
-  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  for (const player of players) {
+    const slug = buildZenithPlayerSlug(player);
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    paths.push({ params: { slug }, props: { player } });
+  }
 
-  const response = await fetch(url, { headers });
-  if (!response.ok) throw new Error(table + " request failed: " + response.status);
-  return response.json();
+  console.log("[player-pages] generated static paths:", paths.length);
+  return paths;
 }
 
-let player = null;
+const slug = Astro.params.slug ?? "";
+let player = Astro.props.player ?? null;
+
+if (!player) {
+  player = await fetchZenithPlayerBySlug(slug, 0);
+}
+
 let stats = [];
 let ranks = [];
 let assets = [];
 let abilityRows = [];
 
-try {
-  const players = await fetchRows("players", {
-    select: "*",
-    slug: "eq." + slug,
-    active: "eq.true",
-    limit: "1"
-  });
+if (player) {
+  stats = Object.keys(player.stats || {}).length
+    ? [{ rank: 0, training: 0, stats: player.stats }]
+    : [];
 
-  player = players[0] ?? null;
+  ranks = Array.isArray(player.ranks) && player.ranks.length
+    ? player.ranks
+    : [{ rank: 0, training: 0, ovr: player.ovr, modifiers: {} }];
 
-  if (player) {
-    [stats, ranks, assets] = await Promise.all([
-      fetchRows("player_stats", {
-        select: "rank,training,stats",
-        player_id: "eq." + player.id,
-        order: "rank,training"
-      }),
-      fetchRows("player_ranks", {
-        select: "rank,training,ovr,modifiers",
-        player_id: "eq." + player.id,
-        order: "rank"
-      }),
-      fetchRows("player_assets", {
-        select: "asset_type,asset_url,metadata,is_primary",
-        player_id: "eq." + player.id
-      })
-    ]);
+  assets = Array.isArray(player.images) ? player.images : [];
 
-    try {
-      const links = await fetchRows("player_ability_links", {
-        select: "ability_id,value",
-        player_id: "eq." + player.id
-      });
-
-      const ids = [...new Set(links.map((row) => row.ability_id).filter(Boolean))];
-      if (ids.length) {
-        const abilities = await fetchRows("player_abilities", {
-          select: "id,name,ability_type,metadata",
-          id: "in.(" + ids.join(",") + ")"
-        });
-        const map = new Map(abilities.map((row) => [String(row.id), row]));
-        abilityRows = links.map((link) => ({
-          ...(map.get(String(link.ability_id)) ?? {}),
-          value: link.value
-        }));
-      }
-    } catch (error) {
-      console.warn("Player abilities unavailable", error);
-    }
-  }
-} catch (error) {
-  console.error(error);
+  abilityRows = [
+    ...(Array.isArray(player.skills) ? player.skills : []).map((name) => ({
+      name,
+      ability_type: "playstyle",
+      metadata: {}
+    })),
+    ...(Array.isArray(player.traits) ? player.traits : []).map((name) => ({
+      name,
+      ability_type: "trait",
+      metadata: {}
+    }))
+  ];
 }
 
 const getAsset = (...types) => {
@@ -98,6 +85,7 @@ const baseStats =
   stats.find((row) => row.rank === 0 && row.training === 0)?.stats ??
   stats.find((row) => row.rank === 0)?.stats ??
   stats[0]?.stats ??
+  player?.stats ??
   {};
 
 const coreStats = [
@@ -110,12 +98,12 @@ const coreStats = [
 ];
 
 const detailStats = [
-  ["Pace", ["acceleration","sprint_speed"]],
-  ["Shooting", ["finishing","shot_power","long_shot","positioning","volley","penalties"]],
-  ["Passing", ["short_passing","long_passing","vision","crossing","curve","free_kick"]],
-  ["Dribbling", ["agility","balance","reactions","ball_control"]],
-  ["Defending", ["marking","standing_tackle","sliding_tackle","awareness","heading"]],
-  ["Physical", ["strength","aggression","jumping","stamina_stat"]]
+  ["Pace", ["acceleration", "sprint_speed"]],
+  ["Shooting", ["finishing", "shot_power", "long_shot", "positioning", "volley", "penalties"]],
+  ["Passing", ["short_passing", "long_passing", "vision", "crossing", "curve", "free_kick"]],
+  ["Dribbling", ["agility", "balance", "reactions", "ball_control"]],
+  ["Defending", ["marking", "standing_tackle", "sliding_tackle", "awareness", "heading"]],
+  ["Physical", ["strength", "aggression", "jumping", "stamina_stat"]]
 ];
 
 const labels = {
@@ -129,6 +117,7 @@ const labels = {
 };
 
 const statsPayload = JSON.stringify(stats);
+const hasStats = Object.keys(baseStats).length > 0;
 ---
 <html lang="en">
 <head>
