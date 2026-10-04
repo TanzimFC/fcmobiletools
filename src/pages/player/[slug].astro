@@ -257,11 +257,18 @@ const playerSchema = player ? {
                       <span data-card-position>{player.primary_position || player.position || '—'}</span>
                     </div>
 
-                    {render ? (
-                      <img class="card-render" data-card-render src={render.asset_url} alt={player.name} fetchpriority="high" decoding="async" />
-                    ) : (
-                      <div class="render-fallback" aria-hidden="true">{player.name.slice(0, 2).toUpperCase()}</div>
-                    )}
+                    <img
+                      class="card-render"
+                      data-card-render
+                      src={render?.asset_url || ''}
+                      alt={player.name}
+                      fetchpriority="high"
+                      decoding="async"
+                      hidden={!render}
+                    />
+                    <div class="render-fallback" data-card-fallback aria-hidden="true" hidden={Boolean(render)}>
+                      {player.name.slice(0, 2).toUpperCase()}
+                    </div>
 
                     <div class="card-name" data-card-name>
                       <span>{player.name}</span>
@@ -751,7 +758,17 @@ const playerSchema = player ? {
         card.style.setProperty('--card-background', background ? 'url("' + background.replace(/"/g, '\\"') + '")' : 'none');
 
         const render = $('[data-card-render]');
-        if (render && record.playerImage) render.src = record.playerImage;
+        const fallback = $('[data-card-fallback]');
+        if (render) {
+          if (record.playerImage) {
+            render.src = record.playerImage;
+            render.hidden = false;
+            if (fallback) fallback.hidden = true;
+          } else {
+            render.hidden = true;
+            if (fallback) fallback.hidden = false;
+          }
+        }
 
         const ovr = $('[data-card-ovr]');
         if (ovr) ovr.textContent = record.ovr ?? '—';
@@ -768,15 +785,19 @@ const playerSchema = player ? {
         const livePosition = $('[data-live-position]');
         if (livePosition) livePosition.textContent = record.primary_position || record.position || '—';
 
-        const badges = [
-          ['[data-card-flag]', assetUrl(record, 'nation_flag')],
-          ['[data-card-club]', assetUrl(record, 'club_logo')],
-          ['[data-card-league]', assetUrl(record, 'league_logo')]
-        ];
-        badges.forEach(([selector, url]) => {
-          const image = $(selector);
-          if (image && url) image.src = url;
-        });
+        const badgesBox = $('[data-card-badges]');
+        if (badgesBox) {
+          const badgeRows = [
+            ['nation_flag', record.nation || ''],
+            ['club_logo', record.club || ''],
+            ['league_logo', record.league || '']
+          ];
+          badgesBox.innerHTML = badgeRows.map(([type, label]) => {
+            const url = assetUrl(record, type);
+            return url ? '<img src="' + esc(url) + '" alt="' + esc(label) + '" loading="lazy" decoding="async">' : '';
+          }).join('');
+          badgesBox.hidden = !badgesBox.children.length;
+        }
 
         const caption = $('.card-caption b');
         if (caption) caption.textContent = (record.ovr || '—') + ' OVR · ' + (record.primary_position || record.position || '—');
