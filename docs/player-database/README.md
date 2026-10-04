@@ -18,22 +18,24 @@ The Worker requests only the page needed by the visitor and keeps a small in-mem
 
 ## Build-time player index
 
-`scripts/player-data/generate-top-players.mjs` refreshes `src/data/top-players.json` from Zenith before each production build.
+`scripts/player-data/generate-top-players.mjs` refreshes `src/data/top-players.json` from Zenith only when explicitly requested. It is intentionally not part of the normal production build.
 
 The index stores stable player IDs rather than duplicating the full player database. The player detail route uses that index to pre-render the configured top-player tier.
 
 Default limits:
 
 - Top-player index: 10,000 IDs
-- Player detail pre-render: 10,000 pages
+- Player detail pre-render: 100 pages by default
 - Public listing page size: 48 cards
 - Worker API maximum listing request: 100 cards
 
-The pre-render limit can be reduced for a faster validation build with:
+The normal build pre-renders only the top 100 indexed players so deployments stay fast. For a deliberate larger rebuild, set `TOP_PLAYERS_PRERENDER_LIMIT` in the build environment, for example:
 
 ```text
 TOP_PLAYERS_PRERENDER_LIMIT=1000
 ```
+
+To refresh the 10,000-ID index itself, run `npm run refresh-player-index` separately. That network operation is not part of `npm run build`.
 
 The public listing can still search and paginate against Zenith records outside the pre-rendered tier. Those cards should only be treated as SEO-pre-rendered when they are included in the current build index.
 
