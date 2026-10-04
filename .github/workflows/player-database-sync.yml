@@ -17,9 +17,20 @@ jobs:
         with:
           node-version: 22
 
+      - name: Validate Supabase sync credentials
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.PLAYER_SUPABASE_SECRET_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLAYER_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "${SUPABASE_SECRET_KEY}" ] && [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "::error::Add PLAYER_SUPABASE_SECRET_KEY to GitHub Actions secrets (legacy PLAYER_SUPABASE_SERVICE_ROLE_KEY is also accepted)."
+            exit 1
+          fi
+
       - name: Sync player database
         env:
-          SUPABASE_URL: ${{ secrets.PLAYER_SUPABASE_URL }}
+          SUPABASE_URL: https://moczgrwxtfexdbjthxpd.supabase.co
+          SUPABASE_SECRET_KEY: ${{ secrets.PLAYER_SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLAYER_SUPABASE_SERVICE_ROLE_KEY }}
           UPSTREAM_BASE_URL: ${{ secrets.PLAYER_UPSTREAM_BASE_URL }}
           UPSTREAM_SEARCH_ENDPOINT: ${{ secrets.PLAYER_UPSTREAM_SEARCH_ENDPOINT }}
