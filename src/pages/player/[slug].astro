@@ -394,9 +394,9 @@ const playerSchema = player ? {
                 <article class:list={['core-card', `t-${statTier(baseStats[key])}`, num(baseStats[key]) === null && 'is-empty']} style={`--d:${i * 70}ms`}>
                   <div class="core-top">
                     <span>{label.toUpperCase()}</span>
-                    <strong data-count={baseStats[key] ?? ''}>{baseStats[key] ?? '—'}</strong>
+                    <strong data-count={baseStats[key] ?? ''} data-core-stat={key}>{baseStats[key] ?? '—'}</strong>
                   </div>
-                  <div class="progress"><i style={`--w:${barWidth(baseStats[key])}%`}></i></div>
+                  <div class="progress"><i data-core-bar={key} style={`--w:${barWidth(baseStats[key])}%`}></i></div>
                 </article>
               ))}
             </div>
@@ -425,8 +425,8 @@ const playerSchema = player ? {
                           {keys.map((key) => (
                             <div class={`stat-row t-${statTier(baseStats[key])}`}>
                               <span>{labels[key] || key.replaceAll('_', ' ')}</span>
-                              <div class="stat-track"><i style={`--w:${barWidth(baseStats[key])}%`}></i></div>
-                              <strong>{baseStats[key]}</strong>
+                              <div class="stat-track"><i data-stat-bar={key} style={`--w:${barWidth(baseStats[key])}%`}></i></div>
+                              <strong data-stat-value={key}>{baseStats[key]}</strong>
                             </div>
                           ))}
                         </div>
@@ -1037,8 +1037,10 @@ const playerSchema = player ? {
           state.skills = Array.isArray(payload?.skills) ? payload.skills : [];
           state.skillBoosts = {};
           renderSkills();
-          renderPlaystyles(Array.isArray(payload?.playstyles) ? payload.playstyles : (Array.isArray(payload?.playStyles) ? payload.playStyles : []));
-          renderTraits(Array.isArray(payload?.trait_details) ? payload.trait_details : (Array.isArray(payload?.traits) ? payload.traits.map((name) => ({ name })) : []));
+          const livePlaystyles = Array.isArray(payload?.playstyles) ? payload.playstyles : (Array.isArray(payload?.playStyles) ? payload.playStyles : []);
+          const liveTraits = Array.isArray(payload?.trait_details) ? payload.trait_details : (Array.isArray(payload?.traits) ? payload.traits.map((name) => ({ name })) : []);
+          if (livePlaystyles.length || rank > 0) renderPlaystyles(livePlaystyles);
+          if (liveTraits.length || rank > 0) renderTraits(liveTraits);
 
           await loadSkillBoosts();
           renderSkills();
@@ -1277,17 +1279,17 @@ const playerSchema = player ? {
 .tilt.is-active .card-shine{opacity:.9}
 .card-meta{position:absolute;top:5.5%;left:8.5%;right:8.5%;display:flex;justify-content:space-between;gap:12px;z-index:7;color:rgba(235,250,255,.78);font:800 8.5px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.13em;text-transform:uppercase}
 .card-meta span{max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card-rating{position:absolute;left:9%;top:10.5%;z-index:7}
+.card-rating{position:absolute;left:29%;top:11%;z-index:7;transform:translateX(-50%)}
 .card-rating strong{display:block;font:900 clamp(54px,6.7vw,82px)/.78 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.1em;color:#F7FCFF;text-shadow:0 4px 26px rgba(0,0,0,.4),0 0 30px rgba(var(--accent-rgb),.28)}
 .card-rating span{display:block;margin-top:8px;color:var(--accent-2);font:900 clamp(11px,1.45vw,15px)/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.23em}
-.card-render{position:absolute;left:50%;top:49%;width:112%;height:79%;transform:translate(-50%,-50%) translateZ(40px);object-fit:contain;object-position:center center;z-index:4;transform:translateZ(40px);filter:drop-shadow(0 30px 28px rgba(0,0,0,.56)) drop-shadow(0 0 30px rgba(var(--accent-rgb),.1))}
+.card-render{position:absolute;left:50%;top:50%;width:110%;height:110%;transform:translate(-50%,-50%) translateZ(40px);object-fit:contain;object-position:center center;z-index:4;filter:drop-shadow(0 30px 28px rgba(0,0,0,.56)) drop-shadow(0 0 30px rgba(var(--accent-rgb),.1))}
 .render-fallback{position:absolute;right:9%;top:29%;width:66%;height:42%;display:grid;place-items:center;color:rgba(191,242,255,.45);font:900 90px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.08em;z-index:2}
-.card-name{position:absolute;left:7%;right:7%;bottom:17.2%;z-index:7;text-align:center}
+.card-name{position:absolute;left:50%;bottom:27%;width:92%;transform:translateX(-50%);z-index:7;text-align:center}
 .card-name>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#F7FCFF;font:900 clamp(23px,3.5vw,39px)/.94 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.045em;text-shadow:0 4px 18px rgba(0,0,0,.5)}
 .card-name small{display:none;color:rgba(227,246,255,.68);font:700 8px/1.1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card-badges{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:7px;z-index:8;min-height:34px;max-width:74%}
+.card-badges{position:absolute;left:50%;bottom:15%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:7px;z-index:8;min-height:32px;max-width:70%}
 .card-badges img{width:32px;height:32px;padding:5px;object-fit:contain;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(4,11,17,.4);backdrop-filter:blur(6px)}
-.card-alt{position:absolute;right:8.5%;bottom:7%;z-index:8;color:rgba(227,246,255,.72);font:800 8px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.card-alt{display:none;position:absolute;right:8.5%;bottom:6%;z-index:8;color:rgba(227,246,255,.72);font:800 8px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
 .card-caption{display:flex;justify-content:space-between;gap:12px;margin:2px 10px 0;color:#4D677A;font:800 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase}
 .card-caption b{color:var(--accent-2);opacity:.85}
 
