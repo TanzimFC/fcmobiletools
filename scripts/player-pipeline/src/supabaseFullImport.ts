@@ -35,9 +35,8 @@ export async function importFull(players:NormalizedPlayer[]) {
     attack_work_rate:p.attack_work_rate, defense_work_rate:p.defense_work_rate,
     height_cm:p.height_cm, weight_kg:p.weight_kg,
     untradeable:p.untradeable, active:p.active,
-    source_name:p.source_name, source_url:p.source_url,
-    source_observed_at:p.source_observed_at, source_checksum:p.source_checksum,
-    source_payload_hash:p.source_payload_hash,
+    source_url:p.source_url, source_observed_at:p.source_observed_at,
+    source_checksum:p.source_checksum, source_payload_hash:p.source_payload_hash,
     data_quality_score:p.data_quality_score
   })));
 
@@ -50,33 +49,29 @@ export async function importFull(players:NormalizedPlayer[]) {
 
     stats.push({
       player_id:id, rank:0, training:0, stats:p.stats,
-      source_name:p.source_name, source_url:p.source_url,
-      source_observed_at:p.source_observed_at, source_checksum:p.source_checksum
-    });
-
-    for (const r of p.ranks) ranks.push({
-      player_id:id, rank:r.rank, training:r.training, ovr:r.ovr,
-      modifiers:r.modifiers, source_name:p.source_name,
       source_url:p.source_url, source_observed_at:p.source_observed_at,
       source_checksum:p.source_checksum
     });
 
+    for (const r of p.ranks) ranks.push({
+      player_id:id, rank:r.rank, training:r.training, ovr:r.ovr,
+      modifiers:r.modifiers, source_url:p.source_url,
+      source_observed_at:p.source_observed_at, source_checksum:p.source_checksum
+    });
+
     for (const price of p.prices) prices.push({
       player_id:id, price:price.price, observed_at:price.observed_at,
-      source_name:p.source_name, source_url:p.source_url,
-      source_checksum:p.source_checksum
+      source_url:p.source_url, source_checksum:p.source_checksum
     });
 
     for (const shard of p.shard_costs) shards.push({
       player_id:id, rank:shard.rank, shard_cost:shard.shard_cost,
-      source_name:p.source_name, source_url:p.source_url,
-      source_observed_at:p.source_observed_at
+      source_url:p.source_url, source_observed_at:p.source_observed_at
     });
 
     for (const asset of p.assets) assets.push({
       player_id:id, asset_type:asset.type, asset_url:asset.url,
-      source_name:p.source_name, source_url:asset.source_url,
-      checksum:p.source_checksum
+      source_url:asset.source_url, checksum:p.source_checksum
     });
   }
 
