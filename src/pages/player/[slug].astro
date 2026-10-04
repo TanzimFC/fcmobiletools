@@ -1,5 +1,6 @@
 ---
-import { PLAYER_SUPABASE_URL, PLAYER_SUPABASE_KEY } from "../../lib/playerSupabase.js";
+const PLAYER_SUPABASE_URL = "https://moczgrwxtfexdbjthxpd.supabase.co";
+const PLAYER_SUPABASE_KEY = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
 
 export async function getStaticPaths() {
   const response = await fetch(
@@ -36,6 +37,7 @@ const { slug } = Astro.params;
   <body>
     <main class="player-shell">
       <a class="back" href="/players/">← Back to Players</a>
+      <div id="player-config" data-slug={slug} hidden></div>
       <div id="status">Loading player…</div>
       <article id="player" hidden></article>
     </main>
@@ -43,7 +45,7 @@ const { slug } = Astro.params;
     <script>
       const supabaseUrl = "https://moczgrwxtfexdbjthxpd.supabase.co";
       const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
-      const slug = ${JSON.stringify(slug)};
+      const slug = document.getElementById("player-config")?.dataset.slug || "";
 
       const headers = {
         apikey: supabaseKey,
@@ -69,13 +71,14 @@ const { slug } = Astro.params;
 
       async function load() {
         try {
+          if (!slug) throw new Error("Missing player slug");
+
           const encoded = encodeURIComponent(slug);
           const rows = await get(
             "players?select=*&slug=eq." + encoded + "&active=eq.true&limit=1"
           );
 
           const player = rows[0];
-
           if (!player) throw new Error("Player not found");
 
           const [stats, ranks, assets] = await Promise.all([
