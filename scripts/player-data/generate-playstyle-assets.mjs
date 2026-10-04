@@ -33,7 +33,7 @@ for (const file of files) {
 }
 
 for (const key of Object.keys(map)) {
-  map[key] = map[key].filter(Boolean);
+  map[key] = map[key].map((value) => value ?? null);
 }
 
 await writeFile(
