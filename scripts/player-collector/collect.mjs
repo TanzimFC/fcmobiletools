@@ -1,145 +1,260 @@
-import { chromium } from "playwright";
 import { mkdir, writeFile, appendFile } from "node:fs/promises";
 
-const BASE = process.env.PLAYER_SOURCE_BASE_URL || "https://zenithfcm.com";
-const START = process.env.PLAYER_SOURCE_START_URL || BASE + "/players";
-const OUT = process.env.PLAYER_COLLECTION_OUTPUT || "scripts/player-collector/data";
-const CONCURRENCY = Number(process.env.PLAYER_COLLECT_CONCURRENCY || 6);
+const BASE=(process.env.PLAYER_SOURCE_API_BASE_URL||"https://zenithfcm.com/api").replace(/\/$/,"");
+const OUT=process.env.PLAYER_COLLECTION_OUTPUT||"scripts/player-collector/data";
+const PAGE_SIZE=Math.min(Number(process.env.PLAYER_API_PAGE_SIZE||1000),1000);
+const REQUEST_DELAY_MS=Number(process.env.PLAYER_API_DELAY_MS||150);
+const MAX_RETRIES=3;
+const MAX_RANK=Number(process.env.PLAYER_MAX_RANK||5);
 
 await mkdir(OUT,{recursive:true});
 
-function playerIdFromUrl(url){
-  const m = url.match(/-(\d+)\/?(?:\?.*)?$/);
-  return m ? m[1] : null;
-}
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
-async function discoverFromSitemap(){
-  const browser=await chromium.launch({headless:true});
-  const page=await browser.newPage();
-  try{
-    const r=await page.request.get(BASE+"/sitemap.xml");
-    if(!r.ok()) return [];
-    const xml=await r.text();
-    return [...xml.matchAll(/<loc>\s*(https?:\/\/[^<]+\/player\/[^<]+)\s*<\/loc>/gi)]
-      .map(m=>m[1]).filter((u,i,a)=>a.indexOf(u)===i);
-  } finally { await browser.close(); }
-}
-
-async function discoverFromPlayersPage(page){
-  const found=new Set();
-  for(let n=1;n<=500;n++){
-    const url=n===1?START:(START.includes("?")?START+"&page="+n:START+"?page="+n);
-    await page.goto(url,{waitUntil:"domcontentloaded",timeout:45000});
-    await page.waitForTimeout(500);
-    const links=await page.locator('a[href*="/player/"]').evaluateAll(as=>as.map(a=>a.href));
-    for(const href of links) found.add(href);
-    if(!links.length) break;
-  }
-  return [...found];
-}
-
-function parseStats(body){
-  const categories=["Pace","Shooting","Passing","Dribbling","Defending","Physical","Goalkeeping","Goalkeeper"];
-  const stats={};
-  for(let i=0;i<categories.length;i++){
-    const cat=categories[i];
-    const start=body.search(new RegExp("^"+cat+"\\s*$","mi"));
-    if(start<0) continue;
-    let end=body.length;
-    for(const next of categories.slice(i+1)){
-      const p=body.search(new RegExp("^"+next+"\\s*$","mi"));
-      if(p>=0 && p>start){end=Math.min(end,p);break;}
+async function getJson(url){
+  for(let attempt=1;attempt<=MAX_RETRIES;attempt++){
+    try{
+      const response=await fetch(url,{headers:{Accept:"application/json"}});
+      if(!response.ok) throw new Error("HTTP "+response.status);
+      return await response.json();
+    }catch(error){
+      if(attempt===MAX_RETRIES) throw error;
+      await sleep(attempt*750);
     }
-    const block=body.slice(start,end);
-    const top=block.match(new RegExp("^"+cat+"\\s*\\n?(\\d+)$","mi"));
-    if(top) stats[cat]=Number(top[1]);
-    for(const m of block.matchAll(/^([A-Za-z][A-Za-z &'().-]{1,40})\s*\|\s*(\d+)$/gmi))
-      stats[m[1].trim()]=Number(m[2]);
+  }
+}
+
+function listPayload(payload){
+  if(Array.isArray(payload)) return payload;
+  if(!payload||typeof payload!=="object") return [];
+  for(const key of ["players","data","results","items"]){
+    if(Array.isArray(payload[key])) return payload[key];
+  }
+  return [];
+}
+
+function stableId(row){
+  return String(row?.player_id??row?.playerId??row?.asset_id??row?.assetId??row?.id??"").trim();
+}
+
+function playerSlug(row){
+  const name=String(row?.name??row?.card_name??row?.cardName??"player").trim();
+  const ovr=Number(row?.ovr??row?.rating??0)||0;
+  const id=stableId(row);
+  return name.toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-+|-+$/g,"")+"-"+ovr+"-"+id;
+}
+
+function imagesFromRow(row){
+  const out=[];
+  const push=(type,url,primary=false,metadata={})=>{
+    if(!url) return;
+    const value=String(url).trim();
+    if(!value||out.some(x=>x.type===type&&x.url===value)) return;
+    out.push({type,url:value,sourceUrl:BASE,metadata,isPrimary:primary});
+  };
+  push("player_render",row?.player_image,true,{field:"player_image"});
+  push("card_background",row?.card_background,true,{field:"card_background"});
+  push("nation_flag",row?.nation_flag,false,{field:"nation_flag"});
+  push("club_logo",row?.club_flag,false,{field:"club_flag"});
+  push("league_logo",row?.league_image,false,{field:"league_image"});
+  return out;
+}
+
+function normalizeRankRow(row){
+  const stats={};
+  const fields=[
+    "pace","acceleration","sprint_speed","shooting","finishing","long_shot","shot_power",
+    "positioning","volley","penalties","passing","short_passing","long_passing","vision",
+    "crossing","curve","free_kick","dribbling_head","dribbling","balance","agility",
+    "reactions","ball_control","defending","marking","standing_tackle","sliding_tackle",
+    "awareness","heading","physical","strength","aggression","jumping","stamina_stat",
+    "diving","gk_diving","gk_positioning","handling","gk_handling","reflexes","gk_reflexes",
+    "kicking","gk_kicking"
+  ];
+  for(const field of fields){
+    const n=Number(row?.[field]);
+    if(Number.isFinite(n)) stats[field]=Math.trunc(n);
   }
   return stats;
 }
 
-async function scrape(page,url){
-  for(let attempt=1;attempt<=3;attempt++){
-    try{
-      await page.goto(url,{waitUntil:"domcontentloaded",timeout:45000});
-      await page.waitForTimeout(250);
-      const data=await page.evaluate(()=>{
-        const body=document.body?.innerText||"";
-        const images=[...document.images].map(img=>({
-          alt:img.alt||"",url:img.currentSrc||img.src||"",
-          width:img.naturalWidth||0,height:img.naturalHeight||0
-        })).filter(x=>x.url);
-        const h1=document.querySelector("h1")?.textContent?.trim()||"";
-        return {body,images,h1};
+async function fetchRank(rank){
+  const all=[];
+  const seen=new Set();
+  let offset=0;
+  let total=null;
+
+  while(true){
+    const qs=new URLSearchParams({
+      limit:String(PAGE_SIZE),
+      offset:String(offset),
+      rank:String(rank),
+      sort_by:"ovr",
+      order:"desc",
+      include_price:rank===0?"true":"false"
+    });
+    const payload=await getJson(BASE+"/players?"+qs.toString());
+    const rows=listPayload(payload);
+
+    if(total===null && Number.isFinite(Number(payload?.pagination?.total)))
+      total=Number(payload.pagination.total);
+
+    if(!rows.length) break;
+
+    for(const row of rows){
+      const id=stableId(row);
+      if(!id) continue;
+      const dedupe=id+"|"+String(row?.rank??rank)+"|"+String(row?.training_level??0);
+      if(seen.has(dedupe)) continue;
+      seen.add(dedupe);
+      all.push({
+        ...row,
+        rank:Number(row?.rank??rank)||rank,
+        training_level:Number(row?.training_level??0)||0
       });
-      const body=data.body, name=data.h1, id=playerIdFromUrl(url);
-      if(!id||!name) throw new Error("missing id/name");
-      const pick=re=>{const m=body.match(re);return m?m[1].trim():null};
-      const ovr=Number(pick(/OVR\s+(\d+)/i)||0)||null;
-      const position=pick(/OVR\s+\d+\s+•\s+([A-Z0-9]+)/i);
-      const nation=pick(/OVR\s+\d+\s+•\s+[A-Z0-9]+\s+•\s+([^•\n]+)/i);
-      const club=pick(/Club\s+([^\n]+)/i);
-      const league=pick(/League\s+([^\n]+)/i);
-      const event=pick(/Event Name\s*\n\s*([^\n]+)/i);
-      const work=body.match(/Work Rates\s+([A-Za-z]+)\s*\/\s*([A-Za-z]+)/i);
-      const size=body.match(/Body\s+(\d+)cm\s*\/\s*(\d+)kg/i);
-      const alt=pick(/Alternate Position\s*\n\s*([^\n]+)/i);
-      const strong=pick(/Strong Foot\s+([A-Za-z]+)/i);
-      const skill=body.match(/Skill Moves\s*\n\s*(★+)/i);
-      const weak=body.match(/Weak Foot\s*\n\s*(★+)/i);
-      const stats=parseStats(body);
-      const imagesOut=[];
-      const add=(type,x,primary=false)=>{
-        if(!x||!x.url||imagesOut.some(a=>a.type===type)) return;
-        imagesOut.push({type,url:x.url,sourceUrl:url,metadata:{alt:x.alt,width:x.width,height:x.height},isPrimary:primary});
-      };
-      add("card_background",data.images.find(x=>/background/i.test(x.alt)||/background\.(png|webp|jpg)/i.test(x.url)),true);
-      add("player_render",data.images.find(x=>x.alt.toLowerCase()===name.toLowerCase()||/-player\.(png|webp|jpg)/i.test(x.url)),true);
-      add("nation_flag",data.images.find(x=>/^nation\b/i.test(x.alt)));
-      add("club_logo",data.images.find(x=>/^club\b/i.test(x.alt)));
-      add("league_logo",data.images.find(x=>/^league\b/i.test(x.alt)));
+    }
 
-      return {
-        assetId:id,playerId:id,cardName:name,name,rating:ovr,position,
-        positions:alt?alt.split(/\s*,\s*/):[],club,league,nation,program:event,
-        skillMoves:skill?skill[1].length:null,weakFoot:weak?weak[1].length:null,
-        preferredFoot:strong,attackWorkRate:work?.[1]??null,defenseWorkRate:work?.[2]??null,
-        height:size?Number(size[1]):null,weight:size?Number(size[2]):null,
-        untradeable:/\bUntradable\b/i.test(body),active:true,sourceUrl:url,images:imagesOut,stats
+    offset+=rows.length;
+    console.log("rank",rank,"fetched",offset,total===null?"":"/"+total);
+
+    if(rows.length<PAGE_SIZE || payload?.pagination?.has_more===false) break;
+    if(total!==null && offset>=total) break;
+    await sleep(REQUEST_DELAY_MS);
+  }
+
+  return all;
+}
+
+const byPlayer=new Map();
+
+for(let rank=0;rank<=MAX_RANK;rank++){
+  const rows=await fetchRank(rank);
+  console.log("rank",rank,"records",rows.length);
+
+  for(const row of rows){
+    const id=stableId(row);
+    if(!id) continue;
+
+    let player=byPlayer.get(id);
+    if(!player){
+      player={
+        assetId:id,
+        playerId:id,
+        cardName:String(row?.name??"").trim(),
+        name:String(row?.name??"").trim(),
+        fullName:String(row?.full_name??row?.fullName??row?.name??"").trim(),
+        rating:Number(row?.ovr??row?.rating)||null,
+        position:row?.position??null,
+        alternatePosition:row?.alternate_position??null,
+        positions:row?.alternate_position?String(row.alternate_position).split(/\s*[,|/]\s*/).filter(Boolean):[],
+        club:row?.team??null,
+        league:row?.league??null,
+        nation:row?.nation_region??null,
+        program:row?.event??null,
+        eventName:row?.event??null,
+        skillMoves:Number(row?.skill_moves_stars)||null,
+        weakFoot:Number(row?.weak_foot_stars)||null,
+        strongFootSide:row?.strong_foot_side??null,
+        strongFootStars:Number(row?.strong_foot_stars)||null,
+        preferredFoot:row?.strong_foot_side??null,
+        attackWorkRate:row?.work_rate_attack??null,
+        defenseWorkRate:row?.work_rate_defense??null,
+        heightFtIn:row?.height_ft_in??null,
+        height:Number(row?.height_cm)||null,
+        weight:Number(row?.weight_kg)||null,
+        stamina:Number(row?.stamina_stat)||null,
+        untradeable:String(row?.is_untradable??"").toLowerCase()==="true",
+        marketStatus:String(row?.is_untradable??"").toLowerCase()==="true"?"untradeable":"tradable",
+        marketPrice:Number(row?.price)||null,
+        dateAdded:row?.date_added??null,
+        colorRating:row?.color_rating??null,
+        colorPosition:row?.color_position??null,
+        colorName:row?.color_name??null,
+        colorLevel:row?.color_level??null,
+        sourceUrl:"https://zenithfcm.com/player/"+playerSlug(row),
+        images:imagesFromRow(row),
+        stats:normalizeRankRow(row),
+        ranks:[],
+        rankStats:[],
+        abilities:[],
+        traits:Array.isArray(row?.traits)?row.traits:[],
+        skills:Array.isArray(row?.skills)?row.skills:[],
       };
-    }catch(e){
-      if(attempt===3) throw e;
-      await page.waitForTimeout(attempt*1000);
+      byPlayer.set(id,player);
+    }
+
+    const rankNumber=Number(row?.rank??rank)||rank;
+    const training=Number(row?.training_level??0)||0;
+    const stats=normalizeRankRow(row);
+
+    player.rankStats.push({
+      rank:rankNumber,
+      training,
+      ovr:Number(row?.ovr??row?.rating)||null,
+      stats
+    });
+
+    if(!player.ranks.some(x=>x.rank===rankNumber))
+      player.ranks.push({
+        rank:rankNumber,
+        training,
+        ovr:Number(row?.ovr??row?.rating)||null,
+        modifiers:{}
+      });
+
+    if(rankNumber===0){
+      Object.assign(player,{
+        rating:Number(row?.ovr??row?.rating)||null,
+        position:row?.position??player.position,
+        alternatePosition:row?.alternate_position??player.alternatePosition,
+        positions:row?.alternate_position?String(row.alternate_position).split(/\s*[,|/]\s*/).filter(Boolean):player.positions,
+        club:row?.team??player.club,
+        league:row?.league??player.league,
+        nation:row?.nation_region??player.nation,
+        program:row?.event??player.program,
+        eventName:row?.event??player.eventName,
+        skillMoves:Number(row?.skill_moves_stars)||player.skillMoves,
+        weakFoot:Number(row?.weak_foot_stars)||player.weakFoot,
+        strongFootSide:row?.strong_foot_side??player.strongFootSide,
+        strongFootStars:Number(row?.strong_foot_stars)||player.strongFootStars,
+        preferredFoot:row?.strong_foot_side??player.preferredFoot,
+        attackWorkRate:row?.work_rate_attack??player.attackWorkRate,
+        defenseWorkRate:row?.work_rate_defense??player.defenseWorkRate,
+        heightFtIn:row?.height_ft_in??player.heightFtIn,
+        height:Number(row?.height_cm)||player.height,
+        weight:Number(row?.weight_kg)||player.weight,
+        stamina:Number(row?.stamina_stat)||player.stamina,
+        untradeable:String(row?.is_untradable??"").toLowerCase()==="true",
+        marketStatus:String(row?.is_untradable??"").toLowerCase()==="true"?"untradeable":"tradable",
+        marketPrice:Number(row?.price)||null,
+        dateAdded:row?.date_added??player.dateAdded,
+        colorRating:row?.color_rating??player.colorRating,
+        colorPosition:row?.color_position??player.colorPosition,
+        colorName:row?.color_name??player.colorName,
+        colorLevel:row?.color_level??player.colorLevel,
+        stats
+      });
+      for(const image of imagesFromRow(row)){
+        const exists=player.images.some(x=>x.type===image.type);
+        if(!exists) player.images.push(image);
+      }
+      player.traits=Array.isArray(row?.traits)?row.traits:player.traits;
+      player.skills=Array.isArray(row?.skills)?row.skills:player.skills;
     }
   }
 }
 
-const browser=await chromium.launch({headless:true});
-const seed=await browser.newPage();
-let urls=await discoverFromSitemap();
-if(!urls.length) urls=await discoverFromPlayersPage(seed);
-await seed.close();
-
-await writeFile(OUT+"/player-urls.json",JSON.stringify(urls,null,2));
-console.log("urls",urls.length);
-
-let cursor=0,done=0;
-async function worker(){
-  const page=await browser.newPage();
-  while(cursor<urls.length){
-    const url=urls[cursor++];
-    try{
-      const p=await scrape(page,url);
-      await appendFile(OUT+"/players.jsonl",JSON.stringify(p)+"\n");
-    }catch(e){
-      await appendFile(OUT+"/failed.jsonl",JSON.stringify({url,error:String(e)})+"\n");
-    }
-    done++;
-    if(done%25===0) console.log("progress",done,"/",urls.length);
-  }
-  await page.close();
-}
-await Promise.all(Array.from({length:Math.min(CONCURRENCY,urls.length)},worker));
-await browser.close();
-console.log("collection complete",done);
+const players=[...byPlayer.values()];
+await writeFile(OUT+"/players.jsonl",players.map(JSON.stringify).join("\n")+"\n");
+await writeFile(OUT+"/collection-summary.json",JSON.stringify({
+  players:players.length,
+  maxRank:MAX_RANK,
+  records:players.reduce((n,p)=>n+p.rankStats.length,0),
+  generatedAt:new Date().toISOString()
+},null,2));
+console.log("unique players",players.length);
+console.log("rank snapshots",players.reduce((n,p)=>n+p.rankStats.length,0));
