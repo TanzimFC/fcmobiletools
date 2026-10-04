@@ -1,0 +1,49 @@
+name: Player Database Mass Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/player-collector/**"
+      - ".github/workflows/player-database-mass-sync.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "23 */12 * * *"
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium collector
+        run: |
+          cd scripts/player-collector
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Collect full player catalog
+        env:
+          PLAYER_SOURCE_BASE_URL: https://zenithfcm.com
+          PLAYER_SOURCE_START_URL: https://zenithfcm.com/players
+          PLAYER_COLLECT_CONCURRENCY: 6
+        run: node scripts/player-collector/collect.mjs
+      - name: Normalize and validate
+        env:
+          PLAYER_QUALITY_MIN: 60
+        run: node scripts/player-collector/normalize.mjs
+      - name: Import verified players
+        env:
+          SUPABASE_URL: ${{ secrets.PLAYER_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLAYER_SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/player-collector/import.mjs
+      - name: Upload collection report
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-collection-${{ github.run_number }}
+          path: scripts/player-collector/data/
+          retention-days: 7
