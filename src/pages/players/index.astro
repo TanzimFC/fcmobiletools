@@ -1,6 +1,4 @@
 ---
-const supabaseUrl = "https://moczgrwxtfexdbjthxpd.supabase.co";
-const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
 ---
 <html lang="en">
   <head>
@@ -14,7 +12,7 @@ const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
       <header class="hero">
         <p class="eyebrow">FC MOBILE DATABASE</p>
         <h1>Players</h1>
-        <p class="sub">Search the catalog by player, OVR, position or event.</p>
+        <p class="sub">Search the live FC Mobile catalog by player, OVR, position or event.</p>
       </header>
 
       <section class="controls" aria-label="Player filters">
@@ -22,10 +20,10 @@ const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
         <select id="position"><option value="">All positions</option></select>
         <select id="event"><option value="">All events</option></select>
         <select id="sort">
-          <option value="ovr.desc">Highest OVR</option>
-          <option value="ovr.asc">Lowest OVR</option>
-          <option value="name.asc">Name A-Z</option>
-          <option value="name.desc">Name Z-A</option>
+          <option value="ovr-desc">Highest OVR</option>
+          <option value="ovr-asc">Lowest OVR</option>
+          <option value="name-asc">Name A-Z</option>
+          <option value="name-desc">Name Z-A</option>
         </select>
       </section>
 
@@ -39,178 +37,159 @@ const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
       </nav>
     </main>
 
-    <script define:vars={{ supabaseUrl, supabaseKey }}>
+    <script>
       const PAGE_SIZE = 48;
       let page = 0;
       let timer;
 
-      const headers = {
-        apikey: supabaseKey,
-        Authorization: "Bearer " + supabaseKey
-      };
-
       const $ = (id) => document.getElementById(id);
-      const grid = $("grid");
-      const status = $("status");
-      const search = $("search");
-      const position = $("position");
-      const event = $("event");
-      const sort = $("sort");
-      const prev = $("prev");
-      const next = $("next");
-      const pageLabel = $("pageLabel");
+      const grid = $('grid');
+      const status = $('status');
+      const search = $('search');
+      const position = $('position');
+      const event = $('event');
+      const sort = $('sort');
+      const prev = $('prev');
+      const next = $('next');
+      const pageLabel = $('pageLabel');
 
       function esc(value) {
-        return String(value ?? "").replace(/[&<>"']/g, (m) => ({
-          "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+        return String(value ?? '').replace(/[&<>"']/g, (m) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
         }[m]));
       }
 
-      function queryUrl(extra = "") {
+      function queryUrl() {
         const params = new URLSearchParams({
-          select: "id,slug,name,ovr,primary_position,club,league,nation,event,skill_moves,weak_foot",
-          active: "eq.true",
           limit: String(PAGE_SIZE),
-          offset: String(page * PAGE_SIZE)
+          offset: String(page * PAGE_SIZE),
+          sort: sort.value
         });
 
-        const term = search.value.trim();
-        if (term) params.set("name", "ilike.*" + term.replace(/[*]/g, "") + "*");
-        if (position.value) params.set("primary_position", "eq." + position.value);
-        if (event.value) params.set("event", "eq." + event.value);
+        if (search.value.trim()) params.set('q', search.value.trim());
+        if (position.value) params.set('position', position.value);
+        if (event.value) params.set('event', event.value);
 
-        const [field, direction] = sort.value.split(".");
-        params.set("order", field + "." + direction);
-        if (extra) params.set(extra, "eq.true");
-
-        return supabaseUrl + "/rest/v1/players?" + params.toString();
+        return '/api/players?' + params.toString();
       }
 
-      function card(player, asset) {
-        const visual = asset
-          ? `<div class="thumb">${asset.asset_type === "card_background" ? `<img class="thumb-bg" src="${esc(asset.asset_url)}" alt="" loading="lazy">` : ""}<img class="thumb-render" src="${esc(asset.asset_url)}" alt="" loading="lazy"></div>`
-          : `<div class="thumb fallback">FC</div>`;
+      function playerCard(player) {
+        const bg = player.cardBackground
+          ? '<img class="thumb-bg" src="' + esc(player.cardBackground) + '" alt="" loading="lazy" decoding="async">'
+          : '';
+        const render = player.playerImage
+          ? '<img class="thumb-render" src="' + esc(player.playerImage) + '" alt="" loading="lazy" decoding="async">'
+          : '<div class="thumb-fallback">FC</div>';
 
-        return `<a class="card" href="/player/${encodeURIComponent(player.slug)}/">
-          ${visual}
-          <div class="card-copy">
-            <div class="ovr">${esc(player.ovr ?? "—")}</div>
-            <div class="name">${esc(player.name)}</div>
-            <div class="meta">${esc(player.primary_position ?? "—")} · ${esc(player.event ?? "Unknown event")}</div>
-            <div class="meta">${esc(player.club ?? "Unknown club")} · ${esc(player.nation ?? "Unknown nation")}</div>
-          </div>
-        </a>`;
+        return '<a class="card" href="/player/' + encodeURIComponent(player.slug) + '/">' +
+          '<div class="thumb">' + bg + render + '</div>' +
+          '<div class="card-copy">' +
+            '<div class="ovr">' + esc(player.ovr ?? '—') + '</div>' +
+            '<div class="name">' + esc(player.name) + '</div>' +
+            '<div class="meta">' + esc(player.position || '—') + ' · ' + esc(player.event || 'Unknown event') + '</div>' +
+            '<div class="meta">' + esc(player.club || 'Unknown club') + ' · ' + esc(player.nation || 'Unknown nation') + '</div>' +
+          '</div>' +
+        '</a>';
       }
 
-      async function fetchJson(url) {
-        const response = await fetch(url, { headers });
-        if (!response.ok) throw new Error("Database request failed");
+      async function getJson(url) {
+        const response = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error('Player database request failed (' + response.status + ').');
         return response.json();
       }
 
-      async function loadFacets() {
-        const [positions, events] = await Promise.all([
-          fetchJson(supabaseUrl + "/rest/v1/players?select=primary_position&active=eq.true&order=primary_position"),
-          fetchJson(supabaseUrl + "/rest/v1/players?select=event&active=eq.true&order=event")
-        ]);
-
-        for (const value of [...new Set(positions.map(x => x.primary_position).filter(Boolean))])
-          position.insertAdjacentHTML("beforeend", `<option value="${esc(value)}">${esc(value)}</option>`);
-
-        for (const value of [...new Set(events.map(x => x.event).filter(Boolean))])
-          event.insertAdjacentHTML("beforeend", `<option value="${esc(value)}">${esc(value)}</option>`);
+      async function loadFilters() {
+        try {
+          const data = await getJson('/api/players/filters');
+          for (const value of data.positions || []) {
+            position.insertAdjacentHTML('beforeend', '<option value="' + esc(value) + '">' + esc(value) + '</option>');
+          }
+          for (const value of data.events || []) {
+            event.insertAdjacentHTML('beforeend', '<option value="' + esc(value) + '">' + esc(value) + '</option>');
+          }
+        } catch (error) {
+          console.warn('Player filters unavailable', error);
+        }
       }
 
       async function load() {
-        status.textContent = "Loading players…";
-        grid.innerHTML = "";
+        status.textContent = 'Loading players…';
+        grid.innerHTML = '';
 
         try {
-          const players = await fetchJson(queryUrl());
+          const data = await getJson(queryUrl());
+          const players = Array.isArray(data.players) ? data.players : [];
+          const total = Number(data.pagination?.total || players.length);
 
           if (!players.length) {
-            status.textContent = "No players match those filters.";
-            prev.disabled = page === 0;
-            next.disabled = true;
+            status.textContent = 'No players match those filters.';
           } else {
-            let assets = [];
-            try {
-              const ids = players.map(p => p.id).filter(Boolean);
-              if (ids.length) {
-                const assetParams = new URLSearchParams({
-                  select: "player_id,asset_type,asset_url",
-                  player_id: "in.(" + ids.join(",") + ")",
-                  asset_type: "in.(player_render,card_background)",
-                  order: "player_id"
-                });
-                assets = await fetchJson(supabaseUrl + "/rest/v1/player_assets?" + assetParams.toString());
-              }
-            } catch (assetError) {
-              console.warn("Player visuals unavailable", assetError);
-            }
-
-            const byPlayer = new Map();
-            for (const asset of assets) {
-              if (!byPlayer.has(String(asset.player_id))) byPlayer.set(String(asset.player_id), asset);
-              if (asset.asset_type === "player_render") byPlayer.set(String(asset.player_id), asset);
-            }
-
-            grid.innerHTML = players.map(player => card(player, byPlayer.get(String(player.id)))).join("");
-            status.textContent = "Showing " + (page * PAGE_SIZE + 1) + "–" + (page * PAGE_SIZE + players.length);
-            prev.disabled = page === 0;
-            next.disabled = players.length < PAGE_SIZE;
+            grid.innerHTML = players.map(playerCard).join('');
+            const first = page * PAGE_SIZE + 1;
+            const last = first + players.length - 1;
+            status.textContent = 'Showing ' + first + '–' + last + ' of ' + total.toLocaleString() + ' players';
           }
 
-          pageLabel.textContent = "Page " + (page + 1);
+          prev.disabled = page === 0;
+          next.disabled = !data.pagination?.has_more;
+          pageLabel.textContent = 'Page ' + (page + 1);
         } catch (error) {
           console.error(error);
-          status.textContent = "Player database is temporarily unavailable.";
+          status.textContent = 'Player database is temporarily unavailable.';
           prev.disabled = true;
           next.disabled = true;
         }
       }
 
-      function resetAndLoad() {
+      function reloadSoon() {
         clearTimeout(timer);
-        timer = setTimeout(() => { page = 0; load(); }, search === document.activeElement ? 250 : 0);
+        timer = setTimeout(() => {
+          page = 0;
+          load();
+        }, 250);
       }
 
-      search.addEventListener("input", resetAndLoad);
-      position.addEventListener("change", () => { page = 0; load(); });
-      event.addEventListener("change", () => { page = 0; load(); });
-      sort.addEventListener("change", () => { page = 0; load(); });
+      search.addEventListener('input', reloadSoon);
+      position.addEventListener('change', () => { page = 0; load(); });
+      event.addEventListener('change', () => { page = 0; load(); });
+      sort.addEventListener('change', () => { page = 0; load(); });
+      prev.addEventListener('click', () => { if (page > 0) { page -= 1; load(); } });
+      next.addEventListener('click', () => { page += 1; load(); });
 
-      prev.addEventListener("click", () => { if (page > 0) { page--; load(); } });
-      next.addEventListener("click", () => { page++; load(); });
-
-      loadFacets().then(load).catch(load);
+      loadFilters().finally(load);
     </script>
 
     <style>
-      :global(body) { margin: 0; background: #071018; color: #F5F8FB; font-family: Inter, system-ui, sans-serif; }
-      .players-shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 56px 0 80px; }
-      .eyebrow { margin: 0 0 8px; color: #4CC9FF; font-size: 12px; font-weight: 800; letter-spacing: .16em; }
-      h1 { margin: 0; font: 700 clamp(38px, 6vw, 64px)/1 Space Grotesk, system-ui, sans-serif; }
-      .sub { color: #A7B4C3; max-width: 640px; }
-      .controls { display: grid; grid-template-columns: 2fr 1fr 1.3fr 1.2fr; gap: 10px; margin: 30px 0 18px; }
-      input, select, button { width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.08); background: #0F1A26; color: #F5F8FB; border-radius: 12px; padding: 13px 14px; }
-      .status { color: #A7B4C3; min-height: 24px; margin-bottom: 16px; }
-      .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-      .card { position:relative; display:block; overflow:hidden; text-decoration:none; color:inherit; padding:0; border:1px solid rgba(255,255,255,.08); background:#0F1A26; border-radius:18px; min-height:270px; transition:transform .16s ease,border-color .16s ease; isolation:isolate; }
+      :global(body) { margin:0; background:#071018; color:#F5F8FB; font-family:Inter,system-ui,sans-serif; }
+      .players-shell { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:56px 0 80px; }
+      .eyebrow { margin:0 0 8px; color:#4CC9FF; font-size:12px; font-weight:800; letter-spacing:.16em; }
+      h1 { margin:0; font:700 clamp(38px,6vw,64px)/1 Space Grotesk,system-ui,sans-serif; letter-spacing:-.04em; }
+      .sub { color:#A7B4C3; max-width:680px; line-height:1.6; }
+      .controls { display:grid; grid-template-columns:2fr 1fr 1.3fr 1.2fr; gap:10px; margin:30px 0 18px; }
+      input,select,button { width:100%; box-sizing:border-box; border:1px solid rgba(255,255,255,.08); background:#0F1A26; color:#F5F8FB; border-radius:12px; padding:13px 14px; font:inherit; }
+      input:focus,select:focus { outline:none; border-color:#4CC9FF; box-shadow:0 0 0 3px rgba(76,201,255,.1); }
+      .status { color:#A7B4C3; min-height:24px; margin-bottom:16px; }
+      .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+      .card { display:block; overflow:hidden; text-decoration:none; color:inherit; border:1px solid rgba(255,255,255,.08); background:#0F1A26; border-radius:18px; min-height:285px; transition:transform .16s ease,border-color .16s ease; }
       .card:hover { transform:translateY(-3px); border-color:#4CC9FF; }
-      .thumb { position:relative; height:165px; overflow:hidden; background:linear-gradient(180deg,#142536,#09121B); }
-      .thumb-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.86; }
-      .thumb-render { position:absolute; inset:4px 14px 0; width:calc(100% - 28px); height:100%; object-fit:contain; object-position:center bottom; filter:drop-shadow(0 12px 16px rgba(0,0,0,.55)); }
-      .thumb.fallback { display:grid; place-items:center; color:#4CC9FF; font-weight:900; font-size:34px; letter-spacing:.08em; }
-      .card-copy { position:relative; padding:12px 14px 16px; }
-      .ovr { font-size:25px; font-weight:900; color:#4CC9FF; }
-      .name { font-size: 18px; font-weight: 750; margin-top: 4px; }
-      .meta { color: #A7B4C3; font-size: 13px; margin-top: 6px; }
-      .pager { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 28px; }
-      .pager button { width: auto; min-width: 110px; cursor: pointer; }
-      .pager button:not(:disabled):hover { border-color: #4CC9FF; }
-      @media (max-width: 900px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr; } }
-      @media (max-width: 620px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr; } .players-shell { width: min(100% - 20px, 1180px); padding-top: 32px; } }
+      .thumb { position:relative; height:175px; overflow:hidden; background:linear-gradient(180deg,#142536,#09121B); }
+      .thumb-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+      .thumb-render { position:absolute; inset:5px 12px 0; width:calc(100% - 24px); height:100%; object-fit:contain; object-position:center bottom; filter:drop-shadow(0 14px 18px rgba(0,0,0,.55)); }
+      .thumb-fallback { height:100%; display:grid; place-items:center; color:#4CC9FF; font-weight:900; font-size:36px; letter-spacing:.08em; }
+      .card-copy { padding:12px 14px 16px; }
+      .ovr { color:#4CC9FF; font-size:25px; font-weight:900; }
+      .name { margin-top:4px; font-size:18px; font-weight:800; }
+      .meta { color:#A7B4C3; font-size:13px; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .pager { display:flex; align-items:center; justify-content:center; gap:18px; margin-top:28px; }
+      .pager button { width:auto; min-width:110px; cursor:pointer; }
+      .pager button:disabled { opacity:.45; cursor:not-allowed; }
+      .pager button:not(:disabled):hover { border-color:#4CC9FF; }
+      @media(max-width:900px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr));}.controls{grid-template-columns:1fr 1fr;} }
+      @media(max-width:620px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr));}.controls{grid-template-columns:1fr;}.players-shell{width:min(100% - 20px,1180px);padding-top:32px;} }
     </style>
   </body>
 </html>
