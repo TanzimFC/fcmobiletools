@@ -1,18 +1,27 @@
 ---
-import topPlayerIds from "../../data/top-players.json";
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import topPlayerIds from '../../data/top-players.json';
+import { RANKS, getRankBracket } from '../../data/fcMobileRankUp.js';
+import { TRAINING_LEVELS, FODDER, MAX_TRAINING_LEVEL } from '../../data/fcMobileTraining.js';
 import {
   buildZenithPlayerSlug,
   fetchZenithPlayerBySlug,
   fetchZenithPlayersByIds,
-} from "../../lib/zenithPlayerApi.js";
+} from '../../lib/zenithPlayerApi.js';
+
+const RANK_ICONS = {
+  0: '/assets/images/rankup/rankicon_25_RANK0.png',
+  1: '/assets/images/rankup/rankicon_25_RANK1.png',
+  2: '/assets/images/rankup/rankicon_25_RANK2.png',
+  3: '/assets/images/rankup/rankicon_25_RANK3.png',
+  4: '/assets/images/rankup/rankicon_25_RANK4.png',
+  5: '/assets/images/rankup/rankicon_25_RANK5.png',
+};
 
 export async function getStaticPaths() {
   const prerenderLimit = Math.min(
     10000,
-    Math.max(
-      1,
-      Number(globalThis.process?.env?.TOP_PLAYERS_PRERENDER_LIMIT || 10000)
-    )
+    Math.max(1, Number(globalThis.process?.env?.TOP_PLAYERS_PRERENDER_LIMIT || 10000))
   );
   const ids = topPlayerIds.map(String).slice(0, prerenderLimit);
   const players = await fetchZenithPlayersByIds(ids, { rank: 0, chunkSize: 100 });
@@ -26,46 +35,16 @@ export async function getStaticPaths() {
     paths.push({ params: { slug }, props: { player } });
   }
 
-  console.log("[player-pages] generated static paths:", paths.length);
+  console.log('[player-pages] generated static paths:', paths.length);
   return paths;
 }
 
-const slug = Astro.params.slug ?? "";
+const slug = Astro.params.slug ?? '';
 let player = Astro.props.player ?? null;
 
-if (!player) {
-  player = await fetchZenithPlayerBySlug(slug, 0);
-}
+if (!player) player = await fetchZenithPlayerBySlug(slug, 0);
 
-let stats = [];
-let ranks = [];
-let assets = [];
-let abilityRows = [];
-
-if (player) {
-  stats = Object.keys(player.stats || {}).length
-    ? [{ rank: 0, training: 0, stats: player.stats }]
-    : [];
-
-  ranks = Array.isArray(player.ranks) && player.ranks.length
-    ? player.ranks
-    : [{ rank: 0, training: 0, ovr: player.ovr, modifiers: {} }];
-
-  assets = Array.isArray(player.images) ? player.images : [];
-
-  abilityRows = [
-    ...(Array.isArray(player.skills) ? player.skills : []).map((name) => ({
-      name,
-      ability_type: "playstyle",
-      metadata: {}
-    })),
-    ...(Array.isArray(player.traits) ? player.traits : []).map((name) => ({
-      name,
-      ability_type: "trait",
-      metadata: {}
-    }))
-  ];
-}
+const assets = Array.isArray(player?.images) ? player.images : [];
 
 const getAsset = (...types) => {
   for (const type of types) {
@@ -77,378 +56,708 @@ const getAsset = (...types) => {
   return null;
 };
 
-const render = getAsset("player_render");
-const background = getAsset("card_background");
-const flag = getAsset("nation_flag");
-const clubLogo = getAsset("club_logo", "club_badge");
-const leagueLogo = getAsset("league_logo");
+const render = getAsset('player_render');
+const background = getAsset('card_background');
+const flag = getAsset('nation_flag');
+const clubLogo = getAsset('club_logo', 'club_badge');
+const leagueLogo = getAsset('league_logo');
 
-const baseStats =
-  stats.find((row) => row.rank === 0 && row.training === 0)?.stats ??
-  stats.find((row) => row.rank === 0)?.stats ??
-  stats[0]?.stats ??
-  player?.stats ??
-  {};
-
-const coreStats = [
-  ["pace", "Pace"],
-  ["shooting", "Shooting"],
-  ["passing", "Passing"],
-  ["dribbling", "Dribbling"],
-  ["defending", "Defending"],
-  ["physical", "Physical"]
-];
-
-const detailStats = [
-  ["Pace", ["acceleration", "sprint_speed"]],
-  ["Shooting", ["finishing", "shot_power", "long_shot", "positioning", "volley", "penalties"]],
-  ["Passing", ["short_passing", "long_passing", "vision", "crossing", "curve", "free_kick"]],
-  ["Dribbling", ["agility", "balance", "reactions", "ball_control"]],
-  ["Defending", ["marking", "standing_tackle", "sliding_tackle", "awareness", "heading"]],
-  ["Physical", ["strength", "aggression", "jumping", "stamina_stat"]]
+const baseStats = player?.stats ?? {};
+const statGroups = [
+  ['Pace', ['acceleration', 'sprint_speed']],
+  ['Shooting', ['finishing', 'positioning', 'shot_power', 'long_shot', 'volleys', 'volley', 'penalties']],
+  ['Passing', ['short_passing', 'long_passing', 'vision', 'crossing', 'curve', 'free_kick']],
+  ['Dribbling', ['dribbling_head', 'agility', 'balance', 'reactions', 'ball_control']],
+  ['Defending', ['marking', 'standing_tackle', 'sliding_tackle', 'awareness', 'heading']],
+  ['Physical', ['strength', 'aggression', 'jumping', 'stamina_stat']],
+  ['Goalkeeping', ['diving', 'gk_diving', 'handling', 'gk_handling', 'kicking', 'gk_kicking', 'reflexes', 'gk_reflexes', 'gk_positioning']],
 ];
 
 const labels = {
-  acceleration:"Acceleration", sprint_speed:"Sprint Speed", finishing:"Finishing", shot_power:"Shot Power",
-  long_shot:"Long Shot", positioning:"Positioning", volley:"Volley", penalties:"Penalties",
-  short_passing:"Short Passing", long_passing:"Long Passing", vision:"Vision", crossing:"Crossing",
-  curve:"Curve", free_kick:"Free Kick", agility:"Agility", balance:"Balance", reactions:"Reactions",
-  ball_control:"Ball Control", marking:"Marking", standing_tackle:"Standing Tackle", sliding_tackle:"Sliding Tackle",
-  awareness:"Defensive Awareness", heading:"Heading", strength:"Strength", aggression:"Aggression",
-  jumping:"Jumping", stamina_stat:"Stamina"
+  acceleration: 'Acceleration',
+  sprint_speed: 'Sprint Speed',
+  finishing: 'Finishing',
+  positioning: 'Positioning',
+  shot_power: 'Shot Power',
+  long_shot: 'Long Shot',
+  volleys: 'Volleys',
+  volley: 'Volley',
+  penalties: 'Penalties',
+  short_passing: 'Short Passing',
+  long_passing: 'Long Passing',
+  vision: 'Vision',
+  crossing: 'Crossing',
+  curve: 'Curve',
+  free_kick: 'Free Kick',
+  dribbling_head: 'Dribbling',
+  agility: 'Agility',
+  balance: 'Balance',
+  reactions: 'Reactions',
+  ball_control: 'Ball Control',
+  marking: 'Marking',
+  standing_tackle: 'Standing Tackle',
+  sliding_tackle: 'Sliding Tackle',
+  awareness: 'Defensive Awareness',
+  heading: 'Heading',
+  strength: 'Strength',
+  aggression: 'Aggression',
+  jumping: 'Jumping',
+  stamina_stat: 'Stamina',
+  diving: 'Diving',
+  gk_diving: 'Diving',
+  handling: 'Handling',
+  gk_handling: 'Handling',
+  kicking: 'Kicking',
+  gk_kicking: 'Kicking',
+  reflexes: 'Reflexes',
+  gk_reflexes: 'Reflexes',
+  gk_positioning: 'Positioning',
 };
 
-const statsPayload = JSON.stringify(stats);
-const hasStats = Object.keys(baseStats).length > 0;
+const availableGroups = statGroups
+  .map(([name, keys]) => [name, keys.filter((key) => baseStats[key] !== undefined && baseStats[key] !== null)] as const)
+  .filter(([, keys]) => keys.length > 0);
+
+const playstyles = Array.isArray(player?.playStyles)
+  ? player.playStyles
+  : Array.isArray(player?.skill_details) ? player.skill_details : [];
+
+const traits = Array.isArray(player?.trait_details)
+  ? player.trait_details
+  : Array.isArray(player?.traits)
+    ? player.traits.map((name) => ({ name, level: null, plus: false, asset_paths: [] }))
+    : [];
+
+const rankBracket = player ? getRankBracket(player.ovr) : null;
+const rankCards = RANKS.map((rank, index) => ({
+  ...rank,
+  icon: RANK_ICONS[rank.value],
+  ovr: player ? player.ovr + rank.value : null,
+  stepCost: rank.value > 0 && rankBracket ? rankBracket.costs[rank.value - 1] : null,
+  state: index === 0 ? 'BASE' : 'RANK ' + rank.value,
+}));
+
+const trainingMilestones = [0, 5, 10, 15, 20, 25, 30];
+
+const statsPayload = JSON.stringify(baseStats);
+const rankPayload = JSON.stringify(rankCards);
+const hasPlayer = Boolean(player);
+const playerTitle = player ? `${player.name} ${player.ovr ?? ''} OVR | FCMobiletools` : 'Player Database | FCMobiletools';
+const playerDescription = player
+  ? `View ${player.name} at ${player.ovr} OVR with FC Mobile stats, PlayStyles, traits, rank progression and training tools.`
+  : 'FC Mobile player database on FCMobiletools.';
+const playerSchema = player ? {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: player.fullName || player.name,
+  url: new URL(`/player/${player.slug}/`, Astro.site ?? new URL('https://fcmobiletools.online')).toString(),
+  image: render?.asset_url || undefined,
+} : null;
 ---
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{player ? `${player.name} ${player.ovr ?? ""} OVR | FCMobiletools` : "Player | FCMobiletools"}</title>
-  <meta name="description" content={player ? `${player.name} ${player.ovr ?? ""} OVR FC Mobile player stats, ranks, PlayStyles and card details.` : "FC Mobile player details on FCMobiletools."} />
-</head>
-<body>
-  <main class="wrap">
-    <div class="topbar">
-      <a class="back" href="/players/">← Players Database</a>
-      {player?.event && <span class="event">{player.event}</span>}
-    </div>
 
-    {!player ? (
-      <section class="empty">
-        <p class="eyebrow">FCMOBILETOOLS PLAYER DATABASE</p>
-        <h1>Player not found</h1>
-        <p>This player is not in the active catalog.</p>
-        <a href="/players/">Browse Players</a>
-      </section>
-    ) : (
-      <>
-        <section class="hero">
-          <div
-            class="visual"
-            style={background ? `--card-bg:url("${background.asset_url}")` : ""}
-          >
-            <div class="visual-bg"></div>
-            <div class="visual-light"></div>
-            <div class="visual-top">
-              <span>{player.event ?? "FC MOBILE"}</span>
-              <span>{player.color_name ?? "PLAYER CARD"}</span>
-            </div>
+<BaseLayout title={playerTitle} description={playerDescription} image={render?.asset_url || undefined}>
+  {playerSchema && <script type="application/ld+json" set:html={JSON.stringify(playerSchema)}></script>}
 
-            {render && <img class="render" src={render.asset_url} alt={player.name} loading="eager" />}
+  <main class="player-page" id="player-page">
+    <div class="shell">
+      <div class="crumbs">
+        <a href="/players/">Players</a>
+        <span>/</span>
+        <span>{player?.event || 'Player Database'}</span>
+      </div>
 
-            <div class="badges">
-              {flag && <img src={flag.asset_url} alt={player.nation ?? ""} />}
-              {clubLogo && <img src={clubLogo.asset_url} alt={player.club ?? ""} />}
-              {leagueLogo && <img src={leagueLogo.asset_url} alt={player.league ?? ""} />}
-            </div>
-
-            <div class="card-copy">
-              <div class="card-ovr">{player.ovr ?? "—"}</div>
-              <div class="card-position">{player.primary_position ?? "—"}</div>
-              <div class="card-name">{player.name}</div>
-            </div>
-          </div>
-
-          <div class="identity">
-            <p class="eyebrow">{player.nation ?? "FC MOBILE"} · {player.event ?? "PLAYER DATABASE"}</p>
-            <h1>{player.name}</h1>
-
-            <div class="identity-pills">
-              <strong>{player.ovr ?? "—"} OVR</strong>
-              <span>{player.primary_position ?? "—"}</span>
-              {player.club && <span>{player.club}</span>}
-              {player.league && <span>{player.league}</span>}
-            </div>
-
-            <div class="logo-facts">
-              {flag && <div><img src={flag.asset_url} alt="" /><span>{player.nation}</span></div>}
-              {clubLogo && <div><img src={clubLogo.asset_url} alt="" /><span>{player.club}</span></div>}
-              {leagueLogo && <div><img src={leagueLogo.asset_url} alt="" /><span>{player.league}</span></div>}
-            </div>
-
-            <div class="facts">
-              <div><span>Skill Moves</span><b>{player.skill_moves ?? "—"}★</b></div>
-              <div><span>Weak Foot</span><b>{player.weak_foot ?? "—"}★</b></div>
-              <div><span>Strong Foot</span><b>{player.strong_foot_side ?? player.preferred_foot ?? "—"}</b></div>
-              <div><span>Work Rate</span><b>{player.attack_work_rate ?? "—"} / {player.defense_work_rate ?? "—"}</b></div>
-              <div><span>Height</span><b>{player.height_cm ? player.height_cm + " cm" : "—"}</b></div>
-              <div><span>Weight</span><b>{player.weight_kg ? player.weight_kg + " kg" : "—"}</b></div>
-            </div>
-          </div>
+      {!player ? (
+        <section class="not-found">
+          <span class="kicker">PLAYER DATABASE</span>
+          <h1>Player not found</h1>
+          <p>This player is not available in the active catalog.</p>
+          <a class="button button-primary" href="/players/">Back to players</a>
         </section>
+      ) : (
+        <>
+          <section class="hero">
+            <div class="hero-card-column">
+              <div
+                class="player-card"
+                style={background ? `--card-background:url("${background.asset_url}")` : ''}
+              >
+                <div class="card-bg"></div>
+                <div class="card-vignette"></div>
+                <div class="card-grid"></div>
 
-        <section class="section">
-          <div class="section-title">
-            <p class="eyebrow">PERFORMANCE</p>
-            <h2>Core Ratings</h2>
-          </div>
-          <div class="core-grid">
-            {coreStats.map(([key,label]) => (
-              <div class="core">
-                <div><span>{label}</span><b>{baseStats[key] ?? "—"}</b></div>
-                <div class="bar"><i style={`width:${Math.min(100, Number(baseStats[key] ?? 0) / 1.5)}%`}></i></div>
+                <div class="card-meta">
+                  <span>{player.event || 'FC MOBILE'}</span>
+                  <span>{player.color_name || 'PLAYER'}</span>
+                </div>
+
+                <div class="card-rating">
+                  <strong>{player.ovr ?? '—'}</strong>
+                  <span>{player.primary_position || player.position || '—'}</span>
+                </div>
+
+                {render ? (
+                  <img class="card-render" src={render.asset_url} alt={player.name} fetchpriority="high" decoding="async" />
+                ) : (
+                  <div class="render-fallback" aria-hidden="true">{player.name.slice(0, 2).toUpperCase()}</div>
+                )}
+
+                <div class="card-name">
+                  <span>{player.name}</span>
+                  {player.fullName && player.fullName !== player.name && <small>{player.fullName}</small>}
+                </div>
+
+                <div class="card-badges">
+                  {flag && <img src={flag.asset_url} alt={player.nation || ''} />}
+                  {clubLogo && <img src={clubLogo.asset_url} alt={player.club || ''} />}
+                  {leagueLogo && <img src={leagueLogo.asset_url} alt={player.league || ''} />}
+                </div>
+
+                {player.alternate_positions?.length > 0 && (
+                  <div class="card-alt">{player.alternate_positions.join(' · ')}</div>
+                )}
               </div>
-            ))}
-          </div>
-          {!Object.keys(baseStats).length && (
-            <p class="muted data-note">Detailed stats will appear after the full Zenith import.</p>
-          )}
-        </section>
 
-        <section class="stat-layout">
-          <div class="stat-main">
-            <div class="section-title">
-              <p class="eyebrow">ATTRIBUTES</p>
-              <h2>Detailed Stats</h2>
+              <div class="card-caption">
+                <span>FCMOBILETOOLS PLAYER CARD</span>
+                <b>{player.ovr} OVR · {player.primary_position || player.position || '—'}</b>
+              </div>
             </div>
 
-            <div class="detail-grid">
-              {detailStats.map(([group,keys]) => (
-                <section class="panel">
-                  <h3>{group}</h3>
-                  {keys.map((key) => (
-                    <div class="row">
-                      <span>{labels[key]}</span>
-                      <div class="mini"><i style={`width:${Math.min(100, Number(baseStats[key] ?? 0) / 1.5)}%`}></i></div>
-                      <b>{baseStats[key] ?? "—"}</b>
+            <div class="hero-content">
+              <div class="hero-kicker">
+                <span class="status-dot"></span>
+                LIVE PLAYER DATABASE
+              </div>
+              <h1>{player.name}</h1>
+              <p class="hero-sub">
+                {player.event || 'FC Mobile'} <span>·</span> {player.primary_position || player.position || 'Position'} <span>·</span> {player.club || 'Club not listed'}
+              </p>
+
+              <div class="identity-grid">
+                <div class="identity-metric featured">
+                  <span>OVR</span>
+                  <strong>{player.ovr}</strong>
+                </div>
+                <div class="identity-metric">
+                  <span>POSITION</span>
+                  <strong>{player.primary_position || player.position || '—'}</strong>
+                </div>
+                <div class="identity-metric">
+                  <span>EVENT</span>
+                  <strong>{player.event || '—'}</strong>
+                </div>
+                <div class="identity-metric">
+                  <span>SKILL MOVES</span>
+                  <strong>{player.skill_moves ? `${player.skill_moves}★` : '—'}</strong>
+                </div>
+                <div class="identity-metric">
+                  <span>WEAK FOOT</span>
+                  <strong>{player.weak_foot ? `${player.weak_foot}★` : '—'}</strong>
+                </div>
+                <div class="identity-metric">
+                  <span>STRONG FOOT</span>
+                  <strong>{player.strong_foot_side || player.preferred_foot || '—'}</strong>
+                </div>
+              </div>
+
+              <div class="profile-strip">
+                <div>
+                  {flag ? <img src={flag.asset_url} alt="" /> : <i></i>}
+                  <span><small>NATION</small><b>{player.nation || 'Not listed'}</b></span>
+                </div>
+                <div>
+                  {clubLogo ? <img src={clubLogo.asset_url} alt="" /> : <i></i>}
+                  <span><small>CLUB</small><b>{player.club || 'Not listed'}</b></span>
+                </div>
+                <div>
+                  {leagueLogo ? <img src={leagueLogo.asset_url} alt="" /> : <i></i>}
+                  <span><small>LEAGUE</small><b>{player.league || 'Not listed'}</b></span>
+                </div>
+              </div>
+
+              <div class="body-facts">
+                <div><span>WORK RATE</span><b>{player.attack_work_rate || '—'} / {player.defense_work_rate || '—'}</b></div>
+                <div><span>HEIGHT</span><b>{player.height_cm ? `${player.height_cm} cm` : '—'}</b></div>
+                <div><span>WEIGHT</span><b>{player.weight_kg ? `${player.weight_kg} kg` : '—'}</b></div>
+                <div><span>ALT POSITIONS</span><b>{player.alternate_positions?.join(', ') || '—'}</b></div>
+              </div>
+
+              <div class="tool-actions">
+                <a class="button button-primary" href={`/rank-up-calculator/?base=${player.ovr}&current=0&target=5`}>
+                  <span class="button-icon">↗</span>
+                  Rank Up Calculator
+                </a>
+                <a class="button button-secondary" href="/training-calculator/">
+                  <span class="button-icon">XP</span>
+                  Training Calculator
+                </a>
+              </div>
+            </div>
+          </section>
+
+          <section class="core-section">
+            <div class="section-head">
+              <div>
+                <span class="kicker">PERFORMANCE</span>
+                <h2>Core attributes</h2>
+              </div>
+              <span class="section-note">{Object.keys(baseStats).length} tracked values</span>
+            </div>
+
+            <div class="core-grid">
+              {[
+                ['pace', 'PACE'],
+                ['shooting', 'SHOOTING'],
+                ['passing', 'PASSING'],
+                ['dribbling', 'DRIBBLING'],
+                ['defending', 'DEFENDING'],
+                ['physical', 'PHYSICAL'],
+              ].map(([key, label]) => (
+                <article class:list={['core-card', !baseStats[key] && 'is-empty']}>
+                  <div class="core-top">
+                    <span>{label}</span>
+                    <strong>{baseStats[key] ?? '—'}</strong>
+                  </div>
+                  <div class="progress"><i style={`width:${Math.min(100, Number(baseStats[key] ?? 0) / 1.5)}%`}></i></div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section class="content-grid">
+            <div class="main-column">
+              <section class="panel-section">
+                <div class="section-head">
+                  <div>
+                    <span class="kicker">ATTRIBUTES</span>
+                    <h2>Detailed stats</h2>
+                  </div>
+                  <span class="section-note">Base card values</span>
+                </div>
+
+                {availableGroups.length ? (
+                  <div class="stat-groups">
+                    {availableGroups.map(([group, keys]) => (
+                      <article class="stat-group">
+                        <header>
+                          <span>{group}</span>
+                          <b>{keys.length} stats</b>
+                        </header>
+                        <div class="stat-rows">
+                          {keys.map((key) => (
+                            <div class="stat-row">
+                              <span>{labels[key] || key.replaceAll('_', ' ')}</span>
+                              <div class="stat-track"><i style={`width:${Math.min(100, Number(baseStats[key]) / 1.5)}%`}></i></div>
+                              <strong>{baseStats[key]}</strong>
+                            </div>
+                          ))}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div class="data-empty">No detailed attribute values were supplied for this player.</div>
+                )}
+              </section>
+
+              <section class="panel-section">
+                <div class="section-head">
+                  <div>
+                    <span class="kicker">PLAYSTYLE</span>
+                    <h2>PlayStyles</h2>
+                  </div>
+                  <span class="section-note">{playstyles.length} collected</span>
+                </div>
+
+                {playstyles.length ? (
+                  <div class="playstyle-grid">
+                    {playstyles.map((item) => {
+                      const paths = Array.isArray(item.asset_paths) ? item.asset_paths : [];
+                      const level = Number(item.level);
+                      const icon = Number.isInteger(level) && level >= 0
+                        ? paths[level] || paths[paths.length - 1]
+                        : paths[paths.length - 1];
+                      return (
+                        <article class="ability-card playstyle-card">
+                          <div class="ability-icon">
+                            {icon ? <img src={icon} alt="" loading="lazy" decoding="async" /> : <span>✦</span>}
+                          </div>
+                          <div class="ability-copy">
+                            <span>{item.plus ? 'PLAYSTYLE+' : 'PLAYSTYLE'}</span>
+                            <strong>{item.name}</strong>
+                            <small>{item.level != null ? `Level ${item.level + 1}` : 'Active style'}</small>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div class="data-empty"><strong>No PlayStyles were returned for this player.</strong><span>The card can still be used with the available core attributes and progression tools.</span></div>
+                )}
+              </section>
+
+              <section class="panel-section">
+                <div class="section-head">
+                  <div>
+                    <span class="kicker">TRAITS</span>
+                    <h2>Player traits</h2>
+                  </div>
+                  <span class="section-note">{traits.length} collected</span>
+                </div>
+
+                {traits.length ? (
+                  <div class="traits-grid">
+                    {traits.map((item) => (
+                      <div class="trait"><span>✓</span><b>{item.name}</b></div>
+                    ))}
+                  </div>
+                ) : (
+                  <div class="data-empty">No traits were returned for this player.</div>
+                )}
+              </section>
+            </div>
+
+            <aside class="side-column">
+              <section class="panel-section progression-panel">
+                <div class="section-head">
+                  <div>
+                    <span class="kicker">PROGRESSION</span>
+                    <h2>Rank Up</h2>
+                  </div>
+                  <span class="section-note">+1 OVR / rank</span>
+                </div>
+
+                <div class="rank-path" id="rankPath">
+                  {rankCards.map((rank) => (
+                    <button class:list={['rank-tile', rank.value === 0 && 'selected']} type="button" data-rank={rank.value}>
+                      <img src={rank.icon} alt="" loading="lazy" />
+                      <span>{rank.name}</span>
+                      <strong>{rank.ovr}</strong>
+                      {rank.stepCost != null ? <small>{rank.stepCost} RP</small> : <small>BASE</small>}
+                    </button>
+                  ))}
+                </div>
+
+                <div class="rank-readout">
+                  <span>SELECTED RANK</span>
+                  <strong id="selectedRank">Base</strong>
+                  <b><em id="selectedOvr">{player.ovr}</em> OVR</b>
+                </div>
+
+                <a class="wide-link" href={`/rank-up-calculator/?base=${player.ovr}&current=0&target=5`}>
+                  Open full Rank Up Calculator <span>→</span>
+                </a>
+              </section>
+
+              <section class="panel-section training-panel">
+                <div class="section-head">
+                  <div>
+                    <span class="kicker">TRAINING</span>
+                    <h2>Training path</h2>
+                  </div>
+                  <span class="section-note">Level 0–30</span>
+                </div>
+
+                <div class="training-hero">
+                  <strong>0 → 30</strong>
+                  <span>Full training range</span>
+                </div>
+
+                <div class="training-track" aria-label="Training level milestones">
+                  {trainingMilestones.map((level) => (
+                    <div>
+                      <span>{level}</span>
+                      <i class:list={{ active: level === 30 }}></i>
                     </div>
                   ))}
-                </section>
-              ))}
-            </div>
-          </div>
+                </div>
 
-          <aside class="side">
-            <div class="section-title">
-              <p class="eyebrow">PROFILE</p>
-              <h2>Player Shape</h2>
-            </div>
-            <svg class="radar" viewBox="0 0 300 300" aria-label="Player attribute radar">
-              <polygon points="150,25 258,87 258,213 150,275 42,213 42,87"></polygon>
-              <polygon points="150,62 226,106 226,194 150,238 74,194 74,106"></polygon>
-              <polygon points="150,99 194,125 194,175 150,201 106,175 106,125"></polygon>
-              <polygon id="shape" points="150,55 218,112 210,190 150,220 91,188 82,111"></polygon>
-              <text x="150" y="15">PAC</text>
-              <text x="278" y="90">SHO</text>
-              <text x="278" y="220">PAS</text>
-              <text x="150" y="296">DRI</text>
-              <text x="22" y="220">DEF</text>
-              <text x="22" y="90">PHY</text>
-            </svg>
+                <div class="training-facts">
+                  <div><span>MAX LEVEL</span><b>{MAX_TRAINING_LEVEL}</b></div>
+                  <div><span>TOP FODDER</span><b>{FODDER.at(-1)?.label || 'Configured'}</b></div>
+                </div>
 
-            <div class="rank-box">
-              <div class="section-title small">
-                <p class="eyebrow">PROGRESSION</p>
-                <h2>Ranks</h2>
-              </div>
-              <div class="rank-grid">
-                {ranks.map((rank) => (
-                  <div class="rank">
-                    <span>{rank.rank === 0 ? "Base" : "Rank " + rank.rank}</span>
-                    <b>{rank.ovr ?? player.ovr ?? "—"}</b>
+                <a class="wide-link" href="/training-calculator/">
+                  Open full Training Calculator <span>→</span>
+                </a>
+              </section>
+
+              <section class="panel-section shape-panel">
+                <div class="section-head">
+                  <div>
+                    <span class="kicker">PROFILE</span>
+                    <h2>Attribute shape</h2>
                   </div>
-                ))}
-              </div>
-            </div>
-          </aside>
-        </section>
+                </div>
 
-        <section class="lower">
-          <div class="box">
-            <div class="section-title small">
-              <p class="eyebrow">PLAYSTYLES</p>
-              <h2>PlayStyles & Skills</h2>
-            </div>
-            <div class="chips">
-              {abilityRows.filter((item) => item.ability_type === "playstyle" || item.ability_type === "skill").map((item) => {
-                const paths = Array.isArray(item.metadata?.asset_paths) ? item.metadata.asset_paths : [];
-                const valueLevel = Number(item.value?.level);
-                const icon = paths[Number.isInteger(valueLevel) && valueLevel >= 0 ? valueLevel : 0] ?? paths[0] ?? null;
-                return (
-                  <span class="chip skill">
-                    {icon ? <img src={icon} alt="" loading="lazy" /> : <b>✦</b>}
-                    {item.name}
-                  </span>
-                );
-              })}
-              {!abilityRows.some((item) => item.ability_type === "playstyle" || item.ability_type === "skill") && <span class="muted">PlayStyles will appear after the full player import.</span>}
-            </div>
-          </div>
+                <svg class="radar" viewBox="0 0 320 320" aria-label="Player attribute radar">
+                  <polygon class="radar-ring r1" points="160,30 272,95 272,225 160,290 48,225 48,95"></polygon>
+                  <polygon class="radar-ring r2" points="160,68 239,114 239,206 160,252 81,206 81,114"></polygon>
+                  <polygon class="radar-ring r3" points="160,106 206,133 206,187 160,214 114,187 114,133"></polygon>
+                  <polygon class="radar-fill" id="shape" points="160,106 206,133 206,187 160,214 114,187 114,133"></polygon>
+                  <text x="160" y="16">PAC</text>
+                  <text x="290" y="94">SHO</text>
+                  <text x="290" y="232">PAS</text>
+                  <text x="160" y="313">DRI</text>
+                  <text x="30" y="232">DEF</text>
+                  <text x="30" y="94">PHY</text>
+                </svg>
 
-          <div class="box">
-            <div class="section-title small">
-              <p class="eyebrow">TRAITS</p>
-              <h2>Traits</h2>
-            </div>
-            <div class="chips">
-              {abilityRows.filter((item) => item.ability_type === "trait").map((item) => (
-                <span class="chip">{item.name}</span>
-              ))}
-              {!abilityRows.some((item) => item.ability_type === "trait") && <span class="muted">Traits will appear after the full player import.</span>}
-            </div>
-          </div>
-        </section>
-
-        {player.alternate_positions?.length > 0 && (
-          <div class="alt">Alternate Positions: <strong>{player.alternate_positions.join(", ")}</strong></div>
-        )}
-      </>
-    )}
+                <div class="shape-legend">
+                  {[
+                    ['pace', 'PACE'], ['shooting', 'SHO'], ['passing', 'PAS'],
+                    ['dribbling', 'DRI'], ['defending', 'DEF'], ['physical', 'PHY']
+                  ].map(([key, label]) => (
+                    <span><b>{baseStats[key] ?? '—'}</b>{label}</span>
+                  ))}
+                </div>
+              </section>
+            </aside>
+          </section>
+        </>
+      )}
+    </div>
   </main>
 
-  {player && (
-    <script define:vars={{ statsPayload }}>
-      const stats = JSON.parse(statsPayload);
-      const base = stats.find((x) => Number(x.rank) === 0 && Number(x.training) === 0)?.stats || stats[0]?.stats || {};
-      const values = ["pace","shooting","passing","dribbling","defending","physical"].map((k) => Math.max(0,Math.min(1,Number(base[k] || 0)/150)));
-      const angles = [-Math.PI/2,-Math.PI/2+Math.PI/3,-Math.PI/2+2*Math.PI/3,Math.PI/2,Math.PI*5/6,Math.PI*7/6];
-      const points = values.map((value,index) => {
-        const angle=angles[index];
-        return (150+Math.cos(angle)*122*value)+","+(150+Math.sin(angle)*122*value);
-      }).join(" ");
-      document.getElementById("shape")?.setAttribute("points",points);
+  {hasPlayer && (
+    <script define:vars={{ statsPayload, rankPayload }}>
+      const base = JSON.parse(statsPayload);
+      const ranks = JSON.parse(rankPayload);
+      const values = ['pace', 'shooting', 'passing', 'dribbling', 'defending', 'physical']
+        .map((key) => Math.max(0, Math.min(1, Number(base[key] ?? 0) / 150)));
+      const angles = [-Math.PI / 2, -Math.PI / 2 + Math.PI / 3, -Math.PI / 2 + 2 * Math.PI / 3, Math.PI / 2, Math.PI * 5 / 6, Math.PI * 7 / 6];
+      const points = values.map((value, index) => {
+        const angle = angles[index];
+        return (160 + Math.cos(angle) * 128 * value) + ',' + (160 + Math.sin(angle) * 128 * value);
+      }).join(' ');
+      document.getElementById('shape')?.setAttribute('points', points);
+
+      const selectedRank = document.getElementById('selectedRank');
+      const selectedOvr = document.getElementById('selectedOvr');
+      document.querySelectorAll('[data-rank]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const rank = ranks.find((item) => Number(item.value) === Number(button.dataset.rank));
+          if (!rank) return;
+          document.querySelectorAll('.rank-tile').forEach((tile) => tile.classList.remove('selected'));
+          button.classList.add('selected');
+          selectedRank.textContent = rank.name;
+          selectedOvr.textContent = rank.ovr;
+        });
+      });
     </script>
   )}
+</BaseLayout>
 
-  <style>
-    :global(body) {
-      margin:0;
-      background:
-        radial-gradient(850px 520px at 78% 0%,rgba(76,201,255,.12),transparent 60%),
-        radial-gradient(680px 460px at 5% 55%,rgba(76,201,255,.055),transparent 62%),
-        #071018;
-      color:#F5F8FB;
-      font-family:Inter,system-ui,sans-serif;
-    }
-
-    .wrap { width:min(1260px,calc(100% - 34px)); margin:auto; padding:30px 0 80px; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:18px; }
-    .back { color:#4CC9FF; text-decoration:none; font-weight:800; }
-    .event { padding:8px 13px; border:1px solid rgba(76,201,255,.22); border-radius:999px; background:rgba(76,201,255,.07); color:#B8F0FF; font-size:11px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
-
-    .eyebrow { margin:0 0 7px; color:#4CC9FF; font-size:11px; line-height:1.2; font-weight:900; letter-spacing:.17em; text-transform:uppercase; }
-    h1,h2,h3 { font-family:"Space Grotesk",Inter,system-ui,sans-serif; }
-    h1 { margin:0; font-size:clamp(48px,7vw,86px); line-height:.92; letter-spacing:-.055em; }
-    h2 { margin:0; font-size:30px; line-height:1.04; letter-spacing:-.025em; }
-    h3 { margin:0; font-size:13px; color:#CFDDE9; letter-spacing:.12em; text-transform:uppercase; }
-
-    .hero { display:grid; grid-template-columns:500px 1fr; gap:38px; align-items:stretch; }
-    .visual { position:relative; min-height:650px; overflow:hidden; border-radius:32px; border:1px solid rgba(76,201,255,.23); background:#0F1A26; isolation:isolate; box-shadow:0 32px 86px rgba(0,0,0,.45); }
-    .visual-bg { position:absolute; inset:0; background-image:var(--card-bg); background-size:cover; background-position:center; opacity:.92; z-index:-3; }
-    .visual-light { position:absolute; inset:0; background:radial-gradient(circle at 50% 38%,rgba(76,201,255,.35),transparent 48%),linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.78)); z-index:-2; }
-    .visual-top { position:absolute; left:24px; right:24px; top:22px; display:flex; justify-content:space-between; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:#D8F7FF; z-index:3; }
-    .render { position:absolute; inset:60px 22px 150px; width:calc(100% - 44px); height:calc(100% - 210px); object-fit:contain; filter:drop-shadow(0 28px 35px rgba(0,0,0,.62)) drop-shadow(0 0 32px rgba(76,201,255,.28)); z-index:2; }
-    .badges { position:absolute; left:24px; bottom:118px; display:flex; gap:8px; z-index:4; }
-    .badges img { width:33px; height:33px; object-fit:contain; padding:7px; border-radius:10px; background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.10); }
-    .card-copy { position:absolute; left:24px; right:24px; bottom:22px; z-index:4; }
-    .card-ovr { font-size:72px; line-height:.8; font-weight:950; letter-spacing:-.08em; text-shadow:0 0 30px rgba(76,201,255,.42); }
-    .card-position { margin-top:7px; color:#A7EFFF; font-size:12px; font-weight:900; letter-spacing:.22em; text-transform:uppercase; }
-    .card-name { margin-top:4px; font-size:25px; font-weight:950; letter-spacing:-.02em; }
-
-    .identity { display:flex; flex-direction:column; justify-content:center; padding:12px 0; }
-    .identity-pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
-    .identity-pills > * { padding:8px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.08); background:#0F1A26; color:#C7D5E2; font-size:12px; }
-    .identity-pills strong { color:#4CC9FF; }
-    .logo-facts { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:24px; }
-    .logo-facts div { min-height:78px; padding:12px; display:flex; align-items:center; gap:9px; border-radius:17px; border:1px solid rgba(255,255,255,.08); background:#0F1A26; }
-    .logo-facts img { width:34px; height:34px; object-fit:contain; flex:none; }
-    .logo-facts span { color:#B5C5D5; font-size:11px; line-height:1.25; }
-    .facts { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:12px; }
-    .facts div { padding:13px; border-radius:17px; background:linear-gradient(180deg,#0F1A26,#0B151F); border:1px solid rgba(255,255,255,.08); }
-    .facts span { display:block; color:#71869A; font-size:9px; letter-spacing:.14em; text-transform:uppercase; font-weight:900; }
-    .facts b { display:block; margin-top:8px; font-size:13px; }
-
-    .section { margin-top:48px; }
-    .section-title { margin-bottom:15px; }
-    .section-title.small { margin-bottom:12px; }
-    .core-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:9px; }
-    .core { padding:16px; border-radius:19px; background:linear-gradient(180deg,#111E2A,#0A141E); border:1px solid rgba(255,255,255,.08); }
-    .core > div:first-child { display:flex; justify-content:space-between; align-items:flex-end; gap:7px; }
-    .core span { color:#8FA3B6; font-size:10px; font-weight:850; letter-spacing:.1em; text-transform:uppercase; }
-    .core b { color:#4CC9FF; font-size:25px; line-height:1; }
-    .bar,.mini { background:rgba(255,255,255,.07); overflow:hidden; border-radius:99px; }
-    .bar { height:5px; margin-top:15px; }
-    .bar i,.mini i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#4CC9FF,#8FE9FF); }
-
-    .stat-layout { display:grid; grid-template-columns:1fr 340px; gap:18px; margin-top:18px; align-items:start; }
-    .detail-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:11px; }
-    .panel,.side,.box { padding:20px; border-radius:24px; border:1px solid rgba(255,255,255,.08); background:linear-gradient(180deg,#0F1A26,#0A141E); }
-    .row { display:grid; grid-template-columns:110px 1fr 32px; align-items:center; gap:9px; margin-top:12px; }
-    .row > span { color:#93A7B9; font-size:10px; }
-    .mini { height:5px; }
-    .row b { color:#DCE8F2; font-size:11px; text-align:right; }
-    .side { position:sticky; top:18px; }
-    .radar { display:block; width:100%; margin:8px auto 12px; }
-    .radar polygon { fill:none; stroke:rgba(255,255,255,.09); stroke-width:1; }
-    .radar polygon:last-of-type { fill:rgba(76,201,255,.19); stroke:#4CC9FF; stroke-width:2; }
-    .radar text { fill:#748BA0; font-size:10px; font-weight:900; text-anchor:middle; }
-
-    .rank-box { margin-top:14px; padding-top:17px; border-top:1px solid rgba(255,255,255,.08); }
-    .rank-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-    .rank { padding:10px; border-radius:12px; background:#0B151F; border:1px solid rgba(255,255,255,.07); }
-    .rank span { display:block; color:#70869A; font-size:9px; font-weight:850; text-transform:uppercase; letter-spacing:.1em; }
-    .rank b { display:block; margin-top:5px; color:#4CC9FF; font-size:18px; }
-
-    .lower { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px; }
-    .chips { display:flex; flex-wrap:wrap; gap:8px; }
-    .chip { display:inline-flex; align-items:center; gap:7px; padding:9px 11px; border-radius:12px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.035); color:#D2DFEA; font-size:11px; font-weight:800; }
-    .chip.skill { border-color:rgba(76,201,255,.20); background:rgba(76,201,255,.055); }
-    .chip.skill b { display:grid; place-items:center; width:21px; height:21px; border-radius:7px; background:linear-gradient(135deg,#4CC9FF,#A2EDFF); color:#071018; }
-    .muted { color:#71869A; font-size:12px; }
-    .alt { margin-top:14px; padding:14px 18px; border-radius:16px; border:1px solid rgba(255,255,255,.07); background:#0F1A26; color:#8196AA; font-size:12px; }
-    .alt strong { color:#DCE8F2; }
-
-    .empty { margin-top:70px; padding:32px; border:1px solid rgba(255,255,255,.08); background:#0F1A26; border-radius:23px; }
-    .empty a { display:inline-block; margin-top:10px; color:#4CC9FF; font-weight:800; }
-
-    @media(max-width:1050px) {
-      .hero { grid-template-columns:430px 1fr; gap:25px; }
-      .visual { min-height:570px; }
-      .core-grid { grid-template-columns:repeat(3,1fr); }
-      .stat-layout { grid-template-columns:1fr; }
-      .side { position:static; }
-    }
-
-    @media(max-width:720px) {
-      .wrap { width:min(100% - 20px,1260px); padding-top:20px; }
-      .hero { grid-template-columns:1fr; }
-      .visual { min-height:520px; }
-      .logo-facts { grid-template-columns:1fr; }
-      .facts { grid-template-columns:repeat(2,1fr); }
-      .core-grid { grid-template-columns:repeat(2,1fr); }
-      .detail-grid,.lower { grid-template-columns:1fr; }
-      .rank-grid { grid-template-columns:repeat(3,1fr); }
-      .identity h1 { font-size:clamp(42px,13vw,64px); }
-    }
-
-    @media(max-width:420px) {
-      .visual { min-height:465px; }
-      .card-ovr { font-size:58px; }
-      .card-name { font-size:21px; }
-      .row { grid-template-columns:94px 1fr 29px; }
-    }
-  </style>
-</body>
-</html>
+<style>
+.player-page{
+  --bg:#071018;
+  --deep:#050c14;
+  --surface:#0F1A26;
+  --surface-2:#132333;
+  --surface-3:#162536;
+  --line:rgba(255,255,255,.08);
+  --line-bright:rgba(76,201,255,.22);
+  --text:#F5F8FB;
+  --muted:#A7B4C3;
+  --dim:#708596;
+  --cyan:#4CC9FF;
+  --cyan-2:#63D4FF;
+  min-height:100vh;
+  color:var(--text);
+  background:
+    radial-gradient(1000px 650px at 85% 0%,rgba(76,201,255,.10),transparent 62%),
+    radial-gradient(820px 520px at 5% 28%,rgba(76,201,255,.045),transparent 65%),
+    linear-gradient(180deg,var(--bg),var(--deep));
+  padding:0 0 90px;
+}
+.player-page *{box-sizing:border-box}
+.shell{width:min(1220px,calc(100% - 34px));margin:0 auto}
+.crumbs{display:flex;align-items:center;gap:10px;padding:28px 0 20px;color:#647D90;font:800 9px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+.crumbs a{color:var(--cyan);text-decoration:none}
+.crumbs a:hover{color:var(--cyan-2)}
+.hero{display:grid;grid-template-columns:minmax(360px,470px) minmax(0,1fr);gap:58px;align-items:center;padding:10px 0 54px}
+.hero-card-column{min-width:0}
+.player-card{
+  position:relative;
+  width:min(100%,470px);
+  aspect-ratio:5 / 7;
+  margin:auto;
+  overflow:hidden;
+  border-radius:28px;
+  isolation:isolate;
+  border:1px solid rgba(76,201,255,.26);
+  background:linear-gradient(150deg,#183247,#08131e 74%);
+  box-shadow:0 45px 110px rgba(0,0,0,.48),0 0 85px rgba(76,201,255,.08);
+}
+.player-card::after{content:"";position:absolute;inset:8px;border:1px solid rgba(255,255,255,.10);border-radius:23px;pointer-events:none;z-index:9}
+.card-bg{position:absolute;inset:0;background-image:var(--card-background);background-size:100% 100%;background-position:center;background-repeat:no-repeat;z-index:-4}
+.card-vignette{position:absolute;inset:0;background:
+  radial-gradient(circle at 48% 36%,rgba(255,255,255,.08),transparent 30%),
+  linear-gradient(180deg,rgba(0,0,0,.03) 0%,rgba(0,0,0,.03) 40%,rgba(0,0,0,.50) 100%);
+  z-index:-3
+}
+.card-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(76,201,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(76,201,255,.025) 1px,transparent 1px);background-size:26px 26px;mask-image:linear-gradient(180deg,transparent 5%,#000 38%,#000 78%,transparent 100%);z-index:-2;opacity:.5}
+.card-meta{position:absolute;top:5.5%;left:8.5%;right:8.5%;display:flex;justify-content:space-between;gap:12px;z-index:7;color:rgba(235,250,255,.74);font:800 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.13em;text-transform:uppercase}
+.card-meta span{max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-rating{position:absolute;left:8.5%;top:12.5%;z-index:7;text-align:left}
+.card-rating strong{display:block;font:900 clamp(56px,7vw,84px)/.78 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.10em;color:#F7FCFF;text-shadow:0 4px 26px rgba(0,0,0,.38),0 0 26px rgba(76,201,255,.18)}
+.card-rating span{display:block;margin-top:10px;color:#BFF2FF;font:900 clamp(12px,1.6vw,15px)/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.23em}
+.card-render{position:absolute;left:21%;top:12%;width:76%;height:69%;object-fit:contain;object-position:center center;z-index:4;filter:drop-shadow(0 30px 28px rgba(0,0,0,.54)) drop-shadow(0 0 30px rgba(76,201,255,.08))}
+.render-fallback{position:absolute;right:9%;top:29%;width:66%;height:42%;display:grid;place-items:center;color:rgba(191,242,255,.45);font:900 90px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.08em;z-index:2}
+.card-name{position:absolute;left:8.5%;right:8.5%;bottom:13.5%;z-index:7;text-align:left}
+.card-name>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#F7FCFF;font:900 clamp(26px,3.8vw,39px)/.96 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.045em;text-shadow:0 4px 18px rgba(0,0,0,.45)}
+.card-name small{display:block;margin-top:7px;color:rgba(227,246,255,.66);font:700 8px/1.1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-badges{position:absolute;left:8.5%;bottom:4.7%;display:flex;gap:7px;z-index:8}
+.card-badges img{width:34px;height:34px;padding:7px;object-fit:contain;border:1px solid rgba(255,255,255,.13);border-radius:10px;background:rgba(4,11,17,.35);backdrop-filter:blur(5px)}
+.card-alt{position:absolute;right:8.5%;bottom:5.5%;z-index:8;color:rgba(227,246,255,.70);font:800 8px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.card-caption{display:flex;justify-content:space-between;gap:12px;margin:11px 8px 0;color:#526D80;font:800 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.11em;text-transform:uppercase}
+.card-caption b{color:#9EC4D4}
+.hero-content{min-width:0;padding:10px 0}
+.hero-kicker{display:flex;align-items:center;gap:8px;color:#74A2B5;font:800 9px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.14em}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green,#47D16C);box-shadow:0 0 14px rgba(71,209,108,.62)}
+.hero-content h1{margin:17px 0 11px;font:800 clamp(52px,7vw,92px)/.86 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.075em}
+.hero-sub{margin:0;color:var(--muted);font:500 13px/1.7 Inter,system-ui,sans-serif}
+.hero-sub span{color:#557083;padding:0 5px}
+.identity-grid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:9px;margin-top:25px}
+.identity-metric{min-height:74px;padding:13px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(150deg,#102335,#0B1620)}
+.identity-metric.featured{border-color:rgba(76,201,255,.22);background:linear-gradient(150deg,#0F2D42,#0B1A27)}
+.identity-metric span{display:block;color:#638194;font:800 7px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.14em}
+.identity-metric strong{display:block;margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#F4FBFF;font:800 18px/1.05 "Space Grotesk",system-ui,sans-serif}
+.identity-metric.featured strong{font-size:30px;color:var(--cyan)}
+.profile-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}
+.profile-strip>div{min-width:0;display:flex;align-items:center;gap:9px;padding:12px;border:1px solid var(--line);border-radius:16px;background:#0F1A26}
+.profile-strip img,.profile-strip i{width:30px;height:30px;flex:none;object-fit:contain}
+.profile-strip i{display:block;border-radius:9px;background:#162536}
+.profile-strip span{min-width:0}
+.profile-strip small{display:block;color:#587187;font:800 7px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.13em}
+.profile-strip b{display:block;margin-top:5px;color:#D9E7EF;font-size:10px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.body-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}
+.body-facts>div{padding:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#0E1B28,#0A141D)}
+.body-facts span{display:block;color:#597388;font:800 7px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.13em}
+.body-facts b{display:block;margin-top:7px;color:#DDEAF2;font-size:10px;line-height:1.3}
+.tool-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.button{min-height:50px;display:flex;align-items:center;justify-content:center;gap:9px;padding:0 14px;border-radius:14px;text-decoration:none;font:800 10px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.03em;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.button:hover{transform:translateY(-2px)}
+.button-primary{color:#041018;background:linear-gradient(135deg,#4CC9FF,#8FE7FF);box-shadow:0 14px 30px rgba(76,201,255,.14)}
+.button-primary:hover{box-shadow:0 18px 38px rgba(76,201,255,.22)}
+.button-secondary{color:#DDF7FF;border:1px solid rgba(76,201,255,.16);background:#0F2030}
+.button-secondary:hover{border-color:rgba(76,201,255,.34)}
+.button-icon{font-size:9px;min-width:18px;text-align:center}
+.core-section,.panel-section{border:1px solid var(--line);border-radius:24px;background:linear-gradient(160deg,#0F1A26,#09131C);box-shadow:0 25px 70px rgba(0,0,0,.18)}
+.core-section{padding:22px;margin-top:6px}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
+.kicker{display:inline-block;color:var(--cyan);font:800 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.16em}
+.section-head h2{margin:8px 0 0;color:#F2FAFD;font:800 28px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.05em}
+.section-note{color:#5E7789;font:800 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase}
+.core-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
+.core-card{padding:15px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(150deg,#102434,#0A151F)}
+.core-card:hover{border-color:rgba(76,201,255,.20)}
+.core-card.is-empty{opacity:.72}
+.core-top{display:flex;align-items:end;justify-content:space-between;gap:8px}
+.core-top span{color:#718A9A;font:800 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.10em}
+.core-top strong{color:var(--cyan);font:900 25px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.05em}
+.progress,.stat-track{height:5px;margin-top:13px;border-radius:99px;background:#162736;overflow:hidden}
+.progress i,.stat-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#278AC4,var(--cyan));box-shadow:0 0 12px rgba(76,201,255,.14)}
+.content-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin-top:16px;align-items:start}
+.main-column,.side-column{display:grid;gap:16px}
+.panel-section{padding:22px}
+.stat-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat-group{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#0B1620}
+.stat-group header{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(76,201,255,.045),transparent)}
+.stat-group header span{color:#E2F4FA;font:800 12px/1 "Space Grotesk",system-ui,sans-serif}
+.stat-group header b{color:#4C7487;font:800 7px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.stat-rows{padding:8px 13px 11px}
+.stat-row{display:grid;grid-template-columns:118px minmax(0,1fr) 30px;gap:9px;align-items:center;padding:7px 0}
+.stat-row>span{color:#89A0AE;font-size:9px;line-height:1.2}
+.stat-row>strong{color:#DCEBF2;font:800 10px/1 "Space Grotesk",system-ui,sans-serif;text-align:right}
+.stat-track{margin:0;height:4px}
+.playstyle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.ability-card{display:flex;align-items:center;gap:11px;min-width:0;padding:12px;border:1px solid rgba(76,201,255,.14);border-radius:17px;background:linear-gradient(145deg,#0D2536,#0A1620)}
+.ability-icon{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:13px;background:rgba(76,201,255,.07);border:1px solid rgba(76,201,255,.11);overflow:hidden}
+.ability-icon img{width:100%;height:100%;padding:6px;object-fit:contain}
+.ability-icon span{color:var(--cyan);font-size:22px}
+.ability-copy{min-width:0}
+.ability-copy span{display:block;color:#5C879D;font:800 7px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.13em}
+.ability-copy strong{display:block;margin-top:6px;color:#E7F8FC;font:800 12px/1.15 "Space Grotesk",system-ui,sans-serif;overflow-wrap:anywhere}
+.ability-copy small{display:block;margin-top:6px;color:#678294;font-size:9px}
+.traits-grid{display:flex;flex-wrap:wrap;gap:8px}
+.trait{display:flex;align-items:center;gap:8px;padding:10px 11px;border:1px solid var(--line);border-radius:12px;background:#0B151F}
+.trait span{display:grid;place-items:center;width:18px;height:18px;border-radius:6px;color:#071018;background:var(--cyan);font-size:10px;font-weight:900}
+.trait b{color:#C9D8E1;font-size:10px}
+.data-empty{display:grid;gap:5px;padding:20px;border:1px dashed rgba(76,201,255,.16);border-radius:15px;background:rgba(76,201,255,.025);color:#7890A1;font-size:11px;line-height:1.6}
+.data-empty strong{color:#B7D5E2;font-size:12px}
+.rank-path{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.rank-tile{position:relative;min-width:0;padding:9px 6px 10px;border:1px solid var(--line);border-radius:14px;background:#0B151F;color:var(--text);font:inherit;cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease}
+.rank-tile:hover{transform:translateY(-2px);border-color:rgba(76,201,255,.24)}
+.rank-tile.selected{border-color:var(--cyan);background:linear-gradient(145deg,#0F293B,#0A1823);box-shadow:inset 0 0 0 1px rgba(76,201,255,.16),0 9px 28px rgba(76,201,255,.08)}
+.rank-tile img{display:block;width:42px;height:42px;margin:0 auto 5px;object-fit:contain}
+.rank-tile span{display:block;color:#73899A;font:800 7px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.10em;text-transform:uppercase;white-space:nowrap}
+.rank-tile strong{display:block;margin-top:5px;color:var(--cyan);font:900 17px/1 "Space Grotesk",system-ui,sans-serif}
+.rank-tile small{display:block;margin-top:5px;color:#5B7485;font-size:8px}
+.rank-readout{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:11px;padding:12px 13px;border:1px solid rgba(76,201,255,.12);border-radius:14px;background:#0A1A27}
+.rank-readout span{color:#608094;font:800 7px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.13em}
+.rank-readout strong{grid-column:1;color:#E6F7FC;font:800 13px/1 "Space Grotesk",system-ui,sans-serif}
+.rank-readout b{grid-row:1 / span 2;grid-column:2;color:var(--cyan);font:800 17px/1 "Space Grotesk",system-ui,sans-serif}
+.rank-readout em{font-style:normal}
+.wide-link{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;padding:12px 13px;border:1px solid var(--line);border-radius:13px;color:#BCEAF8;text-decoration:none;background:#0C1822;font:800 9px/1.2 "Space Grotesk",system-ui,sans-serif}
+.wide-link:hover{border-color:rgba(76,201,255,.25);color:#E8FAFF}
+.training-hero{padding:18px;border:1px solid rgba(76,201,255,.14);border-radius:18px;background:radial-gradient(circle at 80% 20%,rgba(76,201,255,.12),transparent 42%),linear-gradient(145deg,#0D2638,#0A1620)}
+.training-hero strong{display:block;color:#F2FCFF;font:900 41px/.9 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.08em}
+.training-hero span{display:block;margin-top:8px;color:#68879A;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:800}
+.training-track{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:12px}
+.training-track>div{display:grid;justify-items:center;gap:5px;color:#5D7484;font:800 7px/1 "Space Grotesk",system-ui,sans-serif}
+.training-track i{width:7px;height:7px;border-radius:50%;background:#1C3343;border:1px solid rgba(76,201,255,.11)}
+.training-track i.active{background:var(--cyan);box-shadow:0 0 10px rgba(76,201,255,.45)}
+.training-facts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}
+.training-facts div{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0A141D}
+.training-facts span{display:block;color:#5C788A;font:800 7px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.1em}
+.training-facts b{display:block;margin-top:6px;color:#DCEBF1;font-size:10px}
+.radar{display:block;width:min(100%,300px);margin:2px auto 8px}
+.radar polygon{fill:none;stroke:rgba(255,255,255,.08);stroke-width:1}
+.radar .radar-fill{fill:rgba(76,201,255,.17);stroke:var(--cyan);stroke-width:2;filter:drop-shadow(0 0 8px rgba(76,201,255,.12))}
+.radar text{fill:#678091;font:800 8px "Space Grotesk",system-ui,sans-serif;text-anchor:middle}
+.shape-legend{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.shape-legend span{display:flex;align-items:center;gap:5px;color:#657E90;font:800 8px/1 "Space Grotesk",system-ui,sans-serif}
+.shape-legend b{color:#DBEEF5}
+.not-found{max-width:700px;margin:70px auto 110px;padding:34px;border:1px solid var(--line);border-radius:24px;background:#0F1A26}
+.not-found h1{margin:12px 0 10px;font:800 48px/.95 "Space Grotesk",system-ui,sans-serif}
+.not-found p{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 20px}
+@media(max-width:1080px){
+  .hero{grid-template-columns:minmax(320px,410px) 1fr;gap:38px}
+  .content-grid{grid-template-columns:1fr}
+  .side-column{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+}
+@media(max-width:820px){
+  .hero{grid-template-columns:1fr;gap:32px}
+  .player-card{width:min(100%,500px)}
+  .hero-content{padding-top:0}
+  .side-column{grid-template-columns:1fr}
+  .core-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:620px){
+  .shell{width:min(100% - 22px,1220px)}
+  .crumbs{padding-top:20px}
+  .hero{padding-top:3px}
+  .hero-content h1{font-size:54px}
+  .identity-grid{grid-template-columns:repeat(2,1fr)}
+  .profile-strip{grid-template-columns:1fr}
+  .body-facts{grid-template-columns:repeat(2,1fr)}
+  .tool-actions{grid-template-columns:1fr}
+  .core-grid{grid-template-columns:repeat(2,1fr)}
+  .stat-groups,.playstyle-grid{grid-template-columns:1fr}
+  .panel-section,.core-section{padding:18px}
+  .section-head{align-items:flex-start}
+  .section-head h2{font-size:24px}
+}
+@media(max-width:460px){
+  .player-page{padding-bottom:65px}
+  .hero-content h1{font-size:48px}
+  .player-card{border-radius:23px}
+  .card-rating strong{font-size:56px}
+  .card-name>span{font-size:27px}
+  .card-render{left:18%;width:80%;height:70%}
+}
+@media(prefers-reduced-motion:reduce){
+  .button,.rank-tile{transition:none}
+}
+</style>
