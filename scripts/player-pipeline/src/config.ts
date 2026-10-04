@@ -1,7 +1,6 @@
 export const config = {
-  sourceName: process.env.PLAYER_SOURCE_NAME ?? "renderz-authorized-adapter",
-  sourceBaseUrl: process.env.UPSTREAM_BASE_URL ?? "https://renderz.app",
-  searchEndpoint: process.env.UPSTREAM_SEARCH_ENDPOINT ?? "/api/search/elasticsearch",
+  sourceBaseUrl: process.env.UPSTREAM_BASE_URL ?? "",
+  searchEndpoint: process.env.UPSTREAM_SEARCH_ENDPOINT ?? "",
   sourceCookie: process.env.UPSTREAM_COOKIE ?? "",
   sourceToken: process.env.UPSTREAM_SECURE_TOKEN ?? "",
   sourceFingerprint: process.env.UPSTREAM_CLIENT_FINGERPRINT ?? "",
