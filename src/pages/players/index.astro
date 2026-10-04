@@ -101,9 +101,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       const render = player.playerImage
         ? '<img class="thumb-render" src="' + esc(player.playerImage) + '" alt="" loading="lazy" decoding="async">'
         : '<div class="thumb-fallback">' + esc((player.name || 'FC').slice(0, 2).toUpperCase()) + '</div>';
-      const club = player.clubLogo
-        ? '<img class="thumb-club" src="' + esc(player.clubLogo) + '" alt="" loading="lazy" decoding="async">'
-        : '';
+      const logos = [
+        player.nationFlag ? '<img src="' + esc(player.nationFlag) + '" alt="" loading="lazy" decoding="async">' : '',
+        player.clubLogo ? '<img src="' + esc(player.clubLogo) + '" alt="" loading="lazy" decoding="async">' : '',
+        player.leagueImage ? '<img src="' + esc(player.leagueImage) + '" alt="" loading="lazy" decoding="async">' : ''
+      ].join('');
 
       return '<a class="player-card" href="/player/' + encodeURIComponent(player.slug) + '/">' +
         '<div class="thumb">' +
@@ -111,8 +113,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           '<div class="thumb-shade"></div>' +
           render +
           '<div class="thumb-rating"><strong>' + esc(player.ovr ?? '—') + '</strong><span>' + esc(player.position || '—') + '</span></div>' +
-          club +
           '<div class="thumb-bottom"><strong>' + esc(player.name) + '</strong><span>' + esc(player.event || 'FC Mobile') + '</span></div>' +
+          '<div class="thumb-logos">' + logos + '</div>' +
         '</div>' +
         '<div class="card-foot"><span>' + esc(player.nation || 'Nation not listed') + '</span><b>' + esc(player.position || '—') + '</b></div>' +
       '</a>';
@@ -218,14 +220,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     .thumb{position:relative;aspect-ratio:5/6;overflow:hidden;background:linear-gradient(160deg,#142A3A,#07131D);isolation:isolate}
     .thumb-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-3}
     .thumb-shade{position:absolute;inset:0;background:radial-gradient(circle at 55% 38%,rgba(255,255,255,.06),transparent 38%),linear-gradient(180deg,rgba(0,0,0,.02) 20%,rgba(0,0,0,.56) 100%);z-index:-2}
-    .thumb-render{position:absolute;left:20%;top:9%;width:78%;height:77%;object-fit:contain;object-position:center center;filter:drop-shadow(0 18px 22px rgba(0,0,0,.60));z-index:2}
+    .thumb-render{position:absolute;left:50%;top:50%;width:108%;height:108%;transform:translate(-50%,-50%);object-fit:contain;object-position:center center;filter:drop-shadow(0 18px 22px rgba(0,0,0,.60));z-index:2}
     .thumb-fallback{position:absolute;inset:0;display:grid;place-items:center;color:rgba(191,242,255,.45);font:900 58px/1 "Space Grotesk",system-ui,sans-serif;z-index:1}
-    .thumb-rating{position:absolute;left:8%;top:9%;z-index:4;display:grid;gap:4px}
+    .thumb-rating{position:absolute;left:25%;top:8%;z-index:4;display:grid;gap:4px;transform:translateX(-50%)}
     .thumb-rating strong{font:900 35px/.78 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.08em;color:#F7FCFF;text-shadow:0 3px 15px rgba(0,0,0,.45)}
     .thumb-rating span{color:#BCEFFF;font:900 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.18em}
-    .thumb-club{position:absolute;right:8%;bottom:8%;z-index:5;width:29px;height:29px;padding:6px;object-fit:contain;border:1px solid rgba(255,255,255,.11);border-radius:9px;background:rgba(4,11,17,.28)}
-    .thumb-bottom{position:absolute;left:8%;right:8%;bottom:7%;z-index:5;display:grid;gap:4px;padding-right:36px}
-    .thumb-bottom strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#F7FCFF;font:900 16px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.02em;text-shadow:0 2px 13px rgba(0,0,0,.4)}
+    .thumb-logos{position:absolute;left:50%;bottom:8%;z-index:5;display:flex;align-items:center;justify-content:center;gap:4px;transform:translateX(-50%);max-width:66%}
+    .thumb-logos img{width:25px;height:25px;padding:4px;object-fit:contain;border:1px solid rgba(255,255,255,.11);border-radius:8px;background:rgba(4,11,17,.30)}
+    .thumb-bottom{position:absolute;left:7%;right:7%;bottom:19%;z-index:5;display:grid;gap:4px;text-align:center}
+    .thumb-bottom strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#F7FCFF;font:900 15px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.02em;text-shadow:0 2px 13px rgba(0,0,0,.4)}
     .thumb-bottom span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(224,244,252,.68);font:700 8px/1 Inter,system-ui,sans-serif}
     .card-foot{display:flex;justify-content:space-between;gap:10px;padding:11px 13px 13px;border-top:1px solid var(--line);color:#6D8494;font-size:9px}
     .card-foot b{color:#B4D5E0}
