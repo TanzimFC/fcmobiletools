@@ -1,23 +1,33 @@
 ---
 import { PLAYER_SUPABASE_URL, PLAYER_SUPABASE_KEY } from "../../lib/playerSupabase.js";
 
-const supabaseUrl = PLAYER_SUPABASE_URL;
-const supabaseKey = PLAYER_SUPABASE_KEY;
-
 export async function getStaticPaths() {
   const response = await fetch(
     PLAYER_SUPABASE_URL + "/rest/v1/players?select=slug&active=eq.true&order=slug",
-    { headers: { apikey: PLAYER_SUPABASE_KEY, Authorization: "Bearer " + PLAYER_SUPABASE_KEY } }
+    {
+      headers: {
+        apikey: PLAYER_SUPABASE_KEY,
+        Authorization: "Bearer " + PLAYER_SUPABASE_KEY
+      }
+    }
   );
-  const players = response.ok ? await response.json() : [];
-  return players.filter((row) => row.slug).map((row) => ({
-    params: { slug: row.slug },
-    props: { slug: row.slug }
-  }));
+
+  if (!response.ok) {
+    throw new Error("Failed to load player slugs from Supabase: " + response.status);
+  }
+
+  const players = await response.json();
+
+  return players
+    .filter((row) => row?.slug)
+    .map((row) => ({
+      params: { slug: row.slug }
+    }));
 }
 
 const { slug } = Astro.params;
 ---
+
 <html lang="en">
   <head>
     <title>Player | FCMobiletools</title>
@@ -30,7 +40,11 @@ const { slug } = Astro.params;
       <article id="player" hidden></article>
     </main>
 
-    <script define:vars={{ supabaseUrl, supabaseKey, slug }}>
+    <script>
+      const supabaseUrl = "https://moczgrwxtfexdbjthxpd.supabase.co";
+      const supabaseKey = "sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr";
+      const slug = ${JSON.stringify(slug)};
+
       const headers = {
         apikey: supabaseKey,
         Authorization: "Bearer " + supabaseKey
@@ -40,7 +54,11 @@ const { slug } = Astro.params;
       const article = document.getElementById("player");
 
       const esc = (value) => String(value ?? "—").replace(/[&<>"']/g, (m) => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
       }[m]));
 
       async function get(path) {
@@ -52,7 +70,10 @@ const { slug } = Astro.params;
       async function load() {
         try {
           const encoded = encodeURIComponent(slug);
-          const rows = await get("players?select=*&slug=eq." + encoded + "&active=eq.true&limit=1");
+          const rows = await get(
+            "players?select=*&slug=eq." + encoded + "&active=eq.true&limit=1"
+          );
+
           const player = rows[0];
 
           if (!player) throw new Error("Player not found");
@@ -63,7 +84,7 @@ const { slug } = Astro.params;
             get("player_assets?select=asset_type,asset_url&player_id=eq." + player.id)
           ]);
 
-          const primaryAsset = assets.find(x => x.asset_type === "card") ?? assets[0];
+          const primaryAsset = assets.find((x) => x.asset_type === "card") ?? assets[0];
 
           article.innerHTML = `
             <div class="head">
@@ -88,12 +109,21 @@ const { slug } = Astro.params;
 
             <section>
               <h2>Ranks</h2>
-              <div class="rank-grid">${ranks.map(r => `<div class="rank"><b>Rank ${esc(r.rank)}</b><span>OVR ${esc(r.ovr ?? player.ovr)}</span></div>`).join("") || "<p>No rank data yet.</p>"}</div>
+              <div class="rank-grid">${ranks.map((r) => `
+                <div class="rank">
+                  <b>Rank ${esc(r.rank)}</b>
+                  <span>OVR ${esc(r.ovr ?? player.ovr)}</span>
+                </div>
+              `).join("") || "<p>No rank data yet.</p>"}</div>
             </section>
 
             <section>
               <h2>Detailed Stats</h2>
-              <div class="stats-grid">${stats[0] ? Object.entries(stats[0].stats || {}).slice(0, 40).map(([k,v]) => `<div class="stat"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("") : "<p>Detailed stats are not available yet.</p>"}</div>
+              <div class="stats-grid">${stats[0]
+                ? Object.entries(stats[0].stats || {}).slice(0, 40).map(([k, v]) => `
+                    <div class="stat"><span>${esc(k)}</span><b>${esc(v)}</b></div>
+                  `).join("")
+                : "<p>Detailed stats are not available yet.</p>"}</div>
             </section>
           `;
 
@@ -127,7 +157,10 @@ const { slug } = Astro.params;
       .rank span { display:block; color:#A7B4C3; margin-top:5px; }
       .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
       .stat { display:flex; justify-content:space-between; gap:8px; }
-      @media (max-width:700px) { .facts,.rank-grid { grid-template-columns:repeat(2,1fr); } .stats-grid { grid-template-columns:repeat(2,1fr); } }
+      @media (max-width:700px) {
+        .facts,.rank-grid { grid-template-columns:repeat(2,1fr); }
+        .stats-grid { grid-template-columns:repeat(2,1fr); }
+      }
     </style>
   </body>
 </html>
