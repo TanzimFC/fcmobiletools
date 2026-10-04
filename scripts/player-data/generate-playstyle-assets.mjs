@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const sourceDir = path.join(root, 'assets', 'images', 'playstyle');
-const outputFile = path.join(root, 'src', 'data', 'playstyle-assets.json');
+const outputFile = path.join(root, 'src', 'data', 'playstyle-assets.js');
 
 const slug = (value) => String(value ?? '')
   .normalize('NFKD')
