@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 const input=process.env.PLAYER_COLLECTION_NORMALIZED||"scripts/player-collector/data/normalized.jsonl";
 const url=(process.env.SUPABASE_URL||"").replace(/\/$/,"");
@@ -6,6 +6,34 @@ const key=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY
 if(!url||!key) throw new Error("SUPABASE_URL and SUPABASE_SECRET_KEY are required");
 
 const rows=(await readFile(input,"utf8")).split("\n").filter(Boolean).map(JSON.parse);
+
+function slugifyAbility(value){
+  return String(value||"").trim().toLowerCase().normalize("NFKD")
+    .replace(/[\\u0300-\\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-+|-+$/g,"");
+}
+
+async function loadPlaystyleAssets(){
+  try{
+    const files=await readdir("assets/images/playstyle");
+    const map=new Map();
+    for(const file of files){
+      const match=file.match(/_PLAYSTYLE_(.+)_(0|1|2)\\.png$/i);
+      if(!match) continue;
+      const key=slugifyAbility(match[1].replace(/_/g," "));
+      if(!key) continue;
+      const list=map.get(key)||[];
+      list[Number(match[2])]="/assets/images/playstyle/"+file;
+      map.set(key,list);
+    }
+    return map;
+  }catch{
+    return new Map();
+  }
+}
+
+const playstyleAssets=await loadPlaystyleAssets();
 const headers={apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=minimal"};
 const chunks=(a,n)=>Array.from({length:Math.ceil(a.length/n)},(_,i)=>a.slice(i*n,(i+1)*n));
 
@@ -81,11 +109,16 @@ for(const batch of chunks(rows,100)){
         : String(value?.name??value?.label??value?.title??"").trim();
       if(!name) return;
       const abilityKey=type+":"+name.toLowerCase().replace(/\W+/g,"-");
-      if(!abilityMap.has(abilityKey))
-        abilityMap.set(abilityKey,{name,type,metadata:{raw:value}});
+      if(abilityMap.has(abilityKey)) return;
+      const metadata={raw:value};
+      if(type==="playstyle"){
+        const paths=playstyleAssets.get(slugifyAbility(name))||[];
+        if(paths.length) metadata.asset_paths=paths.filter(Boolean);
+      }
+      abilityMap.set(abilityKey,{name,type,metadata});
     };
 
-    for(const value of Array.isArray(p.skills)?p.skills:[]) addAbility("skill",value);
+    for(const value of Array.isArray(p.skills)?p.skills:[]) addAbility("playstyle",value);
     for(const value of Array.isArray(p.traits)?p.traits:[]) addAbility("trait",value);
   }
 
@@ -109,7 +142,7 @@ for(const batch of chunks(rows,100)){
         if(!playerId) continue;
 
         const values=[
-          ...(Array.isArray(p.skills)?p.skills:[]).map(value=>({type:"skill",value})),
+          ...(Array.isArray(p.skills)?p.skills:[]).map(value=>({type:"playstyle",value})),
           ...(Array.isArray(p.traits)?p.traits:[]).map(value=>({type:"trait",value}))
         ];
 
