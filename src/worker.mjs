@@ -1,7 +1,6 @@
 import { App } from 'astro/app';
 import { handle } from '@astrojs/cloudflare/handler';
 import { tournamentWorkerRoute } from './tournamentWorker.mjs';
-import { handlePlayerRequest } from './lib/playerDatabase.js';
 import { argon2id, argon2Verify } from 'hash-wasm';
 import {
   RedeemError, listAdminCodes, publicPayload, saveCode as saveRedeemRecord,
@@ -1153,7 +1152,6 @@ export function createExports(manifest) {
     return Response.redirect(new URL('/fc-mobile-27/',url),301);
   }
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
-  if(url.pathname === '/api/players' || url.pathname.startsWith('/api/players/')) return handlePlayerRequest(request,url.pathname);
   if(url.pathname === '/api/football' && request.method === 'GET') {
     try {
       const file=await repoFile(env,'src/data/footballCentre.js');
