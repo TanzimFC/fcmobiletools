@@ -1,134 +1,163 @@
-const SUPABASE_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr';
-const SOURCE_PAGE = 'https://fcmobilesquad.com/star-signings-players';
+import {
+  buildZenithPlayerSlug,
+  fetchZenithPlayers,
+  fetchZenithPlayerById,
+  normalizeZenithPlayer
+} from './zenithPlayerApi.js';
+
+const POSITION_VALUES = ['GK','RB','RWB','CB','LB','LWB','CDM','RM','CM','LM','CAM','RW','LW','CF','ST'];
+let filterCache = { expiresAt: 0, value: null };
 
 const response = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), {
   status,
-  headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=900', ...headers },
+  headers: {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300',
+    ...headers
+  }
 });
 
-async function readTable(table, query, options = {}) {
-  const url = new URL(`/rest/v1/${table}`, SUPABASE_URL);
-  url.search = query.toString();
-  const result = await fetch(url, {
-    headers: {
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-      accept: 'application/json',
-      ...(options.range ? { range: options.range, 'range-unit': 'items', prefer: 'count=exact' } : {}),
-    },
-  });
-  if (!result.ok) throw new Error(`Player data request failed (${result.status}).`);
-  return { rows: await result.json(), total: Number(result.headers.get('content-range')?.split('/')[1]) || 0 };
+function filterValue(request, name) {
+  const value = new URL(request.url).searchParams.get(name);
+  return value ? value.trim() : '';
 }
 
-function playerIdsFilter(rows) {
-  return `in.(${rows.map((x) => x.player_id).join(',')})`;
-}
+async function loadFilters() {
+  if (filterCache.value && filterCache.expiresAt > Date.now()) return filterCache.value;
 
-async function observations(rows, table, columns) {
-  if (!rows.length) return new Map();
-  const q = new URLSearchParams({ select: columns, player_id: playerIdsFilter(rows), order: 'observed_at.desc', limit: String(rows.length * 8) });
-  const { rows: values } = await readTable(table, q);
-  const latest = new Map();
-  for (const value of values) if (!latest.has(value.player_id)) latest.set(value.player_id, value);
-  return latest;
-}
+  const events = new Set();
+  const leagues = new Set();
+  const nations = new Set();
+  const teams = new Set();
+  const pageSize = 1000;
 
-function assetMatchKey(value) {
-  return String(value || '').normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
+  try {
+    const first = await fetchZenithPlayers({ limit: pageSize, offset: 0, rank: 0 });
+    for (const player of first.players) {
+      if (player.event) events.add(player.event);
+      if (player.league) leagues.add(player.league);
+      if (player.nation) nations.add(player.nation);
+      if (player.club) teams.add(player.club);
+    }
 
-async function enrich(rows) {
-  const [assets, shards, prices] = await Promise.all([
-    readTable('player_assets', new URLSearchParams({ select: 'player_id,asset_type,public_url,local_path', player_id: playerIdsFilter(rows) })),
-    observations(rows, 'player_shard_costs', 'player_id,shard_cost,shard_type,event,source_name,source_url,observed_at'),
-    observations(rows, 'player_prices', 'player_id,current_sell_price,lowest_sell_price,highest_sell_price,currency,source_name,source_url,usage_policy,observed_at'),
-  ]);
-  const keys = new Map();
-  for (const p of rows) for (const [field,value] of Object.entries({event:p.event,club:p.club,league:p.league,nation:p.nation,player_id:p.player_id})) {
-    const key=assetMatchKey(value); if(!key)continue;
-    if(!keys.has(field))keys.set(field,new Set()); keys.get(field).add(key);
+    const total = Math.min(first.pagination.total, 20_000);
+    const offsets = [];
+    for (let offset = pageSize; offset < total; offset += pageSize) offsets.push(offset);
+
+    const concurrency = 5;
+    for (let index = 0; index < offsets.length; index += concurrency) {
+      const batch = await Promise.all(
+        offsets.slice(index, index + concurrency).map((offset) =>
+          fetchZenithPlayers({ limit: pageSize, offset, rank: 0 })
+            .then((result) => result.players)
+            .catch(() => [])
+        )
+      );
+      for (const rows of batch) {
+        for (const player of rows) {
+          if (player.event) events.add(player.event);
+          if (player.league) leagues.add(player.league);
+          if (player.nation) nations.add(player.nation);
+          if (player.club) teams.add(player.club);
+        }
+      }
+    }
+  } catch {
+    // Keep the basic position filters available if the upstream filter scan fails.
   }
-  const globalRows=(await Promise.all([...keys].map(async([field,values])=>{
-    try {
-      const q=new URLSearchParams({select:'asset_type,match_field,match_key,public_url,local_path',player_id:'is.null',match_field:'eq.'+field,match_key:'in.('+[...values].map(x=>'"'+x.replace(/"/g,'\\"')+'"').join(',')+')'});
-      return (await readTable('player_assets',q)).rows;
-    } catch { return []; }
-  }))).flat();
-  const global=new Map(globalRows.map(a=>[a.asset_type+'|'+a.match_field+'|'+a.match_key,a.local_path||a.public_url||null]));
-  const byId=new Map();
-  for(const a of assets.rows){const m=byId.get(a.player_id)||{};m[a.asset_type||'player_image']=a.local_path||a.public_url||null;byId.set(a.player_id,m);}
-  return rows.map(player=>{
-    const m=byId.get(player.player_id)||{}, get=(type,field,value)=>global.get(type+'|'+field+'|'+assetMatchKey(value))||null;
-    return {...player,image:m.player_image||get('player_image','player_id',player.player_id),card_background:m.card_background||get('card_background','event',player.event),nation_flag:m.nation_flag||get('nation_flag','nation',player.nation),club_badge:m.club_badge||get('club_badge','club',player.club),league_logo:m.league_logo||get('league_logo','league',player.league),shard_cost:shards.get(player.player_id)||null,sell_price:prices.get(player.player_id)||null};
-  });
+
+  const value = {
+    positions: POSITION_VALUES,
+    events: [...events].sort((a, b) => a.localeCompare(b)),
+    leagues: [...leagues].sort((a, b) => a.localeCompare(b)),
+    nations: [...nations].sort((a, b) => a.localeCompare(b)),
+    teams: [...teams].sort((a, b) => a.localeCompare(b))
+  };
+
+  filterCache = { value, expiresAt: Date.now() + 60 * 60 * 1000 };
+  return value;
 }
 
-async function readRpc(name) {
-  const result = await fetch(new URL('/rest/v1/rpc/' + name, SUPABASE_URL), {
-    method: 'POST',
-    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`, 'content-type': 'application/json', accept: 'application/json' },
-    body: '{}'
-  });
-  if (!result.ok) throw new Error(`Player filter request failed (${result.status}).`);
-  return result.json();
-}
-
-function setExactFilter(query, field, value) {
-  const clean = String(value || '').trim().slice(0, 100);
-  if (clean && !/[(),]/.test(clean)) query.set(field, 'eq.' + JSON.stringify(clean));
+function sortOptions(value) {
+  switch (value) {
+    case 'name-asc':
+    case 'name.desc':
+      return { sortBy: 'name', order: value === 'name-asc' ? 'asc' : 'desc' };
+    case 'ovr-asc':
+      return { sortBy: 'ovr', order: 'asc' };
+    default:
+      return { sortBy: 'ovr', order: 'desc' };
+  }
 }
 
 export async function handlePlayerRequest(request, pathname) {
-  if (request.method !== 'GET') return response({ error: 'Method not allowed.' }, 405, { allow: 'GET' });
+  if (request.method !== 'GET') {
+    return response({ error: 'Method not allowed.' }, 405, { allow: 'GET' });
+  }
+
   try {
     if (pathname === '/api/players/filters') {
-      return response({ ...(await readRpc('player_filter_options')), source: SOURCE_PAGE });
+      return response(await loadFilters());
     }
+
     if (pathname === '/api/players' || pathname === '/api/players/') {
-      const url = new URL(request.url);
-      const params = url.searchParams;
-      const limit = Math.min(100, Math.max(1, Number(params.get('limit')) || 48));
-      const offset = Math.max(0, Math.min(100000, Number(params.get('offset')) || 0));
-      const sortMap = { 'ovr-desc': 'ovr.desc,name.asc', 'ovr-asc': 'ovr.asc,name.asc', 'name-asc': 'name.asc', 'name-desc': 'name.desc' };
-      const query = new URLSearchParams({ select: 'player_id,name,slug,ovr,position,alternate_positions,club,league,nation,event', is_active: 'eq.true', order: sortMap[params.get('sort')] || sortMap['ovr-desc'] });
-      const search = (params.get('q') || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 -]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
-      if (search) query.set('normalized_name', `ilike.*${search}*`);
-      const position = (params.get('position') || '').toUpperCase();
-      if (/^[A-Z]{1,4}$/.test(position)) query.set('position', `eq.${position}`);
-      for (const field of ['club', 'league', 'nation', 'event']) setExactFilter(query, field, params.get(field));
-      const minOvr = Number(params.get('minOvr'));
-      const maxOvr = Number(params.get('maxOvr'));
-      const ovrFilters = [];
-      if (Number.isInteger(minOvr) && minOvr >= 1 && minOvr <= 150) ovrFilters.push(`ovr.gte.${minOvr}`);
-      if (Number.isInteger(maxOvr) && maxOvr >= 1 && maxOvr <= 150) ovrFilters.push(`ovr.lte.${maxOvr}`);
-      if (ovrFilters.length) query.set('and', `(${ovrFilters.join(',')})`);
-      const result = await readTable('players', query, { range: `${offset}-${offset + limit - 1}` });
-      return response({ players: await enrich(result.rows), total: result.total, limit, offset, source: SOURCE_PAGE });
+      const search = filterValue(request, 'q');
+      const position = filterValue(request, 'position');
+      const event = filterValue(request, 'event');
+      const team = filterValue(request, 'team');
+      const league = filterValue(request, 'league');
+      const nation = filterValue(request, 'nation');
+      const minOvr = filterValue(request, 'minOvr');
+      const maxOvr = filterValue(request, 'maxOvr');
+      const limit = Math.min(100, Math.max(1, Number(filterValue(request, 'limit')) || 48));
+      const offset = Math.max(0, Number(filterValue(request, 'offset')) || 0);
+      const sort = sortOptions(filterValue(request, 'sort'));
+
+      const result = await fetchZenithPlayers({
+        limit,
+        offset,
+        rank: 0,
+        nameStartsWith: search,
+        position,
+        event,
+        team,
+        league,
+        nation,
+        minOvr,
+        maxOvr,
+        sortBy: sort.sortBy,
+        order: sort.order
+      });
+
+      return response({
+        players: result.players,
+        pagination: result.pagination,
+        source: 'zenith-api'
+      });
     }
+
     if (pathname.startsWith('/api/players/')) {
-      const slug = decodeURIComponent(pathname.slice('/api/players/'.length)).replace(/[^a-zA-Z0-9-]/g, '').slice(0, 120);
-      if (!slug) return response({ error: 'Player not found.' }, 404);
-      const playerQuery = new URLSearchParams({ select: 'player_id,name,slug,ovr,position,alternate_positions,club,league,nation,event,skill_moves,weak_foot,strong_foot,strong_foot_side,work_rate_attack,work_rate_defense,height_cm,weight_kg,date_added,is_untradable', slug: `eq.${slug}`, is_active: 'eq.true', limit: '1' });
-      const { rows } = await readTable('players', playerQuery);
-      if (!rows[0]) return response({ error: 'Player not found.' }, 404);
-      const player = rows[0];
-      const id = String(player.player_id);
-      const [expanded, stats, ranks, assets, shards, prices] = await Promise.all([
-        enrich([player]),
-        readTable('player_stats', new URLSearchParams({ select: 'stats,source_name,source_url,verified_at', player_id: `eq.${id}`, limit: '1' })),
-        readTable('player_ranks', new URLSearchParams({ select: 'rank,training_level,ovr,stat_modifiers,rank_asset_key,source_url', player_id: `eq.${id}`, order: 'rank.asc,training_level.asc', limit: '186' })),
-        readTable('player_assets', new URLSearchParams({ select: 'asset_key,asset_type,public_url,local_path,source_name,source_url,attribution,license', player_id: `eq.${id}` })),
-        observations([player], 'player_shard_costs', 'player_id,shard_cost,shard_type,event,source_name,source_url,observed_at'),
-        observations([player], 'player_prices', 'player_id,current_sell_price,lowest_sell_price,highest_sell_price,currency,source_name,source_url,usage_policy,observed_at'),
-      ]);
-      const abilityQuery = new URLSearchParams({ select: 'rank,player_abilities(name,slug,ability_type,is_plus,description,player_assets(public_url,local_path))', player_id: `eq.${id}`, order: 'rank.asc' });
-      const abilities = await readTable('player_ability_links', abilityQuery);
-      return response({ ...expanded[0], stats: stats.rows[0] || null, ranks: ranks.rows, assets: assets.rows, abilities: abilities.rows, shard_cost: shards.get(player.player_id) || null, sell_price: prices.get(player.player_id) || null });
+      const slug = decodeURIComponent(pathname.slice('/api/players/'.length));
+      const match = slug.match(/-(\d+)$/);
+      const player = match
+        ? await fetchZenithPlayerById(match[1], 0)
+        : null;
+
+      if (!player) return response({ error: 'Player not found.' }, 404);
+
+      return response({
+        ...player,
+        source: 'zenith-api'
+      });
     }
+
     return response({ error: 'Player API route not found.' }, 404);
   } catch (error) {
-    return response({ error: error?.message || 'Unable to load player data.' }, 502, { 'cache-control': 'no-store' });
+    console.error('[PLAYER_API]', error);
+    return response(
+      { error: error?.message || 'Unable to load player data.' },
+      502,
+      { 'cache-control': 'no-store' }
+    );
   }
 }
