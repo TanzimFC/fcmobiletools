@@ -5,46 +5,49 @@ const input=process.env.PLAYER_COLLECTION_INPUT||"scripts/player-collector/data/
 const output=process.env.PLAYER_COLLECTION_NORMALIZED||"scripts/player-collector/data/normalized.jsonl";
 const min=Number(process.env.PLAYER_QUALITY_MIN||60);
 
-const source=await readFile(input,"utf8");
-const rows=source.split("\n").filter(Boolean).map(JSON.parse);
-const seen=new Set(), accepted=[], rejected=[];
+const rows=(await readFile(input,"utf8")).split("\n").filter(Boolean).map(JSON.parse);
+const seen=new Set();
+const accepted=[];
+const rejected=[];
+const slugify=x=>String(x).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 const hash=x=>createHash("sha256").update(JSON.stringify(x)).digest("hex");
-const slug=x=>x.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 
 for(const raw of rows){
-  const id=String(raw.assetId||raw.playerId||"");
+  const id=String(raw.assetId||raw.playerId||"").trim();
   const name=String(raw.cardName||raw.name||"").trim();
   const stats=raw.stats&&typeof raw.stats==="object"?raw.stats:{};
+  const rankStats=Array.isArray(raw.rankStats)?raw.rankStats:[];
   const images=Array.isArray(raw.images)?raw.images:[];
-  const hasVisual=images.some(x=>x.type==="player_render"||x.type==="card_background");
+  const hasRender=images.some(x=>x.type==="player_render");
+  const hasCardBackground=images.some(x=>x.type==="card_background");
   const errors=[];
+
   if(!id) errors.push("missing stable id");
   if(!name) errors.push("missing name");
   if(!raw.rating) errors.push("missing ovr");
   if(!raw.position) errors.push("missing position");
   if(!raw.league) errors.push("missing league");
   if(!raw.program) errors.push("missing event");
-  if(Object.keys(stats).length<10) errors.push("insufficient stats");
-  if(!hasVisual) errors.push("missing player visual");
+  if(Object.keys(stats).length<10) errors.push("insufficient base stats");
+  if(!hasRender&&!hasCardBackground) errors.push("missing card/player visual");
 
   if(seen.has(id)) errors.push("duplicate stable id");
   seen.add(id);
 
+  const corePresent=[id,name,raw.rating,raw.position,raw.club,raw.league,raw.nation,raw.program,raw.skillMoves,raw.weakFoot];
   const score=Math.min(100,
-    (id&&name?25:0)+
-    (raw.rating?15:0)+
-    (raw.position?10:0)+
-    (raw.league?10:0)+
-    (raw.program?10:0)+
-    Math.min(20,Math.round(Object.keys(stats).length/35*20))+
-    (hasVisual?10:0)
+    Math.round(corePresent.filter(Boolean).length/10*55)+
+    Math.min(25,Math.round(Object.keys(stats).length/35*25))+
+    Math.min(10,rankStats.length/6*10)+
+    (hasRender?5:0)+
+    (hasCardBackground?5:0)
   );
 
   const normalized={
     ...raw,
     assetId:id,
     cardName:name,
-    slug:slug(name)+"-"+id,
+    slug:slugify(name)+"-"+String(raw.rating||0)+"-"+id,
     sourceObservedAt:new Date().toISOString(),
     sourcePayloadHash:hash(raw),
     dataQualityScore:score
