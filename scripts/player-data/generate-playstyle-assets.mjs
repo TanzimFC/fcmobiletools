@@ -38,7 +38,7 @@ for (const key of Object.keys(map)) {
 
 await writeFile(
   outputFile,
-  JSON.stringify(map, null, 2) + '\n',
+  'export const PLAYSTYLE_ASSETS = ' + JSON.stringify(map, null, 2) + ';\n',
   'utf8'
 );
 
