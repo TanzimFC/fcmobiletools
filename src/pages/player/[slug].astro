@@ -11,15 +11,10 @@ const headers = {
 
 async function fetchRows(table, params) {
   const url = new URL("/rest/v1/" + table, PLAYER_SUPABASE_URL);
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
-  }
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
 
   const response = await fetch(url, { headers });
-  if (!response.ok) {
-    throw new Error(table + " request failed: " + response.status);
-  }
-
+  if (!response.ok) throw new Error(table + " request failed: " + response.status);
   return response.json();
 }
 
@@ -27,7 +22,7 @@ let player = null;
 let stats = [];
 let ranks = [];
 let assets = [];
-let loadError = null;
+let abilityRows = [];
 
 try {
   const players = await fetchRows("players", {
@@ -39,9 +34,7 @@ try {
 
   player = players[0] ?? null;
 
-  if (!player) {
-    loadError = "Player not found.";
-  } else {
+  if (player) {
     [stats, ranks, assets] = await Promise.all([
       fetchRows("player_stats", {
         select: "rank,training,stats",
@@ -54,287 +47,399 @@ try {
         order: "rank"
       }),
       fetchRows("player_assets", {
-        select: "asset_type,asset_url",
+        select: "asset_type,asset_url,metadata,is_primary",
         player_id: "eq." + player.id
       })
     ]);
+
+    try {
+      const links = await fetchRows("player_ability_links", {
+        select: "ability_id,value",
+        player_id: "eq." + player.id
+      });
+
+      const ids = [...new Set(links.map((row) => row.ability_id).filter(Boolean))];
+      if (ids.length) {
+        const abilities = await fetchRows("player_abilities", {
+          select: "id,name,ability_type,metadata",
+          id: "in.(" + ids.join(",") + ")"
+        });
+        const map = new Map(abilities.map((row) => [String(row.id), row]));
+        abilityRows = links.map((link) => ({
+          ...(map.get(String(link.ability_id)) ?? {}),
+          value: link.value
+        }));
+      }
+    } catch (error) {
+      console.warn("Player abilities unavailable", error);
+    }
   }
 } catch (error) {
   console.error(error);
-  loadError = "Player data is temporarily unavailable.";
 }
 
-const primaryAsset = assets.find((asset) => asset.asset_type === "card") ?? assets[0];
-const baseStats = stats.find((row) => row.rank === 0 && row.training === 0)?.stats ?? stats[0]?.stats ?? {};
-const statEntries = Object.entries(baseStats);
----
+const getAsset = (type) =>
+  assets.find((item) => item.asset_type === type && item.is_primary) ??
+  assets.find((item) => item.asset_type === type) ??
+  null;
+
+const render = getAsset("player_render");
+const background = getAsset("card_background");
+const flag = getAsset("nation_flag");
+const clubLogo = getAsset("club_logo");
+const leagueLogo = getAsset("league_logo");
+
+const baseStats =
+  stats.find((row) => row.rank === 0 && row.training === 0)?.stats ??
+  stats.find((row) => row.rank === 0)?.stats ??
+  stats[0]?.stats ??
+  {};
+
+const coreStats = [
+  ["pace", "Pace"],
+  ["shooting", "Shooting"],
+  ["passing", "Passing"],
+  ["dribbling", "Dribbling"],
+  ["defending", "Defending"],
+  ["physical", "Physical"]
+];
+
+const detailStats = [
+  ["Pace", ["acceleration","sprint_speed"]],
+  ["Shooting", ["finishing","shot_power","long_shot","positioning","volley","penalties"]],
+  ["Passing", ["short_passing","long_passing","vision","crossing","curve","free_kick"]],
+  ["Dribbling", ["agility","balance","reactions","ball_control"]],
+  ["Defending", ["marking","standing_tackle","sliding_tackle","awareness","heading"]],
+  ["Physical", ["strength","aggression","jumping","stamina_stat"]]
+];
+
+const labels = {
+  acceleration:"Acceleration", sprint_speed:"Sprint Speed", finishing:"Finishing", shot_power:"Shot Power",
+  long_shot:"Long Shot", positioning:"Positioning", volley:"Volley", penalties:"Penalties",
+  short_passing:"Short Passing", long_passing:"Long Passing", vision:"Vision", crossing:"Crossing",
+  curve:"Curve", free_kick:"Free Kick", agility:"Agility", balance:"Balance", reactions:"Reactions",
+  ball_control:"Ball Control", marking:"Marking", standing_tackle:"Standing Tackle", sliding_tackle:"Sliding Tackle",
+  awareness:"Defensive Awareness", heading:"Heading", strength:"Strength", aggression:"Aggression",
+  jumping:"Jumping", stamina_stat:"Stamina"
+};
+
+const statsPayload = JSON.stringify(stats);
 
 <html lang="en">
-  <head>
-    <title>{player ? player.name + " | FCMobiletools" : "Player | FCMobiletools"}</title>
-    <meta
-      name="description"
-      content={player
-        ? `${player.name} FC Mobile player details, OVR, position, ranks and stats on FCMobiletools.`
-        : "FC Mobile player details on FCMobiletools."}
-    />
-  </head>
-  <body>
-    <main class="player-shell">
-      <a class="back" href="/players/">← Back to Players</a>
+<head>
+  <title>{player ? `${player.name} ${player.ovr ?? ""} OVR | FCMobiletools` : "Player | FCMobiletools"}</title>
+  <meta name="description" content={player ? `${player.name} ${player.ovr ?? ""} OVR FC Mobile player stats, ranks, PlayStyles and card details.` : "FC Mobile player details on FCMobiletools."} />
+</head>
+<body>
+  <main class="wrap">
+    <div class="topbar">
+      <a class="back" href="/players/">← Players Database</a>
+      {player?.event && <span class="event">{player.event}</span>}
+    </div>
 
-      {loadError ? (
-        <section class="notice">
-          <h1>{loadError}</h1>
-          <p>The player may have been removed or the database may be temporarily unavailable.</p>
-          <a href="/players/">Return to Players</a>
-        </section>
-      ) : player ? (
-        <article>
-          <div class="head">
-            <div>
-              <p class="eyebrow">{player.event}</p>
-              <h1>{player.name}</h1>
-              <p class="lead">{player.club} · {player.league} · {player.nation}</p>
+    {!player ? (
+      <section class="empty">
+        <p class="eyebrow">FCMOBILETOOLS PLAYER DATABASE</p>
+        <h1>Player not found</h1>
+        <p>This player is not in the active catalog.</p>
+        <a href="/players/">Browse Players</a>
+      </section>
+    ) : (
+      <>
+        <section class="hero">
+          <div
+            class="visual"
+            style={background ? `--card-bg:url("${background.asset_url}")` : ""}
+          >
+            <div class="visual-bg"></div>
+            <div class="visual-light"></div>
+            <div class="visual-top">
+              <span>{player.event ?? "FC MOBILE"}</span>
+              <span>{player.color_name ?? "PLAYER CARD"}</span>
             </div>
-            <div class="ovr">{player.ovr ?? "—"}</div>
+
+            {render && <img class="render" src={render.asset_url} alt={player.name} loading="eager" />}
+
+            <div class="badges">
+              {flag && <img src={flag.asset_url} alt={player.nation ?? ""} />}
+              {clubLogo && <img src={clubLogo.asset_url} alt={player.club ?? ""} />}
+              {leagueLogo && <img src={leagueLogo.asset_url} alt={player.league ?? ""} />}
+            </div>
+
+            <div class="card-copy">
+              <div class="card-ovr">{player.ovr ?? "—"}</div>
+              <div class="card-position">{player.primary_position ?? "—"}</div>
+              <div class="card-name">{player.name}</div>
+            </div>
           </div>
 
-          {primaryAsset && (
-            <div class="card-wrap">
-              <img class="card-image" src={primaryAsset.asset_url} alt={player.name + " FC Mobile card"} loading="eager" />
+          <div class="identity">
+            <p class="eyebrow">{player.nation ?? "FC MOBILE"} · {player.event ?? "PLAYER DATABASE"}</p>
+            <h1>{player.name}</h1>
+
+            <div class="identity-pills">
+              <strong>{player.ovr ?? "—"} OVR</strong>
+              <span>{player.primary_position ?? "—"}</span>
+              {player.club && <span>{player.club}</span>}
+              {player.league && <span>{player.league}</span>}
             </div>
-          )}
 
-          <section class="facts">
-            <div><span>Position</span><strong>{player.primary_position ?? "—"}</strong></div>
-            <div><span>Skill Moves</span><strong>{player.skill_moves ?? "—"}</strong></div>
-            <div><span>Weak Foot</span><strong>{player.weak_foot ?? "—"}</strong></div>
-            <div><span>Height</span><strong>{player.height_cm ? player.height_cm + " cm" : "—"}</strong></div>
-            <div><span>Weight</span><strong>{player.weight_kg ? player.weight_kg + " kg" : "—"}</strong></div>
-            <div><span>Work Rates</span><strong>{player.attack_work_rate ?? "—"} / {player.defense_work_rate ?? "—"}</strong></div>
-          </section>
+            <div class="logo-facts">
+              {flag && <div><img src={flag.asset_url} alt="" /><span>{player.nation}</span></div>}
+              {clubLogo && <div><img src={clubLogo.asset_url} alt="" /><span>{player.club}</span></div>}
+              {leagueLogo && <div><img src={leagueLogo.asset_url} alt="" /><span>{player.league}</span></div>}
+            </div>
 
-          <section>
-            <div class="section-heading">
-              <div>
+            <div class="facts">
+              <div><span>Skill Moves</span><b>{player.skill_moves ?? "—"}★</b></div>
+              <div><span>Weak Foot</span><b>{player.weak_foot ?? "—"}★</b></div>
+              <div><span>Strong Foot</span><b>{player.strong_foot_side ?? player.preferred_foot ?? "—"}</b></div>
+              <div><span>Work Rate</span><b>{player.attack_work_rate ?? "—"} / {player.defense_work_rate ?? "—"}</b></div>
+              <div><span>Height</span><b>{player.height_cm ? player.height_cm + " cm" : "—"}</b></div>
+              <div><span>Weight</span><b>{player.weight_kg ? player.weight_kg + " kg" : "—"}</b></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <p class="eyebrow">PERFORMANCE</p>
+            <h2>Core Ratings</h2>
+          </div>
+          <div class="core-grid">
+            {coreStats.map(([key,label]) => (
+              <div class="core">
+                <div><span>{label}</span><b>{baseStats[key] ?? "—"}</b></div>
+                <div class="bar"><i style={`width:${Math.min(100, Number(baseStats[key] ?? 0) / 1.5)}%`}></i></div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section class="stat-layout">
+          <div class="stat-main">
+            <div class="section-title">
+              <p class="eyebrow">ATTRIBUTES</p>
+              <h2>Detailed Stats</h2>
+            </div>
+
+            <div class="detail-grid">
+              {detailStats.map(([group,keys]) => (
+                <section class="panel">
+                  <h3>{group}</h3>
+                  {keys.map((key) => (
+                    <div class="row">
+                      <span>{labels[key]}</span>
+                      <div class="mini"><i style={`width:${Math.min(100, Number(baseStats[key] ?? 0) / 1.5)}%`}></i></div>
+                      <b>{baseStats[key] ?? "—"}</b>
+                    </div>
+                  ))}
+                </section>
+              ))}
+            </div>
+          </div>
+
+          <aside class="side">
+            <div class="section-title">
+              <p class="eyebrow">PROFILE</p>
+              <h2>Player Shape</h2>
+            </div>
+            <svg class="radar" viewBox="0 0 300 300" aria-label="Player attribute radar">
+              <polygon points="150,25 258,87 258,213 150,275 42,213 42,87"></polygon>
+              <polygon points="150,62 226,106 226,194 150,238 74,194 74,106"></polygon>
+              <polygon points="150,99 194,125 194,175 150,201 106,175 106,125"></polygon>
+              <polygon id="shape" points="150,55 218,112 210,190 150,220 91,188 82,111"></polygon>
+              <text x="150" y="15">PAC</text>
+              <text x="278" y="90">SHO</text>
+              <text x="278" y="220">PAS</text>
+              <text x="150" y="296">DRI</text>
+              <text x="22" y="220">DEF</text>
+              <text x="22" y="90">PHY</text>
+            </svg>
+
+            <div class="rank-box">
+              <div class="section-title small">
                 <p class="eyebrow">PROGRESSION</p>
                 <h2>Ranks</h2>
               </div>
-            </div>
-
-            {ranks.length ? (
               <div class="rank-grid">
                 {ranks.map((rank) => (
                   <div class="rank">
-                    <b>Rank {rank.rank}</b>
-                    <span>OVR {rank.ovr ?? player.ovr ?? "—"}</span>
+                    <span>{rank.rank === 0 ? "Base" : "Rank " + rank.rank}</span>
+                    <b>{rank.ovr ?? player.ovr ?? "—"}</b>
                   </div>
                 ))}
-              </div>
-            ) : (
-              <p class="muted">Rank data is not available yet.</p>
-            )}
-          </section>
-
-          <section>
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">ATTRIBUTES</p>
-                <h2>Detailed Stats</h2>
               </div>
             </div>
-
-            {statEntries.length ? (
-              <div class="stats-grid">
-                {statEntries.map(([key, value]) => (
-                  <div class="stat">
-                    <span>{key}</span>
-                    <b>{String(value)}</b>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p class="muted">Detailed stats are not available yet.</p>
-            )}
-          </section>
-
-          <p class="updated">
-            Data source: {player.source_name ?? "FCMobiletools player database"}
-            {player.source_observed_at ? " · Updated " + new Date(player.source_observed_at).toLocaleDateString("en-GB") : ""}
-          </p>
-        </article>
-      ) : (
-        <section class="notice">
-          <h1>Player not found</h1>
-          <p>We could not find this player in the active catalog.</p>
-          <a href="/players/">Browse Players</a>
+          </aside>
         </section>
-      )}
-    </main>
 
-    <style>
-      :global(body) {
-        margin: 0;
-        background: #071018;
-        color: #F5F8FB;
-        font-family: Inter, system-ui, sans-serif;
-      }
+        <section class="lower">
+          <div class="box">
+            <div class="section-title small">
+              <p class="eyebrow">PLAYSTYLES</p>
+              <h2>PlayStyles & Skills</h2>
+            </div>
+            <div class="chips">
+              {abilityRows.filter((item) => item.ability_type === "skill").map((item) => (
+                <span class="chip skill"><b>✦</b>{item.name}</span>
+              ))}
+              {!abilityRows.some((item) => item.ability_type === "skill") && <span class="muted">No PlayStyles collected yet.</span>}
+            </div>
+          </div>
 
-      .player-shell {
-        width: min(920px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 48px 0 80px;
-      }
+          <div class="box">
+            <div class="section-title small">
+              <p class="eyebrow">TRAITS</p>
+              <h2>Traits</h2>
+            </div>
+            <div class="chips">
+              {abilityRows.filter((item) => item.ability_type === "trait").map((item) => (
+                <span class="chip">{item.name}</span>
+              ))}
+              {!abilityRows.some((item) => item.ability_type === "trait") && <span class="muted">No Traits collected yet.</span>}
+            </div>
+          </div>
+        </section>
 
-      .back {
-        color: #4CC9FF;
-        text-decoration: none;
-      }
+        {player.alternate_positions?.length > 0 && (
+          <div class="alt">Alternate Positions: <strong>{player.alternate_positions.join(", ")}</strong></div>
+        )}
+      </>
+    )}
+  </main>
 
-      .head {
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
-        align-items: flex-start;
-        margin-top: 28px;
-      }
+  {player && (
+    <script define:vars={{ statsPayload }}>
+      const stats = JSON.parse(statsPayload);
+      const base = stats.find((x) => Number(x.rank) === 0 && Number(x.training) === 0)?.stats || stats[0]?.stats || {};
+      const values = ["pace","shooting","passing","dribbling","defending","physical"].map((k) => Math.max(0,Math.min(1,Number(base[k] || 0)/150)));
+      const angles = [-Math.PI/2,-Math.PI/2+Math.PI/3,-Math.PI/2+2*Math.PI/3,Math.PI/2,Math.PI*5/6,Math.PI*7/6];
+      const points = values.map((value,index) => {
+        const angle=angles[index];
+        return (150+Math.cos(angle)*122*value)+","+(150+Math.sin(angle)*122*value);
+      }).join(" ");
+      document.getElementById("shape")?.setAttribute("points",points);
+    </script>
+  )}
 
-      .eyebrow {
-        margin: 0 0 7px;
-        color: #4CC9FF;
-        text-transform: uppercase;
-        letter-spacing: .14em;
-        font-size: 12px;
-        font-weight: 800;
-      }
+  <style>
+    :global(body) {
+      margin:0;
+      background:
+        radial-gradient(850px 520px at 78% 0%,rgba(76,201,255,.12),transparent 60%),
+        radial-gradient(680px 460px at 5% 55%,rgba(76,201,255,.055),transparent 62%),
+        #071018;
+      color:#F5F8FB;
+      font-family:Inter,system-ui,sans-serif;
+    }
 
-      h1 {
-        margin: 0;
-        font: 700 clamp(36px, 6vw, 60px)/1 Space Grotesk, system-ui, sans-serif;
-      }
+    .wrap { width:min(1260px,calc(100% - 34px)); margin:auto; padding:30px 0 80px; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:18px; }
+    .back { color:#4CC9FF; text-decoration:none; font-weight:800; }
+    .event { padding:8px 13px; border:1px solid rgba(76,201,255,.22); border-radius:999px; background:rgba(76,201,255,.07); color:#B8F0FF; font-size:11px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
 
-      h2 {
-        margin: 0;
-        font: 700 30px/1.1 Space Grotesk, system-ui, sans-serif;
-      }
+    .eyebrow { margin:0 0 7px; color:#4CC9FF; font-size:11px; line-height:1.2; font-weight:900; letter-spacing:.17em; text-transform:uppercase; }
+    h1,h2,h3 { font-family:"Space Grotesk",Inter,system-ui,sans-serif; }
+    h1 { margin:0; font-size:clamp(48px,7vw,86px); line-height:.92; letter-spacing:-.055em; }
+    h2 { margin:0; font-size:30px; line-height:1.04; letter-spacing:-.025em; }
+    h3 { margin:0; font-size:13px; color:#CFDDE9; letter-spacing:.12em; text-transform:uppercase; }
 
-      .lead {
-        color: #A7B4C3;
-      }
+    .hero { display:grid; grid-template-columns:500px 1fr; gap:38px; align-items:stretch; }
+    .visual { position:relative; min-height:650px; overflow:hidden; border-radius:32px; border:1px solid rgba(76,201,255,.23); background:#0F1A26; isolation:isolate; box-shadow:0 32px 86px rgba(0,0,0,.45); }
+    .visual-bg { position:absolute; inset:0; background-image:var(--card-bg); background-size:cover; background-position:center; opacity:.92; z-index:-3; }
+    .visual-light { position:absolute; inset:0; background:radial-gradient(circle at 50% 38%,rgba(76,201,255,.35),transparent 48%),linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.78)); z-index:-2; }
+    .visual-top { position:absolute; left:24px; right:24px; top:22px; display:flex; justify-content:space-between; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:#D8F7FF; z-index:3; }
+    .render { position:absolute; inset:60px 22px 150px; width:calc(100% - 44px); height:calc(100% - 210px); object-fit:contain; filter:drop-shadow(0 28px 35px rgba(0,0,0,.62)) drop-shadow(0 0 32px rgba(76,201,255,.28)); z-index:2; }
+    .badges { position:absolute; left:24px; bottom:118px; display:flex; gap:8px; z-index:4; }
+    .badges img { width:33px; height:33px; object-fit:contain; padding:7px; border-radius:10px; background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.10); }
+    .card-copy { position:absolute; left:24px; right:24px; bottom:22px; z-index:4; }
+    .card-ovr { font-size:72px; line-height:.8; font-weight:950; letter-spacing:-.08em; text-shadow:0 0 30px rgba(76,201,255,.42); }
+    .card-position { margin-top:7px; color:#A7EFFF; font-size:12px; font-weight:900; letter-spacing:.22em; text-transform:uppercase; }
+    .card-name { margin-top:4px; font-size:25px; font-weight:950; letter-spacing:-.02em; }
 
-      .ovr {
-        font-size: 58px;
-        font-weight: 900;
-        color: #4CC9FF;
-      }
+    .identity { display:flex; flex-direction:column; justify-content:center; padding:12px 0; }
+    .identity-pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+    .identity-pills > * { padding:8px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.08); background:#0F1A26; color:#C7D5E2; font-size:12px; }
+    .identity-pills strong { color:#4CC9FF; }
+    .logo-facts { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:24px; }
+    .logo-facts div { min-height:78px; padding:12px; display:flex; align-items:center; gap:9px; border-radius:17px; border:1px solid rgba(255,255,255,.08); background:#0F1A26; }
+    .logo-facts img { width:34px; height:34px; object-fit:contain; flex:none; }
+    .logo-facts span { color:#B5C5D5; font-size:11px; line-height:1.25; }
+    .facts { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:12px; }
+    .facts div { padding:13px; border-radius:17px; background:linear-gradient(180deg,#0F1A26,#0B151F); border:1px solid rgba(255,255,255,.08); }
+    .facts span { display:block; color:#71869A; font-size:9px; letter-spacing:.14em; text-transform:uppercase; font-weight:900; }
+    .facts b { display:block; margin-top:8px; font-size:13px; }
 
-      .card-wrap {
-        display: flex;
-        justify-content: center;
-        margin: 28px 0;
-      }
+    .section { margin-top:48px; }
+    .section-title { margin-bottom:15px; }
+    .section-title.small { margin-bottom:12px; }
+    .core-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:9px; }
+    .core { padding:16px; border-radius:19px; background:linear-gradient(180deg,#111E2A,#0A141E); border:1px solid rgba(255,255,255,.08); }
+    .core > div:first-child { display:flex; justify-content:space-between; align-items:flex-end; gap:7px; }
+    .core span { color:#8FA3B6; font-size:10px; font-weight:850; letter-spacing:.1em; text-transform:uppercase; }
+    .core b { color:#4CC9FF; font-size:25px; line-height:1; }
+    .bar,.mini { background:rgba(255,255,255,.07); overflow:hidden; border-radius:99px; }
+    .bar { height:5px; margin-top:15px; }
+    .bar i,.mini i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#4CC9FF,#8FE9FF); }
 
-      .card-image {
-        display: block;
-        width: min(240px, 60vw);
-        max-height: 330px;
-        object-fit: contain;
-      }
+    .stat-layout { display:grid; grid-template-columns:1fr 340px; gap:18px; margin-top:18px; align-items:start; }
+    .detail-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:11px; }
+    .panel,.side,.box { padding:20px; border-radius:24px; border:1px solid rgba(255,255,255,.08); background:linear-gradient(180deg,#0F1A26,#0A141E); }
+    .row { display:grid; grid-template-columns:110px 1fr 32px; align-items:center; gap:9px; margin-top:12px; }
+    .row > span { color:#93A7B9; font-size:10px; }
+    .mini { height:5px; }
+    .row b { color:#DCE8F2; font-size:11px; text-align:right; }
+    .side { position:sticky; top:18px; }
+    .radar { display:block; width:100%; margin:8px auto 12px; }
+    .radar polygon { fill:none; stroke:rgba(255,255,255,.09); stroke-width:1; }
+    .radar polygon:last-of-type { fill:rgba(76,201,255,.19); stroke:#4CC9FF; stroke-width:2; }
+    .radar text { fill:#748BA0; font-size:10px; font-weight:900; text-anchor:middle; }
 
-      .facts {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin: 28px 0 42px;
-      }
+    .rank-box { margin-top:14px; padding-top:17px; border-top:1px solid rgba(255,255,255,.08); }
+    .rank-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .rank { padding:10px; border-radius:12px; background:#0B151F; border:1px solid rgba(255,255,255,.07); }
+    .rank span { display:block; color:#70869A; font-size:9px; font-weight:850; text-transform:uppercase; letter-spacing:.1em; }
+    .rank b { display:block; margin-top:5px; color:#4CC9FF; font-size:18px; }
 
-      .facts div, .rank, .stat {
-        background: #0F1A26;
-        border: 1px solid rgba(255,255,255,.08);
-        border-radius: 14px;
-        padding: 14px;
-      }
+    .lower { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .chip { display:inline-flex; align-items:center; gap:7px; padding:9px 11px; border-radius:12px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.035); color:#D2DFEA; font-size:11px; font-weight:800; }
+    .chip.skill { border-color:rgba(76,201,255,.20); background:rgba(76,201,255,.055); }
+    .chip.skill b { display:grid; place-items:center; width:21px; height:21px; border-radius:7px; background:linear-gradient(135deg,#4CC9FF,#A2EDFF); color:#071018; }
+    .muted { color:#71869A; font-size:12px; }
+    .alt { margin-top:14px; padding:14px 18px; border-radius:16px; border:1px solid rgba(255,255,255,.07); background:#0F1A26; color:#8196AA; font-size:12px; }
+    .alt strong { color:#DCE8F2; }
 
-      .facts span, .stat span {
-        display: block;
-        color: #A7B4C3;
-        font-size: 12px;
-      }
+    .empty { margin-top:70px; padding:32px; border:1px solid rgba(255,255,255,.08); background:#0F1A26; border-radius:23px; }
+    .empty a { display:inline-block; margin-top:10px; color:#4CC9FF; font-weight:800; }
 
-      .section-heading {
-        margin-top: 36px;
-        margin-bottom: 16px;
-      }
+    @media(max-width:1050px) {
+      .hero { grid-template-columns:430px 1fr; gap:25px; }
+      .visual { min-height:570px; }
+      .core-grid { grid-template-columns:repeat(3,1fr); }
+      .stat-layout { grid-template-columns:1fr; }
+      .side { position:static; }
+    }
 
-      .rank-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
+    @media(max-width:720px) {
+      .wrap { width:min(100% - 20px,1260px); padding-top:20px; }
+      .hero { grid-template-columns:1fr; }
+      .visual { min-height:520px; }
+      .logo-facts { grid-template-columns:1fr; }
+      .facts { grid-template-columns:repeat(2,1fr); }
+      .core-grid { grid-template-columns:repeat(2,1fr); }
+      .detail-grid,.lower { grid-template-columns:1fr; }
+      .rank-grid { grid-template-columns:repeat(3,1fr); }
+      .identity h1 { font-size:clamp(42px,13vw,64px); }
+    }
 
-      .rank span {
-        display: block;
-        color: #A7B4C3;
-        margin-top: 5px;
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-      }
-
-      .stat {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      .muted, .updated {
-        color: #A7B4C3;
-      }
-
-      .updated {
-        margin-top: 30px;
-        font-size: 12px;
-      }
-
-      .notice {
-        margin-top: 40px;
-        padding: 28px;
-        background: #0F1A26;
-        border: 1px solid rgba(255,255,255,.08);
-        border-radius: 18px;
-      }
-
-      .notice h1 {
-        font-size: clamp(30px, 5vw, 46px);
-      }
-
-      .notice a {
-        display: inline-block;
-        margin-top: 12px;
-        color: #4CC9FF;
-      }
-
-      @media (max-width: 700px) {
-        .facts, .rank-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .stats-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .head {
-          gap: 12px;
-        }
-
-        .ovr {
-          font-size: 46px;
-        }
-      }
-    </style>
-  </body>
+    @media(max-width:420px) {
+      .visual { min-height:465px; }
+      .card-ovr { font-size:58px; }
+      .card-name { font-size:21px; }
+      .row { grid-template-columns:94px 1fr 29px; }
+    }
+  </style>
+</body>
 </html>
