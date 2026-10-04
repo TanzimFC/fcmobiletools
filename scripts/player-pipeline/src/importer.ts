@@ -45,7 +45,6 @@ export async function importPlayers(players: NormalizedPlayer[]) {
       weight_kg: p.weight_kg,
       untradeable: p.untradeable,
       active: p.active,
-      source_name: p.source_name,
       source_url: p.source_url,
       source_observed_at: p.source_observed_at,
       source_checksum: p.source_checksum,
