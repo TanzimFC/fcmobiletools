@@ -1,4 +1,4 @@
-import { mkdir, writeFile, appendFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 
 const BASE=(process.env.PLAYER_SOURCE_API_BASE_URL||"https://zenithfcm.com/api").replace(/\/$/,"");
 const OUT=process.env.PLAYER_COLLECTION_OUTPUT||"scripts/player-collector/data";
@@ -27,9 +27,8 @@ async function getJson(url){
 function listPayload(payload){
   if(Array.isArray(payload)) return payload;
   if(!payload||typeof payload!=="object") return [];
-  for(const key of ["players","data","results","items"]){
+  for(const key of ["players","data","results","items"])
     if(Array.isArray(payload[key])) return payload[key];
-  }
   return [];
 }
 
@@ -41,8 +40,7 @@ function playerSlug(row){
   const name=String(row?.name??row?.card_name??row?.cardName??"player").trim();
   const ovr=Number(row?.ovr??row?.rating??0)||0;
   const id=stableId(row);
-  return name.toLowerCase()
-    .normalize("NFKD")
+  return name.toLowerCase().normalize("NFKD")
     .replace(/[\u0300-\u036f]/g,"")
     .replace(/[^a-z0-9]+/g,"-")
     .replace(/^-+|-+$/g,"")+"-"+ovr+"-"+id;
@@ -65,16 +63,15 @@ function imagesFromRow(row){
 }
 
 function normalizeRankRow(row){
-  const stats={};
   const fields=[
     "pace","acceleration","sprint_speed","shooting","finishing","long_shot","shot_power",
     "positioning","volley","penalties","passing","short_passing","long_passing","vision",
-    "crossing","curve","free_kick","dribbling_head","dribbling","balance","agility",
-    "reactions","ball_control","defending","marking","standing_tackle","sliding_tackle",
-    "awareness","heading","physical","strength","aggression","jumping","stamina_stat",
-    "diving","gk_diving","gk_positioning","handling","gk_handling","reflexes","gk_reflexes",
-    "kicking","gk_kicking"
+    "crossing","curve","free_kick","dribbling_head","dribbling","balance","agility","reactions",
+    "ball_control","defending","marking","standing_tackle","sliding_tackle","awareness","heading",
+    "physical","strength","aggression","jumping","stamina_stat","diving","gk_diving",
+    "gk_positioning","handling","gk_handling","reflexes","gk_reflexes","kicking","gk_kicking"
   ];
+  const stats={};
   for(const field of fields){
     const n=Number(row?.[field]);
     if(Number.isFinite(n)) stats[field]=Math.trunc(n);
@@ -83,10 +80,8 @@ function normalizeRankRow(row){
 }
 
 async function fetchRank(rank){
-  const all=[];
-  const seen=new Set();
-  let offset=0;
-  let total=null;
+  const all=[]; const seen=new Set();
+  let offset=0; let total=null;
 
   while(true){
     const qs=new URLSearchParams({
@@ -111,18 +106,13 @@ async function fetchRank(rank){
       const dedupe=id+"|"+String(row?.rank??rank)+"|"+String(row?.training_level??0);
       if(seen.has(dedupe)) continue;
       seen.add(dedupe);
-      all.push({
-        ...row,
-        rank:Number(row?.rank??rank)||rank,
-        training_level:Number(row?.training_level??0)||0
-      });
+      all.push({...row,rank:Number(row?.rank??rank)||rank,training_level:Number(row?.training_level??0)||0});
     }
 
     offset+=rows.length;
     console.log("rank",rank,"fetched",offset,total===null?"":"/"+total);
-
-    if(rows.length<PAGE_SIZE || payload?.pagination?.has_more===false) break;
-    if(total!==null && offset>=total) break;
+    if(rows.length<PAGE_SIZE||payload?.pagination?.has_more===false) break;
+    if(total!==null&&offset>=total) break;
     await sleep(REQUEST_DELAY_MS);
   }
 
@@ -135,6 +125,8 @@ for(let rank=0;rank<=MAX_RANK;rank++){
   const rows=await fetchRank(rank);
   console.log("rank",rank,"records",rows.length);
 
+  if(rank===0&&!rows.length) throw new Error("Zenith API returned zero player records for rank 0");
+
   for(const row of rows){
     const id=stableId(row);
     if(!id) continue;
@@ -142,8 +134,7 @@ for(let rank=0;rank<=MAX_RANK;rank++){
     let player=byPlayer.get(id);
     if(!player){
       player={
-        assetId:id,
-        playerId:id,
+        assetId:id,playerId:id,
         cardName:String(row?.name??"").trim(),
         name:String(row?.name??"").trim(),
         fullName:String(row?.full_name??row?.fullName??row?.name??"").trim(),
@@ -151,11 +142,8 @@ for(let rank=0;rank<=MAX_RANK;rank++){
         position:row?.position??null,
         alternatePosition:row?.alternate_position??null,
         positions:row?.alternate_position?String(row.alternate_position).split(/\s*[,|/]\s*/).filter(Boolean):[],
-        club:row?.team??null,
-        league:row?.league??null,
-        nation:row?.nation_region??null,
-        program:row?.event??null,
-        eventName:row?.event??null,
+        club:row?.team??null,league:row?.league??null,nation:row?.nation_region??null,
+        program:row?.event??null,eventName:row?.event??null,
         skillMoves:Number(row?.skill_moves_stars)||null,
         weakFoot:Number(row?.weak_foot_stars)||null,
         strongFootSide:row?.strong_foot_side??null,
@@ -164,8 +152,7 @@ for(let rank=0;rank<=MAX_RANK;rank++){
         attackWorkRate:row?.work_rate_attack??null,
         defenseWorkRate:row?.work_rate_defense??null,
         heightFtIn:row?.height_ft_in??null,
-        height:Number(row?.height_cm)||null,
-        weight:Number(row?.weight_kg)||null,
+        height:Number(row?.height_cm)||null,weight:Number(row?.weight_kg)||null,
         stamina:Number(row?.stamina_stat)||null,
         untradeable:String(row?.is_untradable??"").toLowerCase()==="true",
         marketStatus:String(row?.is_untradable??"").toLowerCase()==="true"?"untradeable":"tradable",
@@ -178,33 +165,19 @@ for(let rank=0;rank<=MAX_RANK;rank++){
         sourceUrl:"https://zenithfcm.com/player/"+playerSlug(row),
         images:imagesFromRow(row),
         stats:normalizeRankRow(row),
-        ranks:[],
-        rankStats:[],
-        abilities:[],
+        ranks:[],rankStats:[],abilities:[],
         traits:Array.isArray(row?.traits)?row.traits:[],
-        skills:Array.isArray(row?.skills)?row.skills:[],
+        skills:Array.isArray(row?.skills)?row.skills:[]
       };
       byPlayer.set(id,player);
     }
 
     const rankNumber=Number(row?.rank??rank)||rank;
     const training=Number(row?.training_level??0)||0;
-    const stats=normalizeRankRow(row);
-
-    player.rankStats.push({
-      rank:rankNumber,
-      training,
-      ovr:Number(row?.ovr??row?.rating)||null,
-      stats
-    });
+    player.rankStats.push({rank:rankNumber,training,ovr:Number(row?.ovr??row?.rating)||null,stats:normalizeRankRow(row)});
 
     if(!player.ranks.some(x=>x.rank===rankNumber))
-      player.ranks.push({
-        rank:rankNumber,
-        training,
-        ovr:Number(row?.ovr??row?.rating)||null,
-        modifiers:{}
-      });
+      player.ranks.push({rank:rankNumber,training,ovr:Number(row?.ovr??row?.rating)||null,modifiers:{}});
 
     if(rankNumber===0){
       Object.assign(player,{
@@ -212,11 +185,8 @@ for(let rank=0;rank<=MAX_RANK;rank++){
         position:row?.position??player.position,
         alternatePosition:row?.alternate_position??player.alternatePosition,
         positions:row?.alternate_position?String(row.alternate_position).split(/\s*[,|/]\s*/).filter(Boolean):player.positions,
-        club:row?.team??player.club,
-        league:row?.league??player.league,
-        nation:row?.nation_region??player.nation,
-        program:row?.event??player.program,
-        eventName:row?.event??player.eventName,
+        club:row?.team??player.club,league:row?.league??player.league,nation:row?.nation_region??player.nation,
+        program:row?.event??player.program,eventName:row?.event??player.eventName,
         skillMoves:Number(row?.skill_moves_stars)||player.skillMoves,
         weakFoot:Number(row?.weak_foot_stars)||player.weakFoot,
         strongFootSide:row?.strong_foot_side??player.strongFootSide,
@@ -225,23 +195,17 @@ for(let rank=0;rank<=MAX_RANK;rank++){
         attackWorkRate:row?.work_rate_attack??player.attackWorkRate,
         defenseWorkRate:row?.work_rate_defense??player.defenseWorkRate,
         heightFtIn:row?.height_ft_in??player.heightFtIn,
-        height:Number(row?.height_cm)||player.height,
-        weight:Number(row?.weight_kg)||player.weight,
+        height:Number(row?.height_cm)||player.height,weight:Number(row?.weight_kg)||player.weight,
         stamina:Number(row?.stamina_stat)||player.stamina,
         untradeable:String(row?.is_untradable??"").toLowerCase()==="true",
         marketStatus:String(row?.is_untradable??"").toLowerCase()==="true"?"untradeable":"tradable",
-        marketPrice:Number(row?.price)||null,
-        dateAdded:row?.date_added??player.dateAdded,
-        colorRating:row?.color_rating??player.colorRating,
-        colorPosition:row?.color_position??player.colorPosition,
-        colorName:row?.color_name??player.colorName,
-        colorLevel:row?.color_level??player.colorLevel,
-        stats
+        marketPrice:Number(row?.price)||null,dateAdded:row?.date_added??player.dateAdded,
+        colorRating:row?.color_rating??player.colorRating,colorPosition:row?.color_position??player.colorPosition,
+        colorName:row?.color_name??player.colorName,colorLevel:row?.color_level??player.colorLevel,
+        stats:normalizeRankRow(row)
       });
-      for(const image of imagesFromRow(row)){
-        const exists=player.images.some(x=>x.type===image.type);
-        if(!exists) player.images.push(image);
-      }
+      for(const image of imagesFromRow(row))
+        if(!player.images.some(x=>x.type===image.type)) player.images.push(image);
       player.traits=Array.isArray(row?.traits)?row.traits:player.traits;
       player.skills=Array.isArray(row?.skills)?row.skills:player.skills;
     }
@@ -251,10 +215,10 @@ for(let rank=0;rank<=MAX_RANK;rank++){
 const players=[...byPlayer.values()];
 await writeFile(OUT+"/players.jsonl",players.map(JSON.stringify).join("\n")+"\n");
 await writeFile(OUT+"/collection-summary.json",JSON.stringify({
-  players:players.length,
-  maxRank:MAX_RANK,
+  players:players.length,maxRank:MAX_RANK,
   records:players.reduce((n,p)=>n+p.rankStats.length,0),
   generatedAt:new Date().toISOString()
 },null,2));
+
 console.log("unique players",players.length);
 console.log("rank snapshots",players.reduce((n,p)=>n+p.rankStats.length,0));
