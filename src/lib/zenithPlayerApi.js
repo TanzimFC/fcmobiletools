@@ -86,7 +86,9 @@ function abilityDetails(value) {
     ? value
     : value && typeof value === 'object'
       ? Object.entries(value).map(([key, entry]) =>
-          entry && typeof entry === 'object' ? { ...entry, name: entry.name ?? entry.label ?? entry.title ?? key } : { name: entry ?? key }
+          entry && typeof entry === 'object'
+            ? { ...entry, name: entry.name ?? entry.label ?? entry.title ?? entry.playstyle ?? entry.skill ?? key }
+            : { name: entry ?? key }
         )
       : [value];
 
@@ -100,11 +102,26 @@ function abilityDetails(value) {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const assetPaths = PLAYSTYLE_ASSETS?.[slugify(name)] ?? [];
+    const assetPaths = playstyleAssetIndex?.[slugify(name)] ?? [];
+    const id = entry && typeof entry === 'object'
+      ? String(entry.skill_id ?? entry.skillId ?? entry.id ?? '').trim()
+      : '';
+
     result.push({
+      id: id || null,
       name,
       level: abilityLevel(entry),
       plus: abilityPlus(entry),
+      image: entry && typeof entry === 'object'
+        ? String(entry.skill_image ?? entry.skillImage ?? entry.icon ?? '').trim()
+        : '',
+      locked: entry && typeof entry === 'object' ? entry.is_locked === true : false,
+      unlock_requirement_type: entry && typeof entry === 'object' ? String(entry.unlock_requirement_type ?? '').trim() : '',
+      unlock_requirement_skillname: entry && typeof entry === 'object' ? String(entry.unlock_requirement_skillname ?? '').trim() : '',
+      unlock_requirement_level: entry && typeof entry === 'object' ? toNumber(entry.unlock_requirement_level) : null,
+      unlock_requirement_text: entry && typeof entry === 'object' ? String(entry.unlock_requirement_text ?? '').trim() : '',
+      prerequisite_skill_id: entry && typeof entry === 'object' ? String(entry.prerequisite_skill_id ?? '').trim() : '',
+      prerequisite_level: entry && typeof entry === 'object' ? toNumber(entry.prerequisite_level) : null,
       asset_paths: Array.isArray(assetPaths) ? assetPaths : [],
       raw: entry && typeof entry === 'object' ? entry : { value: entry }
     });
@@ -343,6 +360,69 @@ export async function fetchZenithPlayersByIds(ids, options = {}) {
 
   const wanted = new Set(cleanIds);
   return results.filter((player) => wanted.has(player.playerId));
+}
+
+export async function fetchZenithPlayerDetails(playerId, rank = 0) {
+  const id = String(playerId ?? '').trim();
+  if (!id) return null;
+
+  const safeRank = Math.min(5, Math.max(0, Number(rank) || 0));
+  const params = new URLSearchParams({
+    rank: String(safeRank),
+    include_price: 'false'
+  });
+
+  const payload = await fetchWithCache(
+    `${getZenithBaseUrl()}/players/${encodeURIComponent(id)}?${params.toString()}`,
+    `player detail ${id} rank ${safeRank}`,
+    60_000
+  );
+
+  const raw = payload?.player && typeof payload.player === 'object'
+    ? payload.player
+    : payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+      ? payload.data
+      : payload;
+
+  const player = normalizeZenithPlayer(raw);
+  if (!player) return null;
+
+  const skillSource = payload?.skills ?? raw?.skills ?? [];
+  const playstyleSource = payload?.playstyles ?? payload?.playStyles ?? raw?.playstyles ?? raw?.playStyles ?? raw?.skillStyleSkills;
+
+  return {
+    ...player,
+    skill_details: abilityDetails(skillSource),
+    playStyles: abilityDetails(playstyleSource),
+    availableSkillPoints: toNumber(payload?.available_skill_points ?? raw?.available_skill_points) ?? safeRank
+  };
+}
+
+export async function fetchZenithTrainingBoosts(position, level) {
+  const safePosition = String(position ?? '').trim().toUpperCase();
+  const safeLevel = Math.min(30, Math.max(1, Number(level) || 1));
+  if (!safePosition) return {};
+
+  const payload = await fetchWithCache(
+    `${getZenithBaseUrl()}/training/boosts?position=${encodeURIComponent(safePosition)}&level=${safeLevel}`,
+    `training boosts ${safePosition} ${safeLevel}`,
+    5 * 60_000
+  );
+
+  return payload?.boosts && typeof payload.boosts === 'object' ? payload.boosts : {};
+}
+
+export async function fetchZenithSkillBoosts(skillId) {
+  const id = String(skillId ?? '').trim();
+  if (!id) return [];
+
+  const payload = await fetchWithCache(
+    `${getZenithBaseUrl()}/skill-boosts/${encodeURIComponent(id)}`,
+    `skill boosts ${id}`,
+    10 * 60_000
+  );
+
+  return Array.isArray(payload?.boosts) ? payload.boosts : [];
 }
 
 export async function fetchZenithPlayerById(playerId, rank = 0) {
