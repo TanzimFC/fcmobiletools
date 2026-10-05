@@ -1,12 +1,8 @@
-name: Verify Supabase Editorial Build
+name: Verify Production Build
 
 on:
-  push:
-    branches:
-      - supabase-lexical-editorial
-      - supabase-lexical-editorial-v2
-      - main
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -37,6 +33,6 @@ jobs:
 
       - name: Verify generated worker
         run: node -e "const fs=require('node:fs');if(!fs.existsSync('dist/_worker.js/index.js')){console.error('Missing dist/_worker.js/index.js');process.exit(1)};console.log('Generated Cloudflare worker verified.')"
-        
+
       - name: Validate generated redirects
         run: node -e "const fs=require('node:fs');const p='dist/_redirects';if(!fs.existsSync(p)){console.log('No generated _redirects file.');process.exit(0)};const lines=fs.readFileSync(p,'utf8').split(/\r?\n/).map(x=>x.trim()).filter(x=>x&&!x.startsWith('#'));const seen=new Set();for(let i=0;i<lines.length;i++){const parts=lines[i].split(/\s+/);if(parts.length<2||parts.length>3)throw new Error('_redirects line '+(i+1)+' must contain 2 or 3 tokens: '+lines[i]);if(seen.has(parts[0]))throw new Error('Duplicate _redirects source on line '+(i+1)+': '+parts[0]);seen.add(parts[0]);}console.log('Generated _redirects validated:',lines.length,'rules.')"
