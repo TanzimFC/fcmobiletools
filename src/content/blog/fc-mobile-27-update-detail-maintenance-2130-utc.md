@@ -7,6 +7,8 @@ description: "Find the FC Mobile 27 maintenance start and expected end times, pl
 type: "news"
 category: "Updates"
 author: "TanzimFC"
+series: "FC Mobile 27"
+seriesOrder: 4
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-09-23T11:28:00.000Z"
@@ -31,7 +33,6 @@ canonicalUrl: ""
 sources:
   - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary"factStatus: "verified"
 lastReviewed: "2026-09-23"
-series: ""
 ---
 
 ![FC Mobile 27 maintenance and season update](https://res.cloudinary.com/b0qikv7n/image/upload/v1790172077/fc-mobile-tools/diqk4o9rqq2mxgowgixy.jpg)
