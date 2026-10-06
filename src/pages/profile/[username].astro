@@ -1,0 +1,554 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AccountNav from '../../../components/AccountNav.astro';
+
+export const prerender = false;
+
+const rawUsername = Astro.params.username || '';
+let username = '';
+try {
+  username = decodeURIComponent(rawUsername).trim().toLowerCase();
+} catch {
+  username = '';
+}
+
+const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/;
+let profile = null;
+let errorMessage = 'This profile does not exist or has been set to private by its owner.';
+let responseStatus = 404;
+
+if (USERNAME_PATTERN.test(username) && username !== 'public') {
+  try {
+    const apiUrl = new URL('/api/public/profile/' + encodeURIComponent(username), Astro.url);
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: { accept: 'application/json' }
+    });
+    const body = await response.json().catch(() => ({}));
+
+    if (response.ok && body?.profile) {
+      profile = body.profile;
+      responseStatus = 200;
+    } else {
+      errorMessage = body?.error || errorMessage;
+      responseStatus = response.status === 503 ? 503 : 404;
+    }
+  } catch (error) {
+    console.error('[PUBLIC_PROFILE_PAGE]', error?.message || error);
+    errorMessage = 'Public profiles are temporarily unavailable.';
+    responseStatus = 503;
+  }
+}
+
+Astro.response.status = responseStatus;
+Astro.response.headers.set(
+  'cache-control',
+  responseStatus === 200
+    ? 'public, max-age=60, stale-while-revalidate=300'
+    : 'public, max-age=30, stale-while-revalidate=60'
+);
+
+const display = profile
+  ? (profile.show_display_name === false ? profile.username : profile.display_name || profile.username)
+  : 'Profile unavailable';
+
+const initials = String(display || 'FC').slice(0, 2).toUpperCase();
+const fmt = (value) => Number(value || 0).toLocaleString();
+const fmtDate = (value) =>
+  value
+    ? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value))
+    : '—';
+
+const level = profile?.level != null ? Number(profile.level) : null;
+const xp = profile?.xp != null ? Number(profile.xp) : null;
+const stepSize = level ? level * 250 : 250;
+const baseForLevel = level ? Math.max(0, (level - 1) * 200) : 0;
+const intoLevel = xp == null ? 0 : Math.max(0, xp - baseForLevel);
+const progressPercent =
+  xp == null ? 0 : Math.min(96, Math.max(8, Math.round((intoLevel % stepSize) / stepSize * 100)));
+const achievements = Array.isArray(profile?.achievements) ? profile.achievements : [];
+const tournamentStats = profile?.tournament_stats || null;
+---
+
+<BaseLayout
+  title={profile ? display + ' | FCMobiletools Community Profile' : 'Profile Unavailable | FCMobiletools'}
+  description={
+    profile
+      ? 'View ' + display + '''s public FCMobiletools profile, progression and community achievements.'
+      : 'The requested FCMobiletools community profile is unavailable.'
+  }
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="pub-page">
+    <div class="pub-wrap">
+      <AccountNav active="profile" sectionLabel="Community Profile" />
+
+      {profile ? (
+        <>
+          <section class="pub-hero">
+            <div class="pub-hero-main">
+              <div class="pub-avatar">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt={display} loading="eager" decoding="async" />
+                ) : (
+                  <span>{initials}</span>
+                )}
+                {profile.show_level !== false && level !== null ? <b>Lv. {fmt(level)}</b> : null}
+              </div>
+
+              <div class="pub-info">
+                <div class="pub-pills">
+                  <span class="pub-pill">FCMobiletools Member</span>
+                  {profile.selected_title ? <span class="pub-pill pub-pill--gold">{profile.selected_title}</span> : null}
+                </div>
+                <h1>{display}</h1>
+                <p class="pub-meta">
+                  <strong>@{profile.username}</strong>
+                  {profile.show_joined_date !== false && profile.joined_at ? (
+                    <>
+                      <span>·</span>
+                      <span>Joined {fmtDate(profile.joined_at)}</span>
+                    </>
+                  ) : null}
+                </p>
+              </div>
+            </div>
+
+            <div class="pub-actions">
+              <button type="button" class="pub-btn-secondary" id="sharePublicBtn">Share Profile</button>
+              <a class="pub-btn-primary" href="/account/?mode=signup">Claim Your @Username →</a>
+            </div>
+
+            {profile.show_level !== false && level !== null && profile.show_xp !== false && xp !== null ? (
+              <div class="pub-xp-bar">
+                <div class="pub-xp-labels">
+                  <span>Level {fmt(level)} Progression</span>
+                  <strong>{fmt(xp)} XP</strong>
+                </div>
+                <div class="pub-xp-track">
+                  <span style={'width:' + progressPercent + '%'}></span>
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          {(() => {
+            const statCards = [];
+            if (profile.show_level !== false && profile.level !== null) {
+              statCards.push(
+                <article class="pub-stat">
+                  <small>LEVEL</small>
+                  <strong>{fmt(profile.level)}</strong>
+                  <span>Account rank</span>
+                </article>
+              );
+            }
+            if (profile.show_xp !== false && profile.xp !== null) {
+              statCards.push(
+                <article class="pub-stat">
+                  <small>VERIFIED XP</small>
+                  <strong>{fmt(profile.xp)}</strong>
+                  <span>Progression ledger</span>
+                </article>
+              );
+            }
+            if (profile.show_streak !== false && profile.current_streak !== null) {
+              statCards.push(
+                <article class="pub-stat">
+                  <small>ACTIVE STREAK</small>
+                  <strong>🔥 {fmt(profile.current_streak)}d</strong>
+                  <span>
+                    {profile.longest_streak != null
+                      ? 'Best: ' + fmt(profile.longest_streak) + 'd'
+                      : 'Qualifying streak'}
+                  </span>
+                </article>
+              );
+            }
+            if (profile.show_tournament_stats !== false && tournamentStats) {
+              statCards.push(
+                <article class="pub-stat">
+                  <small>TOURNAMENTS</small>
+                  <strong>{fmt(tournamentStats.wins)}W – {fmt(tournamentStats.losses)}L</strong>
+                  <span>
+                    {tournamentStats.matchesPlayed > 0
+                      ? String(tournamentStats.winRate) + '% Win Rate'
+                      : 'Verified match record'}
+                  </span>
+                </article>
+              );
+            }
+
+            return statCards.length ? <section class="pub-stats-grid">{statCards}</section> : null;
+          })()}
+
+          {profile.show_achievements !== false ? (
+            <section class="pub-section">
+              <div class="pub-sec-head">
+                <div>
+                  <span class="pub-kicker">MILESTONES</span>
+                  <h2>Unlocked Achievements</h2>
+                </div>
+                <span>{achievements.length} unlocked</span>
+              </div>
+
+              {achievements.length ? (
+                <div class="pub-ach-grid">
+                  {achievements.map((achievement) => (
+                    <article class="pub-ach-card">
+                      <span class="pub-ach-ico">{achievement.icon || '🏆'}</span>
+                      <div>
+                        <strong>{achievement.name}</strong>
+                        <p>{achievement.description || 'Verified community milestone.'}</p>
+                        {achievement.unlocked_at ? (
+                          <small>Unlocked {fmtDate(achievement.unlocked_at)}</small>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div class="pub-empty-box">No unlocked public achievements displayed yet.</div>
+              )}
+            </section>
+          ) : null}
+
+          <footer class="pub-privacy-note">
+            <span>Privacy Protected:</span> Only fields explicitly enabled by <strong>@{profile.username}</strong> are
+            visible on this page. Email, security and account credentials are never exposed.
+          </footer>
+        </>
+      ) : (
+        <section class="pub-empty">
+          <span class="pub-kicker">COMMUNITY PROFILE</span>
+          <h1>Profile unavailable</h1>
+          <p>{errorMessage}</p>
+          <div class="pub-empty-actions">
+            <a class="pub-btn-primary" href="/leaderboard/">Browse Leaderboard</a>
+            <a class="pub-btn-secondary" href="/account/">Create Your Account</a>
+          </div>
+        </section>
+      )}
+    </div>
+  </main>
+
+  {profile ? (
+    <script is:inline>
+      const shareBtn = document.getElementById('sharePublicBtn');
+      shareBtn?.addEventListener('click', async () => {
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: document.title, url: location.href });
+          } else {
+            await navigator.clipboard.writeText(location.href);
+            shareBtn.textContent = 'Link Copied!';
+            setTimeout(() => (shareBtn.textContent = 'Share Profile'), 1800);
+          }
+        } catch {}
+      });
+    </script>
+  ) : null}
+</BaseLayout>
+
+<style is:global>
+  .pub-page {
+    min-height: calc(100vh - 80px);
+    padding: 36px 18px 110px;
+    background: radial-gradient(860px 440px at 50% 0%, rgba(76, 201, 255, 0.08), transparent 65%);
+  }
+  .pub-wrap { width: min(1040px, 100%); margin: 0 auto; }
+
+  .pub-hero,
+  .pub-section,
+  .pub-empty {
+    padding: 32px;
+    border-radius: 26px;
+    border: 1px solid rgba(76, 201, 255, 0.2);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(76, 201, 255, 0.1), transparent 52%),
+      linear-gradient(155deg, #0f1a26 0%, #071018 100%);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.35);
+  }
+  .pub-hero {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 22px;
+    align-items: center;
+  }
+  .pub-hero-main {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    min-width: 0;
+  }
+  .pub-avatar {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    flex: 0 0 92px;
+    border-radius: 24px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font: 800 30px/1 var(--font-display);
+    box-shadow: 0 14px 36px rgba(76, 201, 255, 0.28);
+  }
+  .pub-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 24px;
+  }
+  .pub-avatar b {
+    position: absolute;
+    bottom: -8px;
+    right: -6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #071018;
+    border: 1px solid rgba(76, 201, 255, 0.5);
+    color: #8ee0ff;
+    font: 800 11px/1 var(--font-body);
+  }
+  .pub-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .pub-pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.1);
+    border: 1px solid rgba(76, 201, 255, 0.26);
+    color: #8ee0ff;
+    font: 700 11.5px/1 var(--font-body);
+  }
+  .pub-pill--gold {
+    background: rgba(255, 191, 104, 0.12);
+    border-color: rgba(255, 191, 104, 0.32);
+    color: #ffd36e;
+  }
+  .pub-info h1 {
+    margin: 0 0 6px;
+    font: 700 clamp(28px, 4vw, 46px) / 1.04 var(--font-display);
+    letter-spacing: -0.04em;
+    color: #f5f8fb;
+  }
+  .pub-meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    color: #93a8b8;
+    font: 500 14px/1.4 var(--font-body);
+  }
+  .pub-meta strong { color: #dcebf5; }
+
+  .pub-actions,
+  .pub-empty-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pub-btn-primary,
+  .pub-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: 700 13px/1 var(--font-body);
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.16s ease, border-color 0.16s ease;
+  }
+  .pub-btn-primary {
+    border: 1px solid #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font-weight: 800;
+  }
+  .pub-btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #101e2c;
+    color: #e3eef6;
+  }
+  .pub-xp-bar {
+    grid-column: 1 / -1;
+    padding: 15px 18px;
+    border-radius: 15px;
+    background: rgba(7, 16, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    display: grid;
+    gap: 8px;
+  }
+  .pub-xp-labels {
+    display: flex;
+    justify-content: space-between;
+    font: 600 13px/1.2 var(--font-body);
+    color: #95abc0;
+  }
+  .pub-xp-labels strong { color: #4cc9ff; }
+  .pub-xp-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #050c12;
+    overflow: hidden;
+  }
+  .pub-xp-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #4cc9ff, #58e0a6);
+  }
+  .pub-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .pub-stat {
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+  }
+  .pub-stat small {
+    color: #7992a4;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.1em;
+  }
+  .pub-stat strong {
+    display: block;
+    margin: 8px 0 4px;
+    font: 800 28px/1.05 var(--font-display);
+    color: #f5f8fb;
+  }
+  .pub-stat span {
+    color: #8ba1b2;
+    font: 500 12.5px/1.4 var(--font-body);
+  }
+  .pub-section {
+    margin-top: 16px;
+    padding: 26px;
+  }
+  .pub-sec-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .pub-kicker {
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .pub-sec-head h2 {
+    margin: 6px 0 0;
+    font: 700 22px/1.15 var(--font-display);
+    color: #f5f8fb;
+  }
+  .pub-sec-head > span {
+    color: #849caf;
+    font: 700 12.5px/1 var(--font-body);
+  }
+  .pub-ach-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .pub-ach-card {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    background: #09141e;
+  }
+  .pub-ach-ico {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(76, 201, 255, 0.1);
+    font-size: 18px;
+  }
+  .pub-ach-card strong {
+    display: block;
+    color: #f5f8fb;
+    font: 700 15px/1.25 var(--font-display);
+  }
+  .pub-ach-card p {
+    margin: 4px 0 0;
+    color: #8ea4b5;
+    font: 500 13px/1.5 var(--font-body);
+  }
+  .pub-ach-card small {
+    display: block;
+    margin-top: 6px;
+    color: #67b9dc;
+    font: 600 11.5px/1.2 var(--font-body);
+  }
+  .pub-empty-box {
+    padding: 24px;
+    border-radius: 14px;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    color: #8aa0b1;
+    font: 500 13.5px/1.5 var(--font-body);
+    text-align: center;
+  }
+  .pub-empty {
+    text-align: center;
+    max-width: 620px;
+    margin: 24px auto;
+  }
+  .pub-empty h1 {
+    margin: 12px 0 8px;
+    font: 700 32px/1.1 var(--font-display);
+    color: #f5f8fb;
+  }
+  .pub-empty p {
+    margin: 0 auto 22px;
+    max-width: 460px;
+    color: #93a8b8;
+    font: 500 14px/1.6 var(--font-body);
+  }
+  .pub-empty-actions { justify-content: center; }
+  .pub-privacy-note {
+    margin-top: 18px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(9, 18, 27, 0.7);
+    color: #839bad;
+    font: 500 12.5px/1.55 var(--font-body);
+    text-align: center;
+  }
+  .pub-privacy-note span,
+  .pub-privacy-note strong {
+    color: #d7e7f2;
+    font-weight: 700;
+  }
+  @media (max-width: 760px) {
+    .pub-hero { grid-template-columns: 1fr; }
+    .pub-ach-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 540px) {
+    .pub-page { padding: 20px 12px 106px; }
+    .pub-hero,
+    .pub-section { padding: 20px 16px; border-radius: 20px; }
+    .pub-hero-main { flex-direction: column; align-items: flex-start; }
+    .pub-actions { width: 100%; }
+    .pub-actions > * { flex: 1 1 180px; }
+  }
+</style>
