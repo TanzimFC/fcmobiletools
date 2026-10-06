@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Rewards" description="Optional FCMobiletools reward catalogue." robots="noindex,nofollow" googlebot="noindex,nofollow">
+  <main class="account-list-page">
+    <section class="intro"><span class="eyebrow">REWARDS</span><h1>Optional rewards, no promises.</h1><p>Reward costs, stock and eligibility are configurable. FCMobiletools does not promise a cash value for XP or Tokens.</p></section>
+    <div id="root"><div class="loading">Loading rewards…</div></div>
+  </main>
+</BaseLayout>
+<style>
+.account-list-page{width:min(1080px,calc(100% - 28px));margin:0 auto;padding:62px 0 100px}.intro{margin-bottom:18px}.eyebrow{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em}.intro h1{margin:11px 0 7px;font:700 clamp(38px,6vw,64px)/.96 var(--font-display);letter-spacing:-.055em;color:var(--text)}.intro p{max-width:720px;margin:0;color:var(--muted);font:500 13px/1.75 var(--font-body)}.loading,.empty,.reward{border:1px solid rgba(255,255,255,.08);border-radius:18px;background:linear-gradient(145deg,rgba(15,26,38,.98),rgba(7,16,24,.98))}.loading,.empty{padding:24px;color:var(--muted);font:600 11px var(--font-body)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.reward{padding:20px}.reward h2{margin:0;font:700 18px var(--font-display)}.reward p{margin:6px 0 0;color:#7890a0;font:500 10px/1.65 var(--font-body)}.meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.meta span{padding:6px 8px;border:1px solid rgba(76,201,255,.12);border-radius:999px;background:rgba(76,201,255,.045);color:#8fdcf6;font:800 8px var(--font-body)}.reward button{margin-top:14px;min-height:40px;padding:0 12px;border:1px solid #6dd8ff;border-radius:10px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;font:800 9px var(--font-body);cursor:pointer}.reward button:disabled{opacity:.55;cursor:wait}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.account-list-page{padding-top:42px}}
+</style>
+<script>
+import { accountAuth } from '../../lib/account-client.js';
+const root=document.querySelector('#root');const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function load(){
+ const session=await accountAuth.auth.getSession();
+ if(!session.data.session){root.innerHTML='<div class="empty">Sign in to view the reward catalogue and your token balance.<br><a href="/account/" style="color:#4cc9ff;font-weight:800">Open Account</a></div>';return;}
+ const r=await fetch('/api/account/rewards',{headers:{authorization:'Bearer '+session.data.session.access_token},cache:'no-store'});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'Unable to load rewards.');
+ const economy=b.economy||{};const head='<div class="empty" style="margin-bottom:12px">Token balance: <strong style="color:#f5f8fb">'+Number(b.tokenBalance||0).toLocaleString()+'</strong> · '+esc(economy.displayName||'Tokens')+'. No fixed money value is assigned.</div>';
+ root.innerHTML=head+(b.rewards?.length?'<div class="grid">'+b.rewards.map(x=>'<article class="reward"><h2>'+esc(x.name)+'</h2><p>'+esc(x.description||'')+'</p><div class="meta"><span>'+Number(x.cost||0).toLocaleString()+' '+esc(x.currencyCode||'tokens')+'</span><span>'+esc(x.rewardType)+'</span>'+(x.stock===null?'<span>Limited by availability</span>':'<span>'+Number(x.stock).toLocaleString()+' left</span>')+'</div><button data-redeem="'+esc(x.id)+'">Redeem</button></article>').join('')+'</div>':'<div class="empty">No rewards are active yet. The catalogue can be populated later without changing user accounts.</div>');
+ root.querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',async()=>{btn.disabled=true;try{const s=await accountAuth.auth.getSession();const rr=await fetch('/api/account/rewards/'+btn.dataset.redeem+'/redeem',{method:'POST',headers:{authorization:'Bearer '+s.data.session.access_token,'content-type':'application/json'},body:JSON.stringify({idempotencyKey:crypto.randomUUID()})});const rb=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(rb.error||'Redemption failed.');btn.textContent='Redemption pending';}catch(e){btn.disabled=false;btn.textContent=e.message||'Try again';}});
+}
+load().catch(e=>root.innerHTML='<div class="empty">'+esc(e.message)+'</div>');
+</script>
