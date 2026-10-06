@@ -94,7 +94,7 @@ async function adminAccountDetail(env, id) {
   id = ensureUuid(id);
   const accountRows = await rest(env, 'accounts?select=id,username,display_name,bio,avatar_url,website_url,state,state_reason,frozen_until,closed_at,created_at,updated_at,system_account&id=eq.' + encodeURIComponent(id) + '&limit=1');
   const account = accountRows?.[0];
-  if (!account) return null;
+  if (!account || account.system_account) return null;
 
   const [progress, rewards, activity, achievements, actions] = await Promise.all([
     rest(env, 'account_progress?select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&account_id=eq.' + encodeURIComponent(id) + '&limit=1'),
@@ -119,6 +119,8 @@ async function adminAdjustXp(env, id, input) {
   if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 1000000000) throw new Error('XP adjustment is invalid.');
   const reason = String(input.reason || '').trim().slice(0, 500);
   if (!reason) throw new Error('A reason is required.');
+  const target = await rest(env, 'accounts?select=id,system_account&id=eq.' + encodeURIComponent(id) + '&system_account=eq.false&limit=1');
+  if (!target?.[0]) throw new Error('User account not found.');
   const key = ensureUuid(input.idempotencyKey || crypto.randomUUID());
   const actor = await systemAccountId(env);
   const existing = await rest(env, 'xp_transactions?select=id,amount&account_id=eq.' + encodeURIComponent(id) + '&idempotency_key=eq.' + encodeURIComponent(key) + '&limit=1');
@@ -204,9 +206,9 @@ async function adminSetState(env, id, input) {
   if (!allowed.has(newState)) throw new Error('Invalid account state.');
   const reason = String(input.reason || '').trim().slice(0, 500);
   const actor = await systemAccountId(env);
-  const rows = await rest(env, 'accounts?select=state&id=eq.' + encodeURIComponent(id) + '&limit=1');
+  const rows = await rest(env, 'accounts?select=state,system_account&id=eq.' + encodeURIComponent(id) + '&limit=1');
   const previous = rows?.[0]?.state;
-  if (!previous) throw new Error('Account not found.');
+  if (!previous || rows?.[0]?.system_account) throw new Error('User account not found.');
   const frozenUntil = newState === 'frozen' && input.frozenUntil ? new Date(String(input.frozenUntil)) : null;
   if (input.frozenUntil && (!frozenUntil || Number.isNaN(frozenUntil.getTime()))) throw new Error('Invalid freeze date.');
   await rest(env, 'accounts?id=eq.' + encodeURIComponent(id), {
