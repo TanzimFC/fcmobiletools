@@ -23,7 +23,7 @@ const extractEditorialSourceUrls = (frontMatter) => {
 const allowedEditorialSource = (url, file) => {
   try {
     const host = new URL(url).hostname.toLowerCase();
-    return host === 'ea.com' || host.endsWith('.ea.com') || (file === 'fc-mobile-hall-of-fut-explained.md' && host === 'fut.gg');
+    return host === 'ea.com' || host.endsWith('.ea.com') || (file === 'fc-mobile-hall-of-fut-explained.md' && (host === 'fut.gg' || host.endsWith('.fut.gg')));
   } catch {
     return false;
   }
