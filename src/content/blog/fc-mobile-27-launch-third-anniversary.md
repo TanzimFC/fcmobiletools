@@ -5,6 +5,8 @@ description: "FC Mobile 27 officially launched on 24 September with the Third An
 publishedAt: 2026-09-24
 author: "FCMobiletools"
 type: "news"
+series: "FC Mobile 27"
+seriesOrder: 2
 status: "published"
 category: "FC Mobile 27 News"
 tags:
