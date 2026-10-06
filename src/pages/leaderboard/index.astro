@@ -12,7 +12,56 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 @media(max-width:720px){.account-list-page{padding-top:42px}.row{grid-template-columns:42px 1fr auto}}
 </style>
 <script>
-const root=document.querySelector('#root');const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function load(){const r=await fetch('/api/public/leaderboard', {cache:'no-store'});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'Unable to load leaderboards.');if(!b.leaderboards?.length){root.innerHTML='<div class="empty">No leaderboard is published yet. The ranking engine is ready, but no leaderboard definition has been enabled.</div>';return;}root.innerHTML='<div class="board-list">'+b.leaderboards.map(l=>'<section class="board"><div class="board-head"><h2>'+esc(l.name)+'</h2><p>'+esc(l.description||'')+' · '+esc(l.periodType||'')+'</p></div><div class="rows">'+(l.rows||[]).map(x=>'<div class="row"><span class="rank">#'+Number(x.rank)+'</span><div><b>@'+esc(x.username)+'</b></div><span class="score">'+Number(x.score||0).toLocaleString()+'</span></div>').join('')+'</div></section>').join('')}</div>}
-load().catch(e=>root.innerHTML='<div class="empty">'+esc(e.message)+'</div>');
+const root = document.querySelector('#root');
+const esc = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+
+async function load() {
+  const response = await fetch('/api/public/leaderboard', { cache: 'no-store' });
+  const body = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(body.error || 'Unable to load leaderboards.');
+  }
+
+  if (!body.leaderboards?.length) {
+    root.innerHTML =
+      '<div class="empty">No leaderboard is published yet. The ranking engine is ready, but no leaderboard definition has been enabled.</div>';
+    return;
+  }
+
+  const boards = body.leaderboards.map((leaderboard) => {
+    const rows = (leaderboard.rows || [])
+      .map((entry) =>
+        '<div class="row">' +
+          '<span class="rank">#' + Number(entry.rank) + '</span>' +
+          '<div><b>@' + esc(entry.username) + '</b></div>' +
+          '<span class="score">' + Number(entry.score || 0).toLocaleString() + '</span>' +
+        '</div>'
+      )
+      .join('');
+
+    return (
+      '<section class="board">' +
+        '<div class="board-head">' +
+          '<h2>' + esc(leaderboard.name) + '</h2>' +
+          '<p>' + esc(leaderboard.description || '') + ' · ' + esc(leaderboard.periodType || '') + '</p>' +
+        '</div>' +
+        '<div class="rows">' + rows + '</div>' +
+      '</section>'
+    );
+  }).join('');
+
+  root.innerHTML = '<div class="board-list">' + boards + '</div>';
+}
+
+load().catch((error) => {
+  root.innerHTML = '<div class="empty">' + esc(error.message) + '</div>';
+});
 </script>
