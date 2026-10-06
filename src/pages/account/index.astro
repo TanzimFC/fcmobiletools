@@ -154,6 +154,43 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             </div>
           </form>
 
+          <!-- PASSWORD RECOVERY FORM -->
+          <form id="recoveryForm" class="auth-form" hidden novalidate>
+            <div class="form-intro">
+              <span class="form-eyebrow">ACCOUNT RECOVERY</span>
+              <h2>Choose a new password</h2>
+              <p>Your reset link is valid. Set a new password below, then sign in normally.</p>
+            </div>
+
+            <div class="field">
+              <label for="recoveryPassword">New password <small>(min 10 characters)</small></label>
+              <div class="input-box">
+                <input id="recoveryPassword" type="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters" />
+                <button class="pw-toggle" type="button" data-target="recoveryPassword" aria-label="Toggle password visibility">Show</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="recoveryPasswordConfirm">Confirm new password</label>
+              <div class="input-box">
+                <input id="recoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="10" required placeholder="Repeat your new password" />
+                <button class="pw-toggle" type="button" data-target="recoveryPasswordConfirm" aria-label="Toggle password visibility">Show</button>
+              </div>
+            </div>
+
+            <button class="submit-btn" type="submit">
+              <span>Update Password</span>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </button>
+
+            <div class="form-message" id="recoveryMessage" role="alert" aria-live="polite" hidden></div>
+
+            <div class="form-foot-note">
+              <span>Need to start over?</span>
+              <button type="button" class="text-btn" id="recoveryToLogin">Back to sign in →</button>
+            </div>
+          </form>
+
           <!-- CREATE ACCOUNT FORM -->
           <form id="signupForm" class="auth-form" hidden novalidate>
             <div class="form-intro">
@@ -264,6 +301,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <span>Already registered?</span>
               <button type="button" class="text-btn" id="switchToLogin">Sign in instead →</button>
             </div>
+
+            <div class="verify-tools">
+              <div>
+                <strong>Verification email missing?</strong>
+                <span>Enter the email above and we’ll send a fresh link.</span>
+              </div>
+              <button type="button" class="text-btn verify-resend" id="resendVerificationBtn">Resend verification</button>
+            </div>
           </form>
         </div>
       </section>
@@ -272,15 +317,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
-  import { accountAuth, validateSignupEmail } from '../../lib/account-client.js';
+  import { accountAuth, getAuthRedirectUrl, validateSignupEmail } from '../../lib/account-client.js';
 
   const loginTab = document.getElementById('loginTab');
   const signupTab = document.getElementById('signupTab');
   const tabPillBg = document.getElementById('tabPillBg');
   const loginForm = document.getElementById('loginForm');
   const signupForm = document.getElementById('signupForm');
+  const recoveryForm = document.getElementById('recoveryForm');
   const loginMessage = document.getElementById('loginMessage');
   const signupMessage = document.getElementById('signupMessage');
+  const recoveryMessage = document.getElementById('recoveryMessage');
 
   const signupUsername = document.getElementById('signupUsername');
   const signupDisplayName = document.getElementById('signupDisplayName');
@@ -306,8 +353,19 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
     loginForm.hidden = !isLogin;
     signupForm.hidden = isLogin;
+    if (recoveryForm) recoveryForm.hidden = true;
     showMessage(loginMessage, '');
     showMessage(signupMessage, '');
+    showMessage(recoveryMessage, '');
+  }
+
+  function showRecovery() {
+    loginForm.hidden = true;
+    signupForm.hidden = true;
+    if (recoveryForm) recoveryForm.hidden = false;
+    showMessage(loginMessage, '');
+    showMessage(signupMessage, '');
+    showMessage(recoveryMessage, '');
   }
 
   function showMessage(el, text, isError = false) {
@@ -356,6 +414,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   signupTab?.addEventListener('click', () => showTab('signup'));
   document.getElementById('switchToSignup')?.addEventListener('click', () => showTab('signup'));
   document.getElementById('switchToLogin')?.addEventListener('click', () => showTab('login'));
+  document.getElementById('recoveryToLogin')?.addEventListener('click', () => showTab('login'));
 
   // Support ?mode=signup or #signup URL deep links
   const params = new URLSearchParams(location.search);
@@ -523,7 +582,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         email: emailCheck.email,
         password: String(fd.get('password') || ''),
         options: {
-          emailRedirectTo: new URL('/account/', location.origin).toString(),
+          emailRedirectTo: getAuthRedirectUrl(),
           data: {
             username,
             display_name: String(fd.get('display_name') || '').trim()
@@ -553,6 +612,32 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
   });
 
+  // Resend signup verification email. Supabase keeps the response intentionally
+  // non-enumerating, so a user can safely request a fresh message for an existing email.
+  document.getElementById('resendVerificationBtn')?.addEventListener('click', async (event) => {
+    const btn = event.currentTarget;
+    const email = String(signupEmail?.value || '').trim().toLowerCase();
+    if (!validateSignupEmail(email).valid) {
+      showMessage(signupMessage, 'Enter the same permanent email address you used for this account.', true);
+      signupEmail?.focus();
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const result = await accountAuth.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: getAuthRedirectUrl() }
+      });
+      if (result.error) throw result.error;
+      showMessage(signupMessage, 'A fresh verification email has been requested. Check your inbox and spam folder.', false);
+    } catch (error) {
+      showMessage(signupMessage, friendlyAuthError(error, 'Unable to resend the verification email right now. Please try again shortly.'), true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   // Password reset
   document.getElementById('resetBtn')?.addEventListener('click', async (event) => {
     showMessage(loginMessage, '');
@@ -567,7 +652,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     btn.disabled = true;
     try {
       const result = await accountAuth.auth.resetPasswordForEmail(email, {
-        redirectTo: new URL('/account/', location.origin).toString()
+        redirectTo: getAuthRedirectUrl()
       });
       if (result.error) throw result.error;
       showMessage(loginMessage, 'Password reset instructions have been sent. Check your inbox and spam folder.', false);
@@ -578,8 +663,43 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
   });
 
+  // Supabase fires PASSWORD_RECOVERY after a valid recovery link creates a session.
+  accountAuth.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') showRecovery();
+  });
+
+  recoveryForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    showMessage(recoveryMessage, '');
+    const password = String(document.getElementById('recoveryPassword')?.value || '');
+    const confirm = String(document.getElementById('recoveryPasswordConfirm')?.value || '');
+    if (password.length < 10) {
+      showMessage(recoveryMessage, 'Use a password with at least 10 characters.', true);
+      return;
+    }
+    if (password !== confirm) {
+      showMessage(recoveryMessage, 'The two passwords do not match.', true);
+      return;
+    }
+    const button = recoveryForm.querySelector('.submit-btn');
+    button.disabled = true;
+    try {
+      const result = await accountAuth.auth.updateUser({ password });
+      if (result.error) throw result.error;
+      await accountAuth.auth.signOut();
+      showMessage(recoveryMessage, 'Password updated successfully. You can now sign in with your new password.', false);
+      recoveryForm.reset();
+      setTimeout(() => showTab('login'), 900);
+    } catch (error) {
+      showMessage(recoveryMessage, friendlyAuthError(error, 'Unable to update your password. Request a fresh reset link and try again.'), true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   accountAuth.auth.getSession().then((result) => {
-    if (result.data?.session) location.replace('/profile/');
+    if (result.data?.session && !recoveryForm?.hidden) return;
+    if (result.data?.session && !location.hash.includes('error=') && !location.search.includes('mode=recovery')) location.replace('/profile/');
   });
 </script>
 
@@ -1166,6 +1286,32 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     color: #93efad;
   }
 
+  .verify-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 13px 14px;
+    border-radius: 13px;
+    border: 1px solid rgba(76, 201, 255, 0.14);
+    background: rgba(76, 201, 255, 0.04);
+  }
+  .verify-tools div {
+    display: grid;
+    gap: 3px;
+  }
+  .verify-tools strong {
+    color: #dff5ff;
+    font: 700 12.5px/1.25 var(--font-body);
+  }
+  .verify-tools span {
+    color: #7f96a7;
+    font: 500 11.5px/1.45 var(--font-body);
+  }
+  .verify-resend {
+    white-space: nowrap;
+  }
+
   .form-foot-note {
     display: flex;
     align-items: center;
@@ -1221,3 +1367,4 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
   }
 </style>
+
