@@ -69,7 +69,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
-  import { accountAuth, runAuthWithFallback } from '../../lib/account-client.js';
+  import { accountAuth } from '../../lib/account-client.js';
 
   const loginTab = document.querySelector('#loginTab');
   const signupTab = document.querySelector('#signupTab');
@@ -94,21 +94,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   function friendlyAuthError(error, fallback) {
     const raw = String(error?.message || error || '');
-    if (/invalid api key|api key is invalid/i.test(raw)) return 'The account service needs a quick refresh. Please reload the page and try again.';
+    if (/invalid api key|api key is invalid/i.test(raw)) return 'The account service rejected its client key. This is a configuration problem, not an email or username error.';
     if (/already registered|already exists|user already/i.test(raw)) return 'That email is already registered. Try signing in instead.';
     if (/email.*invalid|invalid.*email/i.test(raw)) return 'That email address does not look valid.';
     if (/password/i.test(raw) && /weak|short|characters/i.test(raw)) return 'Use a stronger password with at least 10 characters.';
     if (/rate limit|too many requests/i.test(raw)) return 'Too many attempts. Give it a moment and try again.';
     if (/network|fetch/i.test(raw)) return 'We could not reach the account service. Check your connection and try again.';
     return fallback;
-  }
-
-  async function authOperation(operation) {
-    return runAuthWithFallback(async (client) => {
-      const result = await operation(client);
-      if (result.error) throw result.error;
-      return result;
-    });
   }
 
   loginTab.addEventListener('click', () => showTab('login'));
@@ -134,10 +126,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const button = loginForm.querySelector('.primary-btn');
     button.disabled = true;
     try {
-      await authOperation((client) => client.auth.signInWithPassword({
+      const result = await accountAuth.auth.signInWithPassword({
         email: String(fd.get('email') || '').trim().toLowerCase(),
         password: String(fd.get('password') || '')
-      }));
+      });
+      if (result.error) throw result.error;
       location.replace('/profile/');
     } catch (error) {
       showMessage(loginMessage, friendlyAuthError(error, 'Email or password is incorrect.'), true);
@@ -161,7 +154,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const button = signupForm.querySelector('.primary-btn');
     button.disabled = true;
     try {
-      const result = await authOperation((client) => client.auth.signUp({
+      const result = await accountAuth.auth.signUp({
         email,
         password: String(fd.get('password') || ''),
         options: {
@@ -171,7 +164,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             display_name: String(fd.get('display_name') || '').trim()
           }
         }
-      }));
+      });
+      if (result.error) throw result.error;
       if (result.data?.session) {
         location.replace('/profile/');
         return;
@@ -189,7 +183,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     if (!email) { showMessage(loginMessage, 'Enter your email first, then choose “Forgot password?”.', true); return; }
     event.currentTarget.disabled = true;
     try {
-      await authOperation((client) => client.auth.resetPasswordForEmail(email, { redirectTo: new URL('/account/', location.origin).toString() }));
+      const result = await accountAuth.auth.resetPasswordForEmail(email, { redirectTo: new URL('/account/', location.origin).toString() });
+      if (result.error) throw result.error;
       showMessage(loginMessage, 'Password reset instructions sent. Check your inbox and spam folder.');
     } catch (error) {
       showMessage(loginMessage, friendlyAuthError(error, 'Unable to send reset instructions.'), true);
