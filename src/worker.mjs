@@ -285,6 +285,110 @@ async function accountApi(request, env, url) {
     return json({items:rows});
   }
 
+  if(request.method==='GET' && url.pathname==='/api/account/missions') {
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before using missions.'},403);
+    const now=new Date().toISOString();
+    const tasks=await supabaseRest(env,
+      'reward_tasks?enabled=eq.true&or=(starts_at.is.null,starts_at.lte.'+encodeURIComponent(now)+
+      ')&or=(ends_at.is.null,ends_at.gt.'+encodeURIComponent(now)+
+      ')&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,display_order,priority&order=display_order.asc,priority.asc,created_at.desc&limit=100'
+    );
+    const attempts=await supabaseRest(env,
+      'task_attempts?account_id=eq.'+encodeURIComponent(account.id)+
+      '&select=task_id,status,verification_status,completed_at&order=completed_at.desc&limit=300'
+    );
+    const latest=new Map();
+    for(const a of attempts||[]) if(!latest.has(a.task_id)) latest.set(a.task_id,a);
+    return json({
+      missions:(tasks||[]).map(t=>{
+        const attempt=latest.get(t.id);
+        let statusLabel='Available';
+        if(attempt?.status==='accepted' && attempt.verification_status==='verified') statusLabel='Completed';
+        else if(attempt?.status==='accepted' && attempt.verification_status==='pending') statusLabel='Pending review';
+        return {
+          id:t.id,slug:t.slug,title:t.title,description:t.description,
+          taskType:t.task_type,missionType:t.mission_type,
+          xpReward:Number(t.xp_reward||0),
+          tokenReward:Number(t.token_reward||t.reward_points||0),
+          dailyLimit:t.daily_limit,weeklyLimit:t.weekly_limit,completionLimit:t.completion_limit,
+          cooldownSeconds:t.cooldown_seconds,verificationMethod:t.verification_method,
+          statusLabel
+        };
+      })
+    });
+  }
+
+  if(request.method==='GET' && url.pathname==='/api/account/achievements') {
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before using achievements.'},403);
+    const defs=await supabaseRest(env,
+      'achievements?active=eq.true&select=id,slug,name,description,icon,requirement,hidden,xp_reward,token_reward,priority&order=priority.asc,created_at.desc&limit=100'
+    );
+    const own=await supabaseRest(env,
+      'user_achievements?account_id=eq.'+encodeURIComponent(account.id)+
+      '&select=achievement_id,status,progress,unlocked_at&limit=200'
+    );
+    const map=new Map((own||[]).map(x=>[x.achievement_id,x]));
+    return json({
+      achievements:(defs||[]).map(a=>{
+        const x=map.get(a.id)||{};
+        const requirement=a.requirement&&typeof a.requirement==='object'?a.requirement:{};
+        const target=Number(requirement.target||requirement.count||0);
+        const progress=Number(x.progress||0);
+        return {
+          id:a.id,slug:a.slug,name:a.name,description:a.description,icon:a.icon||'',
+          xpReward:Number(a.xp_reward||0),tokenReward:Number(a.token_reward||0),
+          status:x.status||'locked',progress,
+          progressPercent:target>0?Math.max(0,Math.min(100,progress/target*100)):x.status==='unlocked'?100:0,
+          progressLabel:target>0?progress+' / '+target:'Progress tracked after qualifying activity.',
+          unlockedAt:x.unlocked_at||null
+        };
+      })
+    });
+  }
+
+  if(request.method==='GET' && url.pathname==='/api/account/rewards') {
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before using rewards.'},403);
+    const now=new Date().toISOString();
+    const [rewards,rewardAccounts,economy]=await Promise.all([
+      supabaseRest(env,
+        'rewards?enabled=eq.true&status=eq.active&or=(start_at.is.null,start_at.lte.'+encodeURIComponent(now)+
+        ')&or=(end_at.is.null,end_at.gt.'+encodeURIComponent(now)+
+        ')&select=id,slug,name,description,image_url,reward_type,cost,currency_code,stock,start_at,end_at,redemption_limit,eligibility,priority&order=priority.asc,created_at.desc&limit=60'
+      ),
+      supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance&limit=1'),
+      supabaseRest(env,'reward_economy_config?select=display_name,currency_code,expiration_enabled,default_expiration_days&id=true&limit=1')
+    ]);
+    return json({
+      tokenBalance:Number(rewardAccounts?.[0]?.balance||0),
+      economy:economy?.[0]||{display_name:'Tokens',currency_code:'tokens',expiration_enabled:false},
+      rewards:(rewards||[]).map(r=>({
+        id:r.id,slug:r.slug,name:r.name,description:r.description,imageUrl:r.image_url||null,
+        rewardType:r.reward_type,cost:Number(r.cost||0),currencyCode:r.currency_code||'tokens',
+        stock:r.stock===null?null:Number(r.stock),
+        startAt:r.start_at,endAt:r.end_at,redemptionLimit:r.redemption_limit,
+        eligibility:r.eligibility&&typeof r.eligibility==='object'?r.eligibility:{}
+      }))
+    });
+  }
+
+  if(request.method==='POST' && /^\/api\/account\/rewards\/[0-9a-f-]+\/redeem$/i.test(url.pathname)) {
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before redeeming a reward.'},403);
+    const rewardId=url.pathname.split('/')[4];
+    const input=await request.json().catch(()=>({}));
+    let key;
+    try { key=crypto.randomUUID(); if(input.idempotencyKey) key=input.idempotencyKey; } catch { key=null; }
+    if(!key || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) {
+      return json({error:'Invalid redemption request.'},400);
+    }
+    const result=await supabaseRest(env,'rpc/server_redeem_reward',{
+      method:'POST',
+      body:JSON.stringify({
+        p_account_id:account.id,p_reward_id:rewardId,p_idempotency_key:key
+      })
+    });
+    return json(result||{ok:true});
+  }
+
   return null;
 }
 
@@ -346,6 +450,36 @@ async function publicProfileApi(request, env, url) {
   profile.tournament_stats=null;
 
   return json({profile},200,{'cache-control':'public, max-age=60, stale-while-revalidate=300'});
+}
+
+async function publicLeaderboardApi(request, env, url) {
+  if(request.method!=='GET' || url.pathname!=='/api/public/leaderboard') return null;
+  const slug=String(url.searchParams.get('slug')||'').trim().toLowerCase();
+  const defs=await supabaseRest(env,
+    'leaderboard_definitions?enabled=eq.true&select=id,slug,name,description,period_type,metric_key,display_order&order=display_order.asc,created_at.desc&limit=20'
+  );
+  const selected=slug ? (defs||[]).filter(x=>x.slug===slug) : (defs||[]);
+  const out=[];
+  for(const d of selected){
+    const snap=await supabaseRest(env,
+      'leaderboard_snapshots?leaderboard_id=eq.'+encodeURIComponent(d.id)+
+      '&select=account_id,score,rank,period_start,period_end&order=rank.asc&limit=100'
+    );
+    const ids=(snap||[]).map(x=>x.account_id);
+    const profiles=ids.length?await supabaseRest(env,
+      'profile_public?account_id=in.('+ids.join(',')+')&is_public=eq.true&select=account_id,username,display_name,show_display_name&limit=100'
+    ):[],
+    pmap=new Map((profiles||[]).map(x=>[x.account_id,x]));
+    out.push({
+      slug:d.slug,name:d.name,description:d.description,periodType:d.period_type,metricKey:d.metric_key,
+      rows:(snap||[]).map(x=>{
+        const p=pmap.get(x.account_id);
+        if(!p) return null;
+        return {rank:Number(x.rank),score:Number(x.score||0),username:p.username,displayName:p.show_display_name?p.display_name:p.username,periodStart:x.period_start,periodEnd:x.period_end};
+      }).filter(Boolean)
+    });
+  }
+  return json({leaderboards:out},200,{'cache-control':'public, max-age=60, stale-while-revalidate=300'});
 }
 
 function editorialStatus(value){
@@ -1429,6 +1563,8 @@ export function createExports(manifest) {
   if(url.pathname === '/fc-mobile-beta' || url.pathname === '/fc-mobile-beta/' || url.pathname === '/legacy/fc-mobile-beta.html') {
     return Response.redirect(new URL('/fc-mobile-27/',url),301);
   }
+  const publicLeaderboardResponse=await publicLeaderboardApi(request,env,url);
+  if(publicLeaderboardResponse) return publicLeaderboardResponse;
   if(url.pathname.startsWith('/api/account/')) return accountApi(request,env,url);
 
   if(
