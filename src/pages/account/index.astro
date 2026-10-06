@@ -401,8 +401,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     if (/password/i.test(raw) && /weak|short|characters/i.test(raw)) {
       return 'Use a stronger password with at least 10 characters.';
     }
+    if (/over_email_send_rate_limit|email rate limit exceeded/i.test(raw)) {
+      return 'Email delivery is temporarily rate-limited after several account attempts. This is a service cooldown, not an email or username error. Wait for the cooldown to clear before trying again.';
+    }
     if (/rate limit|too many requests/i.test(raw)) {
-      return 'Too many attempts. Wait a moment and try again.';
+      return 'Too many account requests were made recently. Wait for the service cooldown to clear, then try again.';
     }
     if (/network|fetch/i.test(raw)) {
       return 'Could not reach the account service. Check your connection and try again.';
