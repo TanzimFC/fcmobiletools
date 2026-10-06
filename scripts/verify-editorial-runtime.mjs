@@ -9,7 +9,17 @@ const blog = read('src/lib/blog-supabase.js');
 const worker = read('src/worker.mjs');
 const blogDir = path.join(root, 'src/content/blog');
 const editorialSourceFiles = fs.readdirSync(blogDir).filter((name) => name.endsWith('.md') && name !== '_template.md');
-const sourceFieldRe = /^sources:\s*([\\s\\S]*?)(?=^\\S|\\s*$)/m;
+const extractEditorialSourceUrls = (frontMatter) => {
+  const lines = frontMatter.split(/\r?\n/);
+  const startIndex = lines.findIndex((line) => /^sources:\s*/.test(line));
+  if (startIndex < 0) return [];
+  const collected = [lines[startIndex]];
+  for (let i = startIndex + 1; i < lines.length; i += 1) {
+    if (lines[i].trim() === '' || /^\s+/.test(lines[i])) collected.push(lines[i]);
+    else break;
+  }
+  return [...collected.join('\n').matchAll(/https?:\/\/[^\s"'\],]+/g)].map((match) => match[0]);
+};
 const allowedEditorialSource = (url, file) => {
   try {
     const host = new URL(url).hostname.toLowerCase();
@@ -22,12 +32,10 @@ const editorialSourceViolations = [];
 for (const file of editorialSourceFiles) {
   const content = read(`src/content/blog/${file}`);
   const frontMatter = content.match(/^---\n([\s\S]*?)\n---/m)?.[1] || '';
-  const sourceBlock = frontMatter.match(sourceFieldRe)?.[1] || '';
-  for (const match of sourceBlock.matchAll(/https?:\/\/[^\s\"'\],]+/g)) {
-    if (!allowedEditorialSource(match[0], file)) editorialSourceViolations.push(`${file}: ${match[0]}`);
+  for (const url of extractEditorialSourceUrls(frontMatter)) {
+    if (!allowedEditorialSource(url, file)) editorialSourceViolations.push(`${file}: ${url}`);
   }
 }
-
 
 const checks = [
   [!admin.includes("marked@"), 'admin article hydration must not reparse Supabase HTML with marked'],
