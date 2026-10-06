@@ -141,6 +141,161 @@ async function supabaseRest(env,path,options={}){
   }
   return body;
 }
+
+async function supabaseAuthUser(env, token) {
+  const {base,key}=supabaseConfig(env);
+  const response=await fetch(base+'/auth/v1/user',{
+    headers:{apikey:key,Authorization:'Bearer '+token,Accept:'application/json'}
+  });
+  if(!response.ok) return null;
+  return await response.json().catch(()=>null);
+}
+
+function bearerToken(request) {
+  const value=request.headers.get('authorization')||'';
+  return /^Bearer\s+(.+)$/i.test(value) ? value.replace(/^Bearer\s+/i,'').trim() : '';
+}
+
+async function accountContext(request, env) {
+  const token=bearerToken(request);
+  if(!token) return null;
+  const user=await supabaseAuthUser(env,token);
+  if(!user?.id) return null;
+  const rows=await supabaseRest(env,
+    'accounts?auth_user_id=eq.'+encodeURIComponent(user.id)+
+    '&select=id,auth_user_id,username,display_name,avatar_url,state,created_at,updated_at,system_account&limit=1'
+  );
+  const account=rows?.[0];
+  if(!account || account.system_account) return null;
+  return {token,user,account};
+}
+
+function validateUsername(value) {
+  const username=String(value||'').trim().toLowerCase();
+  if(!/^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/.test(username)) {
+    throw new Error('Username must be 3-24 characters and use lowercase letters, numbers, dots, underscores or hyphens.');
+  }
+  return username;
+}
+
+function validateAvatarUrl(value) {
+  const raw=String(value||'').trim();
+  if(!raw) return null;
+  let url;
+  try { url=new URL(raw); } catch { throw new Error('Avatar URL must be a valid URL.'); }
+  if(!['http:','https:'].includes(url.protocol)) throw new Error('Avatar URL must use HTTPS or HTTP.');
+  return raw.slice(0,2048);
+}
+
+async function accountApi(request, env, url) {
+  const context=await accountContext(request,env);
+  if(!context) return json({error:'Authentication required.'},401);
+
+  const {account,user}=context;
+  if(request.method==='GET' && url.pathname==='/api/account/me') {
+    const [progress,settings,rewards,activity]=await Promise.all([
+      supabaseRest(env,'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&limit=1'),
+      supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(account.id)+'&select=*&limit=1'),
+      supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance,lifetime_earned,lifetime_spent,lifetime_reversed&limit=1'),
+      supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=8')
+    ]);
+    const p=progress?.[0]||{}, st=settings?.[0]||{}, rw=rewards?.[0]||{};
+    return json({account:{
+      id:account.id,username:account.username,displayName:account.display_name,avatarUrl:account.avatar_url,
+      state:account.state,createdAt:account.created_at,updatedAt:account.updated_at,
+      email:user.email||null,emailConfirmedAt:user.email_confirmed_at||null,
+      level:Number(p.level||1),xp:Number(p.xp_balance||0),currentStreak:Number(p.current_streak||0),
+      longestStreak:Number(p.longest_streak||0),tokens:Number(rw.balance||0)
+    },settings:st,activity:activity||[]});
+  }
+
+  if(request.method==='PUT' && url.pathname==='/api/account/profile') {
+    if(['closed','fraud_removed'].includes(account.state)) return json({error:'This account is not available for profile changes.'},403);
+    const input=await request.json().catch(()=>({}));
+    let username;
+    try { username=validateUsername(input.username); } catch(e) { return json({error:e.message},400); }
+    let avatarUrl;
+    try { avatarUrl=validateAvatarUrl(input.avatarUrl); } catch(e) { return json({error:e.message},400); }
+    const displayName=String(input.displayName||'').trim();
+    if(displayName.length>80) return json({error:'Display name must be 80 characters or fewer.'},400);
+    try {
+      const result=await supabaseRest(env,'rpc/server_update_account_profile',{
+        method:'POST',
+        body:JSON.stringify({
+          p_account_id:account.id,
+          p_username:username,
+          p_display_name:displayName,
+          p_avatar_url:avatarUrl
+        })
+      });
+      return json({ok:true,result});
+    } catch(error) {
+      const msg=String(error?.message||'Unable to save profile.');
+      return json({error:/duplicate|taken/i.test(msg)?'That username is already taken.':msg},400);
+    }
+  }
+
+  if(request.method==='PUT' && url.pathname==='/api/account/settings') {
+    const input=await request.json().catch(()=>({}));
+    const b=(key)=>Boolean(input?.[key]);
+    try {
+      const result=await supabaseRest(env,'rpc/server_update_profile_settings',{
+        method:'POST',
+        body:JSON.stringify({
+          p_account_id:account.id,
+          p_profile_public:b('profile_public'),
+          p_show_display_name:b('show_display_name'),
+          p_show_level:b('show_level'),
+          p_show_xp:b('show_xp'),
+          p_show_streak:b('show_streak'),
+          p_show_joined_date:b('show_joined_date'),
+          p_show_achievements:b('show_achievements'),
+          p_show_tournament_stats:b('show_tournament_stats'),
+          p_show_activity_summary:b('show_activity_summary')
+        })
+      });
+      return json({ok:true,result});
+    } catch(error) { return json({error:error?.message||'Unable to save privacy settings.'},400); }
+  }
+
+  if(request.method==='GET' && url.pathname==='/api/account/activity') {
+    const limit=Math.max(1,Math.min(50,Number(url.searchParams.get('limit')||20)));
+    const before=String(url.searchParams.get('before')||'').trim();
+    let query='activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,metadata,source,created_at&order=created_at.desc&limit='+limit;
+    if(before) query+='&created_at=lt.'+encodeURIComponent(before);
+    return json({items:await supabaseRest(env,query)});
+  }
+
+  if(request.method==='GET' && url.pathname==='/api/account/xp') {
+    const limit=Math.max(1,Math.min(50,Number(url.searchParams.get('limit')||25)));
+    const rows=await supabaseRest(env,'xp_transactions?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,amount,source_type,source_id,reason,created_at&order=created_at.desc&limit='+limit);
+    return json({items:rows});
+  }
+
+  if(request.method==='GET' && url.pathname==='/api/account/tokens') {
+    const limit=Math.max(1,Math.min(50,Number(url.searchParams.get('limit')||25)));
+    const rows=await supabaseRest(env,'reward_ledger?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,entry_type,amount,memo,expires_at,reversal_of_id,created_at&order=created_at.desc&limit='+limit);
+    return json({items:rows});
+  }
+
+  return null;
+}
+
+async function publicProfileApi(request, env, url) {
+  if(request.method!=='GET') return json({error:'Method not allowed.'},405);
+  const match=url.pathname.match(/^\/api\/public\/profile\/([^/]+)\/?$/);
+  if(!match) return null;
+  const username=decodeURIComponent(match[1]).trim().toLowerCase();
+  if(!/^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/.test(username)) return json({error:'Profile not found.'},404);
+  const rows=await supabaseRest(env,
+    'profile_public?username=eq.'+encodeURIComponent(username)+
+    '&select=username,display_name,avatar_url,level,xp,current_streak,longest_streak,selected_title,joined_at,is_public,show_display_name,show_level,show_xp,show_streak,show_joined_date,show_achievements,show_tournament_stats,show_activity_summary&limit=1'
+  );
+  const p=rows?.[0];
+  if(!p || !p.is_public) return json({error:'This profile does not exist or is private.'},404);
+  return json({profile:p},{cacheControl:'public, max-age=60, stale-while-revalidate=300'});
+}
+
 function editorialStatus(value){
   return ({draft:'draft',review:'in_review',in_review:'in_review',changes_requested:'changes_requested',published:'published',scheduled:'scheduled',approved:'approved',archived:'archived',trash:'trash'})[String(value||'draft')]||'draft';
 }
@@ -1176,6 +1331,24 @@ export function createExports(manifest) {
     headers.set('cache-control','no-store, max-age=0, must-revalidate');
     headers.set('x-fcmobiletools-page','team-ovr-live');
     return new Response(await asset.arrayBuffer(),{status:asset.status,statusText:asset.statusText,headers});
+  }
+  if(url.pathname === '/account/' || url.pathname === '/account') {
+    // Keep the public account shell on the static Astro path.
+  }
+  const publicProfileApiResponse=await publicProfileApi(request,env,url);
+  if(publicProfileApiResponse) return publicProfileApiResponse;
+  const accountApiResponse=await accountApi(request,env,url);
+  if(accountApiResponse) return accountApiResponse;
+
+  const publicProfilePath=url.pathname.match(/^\/profile\/([^/]+)\/?$/);
+  if(publicProfilePath && request.method==='GET') {
+    const asset=await env.ASSETS.fetch(new Request(new URL('/profile/public/',url),{method:'GET',headers:request.headers}));
+    if(asset.ok) {
+      const headers=new Headers(asset.headers);
+      headers.set('cache-control','public, max-age=0, must-revalidate');
+      headers.set('x-fcmobiletools-page','public-profile-shell');
+      return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
+    }
   }
   if(url.pathname === '/events' || url.pathname === '/events/') {
     const asset=await env.ASSETS.fetch(new Request(new URL('/events/',url),{method:'GET',headers:request.headers}));
