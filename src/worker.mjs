@@ -472,10 +472,16 @@ async function publicProfileApi(request, env, url) {
   if(request.method!=='GET') return json({error:'Method not allowed.'},405);
   const username=decodeURIComponent(match[1]).trim().toLowerCase();
   if(!/^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/.test(username)) return json({error:'Profile not found.'},404);
-  const rows=await supabaseRest(env,
-    'profile_public?username=eq.'+encodeURIComponent(username)+
-    '&select=username,display_name,avatar_url,level,xp,current_streak,longest_streak,selected_title,joined_at,is_public,show_display_name,show_level,show_xp,show_streak,show_joined_date,show_achievements,show_tournament_stats,show_activity_summary&limit=1'
-  );
+  let rows;
+  try {
+    rows=await supabaseRest(env,
+      'profile_public?username=eq.'+encodeURIComponent(username)+
+      '&select=account_id,username,display_name,avatar_url,level,xp,current_streak,longest_streak,selected_title,joined_at,is_public,show_display_name,show_level,show_xp,show_streak,show_joined_date,show_achievements,show_tournament_stats,show_activity_summary&limit=1'
+    );
+  } catch(error) {
+    console.error('[PUBLIC_PROFILE]',error?.message);
+    return json({error:'Public profiles are temporarily unavailable.'},503);
+  }
   const p=rows?.[0];
   if(!p || !p.is_public) return json({error:'This profile does not exist or is private.'},404);
 
@@ -498,11 +504,7 @@ async function publicProfileApi(request, env, url) {
     show_activity_summary:p.show_activity_summary,
   };
 
-  const accountRows=await supabaseRest(env,
-    'accounts?username=eq.'+encodeURIComponent(username)+
-    '&state=eq.active&system_account=eq.false&select=id&limit=1'
-  );
-  const accountId=accountRows?.[0]?.id;
+  const accountId=p.account_id || null;
 
   if(accountId && p.show_achievements){
     const achievements=await supabaseRest(env,
