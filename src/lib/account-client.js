@@ -2,11 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 
 export const ACCOUNT_SUPABASE_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
 
-// Browser Auth uses the project's active legacy anon key. Supabase documents the
-// legacy anon key as supported through the end of 2026 while projects migrate
-// to the newer publishable-key system.
+// Browser Auth uses the project's publishable key. This is the public client key
+// intended for browser/mobile code and is supported by the current Supabase API-key model.
 export const ACCOUNT_SUPABASE_CLIENT_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vY3pncnd4dGZleGRianRoeHBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0Mzk5ODgsImV4cCI6MjEwNjAxNTk4OH0.sStj8u_mbUE2wUcVdKZyZemG3rLQEh4RrC4A8qnmbs';
+  'sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr';
 
 export const IDENTITY_CACHE_KEY = 'fcmobiletools-identity-cache-v1';
 
