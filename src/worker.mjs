@@ -113,6 +113,12 @@ async function authenticated(request, env) {
     return true;
   } catch { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'VALIDATION_EXCEPTION'}); return false; }
 }
+
+async function adminCanRemoveFraud(request,env) {
+  // Existing Worker-secret admin is the trusted administrative boundary for V1.
+  return authenticated(request,env);
+}
+
 const SUPABASE_DEFAULT_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
 
 function supabaseConfig(env){
@@ -293,7 +299,7 @@ async function publicProfileApi(request, env, url) {
   );
   const p=rows?.[0];
   if(!p || !p.is_public) return json({error:'This profile does not exist or is private.'},404);
-  return json({profile:p},{cacheControl:'public, max-age=60, stale-while-revalidate=300'});
+  return json({profile:p},200,{'cache-control':'public, max-age=60, stale-while-revalidate=300'});
 }
 
 function editorialStatus(value){
@@ -822,6 +828,77 @@ function adminAuthLog(stage, details={}) {
 }
 
 async function api(request,env,path) {
+
+  if(path === '/accounts' && request.method === 'GET') {
+    if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
+    const q=String(new URL(request.url).searchParams.get('q')||'').trim().slice(0,80);
+    const limit=Math.max(1,Math.min(50,Number(new URL(request.url).searchParams.get('limit')||25)));
+    let query='accounts?select=id,username,display_name,avatar_url,state,created_at,updated_at,system_account&system_account=eq.false&order=created_at.desc&limit='+limit;
+    if(q) {
+      const encoded=encodeURIComponent('*'+q+'*');
+      query+='&or=(username.ilike.'+encoded+',display_name.ilike.'+encoded+')';
+    }
+    const rows=await supabaseRest(env,query);
+    return json({accounts:rows});
+  }
+
+  if(path.match(/^\/accounts\/[0-9a-f-]{36}$/i) && request.method === 'GET') {
+    if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
+    const id=path.split('/')[2];
+    const [accounts,progress,rewards,activity,xp,tokens]=await Promise.all([
+      supabaseRest(env,'accounts?id=eq.'+encodeURIComponent(id)+'&system_account=eq.false&select=id,username,display_name,avatar_url,state,state_reason,frozen_until,closed_at,created_at,updated_at&limit=1'),
+      supabaseRest(env,'account_progress?account_id=eq.'+encodeURIComponent(id)+'&select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&limit=1'),
+      supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(id)+'&select=balance,lifetime_earned,lifetime_spent,lifetime_reversed&limit=1'),
+      supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=20'),
+      supabaseRest(env,'xp_transactions?account_id=eq.'+encodeURIComponent(id)+'&select=id,amount,source_type,source_id,reason,created_at&order=created_at.desc&limit=20'),
+      supabaseRest(env,'reward_ledger?account_id=eq.'+encodeURIComponent(id)+'&select=id,entry_type,amount,memo,expires_at,created_at&order=created_at.desc&limit=20')
+    ]);
+    if(!accounts?.[0]) return json({error:'User not found.'},404);
+    return json({account:accounts[0],progress:progress?.[0]||{},tokens:rewards?.[0]||{},activity:activity||[],xpTransactions:xp||[],tokenTransactions:tokens||[]});
+  }
+
+  if(path.match(/^\/accounts\/[0-9a-f-]{36}\/(xp|tokens|state)$/i) && request.method === 'POST') {
+    if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
+    const parts=path.split('/').filter(Boolean);
+    const id=parts[1];
+    const action=parts[2];
+    const actor=await supabaseRest(env,'accounts?username=eq.fcmt-system&select=id&limit=1');
+    const adminAccountId=actor?.[0]?.id;
+    if(!adminAccountId) return json({error:'Account system actor is not configured.'},503);
+    const body=await request.json().catch(()=>({}));
+
+    try {
+      if(action==='xp' || action==='tokens') {
+        const amount=Number(body.amount);
+        if(!Number.isSafeInteger(amount) || amount===0) return json({error:'Adjustment amount must be a non-zero whole number.'},400);
+        const reason=String(body.reason||'').trim();
+        if(!reason) return json({error:'A reason is required for every balance adjustment.'},400);
+        const idempotency=crypto.randomUUID();
+        const rpcPath=action==='xp' ? 'rpc/server_adjust_xp' : 'rpc/server_adjust_tokens';
+        const payload=action==='xp'
+          ? {p_target_account_id:id,p_amount:amount,p_reason:reason,p_idempotency_key:idempotency,p_admin_account_id:adminAccountId}
+          : {p_target_account_id:id,p_amount:amount,p_reason:reason,p_idempotency_key:idempotency,p_admin_account_id:adminAccountId};
+        const result=await supabaseRest(env,rpcPath,{method:'POST',body:JSON.stringify(payload)});
+        return json({ok:true,result});
+      }
+
+      const state=String(body.state||'').trim();
+      const allowed=['active','restricted','frozen','fraud_hold','fraud_removed','closed'];
+      if(!allowed.includes(state)) return json({error:'Invalid account state.'},400);
+      if(state==='fraud_removed' && !(await adminCanRemoveFraud(request,env))) return json({error:'Only owner/admin access can remove a fraud account.'},403);
+      const result=await supabaseRest(env,'rpc/server_set_account_state',{
+        method:'POST',
+        body:JSON.stringify({
+          p_target_account_id:id,p_new_state:state,p_reason:String(body.reason||'').trim(),
+          p_frozen_until:body.frozenUntil || null,p_admin_account_id:adminAccountId
+        })
+      });
+      return json({ok:true,result});
+    } catch(error) {
+      return json({error:error?.message||'Account operation failed.'},400);
+    }
+  }
+
   if(path === '/creator/articles' && request.method === 'GET') {
     const creator=await creatorRecord(request,env);
     if(!creator) return json({error:'Authentication required.'},401);
