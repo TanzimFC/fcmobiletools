@@ -59,7 +59,7 @@ function ensureUuid(value) {
 async function adminAccountList(env, url) {
   const q = safeSearch(url.searchParams.get('q'));
   const limit = asInt(url.searchParams.get('limit'), 50, 1, 100);
-  let path = 'accounts?select=id,username,display_name,state,created_at,system_account&order=created_at.desc&limit=' + limit;
+  let path = 'accounts?select=id,username,display_name,state,created_at,system_account&system_account=eq.false&order=created_at.desc&limit=' + limit;
   if (q) {
     path += '&or=(username.ilike.*' + encodeURIComponent(q) + '*,display_name.ilike.*' + encodeURIComponent(q) + '*)';
   }
