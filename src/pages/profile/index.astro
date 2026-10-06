@@ -21,41 +21,59 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
 
   async function load() {
-    const sessionResult = await accountAuth.auth.getSession();
-    if (!sessionResult.data.session) {
-      showState('Sign in to use your profile.','The rest of FCMobiletools still works normally without an account.');
-      return;
+    const parts = location.pathname.split('/').filter(Boolean);
+    const publicUsername = parts[0] === 'profile' && parts[1] ? decodeURIComponent(parts[1]).toLowerCase() : '';
+    const publicMode = Boolean(publicUsername);
+
+    let body = {};
+    if (publicMode) {
+      const response = await fetch('/api/account/public-profile?username='+encodeURIComponent(publicUsername), { credentials:'same-origin', cache:'no-store' });
+      body = await response.json().catch(()=>({}));
+      if (!response.ok) {
+        showState('Profile not found.','This public profile is unavailable or private.');
+        return;
+      }
+    } else {
+      const sessionResult = await accountAuth.auth.getSession();
+      if (!sessionResult.data.session) {
+        showState('Sign in to use your profile.','The rest of FCMobiletools still works normally without an account.');
+        return;
+      }
+      const response = await accountApi('/api/account/me');
+      body = await response.json().catch(()=>({}));
+      if (!response.ok) {
+        showState(body.error || 'Your session could not be loaded.','Please sign in again.');
+        return;
+      }
     }
 
-    const response = await accountApi('/api/account/me');
-    const body = await response.json().catch(()=>({}));
-    if (!response.ok) {
-      showState(body.error || 'Your session could not be loaded.','Please sign in again.');
-      return;
-    }
-
-    const a = body.account || {};
-    const activity = Array.isArray(body.activity) ? body.activity : [];
+    const a = publicMode ? (body.profile || {}) : (body.account || {});
+    const activity = publicMode ? [] : (Array.isArray(body.activity) ? body.activity : []);
     const initial = String(a.displayName || a.username || 'FC').slice(0,2).toUpperCase();
+
+    const publicActions = publicMode
+      ? '<div class="hero-actions"><a href="/account/signup/" class="soft-btn">Create account</a><a href="/account/login/" class="soft-btn">Sign in</a></div>'
+      : '<div class="hero-actions"><a href="/settings/" class="soft-btn">Edit profile</a><button id="logout" class="soft-btn" type="button">Sign out</button></div>';
 
     root.innerHTML = '<section class="profile-hero">'
       +'<div class="avatar">'+(a.avatarUrl ? '<img src="'+esc(a.avatarUrl)+'" alt="">' : esc(initial))+'</div>'
-      +'<div class="hero-copy"><span class="kicker">FCMOBILETOOLS ACCOUNT</span>'
+      +'<div class="hero-copy"><span class="kicker">'+(publicMode ? 'PUBLIC PROFILE' : 'FCMOBILETOOLS ACCOUNT')+'</span>'
       +'<h1>'+esc(a.displayName || a.username)+'</h1>'
-      +'<p>@'+esc(a.username)+' · Joined '+esc(date(a.createdAt))+'</p>'
-      +'<div class="hero-actions"><a href="/settings/" class="soft-btn">Edit profile</a><button id="logout" class="soft-btn" type="button">Sign out</button></div></div></section>'
+      +'<p>@'+esc(a.username)+(a.joinedAt || a.createdAt ? ' · Joined '+esc(date(a.joinedAt || a.createdAt)) : '')+'</p>'
+      +publicActions+'</div></section>'
       +'<section class="stat-grid">'
-      +'<article class="stat"><small>LEVEL</small><strong>'+fmt(a.level)+'</strong><span>XP progression</span></article>'
-      +'<article class="stat"><small>XP</small><strong>'+fmt(a.xp)+'</strong><span>Recorded XP balance</span></article>'
-      +'<article class="stat"><small>STREAK</small><strong>'+fmt(a.currentStreak)+'</strong><span>Qualifying activity</span></article>'
-      +'<article class="stat"><small>TOKENS</small><strong>'+fmt(a.tokens)+'</strong><span>Reward currency balance</span></article>'
+      +'<article class="stat"><small>LEVEL</small><strong>'+(a.level == null ? '—' : fmt(a.level))+'</strong><span>XP progression</span></article>'
+      +'<article class="stat"><small>XP</small><strong>'+(a.xp == null ? '—' : fmt(a.xp))+'</strong><span>Recorded XP balance</span></article>'
+      +'<article class="stat"><small>STREAK</small><strong>'+(a.currentStreak == null ? '—' : fmt(a.currentStreak))+'</strong><span>Qualifying activity</span></article>'
+      +'<article class="stat"><small>STATUS</small><strong>'+(publicMode ? 'Public' : fmt(a.tokens))+'</strong><span>'+(publicMode ? 'Profile visibility' : 'Token balance')+'</span></article>'
       +'</section>'
-      +'<section class="content-grid"><article class="panel"><div class="panel-head"><div><span class="kicker">ACTIVITY</span><h2>Recent account activity</h2></div><a href="/settings/">Settings</a></div>'
-      +(activity.length ? '<div class="activity-list">'+activity.map((item)=>'<div class="activity"><span class="activity-icon">'+esc(item.event_type === 'xp_earned' ? 'XP' : '•')+'</span><div><strong>'+esc(titleCase(item.event_type))+'</strong><small>'+esc(date(item.created_at))+'</small></div></div>').join('')+'</div>'
-      : '<div class="empty">No activity recorded yet. Useful account actions will appear here as the system grows.</div>')
-      +'</article><aside class="panel"><div class="panel-head"><div><span class="kicker">IDENTITY</span><h2>Public profile</h2></div></div>'
-      +'<p class="panel-copy">Your public profile shows only the fields you choose to make visible. Email, security data and internal account identifiers stay private.</p>'
-      +'<a class="primary-btn" href="/profile/'+encodeURIComponent(a.username)+'/">View public profile</a></aside></section>';
+      +'<section class="content-grid"><article class="panel"><div class="panel-head"><div><span class="kicker">'+(publicMode ? 'ACHIEVEMENTS' : 'ACTIVITY')+'</span><h2>'+(publicMode ? 'Public achievements' : 'Recent account activity')+'</h2></div><a href="'+(publicMode ? '/account/signup/' : '/settings/')+'">'+(publicMode ? 'Join FCMobiletools' : 'Settings')+'</a></div>'
+      +(publicMode
+        ? ((a.achievements||[]).length ? '<div class="activity-list">'+a.achievements.map((item)=>'<div class="activity"><span class="activity-icon">★</span><div><strong>'+esc(item.name)+'</strong><small>'+esc(item.description || '')+'</small></div></div>').join('')+'</div>' : '<div class="empty">No public achievements selected.</div>')
+        : (activity.length ? '<div class="activity-list">'+activity.map((item)=>'<div class="activity"><span class="activity-icon">'+esc(item.event_type === 'xp_earned' ? 'XP' : '•')+'</span><div><strong>'+esc(titleCase(item.event_type))+'</strong><small>'+esc(date(item.created_at))+'</small></div></div>').join('')+'</div>' : '<div class="empty">No activity recorded yet. Useful account actions will appear here as the system grows.</div>'))
+      +'</article><aside class="panel"><div class="panel-head"><div><span class="kicker">IDENTITY</span><h2>Privacy boundary</h2></div></div>'
+      +'<p class="panel-copy">Email, authentication credentials, internal account identifiers, security data, moderation notes and reward delivery information are never shown on this profile.</p>'
+      +(publicMode ? '<a class="primary-btn" href="/account/signup/">Create your account</a>' : '<a class="primary-btn" href="/profile/'+encodeURIComponent(a.username)+'/">View public profile</a>')+'</aside></section>';
 
     document.querySelector('#logout')?.addEventListener('click', async ()=>{
       await accountAuth.auth.signOut();
