@@ -30,8 +30,8 @@ readingTime: 5
 seoTitle: "FC Mobile 27 Maintenance Time & Global Schedule"
 seoDescription: "FC Mobile 27 maintenance starts at 21:30 UTC and is expected to end around 02:00 UTC. Check maintenance times for Europe, Middle East, Africa, Americas and Oceania."
 canonicalUrl: ""
-sources:
-  - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary"factStatus: "verified"
+sources: []
+factStatus: "verified"
 lastReviewed: "2026-09-23"
 ---
 
