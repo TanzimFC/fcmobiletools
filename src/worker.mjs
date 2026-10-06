@@ -1688,7 +1688,10 @@ export function createExports(manifest) {
 
   const publicProfilePath=url.pathname.match(/^\/profile\/([^/]+)\/?$/);
   if(publicProfilePath && publicProfilePath[1].toLowerCase()!=='public' && request.method==='GET') {
-    const asset=await env.ASSETS.fetch(new Request(new URL('/profile/public/',url),{method:'GET',headers:request.headers}));
+    // Use the main profile shell as the canonical public-profile renderer. It already
+    // detects /profile/:username and loads only the public, privacy-filtered API.
+    // This avoids depending on a second static shell asset being present in every build.
+    const asset=await env.ASSETS.fetch(new Request(new URL('/profile/',url),{method:'GET',headers:request.headers}));
     if(asset.ok) {
       const headers=new Headers(asset.headers);
       headers.set('cache-control','public, max-age=0, must-revalidate');
