@@ -1,61 +1,699 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AccountNav from '../../components/AccountNav.astro';
 ---
-<BaseLayout title="Account Settings" description="Manage your FCMobiletools profile and public profile visibility." robots="noindex,nofollow" googlebot="noindex,nofollow">
-  <main class="settings-page">
-    <div id="settingsRoot" class="settings-root"><div class="loading-card">Loading account settings…</div></div>
+<BaseLayout
+  title="Account Settings & Privacy | FCMobiletools"
+  description="Manage your FCMobiletools profile identity, avatar and public profile privacy controls."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="set-page">
+    <div class="set-wrap">
+      <AccountNav active="settings" sectionLabel="Settings & Privacy" />
+
+      <div id="settingsRoot" class="set-root">
+        <div class="acc-skel set-skel" aria-label="Loading account settings"></div>
+      </div>
+    </div>
   </main>
 </BaseLayout>
 
 <script>
-  import { accountAuth, accountApi } from '../../lib/account-client.js';
+  import {
+    accountAuth,
+    accountApi,
+    setCachedIdentity,
+    clearCachedIdentity,
+    escapeHtml as esc
+  } from '../../lib/account-client.js';
 
-  const root=document.querySelector('#settingsRoot');
-  const esc=(v)=>String(v ?? '').replace(/[&<>"']/g,(ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  function state(title,copy){root.innerHTML='<section class="state-card"><span class="kicker">ACCOUNT SETTINGS</span><h1>'+esc(title)+'</h1><p>'+esc(copy)+'</p><a class="primary-btn" href="/account/">Open account</a></section>';}
+  const root = document.getElementById('settingsRoot');
 
-  async function load(){
-    const session=await accountAuth.auth.getSession();
-    if(!session.data.session){state('Sign in first.','Sign in to manage your profile and public profile visibility.');return;}
-    const r=await accountApi('/api/account/me');
-    const b=await r.json().catch(()=>({}));
-    if(!r.ok){state(b.error || 'Unable to load settings.','Please sign in again.');return;}
+  const PRIVACY_OPTIONS = [
+    ['profile_public', 'Public profile enabled', 'Allow visitors to view your public profile at /profile/username/.'],
+    ['show_display_name', 'Show display name', 'Display your custom name instead of only your @username.'],
+    ['show_level', 'Show progression level', 'Display your current account level on your public card.'],
+    ['show_xp', 'Show recorded XP balance', 'Display your verified XP total on your public profile.'],
+    ['show_streak', 'Show activity streak', 'Display your current and longest qualifying day streak.'],
+    ['show_joined_date', 'Show joined date', 'Display the month and year you joined FCMobiletools.'],
+    ['show_achievements', 'Show unlocked achievements', 'Display your unlocked milestone badges on your public profile.'],
+    ['show_tournament_stats', 'Show tournament record', 'Display your verified tournament wins, losses and win rate.'],
+    ['show_activity_summary', 'Show activity summary', 'Allow public activity summary metrics when enabled.']
+  ];
 
-    const a=b.account || {}, s=b.settings || {};
-    root.innerHTML='<section class="head"><span class="kicker">ACCOUNT SETTINGS</span><h1>Keep your profile yours.</h1><p>These controls affect what other people can see. Email and security information are never public.</p></section>'
-      +'<section class="form-grid"><form class="panel" id="profileForm"><div class="panel-head"><div><span class="kicker">PROFILE</span><h2>Identity</h2></div></div>'
-      +'<label><span>Username</span><input id="username" value="'+esc(a.username)+'" minlength="3" maxlength="24" pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]" required></label>'
-      +'<label><span>Display name</span><input id="displayName" value="'+esc(a.displayName || '')+'" maxlength="80"></label>'
-      +'<label><span>Avatar URL</span><input id="avatarUrl" value="'+esc(a.avatarUrl || '')+'" maxlength="2048" placeholder="https://..."></label>'
-      +'<button class="primary-btn" type="submit">Save profile</button><p class="msg" id="profileMsg" role="status"></p></form>'
-      +'<form class="panel" id="privacyForm"><div class="panel-head"><div><span class="kicker">PUBLIC PROFILE</span><h2>Visibility</h2></div></div>'
-      +[['profile_public','Profile page public'],['show_display_name','Display name'],['show_level','Level'],['show_xp','XP'],['show_streak','Streak'],['show_joined_date','Joined date'],['show_achievements','Achievements'],['show_tournament_stats','Tournament stats'],['show_activity_summary','Activity summary']].map(([n,l])=>'<label class="toggle"><input type="checkbox" data-setting="'+n+'" '+(s[n] !== false ? 'checked' : '')+'><span>'+esc(l)+'</span></label>').join('')
-      +'<button class="primary-btn" type="submit">Save privacy settings</button><p class="msg" id="privacyMsg" role="status"></p></form></section>';
+  function renderSignedOut(title, copy) {
+    root.innerHTML = `
+      <section class="set-guest acc-anim">
+        <span class="set-kicker">ACCOUNT SETTINGS</span>
+        <h1>${esc(title)}</h1>
+        <p>${esc(copy)}</p>
+        <div class="set-guest-actions">
+          <a class="set-btn-primary" href="/account/">Sign in to Account →</a>
+          <a class="set-btn-secondary" href="/account/?mode=signup">Create Account</a>
+        </div>
+      </section>
+    `;
+  }
 
-    document.querySelector('#profileForm').addEventListener('submit',async (event)=>{
-      event.preventDefault(); const form=event.currentTarget,msg=document.querySelector('#profileMsg'),button=form.querySelector('button[type="submit"]'); msg.textContent='';button.disabled=true;
-      try{
-        if(!form.checkValidity()){form.reportValidity();return;}
-        const r=await accountApi('/api/account/profile',{method:'PUT',body:JSON.stringify({username:document.querySelector('#username').value.trim().toLowerCase(),displayName:document.querySelector('#displayName').value.trim(),avatarUrl:document.querySelector('#avatarUrl').value.trim()})});
-        const b=await r.json().catch(()=>({})); if(!r.ok)throw Error(b.error || 'Unable to save profile.');
-        msg.textContent='Profile saved.';msg.className='msg success';
-      }catch(e){msg.textContent=e.message;msg.className='msg error';}finally{button.disabled=false;}
+  async function loadSettings() {
+    const session = await accountAuth.auth.getSession();
+    if (!session.data?.session) {
+      renderSignedOut('Sign in to manage your settings', 'Control your @username, display name, avatar and public profile visibility.');
+      return;
+    }
+
+    const r = await accountApi('/api/account/me');
+    const b = await r.json().catch(() => ({}));
+    if (!r.ok || !b?.account) {
+      renderSignedOut(b?.error || 'Unable to load settings', 'Please sign in again to manage your account.');
+      return;
+    }
+
+    const a = b.account;
+    const s = b.settings || {};
+    setCachedIdentity(a);
+
+    const display = a.displayName || a.username;
+    const initials = String(display || 'FC').slice(0, 2).toUpperCase();
+    const isVerified = Boolean(a.emailConfirmedAt);
+
+    root.innerHTML = `
+      <header class="set-header acc-anim">
+        <div>
+          <span class="set-kicker">IDENTITY &amp; PRIVACY</span>
+          <h1>Keep your profile yours.</h1>
+          <p>Update your public handle and choose exactly which progression stats appear on your public profile. Private email and security data are never public.</p>
+        </div>
+        <a class="set-btn-secondary" href="/profile/${encodeURIComponent(a.username)}/">Preview Public Profile ↗</a>
+      </header>
+
+      <div class="set-grid acc-anim acc-anim-d1">
+        <!-- Left: Identity Form + Security Box -->
+        <div class="set-col">
+          <form class="set-panel" id="profileForm" novalidate>
+            <div class="panel-head">
+              <div>
+                <span class="set-kicker">PUBLIC IDENTITY</span>
+                <h2>Profile Details</h2>
+              </div>
+              <span class="pill-tag">Level ${Number(a.level || 1)}</span>
+            </div>
+
+            <!-- Live mini card preview -->
+            <div class="live-id-preview">
+              <div class="live-id-avatar" id="liveAvatarPreview">
+                ${a.avatarUrl ? `<img src="${esc(a.avatarUrl)}" alt="" />` : `<span>${esc(initials)}</span>`}
+              </div>
+              <div class="live-id-text">
+                <strong id="liveDisplayPreview">${esc(display)}</strong>
+                <span id="liveHandlePreview">@${esc(a.username)}</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="username">Username <small>(3–24 chars)</small></label>
+              <div class="input-prefix-wrap">
+                <span>@</span>
+                <input
+                  id="username"
+                  value="${esc(a.username)}"
+                  minlength="3"
+                  maxlength="24"
+                  pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]"
+                  required
+                />
+              </div>
+              <small class="hint">Lowercase letters, numbers, dots, underscores or hyphens.</small>
+            </div>
+
+            <div class="field">
+              <label for="displayName">Display Name <small>(optional, max 80 chars)</small></label>
+              <input id="displayName" value="${esc(a.displayName || '')}" maxlength="80" placeholder="Your display name" />
+            </div>
+
+            <div class="field">
+              <label for="avatarUrl">Avatar Image URL <small>(optional HTTPS URL)</small></label>
+              <input id="avatarUrl" value="${esc(a.avatarUrl || '')}" maxlength="2048" placeholder="https://..." />
+              <small class="hint">Leave blank to use your custom monogram badge.</small>
+            </div>
+
+            <div class="panel-foot">
+              <button class="set-btn-primary" type="submit">Save Profile Changes</button>
+              <p class="status-msg" id="profileMsg" role="status"></p>
+            </div>
+          </form>
+
+          <!-- Security & Account Box -->
+          <section class="set-panel">
+            <div class="panel-head">
+              <div>
+                <span class="set-kicker">PRIVATE CREDENTIALS</span>
+                <h2>Email &amp; Security</h2>
+              </div>
+              <span class="pill-tag ${isVerified ? 'is-green' : 'is-amber'}">
+                ${isVerified ? 'Verified' : 'Unverified'}
+              </span>
+            </div>
+            <div class="sec-info-row">
+              <div>
+                <small>LINKED EMAIL ADDRESS (NEVER PUBLIC)</small>
+                <strong>${esc(a.email || 'Protected')}</strong>
+              </div>
+            </div>
+            <p class="sec-note">
+              Need to change your password? Send a secure password reset link to your registered email address.
+            </p>
+            <div class="sec-actions">
+              <button type="button" class="set-btn-secondary" id="sendPasswordResetBtn">Send Password Reset Email</button>
+              <button type="button" class="set-btn-danger" id="settingsLogoutBtn">Sign out</button>
+            </div>
+            <p class="status-msg" id="securityMsg" role="status"></p>
+          </section>
+        </div>
+
+        <!-- Right: Public Visibility Switch Toggles -->
+        <form class="set-panel" id="privacyForm">
+          <div class="panel-head">
+            <div>
+              <span class="set-kicker">VISIBILITY CONTROLS</span>
+              <h2>Public Profile Privacy</h2>
+            </div>
+          </div>
+          <p class="privacy-intro">
+            Choose what other players can see when they visit <code>/profile/${esc(a.username)}/</code>.
+          </p>
+
+          <div class="switch-list">
+            ${PRIVACY_OPTIONS.map(
+              ([key, label, desc]) => `
+              <label class="switch-row">
+                <div class="switch-copy">
+                  <strong>${esc(label)}</strong>
+                  <small>${esc(desc)}</small>
+                </div>
+                <span class="switch-control">
+                  <input type="checkbox" data-setting="${key}" ${s[key] !== false ? 'checked' : ''} />
+                  <i class="switch-slider"></i>
+                </span>
+              </label>
+            `
+            ).join('')}
+          </div>
+
+          <div class="panel-foot">
+            <button class="set-btn-primary" type="submit">Save Privacy Preferences</button>
+            <p class="status-msg" id="privacyMsg" role="status"></p>
+          </div>
+        </form>
+      </div>
+    `;
+
+    // Live preview updates
+    const uInput = document.getElementById('username');
+    const dInput = document.getElementById('displayName');
+    const avInput = document.getElementById('avatarUrl');
+    const avBox = document.getElementById('liveAvatarPreview');
+    const dBox = document.getElementById('liveDisplayPreview');
+    const hBox = document.getElementById('liveHandlePreview');
+
+    const updatePreview = () => {
+      const u = String(uInput?.value || '').trim().toLowerCase() || a.username;
+      const d = String(dInput?.value || '').trim() || u;
+      const av = String(avInput?.value || '').trim();
+      if (dBox) dBox.textContent = d;
+      if (hBox) hBox.textContent = '@' + u;
+      if (avBox) {
+        if (av && /^https?:\/\//i.test(av)) {
+          avBox.innerHTML = `<img src="${esc(av)}" alt="" />`;
+        } else {
+          avBox.innerHTML = `<span>${esc(d.slice(0, 2).toUpperCase())}</span>`;
+        }
+      }
+    };
+    uInput?.addEventListener('input', updatePreview);
+    dInput?.addEventListener('input', updatePreview);
+    avInput?.addEventListener('input', updatePreview);
+
+    // Save Profile
+    document.getElementById('profileForm')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const msg = document.getElementById('profileMsg');
+      const button = form.querySelector('button[type="submit"]');
+      msg.textContent = '';
+      msg.className = 'status-msg';
+      button.disabled = true;
+      try {
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        const username = uInput.value.trim().toLowerCase();
+        const displayName = dInput.value.trim();
+        const avatarUrl = avInput.value.trim();
+        const r = await accountApi('/api/account/profile', {
+          method: 'PUT',
+          body: JSON.stringify({ username, displayName, avatarUrl })
+        });
+        const out = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(out.error || 'Unable to save profile.');
+        setCachedIdentity({ ...a, username, displayName: displayName || username, avatarUrl: avatarUrl || null });
+        msg.textContent = 'Profile saved and synced.';
+        msg.className = 'status-msg is-ok';
+      } catch (e) {
+        msg.textContent = e.message;
+        msg.className = 'status-msg is-err';
+      } finally {
+        button.disabled = false;
+      }
     });
 
-    document.querySelector('#privacyForm').addEventListener('submit',async (event)=>{
-      event.preventDefault(); const form=event.currentTarget,msg=document.querySelector('#privacyMsg'),button=form.querySelector('button[type="submit"]');msg.textContent='';button.disabled=true;
-      try{
-        const values={};form.querySelectorAll('[data-setting]').forEach((input)=>values[input.dataset.setting]=input.checked);
-        const r=await accountApi('/api/account/settings',{method:'PUT',body:JSON.stringify(values)});
-        const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error || 'Unable to save privacy settings.');
-        msg.textContent='Privacy settings saved.';msg.className='msg success';
-      }catch(e){msg.textContent=e.message;msg.className='msg error';}finally{button.disabled=false;}
+    // Save Privacy Settings
+    document.getElementById('privacyForm')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const msg = document.getElementById('privacyMsg');
+      const button = form.querySelector('button[type="submit"]');
+      msg.textContent = '';
+      msg.className = 'status-msg';
+      button.disabled = true;
+      try {
+        const values = {};
+        form.querySelectorAll('[data-setting]').forEach((input) => {
+          values[input.dataset.setting] = input.checked;
+        });
+        const r = await accountApi('/api/account/settings', {
+          method: 'PUT',
+          body: JSON.stringify(values)
+        });
+        const out = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(out.error || 'Unable to save privacy settings.');
+        msg.textContent = 'Privacy settings saved.';
+        msg.className = 'status-msg is-ok';
+      } catch (e) {
+        msg.textContent = e.message;
+        msg.className = 'status-msg is-err';
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    // Password reset trigger
+    document.getElementById('sendPasswordResetBtn')?.addEventListener('click', async (event) => {
+      const btn = event.currentTarget;
+      const msg = document.getElementById('securityMsg');
+      if (!a.email) return;
+      btn.disabled = true;
+      msg.textContent = '';
+      try {
+        const res = await accountAuth.auth.resetPasswordForEmail(a.email, {
+          redirectTo: new URL('/account/', location.origin).toString()
+        });
+        if (res.error) throw res.error;
+        msg.textContent = 'Password reset link sent to ' + a.email + '.';
+        msg.className = 'status-msg is-ok';
+      } catch (e) {
+        msg.textContent = e.message || 'Could not send reset email.';
+        msg.className = 'status-msg is-err';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Logout
+    document.getElementById('settingsLogoutBtn')?.addEventListener('click', async () => {
+      await accountAuth.auth.signOut();
+      clearCachedIdentity();
+      location.replace('/');
     });
   }
-  load().catch(()=>state('Something went wrong.','Please refresh and try again.'));
+
+  loadSettings().catch(() =>
+    renderSignedOut('Something went wrong', 'Please refresh the page and try again.')
+  );
 </script>
 
-<style>
-.settings-page{min-height:calc(100vh - 80px);padding:72px 18px 100px}.settings-root{width:min(1040px,100%);margin:auto}.kicker{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em;text-transform:uppercase}.head h1{margin:13px 0 8px;font:700 clamp(40px,5vw,62px)/1 var(--font-display);letter-spacing:-.06em}.head p{margin:0;color:var(--muted);font:500 12px/1.7 var(--font-body)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:25px}.panel,.loading-card,.state-card{padding:22px;border:1px solid rgba(255,255,255,.08);border-radius:20px;background:linear-gradient(150deg,rgba(15,26,38,.98),rgba(7,16,24,.98));box-shadow:0 22px 65px rgba(0,0,0,.23)}.panel{display:grid;gap:14px}.panel-head h2{margin:7px 0 0;font:700 20px var(--font-display);letter-spacing:-.035em}.panel label>span{display:block;margin-bottom:7px;color:#dce8ef;font:700 10px var(--font-body)}.panel input:not([type="checkbox"]){width:100%;min-height:44px;padding:0 12px;border:1px solid #29414e;border-radius:11px;background:#09141d;color:var(--text);font:600 12px var(--font-body);outline:0}.panel input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(76,201,255,.09)}.toggle{display:flex!important;gap:10px;align-items:center;padding:10px 11px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:#09141d}.toggle input{width:16px!important;height:16px!important;min-height:16px!important}.toggle span{margin:0!important;color:#bdd0dc!important}.primary-btn{min-height:42px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #69d8ff;border-radius:11px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;text-decoration:none;font:800 9px var(--font-body);cursor:pointer}.primary-btn:disabled{opacity:.6}.msg{min-height:18px;margin:0;font:700 9px var(--font-body)}.msg.success{color:#86e7a0}.msg.error{color:#ff9e96}.state-card{max-width:630px;margin:40px auto}.state-card h1{margin:11px 0;font:700 35px var(--font-display);letter-spacing:-.05em}.state-card p{color:var(--muted);font:500 11px/1.7 var(--font-body);margin:0 0 20px}
-@media(max-width:760px){.form-grid{grid-template-columns:1fr}}@media(max-width:520px){.settings-page{padding:48px 12px 75px}.panel{padding:17px}}
+<style is:global>
+  .set-page {
+    min-height: calc(100vh - 80px);
+    padding: 36px 18px 110px;
+    background: radial-gradient(900px 440px at 15% 0%, rgba(76, 201, 255, 0.07), transparent 65%);
+  }
+  .set-wrap {
+    width: min(1140px, 100%);
+    margin: 0 auto;
+  }
+  .set-skel {
+    height: 460px;
+    border-radius: 24px;
+  }
+
+  .set-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .set-kicker {
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .set-header h1 {
+    margin: 10px 0 8px;
+    font: 700 clamp(30px, 4.5vw, 46px) / 1.04 var(--font-display);
+    letter-spacing: -0.04em;
+    color: #f5f8fb;
+  }
+  .set-header p {
+    margin: 0;
+    max-width: 660px;
+    color: #93a8b8;
+    font: 500 14.5px/1.65 var(--font-body);
+  }
+
+  .set-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .set-col {
+    display: grid;
+    gap: 16px;
+  }
+
+  .set-panel,
+  .set-guest {
+    padding: 26px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(155deg, rgba(15, 26, 38, 0.97), rgba(8, 16, 24, 0.97));
+    box-shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
+    display: grid;
+    gap: 16px;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .panel-head h2 {
+    margin: 6px 0 0;
+    font: 700 22px/1.15 var(--font-display);
+    letter-spacing: -0.03em;
+    color: #f5f8fb;
+  }
+  .pill-tag {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.12);
+    border: 1px solid rgba(76, 201, 255, 0.28);
+    color: #8ee0ff;
+    font: 700 11.5px/1 var(--font-body);
+  }
+  .pill-tag.is-green {
+    background: rgba(71, 209, 108, 0.12);
+    border-color: rgba(71, 209, 108, 0.3);
+    color: #8ceca4;
+  }
+  .pill-tag.is-amber {
+    background: rgba(255, 191, 104, 0.12);
+    border-color: rgba(255, 191, 104, 0.3);
+    color: #ffd36e;
+  }
+
+  .live-id-preview {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(76, 201, 255, 0.2);
+    background: rgba(7, 16, 24, 0.75);
+  }
+  .live-id-avatar {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font: 800 18px/1 var(--font-display);
+    overflow: hidden;
+  }
+  .live-id-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .live-id-text strong {
+    display: block;
+    color: #f5f8fb;
+    font: 700 16px/1.25 var(--font-display);
+  }
+  .live-id-text span {
+    display: block;
+    margin-top: 2px;
+    color: #879fb1;
+    font: 600 13px/1.3 var(--font-body);
+  }
+
+  .field {
+    display: grid;
+    gap: 6px;
+  }
+  .field label {
+    color: #e1ecf3;
+    font: 700 13px/1.2 var(--font-body);
+  }
+  .field label small {
+    color: #7990a2;
+    font-weight: 500;
+  }
+  .input-prefix-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-prefix-wrap span {
+    position: absolute;
+    left: 14px;
+    color: #4cc9ff;
+    font: 700 14px/1 var(--font-body);
+  }
+  .input-prefix-wrap input {
+    padding-left: 30px !important;
+  }
+  .field input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid #263d4d;
+    background: #071018;
+    color: #f5f8fb;
+    font: 600 14px/1.2 var(--font-body);
+    outline: none;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+  .field input:focus {
+    border-color: #4cc9ff;
+    box-shadow: 0 0 0 4px rgba(76, 201, 255, 0.12);
+  }
+  .hint {
+    color: #7990a2;
+    font: 500 12px/1.45 var(--font-body);
+  }
+
+  /* Switch Toggles */
+  .privacy-intro {
+    margin: -4px 0 0;
+    color: #8fa5b6;
+    font: 500 13px/1.55 var(--font-body);
+  }
+  .privacy-intro code {
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #dff4ff;
+  }
+  .switch-list {
+    display: grid;
+    gap: 9px;
+  }
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    background: #09141e;
+    cursor: pointer;
+    transition: border-color 0.16s ease;
+  }
+  .switch-row:hover {
+    border-color: rgba(76, 201, 255, 0.28);
+  }
+  .switch-copy strong {
+    display: block;
+    color: #edf5fa;
+    font: 700 13.5px/1.25 var(--font-body);
+  }
+  .switch-copy small {
+    display: block;
+    margin-top: 3px;
+    color: #7d94a5;
+    font: 500 12px/1.4 var(--font-body);
+  }
+  .switch-control {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    flex: 0 0 46px;
+  }
+  .switch-control input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+  .switch-slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: #182a3a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .switch-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    border-radius: 50%;
+    background: #93a9b9;
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease;
+  }
+  .switch-control input:checked + .switch-slider {
+    background: rgba(76, 201, 255, 0.25);
+    border-color: #4cc9ff;
+  }
+  .switch-control input:checked + .switch-slider::before {
+    transform: translateX(20px);
+    background: #4cc9ff;
+    box-shadow: 0 0 10px rgba(76, 201, 255, 0.7);
+  }
+
+  .sec-info-row {
+    padding: 13px 15px;
+    border-radius: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    background: #09141e;
+  }
+  .sec-info-row small {
+    display: block;
+    color: #758e9f;
+    font: 800 10.5px/1 var(--font-body);
+    letter-spacing: 0.08em;
+  }
+  .sec-info-row strong {
+    display: block;
+    margin-top: 6px;
+    color: #f5f8fb;
+    font: 700 14px/1.2 var(--font-body);
+  }
+  .sec-note {
+    margin: 0;
+    color: #8ca3b4;
+    font: 500 13px/1.55 var(--font-body);
+  }
+  .sec-actions,
+  .panel-foot,
+  .set-guest-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .set-btn-primary,
+  .set-btn-secondary,
+  .set-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: 700 13px/1 var(--font-body);
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.16s ease, border-color 0.16s ease, opacity 0.16s ease;
+  }
+  .set-btn-primary {
+    border: 1px solid #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font-weight: 800;
+  }
+  .set-btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #101e2c;
+    color: #e3eef6;
+  }
+  .set-btn-danger {
+    border: 1px solid rgba(255, 130, 124, 0.28);
+    background: rgba(255, 130, 124, 0.07);
+    color: #ffaaa3;
+  }
+
+  .status-msg {
+    margin: 0;
+    font: 600 13px/1.4 var(--font-body);
+  }
+  .status-msg.is-ok { color: #7ee898; }
+  .status-msg.is-err { color: #ff9e96; }
+
+  .set-guest {
+    max-width: 600px;
+    margin: 24px auto;
+  }
+  .set-guest h1 {
+    margin: 8px 0 6px;
+    font: 700 32px/1.1 var(--font-display);
+  }
+  .set-guest p {
+    margin: 0 0 16px;
+    color: #93a8b8;
+    font: 500 14px/1.6 var(--font-body);
+  }
+
+  @media (max-width: 900px) {
+    .set-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 560px) {
+    .set-page {
+      padding: 20px 12px 106px;
+    }
+    .set-panel,
+    .set-guest {
+      padding: 20px 16px;
+      border-radius: 20px;
+    }
+  }
 </style>

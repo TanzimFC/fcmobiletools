@@ -1,26 +1,496 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AccountNav from '../../components/AccountNav.astro';
 ---
-<BaseLayout title="Rewards" description="Optional FCMobiletools reward catalogue." robots="noindex,nofollow" googlebot="noindex,nofollow">
-  <main class="account-list-page">
-    <section class="intro"><span class="eyebrow">REWARDS</span><h1>Optional rewards, no promises.</h1><p>Reward costs, stock and eligibility are configurable. FCMobiletools does not promise a cash value for XP or Tokens.</p></section>
-    <div id="root"><div class="loading">Loading rewards…</div></div>
+<BaseLayout
+  title="Rewards Catalogue | FCMobiletools Account"
+  description="Optional FCMobiletools loyalty perks, profile titles, badges, cosmetics and limited community rewards."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="rw-page">
+    <div class="rw-wrap">
+      <AccountNav active="rewards" sectionLabel="Rewards" />
+
+      <header class="rw-head acc-anim">
+        <div>
+          <span class="rw-kicker"><i class="rw-dot"></i> OPTIONAL LOYALTY CATALOGUE</span>
+          <h1>Optional perks, zero gimmicks.</h1>
+          <p>
+            Redeem earned Tokens for profile titles, badges, frames and limited community rewards when available. FCMobiletools does not assign a cash value or fixed exchange rate to XP or Tokens.
+          </p>
+        </div>
+      </header>
+
+      <div id="root" class="rw-root">
+        <div class="acc-skel rw-skel" aria-label="Loading rewards catalogue"></div>
+      </div>
+    </div>
   </main>
 </BaseLayout>
-<style>
-.account-list-page{width:min(1080px,calc(100% - 28px));margin:0 auto;padding:62px 0 100px}.intro{margin-bottom:18px}.eyebrow{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em}.intro h1{margin:11px 0 7px;font:700 clamp(38px,6vw,64px)/.96 var(--font-display);letter-spacing:-.055em;color:var(--text)}.intro p{max-width:720px;margin:0;color:var(--muted);font:500 13px/1.75 var(--font-body)}.loading,.empty,.reward{border:1px solid rgba(255,255,255,.08);border-radius:18px;background:linear-gradient(145deg,rgba(15,26,38,.98),rgba(7,16,24,.98))}.loading,.empty{padding:24px;color:var(--muted);font:600 11px var(--font-body)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.reward{padding:20px}.reward h2{margin:0;font:700 18px var(--font-display)}.reward p{margin:6px 0 0;color:#7890a0;font:500 10px/1.65 var(--font-body)}.meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.meta span{padding:6px 8px;border:1px solid rgba(76,201,255,.12);border-radius:999px;background:rgba(76,201,255,.045);color:#8fdcf6;font:800 8px var(--font-body)}.reward button{margin-top:14px;min-height:40px;padding:0 12px;border:1px solid #6dd8ff;border-radius:10px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;font:800 9px var(--font-body);cursor:pointer}.reward button:disabled{opacity:.55;cursor:wait}
-@media(max-width:720px){.grid{grid-template-columns:1fr}.account-list-page{padding-top:42px}}
-</style>
+
 <script>
-import { accountAuth } from '../../lib/account-client.js';
-const root=document.querySelector('#root');const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function load(){
- const session=await accountAuth.auth.getSession();
- if(!session.data.session){root.innerHTML='<div class="empty">Sign in to view the reward catalogue and your token balance.<br><a href="/account/" style="color:#4cc9ff;font-weight:800">Open Account</a></div>';return;}
- const r=await fetch('/api/account/rewards',{headers:{authorization:'Bearer '+session.data.session.access_token},cache:'no-store'});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'Unable to load rewards.');
- const economy=b.economy||{};const head='<div class="empty" style="margin-bottom:12px">Token balance: <strong style="color:#f5f8fb">'+Number(b.tokenBalance||0).toLocaleString()+'</strong> · '+esc(economy.displayName||'Tokens')+'. No fixed money value is assigned.</div>';
- root.innerHTML=head+(b.rewards?.length?'<div class="grid">'+b.rewards.map(x=>'<article class="reward"><h2>'+esc(x.name)+'</h2><p>'+esc(x.description||'')+'</p><div class="meta"><span>'+Number(x.cost||0).toLocaleString()+' '+esc(x.currencyCode||'tokens')+'</span><span>'+esc(x.rewardType)+'</span>'+(x.stock===null?'<span>Limited by availability</span>':'<span>'+Number(x.stock).toLocaleString()+' left</span>')+'</div><button data-redeem="'+esc(x.id)+'">Redeem</button></article>').join('')+'</div>':'<div class="empty">No rewards are active yet. The catalogue can be populated later without changing user accounts.</div>');
- root.querySelectorAll('[data-redeem]').forEach(btn=>btn.addEventListener('click',async()=>{btn.disabled=true;try{const s=await accountAuth.auth.getSession();const rr=await fetch('/api/account/rewards/'+btn.dataset.redeem+'/redeem',{method:'POST',headers:{authorization:'Bearer '+s.data.session.access_token,'content-type':'application/json'},body:JSON.stringify({idempotencyKey:crypto.randomUUID()})});const rb=await rr.json().catch(()=>({}));if(!rr.ok)throw new Error(rb.error||'Redemption failed.');btn.textContent='Redemption pending';}catch(e){btn.disabled=false;btn.textContent=e.message||'Try again';}}));
-}
-load().catch(e=>root.innerHTML='<div class="empty">'+esc(e.message)+'</div>');
+  import { accountAuth, escapeHtml as esc } from '../../lib/account-client.js';
+
+  const root = document.getElementById('root');
+  const fmt = (v) => Number(v || 0).toLocaleString();
+  const titleCase = (v) =>
+    String(v || 'reward')
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  async function load() {
+    const session = await accountAuth.auth.getSession();
+    if (!session.data?.session) {
+      root.innerHTML = `
+        <section class="rw-empty-card acc-anim">
+          <span class="rw-empty-badge">REWARD CATALOGUE</span>
+          <h2>Sign in to view your Token balance &amp; rewards</h2>
+          <p>Rewards are optional community perks for registered members. The entire FCMobiletools website remains free and open without an account.</p>
+          <div class="rw-empty-actions">
+            <a class="rw-btn-primary" href="/account/">Sign in to Account →</a>
+            <a class="rw-btn-secondary" href="/account/?mode=signup">Create Free Account</a>
+          </div>
+        </section>
+      `;
+      return;
+    }
+
+    const r = await fetch('/api/account/rewards', {
+      headers: { authorization: 'Bearer ' + session.data.session.access_token },
+      cache: 'no-store'
+    });
+    const b = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      root.innerHTML = `
+        <section class="rw-empty-card acc-anim">
+          <span class="rw-empty-badge">VERIFICATION REQUIRED</span>
+          <h2>${esc(b.error || 'Unable to load rewards')}</h2>
+          <p>Please verify your email address before accessing the reward catalogue or redeeming tokens.</p>
+          <div class="rw-empty-actions">
+            <a class="rw-btn-primary" href="/profile/">Back to Profile</a>
+          </div>
+        </section>
+      `;
+      return;
+    }
+
+    const economy = b.economy || {};
+    const balance = Number(b.tokenBalance || 0);
+    const rewards = Array.isArray(b.rewards) ? b.rewards : [];
+
+    const balanceBar = `
+      <section class="rw-balance-bar acc-anim">
+        <div class="rw-bal-main">
+          <span class="rw-bal-label">AVAILABLE BALANCE</span>
+          <strong>${fmt(balance)} <small>${esc(economy.display_name || 'Tokens')}</small></strong>
+          <p>Ledger-verified balance · No fixed cash value is assigned to XP or Tokens.</p>
+        </div>
+        <div class="rw-bal-actions">
+          <a class="rw-btn-secondary" href="/profile/#tokens">View Token Ledger →</a>
+          <a class="rw-btn-secondary" href="/missions/">Earn via Missions</a>
+        </div>
+      </section>
+    `;
+
+    if (!rewards.length) {
+      root.innerHTML =
+        balanceBar +
+        `
+        <section class="rw-empty-card acc-anim acc-anim-d1">
+          <span class="rw-empty-badge">CATALOGUE STANDBY</span>
+          <h2>No rewards are active right now</h2>
+          <p>
+            The reward catalogue is configurable from the Admin Workspace. Cosmetics, profile titles, badges and limited-stock community perks appear here when enabled.
+          </p>
+          <div class="rw-types-grid">
+            <article>
+              <strong>Profile Titles &amp; Badges</strong>
+              <span>Custom identity cosmetics displayed on your public profile and leaderboard row.</span>
+            </article>
+            <article>
+              <strong>Promotional &amp; Event Drops</strong>
+              <span>Limited-stock or seasonal community rewards when funded and scheduled.</span>
+            </article>
+            <article>
+              <strong>Server-Verified Redemption</strong>
+              <span>Every redemption uses idempotency keys and eligibility checks on the server.</span>
+            </article>
+          </div>
+        </section>
+      `;
+      return;
+    }
+
+    root.innerHTML =
+      balanceBar +
+      `
+      <div class="rw-grid acc-anim acc-anim-d1">
+        ${rewards
+          .map((item) => {
+            const canAfford = balance >= Number(item.cost || 0);
+            const outOfStock = item.stock !== null && Number(item.stock) <= 0;
+            return `
+              <article class="rw-card">
+                <div class="rw-card-top">
+                  <span class="rw-type-pill">${esc(titleCase(item.rewardType || 'Perk'))}</span>
+                  <span class="rw-stock-pill ${outOfStock ? 'is-out' : ''}">
+                    ${item.stock === null ? 'Available' : outOfStock ? 'Out of stock' : `${fmt(item.stock)} left`}
+                  </span>
+                </div>
+
+                <h2>${esc(item.name)}</h2>
+                <p>${esc(item.description || 'Optional FCMobiletools community reward.')}</p>
+
+                <div class="rw-card-foot">
+                  <div class="rw-cost">
+                    <small>COST</small>
+                    <strong>${fmt(item.cost)} ${esc(item.currencyCode || 'Tokens')}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    class="rw-redeem-btn"
+                    data-redeem="${esc(item.id)}"
+                    ${!canAfford || outOfStock ? 'disabled' : ''}
+                  >
+                    ${outOfStock ? 'Sold Out' : !canAfford ? 'Insufficient Tokens' : 'Redeem Reward'}
+                  </button>
+                </div>
+                <p class="rw-card-msg" data-msg-for="${esc(item.id)}" hidden></p>
+              </article>
+            `;
+          })
+          .join('')}
+      </div>
+    `;
+
+    root.querySelectorAll('[data-redeem]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const rewardId = btn.dataset.redeem;
+        const msgEl = root.querySelector(`[data-msg-for="${CSS.escape(rewardId)}"]`);
+        btn.disabled = true;
+        const prevText = btn.textContent;
+        btn.textContent = 'Processing…';
+        if (msgEl) {
+          msgEl.hidden = true;
+          msgEl.textContent = '';
+        }
+        try {
+          const s = await accountAuth.auth.getSession();
+          const rr = await fetch('/api/account/rewards/' + encodeURIComponent(rewardId) + '/redeem', {
+            method: 'POST',
+            headers: {
+              authorization: 'Bearer ' + s.data.session.access_token,
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({ idempotencyKey: crypto.randomUUID() })
+          });
+          const rb = await rr.json().catch(() => ({}));
+          if (!rr.ok) throw new Error(rb.error || 'Redemption failed.');
+          btn.textContent = 'Redemption Recorded ✓';
+          if (msgEl) {
+            msgEl.hidden = false;
+            msgEl.className = 'rw-card-msg is-ok';
+            msgEl.textContent = 'Redemption request verified and recorded in your Token ledger.';
+          }
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = prevText;
+          if (msgEl) {
+            msgEl.hidden = false;
+            msgEl.className = 'rw-card-msg is-err';
+            msgEl.textContent = e.message || 'Unable to redeem this reward.';
+          }
+        }
+      });
+    });
+  }
+
+  load().catch((e) => {
+    root.innerHTML = `<section class="rw-empty-card"><h2>Unable to load rewards</h2><p>${esc(e.message)}</p></section>`;
+  });
 </script>
+
+<style is:global>
+  .rw-page {
+    min-height: calc(100vh - 80px);
+    padding: 36px 18px 110px;
+    background: radial-gradient(880px 440px at 15% 0%, rgba(76, 201, 255, 0.07), transparent 65%);
+  }
+  .rw-wrap {
+    width: min(1140px, 100%);
+    margin: 0 auto;
+  }
+  .rw-skel {
+    height: 320px;
+    border-radius: 24px;
+  }
+
+  .rw-head {
+    margin-bottom: 22px;
+  }
+  .rw-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.14em;
+  }
+  .rw-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4cc9ff;
+    box-shadow: 0 0 10px #4cc9ff;
+  }
+  .rw-head h1 {
+    margin: 10px 0 8px;
+    font: 700 clamp(30px, 4.5vw, 48px) / 1.04 var(--font-display);
+    letter-spacing: -0.04em;
+    color: #f5f8fb;
+  }
+  .rw-head p {
+    margin: 0;
+    max-width: 660px;
+    color: #93a8b8;
+    font: 500 14.5px/1.65 var(--font-body);
+  }
+
+  .rw-balance-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 24px 28px;
+    border-radius: 22px;
+    border: 1px solid rgba(76, 201, 255, 0.24);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(76, 201, 255, 0.12), transparent 55%),
+      linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.28);
+    margin-bottom: 16px;
+  }
+  .rw-bal-label {
+    color: #7992a4;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.12em;
+  }
+  .rw-bal-main strong {
+    display: block;
+    margin: 6px 0 4px;
+    font: 800 clamp(26px, 3.5vw, 36px) / 1.05 var(--font-display);
+    color: #f5f8fb;
+  }
+  .rw-bal-main strong small {
+    font-size: 15px;
+    color: #4cc9ff;
+  }
+  .rw-bal-main p {
+    margin: 0;
+    color: #8ca2b3;
+    font: 500 13px/1.5 var(--font-body);
+  }
+  .rw-bal-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .rw-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .rw-card {
+    padding: 24px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+  }
+  .rw-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(76, 201, 255, 0.3);
+  }
+  .rw-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .rw-type-pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.12);
+    border: 1px solid rgba(76, 201, 255, 0.26);
+    color: #8ce2ff;
+    font: 700 11.5px/1 var(--font-body);
+  }
+  .rw-stock-pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(71, 209, 108, 0.12);
+    color: #88eba0;
+    font: 700 11.5px/1 var(--font-body);
+  }
+  .rw-stock-pill.is-out {
+    background: rgba(255, 130, 124, 0.12);
+    color: #ffaaa3;
+  }
+  .rw-card h2 {
+    margin: 0;
+    font: 700 20px/1.2 var(--font-display);
+    color: #f5f8fb;
+  }
+  .rw-card p {
+    margin: 0;
+    color: #90a6b7;
+    font: 500 13.5px/1.6 var(--font-body);
+  }
+  .rw-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .rw-cost small {
+    display: block;
+    color: #778fa1;
+    font: 800 10.5px/1 var(--font-body);
+    letter-spacing: 0.1em;
+  }
+  .rw-cost strong {
+    display: block;
+    margin-top: 4px;
+    color: #f5f8fb;
+    font: 800 17px/1.1 var(--font-display);
+  }
+  .rw-redeem-btn {
+    min-height: 42px;
+    padding: 0 16px;
+    border-radius: 11px;
+    border: 1px solid #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font: 800 13px/1 var(--font-body);
+    cursor: pointer;
+  }
+  .rw-redeem-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .rw-card-msg {
+    margin: 0;
+    font: 600 12.5px/1.4 var(--font-body);
+  }
+  .rw-card-msg.is-ok { color: #7ee898; }
+  .rw-card-msg.is-err { color: #ff9e96; }
+
+  /* Empty Card */
+  .rw-empty-card {
+    padding: 36px;
+    border-radius: 24px;
+    border: 1px solid rgba(76, 201, 255, 0.18);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(76, 201, 255, 0.09), transparent 55%),
+      linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+    box-shadow: 0 24px 65px rgba(0, 0, 0, 0.3);
+  }
+  .rw-empty-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.1);
+    border: 1px solid rgba(76, 201, 255, 0.24);
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.1em;
+  }
+  .rw-empty-card h2 {
+    margin: 14px 0 8px;
+    font: 700 clamp(24px, 3.5vw, 34px) / 1.12 var(--font-display);
+    color: #f5f8fb;
+  }
+  .rw-empty-card > p {
+    margin: 0 0 22px;
+    max-width: 680px;
+    color: #93a8b8;
+    font: 500 14.5px/1.65 var(--font-body);
+  }
+  .rw-types-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .rw-types-grid article {
+    padding: 16px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(7, 16, 24, 0.68);
+  }
+  .rw-types-grid strong {
+    display: block;
+    color: #edf5fb;
+    font: 700 14.5px/1.25 var(--font-display);
+    margin-bottom: 5px;
+  }
+  .rw-types-grid span {
+    color: #88a0b2;
+    font: 500 13px/1.5 var(--font-body);
+  }
+
+  .rw-empty-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .rw-btn-primary,
+  .rw-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: 700 13px/1 var(--font-body);
+    text-decoration: none;
+  }
+  .rw-btn-primary {
+    border: 1px solid #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font-weight: 800;
+  }
+  .rw-btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #101e2c;
+    color: #e3eef6;
+  }
+
+  @media (max-width: 860px) {
+    .rw-grid,
+    .rw-types-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 560px) {
+    .rw-page {
+      padding: 20px 12px 106px;
+    }
+    .rw-balance-bar,
+    .rw-empty-card,
+    .rw-card {
+      padding: 20px 16px;
+      border-radius: 20px;
+    }
+  }
+</style>

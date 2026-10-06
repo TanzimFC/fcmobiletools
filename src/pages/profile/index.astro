@@ -1,93 +1,1371 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AccountNav from '../../components/AccountNav.astro';
 ---
-<BaseLayout title="My Profile" description="Your FCMobiletools profile, progression and account activity." robots="noindex,nofollow" googlebot="noindex,nofollow">
-  <main class="profile-page">
-    <div id="profileRoot" class="profile-root"><div class="loading-card">Loading your FCMobiletools profile…</div></div>
+<BaseLayout
+  title="My Profile | FCMobiletools Account"
+  description="Your FCMobiletools personal profile, XP progression, streaks, tournament record, token ledger and account activity."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="prof-page">
+    <div class="prof-wrap">
+      <AccountNav active="profile" sectionLabel="Profile Hub" />
+
+      <div id="profileRoot" class="prof-root">
+        <!-- Shimmer skeleton while session & profile load -->
+        <div class="prof-skeleton" aria-label="Loading profile">
+          <div class="acc-skel skel-hero"></div>
+          <div class="skel-kpi-grid">
+            <div class="acc-skel skel-kpi"></div>
+            <div class="acc-skel skel-kpi"></div>
+            <div class="acc-skel skel-kpi"></div>
+            <div class="acc-skel skel-kpi"></div>
+          </div>
+          <div class="acc-skel skel-main"></div>
+        </div>
+      </div>
+    </div>
   </main>
 </BaseLayout>
 
 <script>
-  import { accountAuth, accountApi } from '../../lib/account-client.js';
+  import {
+    accountAuth,
+    accountApi,
+    setCachedIdentity,
+    clearCachedIdentity,
+    computeLevelProgress,
+    escapeHtml as esc
+  } from '../../lib/account-client.js';
 
-  const root = document.querySelector('#profileRoot');
-  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const root = document.getElementById('profileRoot');
   const fmt = (v) => Number(v || 0).toLocaleString();
-  const date = (v) => v ? new Intl.DateTimeFormat(undefined,{month:'short',year:'numeric',day:'numeric'}).format(new Date(v)) : '—';
-  const titleCase = (v) => String(v || '').replaceAll('_',' ').replace(/\b\w/g,(c)=>c.toUpperCase());
+  const fmtDate = (v) =>
+    v
+      ? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(v))
+      : '—';
+  const fmtDateTime = (v) =>
+    v
+      ? new Intl.DateTimeFormat(undefined, {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).format(new Date(v))
+      : '—';
+  const titleCase = (v) =>
+    String(v || 'Activity')
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  function showState(title, copy) {
-    root.innerHTML = '<section class="state-card"><span class="kicker">ACCOUNT</span><h1>'+esc(title)+'</h1><p>'+esc(copy)+'</p><a class="primary-btn" href="/account/">Open account</a></section>';
+  function renderGuestState(reasonTitle = 'Your FC Mobile companion identity.', reasonSub = '') {
+    root.innerHTML = `
+      <section class="guest-card acc-anim">
+        <div class="guest-main">
+          <span class="sec-kicker"><i class="kicker-dot"></i> FCMOBILETOOLS ACCOUNT</span>
+          <h1>${esc(reasonTitle)}</h1>
+          <p class="guest-lede">
+            ${esc(
+              reasonSub ||
+                'Track your progression, custom @username, daily streaks, tournament record and community contributions in one personal hub. Every calculator, event timer and redeem code on FCMobiletools works without signing in.'
+            )}
+          </p>
+          <div class="guest-actions">
+            <a class="btn-primary" href="/account/">Sign in to Account →</a>
+            <a class="btn-secondary" href="/account/?mode=signup">Create Free Account</a>
+            <a class="btn-ghost" href="/leaderboard/">View Leaderboard</a>
+          </div>
+        </div>
+        <div class="guest-features">
+          <article>
+            <span>01 · Identity</span>
+            <strong>Custom Profile &amp; Privacy</strong>
+            <p>Reserve your @username, display name, avatar and choose exactly which stats are public or private.</p>
+          </article>
+          <article>
+            <span>02 · Progression</span>
+            <strong>Ledger-Backed XP &amp; Streaks</strong>
+            <p>Earn verified XP from missions, achievements, tournament matches and approved community contributions.</p>
+          </article>
+          <article>
+            <span>03 · Ecosystem</span>
+            <strong>Connected Across Tools</strong>
+            <p>Jump straight to Team OVR, Rank Up Calculator, Live Events and Redeem Codes anytime.</p>
+          </article>
+        </div>
+      </section>
+    `;
   }
 
-  async function load() {
-    const parts = location.pathname.split('/').filter(Boolean);
-    const publicUsername = parts[0] === 'profile' && parts[1] ? decodeURIComponent(parts[1]).toLowerCase() : '';
-    const publicMode = Boolean(publicUsername);
+  async function loadPublicFallback(username) {
+    const response = await fetch('/api/public/profile/' + encodeURIComponent(username), { cache: 'no-store' });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !body?.profile) {
+      renderGuestState('Profile unavailable', body?.error || 'This public profile does not exist or is set to private.');
+      return;
+    }
+    const p = body.profile;
+    const display = p.show_display_name === false ? p.username : p.display_name || p.username;
+    const initials = String(display || 'FC').slice(0, 2).toUpperCase();
+    const tStats = p.tournament_stats || null;
 
-    let body = {};
-    if (publicMode) {
-      const response = await fetch('/api/account/public-profile?username='+encodeURIComponent(publicUsername), { credentials:'same-origin', cache:'no-store' });
-      body = await response.json().catch(()=>({}));
-      if (!response.ok) {
-        showState('Profile not found.','This public profile is unavailable or private.');
-        return;
-      }
-    } else {
-      const sessionResult = await accountAuth.auth.getSession();
-      if (!sessionResult.data.session) {
-        showState('Sign in to use your profile.','The rest of FCMobiletools still works normally without an account.');
-        return;
-      }
-      const response = await accountApi('/api/account/me');
-      body = await response.json().catch(()=>({}));
-      if (!response.ok) {
-        showState(body.error || 'Your session could not be loaded.','Please sign in again.');
-        return;
+    root.innerHTML = `
+      <section class="hero-card acc-anim">
+        <div class="hero-identity">
+          <div class="hero-avatar">
+            ${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="${esc(display)}" />` : `<span>${esc(initials)}</span>`}
+            ${p.level != null ? `<b class="avatar-lvl">Lv. ${fmt(p.level)}</b>` : ''}
+          </div>
+          <div class="hero-copy">
+            <div class="hero-badges">
+              <span class="pill pill-cyan">Public Profile</span>
+              ${p.selected_title ? `<span class="pill pill-amber">${esc(p.selected_title)}</span>` : ''}
+            </div>
+            <h1>${esc(display)}</h1>
+            <p class="hero-handle">
+              @${esc(p.username)}
+              ${p.joined_at ? ` · Joined ${esc(fmtDate(p.joined_at))}` : ''}
+            </p>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <a class="btn-primary" href="/account/?mode=signup">Create Your Account</a>
+          <a class="btn-secondary" href="/leaderboard/">Leaderboard</a>
+        </div>
+      </section>
+
+      <section class="kpi-grid acc-anim acc-anim-d1">
+        <article class="kpi-card">
+          <small>LEVEL</small>
+          <strong>${p.level != null ? fmt(p.level) : 'Private'}</strong>
+          <span>Account progression</span>
+        </article>
+        <article class="kpi-card">
+          <small>RECORDED XP</small>
+          <strong>${p.xp != null ? fmt(p.xp) : 'Private'}</strong>
+          <span>Verified experience</span>
+        </article>
+        <article class="kpi-card">
+          <small>ACTIVE STREAK</small>
+          <strong>${p.current_streak != null ? `🔥 ${fmt(p.current_streak)}d` : 'Private'}</strong>
+          <span>${p.longest_streak != null ? `Best: ${fmt(p.longest_streak)}d` : 'Qualifying streak'}</span>
+        </article>
+        <article class="kpi-card">
+          <small>TOURNAMENTS</small>
+          <strong>${tStats ? `${fmt(tStats.wins)}W – ${fmt(tStats.losses)}L` : '—'}</strong>
+          <span>${tStats && tStats.matchesPlayed ? `${tStats.winRate}% Win Rate (${tStats.matchesPlayed} played)` : 'Match record'}</span>
+        </article>
+      </section>
+    `;
+  }
+
+  async function loadAuthenticatedProfile() {
+    const parts = location.pathname.split('/').filter(Boolean);
+    const maybePublicUser = parts[0] === 'profile' && parts[1] && parts[1].toLowerCase() !== 'public'
+      ? decodeURIComponent(parts[1]).toLowerCase()
+      : '';
+
+    if (maybePublicUser) {
+      await loadPublicFallback(maybePublicUser);
+      return;
+    }
+
+    const sessionResult = await accountAuth.auth.getSession();
+    if (!sessionResult.data?.session) {
+      clearCachedIdentity();
+      renderGuestState();
+      return;
+    }
+
+    const response = await accountApi('/api/account/me');
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !body?.account) {
+      if (response.status === 401) clearCachedIdentity();
+      renderGuestState(body?.error || 'Session expired', 'Please sign in again to access your profile hub.');
+      return;
+    }
+
+    const a = body.account;
+    setCachedIdentity(a);
+
+    const activity = Array.isArray(body.activity) ? body.activity : [];
+    const tStats = body.tournamentStats || { tournamentsPlayed: 0, matchesPlayed: 0, wins: 0, losses: 0, winRate: 0 };
+    const lvInfo = computeLevelProgress(a.level, a.xp);
+    const display = a.displayName || a.username;
+    const initials = String(display || 'FC').slice(0, 2).toUpperCase();
+    const isVerified = Boolean(a.emailConfirmedAt);
+    const publicUrl = `${location.origin}/profile/${encodeURIComponent(a.username)}/`;
+
+    root.innerHTML = `
+      <!-- IDENTITY HERO -->
+      <section class="hero-card acc-anim">
+        <div class="hero-identity">
+          <div class="hero-avatar">
+            ${a.avatarUrl ? `<img src="${esc(a.avatarUrl)}" alt="${esc(display)}" />` : `<span>${esc(initials)}</span>`}
+            <b class="avatar-lvl">Lv. ${fmt(a.level)}</b>
+          </div>
+
+          <div class="hero-copy">
+            <div class="hero-badges">
+              <span class="pill pill-cyan">FCMobiletools Account</span>
+              <span class="pill ${a.state === 'active' ? 'pill-green' : 'pill-amber'}">${esc(titleCase(a.state || 'active'))}</span>
+              <span class="pill ${isVerified ? 'pill-green' : 'pill-amber'}">
+                ${isVerified ? '✓ Email Verified' : 'Email Unverified'}
+              </span>
+            </div>
+            <h1>${esc(display)}</h1>
+            <p class="hero-handle">
+              <strong>@${esc(a.username)}</strong>
+              <span>·</span>
+              <span>Joined ${esc(fmtDate(a.createdAt))}</span>
+              ${a.email ? `<span>·</span><span>${esc(a.email)}</span>` : ''}
+            </p>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <a class="btn-secondary" href="/settings/">Edit Profile &amp; Privacy</a>
+          <a class="btn-secondary" href="/profile/${encodeURIComponent(a.username)}/">Public View ↗</a>
+          <button class="btn-secondary" type="button" id="copyProfileUrlBtn" data-url="${esc(publicUrl)}">Copy Link</button>
+          <button class="btn-danger-ghost" type="button" id="logoutBtn">Sign out</button>
+        </div>
+
+        <!-- Level & XP Bar -->
+        <div class="xp-strip">
+          <div class="xp-strip-head">
+            <div>
+              <strong>Level ${fmt(lvInfo.level)} Progression</strong>
+              <span>Ledger-backed XP balance · Next milestone active</span>
+            </div>
+            <div class="xp-strip-numbers">
+              <b>${fmt(a.xp)} XP</b>
+              <span>🔥 ${fmt(a.currentStreak)}d Streak (Best ${fmt(a.longestStreak)}d)</span>
+            </div>
+          </div>
+          <div class="xp-bar-track" role="progressbar" aria-valuenow="${lvInfo.percent}" aria-valuemin="0" aria-valuemax="100">
+            <span class="xp-bar-fill" style="width:${lvInfo.percent}%"></span>
+          </div>
+        </div>
+      </section>
+
+      ${!isVerified ? `
+        <aside class="verify-banner acc-anim acc-anim-d1">
+          <div>
+            <strong>Verify your email address to unlock account-only features</strong>
+            <p>Check your inbox (${esc(a.email || 'your email')}) for the confirmation link so you can participate in missions, achievements, community submissions and reward redemptions.</p>
+          </div>
+          <a class="btn-secondary" href="/settings/">Account Settings →</a>
+        </aside>
+      ` : ''}
+
+      <!-- 4-CARD KPI GRID -->
+      <section class="kpi-grid acc-anim acc-anim-d1" aria-label="Account statistics">
+        <article class="kpi-card">
+          <div class="kpi-top">
+            <small>PROGRESSION</small>
+            <span class="kpi-badge">Level ${fmt(a.level)}</span>
+          </div>
+          <strong>${fmt(a.xp)} <small>XP</small></strong>
+          <p>Derived from verified append-only XP transactions.</p>
+          <button type="button" class="kpi-link" data-jump-tab="xp">View XP ledger →</button>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-top">
+            <small>REWARD CURRENCY</small>
+            <span class="kpi-badge kpi-badge--mint">Tokens</span>
+          </div>
+          <strong>${fmt(a.tokens)} <small>TKN</small></strong>
+          <p>Earned: ${fmt(a.lifetimeEarnedTokens)} · Spent: ${fmt(a.lifetimeSpentTokens)} · Loyalty perks</p>
+          <button type="button" class="kpi-link" data-jump-tab="tokens">View token ledger →</button>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-top">
+            <small>ACTIVITY STREAK</small>
+            <span class="kpi-badge kpi-badge--amber">Best: ${fmt(a.longestStreak)}d</span>
+          </div>
+          <strong>🔥 ${fmt(a.currentStreak)} <small>Days</small></strong>
+          <p>${a.lastQualifyingActivityAt ? `Last active ${esc(fmtDate(a.lastQualifyingActivityAt))}` : 'Updated on qualifying actions.'}</p>
+          <a class="kpi-link" href="/missions/">Browse missions →</a>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-top">
+            <small>TOURNAMENT RECORD</small>
+            <span class="kpi-badge">${fmt(tStats.tournamentsPlayed)} Events</span>
+          </div>
+          <strong>${fmt(tStats.wins)}W – ${fmt(tStats.losses)}L</strong>
+          <p>${tStats.matchesPlayed > 0 ? `${tStats.winRate}% Win Rate across ${fmt(tStats.matchesPlayed)} matches` : 'Play in FCMobiletools tournaments to build your record.'}</p>
+          <a class="kpi-link" href="/tournaments">Open Tournaments →</a>
+        </article>
+      </section>
+
+      <!-- MAIN WORKSPACE GRID -->
+      <section class="workspace-grid acc-anim acc-anim-d2">
+        <!-- Left: Tabbed Activity, XP Ledger, Token Ledger & Community Submission -->
+        <div class="ledger-panel">
+          <div class="ledger-tabs" role="tablist" aria-label="Account history and contributions">
+            <button type="button" class="ledger-tab active" data-tab="activity" role="tab" aria-selected="true">
+              Recent Activity
+            </button>
+            <button type="button" class="ledger-tab" data-tab="xp" role="tab" aria-selected="false">
+              XP Ledger
+            </button>
+            <button type="button" class="ledger-tab" data-tab="tokens" role="tab" aria-selected="false">
+              Token Ledger
+            </button>
+            <button type="button" class="ledger-tab" data-tab="contribute" role="tab" aria-selected="false">
+              Submit Correction
+            </button>
+          </div>
+
+          <!-- TAB 1: RECENT ACTIVITY -->
+          <div class="ledger-view" id="tab-activity">
+            <div class="view-head">
+              <div>
+                <h2>Account Activity</h2>
+                <p>Meaningful account events recorded server-side.</p>
+              </div>
+            </div>
+            ${
+              activity.length
+                ? `<div class="feed-list">
+                    ${activity
+                      .map(
+                        (item) => `
+                      <div class="feed-row">
+                        <span class="feed-ico">${item.event_type?.includes('xp') ? 'XP' : item.event_type?.includes('token') ? 'TK' : '★'}</span>
+                        <div class="feed-main">
+                          <strong>${esc(titleCase(item.event_type))}</strong>
+                          <small>${esc(item.entity_type ? titleCase(item.entity_type) : 'Verified account event')}</small>
+                        </div>
+                        <time class="feed-time">${esc(fmtDateTime(item.created_at))}</time>
+                      </div>
+                    `
+                      )
+                      .join('')}
+                  </div>`
+                : `<div class="empty-state">
+                    <strong>No activity events recorded yet</strong>
+                    <p>Meaningful actions—such as completing missions, unlocking achievements, tournament participation, and approved corrections—appear here automatically.</p>
+                  </div>`
+            }
+          </div>
+
+          <!-- TAB 2: XP LEDGER -->
+          <div class="ledger-view" id="tab-xp" hidden>
+            <div class="view-head">
+              <div>
+                <h2>XP Transaction History</h2>
+                <p>Append-only ledger of positive and negative XP adjustments with source and reason.</p>
+              </div>
+            </div>
+            <div id="xpLedgerList" class="feed-list">
+              <div class="empty-state">Loading XP transactions…</div>
+            </div>
+          </div>
+
+          <!-- TAB 3: TOKEN LEDGER -->
+          <div class="ledger-view" id="tab-tokens" hidden>
+            <div class="view-head">
+              <div>
+                <h2>Token Ledger</h2>
+                <p>Complete history of token earns, redemptions, admin adjustments and expiration metadata.</p>
+              </div>
+            </div>
+            <div id="tokenLedgerList" class="feed-list">
+              <div class="empty-state">Loading token ledger…</div>
+            </div>
+          </div>
+
+          <!-- TAB 4: COMMUNITY CONTRIBUTION -->
+          <div class="ledger-view" id="tab-contribute" hidden>
+            <div class="view-head">
+              <div>
+                <h2>Submit a Correction or Report</h2>
+                <p>Help keep FCMobiletools accurate. Submissions enter moderation review (submitted → pending review → approved/rejected) before any XP or token reward is granted.</p>
+              </div>
+            </div>
+            <form id="contributionForm" class="contrib-form">
+              <div class="contrib-row">
+                <label>
+                  <span>Contribution type</span>
+                  <select name="submissionType" required>
+                    <option value="correction">Data / Calculator Correction</option>
+                    <option value="event_info">Event / Reset Timing Update</option>
+                    <option value="broken_link">Broken Link or Bug Report</option>
+                    <option value="feedback">Feature or Tool Suggestion</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Related page or tool (optional)</span>
+                  <input name="pageUrl" type="text" maxlength="200" placeholder="e.g. /events or /rank-up-calculator" />
+                </label>
+              </div>
+              <label>
+                <span>Short summary</span>
+                <input name="title" type="text" required minlength="5" maxlength="160" placeholder="Brief summary of the correction or report" />
+              </label>
+              <label>
+                <span>Details &amp; verification notes</span>
+                <textarea name="body" required minlength="12" maxlength="2000" placeholder="Explain what needs updating and include the accurate values or source..."></textarea>
+              </label>
+              <div class="contrib-foot">
+                <button type="submit" class="btn-primary">Submit for Review →</button>
+                <p class="contrib-msg" id="contribMsg" role="status"></p>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Right Sidebar: Ecosystem Modules & Privacy Guarantee -->
+        <aside class="side-stack">
+          <section class="side-card">
+            <span class="sec-kicker">ACCOUNT MODULES</span>
+            <h2>Explore Your Hub</h2>
+            <div class="module-links">
+              <a href="/missions/">
+                <div>
+                  <strong>Missions</strong>
+                  <small>Daily, weekly &amp; event tasks</small>
+                </div>
+                <span>→</span>
+              </a>
+              <a href="/achievements/">
+                <div>
+                  <strong>Achievements</strong>
+                  <small>Unlockable milestones &amp; badges</small>
+                </div>
+                <span>→</span>
+              </a>
+              <a href="/leaderboard/">
+                <div>
+                  <strong>Leaderboards</strong>
+                  <small>Weekly, monthly &amp; all-time ranks</small>
+                </div>
+                <span>→</span>
+              </a>
+              <a href="/rewards/">
+                <div>
+                  <strong>Reward Catalogue</strong>
+                  <small>Optional titles, badges &amp; perks</small>
+                </div>
+                <span>→</span>
+              </a>
+              <a href="/settings/">
+                <div>
+                  <strong>Privacy &amp; Settings</strong>
+                  <small>Control public visibility</small>
+                </div>
+                <span>→</span>
+              </a>
+            </div>
+          </section>
+
+          <section class="side-card side-card--privacy">
+            <span class="sec-kicker">PRIVACY BOUNDARY</span>
+            <h3>Protected by Design</h3>
+            <p>
+              Your email address, authentication credentials, internal IDs, security logs and reward delivery details are strictly private and never appear on public profiles or leaderboards.
+            </p>
+            <a class="privacy-link" href="/settings/">Manage public profile fields →</a>
+          </section>
+        </aside>
+      </section>
+    `;
+
+    // Bind Copy Public Profile Link
+    const copyBtn = document.getElementById('copyProfileUrlBtn');
+    copyBtn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(copyBtn.dataset.url || publicUrl);
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => (copyBtn.textContent = prev), 1800);
+      } catch {}
+    });
+
+    // Bind Logout
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+      await accountAuth.auth.signOut();
+      clearCachedIdentity();
+      location.replace('/');
+    });
+
+    // Lazy-loaded XP & Token ledgers
+    let xpLoaded = false;
+    let tokensLoaded = false;
+
+    async function loadXpLedger() {
+      if (xpLoaded) return;
+      const box = document.getElementById('xpLedgerList');
+      if (!box) return;
+      try {
+        const r = await accountApi('/api/account/xp?limit=25');
+        const b = await r.json().catch(() => ({}));
+        const items = Array.isArray(b.items) ? b.items : [];
+        xpLoaded = true;
+        box.innerHTML = items.length
+          ? items
+              .map((tx) => {
+                const amt = Number(tx.amount || 0);
+                const sign = amt > 0 ? '+' : '';
+                return `
+                  <div class="feed-row">
+                    <span class="feed-ico ${amt >= 0 ? 'is-pos' : 'is-neg'}">${sign}${fmt(amt)}</span>
+                    <div class="feed-main">
+                      <strong>${esc(tx.reason || titleCase(tx.source_type || 'XP Transaction'))}</strong>
+                      <small>Source: ${esc(titleCase(tx.source_type || 'system'))}</small>
+                    </div>
+                    <time class="feed-time">${esc(fmtDateTime(tx.created_at))}</time>
+                  </div>
+                `;
+              })
+              .join('')
+          : `<div class="empty-state">
+              <strong>No XP transactions yet</strong>
+              <p>Every XP addition or deduction will be recorded here with its timestamp and reason.</p>
+            </div>`;
+      } catch {
+        box.innerHTML = '<div class="empty-state">Unable to load XP ledger right now.</div>';
       }
     }
 
-    const a = publicMode ? (body.profile || {}) : (body.account || {});
-    const activity = publicMode ? [] : (Array.isArray(body.activity) ? body.activity : []);
-    const initial = String(a.displayName || a.username || 'FC').slice(0,2).toUpperCase();
+    async function loadTokenLedger() {
+      if (tokensLoaded) return;
+      const box = document.getElementById('tokenLedgerList');
+      if (!box) return;
+      try {
+        const r = await accountApi('/api/account/tokens?limit=25');
+        const b = await r.json().catch(() => ({}));
+        const items = Array.isArray(b.items) ? b.items : [];
+        tokensLoaded = true;
+        box.innerHTML = items.length
+          ? items
+              .map((tx) => {
+                const amt = Number(tx.amount || 0);
+                const sign = amt > 0 ? '+' : '';
+                return `
+                  <div class="feed-row">
+                    <span class="feed-ico ${amt >= 0 ? 'is-pos' : 'is-neg'}">${sign}${fmt(amt)}</span>
+                    <div class="feed-main">
+                      <strong>${esc(tx.memo || titleCase(tx.entry_type || 'Token Entry'))}</strong>
+                      <small>${esc(titleCase(tx.entry_type || 'ledger'))}${tx.expires_at ? ` · Expires ${esc(fmtDate(tx.expires_at))}` : ''}</small>
+                    </div>
+                    <time class="feed-time">${esc(fmtDateTime(tx.created_at))}</time>
+                  </div>
+                `;
+              })
+              .join('')
+          : `<div class="empty-state">
+              <strong>No token transactions yet</strong>
+              <p>Token earnings, redemptions and adjustments are tracked here. Tokens have no fixed cash value.</p>
+            </div>`;
+      } catch {
+        box.innerHTML = '<div class="empty-state">Unable to load token ledger right now.</div>';
+      }
+    }
 
-    const publicActions = publicMode
-      ? '<div class="hero-actions"><a href="/account/" class="soft-btn">Create account</a><a href="/account/" class="soft-btn">Sign in</a></div>'
-      : '<div class="hero-actions"><a href="/settings/" class="soft-btn">Edit profile</a><button id="logout" class="soft-btn" type="button">Sign out</button></div>';
+    function activateTab(tabName) {
+      document.querySelectorAll('.ledger-tab').forEach((btn) => {
+        const active = btn.dataset.tab === tabName;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      ['activity', 'xp', 'tokens', 'contribute'].forEach((id) => {
+        const view = document.getElementById('tab-' + id);
+        if (view) view.hidden = id !== tabName;
+      });
+      if (tabName === 'xp') loadXpLedger();
+      if (tabName === 'tokens') loadTokenLedger();
+    }
 
-    root.innerHTML = '<section class="profile-hero">'
-      +'<div class="avatar">'+(a.avatarUrl ? '<img src="'+esc(a.avatarUrl)+'" alt="">' : esc(initial))+'</div>'
-      +'<div class="hero-copy"><span class="kicker">'+(publicMode ? 'PUBLIC PROFILE' : 'FCMOBILETOOLS ACCOUNT')+'</span>'
-      +'<h1>'+esc(a.displayName || a.username)+'</h1>'
-      +'<p>@'+esc(a.username)+(a.joinedAt || a.createdAt ? ' · Joined '+esc(date(a.joinedAt || a.createdAt)) : '')+'</p>'
-      +publicActions+'</div></section>'
-      +'<section class="stat-grid">'
-      +'<article class="stat"><small>LEVEL</small><strong>'+(a.level == null ? '—' : fmt(a.level))+'</strong><span>XP progression</span></article>'
-      +'<article class="stat"><small>XP</small><strong>'+(a.xp == null ? '—' : fmt(a.xp))+'</strong><span>Recorded XP balance</span></article>'
-      +'<article class="stat"><small>STREAK</small><strong>'+(a.currentStreak == null ? '—' : fmt(a.currentStreak))+'</strong><span>Qualifying activity</span></article>'
-      +'<article class="stat"><small>STATUS</small><strong>'+(publicMode ? 'Public' : fmt(a.tokens))+'</strong><span>'+(publicMode ? 'Profile visibility' : 'Token balance')+'</span></article>'
-      +'</section>'
-      +'<section class="content-grid"><article class="panel"><div class="panel-head"><div><span class="kicker">'+(publicMode ? 'ACHIEVEMENTS' : 'ACTIVITY')+'</span><h2>'+(publicMode ? 'Public achievements' : 'Recent account activity')+'</h2></div><a href="'+(publicMode ? '/account/signup/' : '/settings/')+'">'+(publicMode ? 'Join FCMobiletools' : 'Settings')+'</a></div>'
-      +(publicMode
-        ? ((a.achievements||[]).length ? '<div class="activity-list">'+a.achievements.map((item)=>'<div class="activity"><span class="activity-icon">★</span><div><strong>'+esc(item.name)+'</strong><small>'+esc(item.description || '')+'</small></div></div>').join('')+'</div>' : '<div class="empty">No public achievements selected.</div>')
-        : (activity.length ? '<div class="activity-list">'+activity.map((item)=>'<div class="activity"><span class="activity-icon">'+esc(item.event_type === 'xp_earned' ? 'XP' : '•')+'</span><div><strong>'+esc(titleCase(item.event_type))+'</strong><small>'+esc(date(item.created_at))+'</small></div></div>').join('')+'</div>' : '<div class="empty">No activity recorded yet. Useful account actions will appear here as the system grows.</div>'))
-      +'</article><aside class="panel"><div class="panel-head"><div><span class="kicker">IDENTITY</span><h2>Privacy boundary</h2></div></div>'
-      +'<p class="panel-copy">Email, authentication credentials, internal account identifiers, security data, moderation notes and reward delivery information are never shown on this profile.</p>'
-      +(publicMode ? '<a class="primary-btn" href="/account/">Create your account</a>' : '<a class="primary-btn" href="/profile/'+encodeURIComponent(a.username)+'/">View public profile</a>')+'</aside></section>';
+    document.querySelectorAll('.ledger-tab').forEach((btn) => {
+      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    });
+    document.querySelectorAll('[data-jump-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activateTab(btn.dataset.jumpTab);
+        document.querySelector('.ledger-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
 
-    document.querySelector('#logout')?.addEventListener('click', async ()=>{
-      await accountAuth.auth.signOut();
-      location.replace('/');
+    if (location.hash === '#xp') activateTab('xp');
+    else if (location.hash === '#tokens') activateTab('tokens');
+    else if (location.hash === '#contribute') activateTab('contribute');
+
+    // Bind Community Contribution Form
+    const contribForm = document.getElementById('contributionForm');
+    contribForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('contribMsg');
+      const btn = contribForm.querySelector('button[type="submit"]');
+      if (msg) {
+        msg.textContent = '';
+        msg.className = 'contrib-msg';
+      }
+      if (btn) btn.disabled = true;
+      try {
+        const fd = new FormData(contribForm);
+        const res = await accountApi('/api/account/community-submissions', {
+          method: 'POST',
+          body: JSON.stringify({
+            submissionType: fd.get('submissionType'),
+            pageUrl: fd.get('pageUrl'),
+            title: fd.get('title'),
+            body: fd.get('body')
+          })
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(out.error || 'Could not submit contribution.');
+        if (msg) {
+          msg.textContent = 'Submitted for admin review! Approved contributions earn verified progression.';
+          msg.className = 'contrib-msg is-ok';
+        }
+        contribForm.reset();
+      } catch (err) {
+        if (msg) {
+          msg.textContent = err.message || 'Submission failed.';
+          msg.className = 'contrib-msg is-err';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     });
   }
 
-  load().catch(()=>showState('Something went wrong.','Please refresh and try again.'));
+  loadAuthenticatedProfile().catch(() =>
+    renderGuestState('Unable to load profile right now', 'Please refresh the page or check your connection.')
+  );
 </script>
 
-<style>
-.profile-page{min-height:calc(100vh - 80px);padding:72px 18px 100px}.profile-root{width:min(1120px,100%);margin:auto}.loading-card,.state-card,.panel,.stat{border:1px solid rgba(255,255,255,.08);background:linear-gradient(150deg,rgba(15,26,38,.97),rgba(7,16,24,.97));border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.22)}.loading-card{padding:34px;color:var(--muted);font:600 12px var(--font-body)}.state-card{max-width:650px;margin:50px auto;padding:38px}.kicker{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em;text-transform:uppercase}.state-card h1{margin:14px 0 8px;font:700 40px var(--font-display);letter-spacing:-.05em}.state-card p{margin:0 0 20px;color:var(--muted);font:500 12px/1.7 var(--font-body)}
-.profile-hero{display:flex;gap:20px;align-items:center;padding:30px;border:1px solid rgba(76,201,255,.14);border-radius:24px;background:radial-gradient(circle at 0 0,rgba(76,201,255,.08),transparent 48%),linear-gradient(145deg,#0f1a26,#08131c);box-shadow:0 26px 70px rgba(0,0,0,.28)}.avatar{width:88px;height:88px;flex:0 0 88px;display:grid;place-items:center;border-radius:22px;background:linear-gradient(145deg,#8be1ff,#4cc9ff);color:#04131c;font:900 24px var(--font-display);overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.hero-copy h1{margin:9px 0 4px;font:700 clamp(30px,5vw,52px)/.98 var(--font-display);letter-spacing:-.05em}.hero-copy p{margin:0;color:var(--muted);font:500 11px var(--font-body)}.hero-actions{display:flex;gap:8px;margin-top:17px}.soft-btn{min-height:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #29414e;border-radius:10px;background:#0d1821;color:#c4d5de;text-decoration:none;font:800 9px var(--font-body);cursor:pointer}.soft-btn:hover{border-color:rgba(76,201,255,.35);color:var(--text)}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.stat{padding:18px}.stat small{color:#66889b;font:800 8px var(--font-body);letter-spacing:.12em}.stat strong{display:block;margin:7px 0 3px;font:800 27px var(--font-display);letter-spacing:-.04em;color:var(--text)}.stat span{display:block;color:#78909f;font:500 9px/1.45 var(--font-body)}
-.content-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:12px;margin-top:12px}.panel{padding:22px}.panel-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.panel-head h2{margin:7px 0 0;font:700 20px var(--font-display);letter-spacing:-.035em}.panel-head a{color:#7bd7fa;font:700 9px var(--font-body);text-decoration:none}.panel-copy{color:var(--muted);font:500 10px/1.7 var(--font-body);margin:13px 0 18px}.activity-list{display:grid;gap:8px;margin-top:18px}.activity{display:flex;gap:11px;align-items:center;padding:10px 11px;border:1px solid rgba(255,255,255,.06);border-radius:11px;background:#09141d}.activity-icon{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:rgba(76,201,255,.08);color:var(--primary);font:800 8px var(--font-body)}.activity strong{display:block;color:#e5f0f5;font:700 10px var(--font-body);text-transform:capitalize}.activity small{display:block;color:#698393;margin-top:3px;font:600 8px var(--font-body)}.empty{padding:20px 0;color:var(--muted);font:500 10px/1.6 var(--font-body)}.primary-btn{min-height:42px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #69d8ff;border-radius:11px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;text-decoration:none;font:800 9px var(--font-body);cursor:pointer}
-@media(max-width:840px){.stat-grid{grid-template-columns:1fr 1fr}.content-grid{grid-template-columns:1fr}}@media(max-width:520px){.profile-page{padding:48px 12px 75px}.profile-hero{padding:20px;align-items:flex-start}.avatar{width:68px;height:68px;flex-basis:68px;border-radius:18px;font-size:18px}.hero-copy h1{font-size:32px}.stat{padding:14px}.stat strong{font-size:22px}}
+<style is:global>
+  .prof-page {
+    min-height: calc(100vh - 80px);
+    padding: 36px 18px 110px;
+    background: radial-gradient(900px 460px at 15% 0%, rgba(76, 201, 255, 0.07), transparent 65%);
+  }
+  .prof-wrap {
+    width: min(1160px, 100%);
+    margin: 0 auto;
+  }
+
+  /* Shimmer Skeleton */
+  .prof-skeleton {
+    display: grid;
+    gap: 16px;
+  }
+  .skel-hero {
+    height: 230px;
+    border-radius: 24px;
+  }
+  .skel-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .skel-kpi {
+    height: 132px;
+    border-radius: 18px;
+  }
+  .skel-main {
+    height: 320px;
+    border-radius: 22px;
+  }
+
+  /* Guest Overview Card */
+  .guest-card {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 28px;
+    padding: 40px;
+    border-radius: 26px;
+    border: 1px solid rgba(76, 201, 255, 0.2);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(76, 201, 255, 0.1), transparent 55%),
+      linear-gradient(155deg, #0f1a26 0%, #071018 100%);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+  }
+  .sec-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .kicker-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4cc9ff;
+    box-shadow: 0 0 10px #4cc9ff;
+  }
+  .guest-main h1 {
+    margin: 14px 0 12px;
+    font: 700 clamp(32px, 4.5vw, 52px) / 1.02 var(--font-display);
+    letter-spacing: -0.045em;
+    color: #f5f8fb;
+  }
+  .guest-lede {
+    margin: 0 0 24px;
+    color: #a7b4c3;
+    font: 500 15px/1.68 var(--font-body);
+    max-width: 560px;
+  }
+  .guest-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .guest-features {
+    display: grid;
+    gap: 12px;
+  }
+  .guest-features article {
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    background: rgba(9, 18, 27, 0.78);
+  }
+  .guest-features span {
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .guest-features strong {
+    display: block;
+    margin: 6px 0 4px;
+    color: #f5f8fb;
+    font: 700 16px/1.25 var(--font-display);
+  }
+  .guest-features p {
+    margin: 0;
+    color: #93a7b7;
+    font: 500 13px/1.55 var(--font-body);
+  }
+
+  /* Buttons */
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: 700 13px/1 var(--font-body);
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+  }
+  .btn-primary {
+    border: 1px solid #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font-weight: 800;
+    box-shadow: 0 12px 28px -10px rgba(76, 201, 255, 0.55);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 34px -10px rgba(76, 201, 255, 0.7);
+  }
+  .btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #101e2c;
+    color: #e3eef6;
+  }
+  .btn-secondary:hover {
+    border-color: rgba(76, 201, 255, 0.4);
+    background: #16283a;
+    color: #fff;
+  }
+  .btn-ghost {
+    border: 1px solid rgba(76, 201, 255, 0.2);
+    background: rgba(76, 201, 255, 0.06);
+    color: #8ce2ff;
+  }
+  .btn-danger-ghost {
+    border: 1px solid rgba(255, 130, 124, 0.25);
+    background: rgba(255, 130, 124, 0.06);
+    color: #ffaba4;
+  }
+  .btn-danger-ghost:hover {
+    border-color: rgba(255, 130, 124, 0.48);
+    background: rgba(255, 130, 124, 0.12);
+  }
+
+  /* Hero Card */
+  .hero-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 22px;
+    align-items: center;
+    padding: 32px;
+    border-radius: 26px;
+    border: 1px solid rgba(76, 201, 255, 0.2);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(76, 201, 255, 0.1), transparent 52%),
+      linear-gradient(150deg, #0f1a26 0%, #08121b 100%);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.35);
+  }
+  .hero-identity {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    min-width: 0;
+  }
+  .hero-avatar {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    flex: 0 0 88px;
+    border-radius: 24px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font: 800 28px/1 var(--font-display);
+    box-shadow: 0 14px 34px rgba(76, 201, 255, 0.28);
+    overflow: visible;
+  }
+  .hero-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 24px;
+  }
+  .avatar-lvl {
+    position: absolute;
+    bottom: -8px;
+    right: -6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #071018;
+    border: 1px solid rgba(76, 201, 255, 0.5);
+    color: #7ee0ff;
+    font: 800 11px/1 var(--font-body);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  }
+
+  .hero-copy {
+    min-width: 0;
+  }
+  .hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font: 700 11.5px/1 var(--font-body);
+  }
+  .pill-cyan {
+    background: rgba(76, 201, 255, 0.1);
+    border: 1px solid rgba(76, 201, 255, 0.26);
+    color: #8ee0ff;
+  }
+  .pill-green {
+    background: rgba(71, 209, 108, 0.1);
+    border: 1px solid rgba(71, 209, 108, 0.28);
+    color: #8ceca4;
+  }
+  .pill-amber {
+    background: rgba(255, 191, 104, 0.1);
+    border: 1px solid rgba(255, 191, 104, 0.28);
+    color: #ffd36e;
+  }
+
+  .hero-copy h1 {
+    margin: 0 0 6px;
+    font: 700 clamp(28px, 4vw, 44px) / 1.04 var(--font-display);
+    letter-spacing: -0.04em;
+    color: #f5f8fb;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hero-handle {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    color: #93a8b8;
+    font: 500 13.5px/1.4 var(--font-body);
+  }
+  .hero-handle strong {
+    color: #d6e8f3;
+    font-weight: 700;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .xp-strip {
+    grid-column: 1 / -1;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(7, 16, 24, 0.72);
+    display: grid;
+    gap: 10px;
+  }
+  .xp-strip-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .xp-strip-head strong {
+    color: #f5f8fb;
+    font: 700 14px/1.2 var(--font-display);
+    margin-right: 10px;
+  }
+  .xp-strip-head span {
+    color: #889fb0;
+    font: 500 12.5px/1.3 var(--font-body);
+  }
+  .xp-strip-numbers {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .xp-strip-numbers b {
+    color: #4cc9ff;
+    font: 800 14px/1 var(--font-display);
+  }
+  .xp-bar-track {
+    height: 9px;
+    border-radius: 999px;
+    background: #050c12;
+    overflow: hidden;
+  }
+  .xp-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #4cc9ff, #58e0a6);
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .verify-banner {
+    margin-top: 14px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 191, 104, 0.3);
+    background: rgba(255, 191, 104, 0.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .verify-banner strong {
+    display: block;
+    color: #ffe094;
+    font: 700 14px/1.3 var(--font-body);
+  }
+  .verify-banner p {
+    margin: 4px 0 0;
+    color: #c7b894;
+    font: 500 13px/1.5 var(--font-body);
+  }
+
+  /* 4-Card KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .kpi-card {
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(76, 201, 255, 0.28);
+  }
+  .kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .kpi-top small {
+    color: #7992a4;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.1em;
+  }
+  .kpi-badge {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.1);
+    color: #7ee0ff;
+    font: 700 11px/1 var(--font-body);
+  }
+  .kpi-badge--mint {
+    background: rgba(71, 209, 108, 0.1);
+    color: #88eba0;
+  }
+  .kpi-badge--amber {
+    background: rgba(255, 191, 104, 0.12);
+    color: #ffd36e;
+  }
+  .kpi-card strong {
+    font: 800 clamp(24px, 3vw, 32px) / 1.05 var(--font-display);
+    letter-spacing: -0.04em;
+    color: #f5f8fb;
+  }
+  .kpi-card strong small {
+    font-size: 14px;
+    color: #7f9bb0;
+    font-weight: 700;
+  }
+  .kpi-card p {
+    margin: 0;
+    color: #8da3b4;
+    font: 500 12.5px/1.5 var(--font-body);
+  }
+  .kpi-link {
+    margin-top: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #4cc9ff;
+    font: 700 12.5px/1.2 var(--font-body);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .kpi-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Workspace Grid */
+  .workspace-grid {
+    display: grid;
+    grid-template-columns: 1.38fr 0.62fr;
+    gap: 16px;
+    margin-top: 16px;
+    align-items: start;
+  }
+
+  .ledger-panel,
+  .side-card {
+    padding: 24px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.26);
+  }
+
+  .ledger-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 5px;
+    border-radius: 14px;
+    background: #071018;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 20px;
+  }
+  .ledger-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .ledger-tab {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #889fb0;
+    font: 700 13px/1 var(--font-body);
+    cursor: pointer;
+    transition: color 0.16s ease, background 0.16s ease;
+  }
+  .ledger-tab:hover {
+    color: #f5f8fb;
+  }
+  .ledger-tab.active {
+    color: #f5f8fb;
+    background: rgba(76, 201, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(76, 201, 255, 0.3);
+  }
+
+  .view-head {
+    margin-bottom: 16px;
+  }
+  .view-head h2 {
+    margin: 0 0 4px;
+    font: 700 21px/1.15 var(--font-display);
+    letter-spacing: -0.03em;
+    color: #f5f8fb;
+  }
+  .view-head p {
+    margin: 0;
+    color: #8ea4b5;
+    font: 500 13px/1.55 var(--font-body);
+  }
+
+  .feed-list {
+    display: grid;
+    gap: 9px;
+  }
+  .feed-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 15px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    background: #09141e;
+  }
+  .feed-ico {
+    min-width: 42px;
+    height: 36px;
+    padding: 0 8px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(76, 201, 255, 0.1);
+    color: #4cc9ff;
+    font: 800 12px/1 var(--font-body);
+  }
+  .feed-ico.is-pos {
+    background: rgba(71, 209, 108, 0.12);
+    color: #7ee898;
+  }
+  .feed-ico.is-neg {
+    background: rgba(255, 130, 124, 0.12);
+    color: #ff9e96;
+  }
+  .feed-main strong {
+    display: block;
+    color: #ecf4f9;
+    font: 700 13.5px/1.3 var(--font-body);
+  }
+  .feed-main small {
+    display: block;
+    margin-top: 3px;
+    color: #7e95a6;
+    font: 500 12px/1.35 var(--font-body);
+  }
+  .feed-time {
+    color: #738a9b;
+    font: 600 12px/1 var(--font-body);
+    white-space: nowrap;
+  }
+
+  .empty-state {
+    padding: 28px 20px;
+    border-radius: 16px;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    background: rgba(7, 16, 24, 0.5);
+    text-align: center;
+  }
+  .empty-state strong {
+    display: block;
+    color: #e6f1f8;
+    font: 700 15px/1.3 var(--font-display);
+    margin-bottom: 6px;
+  }
+  .empty-state p {
+    margin: 0 auto;
+    max-width: 480px;
+    color: #8ca2b3;
+    font: 500 13px/1.6 var(--font-body);
+  }
+
+  /* Community Contribution Form */
+  .contrib-form {
+    display: grid;
+    gap: 14px;
+  }
+  .contrib-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .contrib-form label {
+    display: grid;
+    gap: 6px;
+  }
+  .contrib-form label span {
+    color: #dce8f0;
+    font: 700 12.5px/1.2 var(--font-body);
+  }
+  .contrib-form input,
+  .contrib-form select,
+  .contrib-form textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 13px;
+    border-radius: 11px;
+    border: 1px solid #263d4d;
+    background: #071018;
+    color: #f5f8fb;
+    font: 600 13.5px/1.4 var(--font-body);
+    outline: none;
+  }
+  .contrib-form textarea {
+    min-height: 110px;
+    padding: 12px 13px;
+    resize: vertical;
+  }
+  .contrib-form input:focus,
+  .contrib-form select:focus,
+  .contrib-form textarea:focus {
+    border-color: #4cc9ff;
+    box-shadow: 0 0 0 4px rgba(76, 201, 255, 0.1);
+  }
+  .contrib-foot {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .contrib-msg {
+    margin: 0;
+    font: 600 13px/1.4 var(--font-body);
+  }
+  .contrib-msg.is-ok { color: #7ee898; }
+  .contrib-msg.is-err { color: #ff9e96; }
+
+  /* Right Side Stack */
+  .side-stack {
+    display: grid;
+    gap: 16px;
+  }
+  .side-card h2,
+  .side-card h3 {
+    margin: 8px 0 12px;
+    font: 700 20px/1.15 var(--font-display);
+    letter-spacing: -0.03em;
+    color: #f5f8fb;
+  }
+  .module-links {
+    display: grid;
+    gap: 8px;
+  }
+  .module-links a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    background: #09141e;
+    text-decoration: none;
+    transition: border-color 0.16s ease, transform 0.16s ease;
+  }
+  .module-links a:hover {
+    border-color: rgba(76, 201, 255, 0.35);
+    transform: translateX(2px);
+  }
+  .module-links strong {
+    display: block;
+    color: #ecf4f9;
+    font: 700 13.5px/1.25 var(--font-body);
+  }
+  .module-links small {
+    display: block;
+    margin-top: 3px;
+    color: #7f96a7;
+    font: 500 12px/1.3 var(--font-body);
+  }
+  .module-links span {
+    color: #4cc9ff;
+    font-weight: 800;
+  }
+  .side-card--privacy p {
+    margin: 0 0 14px;
+    color: #90a6b7;
+    font: 500 13px/1.6 var(--font-body);
+  }
+  .privacy-link {
+    color: #4cc9ff;
+    font: 700 13px/1.2 var(--font-body);
+    text-decoration: none;
+  }
+  .privacy-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 960px) {
+    .guest-card,
+    .workspace-grid {
+      grid-template-columns: 1fr;
+    }
+    .kpi-grid,
+    .skel-kpi-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .hero-card {
+      grid-template-columns: 1fr;
+    }
+    .hero-actions {
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 580px) {
+    .prof-page {
+      padding: 22px 12px 106px;
+    }
+    .guest-card,
+    .hero-card,
+    .ledger-panel,
+    .side-card {
+      padding: 20px 16px;
+      border-radius: 20px;
+    }
+    .hero-identity {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .kpi-grid,
+    .skel-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+    .contrib-row {
+      grid-template-columns: 1fr;
+    }
+    .feed-row {
+      grid-template-columns: auto 1fr;
+    }
+    .feed-time {
+      grid-column: 2;
+    }
+  }
 </style>

@@ -1,44 +1,541 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AccountNav from '../../../components/AccountNav.astro';
 ---
-<BaseLayout title="Player Profile" description="Public FCMobiletools community profile." robots="noindex,nofollow" googlebot="noindex,nofollow">
-  <main class="public-profile-page">
-    <div id="publicRoot" class="public-root"><div class="loading-card">Loading public profile…</div></div>
+<BaseLayout
+  title="Community Player Profile | FCMOBILETOOLS"
+  description="Public FCMobiletools community profile, progression, achievements and tournament statistics."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="pub-page">
+    <div class="pub-wrap">
+      <AccountNav active="profile" sectionLabel="Public Profile" />
+
+      <div id="publicRoot" class="pub-root">
+        <div class="acc-skel pub-skel" aria-label="Loading public profile"></div>
+      </div>
+    </div>
   </main>
 </BaseLayout>
 
 <script>
-  const root=document.querySelector('#publicRoot');
-  const esc=(v)=>String(v ?? '').replace(/[&<>"']/g,(ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const fmt=(v)=>Number(v || 0).toLocaleString();
-  const date=(v)=>v ? new Intl.DateTimeFormat(undefined,{month:'short',year:'numeric',day:'numeric'}).format(new Date(v)) : '—';
+  import { computeLevelProgress, escapeHtml as esc } from '../../../lib/account-client.js';
 
-  async function load(){
-    const parts=location.pathname.split('/').filter(Boolean);
-    const username=parts.length >= 2 && parts[0] === 'profile' ? decodeURIComponent(parts[1]) : '';
-    if(!username){root.innerHTML='<div class="empty">Profile not found.</div>';return;}
-    const response=await fetch('/api/public/profile/'+encodeURIComponent(username),{cache:'no-store'});
-    const body=await response.json().catch(()=>({}));
-    if(!response.ok){root.innerHTML='<section class="empty"><h1>Profile unavailable</h1><p>'+esc(body.error || 'This profile does not exist or is private.')+'</p><a href="/account/">Create an account</a></section>';return;}
-    const p=body.profile || {};
-    const initial=String(p.display_name || p.username || 'FC').slice(0,2).toUpperCase();
-    const cards=[];
-    if(p.show_level !== false && p.level !== null) cards.push('<article><small>LEVEL</small><strong>'+fmt(p.level)+'</strong></article>');
-    if(p.show_xp !== false && p.xp !== null) cards.push('<article><small>XP</small><strong>'+fmt(p.xp)+'</strong></article>');
-    if(p.show_streak !== false && p.current_streak !== null) cards.push('<article><small>STREAK</small><strong>'+fmt(p.current_streak)+'</strong></article>');
-    root.innerHTML='<section class="profile-card"><div class="avatar">'+(p.avatar_url ? '<img src="'+esc(p.avatar_url)+'" alt="">' : esc(initial))+'</div>'
-      +'<span class="kicker">FCMOBILETOOLS COMMUNITY</span>'
-      +'<h1>'+esc(p.show_display_name === false ? p.username : (p.display_name || p.username))+'</h1>'
-      +'<p class="handle">@'+esc(p.username)+'</p>'
-      +(p.show_joined_date !== false ? '<p class="joined">Joined '+esc(date(p.joined_at))+'</p>' : '')
-      +(p.selected_title ? '<div class="title-pill">'+esc(p.selected_title)+'</div>' : '')
-      +(cards.length ? '<div class="stat-grid">'+cards.join('')+'</div>' : '')
-      +'<p class="privacy-note">Public profile. Private account, security, email and reward-delivery information stays hidden.</p>'
-      +'<a class="primary-btn" href="/account/">Join FCMobiletools</a></section>';
+  const root = document.getElementById('publicRoot');
+  const fmt = (v) => Number(v || 0).toLocaleString();
+  const fmtDate = (v) =>
+    v ? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(v)) : '—';
+
+  async function loadPublicProfile() {
+    const parts = location.pathname.split('/').filter(Boolean);
+    const username = parts.length >= 2 && parts[0] === 'profile' ? decodeURIComponent(parts[1]).toLowerCase() : '';
+
+    if (!username || username === 'public') {
+      root.innerHTML = `
+        <section class="pub-empty acc-anim">
+          <span class="pub-kicker">PUBLIC PROFILE</span>
+          <h1>No username specified</h1>
+          <p>Open a community member’s profile from the leaderboard or sign in to view your own FCMobiletools profile.</p>
+          <div class="pub-empty-actions">
+            <a class="pub-btn-primary" href="/profile/">My Profile</a>
+            <a class="pub-btn-secondary" href="/leaderboard/">View Leaderboard</a>
+          </div>
+        </section>
+      `;
+      return;
+    }
+
+    const response = await fetch('/api/public/profile/' + encodeURIComponent(username), { cache: 'no-store' });
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok || !body?.profile) {
+      root.innerHTML = `
+        <section class="pub-empty acc-anim">
+          <span class="pub-kicker">COMMUNITY PROFILE</span>
+          <h1>Profile unavailable</h1>
+          <p>${esc(body?.error || 'This profile does not exist or has been set to private by its owner.')}</p>
+          <div class="pub-empty-actions">
+            <a class="pub-btn-primary" href="/leaderboard/">Browse Leaderboard</a>
+            <a class="pub-btn-secondary" href="/account/">Create Your Account</a>
+          </div>
+        </section>
+      `;
+      return;
+    }
+
+    const p = body.profile;
+    const display = p.show_display_name === false ? p.username : p.display_name || p.username;
+    const initials = String(display || 'FC').slice(0, 2).toUpperCase();
+    const lvInfo = computeLevelProgress(p.level || 1, p.xp || 0);
+    const achievements = Array.isArray(p.achievements) ? p.achievements : [];
+    const tStats = p.tournament_stats || null;
+
+    const statCards = [];
+    if (p.show_level !== false && p.level !== null) {
+      statCards.push(`
+        <article class="pub-stat">
+          <small>LEVEL</small>
+          <strong>${fmt(p.level)}</strong>
+          <span>Account rank</span>
+        </article>
+      `);
+    }
+    if (p.show_xp !== false && p.xp !== null) {
+      statCards.push(`
+        <article class="pub-stat">
+          <small>VERIFIED XP</small>
+          <strong>${fmt(p.xp)}</strong>
+          <span>Progression ledger</span>
+        </article>
+      `);
+    }
+    if (p.show_streak !== false && p.current_streak !== null) {
+      statCards.push(`
+        <article class="pub-stat">
+          <small>ACTIVE STREAK</small>
+          <strong>🔥 ${fmt(p.current_streak)}d</strong>
+          <span>${p.longest_streak != null ? `Best: ${fmt(p.longest_streak)}d` : 'Qualifying streak'}</span>
+        </article>
+      `);
+    }
+    if (p.show_tournament_stats !== false && tStats) {
+      statCards.push(`
+        <article class="pub-stat">
+          <small>TOURNAMENTS</small>
+          <strong>${fmt(tStats.wins)}W – ${fmt(tStats.losses)}L</strong>
+          <span>${tStats.matchesPlayed > 0 ? `${tStats.winRate}% Win Rate` : 'Verified match record'}</span>
+        </article>
+      `);
+    }
+
+    root.innerHTML = `
+      <section class="pub-hero acc-anim">
+        <div class="pub-hero-main">
+          <div class="pub-avatar">
+            ${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="${esc(display)}" />` : `<span>${esc(initials)}</span>`}
+            ${p.show_level !== false && p.level !== null ? `<b>Lv. ${fmt(p.level)}</b>` : ''}
+          </div>
+          <div class="pub-info">
+            <div class="pub-pills">
+              <span class="pub-pill">FCMobiletools Member</span>
+              ${p.selected_title ? `<span class="pub-pill pub-pill--gold">${esc(p.selected_title)}</span>` : ''}
+            </div>
+            <h1>${esc(display)}</h1>
+            <p class="pub-meta">
+              <strong>@${esc(p.username)}</strong>
+              ${p.show_joined_date !== false && p.joined_at ? `<span>·</span><span>Joined ${esc(fmtDate(p.joined_at))}</span>` : ''}
+            </p>
+          </div>
+        </div>
+
+        <div class="pub-actions">
+          <button type="button" class="pub-btn-secondary" id="sharePublicBtn">Share Profile</button>
+          <a class="pub-btn-primary" href="/account/?mode=signup">Claim Your @Username →</a>
+        </div>
+
+        ${
+          p.show_level !== false && p.level !== null && p.show_xp !== false && p.xp !== null
+            ? `<div class="pub-xp-bar">
+                <div class="pub-xp-labels">
+                  <span>Level ${fmt(p.level)} Progression</span>
+                  <strong>${fmt(p.xp)} XP</strong>
+                </div>
+                <div class="pub-xp-track"><span style="width:${lvInfo.percent}%"></span></div>
+              </div>`
+            : ''
+        }
+      </section>
+
+      ${
+        statCards.length
+          ? `<section class="pub-stats-grid acc-anim acc-anim-d1">${statCards.join('')}</section>`
+          : ''
+      }
+
+      ${
+        p.show_achievements !== false
+          ? `<section class="pub-section acc-anim acc-anim-d2">
+              <div class="pub-sec-head">
+                <div>
+                  <span class="pub-kicker">MILESTONES</span>
+                  <h2>Unlocked Achievements</h2>
+                </div>
+                <span>${achievements.length} unlocked</span>
+              </div>
+              ${
+                achievements.length
+                  ? `<div class="pub-ach-grid">
+                      ${achievements
+                        .map(
+                          (a) => `
+                        <article class="pub-ach-card">
+                          <span class="pub-ach-ico">🏆</span>
+                          <div>
+                            <strong>${esc(a.name)}</strong>
+                            <p>${esc(a.description || 'Verified community milestone.')}</p>
+                            ${a.unlocked_at ? `<small>Unlocked ${esc(fmtDate(a.unlocked_at))}</small>` : ''}
+                          </div>
+                        </article>
+                      `
+                        )
+                        .join('')}
+                    </div>`
+                  : `<div class="pub-empty-box">No unlocked public achievements displayed yet.</div>`
+              }
+            </section>`
+          : ''
+      }
+
+      <footer class="pub-privacy-note acc-anim acc-anim-d3">
+        <span>Privacy Protected:</span> Only fields explicitly enabled by <strong>@${esc(p.username)}</strong> are visible on this page. Email, security and account credentials are never exposed.
+      </footer>
+    `;
+
+    const shareBtn = document.getElementById('sharePublicBtn');
+    shareBtn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        shareBtn.textContent = 'Link Copied!';
+        setTimeout(() => (shareBtn.textContent = 'Share Profile'), 1800);
+      } catch {}
+    });
   }
-  load().catch(()=>{root.innerHTML='<div class="empty">Unable to load this profile.</div>';});
+
+  loadPublicProfile().catch(() => {
+    root.innerHTML = `<section class="pub-empty"><h1>Unable to load profile</h1><p>Please check your connection and try again.</p></section>`;
+  });
 </script>
 
-<style>
-.public-profile-page{min-height:calc(100vh - 80px);padding:82px 18px 110px}.public-root{width:min(760px,100%);margin:auto}.loading-card,.profile-card,.empty{border:1px solid rgba(255,255,255,.08);border-radius:24px;background:linear-gradient(150deg,rgba(15,26,38,.98),rgba(7,16,24,.98));box-shadow:0 26px 80px rgba(0,0,0,.25)}.loading-card{padding:34px;color:var(--muted)}.profile-card{padding:42px;text-align:center;background:radial-gradient(circle at 50% 0,rgba(76,201,255,.09),transparent 48%),linear-gradient(150deg,#0f1a26,#071018)}.kicker{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em;text-transform:uppercase}.avatar{width:104px;height:104px;margin:0 auto 20px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(145deg,#8be1ff,#4cc9ff);color:#04131c;font:900 28px var(--font-display);overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.profile-card h1{margin:15px 0 4px;font:700 clamp(38px,6vw,58px)/1 var(--font-display);letter-spacing:-.055em}.handle{margin:0;color:#99afbd;font:600 12px var(--font-body)}.joined{margin:7px 0 0;color:#6f8796;font:500 10px var(--font-body)}.title-pill{display:inline-flex;margin-top:16px;padding:8px 11px;border:1px solid rgba(76,201,255,.16);border-radius:999px;background:rgba(76,201,255,.06);color:#8dddf8;font:800 9px var(--font-body)}.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:26px}.stat-grid article{padding:15px 10px;border:1px solid rgba(255,255,255,.07);border-radius:13px;background:#09141d}.stat-grid small{display:block;color:#648295;font:800 7px var(--font-body);letter-spacing:.12em}.stat-grid strong{display:block;margin-top:6px;color:var(--text);font:800 24px var(--font-display)}.privacy-note{max-width:520px;margin:24px auto 20px;color:#748c9a;font:500 9px/1.65 var(--font-body)}.primary-btn{min-height:43px;padding:0 15px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #69d8ff;border-radius:11px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;text-decoration:none;font:800 9px var(--font-body)}.empty{padding:34px;color:var(--muted);text-align:center}.empty h1{margin:0 0 8px;font:700 30px var(--font-display);color:var(--text)}.empty p{margin:0 0 17px}.empty a{color:#7fdcff}@media(max-width:520px){.public-profile-page{padding:52px 12px 75px}.profile-card{padding:28px 18px}.avatar{width:82px;height:82px;border-radius:21px}.stat-grid{grid-template-columns:1fr 1fr}.stat-grid article:last-child:nth-child(odd){grid-column:1/-1}}
+<style is:global>
+  .pub-page {
+    min-height: calc(100vh - 80px);
+    padding: 36px 18px 110px;
+    background: radial-gradient(860px 440px at 50% 0%, rgba(76, 201, 255, 0.08), transparent 65%);
+  }
+  .pub-wrap {
+    width: min(1040px, 100%);
+    margin: 0 auto;
+  }
+  .pub-skel {
+    height: 300px;
+    border-radius: 26px;
+  }
+
+  .pub-hero,
+  .pub-section,
+  .pub-empty {
+    padding: 32px;
+    border-radius: 26px;
+    border: 1px solid rgba(76, 201, 255, 0.2);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(76, 201, 255, 0.1), transparent 52%),
+      linear-gradient(155deg, #0f1a26 0%, #071018 100%);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.35);
+  }
+  .pub-hero {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 22px;
+    align-items: center;
+  }
+  .pub-hero-main {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    min-width: 0;
+  }
+  .pub-avatar {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    flex: 0 0 92px;
+    border-radius: 24px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font: 800 30px/1 var(--font-display);
+    box-shadow: 0 14px 36px rgba(76, 201, 255, 0.28);
+  }
+  .pub-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 24px;
+  }
+  .pub-avatar b {
+    position: absolute;
+    bottom: -8px;
+    right: -6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #071018;
+    border: 1px solid rgba(76, 201, 255, 0.5);
+    color: #8ee0ff;
+    font: 800 11px/1 var(--font-body);
+  }
+
+  .pub-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .pub-pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.1);
+    border: 1px solid rgba(76, 201, 255, 0.26);
+    color: #8ee0ff;
+    font: 700 11.5px/1 var(--font-body);
+  }
+  .pub-pill--gold {
+    background: rgba(255, 191, 104, 0.12);
+    border-color: rgba(255, 191, 104, 0.32);
+    color: #ffd36e;
+  }
+
+  .pub-info h1 {
+    margin: 0 0 6px;
+    font: 700 clamp(28px, 4vw, 46px) / 1.04 var(--font-display);
+    letter-spacing: -0.04em;
+    color: #f5f8fb;
+  }
+  .pub-meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    color: #93a8b8;
+    font: 500 14px/1.4 var(--font-body);
+  }
+  .pub-meta strong {
+    color: #dcebf5;
+  }
+
+  .pub-actions,
+  .pub-empty-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pub-btn-primary,
+  .pub-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: 700 13px/1 var(--font-body);
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.16s ease, border-color 0.16s ease;
+  }
+  .pub-btn-primary {
+    border: 1px solid #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font-weight: 800;
+  }
+  .pub-btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #101e2c;
+    color: #e3eef6;
+  }
+
+  .pub-xp-bar {
+    grid-column: 1 / -1;
+    padding: 15px 18px;
+    border-radius: 15px;
+    background: rgba(7, 16, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    display: grid;
+    gap: 8px;
+  }
+  .pub-xp-labels {
+    display: flex;
+    justify-content: space-between;
+    font: 600 13px/1.2 var(--font-body);
+    color: #95abc0;
+  }
+  .pub-xp-labels strong {
+    color: #4cc9ff;
+  }
+  .pub-xp-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #050c12;
+    overflow: hidden;
+  }
+  .pub-xp-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #4cc9ff, #58e0a6);
+  }
+
+  .pub-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .pub-stat {
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+  }
+  .pub-stat small {
+    color: #7992a4;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.1em;
+  }
+  .pub-stat strong {
+    display: block;
+    margin: 8px 0 4px;
+    font: 800 28px/1.05 var(--font-display);
+    color: #f5f8fb;
+  }
+  .pub-stat span {
+    color: #8ba1b2;
+    font: 500 12.5px/1.4 var(--font-body);
+  }
+
+  .pub-section {
+    margin-top: 16px;
+    padding: 26px;
+  }
+  .pub-sec-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .pub-kicker {
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .pub-sec-head h2 {
+    margin: 6px 0 0;
+    font: 700 22px/1.15 var(--font-display);
+    color: #f5f8fb;
+  }
+  .pub-sec-head > span {
+    color: #849caf;
+    font: 700 12.5px/1 var(--font-body);
+  }
+
+  .pub-ach-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .pub-ach-card {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    background: #09141e;
+  }
+  .pub-ach-ico {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(76, 201, 255, 0.1);
+    font-size: 18px;
+  }
+  .pub-ach-card strong {
+    display: block;
+    color: #f5f8fb;
+    font: 700 15px/1.25 var(--font-display);
+  }
+  .pub-ach-card p {
+    margin: 4px 0 0;
+    color: #8ea4b5;
+    font: 500 13px/1.5 var(--font-body);
+  }
+  .pub-ach-card small {
+    display: block;
+    margin-top: 6px;
+    color: #67b9dc;
+    font: 600 11.5px/1.2 var(--font-body);
+  }
+
+  .pub-empty-box {
+    padding: 24px;
+    border-radius: 14px;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    color: #8aa0b1;
+    font: 500 13.5px/1.5 var(--font-body);
+    text-align: center;
+  }
+  .pub-empty {
+    text-align: center;
+    max-width: 620px;
+    margin: 24px auto;
+  }
+  .pub-empty h1 {
+    margin: 12px 0 8px;
+    font: 700 32px/1.1 var(--font-display);
+  }
+  .pub-empty p {
+    margin: 0 auto 22px;
+    max-width: 460px;
+    color: #93a8b8;
+    font: 500 14px/1.6 var(--font-body);
+  }
+  .pub-empty-actions {
+    justify-content: center;
+  }
+
+  .pub-privacy-note {
+    margin-top: 18px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(9, 18, 27, 0.7);
+    color: #839bad;
+    font: 500 12.5px/1.55 var(--font-body);
+    text-align: center;
+  }
+  .pub-privacy-note span,
+  .pub-privacy-note strong {
+    color: #d7e7f2;
+    font-weight: 700;
+  }
+
+  @media (max-width: 760px) {
+    .pub-hero {
+      grid-template-columns: 1fr;
+    }
+    .pub-ach-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 540px) {
+    .pub-page {
+      padding: 20px 12px 106px;
+    }
+    .pub-hero,
+    .pub-section {
+      padding: 20px 16px;
+      border-radius: 20px;
+    }
+    .pub-hero-main {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
 </style>

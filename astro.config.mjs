@@ -48,7 +48,15 @@ export default defineConfig({
         '/profile/public',
         '/profile/public/',
         '/settings',
-        '/settings/'
+        '/settings/',
+        '/missions',
+        '/missions/',
+        '/achievements',
+        '/achievements/',
+        '/leaderboard',
+        '/leaderboard/',
+        '/rewards',
+        '/rewards/'
       ].includes(pathname);
     }
   })],

@@ -1,25 +1,541 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AccountNav from '../../components/AccountNav.astro';
 ---
-<BaseLayout title="Achievements" description="Your FCMobiletools achievements and progress." robots="noindex,nofollow" googlebot="noindex,nofollow">
-  <main class="account-list-page">
-    <section class="intro"><span class="eyebrow">ACHIEVEMENTS</span><h1>Build your track record.</h1><p>Achievements are configurable milestones. They can be added or changed without rebuilding your profile system.</p></section>
-    <div id="root"><div class="loading">Loading achievements…</div></div>
+<BaseLayout
+  title="Achievements | FCMobiletools Account"
+  description="Unlockable FC Mobile companion milestones, badges and verified progression rewards on FCMobiletools."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="ach-page">
+    <div class="ach-wrap">
+      <AccountNav active="achievements" sectionLabel="Achievements" />
+
+      <header class="ach-head acc-anim">
+        <div>
+          <span class="ach-kicker"><i class="ach-dot"></i> MILESTONE BADGES</span>
+          <h1>Build your track record.</h1>
+          <p>
+            Achievements track long-term milestones across tournaments, calculators and community contributions. Unlocked badges can be showcased on your public profile.
+          </p>
+        </div>
+
+        <div class="ach-filters" id="achFilters" role="group" aria-label="Filter achievements">
+          <button type="button" class="ach-pill active" data-filter="all">All Milestones</button>
+          <button type="button" class="ach-pill" data-filter="unlocked">Unlocked</button>
+          <button type="button" class="ach-pill" data-filter="locked">In Progress</button>
+        </div>
+      </header>
+
+      <div id="root" class="ach-root">
+        <div class="ach-skel-grid" aria-label="Loading achievements">
+          <div class="acc-skel ach-skel-card"></div>
+          <div class="acc-skel ach-skel-card"></div>
+        </div>
+      </div>
+    </div>
   </main>
 </BaseLayout>
-<style>
-.account-list-page{width:min(1080px,calc(100% - 28px));margin:0 auto;padding:62px 0 100px}.intro{margin-bottom:18px}.eyebrow{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em}.intro h1{margin:11px 0 7px;font:700 clamp(38px,6vw,64px)/.96 var(--font-display);letter-spacing:-.055em;color:var(--text)}.intro p{max-width:720px;margin:0;color:var(--muted);font:500 13px/1.75 var(--font-body)}.loading,.empty,.achievement{border:1px solid rgba(255,255,255,.08);border-radius:18px;background:linear-gradient(145deg,rgba(15,26,38,.98),rgba(7,16,24,.98))}.loading,.empty{padding:24px;color:var(--muted);font:600 11px var(--font-body)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.achievement{padding:20px}.achievement h2{margin:0;font:700 18px var(--font-display)}.achievement p{margin:6px 0 0;color:#7890a0;font:500 10px/1.65 var(--font-body)}.meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.meta span{padding:6px 8px;border:1px solid rgba(76,201,255,.12);border-radius:999px;background:rgba(76,201,255,.045);color:#8fdcf6;font:800 8px var(--font-body)}.bar{height:7px;margin-top:13px;border-radius:999px;background:#0a141d;overflow:hidden}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4cc9ff,#9fe6ff)}.status{margin-top:9px;color:#708696;font:700 9px var(--font-body)}
-@media(max-width:720px){.grid{grid-template-columns:1fr}.account-list-page{padding-top:42px}}
-</style>
+
 <script>
-import { accountAuth } from '../../lib/account-client.js';
-const root=document.querySelector('#root');const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function load(){
- const session=await accountAuth.auth.getSession();
- if(!session.data.session){root.innerHTML='<div class="empty">Sign in to see your achievement progress.<br><a href="/account/" style="color:#4cc9ff;font-weight:800">Open Account</a></div>';return;}
- const r=await fetch('/api/account/achievements',{headers:{authorization:'Bearer '+session.data.session.access_token},cache:'no-store'});
- const b=await r.json().catch(()=>({})); if(!r.ok) throw new Error(b.error||'Unable to load achievements.');
- root.innerHTML=b.achievements?.length?'<div class="grid">'+b.achievements.map(a=>{const done=a.status==='unlocked';const pct=Math.min(100,Math.max(0,Number(a.progressPercent||0)));return '<article class="achievement"><h2>'+esc(a.name)+'</h2><p>'+esc(a.description||'')+'</p><div class="meta">'+(a.xpReward>0?'<span>XP '+Number(a.xpReward).toLocaleString()+'</span>':'')+(a.tokenReward>0?'<span>Tokens '+Number(a.tokenReward).toLocaleString()+'</span>':'')+'<span>'+esc(done?'Unlocked':a.status||'Locked')+'</span></div><div class="bar"><i style="width:'+pct+'%"></i></div><div class="status">'+esc(done?'Unlocked on '+(a.unlockedAt||''):(a.progressLabel||'Progress tracked when a qualifying action is verified.'))+'</div></article>'}).join('')+'</div>':'<div class="empty">No achievements are active yet. Admins can add milestones later without changing the account architecture.</div>';
-}
-load().catch(e=>root.innerHTML='<div class="empty">'+esc(e.message)+'</div>');
+  import { accountAuth, escapeHtml as esc } from '../../lib/account-client.js';
+
+  const root = document.getElementById('root');
+  const fmt = (v) => Number(v || 0).toLocaleString();
+  const fmtDate = (v) =>
+    v ? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(v)) : '';
+
+  let allAchievements = [];
+  let currentFilter = 'all';
+
+  function renderAchievements() {
+    const filtered =
+      currentFilter === 'all'
+        ? allAchievements
+        : allAchievements.filter((a) =>
+            currentFilter === 'unlocked' ? a.status === 'unlocked' : a.status !== 'unlocked'
+          );
+
+    if (!filtered.length) {
+      root.innerHTML = `
+        <section class="ach-empty-card acc-anim">
+          <span class="ach-empty-badge">CONFIGURABLE MILESTONES</span>
+          <h2>${allAchievements.length ? 'No achievements match this filter' : 'No achievements are active yet'}</h2>
+          <p>
+            ${
+              allAchievements.length
+                ? 'Switch the filter above to inspect all milestones.'
+                : 'Achievement definitions are managed in the Admin Workspace so new badges and milestones can be launched without changing your account history.'
+            }
+          </p>
+          <div class="ach-examples-grid">
+            <article>
+              <span class="ex-ico">🏆</span>
+              <div>
+                <strong>Tournament Debut &amp; Champion</strong>
+                <small>Play or win official FCMobiletools community tournaments.</small>
+              </div>
+            </article>
+            <article>
+              <span class="ex-ico">📈</span>
+              <div>
+                <strong>Calculator &amp; Market Pro</strong>
+                <small>Plan squad OVR, Rank Ups and market tax investments.</small>
+              </div>
+            </article>
+            <article>
+              <span class="ex-ico">🔎</span>
+              <div>
+                <strong>Community Helper</strong>
+                <small>Have verified data or event corrections approved by the team.</small>
+              </div>
+            </article>
+          </div>
+          <div class="ach-empty-actions">
+            <a class="ach-btn-primary" href="/profile/">Back to Profile Hub →</a>
+            <a class="ach-btn-secondary" href="/settings/">Public Profile Visibility</a>
+          </div>
+        </section>
+      `;
+      return;
+    }
+
+    const unlockedCount = allAchievements.filter((a) => a.status === 'unlocked').length;
+
+    root.innerHTML = `
+      <div class="ach-summary-bar acc-anim">
+        <span>Unlocked Milestones: <strong>${fmt(unlockedCount)} / ${fmt(allAchievements.length)}</strong></span>
+        <a href="/settings/">Manage public showcase →</a>
+      </div>
+
+      <div class="ach-grid acc-anim acc-anim-d1">
+        ${filtered
+          .map((a) => {
+            const done = a.status === 'unlocked';
+            const pct = Math.min(100, Math.max(0, Number(a.progressPercent || 0)));
+            return `
+              <article class="ach-card ${done ? 'is-unlocked' : ''}">
+                <div class="ach-card-top">
+                  <div class="ach-icon-box">${done ? '🏆' : '★'}</div>
+                  <div class="ach-title-box">
+                    <div class="ach-row">
+                      <h2>${esc(a.name)}</h2>
+                      <span class="ach-state ${done ? 'is-done' : ''}">${done ? 'Unlocked' : 'Locked'}</span>
+                    </div>
+                    <p>${esc(a.description || 'Complete the qualifying milestone to unlock this badge.')}</p>
+                  </div>
+                </div>
+
+                <div class="ach-progress-block">
+                  <div class="ach-progress-labels">
+                    <span>${esc(done && a.unlockedAt ? `Unlocked ${fmtDate(a.unlockedAt)}` : a.progressLabel || 'Tracked automatically')}</span>
+                    <strong>${Math.round(pct)}%</strong>
+                  </div>
+                  <div class="ach-bar"><i style="width:${pct}%"></i></div>
+                </div>
+
+                <div class="ach-rewards">
+                  ${a.xpReward > 0 ? `<span class="rw-xp">+${fmt(a.xpReward)} XP</span>` : ''}
+                  ${a.tokenReward > 0 ? `<span class="rw-tk">+${fmt(a.tokenReward)} Tokens</span>` : ''}
+                </div>
+              </article>
+            `;
+          })
+          .join('')}
+      </div>
+    `;
+  }
+
+  document.querySelectorAll('#achFilters .ach-pill').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#achFilters .ach-pill').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter || 'all';
+      if (allAchievements.length) renderAchievements();
+    });
+  });
+
+  async function load() {
+    const session = await accountAuth.auth.getSession();
+    if (!session.data?.session) {
+      root.innerHTML = `
+        <section class="ach-empty-card acc-anim">
+          <span class="ach-empty-badge">ACCOUNT MILESTONES</span>
+          <h2>Sign in to track your achievements</h2>
+          <p>Create or sign in to your FCMobiletools account to unlock milestone badges and display them on your public profile.</p>
+          <div class="ach-empty-actions">
+            <a class="ach-btn-primary" href="/account/">Sign in to Account →</a>
+            <a class="ach-btn-secondary" href="/account/?mode=signup">Create Free Account</a>
+          </div>
+        </section>
+      `;
+      return;
+    }
+
+    const r = await fetch('/api/account/achievements', {
+      headers: { authorization: 'Bearer ' + session.data.session.access_token },
+      cache: 'no-store'
+    });
+    const b = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      root.innerHTML = `
+        <section class="ach-empty-card acc-anim">
+          <span class="ach-empty-badge">EMAIL VERIFICATION</span>
+          <h2>${esc(b.error || 'Unable to load achievements')}</h2>
+          <p>Verify your email address to enable achievement tracking and milestone rewards.</p>
+          <div class="ach-empty-actions">
+            <a class="ach-btn-primary" href="/profile/">Back to Profile</a>
+          </div>
+        </section>
+      `;
+      return;
+    }
+
+    allAchievements = Array.isArray(b.achievements) ? b.achievements : [];
+    renderAchievements();
+  }
+
+  load().catch((e) => {
+    root.innerHTML = `<section class="ach-empty-card"><h2>Unable to load achievements</h2><p>${esc(e.message)}</p></section>`;
+  });
 </script>
+
+<style is:global>
+  .ach-page {
+    min-height: calc(100vh - 80px);
+    padding: 36px 18px 110px;
+    background: radial-gradient(880px 440px at 15% 0%, rgba(76, 201, 255, 0.07), transparent 65%);
+  }
+  .ach-wrap {
+    width: min(1140px, 100%);
+    margin: 0 auto;
+  }
+
+  .ach-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .ach-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.14em;
+  }
+  .ach-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4cc9ff;
+    box-shadow: 0 0 10px #4cc9ff;
+  }
+  .ach-head h1 {
+    margin: 10px 0 8px;
+    font: 700 clamp(30px, 4.5vw, 48px) / 1.04 var(--font-display);
+    letter-spacing: -0.04em;
+    color: #f5f8fb;
+  }
+  .ach-head p {
+    margin: 0;
+    max-width: 640px;
+    color: #93a8b8;
+    font: 500 14.5px/1.65 var(--font-body);
+  }
+
+  .ach-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .ach-pill {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(15, 26, 38, 0.85);
+    color: #90a6b7;
+    font: 700 12.5px/1 var(--font-body);
+    cursor: pointer;
+    transition: color 0.16s ease, border-color 0.16s ease;
+  }
+  .ach-pill.active {
+    color: #04131c;
+    border-color: #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    font-weight: 800;
+  }
+
+  .ach-summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(15, 26, 38, 0.85);
+    margin-bottom: 14px;
+    font: 600 13.5px/1.3 var(--font-body);
+    color: #9ab0c1;
+  }
+  .ach-summary-bar strong {
+    color: #f5f8fb;
+  }
+  .ach-summary-bar a {
+    color: #4cc9ff;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .ach-skel-grid,
+  .ach-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .ach-skel-card {
+    height: 195px;
+    border-radius: 20px;
+  }
+
+  .ach-card {
+    padding: 22px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    display: grid;
+    gap: 16px;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+  }
+  .ach-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(76, 201, 255, 0.3);
+  }
+  .ach-card.is-unlocked {
+    border-color: rgba(71, 209, 108, 0.32);
+  }
+
+  .ach-card-top {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .ach-icon-box {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: rgba(76, 201, 255, 0.1);
+    border: 1px solid rgba(76, 201, 255, 0.22);
+    color: #4cc9ff;
+    font-size: 20px;
+  }
+  .ach-card.is-unlocked .ach-icon-box {
+    background: rgba(71, 209, 108, 0.12);
+    border-color: rgba(71, 209, 108, 0.3);
+  }
+
+  .ach-title-box {
+    flex: 1;
+    min-width: 0;
+  }
+  .ach-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .ach-row h2 {
+    margin: 0;
+    font: 700 19px/1.2 var(--font-display);
+    color: #f5f8fb;
+  }
+  .ach-state {
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #8ea4b5;
+    font: 700 11px/1 var(--font-body);
+  }
+  .ach-state.is-done {
+    background: rgba(71, 209, 108, 0.14);
+    color: #88eba0;
+  }
+  .ach-title-box p {
+    margin: 6px 0 0;
+    color: #90a6b7;
+    font: 500 13.5px/1.55 var(--font-body);
+  }
+
+  .ach-progress-block {
+    display: grid;
+    gap: 7px;
+  }
+  .ach-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font: 600 12px/1.2 var(--font-body);
+    color: #869eb0;
+  }
+  .ach-progress-labels strong {
+    color: #dff4ff;
+  }
+  .ach-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #050c12;
+    overflow: hidden;
+  }
+  .ach-bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #4cc9ff, #58e0a6);
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .ach-rewards {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ach-rewards span {
+    padding: 5px 10px;
+    border-radius: 999px;
+    font: 800 11.5px/1 var(--font-body);
+  }
+  .rw-xp {
+    background: rgba(76, 201, 255, 0.12);
+    border: 1px solid rgba(76, 201, 255, 0.28);
+    color: #8ee0ff;
+  }
+  .rw-tk {
+    background: rgba(71, 209, 108, 0.12);
+    border: 1px solid rgba(71, 209, 108, 0.28);
+    color: #88eba0;
+  }
+
+  /* Empty Card */
+  .ach-empty-card {
+    padding: 36px;
+    border-radius: 24px;
+    border: 1px solid rgba(76, 201, 255, 0.18);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(76, 201, 255, 0.09), transparent 55%),
+      linear-gradient(155deg, rgba(15, 26, 38, 0.96), rgba(8, 16, 24, 0.96));
+    box-shadow: 0 24px 65px rgba(0, 0, 0, 0.3);
+  }
+  .ach-empty-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.1);
+    border: 1px solid rgba(76, 201, 255, 0.24);
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.1em;
+  }
+  .ach-empty-card h2 {
+    margin: 14px 0 8px;
+    font: 700 clamp(24px, 3.5vw, 34px) / 1.12 var(--font-display);
+    color: #f5f8fb;
+  }
+  .ach-empty-card > p {
+    margin: 0 0 22px;
+    max-width: 680px;
+    color: #93a8b8;
+    font: 500 14.5px/1.65 var(--font-body);
+  }
+  .ach-examples-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .ach-examples-grid article {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 15px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(7, 16, 24, 0.68);
+  }
+  .ex-ico {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: rgba(76, 201, 255, 0.1);
+    font-size: 17px;
+  }
+  .ach-examples-grid strong {
+    display: block;
+    color: #edf5fb;
+    font: 700 14px/1.25 var(--font-display);
+    margin-bottom: 4px;
+  }
+  .ach-examples-grid small {
+    display: block;
+    color: #88a0b2;
+    font: 500 12.5px/1.45 var(--font-body);
+  }
+
+  .ach-empty-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ach-btn-primary,
+  .ach-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: 700 13px/1 var(--font-body);
+    text-decoration: none;
+  }
+  .ach-btn-primary {
+    border: 1px solid #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font-weight: 800;
+  }
+  .ach-btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #101e2c;
+    color: #e3eef6;
+  }
+
+  @media (max-width: 860px) {
+    .ach-grid,
+    .ach-skel-grid,
+    .ach-examples-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 560px) {
+    .ach-page {
+      padding: 20px 12px 106px;
+    }
+    .ach-empty-card,
+    .ach-card {
+      padding: 20px 16px;
+      border-radius: 20px;
+    }
+  }
+</style>

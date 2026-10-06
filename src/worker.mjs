@@ -194,17 +194,59 @@ function validateAvatarUrl(value) {
   return raw.slice(0,2048);
 }
 
+async function fetchTournamentStatsForAccount(env, accountId) {
+  if (!accountId) return null;
+  try {
+    const players = await supabaseRest(
+      env,
+      'tournament_players?account_id=eq.' + encodeURIComponent(accountId) + '&select=id,tournament_id,status&limit=50'
+    );
+    if (!Array.isArray(players) || !players.length) {
+      return { tournamentsPlayed: 0, matchesPlayed: 0, wins: 0, losses: 0, draws: 0, winRate: 0 };
+    }
+    const playerIds = players.map((p) => p.id).filter(Boolean);
+    const inList = '(' + playerIds.join(',') + ')';
+    const matches = await supabaseRest(
+      env,
+      'tournament_matches?or=(player_a_id.in.' + encodeURIComponent(inList) + ',player_b_id.in.' + encodeURIComponent(inList) + ')&status=eq.completed&select=player_a_id,player_b_id,winner_id&limit=300'
+    );
+    const idSet = new Set(playerIds);
+    let wins = 0;
+    let losses = 0;
+    let draws = 0;
+    for (const m of matches || []) {
+      if (!m.winner_id) draws += 1;
+      else if (idSet.has(m.winner_id)) wins += 1;
+      else losses += 1;
+    }
+    const matchesPlayed = wins + losses + draws;
+    const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 1000) / 10 : 0;
+    return {
+      tournamentsPlayed: new Set(players.map((p) => p.tournament_id)).size,
+      matchesPlayed,
+      wins,
+      losses,
+      draws,
+      winRate
+    };
+  } catch {
+    return { tournamentsPlayed: 0, matchesPlayed: 0, wins: 0, losses: 0, draws: 0, winRate: 0 };
+  }
+}
+
 async function accountApi(request, env, url) {
+  if(!url.pathname.startsWith('/api/account/')) return null;
   const context=await accountContext(request,env);
   if(!context) return json({error:'Authentication required.'},401);
 
   const {account,user}=context;
   if(request.method==='GET' && url.pathname==='/api/account/me') {
-    const [progress,settings,rewards,activity]=await Promise.all([
+    const [progress,settings,rewards,activity,tournamentStats]=await Promise.all([
       supabaseRest(env,'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&limit=1'),
       supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(account.id)+'&select=*&limit=1'),
       supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance,lifetime_earned,lifetime_spent,lifetime_reversed&limit=1'),
-      supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=8')
+      supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=12'),
+      fetchTournamentStatsForAccount(env,account.id)
     ]);
     const p=progress?.[0]||{}, st=settings?.[0]||{}, rw=rewards?.[0]||{};
     return json({account:{
@@ -212,8 +254,9 @@ async function accountApi(request, env, url) {
       state:account.state,createdAt:account.created_at,updatedAt:account.updated_at,
       email:user.email||null,emailConfirmedAt:user.email_confirmed_at||null,
       level:Number(p.level||1),xp:Number(p.xp_balance||0),currentStreak:Number(p.current_streak||0),
-      longestStreak:Number(p.longest_streak||0),tokens:Number(rw.balance||0)
-    },settings:st,activity:activity||[]});
+      longestStreak:Number(p.longest_streak||0),lastQualifyingActivityAt:p.last_qualifying_activity_at||null,
+      tokens:Number(rw.balance||0),lifetimeEarnedTokens:Number(rw.lifetime_earned||0),lifetimeSpentTokens:Number(rw.lifetime_spent||0)
+    },settings:st,activity:activity||[],tournamentStats});
   }
 
   if(request.method==='PUT' && url.pathname==='/api/account/profile') {
@@ -389,13 +432,44 @@ async function accountApi(request, env, url) {
     return json(result||{ok:true});
   }
 
-  return null;
+  if(request.method==='POST' && url.pathname==='/api/account/community-submissions') {
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before submitting community contributions.'},403);
+    if(['closed','fraud_removed','frozen','restricted'].includes(account.state)) {
+      return json({error:'This account cannot submit contributions right now.'},403);
+    }
+    const input=await request.json().catch(()=>({}));
+    const type=String(input.submissionType||'correction').trim().toLowerCase();
+    const allowedTypes=['correction','broken_link','event_info','feedback'];
+    const submissionType=allowedTypes.includes(type)?type:'correction';
+    const title=String(input.title||'').trim().slice(0,160);
+    const body=String(input.body||'').trim().slice(0,2000);
+    const pageUrl=String(input.pageUrl||'').trim().slice(0,500);
+    if(title.length<5 || body.length<12) {
+      return json({error:'Please provide a clear title and description (at least 12 characters).'},400);
+    }
+    await supabaseRest(env,'community_submissions',{
+      method:'POST',
+      headers:{Prefer:'return=minimal'},
+      body:JSON.stringify([{
+        account_id:account.id,
+        submission_type:submissionType,
+        title,
+        body:pageUrl ? `[Page: ${pageUrl}]\n${body}` : body,
+        status:'submitted',
+        reward_xp:0,
+        reward_tokens:0
+      }])
+    });
+    return json({ok:true,status:'submitted'});
+  }
+
+  return json({error:'Account endpoint not found.'},404);
 }
 
 async function publicProfileApi(request, env, url) {
-  if(request.method!=='GET') return json({error:'Method not allowed.'},405);
   const match=url.pathname.match(/^\/api\/public\/profile\/([^/]+)\/?$/);
   if(!match) return null;
+  if(request.method!=='GET') return json({error:'Method not allowed.'},405);
   const username=decodeURIComponent(match[1]).trim().toLowerCase();
   if(!/^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/.test(username)) return json({error:'Profile not found.'},404);
   const rows=await supabaseRest(env,
@@ -447,7 +521,9 @@ async function publicProfileApi(request, env, url) {
 
   // Tournament records stay in the existing tournament tables. Nothing here
   // exposes match-level private identifiers.
-  profile.tournament_stats=null;
+  profile.tournament_stats=(accountId && p.show_tournament_stats)
+    ? await fetchTournamentStatsForAccount(env,accountId)
+    : null;
 
   return json({profile},200,{'cache-control':'public, max-age=60, stale-while-revalidate=300'});
 }
@@ -1609,11 +1685,9 @@ export function createExports(manifest) {
   }
   const publicProfileApiResponse=await publicProfileApi(request,env,url);
   if(publicProfileApiResponse) return publicProfileApiResponse;
-  const accountApiResponse=await accountApi(request,env,url);
-  if(accountApiResponse) return accountApiResponse;
 
   const publicProfilePath=url.pathname.match(/^\/profile\/([^/]+)\/?$/);
-  if(publicProfilePath && request.method==='GET') {
+  if(publicProfilePath && publicProfilePath[1].toLowerCase()!=='public' && request.method==='GET') {
     const asset=await env.ASSETS.fetch(new Request(new URL('/profile/public/',url),{method:'GET',headers:request.headers}));
     if(asset.ok) {
       const headers=new Headers(asset.headers);

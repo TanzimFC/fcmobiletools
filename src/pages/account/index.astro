@@ -1,129 +1,464 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
-<BaseLayout title="FCMobiletools Account" description="Create or sign in to your FCMobiletools account." robots="noindex,nofollow" googlebot="noindex,nofollow">
-  <main class="account-page">
-    <section class="account-shell">
-      <div class="account-stage">
-        <div class="stage-grid"></div>
-        <div class="stage-orb"></div>
-        <div class="stage-line stage-line-a"></div>
-        <div class="stage-line stage-line-b"></div>
-        <div class="stage-copy">
-          <div class="eyebrow"><i></i> FCMOBILETOOLS ACCOUNT</div>
-          <h1>Your FC Mobile<br><em>identity.</em></h1>
-          <p>Keep your progression, profile and future community features connected. The tools themselves stay open to everyone.</p>
-          <div class="stage-points">
-            <div><b>01</b><span>Profile &amp; identity</span></div>
-            <div><b>02</b><span>XP, Tokens &amp; achievements</span></div>
-            <div><b>03</b><span>Community features as they launch</span></div>
-          </div>
+<BaseLayout
+  title="FCMobiletools Account | Sign In or Create Account"
+  description="Create or sign in to your FCMobiletools account for personal profile identity, XP progression, streaks, achievements and community features."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="auth-page">
+    <div class="auth-ambient" aria-hidden="true">
+      <i class="auth-orb auth-orb-a"></i>
+      <i class="auth-orb auth-orb-b"></i>
+    </div>
+
+    <div class="auth-wrap">
+      <div class="auth-topbar">
+        <a class="auth-back" href="/">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <span>Back to FCMOBILETOOLS</span>
+        </a>
+        <div class="auth-quick-links">
+          <a href="/leaderboard/">Community Leaderboard</a>
+          <span aria-hidden="true">·</span>
+          <a href="/events/">Live Events</a>
         </div>
-        <div class="stage-footer"><span>NO FORCED REGISTRATION</span><span>FREE TO CREATE</span><span>SECURE EMAIL AUTH</span></div>
       </div>
 
-      <div class="account-panel">
-        <div class="panel-top">
-          <a class="back-link" href="/" aria-label="Back to FCMobiletools">← <span>FCMobiletools</span></a>
-          <span class="secure"><i></i> SECURE</span>
+      <section class="auth-shell">
+        <!-- Left showcase column -->
+        <div class="auth-stage">
+          <div class="stage-grid" aria-hidden="true"></div>
+          <div class="stage-glow" aria-hidden="true"></div>
+
+          <div class="stage-top">
+            <span class="stage-kicker"><i class="pulse-dot"></i> FCMOBILETOOLS ACCOUNT</span>
+            <h1>Your personal<br /><em>FC Mobile identity.</em></h1>
+            <p class="stage-lede">
+              Build your track record across calculators, events, tournaments and community contributions. Every public tool on FCMobiletools remains 100% open without an account.
+            </p>
+          </div>
+
+          <!-- Live interactive preview card -->
+          <div class="preview-card" aria-label="Example FCMobiletools profile card">
+            <div class="preview-head">
+              <div class="preview-avatar" id="previewAvatar">FC</div>
+              <div class="preview-id">
+                <div class="preview-title-row">
+                  <strong id="previewDisplayName">Market Scout</strong>
+                  <span class="preview-lvl">Level 12</span>
+                </div>
+                <span class="preview-handle" id="previewHandle">@fcmobile_pro</span>
+              </div>
+              <span class="preview-streak">🔥 8d Streak</span>
+            </div>
+            <div class="preview-xp">
+              <div class="preview-xp-meta">
+                <span>XP Progression</span>
+                <strong>2,840 XP · 1,240 Tokens</strong>
+              </div>
+              <div class="preview-bar"><i></i></div>
+            </div>
+            <div class="preview-badges">
+              <span>🏆 Tournament Debut</span>
+              <span>📈 Market Watcher</span>
+              <span>🔎 Verified Member</span>
+            </div>
+          </div>
+
+          <div class="stage-pillars">
+            <article>
+              <b>01 · Identity &amp; Profile</b>
+              <p>Custom @username, public/private visibility controls, titles and unlocked achievements.</p>
+            </article>
+            <article>
+              <b>02 · Verified Progression</b>
+              <p>Ledger-backed XP, streaks, configurable missions and tournament record integration.</p>
+            </article>
+            <article>
+              <b>03 · Zero Forced Walls</b>
+              <p>Calculators, redeem codes, events and guides never require registration to use.</p>
+            </article>
+          </div>
         </div>
 
-        <div class="switcher" role="tablist" aria-label="Account actions">
-          <button class="switch active" id="loginTab" type="button">Sign in</button>
-          <button class="switch" id="signupTab" type="button">Create account</button>
+        <!-- Right form panel -->
+        <div class="auth-panel">
+          <div class="panel-header">
+            <div class="tab-switcher" role="tablist" aria-label="Account authentication mode">
+              <span class="tab-pill-bg" id="tabPillBg" aria-hidden="true"></span>
+              <button class="tab-btn active" id="loginTab" type="button" role="tab" aria-selected="true">
+                Sign in
+              </button>
+              <button class="tab-btn" id="signupTab" type="button" role="tab" aria-selected="false">
+                Create account
+              </button>
+            </div>
+          </div>
+
+          <!-- SIGN IN FORM -->
+          <form id="loginForm" class="auth-form" novalidate>
+            <div class="form-intro">
+              <span class="form-eyebrow">WELCOME BACK</span>
+              <h2>Sign in to your account</h2>
+              <p>Enter the email address and password connected to your FCMobiletools profile.</p>
+            </div>
+
+            <div class="field">
+              <label for="loginEmail">Email address</label>
+              <div class="input-box">
+                <input
+                  id="loginEmail"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  maxlength="254"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field-label-row">
+                <label for="loginPassword">Password</label>
+                <button class="text-btn" type="button" id="resetBtn">Forgot password?</button>
+              </div>
+              <div class="input-box">
+                <input
+                  id="loginPassword"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                  minlength="10"
+                  placeholder="Enter your password"
+                />
+                <button class="pw-toggle" type="button" data-target="loginPassword" aria-label="Toggle password visibility">
+                  Show
+                </button>
+              </div>
+            </div>
+
+            <button class="submit-btn" type="submit">
+              <span>Sign in to Profile</span>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </button>
+
+            <div class="form-message" id="loginMessage" role="alert" aria-live="polite" hidden></div>
+
+            <div class="form-foot-note">
+              <span>Don’t have an account yet?</span>
+              <button type="button" class="text-btn" id="switchToSignup">Create a free account →</button>
+            </div>
+          </form>
+
+          <!-- CREATE ACCOUNT FORM -->
+          <form id="signupForm" class="auth-form" hidden novalidate>
+            <div class="form-intro">
+              <span class="form-eyebrow">NEW IDENTITY</span>
+              <h2>Create your account</h2>
+              <p>Reserve your permanent handle and start tracking your FC Mobile progression.</p>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="signupUsername">Username <small>(3–24 chars)</small></label>
+                <div class="input-box has-prefix">
+                  <span class="input-prefix" aria-hidden="true">@</span>
+                  <input
+                    id="signupUsername"
+                    name="username"
+                    type="text"
+                    autocomplete="username"
+                    required
+                    minlength="3"
+                    maxlength="24"
+                    pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]"
+                    placeholder="yourname"
+                  />
+                </div>
+                <small class="field-hint" id="usernameHint">Lowercase letters, numbers, dots, underscores or hyphens.</small>
+              </div>
+
+              <div class="field">
+                <label for="signupDisplayName">Display name <small>(optional)</small></label>
+                <div class="input-box">
+                  <input
+                    id="signupDisplayName"
+                    name="display_name"
+                    type="text"
+                    autocomplete="nickname"
+                    maxlength="80"
+                    placeholder="e.g. Festival"
+                  />
+                </div>
+                <small class="field-hint">Shown on your profile card if enabled.</small>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="signupEmail">Permanent email address</label>
+              <div class="input-box">
+                <input
+                  id="signupEmail"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  maxlength="254"
+                  placeholder="name@gmail.com"
+                />
+              </div>
+              <small class="field-hint" id="emailHint">No Gmail “+” aliases or temporary/disposable email domains.</small>
+            </div>
+
+            <div class="field">
+              <label for="signupPassword">Password <small>(min 10 characters)</small></label>
+              <div class="input-box">
+                <input
+                  id="signupPassword"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="10"
+                  placeholder="At least 10 characters"
+                />
+                <button class="pw-toggle" type="button" data-target="signupPassword" aria-label="Toggle password visibility">
+                  Show
+                </button>
+              </div>
+              <div class="pw-meter" aria-hidden="true">
+                <span id="pwMeterBar"></span>
+              </div>
+              <small class="field-hint" id="pwHint">Use at least 10 characters with a mix of letters and numbers.</small>
+            </div>
+
+            <div class="advisory-box">
+              <div class="advisory-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+              </div>
+              <div>
+                <strong>Use a permanent email you control</strong>
+                <p>
+                  Email verification is required for missions, achievements, and reward redemptions, and may be needed for account recovery later. Temporary mail services and Gmail <code>+</code> aliases are blocked.
+                </p>
+              </div>
+            </div>
+
+            <label class="consent-check">
+              <input name="agree" type="checkbox" required />
+              <span>I confirm this is a permanent email address I can access for verification and account recovery.</span>
+            </label>
+
+            <button class="submit-btn" type="submit">
+              <span>Create FCMobiletools Account</span>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </button>
+
+            <div class="form-message" id="signupMessage" role="alert" aria-live="polite" hidden></div>
+
+            <div class="form-foot-note">
+              <span>Already registered?</span>
+              <button type="button" class="text-btn" id="switchToLogin">Sign in instead →</button>
+            </div>
+          </form>
         </div>
-
-        <form id="loginForm" class="form" novalidate>
-          <div class="form-heading">
-            <span class="eyebrow">WELCOME BACK</span>
-            <h2>Sign in</h2>
-            <p>Use the email and password connected to your account.</p>
-          </div>
-          <label><span>Email</span><div class="input-wrap"><input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></div></label>
-          <label><span>Password</span><div class="input-wrap"><input name="password" type="password" autocomplete="current-password" required minlength="10" placeholder="Your password"><button class="password-toggle" type="button" data-target="loginForm">Show</button></div></label>
-          <button class="primary-btn" type="submit"><span>Sign in</span><b>↗</b></button>
-          <div class="form-row"><button class="link-btn" type="button" id="resetBtn">Forgot password?</button><span>Protected session</span></div>
-          <p class="form-message" id="loginMessage" role="alert"></p>
-        </form>
-
-        <form id="signupForm" class="form" hidden novalidate>
-          <div class="form-heading">
-            <span class="eyebrow">NEW ACCOUNT</span>
-            <h2>Create your account</h2>
-            <p>Choose the username you want people to see around FCMobiletools.</p>
-          </div>
-          <div class="two-fields">
-            <label><span>Username</span><div class="input-wrap"><input name="username" autocomplete="username" required minlength="3" maxlength="24" pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]" placeholder="yourname"></div></label>
-            <label><span>Display name</span><div class="input-wrap"><input name="display_name" autocomplete="nickname" maxlength="80" placeholder="Optional"></div></label>
-          </div>
-          <label><span>Email</span><div class="input-wrap"><input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></div></label>
-          <label><span>Password</span><div class="input-wrap"><input name="password" type="password" autocomplete="new-password" required minlength="10" placeholder="At least 10 characters"><button class="password-toggle" type="button" data-target="signupForm">Show</button></div></label>
-          <div class="email-note"><strong>Use an email you control.</strong><span>It may be needed for verification and account recovery.</span></div>
-          <label class="check-row"><input name="agree" type="checkbox" required><span>I understand that my email may be used for verification and account recovery.</span></label>
-          <button class="primary-btn" type="submit"><span>Create account</span><b>↗</b></button>
-          <p class="form-message" id="signupMessage" role="alert"></p>
-        </form>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 </BaseLayout>
 
 <script>
-  import { accountAuth } from '../../lib/account-client.js';
+  import { accountAuth, validateSignupEmail } from '../../lib/account-client.js';
 
-  const loginTab = document.querySelector('#loginTab');
-  const signupTab = document.querySelector('#signupTab');
-  const loginForm = document.querySelector('#loginForm');
-  const signupForm = document.querySelector('#signupForm');
-  const loginMessage = document.querySelector('#loginMessage');
-  const signupMessage = document.querySelector('#signupMessage');
+  const loginTab = document.getElementById('loginTab');
+  const signupTab = document.getElementById('signupTab');
+  const tabPillBg = document.getElementById('tabPillBg');
+  const loginForm = document.getElementById('loginForm');
+  const signupForm = document.getElementById('signupForm');
+  const loginMessage = document.getElementById('loginMessage');
+  const signupMessage = document.getElementById('signupMessage');
+
+  const signupUsername = document.getElementById('signupUsername');
+  const signupDisplayName = document.getElementById('signupDisplayName');
+  const signupEmail = document.getElementById('signupEmail');
+  const signupPassword = document.getElementById('signupPassword');
+  const usernameHint = document.getElementById('usernameHint');
+  const emailHint = document.getElementById('emailHint');
+  const pwMeterBar = document.getElementById('pwMeterBar');
+  const pwHint = document.getElementById('pwHint');
+
+  const previewAvatar = document.getElementById('previewAvatar');
+  const previewDisplayName = document.getElementById('previewDisplayName');
+  const previewHandle = document.getElementById('previewHandle');
 
   function showTab(tab) {
-    const login = tab === 'login';
-    loginTab.classList.toggle('active', login);
-    signupTab.classList.toggle('active', !login);
-    loginForm.hidden = !login;
-    signupForm.hidden = login;
-    window.setTimeout(() => (login ? loginForm : signupForm).querySelector('input')?.focus(), 60);
+    const isLogin = tab === 'login';
+    loginTab.classList.toggle('active', isLogin);
+    signupTab.classList.toggle('active', !isLogin);
+    loginTab.setAttribute('aria-selected', isLogin ? 'true' : 'false');
+    signupTab.setAttribute('aria-selected', !isLogin ? 'true' : 'false');
+    if (tabPillBg) {
+      tabPillBg.style.transform = isLogin ? 'translateX(0%)' : 'translateX(100%)';
+    }
+    loginForm.hidden = !isLogin;
+    signupForm.hidden = isLogin;
+    showMessage(loginMessage, '');
+    showMessage(signupMessage, '');
   }
 
-  function showMessage(el, text, error = false) {
-    el.textContent = text || '';
-    el.className = 'form-message' + (text ? (error ? ' error' : ' success') : '');
+  function showMessage(el, text, isError = false) {
+    if (!el) return;
+    if (!text) {
+      el.hidden = true;
+      el.textContent = '';
+      el.className = 'form-message';
+      return;
+    }
+    el.hidden = false;
+    el.textContent = text;
+    el.className = 'form-message ' + (isError ? 'is-error' : 'is-success');
   }
 
   function friendlyAuthError(error, fallback) {
     const raw = String(error?.message || error || '');
-    if (/invalid api key|api key is invalid/i.test(raw)) return 'The account service rejected its client key. This is a configuration problem, not an email or username error.';
-    if (/already registered|already exists|user already/i.test(raw)) return 'That email is already registered. Try signing in instead.';
-    if (/email.*invalid|invalid.*email/i.test(raw)) return 'That email address does not look valid.';
-    if (/password/i.test(raw) && /weak|short|characters/i.test(raw)) return 'Use a stronger password with at least 10 characters.';
-    if (/rate limit|too many requests/i.test(raw)) return 'Too many attempts. Give it a moment and try again.';
-    if (/network|fetch/i.test(raw)) return 'We could not reach the account service. Check your connection and try again.';
+    if (/invalid api key|api key is invalid/i.test(raw)) {
+      return 'The account service rejected its client key. This is a configuration issue, not an email or username error.';
+    }
+    if (/already registered|already exists|user already/i.test(raw)) {
+      return 'That email is already registered. Switch to Sign in or reset your password.';
+    }
+    if (/duplicate|username.*taken|unique/i.test(raw)) {
+      return 'That @username is already taken. Try a different username.';
+    }
+    if (/disposable|temporary|alias/i.test(raw)) {
+      return raw;
+    }
+    if (/email.*invalid|invalid.*email/i.test(raw)) {
+      return 'That email address does not look valid. Use a permanent email you control.';
+    }
+    if (/password/i.test(raw) && /weak|short|characters/i.test(raw)) {
+      return 'Use a stronger password with at least 10 characters.';
+    }
+    if (/rate limit|too many requests/i.test(raw)) {
+      return 'Too many attempts. Wait a moment and try again.';
+    }
+    if (/network|fetch/i.test(raw)) {
+      return 'Could not reach the account service. Check your connection and try again.';
+    }
     return fallback;
   }
 
-  loginTab.addEventListener('click', () => showTab('login'));
-  signupTab.addEventListener('click', () => showTab('signup'));
+  loginTab?.addEventListener('click', () => showTab('login'));
+  signupTab?.addEventListener('click', () => showTab('signup'));
+  document.getElementById('switchToSignup')?.addEventListener('click', () => showTab('signup'));
+  document.getElementById('switchToLogin')?.addEventListener('click', () => showTab('login'));
 
-  document.querySelectorAll('.password-toggle').forEach((toggle) => {
+  // Support ?mode=signup or #signup URL deep links
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode') === 'signup' || location.hash === '#signup') {
+    showTab('signup');
+  }
+
+  // Live preview card updates as user types username / display name
+  function updateLivePreview() {
+    const rawUser = String(signupUsername?.value || '').trim().toLowerCase();
+    const rawDisplay = String(signupDisplayName?.value || '').trim();
+    const handle = rawUser || 'fcmobile_pro';
+    const display = rawDisplay || (rawUser ? rawUser : 'Market Scout');
+    if (previewHandle) previewHandle.textContent = '@' + handle;
+    if (previewDisplayName) previewDisplayName.textContent = display;
+    if (previewAvatar) previewAvatar.textContent = display.slice(0, 2).toUpperCase();
+
+    if (signupUsername && usernameHint) {
+      if (!rawUser) {
+        usernameHint.textContent = 'Lowercase letters, numbers, dots, underscores or hyphens.';
+        usernameHint.className = 'field-hint';
+      } else if (/^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/.test(rawUser)) {
+        usernameHint.textContent = `@${rawUser} looks valid.`;
+        usernameHint.className = 'field-hint is-ok';
+      } else {
+        usernameHint.textContent = 'Use 3–24 lowercase letters, numbers, dots, underscores or hyphens (must start/end with letter or number).';
+        usernameHint.className = 'field-hint is-warn';
+      }
+    }
+  }
+  signupUsername?.addEventListener('input', updateLivePreview);
+  signupDisplayName?.addEventListener('input', updateLivePreview);
+
+  // Live email validation feedback
+  signupEmail?.addEventListener('input', () => {
+    const val = signupEmail.value.trim();
+    if (!val) {
+      emailHint.textContent = 'No Gmail “+” aliases or temporary/disposable email domains.';
+      emailHint.className = 'field-hint';
+      signupEmail.removeAttribute('aria-invalid');
+      return;
+    }
+    const check = validateSignupEmail(val);
+    if (!check.valid) {
+      emailHint.textContent = check.message;
+      emailHint.className = 'field-hint is-warn';
+      signupEmail.setAttribute('aria-invalid', 'true');
+    } else {
+      emailHint.textContent = 'Permanent email format looks good.';
+      emailHint.className = 'field-hint is-ok';
+      signupEmail.removeAttribute('aria-invalid');
+    }
+  });
+
+  // Live password meter
+  signupPassword?.addEventListener('input', () => {
+    const pw = signupPassword.value || '';
+    let score = 0;
+    if (pw.length >= 10) score += 50;
+    else score += Math.round((pw.length / 10) * 35);
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score += 20;
+    if (/\d/.test(pw)) score += 15;
+    if (/[^A-Za-z0-9]/.test(pw)) score += 15;
+    score = Math.min(100, score);
+    if (pwMeterBar) {
+      pwMeterBar.style.width = score + '%';
+      pwMeterBar.dataset.strength = pw.length < 10 ? 'weak' : score >= 80 ? 'strong' : 'good';
+    }
+    if (pwHint) {
+      if (!pw) {
+        pwHint.textContent = 'Use at least 10 characters with a mix of letters and numbers.';
+        pwHint.className = 'field-hint';
+      } else if (pw.length < 10) {
+        pwHint.textContent = `${10 - pw.length} more character${10 - pw.length === 1 ? '' : 's'} needed (minimum 10).`;
+        pwHint.className = 'field-hint is-warn';
+      } else {
+        pwHint.textContent = score >= 80 ? 'Strong password.' : 'Password meets length requirements.';
+        pwHint.className = 'field-hint is-ok';
+      }
+    }
+  });
+
+  // Password visibility toggles
+  document.querySelectorAll('.pw-toggle').forEach((toggle) => {
     toggle.addEventListener('click', () => {
-      const form = document.querySelector('#' + toggle.dataset.target);
-      const input = form?.querySelector('input[type="password"],input[type="text"][data-password]');
+      const input = document.getElementById(toggle.dataset.target);
       if (!input) return;
-      const visible = input.type === 'text';
-      input.type = visible ? 'password' : 'text';
-      if (!visible) input.dataset.password = 'true'; else input.removeAttribute('data-password');
-      toggle.textContent = visible ? 'Show' : 'Hide';
+      const isVisible = input.type === 'text';
+      input.type = isVisible ? 'password' : 'text';
+      toggle.textContent = isVisible ? 'Show' : 'Hide';
     });
   });
 
-  loginForm.addEventListener('submit', async (event) => {
+  // Sign in submission
+  loginForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    showMessage(loginMessage);
-    if (!loginForm.checkValidity()) { loginForm.reportValidity(); return; }
+    showMessage(loginMessage, '');
+    if (!loginForm.checkValidity()) {
+      loginForm.reportValidity();
+      return;
+    }
     const fd = new FormData(loginForm);
-    const button = loginForm.querySelector('.primary-btn');
+    const button = loginForm.querySelector('.submit-btn');
     button.disabled = true;
     try {
       const result = await accountAuth.auth.signInWithPassword({
@@ -134,33 +469,46 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       location.replace('/profile/');
     } catch (error) {
       showMessage(loginMessage, friendlyAuthError(error, 'Email or password is incorrect.'), true);
-    } finally { button.disabled = false; }
+    } finally {
+      button.disabled = false;
+    }
   });
 
-  signupForm.addEventListener('submit', async (event) => {
+  // Create account submission
+  signupForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    showMessage(signupMessage);
-    if (!signupForm.checkValidity()) { signupForm.reportValidity(); return; }
+    showMessage(signupMessage, '');
 
     const fd = new FormData(signupForm);
-    const email = String(fd.get('email') || '').trim().toLowerCase();
-    const local = email.split('@')[0] || '';
-    const domain = (email.split('@')[1] || '').toLowerCase();
-    if ((domain === 'gmail.com' || domain === 'googlemail.com') && local.includes('+')) {
-      showMessage(signupMessage, 'Gmail “+” aliases are not accepted. Use your main Gmail address.', true);
+    const username = String(fd.get('username') || '').trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/.test(username)) {
+      showMessage(signupMessage, 'Username must be 3–24 characters using lowercase letters, numbers, dots, underscores or hyphens.', true);
+      signupUsername?.focus();
       return;
     }
 
-    const button = signupForm.querySelector('.primary-btn');
+    const emailCheck = validateSignupEmail(fd.get('email'));
+    if (!emailCheck.valid) {
+      showMessage(signupMessage, emailCheck.message, true);
+      signupEmail?.focus();
+      return;
+    }
+
+    if (!signupForm.checkValidity()) {
+      signupForm.reportValidity();
+      return;
+    }
+
+    const button = signupForm.querySelector('.submit-btn');
     button.disabled = true;
     try {
       const result = await accountAuth.auth.signUp({
-        email,
+        email: emailCheck.email,
         password: String(fd.get('password') || ''),
         options: {
           emailRedirectTo: new URL('/account/', location.origin).toString(),
           data: {
-            username: String(fd.get('username') || '').trim().toLowerCase(),
+            username,
             display_name: String(fd.get('display_name') || '').trim()
           }
         }
@@ -170,25 +518,47 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         location.replace('/profile/');
         return;
       }
-      showMessage(signupMessage, 'Account created. Check your email to confirm the address before using account-only features.', false);
+      showMessage(
+        signupMessage,
+        'Account created! Check your inbox to verify your email address before using missions, achievements, and rewards.',
+        false
+      );
       signupForm.reset();
+      updateLivePreview();
     } catch (error) {
-      showMessage(signupMessage, friendlyAuthError(error, 'We could not create that account. Check the email and username, then try again.'), true);
-    } finally { button.disabled = false; }
+      showMessage(
+        signupMessage,
+        friendlyAuthError(error, 'Could not create that account. Check your email and username, then try again.'),
+        true
+      );
+    } finally {
+      button.disabled = false;
+    }
   });
 
-  document.querySelector('#resetBtn').addEventListener('click', async (event) => {
-    showMessage(loginMessage);
-    const email = String(loginForm.querySelector('[name="email"]').value || '').trim().toLowerCase();
-    if (!email) { showMessage(loginMessage, 'Enter your email first, then choose “Forgot password?”.', true); return; }
-    event.currentTarget.disabled = true;
+  // Password reset
+  document.getElementById('resetBtn')?.addEventListener('click', async (event) => {
+    showMessage(loginMessage, '');
+    const emailInput = document.getElementById('loginEmail');
+    const email = String(emailInput?.value || '').trim().toLowerCase();
+    if (!email) {
+      showMessage(loginMessage, 'Enter your email address above first, then click “Forgot password?”.', true);
+      emailInput?.focus();
+      return;
+    }
+    const btn = event.currentTarget;
+    btn.disabled = true;
     try {
-      const result = await accountAuth.auth.resetPasswordForEmail(email, { redirectTo: new URL('/account/', location.origin).toString() });
+      const result = await accountAuth.auth.resetPasswordForEmail(email, {
+        redirectTo: new URL('/account/', location.origin).toString()
+      });
       if (result.error) throw result.error;
-      showMessage(loginMessage, 'Password reset instructions sent. Check your inbox and spam folder.');
+      showMessage(loginMessage, 'Password reset instructions have been sent. Check your inbox and spam folder.', false);
     } catch (error) {
-      showMessage(loginMessage, friendlyAuthError(error, 'Unable to send reset instructions.'), true);
-    } finally { event.currentTarget.disabled = false; }
+      showMessage(loginMessage, friendlyAuthError(error, 'Unable to send reset instructions right now.'), true);
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   accountAuth.auth.getSession().then((result) => {
@@ -197,26 +567,640 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </script>
 
 <style>
-.account-page{min-height:calc(100vh - 80px);padding:34px 18px 96px;background:radial-gradient(900px 520px at 10% 20%,rgba(76,201,255,.055),transparent 70%)}
-.account-shell{width:min(1220px,100%);min-height:760px;margin:auto;display:grid;grid-template-columns:1.08fr .92fr;border:1px solid rgba(255,255,255,.07);border-radius:30px;overflow:hidden;background:#071018;box-shadow:0 35px 100px rgba(0,0,0,.38)}
-.account-stage{position:relative;min-height:760px;overflow:hidden;padding:76px 72px;background:linear-gradient(145deg,#0c1925,#071018 72%);border-right:1px solid rgba(255,255,255,.07)}
-.stage-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(76,201,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(76,201,255,.035) 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(180deg,#000,transparent 88%);opacity:.7}
-.stage-orb{position:absolute;width:560px;height:560px;right:-240px;top:-160px;border-radius:50%;background:radial-gradient(circle,rgba(76,201,255,.18),rgba(76,201,255,.025) 48%,transparent 70%);filter:blur(2px)}
-.stage-line{position:absolute;border:1px solid rgba(76,201,255,.14);border-radius:50%;width:440px;height:440px;right:-120px;top:80px}.stage-line-a{transform:rotate(16deg)}.stage-line-b{width:700px;height:700px;right:-250px;top:-40px;border-color:rgba(255,255,255,.045)}
-.stage-copy{position:relative;z-index:2;max-width:600px;margin-top:54px}.eyebrow{display:inline-flex;align-items:center;gap:8px;color:#4cc9ff;font:800 10px/1 Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase}.eyebrow i{width:6px;height:6px;border-radius:50%;background:#4cc9ff;box-shadow:0 0 16px rgba(76,201,255,.8)}
-.stage-copy h1{margin:20px 0 18px;font:700 clamp(48px,5vw,76px)/.94 'Space Grotesk',sans-serif;letter-spacing:-.065em;color:#f5f8fb}.stage-copy h1 em{font-style:normal;color:#4cc9ff}
-.stage-copy>p{max-width:500px;margin:0;color:#a7b4c3;font:500 16px/1.75 Inter,sans-serif}
-.stage-points{display:grid;gap:12px;margin-top:44px}.stage-points div{display:flex;align-items:center;gap:14px}.stage-points b{width:34px;color:#4cc9ff;font:800 10px Inter,sans-serif;letter-spacing:.1em}.stage-points span{color:#d5e1e8;font:600 12px Inter,sans-serif}
-.stage-footer{position:absolute;left:72px;right:72px;bottom:34px;display:flex;gap:22px;color:#64798a;font:800 8px Inter,sans-serif;letter-spacing:.13em}.stage-footer span+span{padding-left:22px;border-left:1px solid rgba(255,255,255,.08)}
-.account-panel{position:relative;padding:30px 42px 38px;background:linear-gradient(180deg,#0d1a27,#09141d);display:flex;flex-direction:column;justify-content:center}
-.panel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}.back-link{color:#a7b4c3;text-decoration:none;font:700 11px Inter,sans-serif}.back-link:hover{color:#f5f8fb}.secure{display:inline-flex;align-items:center;gap:7px;color:#7890a1;font:800 8px Inter,sans-serif;letter-spacing:.13em}.secure i{width:6px;height:6px;border-radius:50%;background:#47d16c;box-shadow:0 0 12px rgba(71,209,108,.7)}
-.switcher{display:grid;grid-template-columns:1fr 1fr;padding:4px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:#071018}.switch{height:40px;border:0;border-radius:10px;background:transparent;color:#738797;font:800 11px Inter,sans-serif;cursor:pointer}.switch.active{color:#f5f8fb;background:#162536;box-shadow:inset 0 0 0 1px rgba(76,201,255,.15)}
-.form{display:grid;gap:14px;margin-top:28px}.form-heading{margin-bottom:4px}.form-heading h2{margin:9px 0 6px;color:#f5f8fb;font:700 30px/1 'Space Grotesk',sans-serif;letter-spacing:-.04em}.form-heading p{margin:0;color:#8498a8;font:500 11px/1.65 Inter,sans-serif}.form label>span{display:block;margin-bottom:7px;color:#dbe7ee;font:700 10px Inter,sans-serif}.input-wrap{position:relative}.form input{box-sizing:border-box;width:100%;height:46px;padding:0 13px;border:1px solid #263d4b;border-radius:11px;outline:0;background:#071018;color:#f5f8fb;font:600 12px Inter,sans-serif}.form input::placeholder{color:#526879}.form input:focus{border-color:#4cc9ff;box-shadow:0 0 0 4px rgba(76,201,255,.075)}.form input[aria-invalid=true],.form input:user-invalid{border-color:#ff827c}
-.password-toggle{position:absolute;right:6px;top:6px;height:34px;padding:0 9px;border:0;border-radius:8px;background:#10202d;color:#7fa9bb;font:800 9px Inter,sans-serif;cursor:pointer}.two-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.primary-btn{display:flex;align-items:center;justify-content:space-between;width:100%;height:46px;padding:0 13px 0 16px;border:0;border-radius:12px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;font:800 11px Inter,sans-serif;cursor:pointer;box-shadow:0 12px 30px -10px rgba(76,201,255,.55)}.primary-btn b{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:rgba(3,20,29,.13);font-size:13px}.primary-btn:disabled{opacity:.55;cursor:wait}
-.form-row{display:flex;align-items:center;justify-content:space-between}.link-btn{border:0;background:none;padding:0;color:#79d7ff;font:800 9px Inter,sans-serif;cursor:pointer}.form-row span{color:#536a7a;font:700 8px Inter,sans-serif;text-transform:uppercase;letter-spacing:.08em}
-.email-note{display:grid;gap:3px;padding:11px 12px;border:1px solid rgba(76,201,255,.12);border-radius:11px;background:rgba(76,201,255,.035)}.email-note strong{color:#bcecff;font:800 9px Inter,sans-serif}.email-note span{color:#718797;font:500 9px/1.45 Inter,sans-serif}.check-row{display:flex!important;gap:9px;align-items:flex-start}.check-row input{width:15px;height:15px;flex:0 0 15px;margin:1px 0 0;padding:0}.check-row span{margin:0!important;color:#728696!important;font:500 9px/1.45 Inter,sans-serif!important}
-.form-message{min-height:17px;margin:0;color:#ff9b94;font:700 9px/1.5 Inter,sans-serif}.form-message.success{color:#7fe59a}
-@media(max-width:900px){.account-shell{grid-template-columns:1fr;max-width:620px}.account-stage{min-height:400px;padding:44px 32px;border-right:0;border-bottom:1px solid rgba(255,255,255,.07)}.stage-copy{margin-top:30px}.stage-copy h1{font-size:52px}.stage-points{display:none}.stage-footer{left:32px;right:32px;bottom:24px;gap:12px}.stage-footer span+span{padding-left:12px}.account-panel{padding:28px 28px 34px;min-height:590px}}
-@media(max-width:560px){.account-page{padding:12px 10px 72px}.account-shell{border-radius:22px}.account-stage{min-height:330px;padding:34px 24px}.stage-copy h1{font-size:43px}.stage-copy>p{font-size:13px}.stage-footer{left:24px;right:24px;font-size:7px;gap:8px}.stage-footer span+span{padding-left:8px}.account-panel{padding:22px 18px 28px}.two-fields{grid-template-columns:1fr}.form{margin-top:22px}}
+  @keyframes authReveal {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .auth-page {
+    position: relative;
+    min-height: calc(100vh - 80px);
+    padding: 36px 18px 110px;
+    overflow: hidden;
+  }
+  .auth-ambient {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .auth-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+  }
+  .auth-orb-a {
+    width: 520px;
+    height: 520px;
+    left: -140px;
+    top: -100px;
+    background: rgba(76, 201, 255, 0.12);
+  }
+  .auth-orb-b {
+    width: 440px;
+    height: 440px;
+    right: -120px;
+    bottom: 40px;
+    background: rgba(71, 209, 108, 0.07);
+  }
+
+  .auth-wrap {
+    position: relative;
+    z-index: 1;
+    width: min(1200px, 100%);
+    margin: 0 auto;
+    animation: authReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .auth-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .auth-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #a7b4c3;
+    text-decoration: none;
+    font: 700 13px/1 var(--font-body);
+    transition: color 0.16s ease, transform 0.16s ease;
+  }
+  .auth-back:hover {
+    color: #f5f8fb;
+    transform: translateX(-2px);
+  }
+  .auth-quick-links {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font: 600 12.5px/1 var(--font-body);
+    color: #6c8396;
+  }
+  .auth-quick-links a {
+    color: #9bb2c3;
+    text-decoration: none;
+    transition: color 0.16s ease;
+  }
+  .auth-quick-links a:hover {
+    color: #4cc9ff;
+  }
+
+  .auth-shell {
+    display: grid;
+    grid-template-columns: 1.06fr 0.94fr;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.085);
+    background: #071018;
+    box-shadow: 0 32px 90px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+
+  /* Left Showcase Stage */
+  .auth-stage {
+    position: relative;
+    padding: 48px 44px;
+    background: linear-gradient(150deg, #0d1c2a 0%, #071018 75%);
+    border-right: 1px solid rgba(255, 255, 255, 0.075);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 28px;
+    overflow: hidden;
+  }
+  .stage-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(76, 201, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(76, 201, 255, 0.04) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(180deg, #000 30%, transparent 95%);
+    pointer-events: none;
+  }
+  .stage-glow {
+    position: absolute;
+    width: 460px;
+    height: 460px;
+    right: -180px;
+    top: -140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(76, 201, 255, 0.2), transparent 68%);
+    pointer-events: none;
+  }
+
+  .stage-top {
+    position: relative;
+    z-index: 1;
+  }
+  .stage-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.08);
+    border: 1px solid rgba(76, 201, 255, 0.22);
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4cc9ff;
+    box-shadow: 0 0 12px #4cc9ff;
+  }
+  .stage-top h1 {
+    margin: 18px 0 14px;
+    font: 700 clamp(36px, 4.2vw, 56px) / 0.98 var(--font-display);
+    letter-spacing: -0.045em;
+    color: #f5f8fb;
+  }
+  .stage-top h1 em {
+    font-style: normal;
+    color: #4cc9ff;
+  }
+  .stage-lede {
+    margin: 0;
+    max-width: 520px;
+    color: #a7b4c3;
+    font: 500 14.5px/1.68 var(--font-body);
+  }
+
+  /* Live Preview Card */
+  .preview-card {
+    position: relative;
+    z-index: 1;
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(76, 201, 255, 0.22);
+    background: linear-gradient(145deg, rgba(16, 29, 42, 0.94), rgba(9, 18, 27, 0.94));
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    display: grid;
+    gap: 14px;
+  }
+  .preview-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .preview-avatar {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font: 800 18px/1 var(--font-display);
+    box-shadow: 0 8px 22px rgba(76, 201, 255, 0.3);
+  }
+  .preview-id {
+    flex: 1;
+    min-width: 0;
+  }
+  .preview-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .preview-title-row strong {
+    color: #f5f8fb;
+    font: 700 17px/1.2 var(--font-display);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .preview-lvl {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(76, 201, 255, 0.14);
+    border: 1px solid rgba(76, 201, 255, 0.3);
+    color: #8ce2ff;
+    font: 800 11px/1 var(--font-body);
+  }
+  .preview-handle {
+    display: block;
+    margin-top: 3px;
+    color: #89a0b2;
+    font: 600 12.5px/1.2 var(--font-body);
+  }
+  .preview-streak {
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: rgba(255, 191, 104, 0.1);
+    border: 1px solid rgba(255, 191, 104, 0.25);
+    color: #ffd36e;
+    font: 700 12px/1 var(--font-body);
+    white-space: nowrap;
+  }
+  .preview-xp-meta {
+    display: flex;
+    justify-content: space-between;
+    font: 600 12px/1 var(--font-body);
+    color: #8ea5b6;
+    margin-bottom: 7px;
+  }
+  .preview-xp-meta strong {
+    color: #dff4ff;
+  }
+  .preview-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #071018;
+    overflow: hidden;
+  }
+  .preview-bar i {
+    display: block;
+    width: 68%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #4cc9ff, #58e0a6);
+  }
+  .preview-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .preview-badges span {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #bfd0dc;
+    font: 600 11.5px/1 var(--font-body);
+  }
+
+  .stage-pillars {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 12px;
+  }
+  .stage-pillars article {
+    padding: 13px 15px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(15, 26, 38, 0.55);
+  }
+  .stage-pillars b {
+    display: block;
+    color: #4cc9ff;
+    font: 800 12px/1.2 var(--font-body);
+    letter-spacing: 0.04em;
+  }
+  .stage-pillars p {
+    margin: 4px 0 0;
+    color: #93a7b7;
+    font: 500 12.5px/1.5 var(--font-body);
+  }
+
+  /* Right Auth Panel */
+  .auth-panel {
+    padding: 42px 40px;
+    background: linear-gradient(180deg, #0f1a26 0%, #09131d 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .tab-switcher {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 5px;
+    border-radius: 14px;
+    background: #071018;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .tab-pill-bg {
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    left: 5px;
+    width: calc(50% - 5px);
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(76, 201, 255, 0.2), rgba(22, 37, 54, 0.95));
+    box-shadow: inset 0 0 0 1px rgba(76, 201, 255, 0.35);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+  .tab-btn {
+    position: relative;
+    z-index: 1;
+    min-height: 42px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #889fb0;
+    font: 700 13.5px/1 var(--font-body);
+    cursor: pointer;
+    transition: color 0.18s ease;
+  }
+  .tab-btn.active {
+    color: #f5f8fb;
+  }
+
+  .auth-form {
+    display: grid;
+    gap: 16px;
+    margin-top: 26px;
+    animation: authReveal 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .auth-form[hidden] {
+    display: none !important;
+  }
+
+  .form-eyebrow {
+    color: #4cc9ff;
+    font: 800 11px/1 var(--font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .form-intro h2 {
+    margin: 8px 0 6px;
+    color: #f5f8fb;
+    font: 700 28px/1.08 var(--font-display);
+    letter-spacing: -0.035em;
+  }
+  .form-intro p {
+    margin: 0;
+    color: #93a7b7;
+    font: 500 13.5px/1.6 var(--font-body);
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .field {
+    display: grid;
+    gap: 6px;
+  }
+  .field label {
+    color: #e1ecf3;
+    font: 700 13px/1.2 var(--font-body);
+  }
+  .field label small {
+    color: #778e9f;
+    font-weight: 500;
+  }
+  .field-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .input-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-prefix {
+    position: absolute;
+    left: 14px;
+    color: #4cc9ff;
+    font: 700 14px/1 var(--font-body);
+    pointer-events: none;
+  }
+  .input-box.has-prefix input {
+    padding-left: 30px;
+  }
+  .input-box input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid #263d4d;
+    background: #071018;
+    color: #f5f8fb;
+    font: 600 14px/1.2 var(--font-body);
+    outline: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .input-box input::placeholder {
+    color: #5a7284;
+  }
+  .input-box input:focus {
+    border-color: #4cc9ff;
+    box-shadow: 0 0 0 4px rgba(76, 201, 255, 0.12);
+  }
+  .input-box input[aria-invalid="true"] {
+    border-color: #ff827c;
+  }
+
+  .pw-toggle {
+    position: absolute;
+    right: 7px;
+    min-height: 32px;
+    padding: 0 11px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: #122230;
+    color: #93bed4;
+    font: 700 12px/1 var(--font-body);
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+  .pw-toggle:hover {
+    background: #182d3f;
+    color: #f5f8fb;
+  }
+
+  .pw-meter {
+    height: 5px;
+    border-radius: 999px;
+    background: #071018;
+    overflow: hidden;
+  }
+  .pw-meter span {
+    display: block;
+    height: 100%;
+    width: 0;
+    transition: width 0.24s ease, background 0.24s ease;
+    background: #4cc9ff;
+  }
+  .pw-meter span[data-strength="weak"] { background: #ff827c; }
+  .pw-meter span[data-strength="good"] { background: #4cc9ff; }
+  .pw-meter span[data-strength="strong"] { background: #47d16c; }
+
+  .field-hint {
+    color: #7990a2;
+    font: 500 12px/1.45 var(--font-body);
+  }
+  .field-hint.is-ok { color: #67df89; }
+  .field-hint.is-warn { color: #ff9c95; }
+
+  .advisory-box {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 11px;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(76, 201, 255, 0.22);
+    background: rgba(76, 201, 255, 0.05);
+  }
+  .advisory-icon {
+    color: #4cc9ff;
+    margin-top: 1px;
+  }
+  .advisory-box strong {
+    display: block;
+    color: #d7f3ff;
+    font: 700 13px/1.3 var(--font-body);
+  }
+  .advisory-box p {
+    margin: 4px 0 0;
+    color: #92a8b9;
+    font: 500 12.5px/1.55 var(--font-body);
+  }
+  .advisory-box code {
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+
+  .consent-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .consent-check input {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin-top: 2px;
+    accent-color: #4cc9ff;
+  }
+  .consent-check span {
+    color: #9ab0c0;
+    font: 500 12.5px/1.5 var(--font-body);
+  }
+
+  .submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+    font: 800 14px/1 var(--font-body);
+    cursor: pointer;
+    box-shadow: 0 14px 32px -10px rgba(76, 201, 255, 0.55);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+  }
+  .submit-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 38px -10px rgba(76, 201, 255, 0.7);
+  }
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  .text-btn {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: #63d4ff;
+    font: 700 12.5px/1 var(--font-body);
+    cursor: pointer;
+  }
+  .text-btn:hover {
+    text-decoration: underline;
+  }
+
+  .form-message {
+    padding: 12px 14px;
+    border-radius: 12px;
+    font: 600 13px/1.5 var(--font-body);
+  }
+  .form-message.is-error {
+    border: 1px solid rgba(255, 130, 124, 0.35);
+    background: rgba(255, 130, 124, 0.09);
+    color: #ffb1aa;
+  }
+  .form-message.is-success {
+    border: 1px solid rgba(71, 209, 108, 0.35);
+    background: rgba(71, 209, 108, 0.09);
+    color: #93efad;
+  }
+
+  .form-foot-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: #8399aa;
+    font: 500 13px/1.4 var(--font-body);
+  }
+
+  @media (max-width: 960px) {
+    .auth-shell {
+      grid-template-columns: 1fr;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .auth-stage {
+      border-right: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 34px 28px;
+    }
+    .stage-pillars {
+      display: none;
+    }
+    .auth-panel {
+      padding: 32px 28px 36px;
+    }
+  }
+
+  @media (max-width: 580px) {
+    .auth-page {
+      padding: 20px 12px 104px;
+    }
+    .auth-shell {
+      border-radius: 22px;
+    }
+    .auth-stage {
+      padding: 26px 20px;
+      gap: 20px;
+    }
+    .stage-top h1 {
+      font-size: 34px;
+    }
+    .auth-panel {
+      padding: 24px 18px 28px;
+    }
+    .field-grid {
+      grid-template-columns: 1fr;
+    }
+    .preview-streak {
+      display: none;
+    }
+  }
 </style>

@@ -4,10 +4,11 @@ import { REDEEM_CODES } from '../data/redeemCodes.js';
 
 const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
 
-// Skip on homepage and /events (which already feature full-page ecosystem hubs) and admin/creator/legal routes
+// Skip on homepage and /events (which already feature full-page ecosystem hubs) and auth/admin/creator/legal routes
 const shouldHide =
   pathname === '/' ||
   pathname === '/events' ||
+  pathname.startsWith('/account') ||
   pathname.startsWith('/admin') ||
   pathname.startsWith('/creator') ||
   pathname.startsWith('/legal');
@@ -46,11 +47,11 @@ const ALL_HUBS = [
     group: 'live',
   },
   {
-    href: '/a-nations-story',
-    tag: '5 Nations · 45 Days',
-    title: "A Nation's Story Answers",
-    desc: 'Instant question search for Japan, Netherlands, Mexico, France and Brazil trivia.',
-    accent: '#FFD36E',
+    href: '/profile',
+    tag: 'Identity & XP',
+    title: 'FCMobiletools Account',
+    desc: 'Track your personal profile, XP progression, streaks, achievements and optional rewards.',
+    accent: '#4CC9FF',
     group: 'live',
   },
   {

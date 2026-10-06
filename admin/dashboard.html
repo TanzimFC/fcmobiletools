@@ -379,12 +379,12 @@ async function accountDetail(id){
   document.querySelector('#backAccounts').onclick=()=>accountsSection();
   document.querySelector('#saveAccountState').onclick=async()=>{
     const btn=document.querySelector('#saveAccountState'),msg=document.querySelector('#stateMsg');btn.disabled=true;msg.textContent='';
-    try{const r=await api('/accounts/'+encodeURIComponent(id)+'/state',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({state:document.querySelector('#accountState').value,reason:document.querySelector('#stateReason').value.trim()})});const b=await r.json();if(!r.ok)throw Error(b.error||'Unable to update account state.');msg.textContent='State updated.';msg.style.color='#86e7a0';}catch(e){msg.textContent=e.message;msg.style.color='#ff9e96'}finally{btn.disabled=false}
+    try{await api('/accounts/'+encodeURIComponent(id)+'/state',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({state:document.querySelector('#accountState').value,reason:document.querySelector('#stateReason').value.trim()})});msg.textContent='State updated.';msg.style.color='#86e7a0';}catch(e){msg.textContent=e.message;msg.style.color='#ff9e96'}finally{btn.disabled=false}
   };
   const bindAdjustment=(formId,kind,msgId)=>{
     document.querySelector('#'+formId).addEventListener('submit',async(e)=>{
       e.preventDefault();const form=e.currentTarget,btn=form.querySelector('button'),msg=document.querySelector('#'+msgId);btn.disabled=true;msg.textContent='';
-      try{const fd=new FormData(form),amount=Number(fd.get('amount')),reason=String(fd.get('reason')||'').trim();if(!Number.isSafeInteger(amount)||amount===0)throw Error('Use a non-zero whole number.');if(!reason)throw Error('Reason is required.');const r=await api('/accounts/'+encodeURIComponent(id)+'/'+kind,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amount,reason})});const b=await r.json();if(!r.ok)throw Error(b.error||'Adjustment failed.');msg.textContent='Adjustment recorded.';msg.style.color='#86e7a0';form.reset();}catch(e){msg.textContent=e.message;msg.style.color='#ff9e96'}finally{btn.disabled=false}
+      try{const fd=new FormData(form),amount=Number(fd.get('amount')),reason=String(fd.get('reason')||'').trim();if(!Number.isSafeInteger(amount)||amount===0)throw Error('Use a non-zero whole number.');if(!reason)throw Error('Reason is required.');await api('/accounts/'+encodeURIComponent(id)+'/'+kind,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amount,reason})});msg.textContent='Adjustment recorded.';msg.style.color='#86e7a0';form.reset();setTimeout(()=>accountDetail(id),450);}catch(e){msg.textContent=e.message;msg.style.color='#ff9e96'}finally{btn.disabled=false}
     });
   };
   bindAdjustment('xpForm','xp','xpMsg');bindAdjustment('tokenForm','tokens','tokenMsg');

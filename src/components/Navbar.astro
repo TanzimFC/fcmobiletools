@@ -101,7 +101,15 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 
     <!-- Actions -->
     <div class="fcmt-actions">
-      <a class="fcmt-account" href="/profile/" aria-label="Open your FCMobiletools profile">Account</a>
+      <a class="fcmt-account" id="fcmtNavAccount" href="/profile/" aria-label="Open your FCMobiletools profile">
+        <span class="fcmt-acc-avatar" id="fcmtNavAvatar" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>
+        </span>
+        <span class="fcmt-acc-meta">
+          <strong id="fcmtNavName">Account</strong>
+          <small id="fcmtNavLevel" hidden>Lv. 1</small>
+        </span>
+      </a>
 
       <button class="fcmt-search" id="fcmtSearchBtn" type="button" aria-label="Search pages" aria-haspopup="dialog">
         <span class="fcmt-search-icon" set:html={ico('search', 17, 2)}></span>
@@ -170,9 +178,9 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         <span class="fcmt-item-text"><strong>Articles</strong><small>News, leaks, guides</small></span>
         <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
       </a>
-      <a class="fcmt-wide fcmt-account-wide" href="/profile/">
-        <span class="fcmt-ico" set:html={ico('ovr')}></span>
-        <span class="fcmt-item-text"><strong>Account</strong><small>Your profile and progression</small></span>
+      <a class="fcmt-wide fcmt-account-wide" id="fcmtSheetAccount" href="/profile/">
+        <span class="fcmt-ico" id="fcmtSheetAvatar" set:html={ico('ovr')}></span>
+        <span class="fcmt-item-text"><strong id="fcmtSheetName">Account &amp; Profile</strong><small id="fcmtSheetMeta">Identity, XP progression &amp; community</small></span>
         <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
       </a>
       <button class="fcmt-wide fcmt-wide-btn" id="fcmtSheetSearch" type="button">
@@ -327,6 +335,55 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 
   /* Close sheet if resized to desktop */
   addEventListener('resize', () => { if (innerWidth > 980 && sheet.classList.contains('open')) closeSheet(false); moveGlide(null); });
+
+  /* ---------- Compact Account Identity Indicator ---------- */
+  const syncNavIdentity = () => {
+    const navBtn = $('fcmtNavAccount');
+    const navAvatar = $('fcmtNavAvatar');
+    const navName = $('fcmtNavName');
+    const navLevel = $('fcmtNavLevel');
+    const sheetName = $('fcmtSheetName');
+    const sheetMeta = $('fcmtSheetMeta');
+    if (!navBtn || !navName) return;
+    try {
+      const hasAuth = Boolean(localStorage.getItem('fcmobiletools-auth-v1'));
+      const raw = localStorage.getItem('fcmobiletools-identity-cache-v1');
+      const identity = raw ? JSON.parse(raw) : null;
+      if (hasAuth && identity && identity.username) {
+        const display = String(identity.displayName || identity.username).slice(0, 16);
+        const lv = Math.max(1, Number(identity.level) || 1);
+        const initials = display.slice(0, 2).toUpperCase();
+        navBtn.classList.add('is-authenticated');
+        navBtn.href = '/profile/';
+        navName.textContent = display;
+        if (navLevel) {
+          navLevel.textContent = 'Lv. ' + lv;
+          navLevel.hidden = false;
+        }
+        if (navAvatar) {
+          if (identity.avatarUrl && /^https?:\/\//i.test(identity.avatarUrl)) {
+            navAvatar.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = identity.avatarUrl;
+            img.alt = '';
+            navAvatar.appendChild(img);
+          } else {
+            navAvatar.textContent = initials;
+          }
+        }
+        if (sheetName) sheetName.textContent = display + ' · Level ' + lv;
+        if (sheetMeta) sheetMeta.textContent = '@' + identity.username + ' · ' + Number(identity.xp || 0).toLocaleString() + ' XP';
+      } else {
+        navBtn.classList.remove('is-authenticated');
+        navBtn.href = hasAuth ? '/profile/' : '/account/';
+        navName.textContent = 'Account';
+        if (navLevel) navLevel.hidden = true;
+      }
+    } catch {}
+  };
+  syncNavIdentity();
+  window.addEventListener('fcmt:account-updated', syncNavIdentity);
+  window.addEventListener('storage', syncNavIdentity);
 })();
 </script>
 
@@ -334,7 +391,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 /* Kill horizontal overflow at the source (fixes the empty strip on the right) */
 html,body{max-width:100%;overflow-x:clip}
 html.fcmt-lock{overflow:hidden}
-.fcmt-account{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid rgba(76,201,255,.12);border-radius:11px;background:rgba(76,201,255,.035);color:#a9c0cc;text-decoration:none;font:800 10px var(--font-body);transition:.16s}.fcmt-account:hover{border-color:rgba(76,201,255,.28);color:var(--text);background:rgba(76,201,255,.07)}.fcmt-account-wide{margin-top:8px}.fcmt-account-wide .fcmt-ico{color:var(--primary)}
+.fcmt-account{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px 0 8px;border:1px solid rgba(76,201,255,.18);border-radius:12px;background:rgba(76,201,255,.05);color:#dce9f2;text-decoration:none;font:700 12.5px/1 var(--font-body);transition:border-color .18s ease,background .18s ease,transform .18s ease}.fcmt-account:hover{border-color:rgba(76,201,255,.4);color:#fff;background:rgba(76,201,255,.1);transform:translateY(-1px)}.fcmt-acc-avatar{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:rgba(76,201,255,.14);color:var(--primary);font:800 10px/1 var(--font-display);overflow:hidden;flex:0 0 24px}.fcmt-account.is-authenticated .fcmt-acc-avatar{background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04131c}.fcmt-acc-avatar img{width:100%;height:100%;object-fit:cover}.fcmt-acc-meta{display:flex;align-items:center;gap:6px;white-space:nowrap}.fcmt-acc-meta strong{font-weight:750;font-size:12.5px;color:#f5f8fb}.fcmt-acc-meta small{padding:3px 6px;border-radius:6px;background:rgba(76,201,255,.14);border:1px solid rgba(76,201,255,.25);color:#8ce2ff;font:800 10px/1 var(--font-body)}.fcmt-account-wide{margin-top:8px}.fcmt-account-wide .fcmt-ico{color:var(--primary)}@media(max-width:640px){.fcmt-account{padding:0 8px}.fcmt-acc-meta{display:none}}
 </style>
 
 <style>
