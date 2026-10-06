@@ -7,6 +7,8 @@ description: "A deep FC Mobile 27 tracker covering every confirmed Season 27 fea
 type: "news"
 category: "Updates"
 author: "TanzimFC"
+series: "FC Mobile 27"
+seriesOrder: 1
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-09-23T14:05:00.000Z"
@@ -36,7 +38,6 @@ sources:
   - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-liga-bbva-mx"
 factStatus: "verified"
 lastReviewed: "2026-09-23"
-series: "FC Mobile 27"
 ---
 
 ![FC Mobile 27 third anniversary and season update](https://res.cloudinary.com/b0qikv7n/image/upload/v1789672979/fc-mobile-tools/wio7rwhdmnyawoa4j4zq.jpg)
