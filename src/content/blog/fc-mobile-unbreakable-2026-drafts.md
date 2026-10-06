@@ -7,6 +7,8 @@ description: "FC Mobile Unbreakable is expected to start on October 15. The firs
 type: "leaks"
 category: "Leaks"
 author: "TanzimFC"
+series: "FC Mobile 27 October Events"
+seriesOrder: 1
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-10-06T06:20:00.000Z"
