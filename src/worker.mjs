@@ -300,7 +300,52 @@ async function publicProfileApi(request, env, url) {
   );
   const p=rows?.[0];
   if(!p || !p.is_public) return json({error:'This profile does not exist or is private.'},404);
-  return json({profile:p},200,{'cache-control':'public, max-age=60, stale-while-revalidate=300'});
+
+  const profile={
+    username:p.username,
+    display_name:p.show_display_name ? p.display_name : p.username,
+    avatar_url:p.avatar_url || null,
+    level:p.show_level ? Number(p.level||1) : null,
+    xp:p.show_xp ? Number(p.xp||0) : null,
+    current_streak:p.show_streak ? Number(p.current_streak||0) : null,
+    longest_streak:p.show_streak ? Number(p.longest_streak||0) : null,
+    selected_title:p.selected_title || null,
+    joined_at:p.show_joined_date ? p.joined_at : null,
+    show_level:p.show_level,
+    show_xp:p.show_xp,
+    show_streak:p.show_streak,
+    show_joined_date:p.show_joined_date,
+    show_achievements:p.show_achievements,
+    show_tournament_stats:p.show_tournament_stats,
+    show_activity_summary:p.show_activity_summary,
+  };
+
+  const accountRows=await supabaseRest(env,
+    'accounts?username=eq.'+encodeURIComponent(username)+
+    '&state=eq.active&system_account=eq.false&select=id&limit=1'
+  );
+  const accountId=accountRows?.[0]?.id;
+
+  if(accountId && p.show_achievements){
+    const achievements=await supabaseRest(env,
+      'user_achievements?account_id=eq.'+encodeURIComponent(accountId)+
+      '&status=eq.unlocked&select=unlocked_at,achievements(name,icon,description)&order=unlocked_at.desc&limit=12'
+    );
+    profile.achievements=(achievements||[]).filter(x=>x.achievements).map(x=>({
+      name:x.achievements.name,
+      icon:x.achievements.icon||'',
+      description:x.achievements.description||'',
+      unlocked_at:x.unlocked_at
+    }));
+  }else{
+    profile.achievements=[];
+  }
+
+  // Tournament records stay in the existing tournament tables. Nothing here
+  // exposes match-level private identifiers.
+  profile.tournament_stats=null;
+
+  return json({profile},200,{'cache-control':'public, max-age=60, stale-while-revalidate=300'});
 }
 
 function editorialStatus(value){
