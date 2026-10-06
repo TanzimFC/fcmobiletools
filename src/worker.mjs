@@ -428,12 +428,12 @@ async function accountApi(request, env, url) {
         const displayName=String(account.display_name||'').trim();
         if(!account.username || !displayName) return json({error:'Finish your profile details before claiming this mission.'},403);
       }
-      if(task.slug==='events-page-visit' || task.slug==='daily-events-check') {
-        if(proof!=='events_page') return json({error:'Open the Events Hub, then return here to complete this mission.'},409);
+      // Never trust a client-side "proof" string as completion evidence.
+      // Missions below are checked against server-owned account state.
+      if(task.slug==='events-page-visit' || task.slug==='daily-events-check' || task.slug==='calculator-run') {
+        return json({error:'This mission is retired. Refresh the mission list for the current server-verified objectives.'},409);
       }
-      if(task.slug==='calculator-run') {
-        if(proof!=='calculator_use') return json({error:'Use a FCMobiletools calculator first, then return here to claim this mission.'},409);
-      }
+
       if(task.slug==='first-tournament-match') {
         const playerRows=await supabaseRest(env,
           'tournament_players?account_id=eq.'+encodeURIComponent(account.id)+'&select=id&limit=100'
@@ -442,9 +442,49 @@ async function accountApi(request, env, url) {
         if(!playerIds.length) return json({error:'No tournament match is linked to this account yet.'},409);
         const encodedIds='('+playerIds.join(',')+')';
         const completed=await supabaseRest(env,
-          'tournament_matches?status=eq.completed&or=(player_a_id.in.'+encodeURIComponent(encodedIds)+',player_b_id.in.'+encodeURIComponent(encodedIds)+')&select=id&limit=1'
+          'tournament_matches?status=eq.completed&or=(player1_id.in.'+encodeURIComponent(encodedIds)+',player2_id.in.'+encodeURIComponent(encodedIds)+')&select=id&limit=1'
         );
         if(!completed?.length) return json({error:'Complete a recorded tournament match first, then check this mission again.'},409);
+      }
+
+      if(task.slug==='reach-level-3') {
+        const progressRows=await supabaseRest(env,
+          'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=level&limit=1'
+        );
+        if(Number(progressRows?.[0]?.level||1)<3) {
+          return json({error:'Reach Level 3 through verified progression before claiming this mission.'},409);
+        }
+      }
+
+      if(task.slug==='build-three-day-streak') {
+        const progressRows=await supabaseRest(env,
+          'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=current_streak&limit=1'
+        );
+        if(Number(progressRows?.[0]?.current_streak||0)<3) {
+          return json({error:'Build a 3-day qualifying activity streak before claiming this mission.'},409);
+        }
+      }
+
+      if(task.slug==='complete-three-mission-types' || task.slug==='complete-five-missions') {
+        const accepted=await supabaseRest(env,
+          'task_attempts?account_id=eq.'+encodeURIComponent(account.id)+
+          '&status=eq.accepted&select=task_id&limit=500'
+        );
+        const completedTaskIds=[...new Set((accepted||[]).map(x=>x.task_id).filter(Boolean))];
+        const required=task.slug==='complete-three-mission-types'?3:5;
+        if(completedTaskIds.length<required) {
+          return json({error:'Complete '+required+' qualifying missions first. Repeating the same mission does not shortcut this objective.'},409);
+        }
+      }
+
+      if(task.slug==='approved-community-contribution') {
+        const approved=await supabaseRest(env,
+          'community_submissions?account_id=eq.'+encodeURIComponent(account.id)+
+          '&status=eq.approved&select=id&limit=1'
+        );
+        if(!approved?.length) {
+          return json({error:'Submit a useful community correction or report and wait for it to be approved before claiming this mission.'},409);
+        }
       }
 
       const reward=await supabaseRest(env,'rpc/complete_task',{
