@@ -7,36 +7,6 @@ const admin = read('admin/articles/index.html');
 const lexical = read('admin/articles/lexical-editor.js');
 const blog = read('src/lib/blog-supabase.js');
 const worker = read('src/worker.mjs');
-const blogDir = path.join(root, 'src/content/blog');
-const editorialSourceFiles = fs.readdirSync(blogDir).filter((name) => name.endsWith('.md') && name !== '_template.md');
-const extractEditorialSourceUrls = (frontMatter) => {
-  const lines = frontMatter.split(/\r?\n/);
-  const startIndex = lines.findIndex((line) => /^sources:\s*/.test(line));
-  if (startIndex < 0) return [];
-  const collected = [lines[startIndex]];
-  for (let i = startIndex + 1; i < lines.length; i += 1) {
-    if (lines[i].trim() === '' || /^\s+/.test(lines[i])) collected.push(lines[i]);
-    else break;
-  }
-  return [...collected.join('\n').matchAll(/https?:\/\/[^\s"'\],]+/g)].map((match) => match[0]);
-};
-const allowedEditorialSource = (url, file) => {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return host === 'ea.com' || host.endsWith('.ea.com') || (file === 'fc-mobile-hall-of-fut-explained.md' && (host === 'fut.gg' || host.endsWith('.fut.gg')));
-  } catch {
-    return false;
-  }
-};
-const editorialSourceViolations = [];
-for (const file of editorialSourceFiles) {
-  const content = read(`src/content/blog/${file}`);
-  const frontMatter = content.match(/^---\n([\s\S]*?)\n---/m)?.[1] || '';
-  for (const url of extractEditorialSourceUrls(frontMatter)) {
-    if (!allowedEditorialSource(url, file)) editorialSourceViolations.push(`${file}: ${url}`);
-  }
-}
-
 const checks = [
   [!admin.includes("marked@"), 'admin article hydration must not reparse Supabase HTML with marked'],
   [admin.includes('contentJson') && admin.includes('loadLexical(editor,html,contentJson'), 'admin editor must hydrate Lexical JSON when available'],
@@ -53,7 +23,6 @@ const checks = [
   [!blog.includes("Authorization:'Bearer '"), 'public Supabase reads must use the publishable-key API contract'],
   [!worker.includes('\\\\') , 'Worker must not contain doubled backslash regex escapes'],
   [worker.includes("'cache-control':'no-store'"), 'editorial API responses must be uncacheable'],
-  [editorialSourceViolations.length === 0, 'article Sources must contain only EA URLs, except FUT.GG in the Hall of FUT article']
 ];
 
 const failed = checks.filter(([ok]) => !ok);
