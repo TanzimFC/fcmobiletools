@@ -334,9 +334,12 @@ async function accountApi(request, env, url) {
     let tasks=[];
     try {
       tasks=await supabaseRest(env,
-        'reward_tasks?enabled=eq.true&and=(or(starts_at.is.null,starts_at.lte.'+encodeURIComponent(now)+
-        '),or(ends_at.is.null,ends_at.gt.'+encodeURIComponent(now)+
-        '))&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,display_order,priority&order=display_order.asc,priority.asc,created_at.desc&limit=100'
+        'reward_tasks?enabled=eq.true&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,display_order,priority,starts_at,ends_at&order=display_order.asc,priority.asc,created_at.desc&limit=100'
+      );
+      const nowMs=Date.now();
+      tasks=(tasks||[]).filter(t=>
+        (!t.starts_at || new Date(t.starts_at).getTime()<=nowMs) &&
+        (!t.ends_at || new Date(t.ends_at).getTime()>nowMs)
       );
     } catch(error) {
       console.error('[ACCOUNT_MISSIONS]',error?.message);
@@ -493,12 +496,15 @@ async function accountApi(request, env, url) {
     let economy=[];
     try {
       rewards=await supabaseRest(env,
-        'rewards?enabled=eq.true&status=eq.active&and=(or(start_at.is.null,start_at.lte.'+encodeURIComponent(now)+
-        '),or(end_at.is.null,end_at.gt.'+encodeURIComponent(now)+
-        '))&select=id,slug,name,description,image_url,reward_type,cost,currency_code,stock,start_at,end_at,redemption_limit,eligibility,priority&order=priority.asc,created_at.desc&limit=60'
+        'rewards?enabled=eq.true&status=eq.active&select=id,slug,name,description,image_url,reward_type,cost,currency_code,stock,start_at,end_at,redemption_limit,eligibility,priority&order=priority.asc,created_at.desc&limit=100'
+      );
+      const nowMs=Date.now();
+      rewards=(rewards||[]).filter(item=>
+        (!item.start_at || new Date(item.start_at).getTime()<=nowMs) &&
+        (!item.end_at || new Date(item.end_at).getTime()>nowMs)
       );
       rewardAccounts=await supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance&limit=1');
-      economy=await supabaseRest(env,'reward_economy_config?select=display_name,currency_code,expiration_enabled,default_expiration_days&id=eq.true&limit=1');
+      economy=await supabaseRest(env,'reward_economy_config?select=display_name,currency_code,expiration_enabled,default_expiration_days&limit=1');
     } catch(error) {
       console.error('[ACCOUNT_REWARDS]',error?.message);
       return json({error:'The reward catalogue is temporarily unavailable.'},503);
