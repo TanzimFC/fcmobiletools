@@ -80,6 +80,40 @@ export function ensureRedeemSchema(db) {
         for (let i = 0; i < statements.length; i += 50) await db.batch(statements.slice(i, i + 50));
         await db.prepare("INSERT OR REPLACE INTO redeem_meta (key,value) VALUES ('seeded',?)").bind(new Date().toISOString()).run();
       }
+
+      // One-time migrations keep the live D1 database in sync with new codes
+      // without replaying the full seed or overwriting admin edits.
+      const migrationVersion = '2026-10-04-3rd-anniversary';
+      const migration = await db.prepare("SELECT value FROM redeem_meta WHERE key='seed-migrations'").first();
+      if (migration?.value !== migrationVersion) {
+        const c = {
+          code: '3RDANNIVERSARY',
+          reward: '1x Draft Voucher + 100x Rank Up Tokens',
+          status: 'active',
+          releaseDate: '2026-10-04',
+          expiryDate: null,
+          region: 'Global',
+          lastVerified: '2026-10-06',
+          notes: 'Released starting October 4, 2026.',
+        };
+        await db.prepare("INSERT OR IGNORE INTO redeem_codes
+          (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)
+          VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')").bind(
+          c.code,
+          c.reward,
+          c.status,
+          c.releaseDate,
+          c.expiryDate,
+          c.region,
+          c.lastVerified,
+          c.notes,
+          c.releaseDate + 'T00:00:00.000Z',
+          new Date().toISOString(),
+        ).run();
+        await db.prepare("INSERT OR REPLACE INTO redeem_meta (key,value) VALUES ('seed-migrations',?)")
+          .bind(migrationVersion)
+          .run();
+      }
     })().catch((error) => { schemaReady = null; throw error; });
   }
   return schemaReady;
