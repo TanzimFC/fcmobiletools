@@ -17,7 +17,7 @@ import AccountNav from '../../components/AccountNav.astro';
           <span class="mod-kicker"><i class="mod-dot"></i> CONFIGURABLE PROGRESSION</span>
           <h1>Useful activity, not a click farm.</h1>
           <p>
-            Missions reward verified FC Mobile companion actions—such as tournament matches, event objectives and approved data contributions. Page refreshes never grant XP.
+            Missions reward real, server-verified progression. Reaching a level, building a streak, completing different missions, playing tournaments or getting a community contribution approved can unlock rewards. Clicking a button alone never qualifies.
           </p>
         </div>
 
@@ -58,37 +58,61 @@ import AccountNav from '../../components/AccountNav.astro';
     if (m.statusLabel === 'Pending review') return '<span class="mission-complete-note">Waiting for review</span>';
 
     const slug=String(m.slug||'').toLowerCase();
+    const checkButton = (label='Verify & Claim') =>
+      `<button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="">${label}</button>`;
+
+    if (slug==='verify-email') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/settings/">Open Settings</a>
+          ${checkButton('Verify & Claim')}
+        </div>`;
+    }
     if (slug==='complete-profile') {
       return `
         <div class="mission-actions">
-          <a class="mission-action-secondary" href="/settings/">Edit Profile</a>
-          <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="profile_setup_complete">Claim Reward</button>
-        </div>`;
-    }
-    if (slug==='daily-events-check' || slug==='events-page-visit') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/events/">Open Events</a>
-          <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="events_page">Complete Check-in</button>
-        </div>`;
-    }
-    if (slug==='calculator-run') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/rank-up-calculator">Open Calculator</a>
-          <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="calculator_use">Claim Reward</button>
+          <a class="mission-action-secondary" href="/settings/">Finish Profile</a>
+          ${checkButton('Verify & Claim')}
         </div>`;
     }
     if (slug==='first-tournament-match') {
       return `
         <div class="mission-actions">
-          <a class="mission-action-secondary" href="/tournaments">Browse Tournaments</a>
-          <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="tournament_match_completed">Check Match</button>
+          <a class="mission-action-secondary" href="/tournaments">Open Tournaments</a>
+          ${checkButton('Check Match')}
+        </div>`;
+    }
+    if (slug==='reach-level-3') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/profile/">View Progress</a>
+          ${checkButton('Check Level')}
+        </div>`;
+    }
+    if (slug==='build-three-day-streak') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/profile/">View Streak</a>
+          ${checkButton('Check Streak')}
+        </div>`;
+    }
+    if (slug==='complete-three-mission-types' || slug==='complete-five-missions') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/missions/">Keep Playing</a>
+          ${checkButton('Check Progress')}
+        </div>`;
+    }
+    if (slug==='approved-community-contribution') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/profile/#contribute">Submit Correction</a>
+          ${checkButton('Check Approval')}
         </div>`;
     }
     return `
       <div class="mission-actions">
-        <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="">Complete Mission</button>
+        ${checkButton()}
       </div>`;
   }
 
