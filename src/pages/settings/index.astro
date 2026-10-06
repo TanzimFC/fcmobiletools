@@ -25,7 +25,8 @@ import AccountNav from '../../components/AccountNav.astro';
     accountApi,
     setCachedIdentity,
     clearCachedIdentity,
-    escapeHtml as esc
+    escapeHtml as esc,
+    getAuthRedirectUrl
   } from '../../lib/account-client.js';
 
   const root = document.getElementById('settingsRoot');
@@ -162,9 +163,12 @@ import AccountNav from '../../components/AccountNav.astro';
               </div>
             </div>
             <p class="sec-note">
-              Need to change your password? Send a secure password reset link to your registered email address.
+              ${isVerified
+                ? 'Your email address is verified. You can request a password reset any time.'
+                : 'Your email address is not verified yet. You can resend a fresh verification link whenever you need one.'}
             </p>
             <div class="sec-actions">
+              ${!isVerified ? '<button type="button" class="set-btn-secondary" id="resendVerificationBtn">Resend Verification Email</button>' : ''}
               <button type="button" class="set-btn-secondary" id="sendPasswordResetBtn">Send Password Reset Email</button>
               <button type="button" class="set-btn-danger" id="settingsLogoutBtn">Sign out</button>
             </div>
@@ -299,6 +303,29 @@ import AccountNav from '../../components/AccountNav.astro';
       }
     });
 
+    // Verification resend for accounts that have not confirmed their email yet.
+    document.getElementById('resendVerificationBtn')?.addEventListener('click', async (event) => {
+      const btn = event.currentTarget;
+      btn.disabled = true;
+      const msg = document.getElementById('securityMsg');
+      msg.textContent = '';
+      try {
+        const result = await accountAuth.auth.resend({
+          type: 'signup',
+          email: a.email,
+          options: { emailRedirectTo: getAuthRedirectUrl() }
+        });
+        if (result.error) throw result.error;
+        msg.textContent = 'A fresh verification email has been requested. Check your inbox and spam folder.';
+        msg.className = 'status-msg is-ok';
+      } catch (e) {
+        msg.textContent = e.message || 'Unable to resend the verification email right now.';
+        msg.className = 'status-msg is-err';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
     // Password reset trigger
     document.getElementById('sendPasswordResetBtn')?.addEventListener('click', async (event) => {
       const btn = event.currentTarget;
@@ -308,7 +335,7 @@ import AccountNav from '../../components/AccountNav.astro';
       msg.textContent = '';
       try {
         const res = await accountAuth.auth.resetPasswordForEmail(a.email, {
-          redirectTo: new URL('/account/', location.origin).toString()
+          redirectTo: getAuthRedirectUrl()
         });
         if (res.error) throw res.error;
         msg.textContent = 'Password reset link sent to ' + a.email + '.';
