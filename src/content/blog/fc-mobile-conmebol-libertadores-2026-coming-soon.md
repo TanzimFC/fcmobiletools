@@ -2,21 +2,21 @@
 id: fc-mobile-conmebol-libertadores-2026-coming-soon
 slug: "fc-mobile-conmebol-libertadores-2026-coming-soon"
 title: "FC Mobile CONMEBOL Libertadores Coming Soon: 122 OVR Drafts Leaked"
-subtitle: "Libertadores is reported to start on October 15, with Maicon and Hulk leading two 122 OVR Draft pools"
-description: "FC Mobile CONMEBOL Libertadores is expected to arrive on October 15, 2026. Here are the reported 122 OVR Draft A and Draft B players, what last year's event tells us, and how the real 2026 Libertadores schedule could shape the new event."
+subtitle: "Libertadores is expected on October 15, with Maicon and Hulk leading the first reported Draft pools"
+description: "FC Mobile CONMEBOL Libertadores is expected to arrive on October 15, 2026. Here are the reported 122 OVR Draft pools, how the event could follow the real Libertadores, and why it may run alongside Unbreakable."
 type: "leaks"
 category: "Leaks"
 author: "TanzimFC"
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-10-06T05:48:00.000Z"
-updatedAt: "2026-10-06T05:48:00.000Z"
+updatedAt: "2026-10-06T06:15:00.000Z"
 publishedAt: "2026-10-06T05:48:00.000Z"
 image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1790755003/fc-mobile-tools/ivcmoudljmftrau8bc2o.jpg"
 imageAlt: "FC Mobile CONMEBOL Libertadores event banner"
 imageCaption: "FC Mobile CONMEBOL Libertadores event banner"
 thumbnail: ""
-excerpt: "The reported FC Mobile Libertadores Drafts put 122 OVR Maicon and Hulk at the top, with Zé Roberto, Riquelme, Francescoli and Pato also in the first leaked pools."
+excerpt: "The reported Libertadores Drafts put 122 OVR Maicon and Hulk at the top, while Zé Roberto, Riquelme, Francescoli and Pato make up the first reported pool."
 tags: ["FC Mobile 27", "CONMEBOL Libertadores", "Libertadores", "Player Leaks", "Draft", "122 OVR", "FC Mobile Events"]
 relatedPlayers: []
 relatedEvents: ["CONMEBOL Libertadores"]
@@ -26,22 +26,25 @@ relatedCodes: []
 featured: false
 readingTime: 5
 seoTitle: "FC Mobile CONMEBOL Libertadores 2026: 122 OVR Drafts Leaked"
-seoDescription: "See the reported FC Mobile CONMEBOL Libertadores Draft A and B pools, the expected October 15 start, last year's event structure, and what could change in 2026."
+seoDescription: "The reported FC Mobile Libertadores Draft A and B pools, the October 15 start, last year's 56-day event, and what the real 2026 tournament could mean for the new event."
 canonicalUrl: ""
-sources: ["https://gol.conmebol.com/libertadores/en/news/dates-confirmed-conmebol-libertadores-semi-final-schedule-announced", "https://gol.conmebol.com/libertadores/en/news/2026-conmebol-libertadores-final-will-be-played-montevideo", "https://renderz.app/news/article/ea-sports-fc-mobile-launches-conmebol-libertadores-event~789", "https://renderz.app/news/article/conmebol-libertadores-final~846", "https://t.me/s/fcmobilez"]
+sources:
+  - "https://gol.conmebol.com/libertadores/en/news/dates-confirmed-conmebol-libertadores-semi-final-schedule-announced"
+  - "https://gol.conmebol.com/libertadores/en/news/2026-conmebol-libertadores-final-will-be-played-montevideo"
+  - "https://renderz.app/news/article/ea-sports-fc-mobile-launches-conmebol-libertadores-event~789"
+  - "https://www.fifamobileguide.com/conmebol-libertadores-26"
+  - "https://www.sportsdunia.com/esports/ea-fc-mobile-unbreakable-draft-predictions"
 factStatus: "community-reported"
 lastReviewed: "2026-10-06"
 ---
 
 ![FC Mobile CONMEBOL Libertadores event banner](https://res.cloudinary.com/b0qikv7n/image/upload/v1790755003/fc-mobile-tools/ivcmoudljmftrau8bc2o.jpg)
 
-The **CONMEBOL Libertadores is coming to FC Mobile on October 15**, and the first reported Draft pools are already out.
+**CONMEBOL Libertadores is expected to arrive in FC Mobile on October 15**, and the first reported Draft pools are already giving us a good idea of what EA may be planning.
 
-The headline is simple: **122 OVR** is the reported max for these first Libertadores Drafts.
+The reported maximum is **122 OVR**.
 
-## FC Mobile Libertadores Drafts
-
-Two Draft pools are currently being reported.
+## Libertadores Drafts
 
 ### Draft A
 
@@ -59,120 +62,104 @@ Two Draft pools are currently being reported.
 | **Juan Román Riquelme** | **121** | CAM |
 | **Alexandre Pato** | **120** | ST |
 
-Maicon and Hulk are the two big 122 OVR names at the top of the leaked Drafts. Zé Roberto and Riquelme sit at 121, while Francescoli and Pato complete the first reported 120 OVR slots.
+That puts **Maicon and Hulk at 122 OVR**, with Zé Roberto and Riquelme at 121 and Francescoli and Pato at 120.
 
-These are **reported leaks**, not a final EA player list. Names, positions, OVRs and the actual Draft setup can still change before the event goes live.
+These are still **leaked player pools**, so the final cards, positions and Draft structure can change.
 
-## Why October 15 makes sense
+## Libertadores and Unbreakable start on the same day
 
-The date lines up very neatly with the real Libertadores.
+One thing that is easy to miss is that **October 15 is not just a Libertadores date**.
 
-CONMEBOL has confirmed the 2026 Semi Finals:
+**FC Mobile Unbreakable is also expected to start on October 15**, with its own reported Draft pools. That means the two events could run at the same time while the Anniversary event is still in its final stretch before October 22.
 
-- **Fluminense vs Palmeiras** — first leg on October 14
-- **Estudiantes vs Flamengo** — first leg on October 15
-- The return legs are on October 21 and October 22
-- The 2026 Final is on **November 28** in Montevideo
+So players will have two new event tracks opening on the same day.
 
-That gives EA an obvious real-football window for the event to start. Last year's FC Mobile Libertadores also launched during the Semi Final stage and used real-world semifinal matchups inside the game.
+That matters for resources. A Draft Voucher or other event currency may have more than one place to go, depending on how EA builds both events.
 
-So an October 15 launch is not a random date. It fits the football calendar almost perfectly.
+## The real Libertadores schedule lines up perfectly
 
-## What happened in FC Mobile Libertadores 2025?
+The timing makes sense when you look at the actual 2026 tournament.
 
-Last year's event is probably the best guide for what EA could do this time.
+The 2026 Semi Finals are:
 
-The 2025 Libertadores event went live on **October 16, 2025** and was scheduled to run for **56 days**. At launch, the main content had a **Semi Finals** chapter and a **Gallery**.
+- **Fluminense vs Palmeiras**, first leg October 14
+- **Estudiantes vs Flamengo**, first leg October 15
+- Return legs on October 21 and October 22
+- **Final on November 28 in Montevideo**
 
-The Semi Finals chapter used the real semifinal ties from that tournament:
+That gives EA a clean real-football storyline to follow from the Semi Finals through the Final.
+
+The teams also mean the 2026 in-game match content should not simply copy last year's bracket. The real clubs have changed, so a new event would need to reflect the current tournament.
+
+## What happened in last year's FC Mobile Libertadores?
+
+The 2025 event is the best comparison.
+
+The FC Mobile Libertadores event launched on **October 16, 2025** and ran for **56 days**, finishing on December 11. It opened with a **Semi Finals** chapter and a **Gallery**.
+
+The in-game Semi Finals used the real 2025 ties:
 
 - **Palmeiras vs LDU Quito**
 - **Racing Club vs Flamengo**
 
-Players could play each match, choose a difficulty and collect different rewards depending on that difficulty. The highest difficulty gave **25 Libertadores Shards per match**, while the other difficulties gave Coins, Gems or Rank Up Points.
+Players could play the matches at different difficulties and earn event rewards. The highest difficulty gave **25 CONMEBOL Shards per match**, while easier difficulties gave Coins, Gems or Rank Up Points.
 
-The Gallery then used **Libertadores Shards** to claim event players.
+The Gallery then used those Libertadores Shards to claim player rewards.
 
-Later, FC Mobile added the **Final** chapter after Palmeiras and Flamengo reached the real 2025 final. That chapter again tied the game to the real tournament, with a Final match challenge and another milestone reward path.
+Later, EA added the **Final** chapter after Palmeiras and Flamengo reached the real final. The event therefore kept following the real tournament rather than ending at the semifinal stage.
 
-That structure is worth remembering because it gives EA a ready-made formula for 2026:
+## Could 2026 follow the same structure?
 
-**real semifinal matches → event progression → real final → final rewards.**
+Quite possibly.
 
-## What could happen this year?
+The biggest difference is the current FC Mobile system. **Drafts are already part of the game**, and the new leaked Libertadores pools strongly suggest that this year's event may put more weight on Draft-based player releases.
 
-The big change is the current FC Mobile system.
+A likely structure would be:
 
-Last year, the event was built around matches, Shards and a Gallery. This year, **Drafts are already a major part of FC Mobile**, so the leaked Maicon and Hulk pools strongly suggest that the Libertadores event could use Draft Vouchers or a similar Draft-based system rather than simply copying the old Gallery setup.
+**Semi Final content → Draft pools → progressing event rewards → Final content after November 28.**
 
-I would expect the live event to lean into the real tournament again, especially with the Semi Finals starting immediately around the reported October 15 launch.
-
-That could mean:
-
-- Draft pools with rotating Libertadores players
-- Match content based on the real Semi Finals
-- Event currency or Shards for progression
-- A later Final chapter tied to the November 28 match
-- Additional player releases as the tournament moves toward the final
-
-None of that is confirmed yet. The **Draft pools are the part currently backed by the active leak reports**.
+That is still a prediction. The Draft leaks are the part we can point to right now.
 
 ## How long could Libertadores last?
 
-This is where last year's 56-day event gives us a useful benchmark.
+Last year's event lasted **56 days**.
 
-A **56-day run starting October 15, 2026 would land around December 10**.
+Starting on **October 15, 2026**, another 56-day run would put the finish around **December 10**.
 
-The real Libertadores Final is scheduled for **November 28**, so that would leave roughly 12 days of FC Mobile content after the real-world final.
+That would also fit the real football calendar. The 2026 Final is on November 28, leaving roughly 12 days afterward, which is almost exactly what happened last year. The 2025 Final was on November 29 and the FC Mobile event finished on December 11.
 
-That actually makes sense when you look at what EA did in 2025. The game did not simply disappear when the real tournament reached its final. It continued long enough to add and complete the Final content.
+So a **late November to early December finish** is a reasonable expectation, but EA has not confirmed the 2026 event duration.
 
-So a **late-November or early-December finish** looks reasonable based on last year's structure, but EA has not confirmed the 2026 duration.
+## The 122 OVR cards still matter
 
-## The 122 OVR cards are the main story
+There is a lot of talk about Ballon d'Or arriving around **October 22** with a possible higher OVR ceiling.
 
-With Ballon d'Or expected to push the top end of FC Mobile higher, Libertadores is not arriving at the moment when 122 OVR is the absolute ceiling for the game.
+That could make some players save resources instead of going all-in on Libertadores.
 
-That does not make 122 OVR irrelevant.
+But **122 OVR is still 122 OVR**. A high-rated Maicon at RB or Hulk at RW can matter for a squad pushing Team OVR, especially when a player needs that exact position.
 
-**OVR matters.** A 122 OVR RB, RW or CAM can still be a serious squad upgrade, especially for accounts that are building toward a higher Team OVR. The leaked positions also give the two Drafts very different appeal.
+The leaked pool also gives players different reasons to check each Draft:
 
-Draft A is led by **Maicon at RB**.
-
-Draft B is led by **Hulk at RW**.
-
-Then you have **Riquelme at CAM**, **Zé Roberto at LM**, and two 120 OVR strikers in Francescoli and Pato.
-
-For players who care about OVR first, these are exactly the kinds of cards worth watching when the event opens.
-
-## Libertadores vs the next big events
-
-This is probably the main reason some players will skip the event.
-
-Libertadores is expected to start on **October 15**, while **Ballon d'Or is expected around October 22**. If the reported Ballon d'Or ceiling reaches 124 OVR, some players will save Gems, Draft Vouchers and other resources rather than chase every Libertadores card.
-
-That does not mean Libertadores is a bad event.
-
-It means the timing matters.
-
-An F2P player with limited resources may get more value from taking the guaranteed free Libertadores rewards, checking the Drafts, and saving the rest for the next event.
+**Maicon** at RB, **Hulk** at RW, **Riquelme** at CAM and **Zé Roberto** at LM are the main position names here.
 
 ## What we know right now
 
-| Detail | Reported status |
+| Detail | Status |
 | :--- | :--- |
 | **Event** | CONMEBOL Libertadores |
 | **Expected start** | **October 15, 2026** |
 | **Reported max OVR** | **122** |
 | **Draft A** | Maicon 122, Zé Roberto 121, Francescoli 120 |
 | **Draft B** | Hulk 122, Riquelme 121, Pato 120 |
-| **2026 real semifinal** | Fluminense vs Palmeiras / Estudiantes vs Flamengo |
-| **Real final** | **November 28, 2026** |
-| **Expected duration** | Could be around 56 days based on 2025 |
-| **Final EA structure** | Not confirmed |
+| **Unbreakable** | Expected to start the same day |
+| **2026 Semi Finals** | Fluminense vs Palmeiras / Estudiantes vs Flamengo |
+| **2026 Final** | **November 28** |
+| **Possible duration** | Around 56 days, based on 2025 |
+| **Final event structure** | Not confirmed |
 
-For now, the **122 OVR Drafts are the main Libertadores leak to keep an eye on**.
+For now, the main Libertadores watchlist is simple: **Maicon 122, Hulk 122, Zé Roberto 121, Riquelme 121, Francescoli 120 and Pato 120**.
 
-The next important step is seeing how EA connects those Drafts to the real Semi Finals. Last year showed that Libertadores can stay relevant from the semifinal stage all the way through the real final, and the 2026 football schedule gives EA almost the same opportunity again.
+The bigger question is what EA does with the event structure. Last year Libertadores followed the real tournament from the Semi Finals into the Final. This year, with Drafts already part of FC Mobile and **Unbreakable launching on the same October 15 date**, the setup could be more packed than last year.
 
-**Libertadores starts October 15. Maicon and Hulk are already on the watchlist.**
+**Libertadores: October 15. Unbreakable: October 15. 122 OVR is the reported Libertadores ceiling.**
+
