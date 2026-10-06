@@ -1,11 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
 export const ACCOUNT_SUPABASE_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
+export const ACCOUNT_SITE_URL = 'https://fcmobiletools.online';
 
 // Browser Auth uses the project's publishable key. This is the public client key
 // intended for browser/mobile code and is supported by the current Supabase API-key model.
 export const ACCOUNT_SUPABASE_CLIENT_KEY =
   'sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr';
+
+// Auth emails must never be sent with a localhost callback. During local testing,
+// keep the email action URL pointed at the production account flow as well.
+export function getAuthRedirectUrl() {
+  return ACCOUNT_SITE_URL + '/account/';
+}
 
 export const IDENTITY_CACHE_KEY = 'fcmobiletools-identity-cache-v1';
 
