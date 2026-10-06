@@ -1384,6 +1384,20 @@ export function createExports(manifest) {
   if(url.pathname === '/fc-mobile-beta' || url.pathname === '/fc-mobile-beta/' || url.pathname === '/legacy/fc-mobile-beta.html') {
     return Response.redirect(new URL('/fc-mobile-27/',url),301);
   }
+  if(url.pathname.startsWith('/api/account/')) return accountApi(request,env,url);
+
+  // Public profile pages use the same lightweight Astro page, while the browser
+  // path remains /profile/<username>/ so the public URL is clean.
+  const publicProfileMatch=url.pathname.match(/^\/profile\/([^/]+)\/?$/);
+  if(publicProfileMatch && request.method === 'GET'){
+    const assetUrl=new URL('/profile/',url);
+    const asset=await env.ASSETS.fetch(new Request(assetUrl,{method:'GET',headers:request.headers}));
+    if(!asset.ok) return asset;
+    const headers=new Headers(asset.headers);
+    headers.set('cache-control','no-store, max-age=0');
+    return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
+  }
+
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
   if(url.pathname === '/api/football' && request.method === 'GET') {
     try {
