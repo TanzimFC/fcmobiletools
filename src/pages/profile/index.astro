@@ -52,7 +52,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const initial = String(a.displayName || a.username || 'FC').slice(0,2).toUpperCase();
 
     const publicActions = publicMode
-      ? '<div class="hero-actions"><a href="/account/signup/" class="soft-btn">Create account</a><a href="/account/login/" class="soft-btn">Sign in</a></div>'
+      ? '<div class="hero-actions"><a href="/account/" class="soft-btn">Create account</a><a href="/account/" class="soft-btn">Sign in</a></div>'
       : '<div class="hero-actions"><a href="/settings/" class="soft-btn">Edit profile</a><button id="logout" class="soft-btn" type="button">Sign out</button></div>';
 
     root.innerHTML = '<section class="profile-hero">'
@@ -73,7 +73,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         : (activity.length ? '<div class="activity-list">'+activity.map((item)=>'<div class="activity"><span class="activity-icon">'+esc(item.event_type === 'xp_earned' ? 'XP' : '•')+'</span><div><strong>'+esc(titleCase(item.event_type))+'</strong><small>'+esc(date(item.created_at))+'</small></div></div>').join('')+'</div>' : '<div class="empty">No activity recorded yet. Useful account actions will appear here as the system grows.</div>'))
       +'</article><aside class="panel"><div class="panel-head"><div><span class="kicker">IDENTITY</span><h2>Privacy boundary</h2></div></div>'
       +'<p class="panel-copy">Email, authentication credentials, internal account identifiers, security data, moderation notes and reward delivery information are never shown on this profile.</p>'
-      +(publicMode ? '<a class="primary-btn" href="/account/signup/">Create your account</a>' : '<a class="primary-btn" href="/profile/'+encodeURIComponent(a.username)+'/">View public profile</a>')+'</aside></section>';
+      +(publicMode ? '<a class="primary-btn" href="/account/">Create your account</a>' : '<a class="primary-btn" href="/profile/'+encodeURIComponent(a.username)+'/">View public profile</a>')+'</aside></section>';
 
     document.querySelector('#logout')?.addEventListener('click', async ()=>{
       await accountAuth.auth.signOut();
