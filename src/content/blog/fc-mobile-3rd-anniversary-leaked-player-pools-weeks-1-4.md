@@ -7,6 +7,8 @@ description: "A week-by-week breakdown of the reported FC Mobile 3rd Anniversary
 type: "leaks"
 category: "Leaks"
 author: "TanzimFC"
+series: "FC Mobile 3rd Anniversary"
+seriesOrder: 1
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-10-03T11:00:00.000Z"
@@ -31,7 +33,6 @@ canonicalUrl: ""
 sources: []
 factStatus: "community-reported"
 lastReviewed: "2026-10-03"
-series: "FC Mobile 3rd Anniversary"
 ---
 
 ![FC Mobile 3rd Anniversary leaked Draft and Box player pool](https://res.cloudinary.com/b0qikv7n/image/upload/v1791024730/fc-mobile-tools/yd1rntt4gdbwzsiyusfd.png)
