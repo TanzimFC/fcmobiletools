@@ -7,6 +7,8 @@ description: "FC Mobile CONMEBOL Libertadores is expected to arrive on October 1
 type: "leaks"
 category: "Leaks"
 author: "TanzimFC"
+series: "FC Mobile 27 October Events"
+seriesOrder: 2
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-10-06T05:48:00.000Z"
