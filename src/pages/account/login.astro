@@ -1,0 +1,92 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Sign in" description="Sign in to your FCMobiletools Account.">
+  <main class="account-shell">
+    <section class="account-card">
+      <div class="eyebrow">FCMOBILETOOLS ACCOUNT</div>
+      <h1>Welcome back.</h1>
+      <p class="lead">Keep your profile, progression and community activity together. The normal FCMobiletools site still works without an account.</p>
+
+      <form id="loginForm" class="account-form">
+        <label>
+          <span>Email</span>
+          <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </label>
+        <label>
+          <span>Password</span>
+          <input id="password" name="password" type="password" autocomplete="current-password" minlength="10" required placeholder="Your password">
+        </label>
+        <button class="primary" type="submit">Sign in</button>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="account-foot">
+        <span>New here?</span>
+        <a href="/account/signup/">Create your account</a>
+      </div>
+    </section>
+
+    <aside class="account-note">
+      <strong>One thing before you sign in</strong>
+      <p>Use an email address you can access permanently. FCMobiletools may require email verification for account features later.</p>
+      <p>Temporary/disposable addresses and Gmail <code>+</code> aliases are not accepted.</p>
+    </aside>
+  </main>
+</BaseLayout>
+
+<style>
+.account-shell{width:min(980px,calc(100% - 32px));margin:0 auto;padding:76px 0 100px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.account-card,.account-note{border:1px solid rgba(255,255,255,.08);border-radius:22px;background:linear-gradient(145deg,rgba(15,26,38,.98),rgba(7,16,24,.98));box-shadow:0 28px 80px rgba(0,0,0,.28)}
+.account-card{padding:36px}
+.account-note{padding:22px;position:sticky;top:110px}
+.eyebrow{font:800 10px/1 var(--font-body);letter-spacing:.14em;color:var(--primary)}
+h1{margin:12px 0 9px;font:700 clamp(42px,6vw,66px)/.94 var(--font-heading);letter-spacing:-.055em;color:var(--text)}
+.lead{max-width:650px;color:var(--muted);font:500 14px/1.75 var(--font-body)}
+.account-form{display:grid;gap:15px;margin-top:28px}
+.account-form label{display:grid;gap:7px}
+.account-form label>span{font:700 11px/1 var(--font-body);color:#d9e5ec}
+.account-form input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #29414e;background:#09141d;color:var(--text);outline:none;font:600 13px var(--font-body)}
+.account-form input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(76,201,255,.10)}
+.primary{min-height:46px;border:1px solid #6bd8ff;border-radius:12px;background:linear-gradient(135deg,#4cc9ff,#9fe6ff);color:#04131b;font:800 11px var(--font-body);cursor:pointer}
+.primary:disabled{opacity:.6;cursor:wait}
+.message{min-height:18px;margin:0;color:var(--muted);font:600 11px/1.5 var(--font-body)}
+.message.error{color:#ff9e94}.message.success{color:#72df8e}
+.account-foot{display:flex;gap:8px;align-items:center;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);color:var(--muted);font:600 11px var(--font-body)}
+.account-foot a{color:var(--primary);font-weight:800;text-decoration:none}
+.account-note strong{display:block;font:700 16px var(--font-heading);color:var(--text)}
+.account-note p{margin:10px 0 0;color:var(--muted);font:500 12px/1.7 var(--font-body)}
+.account-note code{padding:2px 5px;border-radius:5px;background:#132333;color:#9fe6ff}
+@media(max-width:760px){.account-shell{grid-template-columns:1fr;padding-top:45px}.account-note{position:static}.account-card{padding:24px}}
+</style>
+
+<script>
+const form=document.getElementById('loginForm');
+const message=document.getElementById('message');
+form?.addEventListener('submit',async(event)=>{
+  event.preventDefault();
+  message.className='message';
+  message.textContent='Signing in…';
+  const button=form.querySelector('button');
+  button.disabled=true;
+  try{
+    const body={
+      email:form.email.value.trim(),
+      password:form.password.value
+    };
+    const response=await fetch('/api/account/login',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      credentials:'same-origin',
+      body:JSON.stringify(body)
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(data.error||'Unable to sign in.');
+    window.location.href=data.next||'/profile/';
+  }catch(error){
+    message.className='message error';
+    message.textContent=error?.message||'Unable to sign in.';
+    button.disabled=false;
+  }
+});
+</script>
