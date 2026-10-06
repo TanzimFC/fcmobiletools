@@ -32,9 +32,7 @@ sources:
   - "https://www.ea.com/games/ea-sports-fc/fc-27/news/fc-27-hall-of-fut"
   - "https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update"
   - "https://www.ea.com/games/ea-sports-fc/fc-27/news/fc-27-fut-deep-dive"
-  - "https://www.fut.gg/hall-of-fut/"
-  - "https://doublecrosswebzine.twstalker.com/fcm_deven"
-factStatus: "community-reported"
+  - "https://www.fut.gg/hall-of-fut/"factStatus: "community-reported"
 lastReviewed: "2026-10-06"
 ---
 
