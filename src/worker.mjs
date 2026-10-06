@@ -1836,21 +1836,9 @@ export function createExports(manifest) {
   const publicProfileApiResponse=await publicProfileApi(request,env,url);
   if(publicProfileApiResponse) return publicProfileApiResponse;
 
-  const publicProfilePath=url.pathname.match(/^\/profile\/([^/]+)\/?$/);
-  if(publicProfilePath && publicProfilePath[1].toLowerCase()!=='public' && request.method==='GET') {
-    // Use the main profile shell as the canonical public-profile renderer. It already
-    // detects /profile/:username and loads only the public, privacy-filtered API.
-    // This avoids depending on a second static shell asset being present in every build.
-    for (const shellPath of ['/profile/public/','/profile/']) {
-      const asset=await env.ASSETS.fetch(new Request(new URL(shellPath,url),{method:'GET',headers:request.headers}));
-      if(asset.ok) {
-        const headers=new Headers(asset.headers);
-        headers.set('cache-control','public, max-age=0, must-revalidate');
-        headers.set('x-fcmobiletools-page','public-profile-shell');
-        return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
-      }
-    }
-  }
+  // /profile/:username is now handled by Astro's on-demand dynamic route.
+  // Keep the JSON endpoint above as the single privacy-filtered profile data source
+  // for the dynamic page and other account surfaces such as the leaderboard.
   if(url.pathname === '/events' || url.pathname === '/events/') {
     const asset=await env.ASSETS.fetch(new Request(new URL('/events/',url),{method:'GET',headers:request.headers}));
     if(!asset.ok) return asset;
