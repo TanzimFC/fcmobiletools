@@ -40,7 +40,15 @@ export default defineConfig({
         '/creator/login',
         '/creator/login/',
         '/reset-center',
-        '/reset-center/'
+        '/reset-center/',
+        '/account',
+        '/account/',
+        '/profile',
+        '/profile/',
+        '/profile/public',
+        '/profile/public/',
+        '/settings',
+        '/settings/'
       ].includes(pathname);
     }
   })],

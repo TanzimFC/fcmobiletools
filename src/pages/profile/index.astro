@@ -1,0 +1,93 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="My Profile" description="Your FCMobiletools profile, progression and account activity." robots="noindex,nofollow" googlebot="noindex,nofollow">
+  <main class="profile-page">
+    <div id="profileRoot" class="profile-root"><div class="loading-card">Loading your FCMobiletools profile…</div></div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { accountAuth, accountApi } from '../../lib/account-client.js';
+
+  const root = document.querySelector('#profileRoot');
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const fmt = (v) => Number(v || 0).toLocaleString();
+  const date = (v) => v ? new Intl.DateTimeFormat(undefined,{month:'short',year:'numeric',day:'numeric'}).format(new Date(v)) : '—';
+  const titleCase = (v) => String(v || '').replaceAll('_',' ').replace(/\b\w/g,(c)=>c.toUpperCase());
+
+  function showState(title, copy) {
+    root.innerHTML = '<section class="state-card"><span class="kicker">ACCOUNT</span><h1>'+esc(title)+'</h1><p>'+esc(copy)+'</p><a class="primary-btn" href="/account/">Open account</a></section>';
+  }
+
+  async function load() {
+    const parts = location.pathname.split('/').filter(Boolean);
+    const publicUsername = parts[0] === 'profile' && parts[1] ? decodeURIComponent(parts[1]).toLowerCase() : '';
+    const publicMode = Boolean(publicUsername);
+
+    let body = {};
+    if (publicMode) {
+      const response = await fetch('/api/account/public-profile?username='+encodeURIComponent(publicUsername), { credentials:'same-origin', cache:'no-store' });
+      body = await response.json().catch(()=>({}));
+      if (!response.ok) {
+        showState('Profile not found.','This public profile is unavailable or private.');
+        return;
+      }
+    } else {
+      const sessionResult = await accountAuth.auth.getSession();
+      if (!sessionResult.data.session) {
+        showState('Sign in to use your profile.','The rest of FCMobiletools still works normally without an account.');
+        return;
+      }
+      const response = await accountApi('/api/account/me');
+      body = await response.json().catch(()=>({}));
+      if (!response.ok) {
+        showState(body.error || 'Your session could not be loaded.','Please sign in again.');
+        return;
+      }
+    }
+
+    const a = publicMode ? (body.profile || {}) : (body.account || {});
+    const activity = publicMode ? [] : (Array.isArray(body.activity) ? body.activity : []);
+    const initial = String(a.displayName || a.username || 'FC').slice(0,2).toUpperCase();
+
+    const publicActions = publicMode
+      ? '<div class="hero-actions"><a href="/account/" class="soft-btn">Create account</a><a href="/account/" class="soft-btn">Sign in</a></div>'
+      : '<div class="hero-actions"><a href="/settings/" class="soft-btn">Edit profile</a><button id="logout" class="soft-btn" type="button">Sign out</button></div>';
+
+    root.innerHTML = '<section class="profile-hero">'
+      +'<div class="avatar">'+(a.avatarUrl ? '<img src="'+esc(a.avatarUrl)+'" alt="">' : esc(initial))+'</div>'
+      +'<div class="hero-copy"><span class="kicker">'+(publicMode ? 'PUBLIC PROFILE' : 'FCMOBILETOOLS ACCOUNT')+'</span>'
+      +'<h1>'+esc(a.displayName || a.username)+'</h1>'
+      +'<p>@'+esc(a.username)+(a.joinedAt || a.createdAt ? ' · Joined '+esc(date(a.joinedAt || a.createdAt)) : '')+'</p>'
+      +publicActions+'</div></section>'
+      +'<section class="stat-grid">'
+      +'<article class="stat"><small>LEVEL</small><strong>'+(a.level == null ? '—' : fmt(a.level))+'</strong><span>XP progression</span></article>'
+      +'<article class="stat"><small>XP</small><strong>'+(a.xp == null ? '—' : fmt(a.xp))+'</strong><span>Recorded XP balance</span></article>'
+      +'<article class="stat"><small>STREAK</small><strong>'+(a.currentStreak == null ? '—' : fmt(a.currentStreak))+'</strong><span>Qualifying activity</span></article>'
+      +'<article class="stat"><small>STATUS</small><strong>'+(publicMode ? 'Public' : fmt(a.tokens))+'</strong><span>'+(publicMode ? 'Profile visibility' : 'Token balance')+'</span></article>'
+      +'</section>'
+      +'<section class="content-grid"><article class="panel"><div class="panel-head"><div><span class="kicker">'+(publicMode ? 'ACHIEVEMENTS' : 'ACTIVITY')+'</span><h2>'+(publicMode ? 'Public achievements' : 'Recent account activity')+'</h2></div><a href="'+(publicMode ? '/account/signup/' : '/settings/')+'">'+(publicMode ? 'Join FCMobiletools' : 'Settings')+'</a></div>'
+      +(publicMode
+        ? ((a.achievements||[]).length ? '<div class="activity-list">'+a.achievements.map((item)=>'<div class="activity"><span class="activity-icon">★</span><div><strong>'+esc(item.name)+'</strong><small>'+esc(item.description || '')+'</small></div></div>').join('')+'</div>' : '<div class="empty">No public achievements selected.</div>')
+        : (activity.length ? '<div class="activity-list">'+activity.map((item)=>'<div class="activity"><span class="activity-icon">'+esc(item.event_type === 'xp_earned' ? 'XP' : '•')+'</span><div><strong>'+esc(titleCase(item.event_type))+'</strong><small>'+esc(date(item.created_at))+'</small></div></div>').join('')+'</div>' : '<div class="empty">No activity recorded yet. Useful account actions will appear here as the system grows.</div>'))
+      +'</article><aside class="panel"><div class="panel-head"><div><span class="kicker">IDENTITY</span><h2>Privacy boundary</h2></div></div>'
+      +'<p class="panel-copy">Email, authentication credentials, internal account identifiers, security data, moderation notes and reward delivery information are never shown on this profile.</p>'
+      +(publicMode ? '<a class="primary-btn" href="/account/">Create your account</a>' : '<a class="primary-btn" href="/profile/'+encodeURIComponent(a.username)+'/">View public profile</a>')+'</aside></section>';
+
+    document.querySelector('#logout')?.addEventListener('click', async ()=>{
+      await accountAuth.auth.signOut();
+      location.replace('/');
+    });
+  }
+
+  load().catch(()=>showState('Something went wrong.','Please refresh and try again.'));
+</script>
+
+<style>
+.profile-page{min-height:calc(100vh - 80px);padding:72px 18px 100px}.profile-root{width:min(1120px,100%);margin:auto}.loading-card,.state-card,.panel,.stat{border:1px solid rgba(255,255,255,.08);background:linear-gradient(150deg,rgba(15,26,38,.97),rgba(7,16,24,.97));border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.22)}.loading-card{padding:34px;color:var(--muted);font:600 12px var(--font-body)}.state-card{max-width:650px;margin:50px auto;padding:38px}.kicker{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em;text-transform:uppercase}.state-card h1{margin:14px 0 8px;font:700 40px var(--font-display);letter-spacing:-.05em}.state-card p{margin:0 0 20px;color:var(--muted);font:500 12px/1.7 var(--font-body)}
+.profile-hero{display:flex;gap:20px;align-items:center;padding:30px;border:1px solid rgba(76,201,255,.14);border-radius:24px;background:radial-gradient(circle at 0 0,rgba(76,201,255,.08),transparent 48%),linear-gradient(145deg,#0f1a26,#08131c);box-shadow:0 26px 70px rgba(0,0,0,.28)}.avatar{width:88px;height:88px;flex:0 0 88px;display:grid;place-items:center;border-radius:22px;background:linear-gradient(145deg,#8be1ff,#4cc9ff);color:#04131c;font:900 24px var(--font-display);overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.hero-copy h1{margin:9px 0 4px;font:700 clamp(30px,5vw,52px)/.98 var(--font-display);letter-spacing:-.05em}.hero-copy p{margin:0;color:var(--muted);font:500 11px var(--font-body)}.hero-actions{display:flex;gap:8px;margin-top:17px}.soft-btn{min-height:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #29414e;border-radius:10px;background:#0d1821;color:#c4d5de;text-decoration:none;font:800 9px var(--font-body);cursor:pointer}.soft-btn:hover{border-color:rgba(76,201,255,.35);color:var(--text)}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.stat{padding:18px}.stat small{color:#66889b;font:800 8px var(--font-body);letter-spacing:.12em}.stat strong{display:block;margin:7px 0 3px;font:800 27px var(--font-display);letter-spacing:-.04em;color:var(--text)}.stat span{display:block;color:#78909f;font:500 9px/1.45 var(--font-body)}
+.content-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:12px;margin-top:12px}.panel{padding:22px}.panel-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.panel-head h2{margin:7px 0 0;font:700 20px var(--font-display);letter-spacing:-.035em}.panel-head a{color:#7bd7fa;font:700 9px var(--font-body);text-decoration:none}.panel-copy{color:var(--muted);font:500 10px/1.7 var(--font-body);margin:13px 0 18px}.activity-list{display:grid;gap:8px;margin-top:18px}.activity{display:flex;gap:11px;align-items:center;padding:10px 11px;border:1px solid rgba(255,255,255,.06);border-radius:11px;background:#09141d}.activity-icon{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:rgba(76,201,255,.08);color:var(--primary);font:800 8px var(--font-body)}.activity strong{display:block;color:#e5f0f5;font:700 10px var(--font-body);text-transform:capitalize}.activity small{display:block;color:#698393;margin-top:3px;font:600 8px var(--font-body)}.empty{padding:20px 0;color:var(--muted);font:500 10px/1.6 var(--font-body)}.primary-btn{min-height:42px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #69d8ff;border-radius:11px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;text-decoration:none;font:800 9px var(--font-body);cursor:pointer}
+@media(max-width:840px){.stat-grid{grid-template-columns:1fr 1fr}.content-grid{grid-template-columns:1fr}}@media(max-width:520px){.profile-page{padding:48px 12px 75px}.profile-hero{padding:20px;align-items:flex-start}.avatar{width:68px;height:68px;flex-basis:68px;border-radius:18px;font-size:18px}.hero-copy h1{font-size:32px}.stat{padding:14px}.stat strong{font-size:22px}}
+</style>

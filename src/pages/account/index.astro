@@ -1,0 +1,196 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="FCMobiletools Account"
+  description="Create or sign in to your FCMobiletools account. Normal FCMobiletools tools and content remain available without an account."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="account-page">
+    <section class="account-shell">
+      <div class="account-intro">
+        <span class="kicker">FCMOBILETOOLS ACCOUNT</span>
+        <h1>Your FCMobiletools identity.</h1>
+        <p>Keep your profile, progression and future community features in one place. The normal site stays fully usable without signing in.</p>
+        <div class="trust-row">
+          <span>Free to create</span><span>No forced registration</span><span>Email verification ready</span>
+        </div>
+      </div>
+
+      <div class="account-card">
+        <div class="switcher" role="tablist" aria-label="Account actions">
+          <button class="switch active" id="loginTab" type="button">Sign in</button>
+          <button class="switch" id="signupTab" type="button">Create account</button>
+        </div>
+
+        <form id="loginForm" class="form" novalidate>
+          <div><span class="kicker">WELCOME BACK</span><h2>Sign in</h2><p class="sub">Use the email address and password connected to your FCMobiletools account.</p></div>
+          <label><span>Email</span><input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
+          <label><span>Password</span><input name="password" type="password" autocomplete="current-password" required minlength="10" placeholder="Your password"></label>
+          <button class="primary-btn" type="submit">Sign in</button>
+          <button class="link-btn" type="button" id="resetBtn">Forgot password?</button>
+          <p class="form-message" id="loginMessage" role="alert"></p>
+        </form>
+
+        <form id="signupForm" class="form" hidden novalidate>
+          <div><span class="kicker">NEW ACCOUNT</span><h2>Create your account</h2><p class="sub">Pick the username you want to keep as your FCMobiletools identity.</p></div>
+          <label><span>Username</span><input name="username" autocomplete="username" required minlength="3" maxlength="24" pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]" placeholder="yourname"></label>
+          <label><span>Display name</span><input name="display_name" autocomplete="nickname" maxlength="80" placeholder="How should we call you?"></label>
+          <label><span>Email</span><input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
+          <label><span>Password</span><input name="password" type="password" autocomplete="new-password" required minlength="10" placeholder="At least 10 characters"></label>
+          <div class="email-notice"><strong>Use an email you permanently control.</strong><span>FCMobiletools may require email verification later. Temporary/disposable addresses and Gmail “+” aliases are not accepted for account creation.</span></div>
+          <label class="check-row"><input name="agree" type="checkbox" required><span>I understand that this email may be needed later for verification and account recovery.</span></label>
+          <button class="primary-btn" type="submit">Create account</button>
+          <p class="form-message" id="signupMessage" role="alert"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { accountAuth } from '../../lib/account-client.js';
+
+  const loginTab = document.querySelector('#loginTab');
+  const signupTab = document.querySelector('#signupTab');
+  const loginForm = document.querySelector('#loginForm');
+  const signupForm = document.querySelector('#signupForm');
+  const loginMessage = document.querySelector('#loginMessage');
+  const signupMessage = document.querySelector('#signupMessage');
+
+  function escapeText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, function (ch) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]);
+    });
+  }
+
+  function showTab(tab) {
+    const login = tab === 'login';
+    loginTab.classList.toggle('active', login);
+    signupTab.classList.toggle('active', !login);
+    loginForm.hidden = !login;
+    signupForm.hidden = login;
+  }
+  function showMessage(el, text, error) {
+    el.textContent = text || '';
+    el.className = 'form-message' + (text ? (error ? ' error' : ' success') : '');
+  }
+
+  loginTab.addEventListener('click', function () { showTab('login'); });
+  signupTab.addEventListener('click', function () { showTab('signup'); });
+
+  loginForm.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    showMessage(loginMessage, '', false);
+    if (!loginForm.checkValidity()) { loginForm.reportValidity(); return; }
+    const fd = new FormData(loginForm);
+    const button = loginForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      const result = await accountAuth.auth.signInWithPassword({
+        email: String(fd.get('email') || '').trim(),
+        password: String(fd.get('password') || '')
+      });
+      if (result.error) throw result.error;
+      location.replace('/profile/');
+    } catch (error) {
+      const raw = String(error && error.message || 'Unable to sign in.');
+      showMessage(loginMessage, raw.toLowerCase().includes('invalid login credentials') ? 'Email or password is incorrect.' : escapeText(raw), true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  signupForm.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    showMessage(signupMessage, '', false);
+    if (!signupForm.checkValidity()) { signupForm.reportValidity(); return; }
+
+    const fd = new FormData(signupForm);
+    const email = String(fd.get('email') || '').trim().toLowerCase();
+    const local = email.split('@')[0] || '';
+    const domain = (email.split('@')[1] || '').toLowerCase();
+
+    if ((domain === 'gmail.com' || domain === 'googlemail.com') && local.includes('+')) {
+      showMessage(signupMessage, 'Gmail “+” aliases are not accepted. Use your main Gmail address.', true);
+      return;
+    }
+
+    const button = signupForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      const result = await accountAuth.auth.signUp({
+        email,
+        password: String(fd.get('password') || ''),
+        options: {
+          emailRedirectTo: new URL('/account/', location.origin).toString(),
+          data: {
+            username: String(fd.get('username') || '').trim().toLowerCase(),
+            display_name: String(fd.get('display_name') || '').trim()
+          }
+        }
+      });
+      if (result.error) throw result.error;
+
+      if (result.data && result.data.session) {
+        location.replace('/profile/');
+        return;
+      }
+
+      showMessage(signupMessage, 'Account created. Check your email and confirm the address before using account-only features.', false);
+      signupForm.reset();
+    } catch (error) {
+      const raw = String(error && error.message || 'Unable to create your account.');
+      if (/temporary|disposable|gmail.*alias|already associated|already registered|already exists|username.*taken/i.test(raw)) {
+        showMessage(signupMessage, escapeText(raw), true);
+      } else {
+        showMessage(signupMessage, 'We could not create that account. Check the email and username, then try again.', true);
+      }
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.querySelector('#resetBtn').addEventListener('click', async function () {
+    showMessage(loginMessage, '', false);
+    const email = String(loginForm.querySelector('[name="email"]').value || '').trim();
+    if (!email) {
+      showMessage(loginMessage, 'Enter your email first, then choose “Forgot password?”.', true);
+      return;
+    }
+    this.disabled = true;
+    try {
+      const result = await accountAuth.auth.resetPasswordForEmail(email, {
+        redirectTo: new URL('/account/', location.origin).toString()
+      });
+      if (result.error) throw result.error;
+      showMessage(loginMessage, 'Password reset instructions sent. Check your inbox and spam folder.', false);
+    } catch (error) {
+      showMessage(loginMessage, escapeText(error && error.message || 'Unable to send reset instructions.'), true);
+    } finally {
+      this.disabled = false;
+    }
+  });
+
+  accountAuth.auth.getSession().then(function (result) {
+    if (result.data && result.data.session) location.replace('/profile/');
+  });
+</script>
+
+<style>
+.account-page{min-height:calc(100vh - 80px);padding:74px 18px 100px}
+.account-shell{width:min(1040px,100%);margin:auto;display:grid;grid-template-columns:1.08fr .92fr;gap:46px;align-items:center}
+.account-intro{padding:22px 0}.kicker{display:inline-flex;align-items:center;color:var(--primary);font:800 10px/1 var(--font-body);letter-spacing:.13em;text-transform:uppercase}
+.account-intro h1{max-width:660px;margin:16px 0 14px;color:var(--text);font:700 clamp(40px,6vw,72px)/.97 var(--font-display);letter-spacing:-.06em}
+.account-intro p{max-width:610px;color:var(--muted);font:500 15px/1.8 var(--font-body)}
+.trust-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}.trust-row span{padding:9px 11px;border:1px solid rgba(255,255,255,.08);border-radius:999px;background:rgba(15,26,38,.72);color:#9db0bf;font:700 10px var(--font-body)}
+.account-card{padding:24px;border:1px solid rgba(76,201,255,.15);border-radius:24px;background:linear-gradient(150deg,rgba(15,26,38,.98),rgba(7,16,24,.98));box-shadow:0 28px 80px rgba(0,0,0,.28)}
+.switcher{display:grid;grid-template-columns:1fr 1fr;padding:4px;border:1px solid rgba(255,255,255,.07);border-radius:13px;background:#09141d}.switch{min-height:42px;border:0;border-radius:10px;background:transparent;color:#8195a5;font:800 11px var(--font-body);cursor:pointer}.switch.active{color:var(--text);background:rgba(76,201,255,.09);box-shadow:inset 0 0 0 1px rgba(76,201,255,.18)}
+.form{display:grid;gap:14px;margin-top:22px}.form h2{margin:8px 0 4px;font:700 25px var(--font-display);letter-spacing:-.035em}.sub{margin:0;color:var(--muted);font:500 11px/1.7 var(--font-body)}
+.form label>span{display:block;margin-bottom:7px;color:#dce8ef;font:700 10px var(--font-body)}.form input{width:100%;min-height:44px;padding:0 12px;border:1px solid #29414e;border-radius:11px;background:#09141d;color:var(--text);font:600 12px var(--font-body);outline:0}.form input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(76,201,255,.09)}.form input:user-invalid{border-color:#ff827c}
+.primary-btn{min-height:46px;border:1px solid #69d8ff;border-radius:12px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;font:800 11px var(--font-body);cursor:pointer}.primary-btn:disabled{opacity:.58;cursor:wait}
+.link-btn{border:0;background:transparent;color:#7fcfeb;font:700 10px var(--font-body);cursor:pointer}.email-notice{padding:12px 13px;border:1px solid rgba(255,190,89,.18);border-radius:12px;background:rgba(255,190,89,.05);display:grid;gap:4px}.email-notice strong{color:#e9d2a6;font:800 10px var(--font-body)}.email-notice span{color:#9f8f76;font:500 9px/1.55 var(--font-body)}
+.check-row{display:flex!important;gap:9px;align-items:flex-start;color:#8ea4b4;font:500 9px/1.5 var(--font-body)}.check-row input{width:16px!important;min-height:16px!important;flex:0 0 16px;margin-top:1px}.form-message{min-height:18px;margin:0;color:#ff9e96;font:700 9px/1.5 var(--font-body)}.form-message.success{color:#86e7a0}
+@media(max-width:820px){.account-shell{grid-template-columns:1fr;gap:20px}.account-intro{padding-top:0}.account-intro h1{font-size:50px}}@media(max-width:520px){.account-page{padding:48px 12px 75px}.account-intro h1{font-size:42px}.account-card{padding:17px;border-radius:18px}}
+</style>

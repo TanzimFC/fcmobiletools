@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Missions" description="Your FCMobiletools missions and configurable progression tasks." robots="noindex,nofollow" googlebot="noindex,nofollow">
+  <main class="account-list-page">
+    <section class="intro"><span class="eyebrow">MISSIONS</span><h1>Useful activity, not a click farm.</h1><p>Missions appear here only when they are enabled by the FCMobiletools team. Rewards are verified server-side.</p></section>
+    <div id="root"><div class="loading">Loading missions…</div></div>
+  </main>
+</BaseLayout>
+<style>
+.account-list-page{width:min(1080px,calc(100% - 28px));margin:0 auto;padding:62px 0 100px}.intro{margin-bottom:18px}.eyebrow{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em}.intro h1{margin:11px 0 7px;font:700 clamp(38px,6vw,64px)/.96 var(--font-display);letter-spacing:-.055em;color:var(--text)}.intro p{max-width:720px;margin:0;color:var(--muted);font:500 13px/1.75 var(--font-body)}.loading,.empty,.mission{border:1px solid rgba(255,255,255,.08);border-radius:18px;background:linear-gradient(145deg,rgba(15,26,38,.98),rgba(7,16,24,.98))}.loading,.empty{padding:24px;color:var(--muted);font:600 11px var(--font-body)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.mission{padding:20px}.mission h2{margin:0;font:700 18px var(--font-display)}.mission p{margin:6px 0 0;color:#7890a0;font:500 10px/1.65 var(--font-body)}.meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.meta span{padding:6px 8px;border:1px solid rgba(76,201,255,.12);border-radius:999px;background:rgba(76,201,255,.045);color:#8fdcf6;font:800 8px var(--font-body)}.status{margin-top:12px;color:#708696;font:700 9px var(--font-body)}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.account-list-page{padding-top:42px}}
+</style>
+<script>
+import { accountAuth } from '../../lib/account-client.js';
+const root=document.querySelector('#root');
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function load(){
+ const session=await accountAuth.auth.getSession();
+ if(!session.data.session){root.innerHTML='<div class="empty">Sign in to see your missions. The normal FCMobiletools site still works without an account.<br><a href="/account/" style="color:#4cc9ff;font-weight:800">Open Account</a></div>';return;}
+ const r=await fetch('/api/account/missions',{headers:{authorization:'Bearer '+session.data.session.access_token},cache:'no-store'});
+ const b=await r.json().catch(()=>({})); if(!r.ok) throw new Error(b.error||'Unable to load missions.');
+ root.innerHTML=b.missions?.length?'<div class="grid">'+b.missions.map(m=>'<article class="mission"><h2>'+esc(m.title)+'</h2><p>'+esc(m.description||'')+'</p><div class="meta"><span>'+esc(m.missionType)+'</span>'+(m.xpReward>0?'<span>XP '+Number(m.xpReward).toLocaleString()+'</span>':'')+(m.tokenReward>0?'<span>Tokens '+Number(m.tokenReward).toLocaleString()+'</span>':'')+'</div><div class="status">'+esc(m.statusLabel||'Available when verified.')+'</div></article>').join('')+'</div>':'<div class="empty">No missions are active right now. The system is ready, but the mission catalogue has not been turned on yet.</div>';
+}
+load().catch(e=>root.innerHTML='<div class="empty">'+esc(e.message)+'</div>');
+</script>

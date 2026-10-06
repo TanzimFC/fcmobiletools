@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>FCMobiletools · Account System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap');
+:root{--bg:#071018;--surface:#0f1a26;--surface2:#162536;--border:rgba(255,255,255,.08);--text:#f5f8fb;--muted:#91a4b3;--cyan:#4cc9ff;--cyan2:#9fe6ff;--green:#47d16c;--red:#ff827c;--amber:#ffbf68;--display:'Space Grotesk',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;min-height:100vh;background:radial-gradient(900px 580px at 6% -9%,rgba(76,201,255,.12),transparent 58%),radial-gradient(760px 500px at 100% 5%,rgba(71,209,108,.05),transparent 56%),var(--bg);color:var(--text);font:14px/1.55 var(--body)}
+a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}button{cursor:pointer}
+.shell{width:min(1400px,calc(100% - 28px));margin:0 auto;padding:28px 0 70px}
+.top{display:flex;justify-content:space-between;gap:18px;align-items:end;margin-bottom:18px}.eyebrow{color:var(--cyan);font:800 9px/1 var(--mono);letter-spacing:.14em}.top h1{margin:9px 0 5px;font:700 clamp(32px,4vw,48px)/.95 var(--display);letter-spacing:-.05em}.top p{margin:0;color:var(--muted);font-size:11px;max-width:720px}.back{padding:9px 11px;border:1px solid var(--border);border-radius:10px;background:rgba(15,26,38,.8);color:#a9bac6;font:800 9px var(--mono)}
+.tabs{display:flex;gap:5px;overflow:auto;padding:5px;border:1px solid var(--border);border-radius:14px;background:#09131d;margin-bottom:14px}.tabs button{white-space:nowrap;border:0;border-radius:10px;background:transparent;color:#728695;padding:10px 13px;font:800 9px var(--mono)}.tabs button.active{background:rgba(76,201,255,.09);color:#eaf8ff;box-shadow:inset 0 0 0 1px rgba(76,201,255,.18)}
+.panel{border:1px solid var(--border);border-radius:18px;background:linear-gradient(145deg,rgba(15,26,38,.97),rgba(7,16,24,.98));box-shadow:0 22px 65px rgba(0,0,0,.22);padding:18px}.head{display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:13px}.head h2{margin:4px 0 0;font:700 19px var(--display);letter-spacing:-.035em}.head p{margin:0;color:#718697;font-size:9px}.tools{display:flex;gap:8px;flex-wrap:wrap}.input,.select{min-height:40px;padding:0 11px;border:1px solid #29414e;border-radius:10px;background:#09141d;color:var(--text);outline:0}.input:focus,.select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(76,201,255,.08)}
+.btn{min-height:40px;padding:0 12px;border:1px solid #29414e;border-radius:10px;background:#0d1821;color:#d4e4eb;font:800 9px var(--mono)}.btn.primary{border-color:#6ed8ff;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#03131b}.btn.danger{border-color:rgba(255,130,124,.28);background:rgba(255,130,124,.055);color:#ffaaa3}.btn:hover{border-color:rgba(76,201,255,.35)}
+.table{display:grid;gap:6px}.row{display:grid;grid-template-columns:1.2fr .8fr .7fr .7fr .7fr auto;gap:10px;align-items:center;padding:11px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:#0b151e}.row.header{border:0;background:transparent;color:#607989;font:800 7px var(--mono);letter-spacing:.08em;text-transform:uppercase}.row b{font-size:10px}.row small{display:block;color:#688090;font-size:8px;margin-top:2px}.pill{display:inline-flex;justify-content:center;padding:5px 8px;border-radius:999px;border:1px solid rgba(76,201,255,.12);background:rgba(76,201,255,.05);color:#91dffb;font:800 7px var(--mono)}.pill.green{color:#88eba0;border-color:rgba(71,209,108,.16);background:rgba(71,209,108,.05)}.pill.red{color:#ffaaa2;border-color:rgba(255,130,124,.16);background:rgba(255,130,124,.05)}.muted{color:#6c8190!important}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.card{padding:16px;border:1px solid rgba(255,255,255,.06);border-radius:14px;background:#0b151e}.card h3{margin:0;font:700 15px var(--display)}.card p{margin:5px 0 0;color:#718798;font-size:9px}.card .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.card .meta span{padding:6px 8px;border:1px solid rgba(255,255,255,.07);border-radius:999px;color:#8ea5b4;font:800 7px var(--mono)}
+.empty{padding:30px;border:1px dashed #29414e;border-radius:12px;color:#698090;text-align:center;font-size:10px}.loading{padding:24px;color:#708798}
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(2,7,12,.8);backdrop-filter:blur(10px)}.modal.open{display:flex}.dialog{width:min(760px,100%);max-height:90vh;overflow:auto;padding:20px;border:1px solid #29414e;border-radius:18px;background:#0f1a26;box-shadow:0 30px 100px rgba(0,0,0,.65)}.dialog-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.dialog-head h3{margin:0;font:700 22px var(--display)}.close{width:34px;height:34px;border:1px solid #29414e;border-radius:9px;background:#0b151e;color:#8fa6b5}.form{display:grid;gap:12px;margin-top:18px}.form label{display:grid;gap:6px}.form label>span{color:#c7d7df;font:700 9px var(--mono)}.form textarea{min-height:100px;resize:vertical;padding:10px 11px;border:1px solid #29414e;border-radius:10px;background:#09141d;color:var(--text);outline:0}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.check{display:flex!important;grid-template-columns:none!important;align-items:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:#0b151e}.check input{accent-color:var(--cyan)}.message{min-height:18px;margin:0;color:#7f95a4;font:700 9px var(--mono)}.message.error{color:#ff9c94}.message.success{color:#85e69b}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{padding:13px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:#0b151e}.metric small{color:#648091;font:800 7px var(--mono);letter-spacing:.08em}.metric strong{display:block;margin-top:5px;font:800 20px var(--display)}
+.activity{display:grid;gap:6px;margin-top:10px}.activity-row{display:flex;justify-content:space-between;gap:12px;padding:9px 10px;border-radius:10px;background:#0b151e;border:1px solid rgba(255,255,255,.05)}.activity-row b{font-size:9px}.activity-row small{color:#698090;font:600 8px var(--mono)}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1.3fr .8fr .8fr .8fr auto}.row>*:nth-child(4){display:none}}@media(max-width:640px){.shell{width:min(100% - 20px,1400px);padding-top:18px}.top{align-items:flex-start;flex-direction:column}.grid,.two,.three,.detail-grid{grid-template-columns:1fr}.row{grid-template-columns:1fr auto}.row.header{display:none}.row>*:nth-child(3),.row>*:nth-child(4),.row>*:nth-child(5){display:none}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <div>
+      <div class="eyebrow">ACCOUNT SYSTEM</div>
+      <h1>Users, progression &amp; community.</h1>
+      <p>Manage the FCMobiletools Account foundation from the existing protected Admin Workspace. No reward economy is assumed here.</p>
+    </div>
+    <a class="back" href="/admin/">← Admin Workspace</a>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="active" data-tab="users">Users</button>
+    <button data-tab="missions">Missions</button>
+    <button data-tab="achievements">Achievements</button>
+    <button data-tab="rewards">Rewards</button>
+    <button data-tab="community">Community</button>
+  </nav>
+
+  <section id="usersView"></section>
+  <section id="missionsView" hidden></section>
+  <section id="achievementsView" hidden></section>
+  <section id="rewardsView" hidden></section>
+  <section id="communityView" hidden></section>
+</main>
+
+<div class="modal" id="modal"><div class="dialog" id="dialog"></div></div>
+
+<script>
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s);
+const modal=$('#modal'),dialog=$('#dialog');
+const state={tab:'users'};
+
+async function api(path,options={}){
+  const r=await fetch(path,{credentials:'same-origin',cache:'no-store',...options,headers:{'content-type':'application/json',...(options.headers||{})}});
+  const b=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(b.error||'Request failed.');
+  return b;
+}
+function openModal(title,body){
+  dialog.innerHTML='<div class="dialog-head"><div><div class="eyebrow">ACCOUNT SYSTEM</div><h3>'+esc(title)+'</h3></div><button class="close" type="button" id="closeModal">×</button></div>'+body;
+  modal.classList.add('open');$('#closeModal').onclick=()=>modal.classList.remove('open');
+}
+modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
+
+function tab(name){
+  state.tab=name;
+  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  ['users','missions','achievements','rewards','community'].forEach(v=>$(`#${v}View`).hidden=v!==name);
+  if(name==='users') loadUsers();
+  if(name==='missions') loadMissions();
+  if(name==='achievements') loadAchievements();
+  if(name==='rewards') loadRewards();
+  if(name==='community') loadCommunity();
+}
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+
+async function loadUsers(){
+  const view=$('#usersView');
+  view.innerHTML='<div class="panel loading">Loading users…</div>';
+  try{
+    const q=encodeURIComponent($('#userSearch')?.value?.trim()||'');
+    const data=await api('/api/admin/account-users?q='+q+'&limit=80');
+    view.innerHTML='<section class="panel"><div class="head"><div><div class="eyebrow">USERS</div><h2>Account directory</h2><p>Search by username or display name. Internal IDs and email addresses stay off this screen.</p></div><div class="tools"><input id="userSearch" class="input" placeholder="Search users…"><button class="btn primary" id="userRefresh">Refresh</button></div></div><div class="table"><div class="row header"><span>User</span><span>State</span><span>Level</span><span>XP</span><span>Tokens</span><span></span></div>'+((data.users||[]).length?(data.users||[]).map(u=>'<button class="row" data-user="'+esc(u.id)+'" type="button"><div><b>@'+esc(u.username)+'</b><small>'+esc(u.displayName||'')+'</small></div><span class="pill '+(u.state==='active'?'green':'red')+'">'+esc(u.state)+'</span><span>'+Number(u.level||1)+'</span><span>'+Number(u.xp||0).toLocaleString()+'</span><span>'+Number(u.tokens||0).toLocaleString()+'</span><span class="pill">Open</span></button>').join(''):'<div class="empty">No accounts matched the search.</div>')+'</div></section>';
+    $('#userSearch').onkeydown=e=>{if(e.key==='Enter')loadUsers()};
+    $('#userRefresh').onclick=loadUsers;
+    view.querySelectorAll('[data-user]').forEach(b=>b.onclick=()=>openUser(b.dataset.user));
+  }catch(e){view.innerHTML='<div class="panel"><div class="empty">'+esc(e.message)+'</div></div>'}
+}
+async function openUser(id){
+  try{
+    const d=await api('/api/admin/account-users/'+encodeURIComponent(id));
+    const u=d.user,p=d.progress||{},r=d.rewards||{};
+    openModal('@'+u.username, '<div class="detail-grid"><div class="metric"><small>STATE</small><strong>'+esc(u.state)+'</strong></div><div class="metric"><small>LEVEL</small><strong>'+Number(p.level||1)+'</strong></div><div class="metric"><small>XP</small><strong>'+Number(p.xp_balance||0).toLocaleString()+'</strong></div><div class="metric"><small>TOKENS</small><strong>'+Number(r.balance||0).toLocaleString()+'</strong></div></div><div class="tools" style="margin-top:14px"><button class="btn primary" id="addXp">Adjust XP</button><button class="btn primary" id="addTokens">Adjust Tokens</button><button class="btn" id="setState">Change state</button></div><div class="head" style="margin-top:18px"><div><div class="eyebrow">ACTIVITY</div><h2>Recent activity</h2></div></div><div class="activity">'+(d.activity||[]).slice(0,20).map(a=>'<div class="activity-row"><b>'+esc(a.event_type)+'</b><small>'+esc(a.created_at)+'</small></div>').join('')||'<div class="empty">No activity.</div>'+'</div>');
+    $('#addXp').onclick=()=>adjustUser(id,'xp');
+    $('#addTokens').onclick=()=>adjustUser(id,'tokens');
+    $('#setState').onclick=()=>setUserState(id);
+  }catch(e){alert(e.message)}
+}
+function adjustUser(id,type){
+  openModal(type==='xp'?'Adjust XP':'Adjust Tokens','<form class="form" id="adjustForm"><label><span>Amount (positive adds, negative removes)</span><input class="input" name="amount" type="number" step="1" required></label><label><span>Reason</span><textarea name="reason" required placeholder="Why is this adjustment being made?"></textarea></label>'+(type==='tokens'?'<label><span>Optional expiration</span><input class="input" name="expiresAt" type="datetime-local"></label>':'')+'<button class="btn primary" type="submit">Save adjustment</button><p class="message" id="formMsg"></p></form>');
+  $('#adjustForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget),msg=$('#formMsg');msg.textContent='Saving…';try{await api('/api/admin/account-users/'+id+'/'+type,{method:'POST',body:JSON.stringify({amount:Number(fd.get('amount')),reason:String(fd.get('reason')),expiresAt:fd.get('expiresAt')||null,idempotencyKey:crypto.randomUUID()})});msg.className='message success';msg.textContent='Saved.';setTimeout(()=>{modal.classList.remove('open');openUser(id)},500)}catch(x){msg.className='message error';msg.textContent=x.message}};
+}
+function setUserState(id){
+  openModal('Change account state','<form class="form" id="stateForm"><label><span>State</span><select class="select" name="state"><option>active</option><option>restricted</option><option>frozen</option><option>fraud_hold</option><option>fraud_removed</option><option>closed</option></select></label><label><span>Reason</span><textarea name="reason" placeholder="Reason for this status change"></textarea></label><label><span>Freeze until (optional)</span><input class="input" name="frozenUntil" type="datetime-local"></label><button class="btn primary" type="submit">Update account</button><p class="message" id="formMsg"></p></form>');
+  $('#stateForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget),msg=$('#formMsg');msg.textContent='Saving…';try{await api('/api/admin/account-users/'+id+'/state',{method:'POST',body:JSON.stringify({state:fd.get('state'),reason:fd.get('reason'),frozenUntil:fd.get('frozenUntil')||null})});msg.className='message success';msg.textContent='Account updated.';setTimeout(()=>{modal.classList.remove('open');openUser(id)},500)}catch(x){msg.className='message error';msg.textContent=x.message}};
+}
+
+async function loadMissions(){
+  const v=$('#missionsView');v.innerHTML='<div class="panel loading">Loading missions…</div>';
+  try{const d=await api('/api/admin/missions');v.innerHTML='<section class="panel"><div class="head"><div><div class="eyebrow">MISSIONS</div><h2>Mission definitions</h2><p>No mission is live unless an admin enables it.</p></div><button class="btn primary" id="newMission">New mission</button></div><div class="grid">'+(d.missions||[]).map(m=>'<article class="card"><h3>'+esc(m.title)+'</h3><p>'+esc(m.description||'')+'</p><div class="meta"><span>'+esc(m.mission_type)+'</span><span>XP '+Number(m.xp_reward||0)+'</span><span>Tokens '+Number(m.token_reward||m.reward_points||0)+'</span><span class="pill '+(m.enabled?'green':'red')+'">'+(m.enabled?'Live':'Off')+'</span></div><div class="tools" style="margin-top:12px"><button class="btn" data-mission="'+m.id+'">Edit</button></div></article>').join('')||'<div class="empty">No missions configured.</div>'+'</div></section>';
+    $('#newMission').onclick=()=>missionForm();
+    v.querySelectorAll('[data-mission]').forEach(b=>b.onclick=()=>missionForm((d.missions||[]).find(x=>x.id===b.dataset.mission)));
+  }catch(e){v.innerHTML='<div class="panel"><div class="empty">'+esc(e.message)+'</div></div>'}
+}
+function missionForm(m){
+ const edit=!!m;openModal(edit?'Edit mission':'New mission','<form class="form" id="missionForm"><div class="two"><label><span>Slug</span><input class="input" name="slug" '+(edit?'readonly':'required')+' value="'+esc(m?.slug||'')+'"></label><label><span>Title</span><input class="input" name="title" required value="'+esc(m?.title||'')+'"></label></div><label><span>Description</span><textarea name="description">'+esc(m?.description||'')+'</textarea></label><div class="three"><label><span>Type</span><select class="select" name="missionType">'+['daily','weekly','one_time','repeatable','achievement','event','community','tournament','calculator','database'].map(x=>'<option '+(m?.mission_type===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label><label><span>Verification</span><select class="select" name="verificationMethod">'+['server_event','moderated','manual'].map(x=>'<option '+(m?.verification_method===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label><label><span>Task type</span><select class="select" name="taskType">'+['one_time','daily','repeatable','event'].map(x=>'<option '+(m?.task_type===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div><div class="three"><label><span>XP reward</span><input class="input" name="xpReward" type="number" min="0" value="'+Number(m?.xp_reward||0)+'"></label><label><span>Token reward</span><input class="input" name="tokenReward" type="number" min="0" value="'+Number(m?.token_reward||m?.reward_points||0)+'"></label><label><span>Daily limit</span><input class="input" name="dailyLimit" type="number" min="1" value="'+(m?.daily_limit??'')+'"></label></div><label class="check"><input type="checkbox" name="enabled" '+(m?.enabled?'checked':'')+'><span>Enable this mission</span></label><button class="btn primary" type="submit">'+(edit?'Save mission':'Create mission')+'</button><p class="message" id="formMsg"></p></form>');
+ $('#missionForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget),body={slug:String(fd.get('slug')).trim().toLowerCase(),title:String(fd.get('title')),description:String(fd.get('description')),missionType:String(fd.get('missionType')),verificationMethod:String(fd.get('verificationMethod')),taskType:String(fd.get('taskType')),xpReward:Number(fd.get('xpReward')),tokenReward:Number(fd.get('tokenReward')),dailyLimit:fd.get('dailyLimit')||null,enabled:fd.get('enabled')==='on'};const msg=$('#formMsg');msg.textContent='Saving…';try{await api(edit?'/api/admin/missions/'+m.id:'/api/admin/missions',{method:edit?'PUT':'POST',body:JSON.stringify(body)});msg.className='message success';msg.textContent='Saved.';setTimeout(()=>{modal.classList.remove('open');loadMissions()},500)}catch(x){msg.className='message error';msg.textContent=x.message}};
+}
+async function loadAchievements(){
+ const v=$('#achievementsView');v.innerHTML='<div class="panel loading">Loading achievements…</div>';
+ try{const d=await api('/api/admin/achievements');v.innerHTML='<section class="panel"><div class="head"><div><div class="eyebrow">ACHIEVEMENTS</div><h2>Achievement definitions</h2><p>Unlock rules stay in configuration rather than frontend code.</p></div><button class="btn primary" id="newAchievement">New achievement</button></div><div class="grid">'+(d.achievements||[]).map(a=>'<article class="card"><h3>'+esc(a.name)+'</h3><p>'+esc(a.description||'')+'</p><div class="meta"><span>XP '+Number(a.xp_reward||0)+'</span><span>Tokens '+Number(a.token_reward||0)+'</span><span class="pill '+(a.active?'green':'red')+'">'+(a.active?'Live':'Off')+'</span></div><div class="tools" style="margin-top:12px"><button class="btn" data-ach="'+a.id+'">Edit</button></div></article>').join('')||'<div class="empty">No achievements configured.</div>'+'</div></section>';
+ $('#newAchievement').onclick=()=>achievementForm();
+ v.querySelectorAll('[data-ach]').forEach(b=>b.onclick=()=>achievementForm((d.achievements||[]).find(x=>x.id===b.dataset.ach)));
+ }catch(e){v.innerHTML='<div class="panel"><div class="empty">'+esc(e.message)+'</div></div>'}
+}
+function achievementForm(a){
+ const edit=!!a;openModal(edit?'Edit achievement':'New achievement','<form class="form" id="achForm"><div class="two"><label><span>Slug</span><input class="input" name="slug" '+(edit?'readonly':'required')+' value="'+esc(a?.slug||'')+'"></label><label><span>Name</span><input class="input" name="name" required value="'+esc(a?.name||'')+'"></label></div><label><span>Description</span><textarea name="description">'+esc(a?.description||'')+'</textarea></label><div class="three"><label><span>Icon / key</span><input class="input" name="icon" value="'+esc(a?.icon||'')+'"></label><label><span>XP reward</span><input class="input" name="xpReward" type="number" min="0" value="'+Number(a?.xp_reward||0)+'"></label><label><span>Token reward</span><input class="input" name="tokenReward" type="number" min="0" value="'+Number(a?.token_reward||0)+'"></label></div><label class="check"><input type="checkbox" name="active" '+(a?.active?'checked':'')+'><span>Enable this achievement</span></label><button class="btn primary" type="submit">'+(edit?'Save achievement':'Create achievement')+'</button><p class="message" id="formMsg"></p></form>');
+ $('#achForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget),body={slug:String(fd.get('slug')).trim().toLowerCase(),name:String(fd.get('name')),description:String(fd.get('description')),icon:String(fd.get('icon')),xpReward:Number(fd.get('xpReward')),tokenReward:Number(fd.get('tokenReward')),active:fd.get('active')==='on'};const msg=$('#formMsg');msg.textContent='Saving…';try{await api(edit?'/api/admin/achievements/'+a.id:'/api/admin/achievements',{method:edit?'PUT':'POST',body:JSON.stringify(body)});msg.className='message success';msg.textContent='Saved.';setTimeout(()=>{modal.classList.remove('open');loadAchievements()},500)}catch(x){msg.className='message error';msg.textContent=x.message}};
+}
+async function loadRewards(){
+ const v=$('#rewardsView');v.innerHTML='<div class="panel loading">Loading rewards…</div>';
+ try{const d=await api('/api/admin/rewards');v.innerHTML='<section class="panel"><div class="head"><div><div class="eyebrow">REWARDS</div><h2>Reward catalogue</h2><p>Rewards can remain disabled until funding, stock and costs are decided.</p></div><button class="btn primary" id="newReward">New reward</button></div><div class="grid">'+(d.rewards||[]).map(r=>'<article class="card"><h3>'+esc(r.name)+'</h3><p>'+esc(r.description||'')+'</p><div class="meta"><span>'+Number(r.cost||0)+' '+esc(r.currency_code||'tokens')+'</span><span>'+esc(r.reward_type)+'</span><span class="pill '+(r.enabled&&r.status==='active'?'green':'red')+'">'+(r.enabled&&r.status==='active'?'Live':'Off')+'</span></div><div class="tools" style="margin-top:12px"><button class="btn" data-reward="'+r.id+'">Edit</button></div></article>').join('')||'<div class="empty">No rewards configured.</div>'+'</div></section>';
+ $('#newReward').onclick=()=>rewardForm();
+ v.querySelectorAll('[data-reward]').forEach(b=>b.onclick=()=>rewardForm((d.rewards||[]).find(x=>x.id===b.dataset.reward)));
+ }catch(e){v.innerHTML='<div class="panel"><div class="empty">'+esc(e.message)+'</div></div>'}
+}
+function rewardForm(r){
+ const edit=!!r;openModal(edit?'Edit reward':'New reward','<form class="form" id="rewardForm"><div class="two"><label><span>Slug</span><input class="input" name="slug" '+(edit?'readonly':'required')+' value="'+esc(r?.slug||'')+'"></label><label><span>Name</span><input class="input" name="name" required value="'+esc(r?.name||'')+'"></label></div><label><span>Description</span><textarea name="description">'+esc(r?.description||'')+'</textarea></label><div class="three"><label><span>Type</span><select class="select" name="rewardType">'+['cosmetic','badge','title','profile_frame','digital_reward','promotional_reward','physical_reward','other'].map(x=>'<option '+(r?.reward_type===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label><label><span>Cost</span><input class="input" name="cost" type="number" min="0" value="'+Number(r?.cost||0)+'"></label><label><span>Stock</span><input class="input" name="stock" type="number" min="0" value="'+(r?.stock??'')+'"></label></div><div class="two"><label><span>Start</span><input class="input" name="startAt" type="datetime-local"></label><label><span>End</span><input class="input" name="endAt" type="datetime-local"></label></div><label class="check"><input type="checkbox" name="enabled" '+(r?.enabled?'checked':'')+'><span>Enable this reward</span></label><button class="btn primary" type="submit">'+(edit?'Save reward':'Create reward')+'</button><p class="message" id="formMsg"></p></form>');
+ $('#rewardForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget),body={slug:String(fd.get('slug')).trim().toLowerCase(),name:String(fd.get('name')),description:String(fd.get('description')),rewardType:String(fd.get('rewardType')),cost:Number(fd.get('cost')),stock:fd.get('stock')===''?null:Number(fd.get('stock')),enabled:fd.get('enabled')==='on',status:'active',startAt:fd.get('startAt')||null,endAt:fd.get('endAt')||null};const msg=$('#formMsg');msg.textContent='Saving…';try{await api(edit?'/api/admin/rewards/'+r.id:'/api/admin/rewards',{method:edit?'PUT':'POST',body:JSON.stringify(body)});msg.className='message success';msg.textContent='Saved.';setTimeout(()=>{modal.classList.remove('open');loadRewards()},500)}catch(x){msg.className='message error';msg.textContent=x.message}};
+}
+async function loadCommunity(){
+ const v=$('#communityView');v.innerHTML='<div class="panel loading">Loading community queue…</div>';
+ try{const d=await api('/api/admin/community-submissions?status=submitted');v.innerHTML='<section class="panel"><div class="head"><div><div class="eyebrow">COMMUNITY</div><h2>Contribution review</h2><p>Submissions can be approved before any XP or token reward is granted.</p></div><button class="btn" id="communityRefresh">Refresh</button></div><div class="grid">'+(d.submissions||[]).map(s=>'<article class="card"><h3>'+esc(s.title)+'</h3><p>'+esc(s.body||'').slice(0,300)+'</p><div class="meta"><span>'+esc(s.submission_type)+'</span><span>XP '+Number(s.reward_xp||0)+'</span><span>Tokens '+Number(s.reward_tokens||0)+'</span></div><div class="tools" style="margin-top:12px"><button class="btn primary" data-review="'+s.id+'" data-status="approved">Approve</button><button class="btn danger" data-review="'+s.id+'" data-status="rejected">Reject</button></div></article>').join('')||'<div class="empty">Nothing waiting for review.</div>'+'</div></section>';
+ $('#communityRefresh').onclick=loadCommunity;
+ v.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/community-submissions/'+b.dataset.review,{method:'POST',body:JSON.stringify({status:b.dataset.status,reason:b.dataset.status==='approved'?'Approved by admin':'Rejected by admin'})});loadCommunity()}catch(e){alert(e.message)}});
+ }catch(e){v.innerHTML='<div class="panel"><div class="empty">'+esc(e.message)+'</div></div>'}
+}
+loadUsers();
+</script>
+</body>
+</html>

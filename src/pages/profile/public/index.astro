@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Player Profile" description="Public FCMobiletools community profile." robots="noindex,nofollow" googlebot="noindex,nofollow">
+  <main class="public-profile-page">
+    <div id="publicRoot" class="public-root"><div class="loading-card">Loading public profile…</div></div>
+  </main>
+</BaseLayout>
+
+<script>
+  const root=document.querySelector('#publicRoot');
+  const esc=(v)=>String(v ?? '').replace(/[&<>"']/g,(ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const fmt=(v)=>Number(v || 0).toLocaleString();
+  const date=(v)=>v ? new Intl.DateTimeFormat(undefined,{month:'short',year:'numeric',day:'numeric'}).format(new Date(v)) : '—';
+
+  async function load(){
+    const parts=location.pathname.split('/').filter(Boolean);
+    const username=parts.length >= 2 && parts[0] === 'profile' ? decodeURIComponent(parts[1]) : '';
+    if(!username){root.innerHTML='<div class="empty">Profile not found.</div>';return;}
+    const response=await fetch('/api/public/profile/'+encodeURIComponent(username),{cache:'no-store'});
+    const body=await response.json().catch(()=>({}));
+    if(!response.ok){root.innerHTML='<section class="empty"><h1>Profile unavailable</h1><p>'+esc(body.error || 'This profile does not exist or is private.')+'</p><a href="/account/">Create an account</a></section>';return;}
+    const p=body.profile || {};
+    const initial=String(p.display_name || p.username || 'FC').slice(0,2).toUpperCase();
+    const cards=[];
+    if(p.show_level !== false && p.level !== null) cards.push('<article><small>LEVEL</small><strong>'+fmt(p.level)+'</strong></article>');
+    if(p.show_xp !== false && p.xp !== null) cards.push('<article><small>XP</small><strong>'+fmt(p.xp)+'</strong></article>');
+    if(p.show_streak !== false && p.current_streak !== null) cards.push('<article><small>STREAK</small><strong>'+fmt(p.current_streak)+'</strong></article>');
+    root.innerHTML='<section class="profile-card"><div class="avatar">'+(p.avatar_url ? '<img src="'+esc(p.avatar_url)+'" alt="">' : esc(initial))+'</div>'
+      +'<span class="kicker">FCMOBILETOOLS COMMUNITY</span>'
+      +'<h1>'+esc(p.show_display_name === false ? p.username : (p.display_name || p.username))+'</h1>'
+      +'<p class="handle">@'+esc(p.username)+'</p>'
+      +(p.show_joined_date !== false ? '<p class="joined">Joined '+esc(date(p.joined_at))+'</p>' : '')
+      +(p.selected_title ? '<div class="title-pill">'+esc(p.selected_title)+'</div>' : '')
+      +(cards.length ? '<div class="stat-grid">'+cards.join('')+'</div>' : '')
+      +'<p class="privacy-note">Public profile. Private account, security, email and reward-delivery information stays hidden.</p>'
+      +'<a class="primary-btn" href="/account/">Join FCMobiletools</a></section>';
+  }
+  load().catch(()=>{root.innerHTML='<div class="empty">Unable to load this profile.</div>';});
+</script>
+
+<style>
+.public-profile-page{min-height:calc(100vh - 80px);padding:82px 18px 110px}.public-root{width:min(760px,100%);margin:auto}.loading-card,.profile-card,.empty{border:1px solid rgba(255,255,255,.08);border-radius:24px;background:linear-gradient(150deg,rgba(15,26,38,.98),rgba(7,16,24,.98));box-shadow:0 26px 80px rgba(0,0,0,.25)}.loading-card{padding:34px;color:var(--muted)}.profile-card{padding:42px;text-align:center;background:radial-gradient(circle at 50% 0,rgba(76,201,255,.09),transparent 48%),linear-gradient(150deg,#0f1a26,#071018)}.kicker{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em;text-transform:uppercase}.avatar{width:104px;height:104px;margin:0 auto 20px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(145deg,#8be1ff,#4cc9ff);color:#04131c;font:900 28px var(--font-display);overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.profile-card h1{margin:15px 0 4px;font:700 clamp(38px,6vw,58px)/1 var(--font-display);letter-spacing:-.055em}.handle{margin:0;color:#99afbd;font:600 12px var(--font-body)}.joined{margin:7px 0 0;color:#6f8796;font:500 10px var(--font-body)}.title-pill{display:inline-flex;margin-top:16px;padding:8px 11px;border:1px solid rgba(76,201,255,.16);border-radius:999px;background:rgba(76,201,255,.06);color:#8dddf8;font:800 9px var(--font-body)}.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:26px}.stat-grid article{padding:15px 10px;border:1px solid rgba(255,255,255,.07);border-radius:13px;background:#09141d}.stat-grid small{display:block;color:#648295;font:800 7px var(--font-body);letter-spacing:.12em}.stat-grid strong{display:block;margin-top:6px;color:var(--text);font:800 24px var(--font-display)}.privacy-note{max-width:520px;margin:24px auto 20px;color:#748c9a;font:500 9px/1.65 var(--font-body)}.primary-btn{min-height:43px;padding:0 15px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #69d8ff;border-radius:11px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04121a;text-decoration:none;font:800 9px var(--font-body)}.empty{padding:34px;color:var(--muted);text-align:center}.empty h1{margin:0 0 8px;font:700 30px var(--font-display);color:var(--text)}.empty p{margin:0 0 17px}.empty a{color:#7fdcff}@media(max-width:520px){.public-profile-page{padding:52px 12px 75px}.profile-card{padding:28px 18px}.avatar{width:82px;height:82px;border-radius:21px}.stat-grid{grid-template-columns:1fr 1fr}.stat-grid article:last-child:nth-child(odd){grid-column:1/-1}}
+</style>
