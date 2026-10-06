@@ -331,11 +331,17 @@ async function accountApi(request, env, url) {
   if(request.method==='GET' && url.pathname==='/api/account/missions') {
     if(!user.email_confirmed_at) return json({error:'Please verify your email before using missions.'},403);
     const now=new Date().toISOString();
-    const tasks=await supabaseRest(env,
-      'reward_tasks?enabled=eq.true&or=(starts_at.is.null,starts_at.lte.'+encodeURIComponent(now)+
-      ')&or=(ends_at.is.null,ends_at.gt.'+encodeURIComponent(now)+
-      ')&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,display_order,priority&order=display_order.asc,priority.asc,created_at.desc&limit=100'
-    );
+    let tasks=[];
+    try {
+      tasks=await supabaseRest(env,
+        'reward_tasks?enabled=eq.true&and=(or(starts_at.is.null,starts_at.lte.'+encodeURIComponent(now)+
+        '),or(ends_at.is.null,ends_at.gt.'+encodeURIComponent(now)+
+        '))&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,display_order,priority&order=display_order.asc,priority.asc,created_at.desc&limit=100'
+      );
+    } catch(error) {
+      console.error('[ACCOUNT_MISSIONS]',error?.message);
+      return json({error:'The mission service is temporarily unavailable.'},503);
+    }
     const attempts=await supabaseRest(env,
       'task_attempts?account_id=eq.'+encodeURIComponent(account.id)+
       '&select=task_id,status,verification_status,completed_at&order=completed_at.desc&limit=300'
@@ -359,6 +365,96 @@ async function accountApi(request, env, url) {
         };
       })
     });
+  }
+
+  const missionStartMatch=url.pathname.match(/^\/api\/account\/missions\/([0-9a-f-]+)\/start$/i);
+  if(request.method==='POST' && missionStartMatch) {
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before starting a mission.'},403);
+    const taskId=missionStartMatch[1];
+    const input=await request.json().catch(()=>({}));
+    let idempotencyKey=input?.idempotencyKey||null;
+    try { if(!idempotencyKey) idempotencyKey=crypto.randomUUID(); } catch { idempotencyKey=null; }
+    if(!idempotencyKey || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
+      return json({error:'Invalid mission request.'},400);
+    }
+    try {
+      const result=await supabaseRest(env,'rpc/start_task',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+        body:JSON.stringify({p_task_id:taskId,p_idempotency_key:idempotencyKey})
+      });
+      return json({ok:true,attemptId:result});
+    } catch(error) {
+      const msg=String(error?.message||'Unable to start this mission.');
+      return json({error:msg},/verified email|Authentication required|Account not provisioned|eligible/i.test(msg)?403:400);
+    }
+  }
+
+  const missionCompleteMatch=url.pathname.match(/^\/api\/account\/missions\/([0-9a-f-]+)\/complete$/i);
+  if(request.method==='POST' && missionCompleteMatch) {
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before completing a mission.'},403);
+    const taskId=missionCompleteMatch[1];
+    const input=await request.json().catch(()=>({}));
+    const attemptId=String(input?.attemptId||'').trim();
+    const proof=String(input?.proof||'').trim().toLowerCase();
+    const clientElapsedMs=Math.max(0,Math.min(86400000,Number(input?.clientElapsedMs||0)));
+    if(!/^[0-9a-f-]{36}$/i.test(attemptId)) return json({error:'Invalid mission attempt.'},400);
+
+    try {
+      const attempts=await supabaseRest(env,
+        'task_attempts?id=eq.'+encodeURIComponent(attemptId)+
+        '&account_id=eq.'+encodeURIComponent(account.id)+
+        '&task_id=eq.'+encodeURIComponent(taskId)+
+        '&select=id,task_id,status&limit=1'
+      );
+      const attempt=attempts?.[0];
+      if(!attempt) return json({error:'Mission attempt not found.'},404);
+
+      const taskRows=await supabaseRest(env,
+        'reward_tasks?id=eq.'+encodeURIComponent(taskId)+
+        '&select=id,slug,task_type,verification_method,conditions&limit=1'
+      );
+      const task=taskRows?.[0];
+      if(!task) return json({error:'Mission not found.'},404);
+
+      // Strong checks for missions whose truth already exists on the server.
+      if(task.slug==='verify-email' && !user.email_confirmed_at) {
+        return json({error:'Verify your email before claiming this mission.'},403);
+      }
+      if(task.slug==='complete-profile') {
+        const displayName=String(account.display_name||'').trim();
+        if(!account.username || !displayName) return json({error:'Finish your profile details before claiming this mission.'},403);
+      }
+      if(task.slug==='events-page-visit' || task.slug==='daily-events-check') {
+        if(proof!=='events_page') return json({error:'Open the Events Hub, then return here to complete this mission.'},409);
+      }
+      if(task.slug==='calculator-run') {
+        if(proof!=='calculator_use') return json({error:'Use a FCMobiletools calculator first, then return here to claim this mission.'},409);
+      }
+      if(task.slug==='first-tournament-match') {
+        const playerRows=await supabaseRest(env,
+          'tournament_players?account_id=eq.'+encodeURIComponent(account.id)+'&select=id&limit=100'
+        );
+        const playerIds=(playerRows||[]).map(x=>x.id).filter(Boolean);
+        if(!playerIds.length) return json({error:'No tournament match is linked to this account yet.'},409);
+        const encodedIds='('+playerIds.join(',')+')';
+        const completed=await supabaseRest(env,
+          'tournament_matches?status=eq.completed&or=(player_a_id.in.'+encodeURIComponent(encodedIds)+',player_b_id.in.'+encodeURIComponent(encodedIds)+')&select=id&limit=1'
+        );
+        if(!completed?.length) return json({error:'Complete a recorded tournament match first, then check this mission again.'},409);
+      }
+
+      const reward=await supabaseRest(env,'rpc/complete_task',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+        body:JSON.stringify({p_attempt_id:attemptId,p_client_elapsed_ms:clientElapsedMs})
+      });
+      return json({ok:true,tokenReward:Number(reward||0),status:'completed'});
+    } catch(error) {
+      const msg=String(error?.message||'Unable to complete this mission.');
+      const status=/already completed|limit reached|cooldown/i.test(msg)?409:/Authentication required|Verified email|not eligible/i.test(msg)?403:400;
+      return json({error:msg},status);
+    }
   }
 
   if(request.method==='GET' && url.pathname==='/api/account/achievements') {
@@ -392,15 +488,21 @@ async function accountApi(request, env, url) {
   if(request.method==='GET' && url.pathname==='/api/account/rewards') {
     if(!user.email_confirmed_at) return json({error:'Please verify your email before using rewards.'},403);
     const now=new Date().toISOString();
-    const [rewards,rewardAccounts,economy]=await Promise.all([
-      supabaseRest(env,
-        'rewards?enabled=eq.true&status=eq.active&or=(start_at.is.null,start_at.lte.'+encodeURIComponent(now)+
-        ')&or=(end_at.is.null,end_at.gt.'+encodeURIComponent(now)+
-        ')&select=id,slug,name,description,image_url,reward_type,cost,currency_code,stock,start_at,end_at,redemption_limit,eligibility,priority&order=priority.asc,created_at.desc&limit=60'
-      ),
-      supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance&limit=1'),
-      supabaseRest(env,'reward_economy_config?select=display_name,currency_code,expiration_enabled,default_expiration_days&id=true&limit=1')
-    ]);
+    let rewards=[];
+    let rewardAccounts=[];
+    let economy=[];
+    try {
+      rewards=await supabaseRest(env,
+        'rewards?enabled=eq.true&status=eq.active&and=(or(start_at.is.null,start_at.lte.'+encodeURIComponent(now)+
+        '),or(end_at.is.null,end_at.gt.'+encodeURIComponent(now)+
+        '))&select=id,slug,name,description,image_url,reward_type,cost,currency_code,stock,start_at,end_at,redemption_limit,eligibility,priority&order=priority.asc,created_at.desc&limit=60'
+      );
+      rewardAccounts=await supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance&limit=1');
+      economy=await supabaseRest(env,'reward_economy_config?select=display_name,currency_code,expiration_enabled,default_expiration_days&id=eq.true&limit=1');
+    } catch(error) {
+      console.error('[ACCOUNT_REWARDS]',error?.message);
+      return json({error:'The reward catalogue is temporarily unavailable.'},503);
+    }
     return json({
       tokenBalance:Number(rewardAccounts?.[0]?.balance||0),
       economy:economy?.[0]||{display_name:'Tokens',currency_code:'tokens',expiration_enabled:false},
@@ -1693,12 +1795,14 @@ export function createExports(manifest) {
     // Use the main profile shell as the canonical public-profile renderer. It already
     // detects /profile/:username and loads only the public, privacy-filtered API.
     // This avoids depending on a second static shell asset being present in every build.
-    const asset=await env.ASSETS.fetch(new Request(new URL('/profile/',url),{method:'GET',headers:request.headers}));
-    if(asset.ok) {
-      const headers=new Headers(asset.headers);
-      headers.set('cache-control','public, max-age=0, must-revalidate');
-      headers.set('x-fcmobiletools-page','public-profile-shell');
-      return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
+    for (const shellPath of ['/profile/public/','/profile/']) {
+      const asset=await env.ASSETS.fetch(new Request(new URL(shellPath,url),{method:'GET',headers:request.headers}));
+      if(asset.ok) {
+        const headers=new Headers(asset.headers);
+        headers.set('cache-control','public, max-age=0, must-revalidate');
+        headers.set('x-fcmobiletools-page','public-profile-shell');
+        return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
+      }
     }
   }
   if(url.pathname === '/events' || url.pathname === '/events/') {
