@@ -1,6 +1,16 @@
 // FC Mobile redeem-code database.
 export const REDEEM_CODES = [
   {
+    "code": "3RDANNIVERSARY",
+    "reward": "1x Draft Voucher + 100x Rank Up Tokens",
+    "status": "active",
+    "releaseDate": "2026-10-04",
+    "expiryDate": null,
+    "region": "Global",
+    "lastVerified": "2026-10-06",
+    "notes": "Released starting October 4, 2026."
+  },
+  {
     "code": "27UPDATE",
     "reward": "1x Draft Voucher + 100x Rank Up Tokens",
     "status": "expired",
