@@ -9,7 +9,7 @@ const blog = read('src/lib/blog-supabase.js');
 const worker = read('src/worker.mjs');
 const blogDir = path.join(root, 'src/content/blog');
 const editorialSourceFiles = fs.readdirSync(blogDir).filter((name) => name.endsWith('.md') && name !== '_template.md');
-const sourceLineRe = /^\s*-\s*[\"']?(https?:\/\/[^\"'\\s]+)[\"']?\s*$/gm;
+const sourceFieldRe = /^sources:\s*([\\s\\S]*?)(?=^\\S|\\s*$)/m;
 const allowedEditorialSource = (url, file) => {
   try {
     const host = new URL(url).hostname.toLowerCase();
@@ -21,8 +21,10 @@ const allowedEditorialSource = (url, file) => {
 const editorialSourceViolations = [];
 for (const file of editorialSourceFiles) {
   const content = read(`src/content/blog/${file}`);
-  for (const match of content.matchAll(sourceLineRe)) {
-    if (!allowedEditorialSource(match[1], file)) editorialSourceViolations.push(`${file}: ${match[1]}`);
+  const frontMatter = content.match(/^---\\n([\\s\\S]*?)\\n---/m)?.[1] || '';
+  const sourceBlock = frontMatter.match(sourceFieldRe)?.[1] || '';
+  for (const match of sourceBlock.matchAll(/https?:\\/\\/[^\\s\"'\\],]+/g)) {
+    if (!allowedEditorialSource(match[0], file)) editorialSourceViolations.push(`${file}: ${match[0]}`);
   }
 }
 
