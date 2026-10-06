@@ -61,6 +61,8 @@ h1{margin:12px 0 9px;font:700 clamp(42px,6vw,66px)/.94 var(--font-heading);lette
 </style>
 
 <script>
+import { accountAuth } from '../../lib/account-client.js';
+
 const form=document.getElementById('loginForm');
 const message=document.getElementById('message');
 form?.addEventListener('submit',async(event)=>{
@@ -70,22 +72,18 @@ form?.addEventListener('submit',async(event)=>{
   const button=form.querySelector('button');
   button.disabled=true;
   try{
-    const body={
+    const { error } = await accountAuth.auth.signInWithPassword({
       email:form.email.value.trim(),
       password:form.password.value
-    };
-    const response=await fetch('/api/account/login',{
-      method:'POST',
-      headers:{'content-type':'application/json'},
-      credentials:'same-origin',
-      body:JSON.stringify(body)
     });
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(data.error||'Unable to sign in.');
-    window.location.href=data.next||'/profile/';
+    if(error) throw error;
+    window.location.href='/profile/';
   }catch(error){
     message.className='message error';
-    message.textContent=error?.message||'Unable to sign in.';
+    const raw=String(error?.message||'');
+    message.textContent=/email not confirmed/i.test(raw)
+      ? 'Please verify your email from the message we sent you, then sign in again.'
+      : 'Invalid email or password.';
     button.disabled=false;
   }
 });
