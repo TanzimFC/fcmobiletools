@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Leaderboard" description="FCMobiletools community leaderboards." robots="noindex,nofollow" googlebot="noindex,nofollow">
+  <main class="account-list-page">
+    <section class="intro"><span class="eyebrow">LEADERBOARD</span><h1>See who is climbing.</h1><p>Leaderboards are metric-driven. XP is not the only ranking model the system can support.</p></section>
+    <div id="root"><div class="loading">Loading leaderboards…</div></div>
+  </main>
+</BaseLayout>
+<style>
+.account-list-page{width:min(1080px,calc(100% - 28px));margin:0 auto;padding:62px 0 100px}.intro{margin-bottom:18px}.eyebrow{color:var(--primary);font:800 9px var(--font-body);letter-spacing:.14em}.intro h1{margin:11px 0 7px;font:700 clamp(38px,6vw,64px)/.96 var(--font-display);letter-spacing:-.055em;color:var(--text)}.intro p{max-width:720px;margin:0;color:var(--muted);font:500 13px/1.75 var(--font-body)}.loading,.empty,.board{border:1px solid rgba(255,255,255,.08);border-radius:18px;background:linear-gradient(145deg,rgba(15,26,38,.98),rgba(7,16,24,.98))}.loading,.empty{padding:24px;color:var(--muted);font:600 11px var(--font-body)}.board{overflow:hidden}.board-head{padding:18px;border-bottom:1px solid rgba(255,255,255,.07)}.board-head h2{margin:0;font:700 19px var(--font-display)}.board-head p{margin:4px 0 0;color:#718898;font:500 9px var(--font-body)}.rows{display:grid;gap:5px;padding:7px}.row{display:grid;grid-template-columns:58px 1fr 110px;align-items:center;gap:12px;padding:11px;border:1px solid transparent;border-radius:11px;background:#0b151e}.row b{font:800 11px var(--font-body)}.rank{color:#7eddfb;font:900 12px var(--mono)}.score{justify-self:end;color:#c7e5f1;font:800 10px var(--mono)}
+@media(max-width:720px){.account-list-page{padding-top:42px}.row{grid-template-columns:42px 1fr auto}}
+</style>
+<script>
+const root=document.querySelector('#root');const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function load(){const r=await fetch('/api/public/leaderboard', {cache:'no-store'});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'Unable to load leaderboards.');if(!b.leaderboards?.length){root.innerHTML='<div class="empty">No leaderboard is published yet. The ranking engine is ready, but no leaderboard definition has been enabled.</div>';return;}root.innerHTML='<div class="board-list">'+b.leaderboards.map(l=>'<section class="board"><div class="board-head"><h2>'+esc(l.name)+'</h2><p>'+esc(l.description||'')+' · '+esc(l.periodType||'')+'</p></div><div class="rows">'+(l.rows||[]).map(x=>'<div class="row"><span class="rank">#'+Number(x.rank)+'</span><div><b>@'+esc(x.username)+'</b></div><span class="score">'+Number(x.score||0).toLocaleString()+'</span></div>').join('')+'</div></section>').join('')}</div>}
+load().catch(e=>root.innerHTML='<div class="empty">'+esc(e.message)+'</div>');
+</script>
