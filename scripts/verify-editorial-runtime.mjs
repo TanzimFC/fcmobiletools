@@ -7,6 +7,25 @@ const admin = read('admin/articles/index.html');
 const lexical = read('admin/articles/lexical-editor.js');
 const blog = read('src/lib/blog-supabase.js');
 const worker = read('src/worker.mjs');
+const blogDir = path.join(root, 'src/content/blog');
+const editorialSourceFiles = fs.readdirSync(blogDir).filter((name) => name.endsWith('.md') && name !== '_template.md');
+const sourceLineRe = /^\s*-\s*[\"']?(https?:\/\/[^\"'\\s]+)[\"']?\s*$/gm;
+const allowedEditorialSource = (url, file) => {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === 'ea.com' || host.endsWith('.ea.com') || (file === 'fc-mobile-hall-of-fut-explained.md' && host === 'fut.gg');
+  } catch {
+    return false;
+  }
+};
+const editorialSourceViolations = [];
+for (const file of editorialSourceFiles) {
+  const content = read(`src/content/blog/${file}`);
+  for (const match of content.matchAll(sourceLineRe)) {
+    if (!allowedEditorialSource(match[1], file)) editorialSourceViolations.push(`${file}: ${match[1]}`);
+  }
+}
+
 
 const checks = [
   [!admin.includes("marked@"), 'admin article hydration must not reparse Supabase HTML with marked'],
@@ -23,12 +42,14 @@ const checks = [
   [!blog.includes('cacheTtl:15') && blog.includes("cache:'no-store'"), 'public Supabase reads must not use the old edge cache'],
   [!blog.includes("Authorization:'Bearer '"), 'public Supabase reads must use the publishable-key API contract'],
   [!worker.includes('\\\\') , 'Worker must not contain doubled backslash regex escapes'],
-  [worker.includes("'cache-control':'no-store'"), 'editorial API responses must be uncacheable']
+  [worker.includes("'cache-control':'no-store'"), 'editorial API responses must be uncacheable'],
+  [editorialSourceViolations.length === 0, 'article Sources must contain only EA URLs, except FUT.GG in the Hall of FUT article']
 ];
 
 const failed = checks.filter(([ok]) => !ok);
 if (failed.length) {
   for (const [, message] of failed) console.error('EDITORIAL CHECK FAILED:', message);
+  if (editorialSourceViolations.length) for (const item of editorialSourceViolations) console.error('EDITORIAL SOURCE VIOLATION:', item);
   process.exit(1);
 }
 console.log('Editorial runtime checks passed:', checks.length);
