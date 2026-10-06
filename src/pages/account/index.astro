@@ -664,8 +664,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   });
 
   // Supabase fires PASSWORD_RECOVERY after a valid recovery link creates a session.
+  let recoveryActive = /(?:^|[&#])type=recovery(?:&|$)/i.test(location.hash);
   accountAuth.auth.onAuthStateChange((event) => {
-    if (event === 'PASSWORD_RECOVERY') showRecovery();
+    if (event === 'PASSWORD_RECOVERY') {
+      recoveryActive = true;
+      showRecovery();
+    }
   });
 
   recoveryForm?.addEventListener('submit', async (event) => {
@@ -698,7 +702,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   });
 
   accountAuth.auth.getSession().then((result) => {
-    if (result.data?.session && !recoveryForm?.hidden) return;
+    if (result.data?.session && recoveryActive) {
+      showRecovery();
+      return;
+    }
     if (result.data?.session && !location.hash.includes('error=') && !location.search.includes('mode=recovery')) location.replace('/profile/');
   });
 </script>
