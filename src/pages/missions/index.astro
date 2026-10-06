@@ -53,6 +53,45 @@ import AccountNav from '../../components/AccountNav.astro';
   let allMissions = [];
   let currentFilter = 'all';
 
+  function missionActionFor(m) {
+    if (m.statusLabel === 'Completed') return '<span class="mission-complete-note">Reward claimed ✓</span>';
+    if (m.statusLabel === 'Pending review') return '<span class="mission-complete-note">Waiting for review</span>';
+
+    const slug=String(m.slug||'').toLowerCase();
+    if (slug==='complete-profile') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/settings/">Edit Profile</a>
+          <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="profile_setup_complete">Claim Reward</button>
+        </div>`;
+    }
+    if (slug==='daily-events-check' || slug==='events-page-visit') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/events/">Open Events</a>
+          <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="events_page">Complete Check-in</button>
+        </div>`;
+    }
+    if (slug==='calculator-run') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/rank-up-calculator">Open Calculator</a>
+          <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="calculator_use">Claim Reward</button>
+        </div>`;
+    }
+    if (slug==='first-tournament-match') {
+      return `
+        <div class="mission-actions">
+          <a class="mission-action-secondary" href="/tournaments">Browse Tournaments</a>
+          <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="tournament_match_completed">Check Match</button>
+        </div>`;
+    }
+    return `
+      <div class="mission-actions">
+        <button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="">Complete Mission</button>
+      </div>`;
+  }
+
   function renderMissionsList() {
     const filtered =
       currentFilter === 'all'
@@ -105,13 +144,15 @@ import AccountNav from '../../components/AccountNav.astro';
           .map((m) => {
             const isDone = m.statusLabel === 'Completed';
             const isPending = m.statusLabel === 'Pending review';
+            const action = missionActionFor(m);
+
             return `
               <article class="mission-card ${isDone ? 'is-completed' : ''}">
                 <div class="mission-top">
                   <div class="mission-tags">
                     <span class="tag-type">${esc(titleCase(m.missionType || m.taskType || 'Mission'))}</span>
                     <span class="tag-verify">
-                      ${m.verificationMethod === 'moderated' ? 'Moderated Review' : 'Server Verified'}
+                      ${m.verificationMethod === 'moderated' ? 'Moderated Review' : 'Server Checked'}
                     </span>
                   </div>
                   <span class="status-badge ${isDone ? 'is-done' : isPending ? 'is-pending' : ''}">
@@ -128,7 +169,9 @@ import AccountNav from '../../components/AccountNav.astro';
                     ${m.tokenReward > 0 ? `<span class="rw-tk">+${fmt(m.tokenReward)} Tokens</span>` : ''}
                     ${m.dailyLimit ? `<span class="rw-limit">${fmt(m.dailyLimit)}/day max</span>` : ''}
                   </div>
+                  ${action}
                 </div>
+                <p class="mission-action-msg" data-mission-msg="${esc(m.id)}" hidden></p>
               </article>
             `;
           })
@@ -136,6 +179,84 @@ import AccountNav from '../../components/AccountNav.astro';
       </div>
     `;
   }
+
+  async function completeMission(taskId, proof, button) {
+    const msg = root.querySelector(`[data-mission-msg="${CSS.escape(taskId)}"]`);
+    const session = await accountAuth.auth.getSession();
+    if (!session.data?.session) throw new Error('Your session expired. Sign in again.');
+    button.disabled = true;
+    const previous = button.textContent;
+    button.textContent = 'Checking…';
+    if (msg) { msg.hidden = true; msg.textContent = ''; }
+
+    try {
+      let accessToken=session.data.session.access_token;
+      let start = await fetch('/api/account/missions/' + encodeURIComponent(taskId) + '/start', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer ' + accessToken,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({ idempotencyKey: crypto.randomUUID() })
+      });
+      let startBody = await start.json().catch(() => ({}));
+
+      if ((start.status === 401 || start.status === 403)) {
+        const refreshed = await accountAuth.auth.refreshSession();
+        if (refreshed.data?.session?.access_token) {
+          accessToken=refreshed.data.session.access_token;
+          start = await fetch('/api/account/missions/' + encodeURIComponent(taskId) + '/start', {
+            method: 'POST',
+            headers: {
+              authorization: 'Bearer ' + accessToken,
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({ idempotencyKey: crypto.randomUUID() })
+          });
+          startBody = await start.json().catch(() => ({}));
+        }
+      }
+
+      if (!start.ok || !startBody?.attemptId) throw new Error(startBody?.error || 'Unable to start this mission.');
+
+      const complete = await fetch('/api/account/missions/' + encodeURIComponent(taskId) + '/complete', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer ' + accessToken,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          attemptId: startBody.attemptId,
+          clientElapsedMs: 1000,
+          proof: proof || ''
+        })
+      });
+      const body = await complete.json().catch(() => ({}));
+      if (!complete.ok) throw new Error(body?.error || 'Unable to complete this mission.');
+
+      if (msg) {
+        msg.hidden = false;
+        msg.className = 'mission-action-msg is-ok';
+        msg.textContent = 'Mission complete. XP and Tokens have been added to your progression ledger.';
+      }
+      button.textContent = 'Completed ✓';
+      window.setTimeout(() => load(), 650);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = previous;
+      if (msg) {
+        msg.hidden = false;
+        msg.className = 'mission-action-msg is-err';
+        msg.textContent = error?.message || 'Unable to complete this mission.';
+      }
+    }
+  }
+
+  root.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-mission-complete]');
+    if (!button) return;
+    completeMission(button.dataset.missionComplete, button.dataset.missionProof || '', button).catch(() => {});
+  });
 
   document.querySelectorAll('#missionFilters .filter-pill').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -398,6 +519,74 @@ import AccountNav from '../../components/AccountNav.astro';
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: #8fa5b6;
   }
+
+  .mission-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .mission-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .mission-action-primary,
+  .mission-action-secondary {
+    min-height: 38px;
+    padding: 0 13px;
+    border-radius: 10px;
+    font: 800 11.5px/1 var(--font-body);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .mission-action-primary {
+    border: 1px solid #6ed8ff;
+    background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
+    color: #04131c;
+  }
+
+  .mission-action-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,.1);
+    background: #101e2c;
+    color: #d9e9f3;
+  }
+
+  .mission-action-primary:disabled {
+    opacity: .6;
+    cursor: wait;
+  }
+
+  .mission-complete-note {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 11px;
+    border-radius: 10px;
+    background: rgba(103, 231, 166, .08);
+    border: 1px solid rgba(103, 231, 166, .2);
+    color: #79e4ae;
+    font: 800 11px/1 var(--font-body);
+  }
+
+  .mission-action-msg {
+    grid-column: 1 / -1;
+    margin: 0;
+    font: 700 11px/1.45 var(--font-body);
+  }
+
+  .mission-action-msg.is-ok { color: #79e4ae; }
+  .mission-action-msg.is-err { color: #ff9f95; }
 
   /* Empty / Info State */
   .mod-empty-card {
