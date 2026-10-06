@@ -86,6 +86,8 @@ h1{margin:12px 0 9px;font:700 clamp(42px,6vw,66px)/.94 var(--font-heading);lette
 </style>
 
 <script>
+import { accountAuth } from '../../lib/account-client.js';
+
 const form=document.getElementById('signupForm');
 const message=document.getElementById('message');
 form?.addEventListener('submit',async(event)=>{
@@ -95,37 +97,50 @@ form?.addEventListener('submit',async(event)=>{
   button.disabled=true;
   const password=form.password.value;
   const confirm=form.confirmPassword.value;
+  const email=form.email.value.trim();
+  const username=form.username.value.trim().toLowerCase();
   if(password!==confirm){
     message.className='message error';
     message.textContent='Passwords do not match.';
     button.disabled=false;
     return;
   }
+  if(email.split('@')[0].includes('+') && /@(gmail|googlemail)\.com$/i.test(email)){
+    message.className='message error';
+    message.textContent='Gmail + aliases are not accepted. Use your main Gmail address.';
+    button.disabled=false;
+    return;
+  }
   message.textContent='Creating your account…';
   try{
-    const body={
-      username:form.username.value.trim().toLowerCase(),
-      displayName:form.displayName.value.trim(),
-      email:form.email.value.trim(),
-      password
-    };
-    const response=await fetch('/api/account/signup',{
-      method:'POST',
-      headers:{'content-type':'application/json'},
-      credentials:'same-origin',
-      body:JSON.stringify(body)
+    const { data, error } = await accountAuth.auth.signUp({
+      email,
+      password,
+      options:{
+        data:{
+          username,
+          display_name:form.displayName.value.trim() || username
+        },
+        emailRedirectTo:location.origin + '/account/login/'
+      }
     });
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(data.error||'Unable to create your account.');
+    if(error) throw error;
     message.className='message success';
-    message.textContent=data.emailConfirmationRequired
-      ? 'Account created. Check your email to verify it, then sign in.'
-      : 'Account created. Opening your profile…';
-    if(!data.emailConfirmationRequired) window.location.href=data.next||'/profile/';
-    else setTimeout(()=>{window.location.href='/account/login/';},1200);
+    if(data.session){
+      message.textContent='Account created. Opening your profile…';
+      window.location.href='/profile/';
+    }else{
+      message.textContent='Account created. Check your email to verify it, then sign in.';
+      button.disabled=false;
+    }
   }catch(error){
+    const raw=String(error?.message||'');
     message.className='message error';
-    message.textContent=error?.message||'Unable to create your account.';
+    message.textContent=/disposable|temporary|gmail \+|gmail.*alias/i.test(raw)
+      ? 'That email address cannot be used for an FCMobiletools account.'
+      : /already.*registered|already.*associated/i.test(raw)
+        ? 'That email address is already associated with an account.'
+        : raw || 'Unable to create your account.';
     button.disabled=false;
   }
 });
