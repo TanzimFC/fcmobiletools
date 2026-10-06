@@ -28,11 +28,7 @@ readingTime: 8
 seoTitle: "Hall of FUT Explained for FC Mobile: What Is It and How Could It Work?"
 seoDescription: "Hall of FUT is a new EA SPORTS FC 27 Player Item category based on FUT Fame. Learn how it works on console and what the FC Mobile leaks could mean."
 canonicalUrl: ""
-sources:
-  - "https://www.ea.com/games/ea-sports-fc/fc-27/news/fc-27-hall-of-fut"
-  - "https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update"
-  - "https://www.ea.com/games/ea-sports-fc/fc-27/news/fc-27-fut-deep-dive"
-  - "https://www.fut.gg/hall-of-fut/"
+sources: []
 factStatus: "community-reported"
 lastReviewed: "2026-10-06"
 ---
