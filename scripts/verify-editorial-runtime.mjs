@@ -21,9 +21,9 @@ const allowedEditorialSource = (url, file) => {
 const editorialSourceViolations = [];
 for (const file of editorialSourceFiles) {
   const content = read(`src/content/blog/${file}`);
-  const frontMatter = content.match(/^---\\n([\\s\\S]*?)\\n---/m)?.[1] || '';
+  const frontMatter = content.match(/^---\n([\s\S]*?)\n---/m)?.[1] || '';
   const sourceBlock = frontMatter.match(sourceFieldRe)?.[1] || '';
-  for (const match of sourceBlock.matchAll(/https?:\\/\\/[^\\s\"'\\],]+/g)) {
+  for (const match of sourceBlock.matchAll(/https?:\/\/[^\s\"'\],]+/g)) {
     if (!allowedEditorialSource(match[0], file)) editorialSourceViolations.push(`${file}: ${match[0]}`);
   }
 }
