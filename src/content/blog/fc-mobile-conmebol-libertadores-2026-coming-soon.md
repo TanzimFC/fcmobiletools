@@ -30,7 +30,8 @@ readingTime: 5
 seoTitle: "FC Mobile CONMEBOL Libertadores 2026: 122 OVR Drafts Leaked"
 seoDescription: "The reported FC Mobile Libertadores Draft A and B pools, the October 15 start, last year's 56-day event, and what the real 2026 tournament could mean for the new event."
 canonicalUrl: ""
-sources: []factStatus: "community-reported"
+sources: []
+factStatus: "community-reported"
 lastReviewed: "2026-10-06"
 ---
 
