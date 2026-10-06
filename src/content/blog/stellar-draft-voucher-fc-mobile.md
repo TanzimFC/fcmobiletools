@@ -7,6 +7,8 @@ description: "A focused FC Mobile 27 guide to the Stellar Draft Voucher, includi
 type: "guide"
 category: "Guides"
 author: "TanzimFC"
+series: "Stellar Series"
+seriesOrder: 2
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-09-27T17:20:00.000Z"
@@ -31,7 +33,6 @@ canonicalUrl: ""
 sources: []
 factStatus: "partially-verified"
 lastReviewed: "2026-09-27"
-series: "Stellar: Libra"
 ---
 
 ![FC Mobile 27 Stellar Libra event banner](https://res.cloudinary.com/b0qikv7n/image/upload/v1790528963/fc-mobile-tools/u1e886zhtzo73brhxbbj.png)
