@@ -1,0 +1,132 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Create an account" description="Create your FCMobiletools Account.">
+  <main class="account-shell">
+    <section class="account-card">
+      <div class="eyebrow">FCMOBILETOOLS ACCOUNT</div>
+      <h1>Make it yours.</h1>
+      <p class="lead">Create a profile for personalization, progression, missions and future community features. You can still use the whole site without one.</p>
+
+      <form id="signupForm" class="account-form">
+        <div class="two">
+          <label>
+            <span>Username</span>
+            <input id="username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]" required placeholder="yourname">
+            <small>3–24 characters. Lowercase letters, numbers, dots, underscores or hyphens.</small>
+          </label>
+          <label>
+            <span>Display name</span>
+            <input id="displayName" name="displayName" autocomplete="nickname" maxlength="80" placeholder="Your name">
+          </label>
+        </div>
+
+        <label>
+          <span>Email</span>
+          <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </label>
+
+        <div class="email-warning">
+          <strong>Use an email you can keep accessing.</strong>
+          <p>FCMobiletools may require email verification for account features later. Temporary/disposable email addresses and Gmail <code>+</code> aliases are not accepted.</p>
+        </div>
+
+        <div class="two">
+          <label>
+            <span>Password</span>
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters">
+          </label>
+          <label>
+            <span>Confirm password</span>
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required placeholder="Repeat your password">
+          </label>
+        </div>
+
+        <button class="primary" type="submit">Create account</button>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="account-foot">
+        <span>Already have an account?</span>
+        <a href="/account/login/">Sign in</a>
+      </div>
+    </section>
+
+    <aside class="account-note">
+      <strong>Your public profile stays limited.</strong>
+      <p>Username, selected profile details, progression and public achievements can be shown. Email, authentication data, security data and reward delivery information stay private.</p>
+    </aside>
+  </main>
+</BaseLayout>
+
+<style>
+.account-shell{width:min(1040px,calc(100% - 32px));margin:0 auto;padding:76px 0 100px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.account-card,.account-note{border:1px solid rgba(255,255,255,.08);border-radius:22px;background:linear-gradient(145deg,rgba(15,26,38,.98),rgba(7,16,24,.98));box-shadow:0 28px 80px rgba(0,0,0,.28)}
+.account-card{padding:36px}.account-note{padding:22px;position:sticky;top:110px}
+.eyebrow{font:800 10px/1 var(--font-body);letter-spacing:.14em;color:var(--primary)}
+h1{margin:12px 0 9px;font:700 clamp(42px,6vw,66px)/.94 var(--font-heading);letter-spacing:-.055em;color:var(--text)}
+.lead{max-width:650px;color:var(--muted);font:500 14px/1.75 var(--font-body)}
+.account-form{display:grid;gap:15px;margin-top:28px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.account-form label{display:grid;gap:7px}.account-form label>span{font:700 11px/1 var(--font-body);color:#d9e5ec}
+.account-form small{color:#738899;font:600 10px/1.45 var(--font-body)}
+.account-form input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #29414e;background:#09141d;color:var(--text);outline:none;font:600 13px var(--font-body)}
+.account-form input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(76,201,255,.10)}
+.primary{min-height:46px;border:1px solid #6bd8ff;border-radius:12px;background:linear-gradient(135deg,#4cc9ff,#9fe6ff);color:#04131b;font:800 11px var(--font-body);cursor:pointer}
+.primary:disabled{opacity:.6;cursor:wait}
+.message{min-height:20px;margin:0;color:var(--muted);font:600 11px/1.5 var(--font-body)}
+.message.error{color:#ff9e94}.message.success{color:#72df8e}
+.email-warning{padding:14px 15px;border:1px solid rgba(255,189,89,.24);border-radius:13px;background:rgba(255,189,89,.055)}
+.email-warning strong{display:block;color:#ffd18c;font:800 11px var(--font-body)}.email-warning p{margin:5px 0 0;color:#ad9c83;font:600 11px/1.6 var(--font-body)}
+.email-warning code{padding:2px 5px;border-radius:5px;background:#132333;color:#9fe6ff}
+.account-foot{display:flex;gap:8px;align-items:center;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);color:var(--muted);font:600 11px var(--font-body)}
+.account-foot a{color:var(--primary);font-weight:800;text-decoration:none}
+.account-note strong{display:block;font:700 16px var(--font-heading);color:var(--text)}
+.account-note p{margin:10px 0 0;color:var(--muted);font:500 12px/1.7 var(--font-body)}
+@media(max-width:760px){.account-shell{grid-template-columns:1fr;padding-top:45px}.account-note{position:static}.account-card{padding:24px}.two{grid-template-columns:1fr}}
+</style>
+
+<script>
+const form=document.getElementById('signupForm');
+const message=document.getElementById('message');
+form?.addEventListener('submit',async(event)=>{
+  event.preventDefault();
+  message.className='message';
+  const button=form.querySelector('button');
+  button.disabled=true;
+  const password=form.password.value;
+  const confirm=form.confirmPassword.value;
+  if(password!==confirm){
+    message.className='message error';
+    message.textContent='Passwords do not match.';
+    button.disabled=false;
+    return;
+  }
+  message.textContent='Creating your account…';
+  try{
+    const body={
+      username:form.username.value.trim().toLowerCase(),
+      displayName:form.displayName.value.trim(),
+      email:form.email.value.trim(),
+      password
+    };
+    const response=await fetch('/api/account/signup',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      credentials:'same-origin',
+      body:JSON.stringify(body)
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(data.error||'Unable to create your account.');
+    message.className='message success';
+    message.textContent=data.emailConfirmationRequired
+      ? 'Account created. Check your email to verify it, then sign in.'
+      : 'Account created. Opening your profile…';
+    if(!data.emailConfirmationRequired) window.location.href=data.next||'/profile/';
+    else setTimeout(()=>{window.location.href='/account/login/';},1200);
+  }catch(error){
+    message.className='message error';
+    message.textContent=error?.message||'Unable to create your account.';
+    button.disabled=false;
+  }
+});
+</script>
