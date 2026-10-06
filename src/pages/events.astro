@@ -17,16 +17,49 @@ const anniversaryLogo = anniversary.logo || 'https://sappurit.github.io/s10img/p
 
 // All upcoming events share one card design and one size.
 const upcoming = [
-  { id: 'unbreakable', title: secondary.title || 'Unbreakable', text: secondary.subtitle || 'Major FC Mobile event.', day: '15', month: 'Oct', img: unbreakableBanner, acc: '#8b93ff' },
-  { id: 'conmebol-libertadores', title: 'CONMEBOL Libertadores', text: 'Starts on the same day as Unbreakable.', day: '15', month: 'Oct', img: cl(banner('conmebol-libertadores'), 1000), acc: '#4fe3a3' },
-  { id: 'ballon-dor', title: "Ballon d'Or", text: 'Starts on Season Reset day.', day: '22', month: 'Oct', img: cl(banner('ballon-dor'), 1000), acc: '#ffd36e' },
+  {
+    id: 'unbreakable',
+    title: secondary.title || 'Unbreakable',
+    text: secondary.subtitle || 'Major FC Mobile event.',
+    day: '15',
+    month: 'Oct',
+    img: unbreakableBanner,
+    acc: '#8b93ff',
+    href: '/blog/fc-mobile-unbreakable-2026-drafts/',
+    cta: 'Read the leaks',
+  },
+  {
+    id: 'conmebol-libertadores',
+    title: 'CONMEBOL Libertadores',
+    text: 'Expected to launch alongside Unbreakable.',
+    day: '15',
+    month: 'Oct',
+    img: cl(banner('conmebol-libertadores'), 1000),
+    acc: '#4fe3a3',
+    href: '/blog/fc-mobile-conmebol-libertadores-2026-coming-soon/',
+    cta: 'Read the leaks',
+  },
+  {
+    id: 'ballon-dor',
+    title: "Ballon d'Or",
+    text: 'Expected on the October 22 season reset.',
+    day: '22',
+    month: 'Oct',
+    img: cl(banner('ballon-dor'), 1000),
+    acc: '#ffd36e',
+    href: '/blog/',
+    cta: 'Browse event news',
+  },
 ];
+
+const anniversaryArticle = '/blog/fc-mobile-3rd-anniversary-leaked-player-pools-weeks-1-4/';
+const desc = 'FC Mobile event schedule for the 3rd Anniversary, Unbreakable, CONMEBOL Libertadores, Ballon d’Or and the October season reset, with live countdowns and event guides.';
 
 const desc = 'FC Mobile event schedule covering Anniversary, Unbreakable, CONMEBOL Libertadores, Ballon d’Or, Daily Reset and the October 22 season reset.';
 const pageSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  name: 'FC Mobile Events & Reset | FCMOBILETOOLS',
+  name: 'FC Mobile Events & Reset',
   description: desc,
   url: new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.online').href,
   publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
@@ -42,11 +75,17 @@ const pageSchema = {
       <div class="top-copy">
         <p class="tag"><i class="dot"></i>FC Mobile 27 · Events &amp; reset</p>
         <h1>Every date that matters,<br />in one place.</h1>
-        <p class="lede">Live events, the October drops and the next resets, all counted down to the second in your own time zone.</p>
+        <p class="lede">Track the current event, see what is coming next, and jump straight into the guides and tools you need before the next reset.</p>
+        <nav class="quick-links" aria-label="Event hub shortcuts">
+          <a href="#october">October events <span>↓</span></a>
+          <a href="#resets">Resets <span>↓</span></a>
+          <a href="#tools">Useful tools <span>↓</span></a>
+        </nav>
       </div>
-      <div class="clock" aria-label="Current local and UTC time">
-        <div><small>Your time</small><strong id="localClock">--:--:--</strong><em id="zoneLabel">Local</em></div>
-        <div><small>UTC</small><strong id="utcClock">--:--:--</strong></div>
+      <div class="status-panel" aria-label="Event hub status">
+        <span><i class="dot"></i>Live schedule</span>
+        <strong>Auto-synced</strong>
+        <small>Your countdowns use your device timezone.</small>
       </div>
     </header>
 
@@ -59,18 +98,25 @@ const pageSchema = {
         <img id="anniversaryLogo" class="hero-logo" src={anniversaryLogo} alt="FC Mobile Anniversary 27 logo" decoding="async" />
         <h2>Anniversary Event</h2>
         <p id="anniversarySubtitle">Live alongside the FC Mobile 27 Season Update.</p>
+        <div class="hero-actions">
+          <a class="hero-cta primary" href={anniversaryArticle}>See Anniversary leaks <span>→</span></a>
+          <a class="hero-cta" href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary" target="_blank" rel="noopener noreferrer">EA announcement ↗</a>
+        </div>
         <div class="hero-foot">
           <div><small>Started</small><strong id="anniversaryStart">24 Sep 2026</strong></div>
-          <a href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary" target="_blank" rel="noopener noreferrer">Read the EA announcement ↗</a>
+          <div><small>Status</small><strong id="anniversaryStateFoot">LIVE NOW</strong></div>
         </div>
       </div>
     </article>
 
     <!-- UPCOMING: three equal cards -->
-    <section class="block" aria-labelledby="upTitle">
+    <section class="block" id="october" aria-labelledby="upTitle">
       <div class="block-head">
-        <h2 id="upTitle">Coming in October</h2>
-        <p>Three launches, two dates.</p>
+        <div>
+          <h2 id="upTitle">Coming in October</h2>
+          <p class="section-note">Three launches across two dates. Tap into the latest guide before you spend coins or FC Points.</p>
+        </div>
+        <a class="section-link" href="/blog/">All event news →</a>
       </div>
 
       <div class="cards">
@@ -89,14 +135,59 @@ const pageSchema = {
                 <small>Starts in</small>
                 <strong data-countdown>--:--:--</strong>
               </div>
+              <a class="card-cta" href={e.href}>{e.cta}<span>→</span></a>
             </div>
           </article>
         ))}
       </div>
     </section>
 
+
+    <section class="block timeline-block" aria-labelledby="timelineTitle">
+      <div class="block-head">
+        <div>
+          <h2 id="timelineTitle">The October run-in</h2>
+          <p class="section-note">The dates worth keeping on your watchlist.</p>
+        </div>
+      </div>
+      <div class="timeline">
+        <a class="timeline-item" href={anniversaryArticle}>
+          <span class="timeline-date">24 Sep</span>
+          <div>
+            <strong>Season 27 + Anniversary</strong>
+            <p>The current season is already live.</p>
+          </div>
+          <span class="timeline-arrow">→</span>
+        </a>
+        <a class="timeline-item" href="/blog/fc-mobile-unbreakable-2026-drafts/">
+          <span class="timeline-date">15 Oct</span>
+          <div>
+            <strong>Unbreakable</strong>
+            <p>Reported to arrive with the first Unbreakable Drafts.</p>
+          </div>
+          <span class="timeline-arrow">→</span>
+        </a>
+        <a class="timeline-item" href="/blog/fc-mobile-conmebol-libertadores-2026-coming-soon/">
+          <span class="timeline-date">15 Oct</span>
+          <div>
+            <strong>CONMEBOL Libertadores</strong>
+            <p>Expected to launch on the same day as Unbreakable.</p>
+          </div>
+          <span class="timeline-arrow">→</span>
+        </a>
+        <a class="timeline-item featured" href="/blog/">
+          <span class="timeline-date">22 Oct</span>
+          <div>
+            <strong>Ballon d'Or + season reset</strong>
+            <p>Two big reasons to check the event schedule again.</p>
+          </div>
+          <span class="timeline-arrow">→</span>
+        </a>
+      </div>
+    </section>
+
     <!-- RESETS -->
-    <section class="block" aria-labelledby="rsTitle">
+    <section class="block" id="resets" aria-labelledby="rsTitle">
       <div class="block-head">
         <h2 id="rsTitle">Resets</h2>
         <p id="syncLabel" class="sync">Syncing…</p>
@@ -120,6 +211,54 @@ const pageSchema = {
             <div><dt>UTC</dt><dd id="rivalsUtc">22 Oct 2026 · 01:00 UTC</dd></div>
           </dl>
         </article>
+      </div>
+    </section>
+
+
+    <section class="block tools-block" id="tools" aria-labelledby="toolsTitle">
+      <div class="block-head">
+        <div>
+          <h2 id="toolsTitle">Before you jump into the next event</h2>
+          <p class="section-note">The pages that actually help when a new event drops.</p>
+        </div>
+      </div>
+      <div class="tool-grid">
+        <a class="tool-card" href="/redeem-codes/">
+          <span class="tool-kicker">Claim</span>
+          <strong>Redeem Codes</strong>
+          <small>Check the latest active codes and claim rewards before they expire.</small>
+          <span class="tool-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/team-ovr/">
+          <span class="tool-kicker">Build</span>
+          <strong>Team OVR</strong>
+          <small>Test your XI before you lock in a new event card.</small>
+          <span class="tool-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/investment-calculator/">
+          <span class="tool-kicker">Market</span>
+          <strong>Investment Calculator</strong>
+          <small>Work out potential returns when event cards hit the market.</small>
+          <span class="tool-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/rank-up-calculator/">
+          <span class="tool-kicker">Upgrade</span>
+          <strong>Rank Up Calculator</strong>
+          <small>See the cost before you spend your Rank Up Points.</small>
+          <span class="tool-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/training-calculator/">
+          <span class="tool-kicker">Train</span>
+          <strong>Training Calculator</strong>
+          <small>Plan Training Transfer and the bronze-player route.</small>
+          <span class="tool-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/football-centre/">
+          <span class="tool-kicker">Follow</span>
+          <strong>Football Centre</strong>
+          <small>Keep match, player, rewards and FC Mobile news in one place.</small>
+          <span class="tool-arrow">→</span>
+        </a>
       </div>
     </section>
 
@@ -148,9 +287,6 @@ const pageSchema = {
     return (d > 0 ? d + 'd ' : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
   };
 
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const localClock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
-  const utcClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
   const localDate = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
   const utcDate = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
 
@@ -182,13 +318,11 @@ const pageSchema = {
 
   const render = () => {
     const now = Date.now();
-    set('localClock', localClock.format(now));
-    set('utcClock', utcClock.format(now));
-    set('zoneLabel', zone);
 
     const a = Date.parse(cfg.anniversaryStartUtc || '');
     set('anniversaryState', Number.isFinite(a) && now < a ? 'UPCOMING' : 'LIVE NOW');
     set('anniversarySubtitle', cfg.anniversarySubtitle || 'Third Anniversary celebration.');
+    set('anniversaryStateFoot', Number.isFinite(a) && now < a ? 'UPCOMING' : 'LIVE NOW');
     if (Number.isFinite(a)) set('anniversaryStart', localDate.format(a).replace(',', ''));
 
     document.querySelectorAll('.card[data-event-id]').forEach((card) => {
@@ -267,16 +401,18 @@ const pageSchema = {
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(88,224,166,.12),0 0 14px rgba(88,224,166,.5)}
 
 /* header */
-.top{display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end;padding-bottom:36px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:40px;align-items:end;padding-bottom:36px}
 .tag{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:13px;letter-spacing:.02em}
 .top h1{margin-top:18px;font-size:clamp(38px,6vw,76px);line-height:1;letter-spacing:-.045em;font-weight:800}
-.lede{margin-top:18px;max-width:52ch;color:var(--mute);font-size:16px;line-height:1.6}
-.clock{display:grid;gap:0;min-width:230px;border:1px solid var(--line);border-radius:18px;background:rgba(11,23,31,.7);backdrop-filter:blur(8px);overflow:hidden}
-.clock>div{display:grid;gap:6px;padding:16px 20px}
-.clock>div+div{border-top:1px solid var(--line)}
-.clock small{color:var(--mute);font-size:12px}
-.clock strong{font:700 24px/1 var(--num);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.clock em{font-style:normal;color:#5d7f8c;font-size:12px}
+.lede{margin-top:18px;max-width:58ch;color:var(--mute);font-size:16px;line-height:1.6}
+.quick-links{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.quick-links a{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(11,23,31,.62);color:#cce6ef;text-decoration:none;font-size:12px;font-weight:700;transition:border-color .2s ease,background .2s ease,transform .2s ease}
+.quick-links a:hover{border-color:rgba(98,217,255,.45);background:rgba(15,31,42,.9);transform:translateY(-1px)}
+.quick-links span{color:var(--cyan)}
+.status-panel{display:grid;gap:8px;padding:18px 20px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(160deg,rgba(12,29,39,.9),rgba(8,19,26,.84))}
+.status-panel span{display:flex;align-items:center;gap:9px;color:#9cebc7;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.status-panel strong{font-size:20px;letter-spacing:-.03em}
+.status-panel small{color:var(--mute);font-size:12px;line-height:1.45}
 
 /* hero */
 .hero{position:relative;min-height:440px;border-radius:26px;overflow:hidden;border:1px solid rgba(98,217,255,.28);box-shadow:0 40px 100px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.02) inset;isolation:isolate}
@@ -285,22 +421,30 @@ const pageSchema = {
 .hero-body{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:14px;min-height:440px;padding:40px;max-width:640px}
 .hero-logo{width:min(70%,280px);max-height:110px;object-fit:contain;object-position:left;filter:drop-shadow(0 8px 24px rgba(0,0,0,.4))}
 .hero h2{font-size:clamp(30px,4vw,48px);letter-spacing:-.04em;line-height:1}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.hero-cta{display:inline-flex;align-items:center;gap:10px;padding:11px 15px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(7,15,21,.5);backdrop-filter:blur(7px);color:#dbf4fb;text-decoration:none;font-size:13px;font-weight:800;transition:transform .2s ease,border-color .2s ease,background .2s ease}
+.hero-cta:hover{transform:translateY(-2px);border-color:rgba(98,217,255,.5);background:rgba(7,18,25,.78)}
+.hero-cta.primary{border-color:rgba(98,217,255,.48);background:rgba(15,73,93,.62);color:#effcff}
+.hero-cta span{color:var(--cyan);font-size:16px}
 .hero p{color:#b8ced6;font-size:16px;line-height:1.55;max-width:44ch}
 .hero-foot{display:flex;flex-wrap:wrap;align-items:center;gap:14px 32px;margin-top:8px;padding-top:18px;border-top:1px solid rgba(255,255,255,.14);width:100%}
 .hero-foot small{display:block;color:#8ba7b1;font-size:12px}
 .hero-foot strong{display:block;margin-top:5px;font:700 14px/1 var(--num)}
 .hero-foot a{color:var(--cyan);font-size:14px;text-decoration:none;border-bottom:1px solid rgba(98,217,255,.35);padding-bottom:2px}
 .hero-foot a:hover{border-color:var(--cyan)}
-.hero-foot a:focus-visible,.card:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.hero-foot a:focus-visible,.card:focus-visible,.hero-cta:focus-visible,.quick-links a:focus-visible,.timeline-item:focus-visible,.tool-card:focus-visible,.section-link:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
 
 .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.06em;background:rgba(5,12,17,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(6px);color:#d5e8ee}
 .badge.live{color:#9af0c6;border-color:rgba(88,224,166,.4)}
 
 /* sections */
 .block{margin-top:72px}
-.block-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:24px}
+.block-head{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:24px}
 .block-head h2{font-size:clamp(26px,3vw,36px);letter-spacing:-.04em}
 .block-head p{color:var(--mute);font-size:14px}
+.section-note{margin-top:7px;max-width:62ch!important;line-height:1.5}
+.section-link{flex:0 0 auto;color:var(--cyan);font-size:13px;font-weight:800;text-decoration:none;border-bottom:1px solid rgba(98,217,255,.25);padding-bottom:3px}
+.section-link:hover{border-color:var(--cyan)}
 .sync{color:#5bbf98!important}
 
 /* event cards: identical structure and size, own accent colour */
@@ -324,6 +468,27 @@ const pageSchema = {
 .card-count{margin-top:auto;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .card-count small{color:var(--mute);font-size:12px}
 .card-count strong{font:800 26px/1 var(--num);letter-spacing:-.05em;color:var(--ink);font-variant-numeric:tabular-nums}
+.card-cta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;padding-top:15px;border-top:1px solid var(--line);color:#dff7ff;text-decoration:none;font-size:13px;font-weight:800}
+.card-cta span{color:var(--acc);font-size:17px;transition:transform .2s ease}
+.card-cta:hover span{transform:translateX(3px)}
+
+.timeline-block{margin-top:58px}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.timeline-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;min-height:120px;padding:18px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(160deg,#0d1b24,#08131a);color:inherit;text-decoration:none;transition:transform .2s ease,border-color .2s ease,background .2s ease}
+.timeline-item:hover{transform:translateY(-3px);border-color:rgba(98,217,255,.34);background:linear-gradient(160deg,#0f202b,#09151d)}
+.timeline-item.featured{border-color:rgba(98,217,255,.34);background:linear-gradient(160deg,#0d2330,#08151c)}
+.timeline-date{font:800 13px/1 var(--num);color:var(--cyan);white-space:nowrap}
+.timeline-item strong{font-size:14px;letter-spacing:-.01em}
+.timeline-item p{margin-top:7px!important;color:var(--mute);font-size:12px;line-height:1.45}
+.timeline-arrow{color:#6e9aa9;font-size:17px;line-height:1}
+.tools-block{margin-top:64px;padding-top:6px}
+.tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.tool-card{position:relative;display:flex;flex-direction:column;min-height:150px;padding:20px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(160deg,#0d1b24,#08131a);color:inherit;text-decoration:none;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.tool-card:hover{transform:translateY(-3px);border-color:rgba(98,217,255,.35);box-shadow:0 24px 48px rgba(0,0,0,.24)}
+.tool-kicker{color:#75a5b3;font:800 10px/1 var(--num);letter-spacing:.12em;text-transform:uppercase}
+.tool-card strong{margin-top:9px;font-size:18px;letter-spacing:-.025em}
+.tool-card small{margin-top:7px;color:var(--mute);font-size:12px;line-height:1.5;max-width:36ch}
+.tool-arrow{margin-top:auto;padding-top:14px;color:var(--cyan);font-size:17px}
 
 /* resets */
 .resets{display:grid;grid-template-columns:1fr 1fr;gap:20px}
@@ -339,22 +504,27 @@ const pageSchema = {
 .reset dd{margin-top:6px;font:600 13px/1.4 var(--num);color:#d6eaf0}
 
 @media (max-width:980px){
+  .top{grid-template-columns:1fr}
+  .status-panel{max-width:360px}
   .cards{grid-template-columns:1fr 1fr}
   .cards .card:last-child{grid-column:1/-1}
   .cards .card:last-child .card-media{aspect-ratio:21/9}
+  .timeline{grid-template-columns:1fr 1fr}
+  .tool-grid{grid-template-columns:1fr 1fr}
 }
 @media (max-width:760px){
   .hub{padding:32px 16px 72px}
   .top{grid-template-columns:1fr;gap:24px}
-  .clock{grid-template-columns:1fr 1fr;min-width:0}
-  .clock>div+div{border-top:0;border-left:1px solid var(--line)}
+  .status-panel{max-width:none}
   .hero,.hero-body{min-height:400px}
   .hero-body{padding:26px 22px}
   .hero-shade{background:linear-gradient(0deg,rgba(4,10,15,.95) 0%,rgba(4,10,15,.55) 60%,rgba(4,10,15,.2) 100%)}
-  .cards,.resets{grid-template-columns:1fr}
+  .cards,.resets,.timeline,.tool-grid{grid-template-columns:1fr}
   .cards .card:last-child .card-media{aspect-ratio:16/10}
   .block{margin-top:56px}
   .reset dl{grid-template-columns:1fr}
+  .block-head{align-items:flex-start;flex-direction:column}
+  .section-link{margin-top:2px}
 }
 @media (prefers-reduced-motion:reduce){
   .card,.card-media img{transition:none}
