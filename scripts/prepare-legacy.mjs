@@ -1,9 +1,14 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.cwd();
 const publicDir = path.join(root, 'public');
+const distDir = path.join(root, 'dist');
 const outDir = path.join(publicDir, '_legacy');
+
+await mkdir(path.join(publicDir, 'assets'), { recursive: true });
+await cp(path.join(root, 'assets'), path.join(publicDir, 'assets'), { recursive: true, force: true });
+await mkdir(distDir, { recursive: true });
 const pages = [
   ['football-centre', 'legacy-football-centre']
 ];

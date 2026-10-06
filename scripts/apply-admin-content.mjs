@@ -47,8 +47,12 @@ for (const [from, to] of staticReplacements) source = source.replaceAll(from, to
 
 const runtimeStart = "(()=>{const root=document.querySelector('[data-fcx]');if(!root)return;const KEY='tanzimfc_football_centre_v13',OLD_KEYS=['tanzimfc_football_centre_v12','tanzimfc_football_centre_v11'];const total=Number(root.dataset.totalShowdowns)||8;const base=()=>({version:13,cycleId:'2026-09',startingBalance:0,matches:{},ledger:[],claims:{}});";
 const runtimeReplacement = "(()=>{const root=document.querySelector('[data-fcx]');if(!root)return;const cycleId=root.dataset.cycleId||'2026-09';const scorePlayed=Number(root.dataset.scorePlayed)||80;const scoreWorld=Number(root.dataset.scoreWorld)||20;const scoreCorrect=Number(root.dataset.scoreCorrect)||400;const KEY='tanzimfc_football_centre_v13:'+cycleId,OLD_KEYS=['tanzimfc_football_centre_v12','tanzimfc_football_centre_v11'];const total=Number(root.dataset.totalShowdowns)||8;const base=()=>({version:13,cycleId,startingBalance:Number(root.dataset.startingBalance)||0,matches:{},ledger:[],claims:{}});";
-if (!source.includes(runtimeStart)) throw new Error('Could not locate the Football Centre runtime configuration. Build stopped.');
-source = source.replace(runtimeStart, runtimeReplacement);
+if (!source.includes(runtimeStart) && !source.includes(runtimeReplacement)) {
+  throw new Error('Could not locate the Football Centre runtime configuration. Build stopped.');
+}
+if (source.includes(runtimeStart)) {
+  source = source.replace(runtimeStart, runtimeReplacement);
+}
 source = source.replaceAll('const points=80+(m.worldClass?20:0)+(m.prediction===m.result?400:0);', 'const points=scorePlayed+(m.worldClass?scoreWorld:0)+(m.prediction===m.result?scoreCorrect:0);');
 source = source.replaceAll('Correct prediction. +80 base +400 correct', 'Correct prediction. +${scorePlayed} base +${scoreCorrect} correct');
 source = source.replaceAll('Wrong prediction. +80 base', 'Wrong prediction. +${scorePlayed} base');

@@ -1,0 +1,410 @@
+---
+import { FOOTBALL_CENTRE_CONTENT as FC } from '../data/footballCentre.js';
+import { REDEEM_CODES } from '../data/redeemCodes.js';
+
+const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
+
+// Skip on homepage and /events (which already feature full-page ecosystem hubs) and admin/creator/legal routes
+const shouldHide =
+  pathname === '/' ||
+  pathname === '/events' ||
+  pathname.startsWith('/admin') ||
+  pathname.startsWith('/creator') ||
+  pathname.startsWith('/legal');
+
+const buildTime = Date.now();
+const activeCode = REDEEM_CODES.find(
+  (c) => c.status === 'active' && (!c.expiryDate || Date.parse(c.expiryDate + 'T23:59:59Z') > buildTime)
+) ?? REDEEM_CODES[0];
+
+const [resetH, resetM] = String(FC.schedule?.dailyResetUtc || '01:00').split(':').map((n) => Number(n) || 0);
+const resetLabel = `${String(resetH).padStart(2, '0')}:${String(resetM).padStart(2, '0')} UTC`;
+
+const ALL_HUBS = [
+  {
+    href: '/events',
+    tag: 'Live Schedule',
+    title: 'Events & Reset Hub',
+    desc: 'Countdowns for Daily Reset, Division Rivals, 3rd Anniversary and October event drops.',
+    accent: '#4CC9FF',
+    group: 'live',
+  },
+  {
+    href: '/redeem-codes',
+    tag: activeCode ? `Code: ${activeCode.code}` : 'Rewards',
+    title: 'Redeem Codes',
+    desc: 'Copy working FC Mobile codes in one tap and jump straight to official EA redemption.',
+    accent: '#58E0A6',
+    group: 'live',
+  },
+  {
+    href: '/football-centre',
+    tag: '8 Showdowns',
+    title: 'Football Centre',
+    desc: 'Track weekly Showdown picks, match outcomes and 4,000-point player reward progress.',
+    accent: '#58E0A6',
+    group: 'live',
+  },
+  {
+    href: '/a-nations-story',
+    tag: '5 Nations · 45 Days',
+    title: "A Nation's Story Answers",
+    desc: 'Instant question search for Japan, Netherlands, Mexico, France and Brazil trivia.',
+    accent: '#FFD36E',
+    group: 'live',
+  },
+  {
+    href: '/fc-mobile-27',
+    tag: 'Season 27',
+    title: 'FC Mobile 27 Update Hub',
+    desc: 'Game Plans, Gauntlet Mode, PlayStyles, patch breakdown and official Android listing.',
+    accent: '#4CC9FF',
+    group: 'live',
+  },
+  {
+    href: '/team-ovr',
+    tag: 'Squad Rating',
+    title: 'Team OVR Calculator',
+    desc: 'Find the exact Base OVR or Rank step needed to hit your next Team OVR threshold.',
+    accent: '#4CC9FF',
+    group: 'calc',
+  },
+  {
+    href: '/rank-up-calculator',
+    tag: 'Base → Orange',
+    title: 'Rank Up Calculator',
+    desc: 'Check Rank Up Point requirements and plan your 1,333 maintenance gift points.',
+    accent: '#4CC9FF',
+    group: 'calc',
+  },
+  {
+    href: '/training-calculator',
+    tag: 'Levels 1 → 30',
+    title: 'Training Calculator',
+    desc: 'Calculate Training XP, fodder counts and coin costs before upgrading cards.',
+    accent: '#4CC9FF',
+    group: 'calc',
+  },
+  {
+    href: '/investment-calculator',
+    tag: '10% Market Tax',
+    title: 'Investment Calculator',
+    desc: 'Check net sale value, break-even price and ROI before buying or selling on the market.',
+    accent: '#FFD36E',
+    group: 'calc',
+  },
+  {
+    href: '/gauntlet-planner',
+    tag: 'Squad Rotation',
+    title: 'Gauntlet Mode Planner',
+    desc: 'Manage player appearance limits and build lineups across escalating Gauntlet rounds.',
+    accent: '#A99BFF',
+    group: 'calc',
+  },
+  {
+    href: '/blog',
+    tag: 'Guides & Leaks',
+    title: 'Editorial & Event Guides',
+    desc: 'Read deep dives on Anniversary Weeks 1–4, Unbreakable, Libertadores and Stellar Libra.',
+    accent: '#67DBFF',
+    group: 'editorial',
+  },
+];
+
+const isCurrentRoute = (href) => pathname === href || pathname.startsWith(href + '/');
+
+// Prioritize complementary tools/hubs depending on what section the visitor is currently viewing
+const isCalcPage = ['/team-ovr', '/rank-up-calculator', '/training-calculator', '/investment-calculator', '/gauntlet-planner'].some(isCurrentRoute);
+const isBlogPage = pathname.startsWith('/blog');
+
+const ordered = ALL_HUBS.filter((item) => !isCurrentRoute(item.href)).sort((a, b) => {
+  if (isCalcPage) {
+    // On a calculator page, show related calculators + Events & Redeem Codes
+    const scoreA = a.href === '/events' || a.href === '/redeem-codes' ? 3 : a.group === 'calc' ? 2 : 1;
+    const scoreB = b.href === '/events' || b.href === '/redeem-codes' ? 3 : b.group === 'calc' ? 2 : 1;
+    return scoreB - scoreA;
+  }
+  if (isBlogPage) {
+    // On an article page, surface Events, Redeem Codes, Team OVR, Football Centre first
+    const priority = ['/events', '/redeem-codes', '/team-ovr', '/football-centre'];
+    const idxA = priority.indexOf(a.href);
+    const idxB = priority.indexOf(b.href);
+    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+  }
+  // On live pages (Redeem Codes, Football Centre, A Nation's Story, FC Mobile 27), surface Events + other live hubs + Team OVR
+  const priority = ['/events', '/redeem-codes', '/football-centre', '/a-nations-story', '/team-ovr', '/rank-up-calculator'];
+  const idxA = priority.indexOf(a.href);
+  const idxB = priority.indexOf(b.href);
+  return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+});
+
+const recommended = ordered.slice(0, 4);
+const quickLinks = ALL_HUBS.filter((item) => !isCurrentRoute(item.href));
+---
+
+{!shouldHide && (
+  <aside class="fcmt-eco" aria-label="Connected tools and live hubs">
+    <div class="fcmt-eco__wrap">
+      <!-- Live status bar -->
+      <div class="fcmt-eco__pulse">
+        <a class="fcmt-eco__status" href="/events">
+          <span class="fcmt-eco__dot" aria-hidden="true"></span>
+          <span><b>Live Hub</b> · 3rd Anniversary &amp; October Drops</span>
+        </a>
+        <a class="fcmt-eco__clock" href="/events" title="Open Events & Reset countdowns">
+          <span>Next daily reset ({resetLabel}):</span>
+          <strong data-eco-reset-cd>--:--:--</strong>
+        </a>
+        {activeCode && (
+          <a class="fcmt-eco__code" href="/redeem-codes">
+            <span>Active code:</span>
+            <b>{activeCode.code}</b>
+            <em>Redeem →</em>
+          </a>
+        )}
+      </div>
+
+      <div class="fcmt-eco__head">
+        <div>
+          <p class="fcmt-eco__kicker">Connected on FCMOBILETOOLS</p>
+          <h2>Continue with a companion tool or live tracker</h2>
+        </div>
+        <a class="fcmt-eco__all" href="/events">Open Events &amp; Reset Hub →</a>
+      </div>
+
+      <div class="fcmt-eco__grid">
+        {recommended.map((item) => (
+          <a class="fcmt-eco__card" href={item.href} style={`--eco-acc:${item.accent}`}>
+            <span class="fcmt-eco__tag">{item.tag}</span>
+            <h3>{item.title}</h3>
+            <p>{item.desc}</p>
+            <span class="fcmt-eco__go">Open tool <span>↗</span></span>
+          </a>
+        ))}
+      </div>
+
+      <nav class="fcmt-eco__nav" aria-label="All FCMOBILETOOLS sections">
+        <span>Jump to:</span>
+        {quickLinks.map((item) => (
+          <a href={item.href}>{item.title}</a>
+        ))}
+      </nav>
+    </div>
+  </aside>
+)}
+
+<script define:vars={{ resetH, resetM }}>
+(() => {
+  const el = document.querySelector('[data-eco-reset-cd]');
+  if (!el) return;
+  const DAY = 86400000;
+  const pad = (n) => String(Math.max(0, Math.floor(n))).padStart(2, '0');
+  const tick = () => {
+    const now = Date.now();
+    const d = new Date(now);
+    let target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), resetH, resetM);
+    if (target <= now) target += DAY;
+    const sec = Math.max(0, Math.floor((target - now) / 1000));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    el.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  };
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+
+<style>
+.fcmt-eco {
+  margin-top: 64px;
+  padding: 0 20px;
+}
+.fcmt-eco__wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px;
+  border-radius: 24px;
+  border: 1px solid rgba(98, 217, 255, 0.16);
+  background:
+    radial-gradient(600px 260px at 0% 0%, rgba(76, 201, 255, 0.09), transparent 65%),
+    linear-gradient(165deg, #0b1722, #071018);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+}
+.fcmt-eco__pulse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12.5px;
+}
+.fcmt-eco__status,
+.fcmt-eco__clock,
+.fcmt-eco__code {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #9bb4c2;
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+.fcmt-eco__status:hover,
+.fcmt-eco__clock:hover,
+.fcmt-eco__code:hover {
+  color: #f1fbff;
+}
+.fcmt-eco__status b {
+  color: #f1fbff;
+}
+.fcmt-eco__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #58e0a6;
+  box-shadow: 0 0 0 4px rgba(88, 224, 166, 0.14), 0 0 12px rgba(88, 224, 166, 0.6);
+}
+.fcmt-eco__clock strong {
+  color: #62d9ff;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.fcmt-eco__code b {
+  color: #58e0a6;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  letter-spacing: 0.04em;
+}
+.fcmt-eco__code em {
+  font-style: normal;
+  color: #62d9ff;
+  font-weight: 600;
+}
+.fcmt-eco__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.fcmt-eco__kicker {
+  margin: 0 0 6px;
+  color: #62d9ff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.fcmt-eco__head h2 {
+  margin: 0;
+  color: #f1fbff;
+  font-family: var(--font-display, 'Space Grotesk', system-ui, sans-serif);
+  font-size: clamp(20px, 2.6vw, 28px);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.fcmt-eco__all {
+  color: #62d9ff;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.fcmt-eco__all:hover {
+  text-decoration: underline;
+}
+.fcmt-eco__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.fcmt-eco__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(160deg, rgba(16, 31, 44, 0.85), rgba(9, 18, 26, 0.92));
+  color: #f1fbff;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.fcmt-eco__card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--eco-acc, #62d9ff) 55%, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+.fcmt-eco__tag {
+  color: var(--eco-acc, #62d9ff);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.fcmt-eco__card h3 {
+  margin: 0;
+  font-family: var(--font-display, 'Space Grotesk', system-ui, sans-serif);
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.fcmt-eco__card p {
+  margin: 0;
+  color: #8ba3b0;
+  font-size: 13px;
+  line-height: 1.55;
+  flex: 1;
+}
+.fcmt-eco__go {
+  margin-top: 6px;
+  color: var(--eco-acc, #62d9ff);
+  font-size: 12.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.fcmt-eco__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 12.5px;
+}
+.fcmt-eco__nav > span {
+  color: #6b8594;
+  font-weight: 600;
+}
+.fcmt-eco__nav a {
+  color: #a5bdc9;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+.fcmt-eco__nav a:hover {
+  color: #62d9ff;
+}
+@media (max-width: 980px) {
+  .fcmt-eco__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .fcmt-eco {
+    padding: 0 14px;
+    margin-top: 48px;
+  }
+  .fcmt-eco__wrap {
+    padding: 20px 16px;
+  }
+  .fcmt-eco__grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

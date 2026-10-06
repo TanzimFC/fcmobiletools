@@ -17,7 +17,14 @@ const nationRedirects = Object.fromEntries(
 export default defineConfig({
   site: 'https://fcmobiletools.online',
   output: 'static',
+  server: {
+    port: 3000,
+    host: true
+  },
   adapter: cloudflare({
+    platformProxy: {
+      enabled: false
+    },
     workerEntryPoint: {
       path: 'src/worker.mjs',
       namedExports: []

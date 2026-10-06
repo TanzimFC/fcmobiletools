@@ -30,13 +30,17 @@ export const FACTS = {
 
 /* ----------------------------------------------------------------- tools */
 export const TOOLS = {
-  '/redeem-codes':        { title: 'Redeem Codes',            label: 'Live tool',  description: 'Check current FC Mobile codes and go straight to redemption.' },
-  '/team-ovr':            { title: 'Team OVR Calculator',     label: 'Calculator', description: 'Work out your squad OVR before you change the lineup.' },
-  '/training-calculator': { title: 'Training Calculator',     label: 'Calculator', description: 'Plan XP, fodder, levels and excess XP before spending resources.' },
-  '/rank-up-calculator':  { title: 'Rank Up Calculator',      label: 'Calculator', description: 'Compare Rank Up Point routes and see the effect before you commit.' },
-  '/football-centre':     { title: 'Football Centre',         label: 'Live tool',  description: 'Track matches, points, rewards and event resources in one place.' },
-  '/gauntlet-planner':    { title: 'Gauntlet Mode Planner',   label: 'Planner',    description: 'Plan match-by-match rotations and track player availability.' },
-  '/a-nations-story':     { title: "A Nation's Story",        label: 'Event tool', description: 'Find event answers without digging through the full quest flow.' }
+  '/events':                { title: 'Events & Reset Hub',      label: 'Live hub',   description: 'Live event countdowns, daily reset clock, Division Rivals timer and October schedule.' },
+  '/redeem-codes':          { title: 'Redeem Codes',            label: 'Live tool',  description: 'Check current FC Mobile codes and go straight to redemption.' },
+  '/fc-mobile-27':          { title: 'FC Mobile 27 Update',     label: 'Season 27',  description: 'Season 27 update guide, Game Plans, Gauntlet Mode, PlayStyles and official install.' },
+  '/team-ovr':              { title: 'Team OVR Calculator',     label: 'Calculator', description: 'Work out your squad OVR before you change the lineup.' },
+  '/training-calculator':   { title: 'Training Calculator',     label: 'Calculator', description: 'Plan XP, fodder, levels and excess XP before spending resources.' },
+  '/rank-up-calculator':    { title: 'Rank Up Calculator',      label: 'Calculator', description: 'Compare Rank Up Point routes and see the effect before you commit.' },
+  '/investment-calculator': { title: 'Investment Calculator',   label: 'Calculator', description: 'Calculate after-tax market profit, ROI and break-even sell prices.' },
+  '/football-centre':       { title: 'Football Centre',         label: 'Live tool',  description: 'Track matches, points, rewards and event resources in one place.' },
+  '/gauntlet-planner':      { title: 'Gauntlet Mode Planner',   label: 'Planner',    description: 'Plan match-by-match rotations and track player availability.' },
+  '/a-nations-story':       { title: "A Nation's Story",        label: 'Event tool', description: 'Find event answers without digging through the full quest flow.' },
+  '/tournaments':           { title: 'Tournaments',             label: 'Brackets',   description: 'Official FC Mobile tournament brackets, match results and progress.' }
 };
 export function resolveTools(list = []) {
   return list.map((value) => {
