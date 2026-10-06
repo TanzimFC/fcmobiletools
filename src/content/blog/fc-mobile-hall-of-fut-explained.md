@@ -150,6 +150,16 @@ Walcott appearing there is not EA secretly promoting him to Icon status.
 
 He is a **Hall of FUT player** receiving a special event card.
 
+## What about Chemistry?
+
+On the console/PC version, EA has already answered one practical question: **Hall of FUT Items follow the same Chemistry rules as Heroes**.
+
+That does not turn Hall of FUT into Heroes. The two categories still have different reasons for existing. It simply means EA chose to make Hall of FUT fit into the squad-building system in a way that is familiar to Hero owners.
+
+That is worth watching on FC Mobile.
+
+If the mobile version follows the same model, Hall of FUT cards could have a Hero-like squad-building role while still keeping their own rarity and event identity. But there is no official FC Mobile Chemistry rule for Hall of FUT to copy yet.
+
 ## How Hall of FUT works on console/PC
 
 This is another part that matters when we try to predict FC Mobile.
