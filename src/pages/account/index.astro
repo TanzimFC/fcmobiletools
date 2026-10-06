@@ -599,7 +599,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         'Account created! Check your inbox to verify your email address before using missions, achievements, and rewards.',
         false
       );
-      signupForm.reset();
+      const passwordInput = document.getElementById('signupPassword');
+      const consentInput = signupForm.querySelector('input[name="agree"]');
+      if (passwordInput) passwordInput.value = '';
+      if (consentInput) consentInput.checked = false;
+      if (pwMeterBar) pwMeterBar.style.width = '0%';
+      if (pwHint) {
+        pwHint.textContent = 'Use at least 10 characters with a mix of letters and numbers.';
+        pwHint.className = 'field-hint';
+      }
+      // Keep the verified email address in the field so a user who did not receive
+      // the first message can immediately press “Resend verification”.
       updateLivePreview();
     } catch (error) {
       showMessage(
@@ -693,6 +703,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       await accountAuth.auth.signOut();
       showMessage(recoveryMessage, 'Password updated successfully. You can now sign in with your new password.', false);
       recoveryForm.reset();
+      recoveryActive = false;
+      history.replaceState(null, document.title, location.pathname + location.search);
       setTimeout(() => showTab('login'), 900);
     } catch (error) {
       showMessage(recoveryMessage, friendlyAuthError(error, 'Unable to update your password. Request a fresh reset link and try again.'), true);
