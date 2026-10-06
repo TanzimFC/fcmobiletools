@@ -121,6 +121,11 @@ async function adminAdjustXp(env, id, input) {
   if (!reason) throw new Error('A reason is required.');
   const key = ensureUuid(input.idempotencyKey || crypto.randomUUID());
   const actor = await systemAccountId(env);
+  const existing = await rest(env, 'xp_transactions?select=id,amount&account_id=eq.' + encodeURIComponent(id) + '&idempotency_key=eq.' + encodeURIComponent(key) + '&limit=1');
+  if(existing?.[0]){
+    if(Number(existing[0].amount) !== amount) throw new Error('XP idempotency key already used with a different amount.');
+    return { ok: true, replayed: true };
+  }
   await rest(env, 'xp_transactions', {
     method: 'POST',
     headers: { Prefer: 'return=minimal' },
@@ -159,6 +164,11 @@ async function adminAdjustTokens(env, id, input) {
   const expiresAt = input.expiresAt ? new Date(String(input.expiresAt)) : null;
   if (input.expiresAt && Number.isNaN(expiresAt.getTime())) throw new Error('Invalid token expiration.');
   const actor = await systemAccountId(env);
+  const existing = await rest(env, 'reward_ledger?select=id,amount&account_id=eq.' + encodeURIComponent(id) + '&idempotency_key=eq.' + encodeURIComponent(key) + '&limit=1');
+  if(existing?.[0]){
+    if(Number(existing[0].amount) !== amount) throw new Error('Token idempotency key already used with a different amount.');
+    return { ok: true, replayed: true };
+  }
   await rest(env, 'reward_ledger', {
     method: 'POST',
     headers: { Prefer: 'return=minimal' },
