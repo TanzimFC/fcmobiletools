@@ -46,7 +46,7 @@ It is called **Hall of FUT**.
 
 And now it is showing up in the FC Mobile leak cycle.
 
-That is what makes the current **Unbreakable** leak interesting. MadridistaaFC reported **Theo Walcott, Antonio Valencia and Alessandro Florenzi** in the Unbreakable Draft pools, alongside **Javier Zanetti and Ruud van Nistelrooy** as the 122 OVR headline cards. citeturn212671search3
+That is what makes the current **Unbreakable** leak interesting. MadridistaaFC reported **Theo Walcott, Antonio Valencia and Alessandro Florenzi** in the Unbreakable Draft pools, alongside **Javier Zanetti and Ruud van Nistelrooy** as the 122 OVR headline cards.
 
 The obvious question came straight away:
 
@@ -74,7 +74,7 @@ EA's first Hall of FUT class was:
 - **Eljero Elia**
 - **Giovani dos Santos**
 
-EA's own announcement says these players may not be Icons, but they created memories that became part of FUT culture. citeturn186672search0
+EA's own announcement says these players may not be Icons, but they created memories that became part of FUT culture.
 
 That is the whole point.
 
@@ -86,7 +86,7 @@ The easiest way to understand the three categories is to look at **why EA chose 
 
 Icons are built around **real football legacy**.
 
-These are the players associated with sustained world-class careers and major historical achievements. EA's FC 27 launch notes describe Icons around trophy cabinets, world-class excellence and players who helped define football history. citeturn926763search1
+These are the players associated with sustained world-class careers and major historical achievements. EA's FC 27 launch notes describe Icons around trophy cabinets, world-class excellence and players who helped define football history.
 
 Pelé, Zidane, Ronaldo Nazário and other all-time greats fit that idea.
 
@@ -94,7 +94,7 @@ Pelé, Zidane, Ronaldo Nazário and other all-time greats fit that idea.
 
 Heroes are also rooted in real football, but the story is usually more specific.
 
-A memorable club spell, an unforgettable season, a legendary league run or a player who became a fan favourite in a particular competition can put someone into the Hero conversation. EA describes Heroes around unforgettable moments, celebrated club or league spells and lasting fan impact. citeturn926763search1
+A memorable club spell, an unforgettable season, a legendary league run or a player who became a fan favourite in a particular competition can put someone into the Hero conversation. EA describes Heroes around unforgettable moments, celebrated club or league spells and lasting fan impact.
 
 ### Hall of FUT
 
@@ -104,7 +104,7 @@ Hall of FUT uses a different test:
 
 That is why a player can be huge inside the game without having the real-world résumé that would normally make him an Icon.
 
-EA describes Hall of FUT as a new tier celebrating players whose impact in EA SPORTS FC and FUT made them unforgettable through things such as **perfect links, standout performances or memories created in squads**. citeturn926763search1
+EA describes Hall of FUT as a new tier celebrating players whose impact in EA SPORTS FC and FUT made them unforgettable through things such as **perfect links, standout performances or memories created in squads**.
 
 So Hall of FUT is not "cheap Icons."
 
@@ -122,7 +122,7 @@ The first class makes much more sense when you stop judging them by football tro
 
 **Fellaini** became the classic physical midfield and aerial threat.
 
-EA's own Hall of FUT write-up leans heavily into these old card identities and memories. citeturn186672search0
+EA's own Hall of FUT write-up leans heavily into these old card identities and memories.
 
 That is important because the category is deliberately about **the player item history**, not a second version of the Ballon d'Or.
 
@@ -142,7 +142,7 @@ By September, the FC 27 database had expanded to a much wider group, including n
 - **Victor Ibarbo**
 - **Loïc Rémy**
 
-Current FC 27 Hall of FUT tracking lists the category as a separate historical Player Item type, with more players added beyond the original class. citeturn212671search0
+Current FC 27 Hall of FUT tracking lists the category as a separate historical Player Item type, with more players added beyond the original class.
 
 That makes the Unbreakable leak much easier to understand.
 
@@ -156,11 +156,11 @@ This is another part that matters when we try to predict FC Mobile.
 
 EA tied the new category directly to the **FUT Gallery**.
 
-At launch, **Base Hall of FUT Player Items** were made available through the **Gallery Token Store**. Players earn Gallery Tokens by completing and grading Gallery Sets, then spend those Tokens in the Token Store. EA also said the Token Store would change during the season. citeturn926763search1turn926763search5
+At launch, **Base Hall of FUT Player Items** were made available through the **Gallery Token Store**. Players earn Gallery Tokens by completing and grading Gallery Sets, then spend those Tokens in the Token Store. EA also said the Token Store would change during the season.
 
 There is another layer too.
 
-EA planned **special versions** of Hall of FUT players through Campaigns during the year, separate from the Base items. citeturn926763search0
+EA planned **special versions** of Hall of FUT players through Campaigns during the year, separate from the Base items.
 
 So on console the structure is basically:
 
@@ -174,7 +174,7 @@ That is a much bigger system than simply adding a new logo to a card.
 
 This is another detail that gets lost when people hear "new legend category."
 
-The first FC 27 Hall of FUT base cards were not released as giant end-game cards. The initial group was around **84-85 OVR**, with their value coming from the card's identity, stats and PlayStyle rather than raw OVR. citeturn212671search8turn186672search3
+The first FC 27 Hall of FUT base cards were not released as giant end-game cards. The initial group was around **84-85 OVR**, with their value coming from the card's identity, stats and PlayStyle rather than raw OVR.
 
 That fits the idea perfectly.
 
@@ -186,7 +186,7 @@ They were saying:
 
 "These players mattered to FUT, so they deserve their own historical Player Item category."
 
-Special versions can then push those same names into stronger event content later. EA has explicitly separated the Base items from future Campaign versions. citeturn926763search0turn926763search1
+Special versions can then push those same names into stronger event content later. EA has explicitly separated the Base items from future Campaign versions.
 
 ## So how could this come to FC Mobile?
 
@@ -256,7 +256,7 @@ This is less clean from a database point of view, but FC Mobile already uses lot
 
 This is probably the most interesting possibility.
 
-FC Mobile has a long history of using **Icons and Heroes as distinct content pillars**. When FC Mobile launched in 2023, EA was already using Icon and Hero items in early content. citeturn830521reddit20turn830521search0
+FC Mobile has a long history of using **Icons and Heroes as distinct content pillars**. When FC Mobile launched in 2023, EA was already using Icon and Hero items in early content.
 
 Later events continued building around those historical player categories.
 
@@ -274,7 +274,7 @@ This is the comparison I would make, but with one warning.
 
 **The role could be similar. The reason for the category is different.**
 
-Early FC Mobile made Icons and Heroes very visible parts of the new post-FIFA-Mobile era. The launch period and early events used them as recognizable historical-player rewards. citeturn830521reddit20turn830521search0
+Early FC Mobile made Icons and Heroes very visible parts of the new post-FIFA-Mobile era. The launch period and early events used them as recognizable historical-player rewards.
 
 Hall of FUT could end up filling a similar **content role** for FC Mobile:
 
@@ -360,7 +360,7 @@ or even
 
 **a dedicated Hall of FUT event later in FC Mobile 27.**
 
-The last option would be especially interesting because the console version already separates Base Hall of FUT items from stronger Campaign versions. citeturn926763search0
+The last option would be especially interesting because the console version already separates Base Hall of FUT items from stronger Campaign versions.
 
 FC Mobile could adapt that model rather than copy it exactly.
 
@@ -376,15 +376,15 @@ A few things are worth clearing up.
 
 **It is not a replacement for Icons.**
 
-EA still uses Icons for the greatest real-world football careers. citeturn926763search1
+EA still uses Icons for the greatest real-world football careers.
 
 **It is not the same as Heroes.**
 
-Heroes remain their own historical category with a different real-football focus. citeturn926763search1
+Heroes remain their own historical category with a different real-football focus.
 
 **It is not simply "players with good old cards."**
 
-The category is officially built around the memories and impact those players had in Ultimate Team itself. citeturn186672search0
+The category is officially built around the memories and impact those players had in Ultimate Team itself.
 
 And it is **not confirmed that every Hall of FUT player on console will arrive in FC Mobile**.
 
@@ -440,9 +440,9 @@ Those are the questions worth watching.
 
 For now, there is a clear line between fact and prediction.
 
-**Confirmed:** Hall of FUT is a real EA SPORTS FC 27 Player Item category built around FUT history and "FUT Fame." citeturn186672search0turn926763search1
+**Confirmed:** Hall of FUT is a real EA SPORTS FC 27 Player Item category built around FUT history and "FUT Fame."
 
-**Reported for FC Mobile:** Walcott, Valencia and Florenzi appearing in the Unbreakable Drafts with Hall of FUT identities. citeturn212671search3
+**Reported for FC Mobile:** Walcott, Valencia and Florenzi appearing in the Unbreakable Drafts with Hall of FUT identities.
 
 **Prediction:** FC Mobile could use Hall of FUT as a permanent player category, an event pool, or eventually a dedicated event series.
 
