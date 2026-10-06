@@ -302,8 +302,17 @@ import AccountNav from '../../components/AccountNav.astro';
         </article>
       </section>
 
+      <div class="dash-section-head acc-anim acc-anim-d2">
+        <div>
+          <span class="sec-kicker"><i class="kicker-dot"></i> ACCOUNT WORKSPACE</span>
+          <h2>Progress &amp; activity</h2>
+          <p>Keep an eye on your verified progression, token history and community activity from one place.</p>
+        </div>
+        <a class="btn-primary" href="/missions/">Open Missions →</a>
+      </div>
+
       <!-- MAIN WORKSPACE GRID -->
-      <section class="workspace-grid acc-anim acc-anim-d2">
+      <section class="workspace-grid acc-anim acc-anim-d3">
         <!-- Left: Tabbed Activity, XP Ledger, Token Ledger & Community Submission -->
         <div class="ledger-panel">
           <div class="ledger-tabs" role="tablist" aria-label="Account history and contributions">
@@ -423,8 +432,8 @@ import AccountNav from '../../components/AccountNav.astro';
         <!-- Right Sidebar: Ecosystem Modules & Privacy Guarantee -->
         <aside class="side-stack">
           <section class="side-card">
-            <span class="sec-kicker">ACCOUNT MODULES</span>
-            <h2>Explore Your Hub</h2>
+            <span class="sec-kicker">QUICK ACCESS</span>
+            <h2>Your Account Hub</h2>
             <div class="module-links">
               <a href="/missions/">
                 <div>
@@ -468,7 +477,7 @@ import AccountNav from '../../components/AccountNav.astro';
             <span class="sec-kicker">PRIVACY BOUNDARY</span>
             <h3>Protected by Design</h3>
             <p>
-              Your email address, authentication credentials, internal IDs, security logs and reward delivery details are strictly private and never appear on public profiles or leaderboards.
+              Email, authentication details, internal IDs and reward delivery data stay private. Public profiles only expose the fields you choose to show.
             </p>
             <a class="privacy-link" href="/settings/">Manage public profile fields →</a>
           </section>
@@ -1067,6 +1076,29 @@ import AccountNav from '../../components/AccountNav.astro';
   }
 
   /* Workspace Grid */
+  .dash-section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    margin: 24px 0 12px;
+    padding: 0 2px;
+  }
+  .dash-section-head h2 {
+    margin: 7px 0 4px;
+    color: #f5f8fb;
+    font: 700 24px/1.08 var(--font-display);
+    letter-spacing: -0.035em;
+  }
+  .dash-section-head p {
+    margin: 0;
+    color: #8ea4b5;
+    font: 500 13px/1.5 var(--font-body);
+  }
+  .dash-section-head .btn-primary {
+    flex: 0 0 auto;
+  }
+
   .workspace-grid {
     display: grid;
     grid-template-columns: 1.38fr 0.62fr;
@@ -1263,7 +1295,9 @@ import AccountNav from '../../components/AccountNav.astro';
   /* Right Side Stack */
   .side-stack {
     display: grid;
-    gap: 16px;
+    gap: 12px;
+    position: sticky;
+    top: 18px;
   }
   .side-card h2,
   .side-card h3 {
@@ -1322,6 +1356,14 @@ import AccountNav from '../../components/AccountNav.astro';
   }
 
   @media (max-width: 960px) {
+    .dash-section-head {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .side-stack {
+      position: static;
+    }
     .guest-card,
     .workspace-grid {
       grid-template-columns: 1fr;
@@ -1346,6 +1388,7 @@ import AccountNav from '../../components/AccountNav.astro';
     .hero-card,
     .ledger-panel,
     .side-card {
+      
       padding: 20px 16px;
       border-radius: 20px;
     }
