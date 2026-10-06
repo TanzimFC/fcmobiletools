@@ -30,7 +30,8 @@ readingTime: 5
 seoTitle: "FC Mobile Unbreakable 2026: 122 OVR Zanetti & Van Nistelrooy Drafts"
 seoDescription: "FC Mobile Unbreakable is expected October 15 with 122 OVR Zanetti and Van Nistelrooy. See the reported Draft A and Draft B pools."
 canonicalUrl: ""
-sources: []factStatus: "community-reported"
+sources: []
+factStatus: "community-reported"
 lastReviewed: "2026-10-06"
 ---
 
