@@ -30,12 +30,7 @@ readingTime: 20
 seoTitle: "FC Mobile 27: Everything We Know So Far"
 seoDescription: "Everything confirmed for FC Mobile 27 as of September 23, 2026, including Game Plans, Gauntlet Mode, new PlayStyles, no season reset, the Bernabéu and third anniversary content."
 canonicalUrl: ""
-sources:
-  - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary"
-  - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fcm27-game-plans-deep-dive"
-  - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/limitedbeta-august2026"
-  - "https://forums.ea.com/category/fc-mobile-en/blog/ea-sports-fc-mobile-game-info-hub-en"
-  - "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-liga-bbva-mx"
+sources: []
 factStatus: "verified"
 lastReviewed: "2026-09-23"
 ---
