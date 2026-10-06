@@ -163,20 +163,39 @@ import AccountNav from '../../components/AccountNav.astro';
       return;
     }
 
-    const r = await fetch('/api/account/missions', {
-      headers: { authorization: 'Bearer ' + session.data.session.access_token },
-      cache: 'no-store'
-    });
+    async function fetchMissions(accessToken) {
+      return fetch('/api/account/missions', {
+        headers: { authorization: 'Bearer ' + accessToken },
+        cache: 'no-store'
+      });
+    }
+
+    let r = await fetchMissions(session.data.session.access_token);
+
+    if (r.status === 401 || r.status === 403) {
+      const refreshed = await accountAuth.auth.refreshSession();
+      if (refreshed.data?.session?.access_token) {
+        r = await fetchMissions(refreshed.data.session.access_token);
+      }
+    }
+
     const b = await r.json().catch(() => ({}));
     if (!r.ok) {
+      const isVerification = r.status === 403;
+      const isAuth = r.status === 401;
       root.innerHTML = `
         <section class="mod-empty-card acc-anim">
-          <div class="mod-empty-badge">VERIFICATION REQUIRED</div>
+          <div class="mod-empty-badge">${isVerification ? 'VERIFICATION REQUIRED' : isAuth ? 'SESSION EXPIRED' : 'MISSION SERVICE'}</div>
           <h2>${esc(b.error || 'Unable to load missions')}</h2>
-          <p>Confirm your email address from the verification link sent during signup to unlock missions and progression rewards.</p>
+          <p>${esc(
+            isVerification
+              ? 'Confirm your email address, then return here. You can resend the verification email from Account Settings.'
+              : isAuth
+                ? 'Your account session has expired. Sign in again to continue.'
+                : 'The mission service returned an error. Your account is not being marked unverified.'
+          )}</p>
           <div class="mod-empty-actions">
-            <a class="mod-btn-primary" href="/profile/">Back to Profile</a>
-            <a class="mod-btn-secondary" href="/settings/">Account Settings</a>
+            <a class="mod-btn-primary" href="${isVerification ? '/settings/' : '/profile/'}">${isVerification ? 'Account Settings' : 'Back to Profile'}</a>
           </div>
         </section>
       `;
