@@ -56,19 +56,42 @@ import AccountNav from '../../components/AccountNav.astro';
       return;
     }
 
-    const r = await fetch('/api/account/rewards', {
-      headers: { authorization: 'Bearer ' + session.data.session.access_token },
-      cache: 'no-store'
-    });
+    async function fetchRewards(accessToken) {
+      return fetch('/api/account/rewards', {
+        headers: { authorization: 'Bearer ' + accessToken },
+        cache: 'no-store'
+      });
+    }
+
+    let r = await fetchRewards(session.data.session.access_token);
+
+    // Email confirmation can happen in another tab/device while the current
+    // access token still carries the old auth state. Refresh once before showing
+    // a verification wall.
+    if (r.status === 401 || r.status === 403) {
+      const refreshed = await accountAuth.auth.refreshSession();
+      if (refreshed.data?.session?.access_token) {
+        r = await fetchRewards(refreshed.data.session.access_token);
+      }
+    }
+
     const b = await r.json().catch(() => ({}));
     if (!r.ok) {
+      const isVerification = r.status === 403;
+      const isAuth = r.status === 401;
       root.innerHTML = `
         <section class="rw-empty-card acc-anim">
-          <span class="rw-empty-badge">VERIFICATION REQUIRED</span>
+          <span class="rw-empty-badge">${isVerification ? 'VERIFICATION REQUIRED' : isAuth ? 'SESSION EXPIRED' : 'REWARD SERVICE'}</span>
           <h2>${esc(b.error || 'Unable to load rewards')}</h2>
-          <p>Please verify your email address before accessing the reward catalogue or redeeming tokens.</p>
+          <p>${esc(
+            isVerification
+              ? 'Confirm your email address, then return here. You can resend the verification email from Account Settings.'
+              : isAuth
+                ? 'Your account session has expired. Sign in again to continue.'
+                : 'The reward service returned an error. Your account is not being marked unverified.'
+          )}</p>
           <div class="rw-empty-actions">
-            <a class="rw-btn-primary" href="/profile/">Back to Profile</a>
+            <a class="rw-btn-primary" href="${isVerification ? '/settings/' : '/profile/'}">${isVerification ? 'Account Settings' : 'Back to Profile'}</a>
           </div>
         </section>
       `;
