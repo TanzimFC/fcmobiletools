@@ -96,9 +96,11 @@ export function ensureRedeemSchema(db) {
           lastVerified: '2026-10-06',
           notes: 'Released starting October 4, 2026.',
         };
-        await db.prepare("INSERT OR IGNORE INTO redeem_codes
-          (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)
-          VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')").bind(
+        await db.prepare([
+          "INSERT OR IGNORE INTO redeem_codes",
+          "  (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)",
+          "  VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')",
+        ].join("\n")).bind(
           c.code,
           c.reward,
           c.status,
