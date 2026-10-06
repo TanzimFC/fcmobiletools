@@ -2,1229 +2,1135 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
-import { NATIONS_STORY, NATIONS_STORY_QUESTION_COUNT } from '../data/aNationsStory.js';
-import { getPosts, img, fmtDate, iso } from '../lib/blog.js';
+import { getPosts, img, fmtDate } from '../lib/blog.js';
 
 const anniversary = FOOTBALL_CENTRE_CONTENT.eventCountdown ?? {};
 const secondary = FOOTBALL_CENTRE_CONTENT.secondaryEvent ?? {};
 const rivals = FOOTBALL_CENTRE_CONTENT.divisionRivalsReset ?? {};
 const schedule = FOOTBALL_CENTRE_CONTENT.schedule ?? {};
-const maintenanceGift = FOOTBALL_CENTRE_CONTENT.maintenanceGift?.enabled ? FOOTBALL_CENTRE_CONTENT.maintenanceGift : null;
-const fcCycle = FOOTBALL_CENTRE_CONTENT.cycle ?? {};
-const fcScoring = FOOTBALL_CENTRE_CONTENT.settings?.scoring ?? { played: 80, worldClass: 20, correctPrediction: 400 };
-const upcomingEvents = Array.isArray(FOOTBALL_CENTRE_CONTENT.upcomingEvents) ? FOOTBALL_CENTRE_CONTENT.upcomingEvents : [];
+const maintenanceGift = FOOTBALL_CENTRE_CONTENT.maintenanceGift?.enabled
+  ? FOOTBALL_CENTRE_CONTENT.maintenanceGift
+  : null;
+const upcomingEvents = Array.isArray(FOOTBALL_CENTRE_CONTENT.upcomingEvents)
+  ? FOOTBALL_CENTRE_CONTENT.upcomingEvents
+  : [];
 
 const buildTime = Date.now();
 const activeCodes = REDEEM_CODES.filter(
-  (c) => c.status === 'active' && (!c.expiryDate || Date.parse(c.expiryDate + 'T23:59:59Z') > buildTime)
+  (code) =>
+    code.status === 'active' &&
+    (!code.expiryDate || Date.parse(code.expiryDate + 'T23:59:59Z') > buildTime)
 );
-const featuredCode = activeCodes[0] ?? REDEEM_CODES[0] ?? null;
+const featuredCode = activeCodes[0] ?? null;
 
 const allPosts = await getPosts();
-const eventPosts = allPosts.slice(0, 6);
+const eventPostSlugs = [
+  'fc-mobile-unbreakable-2026-drafts',
+  'fc-mobile-conmebol-libertadores-2026-coming-soon',
+  'fc-mobile-hall-of-fut-explained',
+  'fc-mobile-3rd-anniversary-leaked-player-pools-weeks-1-4'
+];
+const eventPosts = eventPostSlugs
+  .map((slug) => allPosts.find((post) => post.slug === slug))
+  .filter(Boolean);
 
-const cl = (url, w) => (url || '').replace('/image/upload/', `/image/upload/f_auto,q_auto,dpr_auto,w_${w}/`);
-const banner = (id) => upcomingEvents.find((e) => e.id === id)?.banner || '';
+const cl = (url, width) =>
+  (url || '').replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_' + width + '/');
 
-const anniversaryBanner = cl(anniversary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323719/fc-mobile-tools/qrtvtote0squixmcts6u.jpg', 1800);
-const unbreakableBanner = cl(secondary.banner || 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg', 1000);
-const anniversaryLogo = anniversary.logo || 'https://sappurit.github.io/s10img/png/2026-09-17/anniversary27_topup_ANNI27_LOGO.png';
+const banner = (id) => upcomingEvents.find((event) => event.id === id)?.banner || '';
 
-// All upcoming events share one card design and one size, enriched with direct links to companion guides and tools.
+const anniversaryBanner = cl(
+  anniversary.banner ||
+    'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323719/fc-mobile-tools/qrtvtote0squixmcts6u.jpg',
+  1800
+);
+const unbreakableBanner = cl(
+  secondary.banner ||
+    'https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg',
+  1000
+);
+const anniversaryLogo =
+  anniversary.logo ||
+  'https://sappurit.github.io/s10img/png/2026-09-17/anniversary27_topup_ANNI27_LOGO.png';
+
 const upcoming = [
   {
     id: 'unbreakable',
-    dropGroup: 'oct-15',
     title: secondary.title || 'Unbreakable',
-    text: secondary.subtitle || 'Major October event featuring dedicated Draft mechanics and high-OVR player pools.',
-    focus: 'Draft Vouchers · Major Promo',
+    text: 'Expected October 15. The first reported Draft pools are already being covered on the site.',
     day: '15',
     month: 'Oct',
     img: unbreakableBanner,
-    acc: '#8b93ff',
-    guideHref: '/blog/fc-mobile-unbreakable-2026-drafts/',
-    guideLabel: 'Unbreakable & Drafts Guide',
-    toolHref: '/redeem-codes',
-    toolLabel: 'Claim Draft Vouchers',
+    acc: '#9b8cff',
+    href: '/blog/fc-mobile-unbreakable-2026-drafts/',
+    label: 'Unbreakable leaks'
   },
   {
     id: 'conmebol-libertadores',
-    dropGroup: 'oct-15',
     title: 'CONMEBOL Libertadores',
-    text: 'Starts on the same day as Unbreakable with South American club contenders and themed rewards.',
-    focus: 'South American Clubs · Oct 15',
+    text: 'Expected October 15 alongside Unbreakable, with reported Draft pools and more coverage to come.',
     day: '15',
     month: 'Oct',
     img: cl(banner('conmebol-libertadores'), 1000),
-    acc: '#4fe3a3',
-    guideHref: '/blog/fc-mobile-conmebol-libertadores-2026-coming-soon/',
-    guideLabel: 'Libertadores 2026 Preview',
-    toolHref: '/team-ovr',
-    toolLabel: 'Plan Squad OVR',
+    acc: '#58dca8',
+    href: '/blog/fc-mobile-conmebol-libertadores-2026-coming-soon/',
+    label: 'Libertadores preview'
   },
   {
     id: 'ballon-dor',
-    dropGroup: 'oct-22',
     title: "Ballon d'Or",
-    text: 'Launches alongside the October 22 Division Rivals Season Reset as a headline celebration.',
-    focus: 'Season Reset Day · Oct 22',
+    text: 'Expected October 22, on the same date as the next Division Rivals season reset.',
     day: '22',
     month: 'Oct',
     img: cl(banner('ballon-dor'), 1000),
-    acc: '#ffd36e',
-    guideHref: '/blog/fc-mobile-27-everything-we-know-so-far/',
-    guideLabel: 'Season 27 Roadmap',
-    toolHref: '/investment-calculator',
-    toolLabel: 'Market Tax Calculator',
-  },
+    acc: '#ffd56f',
+    href: '/blog/',
+    label: 'Latest event news'
+  }
 ];
 
-const dailyRoutine = [
-  {
-    id: 'codes',
-    title: 'Check working Redeem Codes',
-    detail: featuredCode ? `Active code ${featuredCode.code} (${featuredCode.reward})` : 'Check for new Draft Voucher & Rank Up codes',
-    href: '/redeem-codes',
-    cta: 'Redeem Codes',
-  },
-  {
-    id: 'nations',
-    title: "Complete A Nation's Story trivia",
-    detail: `Search all ${NATIONS_STORY_QUESTION_COUNT} verified answers across Japan, Netherlands, Mexico, France & Brazil`,
-    href: '/a-nations-story',
-    cta: 'Answer Hub',
-  },
-  {
-    id: 'centre',
-    title: 'Lock in Football Centre Showdown picks',
-    detail: `Earn +${fcScoring.played} played, +${fcScoring.worldClass} World Class & +${fcScoring.correctPrediction} correct pick toward 4,000 PTS`,
-    href: '/football-centre/matches',
-    cta: 'Showdowns',
-  },
-  {
-    id: 'gauntlet',
-    title: 'Plan Gauntlet Mode squad rotation',
-    detail: 'Track 1-appearance goalkeepers and outfield appearance caps across rounds',
-    href: '/gauntlet-planner',
-    cta: 'Gauntlet Planner',
-  },
-  {
-    id: 'ovr',
-    title: 'Check Team OVR & Rank Up next step',
-    detail: 'Find the cheapest Base OVR or Rank Up step before Division Rivals rewards lock',
-    href: '/team-ovr',
-    cta: 'Team OVR',
-  },
-];
-
-const spotlightGuides = [
-  {
-    kicker: 'Stellar Series · Live Guide',
-    title: 'Stellar Libra Event & Token Math',
-    desc: 'How Stellar Libra works, token milestones, and optimal reward paths.',
-    href: '/blog/fc-mobile-27-stellar-libra-event/',
-    subHref: '/blog/stellar-libra-tokens-fc-mobile/',
-    subLabel: 'Token Breakdown →',
-  },
-  {
-    kicker: 'Draft Mechanics · Resource Guide',
-    title: 'Stellar Draft Vouchers Explained',
-    desc: 'Where to get Draft Vouchers and how they carry into upcoming October events.',
-    href: '/blog/stellar-draft-voucher-fc-mobile/',
-    subHref: '/blog/fc-mobile-unbreakable-2026-drafts/',
-    subLabel: 'Unbreakable Drafts →',
-  },
-  {
-    kicker: 'Numero Series · Weeks 1–3',
-    title: 'FC Mobile Numero Event Tracker',
-    desc: 'Complete breakdown of Numero Week 1 (No. 7), Week 2 (No. 4) and Week 3 (No. 10).',
-    href: '/blog/fc-mobile-numero-week-3-number-10/',
-    subHref: '/blog/fc-mobile-numero-week-2-number-4/',
-    subLabel: 'Week 2 Recap →',
-  },
-  {
-    kicker: 'Mechanics & Market Alert',
-    title: 'Hall of FUT & Rare Removed Nations',
-    desc: 'How Hall of FUT works and why 16 removed national teams could become rare collectibles.',
-    href: '/blog/fc-mobile-hall-of-fut-explained/',
-    subHref: '/blog/16-nations-removed-from-fc-mobile-27-international-player-cards-could-become-rare-collecti/',
-    subLabel: '16 Nations Alert →',
-  },
-];
-
-const prepToolkit = [
-  {
-    href: '/team-ovr',
-    tag: 'Squad Rating',
-    title: 'Team OVR Calculator',
-    desc: 'Test how a new event player or Rank Up changes your 11-starter + bench average before spending resources.',
-    cta: 'Open Team OVR',
-  },
-  {
-    href: '/rank-up-calculator',
-    tag: 'Base → Orange',
-    title: 'Rank Up Calculator',
-    desc: 'Plan your 1,333 maintenance gift Rank Up Points and compare step-by-step costs across OVR brackets.',
-    cta: 'Plan Rank Ups',
-  },
-  {
-    href: '/training-calculator',
-    tag: 'Levels 1 → 30',
-    title: 'Training Calculator',
-    desc: 'Calculate exact XP, coins and fodder cards required before transferring or feeding trained players.',
-    cta: 'Calculate XP',
-  },
-  {
-    href: '/investment-calculator',
-    tag: '10% Market Tax',
-    title: 'Investment Calculator',
-    desc: 'Model after-tax net return, ROI and break-even sell prices ahead of the Oct 15 and Oct 22 market shifts.',
-    cta: 'Run Market Math',
-  },
-  {
-    href: '/gauntlet-planner',
-    tag: 'Squad Depth',
-    title: 'Gauntlet Mode Planner',
-    desc: 'Spread player appearance limits across escalating PvE rounds without running out of goalkeepers or starters.',
-    cta: 'Build Rotation',
-  },
-  {
-    href: '/fc-mobile-27',
-    tag: 'Season 27 Hub',
-    title: 'FC Mobile 27 Update Guide',
-    desc: 'Review Game Plans, Mentalities, new PlayStyles, patch notes and the official Android installation path.',
-    cta: 'Open Update Hub',
-  },
-];
-
-const desc = 'FC Mobile event schedule and live hub covering 3rd Anniversary, Unbreakable, CONMEBOL Libertadores, Ballon d’Or, Daily Reset, Division Rivals reset, active trackers and guides.';
+const desc =
+  'FC Mobile events and reset hub with live event timing, October event countdowns, Division Rivals reset timing and connected event coverage.';
 const pageSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  name: 'FC Mobile Events & Reset | FCMOBILETOOLS',
+  name: 'FC Mobile Events & Reset',
   description: desc,
   url: new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.online').href,
-  publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
+  publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' }
 };
 ---
-<BaseLayout title="FC Mobile Events & Reset | FCMOBILETOOLS" description={desc}>
-<script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
+<BaseLayout title="FC Mobile Events & Reset" description={desc}>
+  <script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
 
-<main class="hub">
-  <div class="wrap">
-
-    <!-- Breadcrumb & section quick-jump bar -->
-    <div class="hub-nav-bar">
-      <nav class="crumbs" aria-label="Breadcrumb">
+  <main class="hub">
+    <div class="wrap">
+      <div class="crumb">
         <a href="/">FCMOBILETOOLS</a>
-        <span aria-hidden="true">/</span>
-        <span>Events &amp; Reset Hub</span>
-      </nav>
-      <nav class="jump-nav" aria-label="Page sections">
-        <a href="#live-now">Live Event</a>
-        <a href="#october-schedule">October Drops</a>
-        <a href="#resets">Resets &amp; Routine</a>
-        <a href="#event-trackers">Live Trackers</a>
-        <a href="#event-guides">Event Guides</a>
-        <a href="#event-toolkit">Squad Toolkit</a>
-      </nav>
-    </div>
-
-    <header class="top">
-      <div class="top-copy">
-        <p class="tag"><i class="dot"></i>FC Mobile 27 · Events, resets &amp; live trackers</p>
-        <h1>Every date that matters,<br />connected in one place.</h1>
-        <p class="lede">Live events, the October drops, daily &amp; Division Rivals resets, and the companion trackers and guides you use to plan every reward.</p>
+        <span>/</span>
+        <strong>Events</strong>
       </div>
-      <div class="clock" aria-label="Current local and UTC time">
-        <div><small>Your time</small><strong id="localClock">--:--:--</strong><em id="zoneLabel">Local</em></div>
-        <div><small>UTC</small><strong id="utcClock">--:--:--</strong></div>
-      </div>
-    </header>
 
-    <!-- At-a-glance interconnected status ribbon -->
-    <section class="status-strip" aria-label="Live FC Mobile status at a glance">
-      <a class="status-cell" href="#live-now">
-        <small>Active Major Event</small>
-        <strong>3rd Anniversary <span id="anniversaryElapsed">· Live</span></strong>
-        <em>Season 27 launch event →</em>
-      </a>
-      <a class="status-cell" href="#october-schedule">
-        <small>Next Major Drops</small>
-        <strong>15 Oct · Double Launch</strong>
-        <em>Unbreakable + Libertadores →</em>
-      </a>
-      <a class="status-cell" href="#resets">
-        <small>Next Daily Reset (01:00 UTC)</small>
-        <strong id="stripDailyCountdown">--:--:--</strong>
-        <em>View reset routine →</em>
-      </a>
-      <div class="status-cell status-cell--code">
-        <small>Active Redeem Code</small>
-        {featuredCode ? (
-          <div class="strip-code-row">
-            <button type="button" class="strip-copy-btn" data-copy-code={featuredCode.code} aria-label={`Copy redeem code ${featuredCode.code}`}>
-              <b>{featuredCode.code}</b>
-              <span data-copy-label>Copy</span>
-            </button>
-            <a class="strip-code-link" href="/redeem-codes">All codes →</a>
-          </div>
-        ) : (
-          <a class="strip-code-link" href="/redeem-codes">Check redeem codes →</a>
-        )}
-        <em>{featuredCode ? featuredCode.reward : 'Verified codes & EA link'}</em>
-      </div>
-    </section>
+      <header class="page-head">
+        <div>
+          <p class="eyebrow"><i class="dot"></i> FC Mobile 27 · Event hub</p>
+          <h1>What’s live.<br />What’s next.</h1>
+          <p class="lede">
+            Live event timing, the next major drops and reset dates, with the guides and tools
+            you actually use around them.
+          </p>
+        </div>
 
-    <!-- LIVE HERO -->
-    <section id="live-now" class="live-section" aria-label="Currently live major event">
-      <article class="hero" id="anniversaryCard">
-        <img id="anniversaryImage" class="hero-img" src={anniversaryBanner} alt="FC Mobile 3rd Anniversary" width="1800" height="800" loading="eager" fetchpriority="high" decoding="async" referrerpolicy="no-referrer" />
+        <div class="head-links" aria-label="Event shortcuts">
+          <a href="/redeem-codes">Redeem Codes <span>→</span></a>
+          <a href="/football-centre">Football Centre <span>→</span></a>
+        </div>
+      </header>
+
+      <section class="hero" id="live-now" aria-labelledby="live-title">
+        <img
+          class="hero-img"
+          id="anniversaryImage"
+          src={anniversaryBanner}
+          alt="FC Mobile 3rd Anniversary"
+          width="1800"
+          height="800"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+          referrerpolicy="no-referrer"
+        />
         <div class="hero-shade"></div>
+
         <div class="hero-body">
-          <div class="hero-badges">
+          <div class="hero-topline">
             <span class="badge live"><i class="dot"></i><span id="anniversaryState">LIVE NOW</span></span>
-            <span class="hero-kicker-text">Season 27 · 4-Week Celebration</span>
+            <span>Season 27 · Third Anniversary</span>
           </div>
-          <img id="anniversaryLogo" class="hero-logo" src={anniversaryLogo} alt="FC Mobile Anniversary 27 logo" decoding="async" referrerpolicy="no-referrer" />
-          <h2>Anniversary Event</h2>
-          <p id="anniversarySubtitle">Live alongside the FC Mobile 27 Season Update.</p>
+
+          <img
+            class="hero-logo"
+            id="anniversaryLogo"
+            src={anniversaryLogo}
+            alt="FC Mobile Anniversary 27"
+            decoding="async"
+            referrerpolicy="no-referrer"
+          />
+
+          <h2 id="live-title">Anniversary Event</h2>
+          <p id="anniversarySubtitle">
+            Live alongside the FC Mobile 27 Season Update.
+          </p>
 
           <div class="hero-actions">
-            <a class="hero-btn hero-btn--primary" href="/fc-mobile-27">FC Mobile 27 Update Hub →</a>
-            <a class="hero-btn hero-btn--ghost" href="/blog/fc-mobile-27-launch-third-anniversary/">Launch Guide</a>
-            <a class="hero-btn hero-btn--ghost" href="/blog/fc-mobile-3rd-anniversary-leaked-player-pools-weeks-1-4/">Weeks 1–4 Player Pools</a>
+            <a class="btn btn-primary" href="/blog/fc-mobile-3rd-anniversary-leaked-player-pools-weeks-1-4/">
+              Anniversary player pools <span>→</span>
+            </a>
+            <a class="btn btn-ghost" href="/fc-mobile-27">Season 27 hub</a>
           </div>
 
-          <div class="hero-foot">
-            <div><small>Started</small><strong id="anniversaryStart">24 Sep 2026</strong></div>
-            <div><small>Active Code</small><strong><a href="/redeem-codes">{featuredCode ? featuredCode.code : 'Check Codes'}</a></strong></div>
-            <div><small>Companion Mode</small><strong><a href="/gauntlet-planner">Gauntlet Planner</a></strong></div>
-            <a class="ext-link" href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary" target="_blank" rel="noopener noreferrer">Read the EA announcement ↗</a>
+          <div class="hero-meta">
+            <div>
+              <small>Started</small>
+              <strong id="anniversaryStart">24 Sep 2026</strong>
+            </div>
+            <div>
+              <small>Latest code</small>
+              <strong>
+                <a href="/redeem-codes">{featuredCode?.code || 'Check codes'}</a>
+              </strong>
+            </div>
+            <a
+              class="official"
+              href="https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >EA announcement ↗</a>
           </div>
         </div>
-      </article>
+      </section>
 
       {maintenanceGift && (
-        <aside class="gift-bar" aria-label={maintenanceGift.title}>
-          <div class="gift-bar__info">
-            <span class="gift-kicker">Season 27 Bonus · Claimable In-Game</span>
-            <h3>{maintenanceGift.title}</h3>
-            <p>{maintenanceGift.note} Pair these rewards with active redeem codes to accelerate your squad upgrades.</p>
+        <aside class="gift">
+          <div>
+            <span class="gift-kicker">Season 27 bonus</span>
+            <strong>{maintenanceGift.title}</strong>
+            <p>{maintenanceGift.note}</p>
           </div>
-          <ul class="gift-items" aria-label="Maintenance gift rewards">
-            {(maintenanceGift.items ?? []).map((item) => (
-              <li>{item}</li>
-            ))}
-          </ul>
-          <div class="gift-links">
-            <a href="/rank-up-calculator">Plan 1,333 Rank Up Points →</a>
-            <a href="/redeem-codes">Claim Draft Vouchers →</a>
+          <div class="gift-items">
+            {(maintenanceGift.items ?? []).map((item) => <span>{item}</span>)}
+          </div>
+          <div class="gift-actions">
+            <a href="/rank-up-calculator">Plan Rank Up Points →</a>
+            <a href="/redeem-codes">Check codes →</a>
           </div>
         </aside>
       )}
-    </section>
 
-    <!-- UPCOMING: three equal cards with filter bar and internal guide/tool links -->
-    <section class="block" id="october-schedule" aria-labelledby="upTitle">
-      <div class="block-head">
-        <div>
-          <p class="sec-kicker">01 · Event Radar</p>
-          <h2 id="upTitle">Coming in October</h2>
-          <p>Three major launches across two key October dates, counted down in your local time zone.</p>
-        </div>
-        <div class="filter-tabs" role="group" aria-label="Filter October events">
-          <button type="button" class="filter-btn is-active" data-event-filter="all">All Drops (3)</button>
-          <button type="button" class="filter-btn" data-event-filter="oct-15">15 Oct Double Drop (2)</button>
-          <button type="button" class="filter-btn" data-event-filter="oct-22">22 Oct Reset Drop (1)</button>
-        </div>
-      </div>
-
-      <div class="cards">
-        {upcoming.map((e) => (
-          <article class="card" data-event-id={e.id} data-drop-group={e.dropGroup} style={`--acc:${e.acc}`}>
-            <div class="card-media">
-              {e.img && <img src={e.img} alt={e.title} loading="lazy" decoding="async" referrerpolicy="no-referrer" />}
-              <div class="card-fade"></div>
-              <div class="card-date"><b>{e.day}</b><span>{e.month}</span></div>
-              <span class="badge soon" data-state>Upcoming</span>
-            </div>
-            <div class="card-body">
-              <p class="card-focus">{e.focus}</p>
-              <h3>{e.title}</h3>
-              <p>{e.text}</p>
-              <div class="card-count">
-                <div>
-                  <small>Starts in</small>
-                  <em class="card-local-time" data-local-start>15 Oct 2026 · UTC</em>
-                </div>
-                <strong data-countdown>--:--:--</strong>
-              </div>
-              <div class="card-links">
-                <a class="card-link card-link--primary" href={e.guideHref}>{e.guideLabel} →</a>
-                <a class="card-link card-link--sub" href={e.toolHref}>{e.toolLabel} ↗</a>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-
-    <!-- RESETS & DAILY ROUTINE CHECKLIST -->
-    <section class="block" id="resets" aria-labelledby="rsTitle">
-      <div class="block-head">
-        <div>
-          <p class="sec-kicker">02 · Timers &amp; Cycles</p>
-          <h2 id="rsTitle">Resets &amp; Daily Routine</h2>
-          <p>Track the daily 01:00 UTC refresh and the 28-day Division Rivals season cycle.</p>
-        </div>
-        <p id="syncLabel" class="sync">Syncing…</p>
-      </div>
-
-      <div class="resets">
-        <article class="reset">
-          <div class="reset-top">
-            <h3>Daily reset</h3>
-            <span>Every day · 01:00 UTC</span>
-          </div>
-          <strong class="big" id="dailyCountdown">--:--:--</strong>
-          <div class="cycle-bar" aria-hidden="true"><span id="dailyProgressBar"></span></div>
-          <dl>
-            <div><dt>Your time</dt><dd id="dailyLocal">—</dd></div>
-            <div><dt>UTC</dt><dd id="dailyUtc">—</dd></div>
-          </dl>
-          <div class="reset-links">
-            <span>Check after reset:</span>
-            <a href="/redeem-codes">Redeem Codes</a>
-            <span aria-hidden="true">·</span>
-            <a href="/a-nations-story">A Nation's Story</a>
-            <span aria-hidden="true">·</span>
-            <a href="/gauntlet-planner">Gauntlet Planner</a>
-          </div>
-        </article>
-
-        <article class="reset accent">
-          <div class="reset-top">
-            <h3>Division Rivals · Season reset</h3>
-            <span>22 Oct · 28-day cycle</span>
-          </div>
-          <strong class="big" id="rivalsCountdown">--:--:--</strong>
-          <div class="cycle-bar" aria-hidden="true"><span id="rivalsProgressBar"></span></div>
-          <dl>
-            <div><dt>Your time</dt><dd id="rivalsLocal">22 Oct 2026</dd></div>
-            <div><dt>UTC</dt><dd id="rivalsUtc">22 Oct 2026 · 01:00 UTC</dd></div>
-          </dl>
-          <div class="reset-links">
-            <span>Prepare before reset:</span>
-            <a href="/team-ovr">Team OVR</a>
-            <span aria-hidden="true">·</span>
-            <a href="/rank-up-calculator">Rank Up Calc</a>
-            <span aria-hidden="true">·</span>
-            <a href="/training-calculator">Training Calc</a>
-          </div>
-        </article>
-      </div>
-
-      <!-- Interactive Daily Reset Routine Checklist -->
-      <div class="routine-panel" data-routine-panel>
-        <div class="routine-head">
+      <section class="section" id="october" aria-labelledby="oct-title">
+        <div class="section-head">
           <div>
-            <span class="sec-kicker">Interactive Checklist · Saved in Browser</span>
-            <h3>Your Daily FC Mobile Reset Checklist</h3>
-            <p>Check off your daily priorities and jump straight to the matching tool. Automatically resets at 01:00 UTC.</p>
+            <p class="eyebrow">Next up</p>
+            <h2 id="oct-title">October events</h2>
           </div>
-          <div class="routine-actions">
-            <span class="routine-progress" id="routineProgressLabel">0 / {dailyRoutine.length} done</span>
-            <button type="button" class="routine-reset-btn" id="routineResetBtn">Reset checklist</button>
-          </div>
+          <p>Counted down in your local time.</p>
         </div>
-        <ul class="routine-list">
-          {dailyRoutine.map((item) => (
-            <li class="routine-row" data-routine-item={item.id}>
-              <label class="routine-check">
-                <input type="checkbox" data-routine-checkbox={item.id} />
-                <span class="routine-text">
-                  <strong>{item.title}</strong>
-                  <small>{item.detail}</small>
-                </span>
-              </label>
-              <a class="routine-link" href={item.href}>{item.cta} →</a>
-            </li>
+
+        <div class="event-grid">
+          {upcoming.map((event) => (
+            <article
+              class="event-card"
+              data-event-id={event.id}
+              style={'--acc:' + event.acc}
+            >
+              <div class="event-media">
+                {event.img && (
+                  <img
+                    src={event.img}
+                    alt={event.title}
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                  />
+                )}
+                <div class="event-fade"></div>
+                <div class="event-date">
+                  <b>{event.day}</b>
+                  <span>{event.month}</span>
+                </div>
+                <span class="event-state" data-state>Upcoming</span>
+              </div>
+
+              <div class="event-body">
+                <h3>{event.title}</h3>
+                <p>{event.text}</p>
+
+                <div class="event-count">
+                  <div>
+                    <small>Starts in</small>
+                    <em data-local-start>15 Oct 2026</em>
+                  </div>
+                  <strong data-countdown>--:--:--</strong>
+                </div>
+
+                <a class="event-link" href={event.href}>
+                  {event.label} <span>→</span>
+                </a>
+              </div>
+            </article>
           ))}
-        </ul>
-      </div>
-    </section>
-
-    <!-- ACTIVE IN-GAME EVENT TRACKERS & HUBS -->
-    <section class="block" id="event-trackers" aria-labelledby="trTitle">
-      <div class="block-head">
-        <div>
-          <p class="sec-kicker">03 · Interactive Event Hubs</p>
-          <h2 id="trTitle">Active In-Game Event Trackers</h2>
-          <p>Dedicated tools built for the events running inside FC Mobile right now.</p>
         </div>
-      </div>
+      </section>
 
-      <div class="trackers-grid">
-        <!-- Football Centre Hub Card -->
-        <article class="tracker-card tracker-card--cyan">
-          <div class="tracker-top">
-            <span class="sec-kicker">{fcCycle.label || 'SEPTEMBER 2026 · ACTIVE CYCLE'}</span>
-            <span class="tracker-meta">8 Showdowns · 4,000 PTS Target</span>
+      <section class="section reset-section" id="resets" aria-labelledby="reset-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Timing</p>
+            <h2 id="reset-title">Know the reset</h2>
           </div>
-          <h3>Football Centre Hub</h3>
-          <p>{fcCycle.description || 'Track weekly Showdown predictions, real match results, points balance and reward claims in one place.'}</p>
+          <span class="sync" id="syncLabel">Syncing…</span>
+        </div>
 
-          <div class="tracker-stats">
-            <div><small>Played Match</small><strong>+{fcScoring.played} PTS</strong></div>
-            <div><small>World Class</small><strong>+{fcScoring.worldClass} PTS</strong></div>
-            <div><small>Correct Pick</small><strong>+{fcScoring.correctPrediction} PTS</strong></div>
-            <div><small>Top Reward</small><strong>120–122 OVR</strong></div>
+        <div class="reset-grid">
+          <article class="reset-card">
+            <div class="reset-top">
+              <div>
+                <small>Every day</small>
+                <h3>Daily reset</h3>
+              </div>
+              <span>01:00 UTC</span>
+            </div>
+            <strong class="reset-count" id="dailyCountdown">--:--:--</strong>
+            <div class="reset-times">
+              <div><small>Your time</small><strong id="dailyLocal">—</strong></div>
+              <div><small>UTC</small><strong id="dailyUtc">—</strong></div>
+            </div>
+            <a href="/redeem-codes">Check Redeem Codes after reset →</a>
+          </article>
+
+          <article class="reset-card reset-card--featured">
+            <div class="reset-top">
+              <div>
+                <small>Next season cycle</small>
+                <h3>Division Rivals reset</h3>
+              </div>
+              <span>22 Oct</span>
+            </div>
+            <strong class="reset-count" id="rivalsCountdown">--:--:--</strong>
+            <div class="reset-times">
+              <div><small>Your time</small><strong id="rivalsLocal">22 Oct 2026</strong></div>
+              <div><small>UTC</small><strong id="rivalsUtc">22 Oct 2026 · 01:00 UTC</strong></div>
+            </div>
+            <a href="/team-ovr">Check Team OVR before reset →</a>
+          </article>
+        </div>
+      </section>
+
+      {eventPosts.length > 0 && (
+        <section class="section coverage" id="coverage" aria-labelledby="coverage-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Connected coverage</p>
+              <h2 id="coverage-title">Read the event. Then act on it.</h2>
+            </div>
+            <a class="section-link" href="/blog/">All articles →</a>
           </div>
 
-          <nav class="tracker-sublinks" aria-label="Football Centre sections">
-            <a class="primary-sublink" href="/football-centre">Open Overview →</a>
-            <a href="/football-centre/matches">Matches (8)</a>
-            <a href="/football-centre/rewards">Rewards</a>
-            <a href="/football-centre/analysis">Analysis</a>
-            <a href="/football-centre/totw">TOTW Status</a>
-          </nav>
-        </article>
-
-        <!-- A Nation's Story Answer Hub Card -->
-        <article class="tracker-card tracker-card--gold">
-          <div class="tracker-top">
-            <span class="sec-kicker">CHRONICLES · TRIVIA DATABASE</span>
-            <span class="tracker-meta">{NATIONS_STORY.length} Nations · {NATIONS_STORY_QUESTION_COUNT} Answers</span>
-          </div>
-          <h3>A Nation's Story Answer Finder</h3>
-          <p>Every Day 1 to Day 9 trivia question and verified answer for Japan, Netherlands, Mexico, France and Brazil.</p>
-
-          <form class="nation-quick-search" action="/a-nations-story" method="get" data-nation-jump-form>
-            <label class="sr-only" for="eventsNationQuery">Search A Nation's Story question</label>
-            <input id="eventsNationQuery" type="search" placeholder="Type a player, year or country (e.g. Zidane, 2022, Pelé)…" autocomplete="off" />
-            <button type="submit">Find Answer →</button>
-          </form>
-
-          <nav class="nation-pills" aria-label="A Nation's Story countries">
-            {NATIONS_STORY.map((n) => (
-              <a href={`/a-nations-story/${n.slug}/`}>
-                <span>{n.flag}</span>
-                <b>{n.name}</b>
-                <small>9 days</small>
+          <div class="coverage-grid">
+            {eventPosts.map((post) => (
+              <a class="coverage-card" href={post.href}>
+                <div class="coverage-media">
+                  {post.cover ? (
+                    <img
+                      src={img(post.cover, 700)}
+                      alt={post.imageAlt || post.title}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span>FC MOBILE 27</span>
+                  )}
+                </div>
+                <div class="coverage-body">
+                  <div>
+                    <span>{post.section?.label || post.category || 'Article'}</span>
+                    <small>{fmtDate(post.date, 'short')}</small>
+                  </div>
+                  <h3>{post.title}</h3>
+                  <p>{post.excerpt}</p>
+                  <strong>Read article →</strong>
+                </div>
               </a>
             ))}
-          </nav>
-        </article>
-      </div>
+          </div>
+        </section>
+      )}
 
-      <!-- Active Side-Events & Mechanics Spotlight -->
-      <div class="spotlight-grid">
-        {spotlightGuides.map((g) => (
-          <article class="spotlight-card">
-            <span class="sec-kicker">{g.kicker}</span>
-            <h3><a href={g.href}>{g.title}</a></h3>
-            <p>{g.desc}</p>
-            <div class="spotlight-links">
-              <a class="spot-primary" href={g.href}>Read guide →</a>
-              <a class="spot-sub" href={g.subHref}>{g.subLabel}</a>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-
-    <!-- EVENT GUIDES, LEAKS & SEASON 27 COVERAGE -->
-    <section class="block" id="event-guides" aria-labelledby="gdTitle">
-      <div class="block-head">
-        <div>
-          <p class="sec-kicker">04 · Editorial Desk</p>
-          <h2 id="gdTitle">Event Guides, Leaks &amp; Update Coverage</h2>
-          <p>Deep dives, leaked player pools, token math and patch breakdowns connected to current events.</p>
+      <section class="section tools" id="tools" aria-labelledby="tools-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Useful before you play</p>
+            <h2 id="tools-title">The tools that pair with events</h2>
+          </div>
         </div>
-        <div class="filter-tabs" role="group" aria-label="Filter event articles">
-          <button type="button" class="filter-btn is-active" data-post-filter="all">All Coverage</button>
-          <button type="button" class="filter-btn" data-post-filter="event-guide">Event Guides</button>
-          <button type="button" class="filter-btn" data-post-filter="leaks">Leaks &amp; Pools</button>
-          <button type="button" class="filter-btn" data-post-filter="news">Updates</button>
+
+        <div class="tool-links">
+          <a href="/team-ovr"><span>01</span><strong>Team OVR</strong><small>Check the XI</small><b>→</b></a>
+          <a href="/rank-up-calculator"><span>02</span><strong>Rank Up Calculator</strong><small>Plan upgrade costs</small><b>→</b></a>
+          <a href="/training-calculator"><span>03</span><strong>Training Calculator</strong><small>Plan XP & fodder</small><b>→</b></a>
+          <a href="/investment-calculator"><span>04</span><strong>Investment Calculator</strong><small>Run market maths</small><b>→</b></a>
+          <a href="/gauntlet-planner"><span>05</span><strong>Gauntlet Planner</strong><small>Plan rotations</small><b>→</b></a>
         </div>
-      </div>
+      </section>
+    </div>
+  </main>
 
-      <div class="guides-grid" id="eventsGuidesGrid">
-        {eventPosts.map((post) => (
-          <a
-            class="guide-card"
-            href={post.href}
-            data-post-type={post.section.key}
-            style={`--post-acc:${post.section.accent}`}
-          >
-            <div class="guide-media">
-              {post.cover ? (
-                <img src={img(post.cover, 640)} alt={post.imageAlt || post.title} width="640" height="360" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
-              ) : (
-                <div class="guide-fallback">FCMOBILETOOLS</div>
-              )}
-            </div>
-            <div class="guide-body">
-              <div class="guide-meta">
-                <span>{post.section.label}</span>
-                {post.date && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <time datetime={iso(post.date)}>{fmtDate(post.date, 'short')}</time>
-                  </>
-                )}
-                <span aria-hidden="true">·</span>
-                <span>{post.minutes} min read</span>
-              </div>
-              <h3>{post.title}</h3>
-              <p>{post.excerpt}</p>
-              <span class="guide-read">Read article →</span>
-            </div>
-          </a>
-        ))}
-      </div>
+  <script define:vars={{
+    anniversaryStartUtc: anniversary.startUtc,
+    anniversarySubtitle: anniversary.subtitle,
+    unbreakableStartUtc: secondary.startUtc,
+    rivalsAnchorUtc: rivals.anchorUtc,
+    rivalsCycleDays: rivals.cycleDays,
+    dailyResetUtc: schedule.dailyResetUtc || '01:00',
+    upcomingEventsData: upcomingEvents
+  }}>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const set = (id, value) => {
+      const node = $(id);
+      if (node) node.textContent = value;
+    };
 
-      <div class="guides-foot">
-        <span>Browse by topic:</span>
-        <a href="/blog">All Articles</a>
-        <span aria-hidden="true">·</span>
-        <a href="/blog/category/events/">Event Guides</a>
-        <span aria-hidden="true">·</span>
-        <a href="/blog/category/leaks/">Leaks</a>
-        <span aria-hidden="true">·</span>
-        <a href="/blog/category/updates/">Season 27 Updates</a>
-        <span aria-hidden="true">·</span>
-        <a href="/blog/category/guides/">Walkthroughs</a>
-      </div>
-    </section>
+    const DAY = 86400000;
+    const pad = (value) => String(Math.max(0, Math.floor(Number(value) || 0))).padStart(2, '0');
 
-    <!-- EVENT PREPARATION & SQUAD TOOLKIT -->
-    <section class="block" id="event-toolkit" aria-labelledby="tkTitle">
-      <div class="block-head">
-        <div>
-          <p class="sec-kicker">05 · Connected Calculators &amp; Planners</p>
-          <h2 id="tkTitle">Prepare Your Squad for the Next Drop</h2>
-          <p>Use FCMOBILETOOLS calculators to plan OVR upgrades, Rank Up Points, Training XP and market investments before new events go live.</p>
-        </div>
-      </div>
+    const formatCountdown = (ms) => {
+      let total = Math.max(0, Math.floor(ms / 1000));
+      const days = Math.floor(total / 86400);
+      total %= 86400;
+      const hours = Math.floor(total / 3600);
+      total %= 3600;
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      return (days > 0 ? days + 'd ' : '') + pad(hours) + ':' + pad(minutes) + ':' + pad(seconds);
+    };
 
-      <div class="toolkit-grid">
-        {prepToolkit.map((tool) => (
-          <a class="toolkit-card" href={tool.href}>
-            <span class="toolkit-tag">{tool.tag}</span>
-            <h3>{tool.title}</h3>
-            <p>{tool.desc}</p>
-            <span class="toolkit-cta">{tool.cta} →</span>
-          </a>
-        ))}
-      </div>
-    </section>
-
-  </div>
-</main>
-
-<script define:vars={{
-  anniversaryStartUtc: anniversary.startUtc,
-  anniversarySubtitle: anniversary.subtitle,
-  unbreakableStartUtc: secondary.startUtc,
-  rivalsAnchorUtc: rivals.anchorUtc,
-  rivalsCycleDays: rivals.cycleDays,
-  dailyResetUtc: schedule.dailyResetUtc || '01:00',
-  upcomingEventsData: upcomingEvents,
-}}>
-(() => {
-  const $ = (id) => document.getElementById(id);
-  const set = (id, v) => { const n = $(id); if (n) n.textContent = v; };
-  const DAY = 86400000;
-  const pad = (v) => String(Math.max(0, Math.floor(Number(v) || 0))).padStart(2, '0');
-  const fmt = (ms) => {
-    let t = Math.max(0, Math.floor(ms / 1000));
-    const d = Math.floor(t / 86400); t %= 86400;
-    const h = Math.floor(t / 3600); t %= 3600;
-    const m = Math.floor(t / 60), s = t % 60;
-    return (d > 0 ? d + 'd ' : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
-  };
-
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const localClock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
-  const utcClock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
-  const localDate = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
-  const utcDate = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
-
-  let cfg = {
-    anniversaryStartUtc, anniversarySubtitle, unbreakableStartUtc,
-    rivalsAnchorUtc, rivalsCycleDays: Number(rivalsCycleDays) || 28,
-    dailyResetUtc,
-    upcomingEvents: Array.isArray(upcomingEventsData) ? upcomingEventsData : [],
-  };
-
-  const nextDaily = (now) => {
-    const p = String(cfg.dailyResetUtc || '01:00').split(':').map(Number);
-    const h = Number.isFinite(p[0]) ? Math.max(0, Math.min(23, p[0])) : 1;
-    const m = Number.isFinite(p[1]) ? Math.max(0, Math.min(59, p[1])) : 0;
-    const d = new Date(now);
-    const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m);
-    return now < t ? t : t + DAY;
-  };
-  const nextRivals = (now) => {
-    const a = Date.parse(cfg.rivalsAnchorUtc || '');
-    const c = Math.max(1, Number(cfg.rivalsCycleDays) || 28) * DAY;
-    if (!Number.isFinite(a)) return NaN;
-    return now < a ? a : a + (Math.floor((now - a) / c) + 1) * c;
-  };
-  const startFor = (id) => {
-    const raw = id === 'unbreakable' ? cfg.unbreakableStartUtc : cfg.upcomingEvents.find((e) => e.id === id)?.startUtc;
-    return Date.parse(raw || '');
-  };
-
-  const render = () => {
-    const now = Date.now();
-    set('localClock', localClock.format(now));
-    set('utcClock', utcClock.format(now));
-    set('zoneLabel', zone);
-
-    const a = Date.parse(cfg.anniversaryStartUtc || '');
-    const isAnnivLive = !Number.isFinite(a) || now >= a;
-    set('anniversaryState', isAnnivLive ? 'LIVE NOW' : 'UPCOMING');
-    set('anniversarySubtitle', cfg.anniversarySubtitle || 'Third Anniversary celebration.');
-    if (Number.isFinite(a)) {
-      set('anniversaryStart', localDate.format(a).replace(',', ''));
-      if (now >= a) {
-        const dayNum = Math.floor((now - a) / DAY) + 1;
-        set('anniversaryElapsed', `· Day ${dayNum}`);
-      } else {
-        set('anniversaryElapsed', `· Starts ${fmt(a - now)}`);
-      }
-    }
-
-    document.querySelectorAll('.card[data-event-id]').forEach((card) => {
-      const start = startFor(card.getAttribute('data-event-id'));
-      if (!Number.isFinite(start)) return;
-      const live = now >= start;
-      const c = card.querySelector('[data-countdown]');
-      const s = card.querySelector('[data-state]');
-      const l = card.querySelector('[data-local-start]');
-      if (c) c.textContent = live ? 'LIVE NOW' : fmt(start - now);
-      if (s) { s.textContent = live ? 'Live now' : 'Upcoming'; s.classList.toggle('live', live); }
-      if (l) l.textContent = localDate.format(start);
+    const localDate = new Intl.DateTimeFormat(undefined, {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
     });
 
-    const d = nextDaily(now);
-    const dailyLeft = d - now;
-    const dailyFormatted = fmt(dailyLeft);
-    set('dailyCountdown', dailyFormatted);
-    set('stripDailyCountdown', dailyFormatted);
-    set('dailyLocal', localDate.format(d));
-    set('dailyUtc', utcDate.format(d));
-    const dailyBar = $('dailyProgressBar');
-    if (dailyBar) {
-      const pct = Math.min(100, Math.max(0, (1 - dailyLeft / DAY) * 100));
-      dailyBar.style.width = pct.toFixed(1) + '%';
-    }
+    const utcDate = new Intl.DateTimeFormat('en-GB', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short'
+    });
 
-    const r = nextRivals(now);
-    if (Number.isFinite(r)) {
-      const cycleMs = Math.max(1, Number(cfg.rivalsCycleDays) || 28) * DAY;
-      const rivalsLeft = r - now;
-      set('rivalsCountdown', fmt(rivalsLeft));
-      set('rivalsLocal', localDate.format(r));
-      set('rivalsUtc', utcDate.format(r));
-      const rivalsBar = $('rivalsProgressBar');
-      if (rivalsBar) {
-        const pct = Math.min(100, Math.max(0, (1 - rivalsLeft / cycleMs) * 100));
-        rivalsBar.style.width = pct.toFixed(1) + '%';
-      }
-    }
-  };
+    let cfg = {
+      anniversaryStartUtc,
+      anniversarySubtitle,
+      unbreakableStartUtc,
+      rivalsAnchorUtc,
+      rivalsCycleDays: Number(rivalsCycleDays) || 28,
+      dailyResetUtc,
+      upcomingEvents: Array.isArray(upcomingEventsData) ? upcomingEventsData : []
+    };
 
-  const sync = async () => {
-    try {
-      const res = await fetch('/api/football?live=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' });
-      if (!res.ok) throw new Error('sync');
-      const c = (await res.json())?.content || {};
-      const ec = c.eventCountdown, se = c.secondaryEvent, dr = c.divisionRivalsReset;
-      if (ec) {
-        cfg.anniversaryStartUtc = ec.startUtc || cfg.anniversaryStartUtc;
-        cfg.anniversarySubtitle = ec.subtitle || cfg.anniversarySubtitle;
-        if (ec.banner && $('anniversaryImage')) $('anniversaryImage').src = ec.banner.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1800/');
-        if (ec.logo && $('anniversaryLogo')) $('anniversaryLogo').src = ec.logo;
-      }
-      if (se) {
-        cfg.unbreakableStartUtc = se.startUtc || cfg.unbreakableStartUtc;
-        const img = document.querySelector('[data-event-id="unbreakable"] img');
-        if (se.banner && img) img.src = se.banner.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto,w_1000/');
-      }
-      if (dr) {
-        cfg.rivalsAnchorUtc = dr.anchorUtc || cfg.rivalsAnchorUtc;
-        cfg.rivalsCycleDays = Number(dr.cycleDays) || cfg.rivalsCycleDays;
-      }
-      if (c.schedule?.dailyResetUtc) cfg.dailyResetUtc = c.schedule.dailyResetUtc;
-      if (Array.isArray(c.upcomingEvents)) cfg.upcomingEvents = c.upcomingEvents;
-      set('syncLabel', 'Live · synced');
-    } catch {
-      set('syncLabel', 'Live · auto clock');
-    }
-    render();
-  };
+    const nextDaily = (now) => {
+      const parts = String(cfg.dailyResetUtc || '01:00').split(':').map(Number);
+      const hour = Number.isFinite(parts[0]) ? Math.max(0, Math.min(23, parts[0])) : 1;
+      const minute = Number.isFinite(parts[1]) ? Math.max(0, Math.min(59, parts[1])) : 0;
+      const d = new Date(now);
+      const target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hour, minute);
+      return now < target ? target : target + DAY;
+    };
 
-  /* ── Copy active redeem code button ── */
-  document.querySelectorAll('[data-copy-code]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const code = btn.getAttribute('data-copy-code') || '';
-      const label = btn.querySelector('[data-copy-label]');
+    const nextRivals = (now) => {
+      const anchor = Date.parse(cfg.rivalsAnchorUtc || '');
+      const cycle = Math.max(1, Number(cfg.rivalsCycleDays) || 28) * DAY;
+      if (!Number.isFinite(anchor)) return NaN;
+      return now < anchor ? anchor : anchor + (Math.floor((now - anchor) / cycle) + 1) * cycle;
+    };
+
+    const startFor = (id) => {
+      const raw =
+        id === 'unbreakable'
+          ? cfg.unbreakableStartUtc
+          : cfg.upcomingEvents.find((event) => event.id === id)?.startUtc;
+      return Date.parse(raw || '');
+    };
+
+    const render = () => {
+      const now = Date.now();
+
+      const anniversaryStart = Date.parse(cfg.anniversaryStartUtc || '');
+      const annivLive = !Number.isFinite(anniversaryStart) || now >= anniversaryStart;
+      set('anniversaryState', annivLive ? 'LIVE NOW' : 'UPCOMING');
+      set('anniversarySubtitle', cfg.anniversarySubtitle || 'Third Anniversary celebration.');
+
+      if (Number.isFinite(anniversaryStart)) {
+        set('anniversaryStart', localDate.format(anniversaryStart).replace(',', ''));
+      }
+
+      document.querySelectorAll('.event-card[data-event-id]').forEach((card) => {
+        const start = startFor(card.getAttribute('data-event-id'));
+        if (!Number.isFinite(start)) return;
+
+        const live = now >= start;
+        const countdown = card.querySelector('[data-countdown]');
+        const state = card.querySelector('[data-state]');
+        const local = card.querySelector('[data-local-start]');
+
+        if (countdown) countdown.textContent = live ? 'LIVE NOW' : formatCountdown(start - now);
+        if (state) {
+          state.textContent = live ? 'Live now' : 'Upcoming';
+          state.classList.toggle('is-live', live);
+        }
+        if (local) local.textContent = localDate.format(start);
+      });
+
+      const daily = nextDaily(now);
+      set('dailyCountdown', formatCountdown(daily - now));
+      set('dailyLocal', localDate.format(daily));
+      set('dailyUtc', utcDate.format(daily));
+
+      const rivalsReset = nextRivals(now);
+      if (Number.isFinite(rivalsReset)) {
+        set('rivalsCountdown', formatCountdown(rivalsReset - now));
+        set('rivalsLocal', localDate.format(rivalsReset));
+        set('rivalsUtc', utcDate.format(rivalsReset));
+      }
+    };
+
+    const sync = async () => {
       try {
-        await navigator.clipboard.writeText(code);
-        if (label) label.textContent = 'Copied!';
+        const response = await fetch('/api/football?live=' + Date.now(), {
+          cache: 'no-store',
+          credentials: 'same-origin'
+        });
+        if (!response.ok) throw new Error('sync failed');
+
+        const content = (await response.json())?.content || {};
+        const eventCountdown = content.eventCountdown;
+        const secondaryEvent = content.secondaryEvent;
+        const divisionRivals = content.divisionRivalsReset;
+
+        if (eventCountdown) {
+          cfg.anniversaryStartUtc = eventCountdown.startUtc || cfg.anniversaryStartUtc;
+          cfg.anniversarySubtitle = eventCountdown.subtitle || cfg.anniversarySubtitle;
+
+          if (eventCountdown.banner && $('anniversaryImage')) {
+            $('anniversaryImage').src = eventCountdown.banner.replace(
+              '/image/upload/',
+              '/image/upload/f_auto,q_auto,dpr_auto,w_1800/'
+            );
+          }
+          if (eventCountdown.logo && $('anniversaryLogo')) {
+            $('anniversaryLogo').src = eventCountdown.logo;
+          }
+        }
+
+        if (secondaryEvent) {
+          cfg.unbreakableStartUtc = secondaryEvent.startUtc || cfg.unbreakableStartUtc;
+          const image = document.querySelector('[data-event-id="unbreakable"] img');
+          if (secondaryEvent.banner && image) {
+            image.src = secondaryEvent.banner.replace(
+              '/image/upload/',
+              '/image/upload/f_auto,q_auto,dpr_auto,w_1000/'
+            );
+          }
+        }
+
+        if (divisionRivals) {
+          cfg.rivalsAnchorUtc = divisionRivals.anchorUtc || cfg.rivalsAnchorUtc;
+          cfg.rivalsCycleDays = Number(divisionRivals.cycleDays) || cfg.rivalsCycleDays;
+        }
+
+        if (content.schedule?.dailyResetUtc) {
+          cfg.dailyResetUtc = content.schedule.dailyResetUtc;
+        }
+        if (Array.isArray(content.upcomingEvents)) {
+          cfg.upcomingEvents = content.upcomingEvents;
+        }
+
+        set('syncLabel', 'Live · synced');
       } catch {
-        const ta = document.createElement('textarea');
-        ta.value = code;
-        ta.style.cssText = 'position:fixed;opacity:0';
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); if (label) label.textContent = 'Copied!'; } catch {}
-        ta.remove();
+        set('syncLabel', 'Live · auto clock');
       }
-      setTimeout(() => { if (label) label.textContent = 'Copy'; }, 2000);
+
+      render();
+    };
+
+    render();
+    sync();
+    setInterval(render, 1000);
+    setInterval(sync, 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        render();
+        sync();
+      }
     });
-  });
+  })();
+  </script>
 
-  /* ── Filter October event drops ── */
-  const eventFilterBtns = document.querySelectorAll('[data-event-filter]');
-  const eventCards = document.querySelectorAll('.card[data-event-id]');
-  eventFilterBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const filter = btn.getAttribute('data-event-filter') || 'all';
-      eventFilterBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
-      eventCards.forEach((card) => {
-        const group = card.getAttribute('data-drop-group');
-        card.hidden = filter !== 'all' && group !== filter;
-      });
-    });
-  });
+  <style>
+    .hub{
+      --bg:#060d13;
+      --panel:#0b171f;
+      --panel-2:#0e1d27;
+      --line:#183542;
+      --ink:#f1fbff;
+      --mute:#87a2ad;
+      --cyan:#62d9ff;
+      --green:#58e0a6;
+      --gold:#ffd36e;
+      --num:var(--mono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace);
+      min-height:100vh;
+      padding:30px 24px 88px;
+      background:
+        radial-gradient(950px 500px at 8% -5%,rgba(50,185,235,.12),transparent 62%),
+        radial-gradient(850px 500px at 100% 35%,rgba(110,100,255,.07),transparent 62%),
+        var(--bg);
+      color:var(--ink);
+      overflow:hidden;
+    }
+    .wrap{max-width:1180px;margin:0 auto}
+    .hub :is(h1,h2,h3,p){margin:0}
+    .crumb{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      color:#6f8d99;
+      font-size:12px;
+      margin-bottom:28px;
+    }
+    .crumb a{color:#8eabb6;text-decoration:none}
+    .crumb a:hover{color:var(--cyan)}
+    .page-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:36px;
+      padding-bottom:32px;
+    }
+    .eyebrow{
+      color:var(--cyan);
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .dot{
+      display:inline-block;
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:var(--green);
+      box-shadow:0 0 0 4px rgba(88,224,166,.12),0 0 13px rgba(88,224,166,.45);
+    }
+    .page-head h1{
+      margin-top:15px;
+      font-size:clamp(42px,6.3vw,76px);
+      line-height:.94;
+      letter-spacing:-.05em;
+      font-weight:800;
+      text-wrap:balance;
+    }
+    .lede{
+      margin-top:17px!important;
+      max-width:56ch;
+      color:var(--mute);
+      font-size:15px;
+      line-height:1.65;
+    }
+    .head-links{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      gap:9px;
+    }
+    .head-links a{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:10px 13px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(11,23,31,.72);
+      color:#d6f1f8;
+      text-decoration:none;
+      font-size:12px;
+      font-weight:800;
+    }
+    .head-links a:hover{border-color:rgba(98,217,255,.44);background:#0d202b}
+    .head-links span{color:var(--cyan)}
 
-  /* ── Filter Editorial Event Guides ── */
-  const postFilterBtns = document.querySelectorAll('[data-post-filter]');
-  const postCards = document.querySelectorAll('.guide-card[data-post-type]');
-  postFilterBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const filter = btn.getAttribute('data-post-filter') || 'all';
-      postFilterBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
-      postCards.forEach((card) => {
-        const type = card.getAttribute('data-post-type');
-        const match = filter === 'all' || type === filter || (filter === 'event-guide' && (type === 'event-guide' || type === 'guide'));
-        card.hidden = !match;
-      });
-    });
-  });
+    .hero{
+      position:relative;
+      min-height:450px;
+      overflow:hidden;
+      border:1px solid rgba(98,217,255,.25);
+      border-radius:26px;
+      box-shadow:0 36px 90px rgba(0,0,0,.4);
+      isolation:isolate;
+    }
+    .hero-img{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      z-index:-2;
+    }
+    .hero-shade{
+      position:absolute;
+      inset:0;
+      z-index:-1;
+      background:
+        linear-gradient(90deg,rgba(4,10,15,.94) 0%,rgba(4,10,15,.7) 50%,rgba(4,10,15,.16) 100%),
+        linear-gradient(0deg,rgba(4,10,15,.75),transparent 58%);
+    }
+    .hero-body{
+      min-height:450px;
+      max-width:720px;
+      padding:40px;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      align-items:flex-start;
+      gap:14px;
+    }
+    .hero-topline{
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      color:#a9c4ce;
+      font-size:12px;
+      font-weight:600;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 11px;
+      border-radius:999px;
+      background:rgba(5,12,17,.76);
+      border:1px solid rgba(255,255,255,.16);
+      color:#d7e8ee;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.05em;
+    }
+    .badge.live{color:#9bf0c7;border-color:rgba(88,224,166,.38)}
+    .hero-logo{
+      width:min(65%,255px);
+      max-height:95px;
+      object-fit:contain;
+      object-position:left;
+      filter:drop-shadow(0 8px 25px rgba(0,0,0,.42));
+    }
+    .hero h2{
+      font-size:clamp(30px,4.2vw,46px);
+      line-height:1;
+      letter-spacing:-.045em;
+    }
+    .hero p{
+      max-width:47ch;
+      color:#b6cbd3;
+      font-size:15px;
+      line-height:1.55;
+    }
+    .hero-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:9px;
+      margin-top:3px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 14px;
+      border-radius:11px;
+      text-decoration:none;
+      font-size:12.5px;
+      font-weight:800;
+      transition:transform .16s ease,border-color .16s ease,background .16s ease;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn-primary{
+      background:var(--cyan);
+      color:#05151d;
+      border:1px solid var(--cyan);
+    }
+    .btn-primary:hover{background:#82e2ff}
+    .btn-ghost{
+      background:rgba(6,15,22,.65);
+      color:var(--ink);
+      border:1px solid rgba(255,255,255,.2);
+    }
+    .btn-ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+    .btn span{font-size:16px}
+    .hero-meta{
+      display:flex;
+      align-items:end;
+      flex-wrap:wrap;
+      gap:17px 28px;
+      width:100%;
+      margin-top:8px;
+      padding-top:16px;
+      border-top:1px solid rgba(255,255,255,.13);
+    }
+    .hero-meta small,.reset-top small{
+      display:block;
+      color:#78929d;
+      font-size:10.5px;
+    }
+    .hero-meta strong{
+      display:block;
+      margin-top:5px;
+      font:700 12px/1.2 var(--num);
+    }
+    .hero-meta a{color:var(--cyan);text-decoration:none}
+    .hero-meta a:hover{text-decoration:underline}
+    .official{
+      margin-left:auto;
+      font-size:12px;
+      white-space:nowrap;
+    }
 
-  /* ── Daily Reset Routine Checklist (persisted per UTC reset day) ── */
-  const routineKey = () => {
-    const next = nextDaily(Date.now());
-    const cycleDay = new Date(next - DAY).toISOString().slice(0, 10);
-    return `fcmobiletools_daily_routine_${cycleDay}`;
-  };
-  const checkboxes = [...document.querySelectorAll('[data-routine-checkbox]')];
-  const progressEl = $('routineProgressLabel');
-  const loadRoutine = () => {
-    let saved = {};
-    try { saved = JSON.parse(localStorage.getItem(routineKey()) || '{}') || {}; } catch {}
-    let done = 0;
-    checkboxes.forEach((cb) => {
-      const id = cb.getAttribute('data-routine-checkbox');
-      const checked = !!saved[id];
-      cb.checked = checked;
-      cb.closest('[data-routine-item]')?.classList.toggle('is-done', checked);
-      if (checked) done += 1;
-    });
-    if (progressEl) progressEl.textContent = `${done} / ${checkboxes.length} done`;
-  };
-  const saveRoutine = () => {
-    const state = {};
-    let done = 0;
-    checkboxes.forEach((cb) => {
-      const id = cb.getAttribute('data-routine-checkbox');
-      state[id] = cb.checked;
-      cb.closest('[data-routine-item]')?.classList.toggle('is-done', cb.checked);
-      if (cb.checked) done += 1;
-    });
-    try { localStorage.setItem(routineKey(), JSON.stringify(state)); } catch {}
-    if (progressEl) progressEl.textContent = `${done} / ${checkboxes.length} done`;
-  };
-  checkboxes.forEach((cb) => cb.addEventListener('change', saveRoutine));
-  $('routineResetBtn')?.addEventListener('click', () => {
-    checkboxes.forEach((cb) => { cb.checked = false; });
-    saveRoutine();
-  });
-  loadRoutine();
+    .gift{
+      display:grid;
+      grid-template-columns:1.2fr 1fr auto;
+      gap:20px;
+      align-items:center;
+      margin-top:14px;
+      padding:17px 20px;
+      border:1px solid rgba(88,224,166,.24);
+      border-radius:18px;
+      background:linear-gradient(160deg,rgba(12,31,37,.92),rgba(8,18,24,.96));
+    }
+    .gift-kicker{
+      display:block;
+      margin-bottom:4px;
+      color:var(--green);
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .gift strong{font-size:15px}
+    .gift p{margin-top:4px!important;color:var(--mute);font-size:12px;line-height:1.45}
+    .gift-items{
+      display:flex;
+      flex-wrap:wrap;
+      gap:7px 14px;
+    }
+    .gift-items span{
+      color:#d8f4e7;
+      font-size:12px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .gift-items span::before{content:"✓";margin-right:6px;color:var(--green)}
+    .gift-actions{
+      display:flex;
+      flex-direction:column;
+      gap:5px;
+      align-items:flex-end;
+    }
+    .gift-actions a{
+      color:var(--cyan);
+      font-size:11.5px;
+      font-weight:800;
+      text-decoration:none;
+      white-space:nowrap;
+    }
+    .gift-actions a:hover{text-decoration:underline}
 
-  /* ── Quick jump to A Nation's Story search ── */
-  const nationForm = document.querySelector('[data-nation-jump-form]');
-  nationForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const q = document.getElementById('eventsNationQuery')?.value?.trim() || '';
-    window.location.href = q ? `/a-nations-story/?q=${encodeURIComponent(q)}` : '/a-nations-story/';
-  });
+    .section{
+      margin-top:62px;
+      scroll-margin-top:96px;
+    }
+    .section-head{
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap:18px;
+      margin-bottom:20px;
+    }
+    .section-head h2{
+      margin-top:6px;
+      font-size:clamp(25px,3.2vw,35px);
+      line-height:1.05;
+      letter-spacing:-.04em;
+    }
+    .section-head > p{
+      color:var(--mute);
+      font-size:12.5px;
+    }
+    .section-link{
+      color:var(--cyan);
+      font-size:12.5px;
+      font-weight:800;
+      text-decoration:none;
+    }
+    .section-link:hover{text-decoration:underline}
+    .sync{color:#6ad0a4!important;font-size:12px!important;font-weight:700}
 
-  render();
-  sync();
-  setInterval(render, 1000);
-  setInterval(sync, 30000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); sync(); } });
-})();
-</script>
+    .event-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:18px;
+    }
+    .event-card{
+      --acc:var(--cyan);
+      overflow:hidden;
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:linear-gradient(165deg,#0d1b24,#081219);
+      transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+    }
+    .event-card:hover{
+      transform:translateY(-3px);
+      border-color:color-mix(in srgb,var(--acc) 48%,var(--line));
+      box-shadow:0 24px 56px rgba(0,0,0,.28);
+    }
+    .event-media{position:relative;aspect-ratio:16/9;background:#071117;overflow:hidden}
+    .event-media img{display:block;width:100%;height:100%;object-fit:cover}
+    .event-fade{
+      position:absolute;
+      inset:0;
+      background:linear-gradient(180deg,rgba(4,10,15,.08),rgba(4,10,15,.14) 42%,rgba(8,18,25,.96));
+    }
+    .event-date{
+      position:absolute;
+      left:18px;
+      bottom:12px;
+      display:flex;
+      align-items:baseline;
+      gap:7px;
+    }
+    .event-date b{
+      color:#fff;
+      font:800 48px/.9 var(--num);
+      letter-spacing:-.06em;
+      text-shadow:0 7px 24px rgba(0,0,0,.5);
+    }
+    .event-date span{color:var(--acc);font-size:13px;font-weight:800}
+    .event-state{
+      position:absolute;
+      right:14px;
+      top:14px;
+      padding:7px 9px;
+      border-radius:999px;
+      border:1px solid color-mix(in srgb,var(--acc) 38%,transparent);
+      background:rgba(4,10,15,.76);
+      color:var(--acc);
+      font-size:10px;
+      font-weight:800;
+      text-transform:uppercase;
+    }
+    .event-state.is-live{color:#9bf0c7;border-color:rgba(88,224,166,.38)}
+    .event-body{display:flex;flex-direction:column;gap:9px;padding:18px}
+    .event-body h3{font-size:21px;letter-spacing:-.03em}
+    .event-body p{color:var(--mute);font-size:13px;line-height:1.5}
+    .event-count{
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap:12px;
+      padding-top:13px;
+      border-top:1px solid var(--line);
+      margin-top:3px;
+    }
+    .event-count small{display:block;color:#718b96;font-size:10.5px}
+    .event-count em{
+      display:block;
+      margin-top:3px;
+      color:#78939d;
+      font-style:normal;
+      font-size:10.5px;
+    }
+    .event-count strong{
+      color:var(--ink);
+      font:800 21px/1 var(--num);
+      letter-spacing:-.05em;
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap;
+    }
+    .event-link{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding-top:2px;
+      color:var(--acc);
+      font-size:12px;
+      font-weight:800;
+      text-decoration:none;
+    }
+    .event-link span{font-size:16px}
+    .event-link:hover{text-decoration:underline}
 
-<style>
-.hub{
-  --bg:#060d13; --panel:#0b171f; --line:#183542; --ink:#f1fbff; --mute:#87a2ad; --cyan:#62d9ff; --green:#58e0a6; --gold:#ffd36e;
-  --num:var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  background:
-    radial-gradient(900px 500px at 8% -5%, rgba(50,185,235,.14), transparent 60%),
-    radial-gradient(800px 500px at 100% 30%, rgba(110,100,255,.09), transparent 60%),
-    var(--bg);
-  color:var(--ink); min-height:100vh; padding:32px 24px 96px; overflow:hidden;
-}
-.wrap{max-width:1180px;margin:0 auto}
-.hub :is(h1,h2,h3,p,dl,dd){margin:0}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(88,224,166,.12),0 0 14px rgba(88,224,166,.5)}
+    .reset-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+    }
+    .reset-card{
+      padding:24px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:linear-gradient(165deg,#0d1b24,#081219);
+    }
+    .reset-card--featured{
+      border-color:rgba(98,217,255,.28);
+      background:linear-gradient(165deg,#0c222e,#08141b);
+    }
+    .reset-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:start;
+      gap:12px;
+    }
+    .reset-top h3{margin-top:4px;font-size:18px;letter-spacing:-.025em}
+    .reset-top > span{color:var(--mute);font-size:11.5px;font-weight:700}
+    .reset-count{
+      display:block;
+      margin:21px 0 17px;
+      color:var(--ink);
+      font:800 clamp(32px,4.3vw,49px)/1 var(--num);
+      letter-spacing:-.06em;
+      font-variant-numeric:tabular-nums;
+    }
+    .reset-card--featured .reset-count{color:var(--cyan)}
+    .reset-times{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      padding-top:14px;
+      border-top:1px solid var(--line);
+    }
+    .reset-times strong{
+      display:block;
+      margin-top:5px;
+      color:#d7ebf1;
+      font:600 11.5px/1.4 var(--num);
+      font-variant-numeric:tabular-nums;
+    }
+    .reset-card > a{
+      display:inline-block;
+      margin-top:16px;
+      color:var(--cyan);
+      font-size:11.5px;
+      font-weight:800;
+      text-decoration:none;
+    }
+    .reset-card > a:hover{text-decoration:underline}
 
-/* breadcrumb & jump nav */
-.hub-nav-bar{
-  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;
-  padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid rgba(24,53,66,.75);
-}
-.crumbs{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mute)}
-.crumbs a{color:var(--ink);text-decoration:none;font-weight:600}
-.crumbs a:hover{color:var(--cyan)}
-.jump-nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px}
-.jump-nav a{color:var(--mute);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;transition:color .16s ease}
-.jump-nav a:hover{color:var(--cyan)}
+    .coverage-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:14px;
+    }
+    .coverage-card{
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(165deg,#0d1b24,#081219);
+      color:inherit;
+      text-decoration:none;
+      transition:transform .18s ease,border-color .18s ease;
+    }
+    .coverage-card:hover{transform:translateY(-3px);border-color:rgba(98,217,255,.4)}
+    .coverage-media{aspect-ratio:16/9;background:#071117;overflow:hidden;display:grid;place-items:center}
+    .coverage-media img{width:100%;height:100%;object-fit:cover;display:block}
+    .coverage-media span{color:#7b98a3;font:800 12px var(--num)}
+    .coverage-body{
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+      flex:1;
+      padding:15px 16px 17px;
+    }
+    .coverage-body > div{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color:var(--mute);
+      font-size:10.5px;
+    }
+    .coverage-body > div span{color:var(--cyan);font-weight:800}
+    .coverage-body h3{font-size:15.5px;line-height:1.25;letter-spacing:-.02em}
+    .coverage-body p{
+      color:var(--mute);
+      font-size:11.5px;
+      line-height:1.45;
+      display:-webkit-box;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:3;
+      overflow:hidden;
+    }
+    .coverage-body > strong{margin-top:auto;color:var(--cyan);font-size:11.5px}
 
-/* header */
-.top{display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end;padding-bottom:28px}
-.tag{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:13px;letter-spacing:.02em}
-.top h1{margin-top:16px;font-size:clamp(36px,5.6vw,68px);line-height:1.02;letter-spacing:-.045em;font-weight:800;text-wrap:balance}
-.lede{margin-top:16px;max-width:58ch;color:var(--mute);font-size:16px;line-height:1.6}
-.clock{display:grid;gap:0;min-width:240px;border:1px solid var(--line);border-radius:18px;background:rgba(11,23,31,.75);backdrop-filter:blur(8px);overflow:hidden}
-.clock>div{display:grid;gap:6px;padding:16px 20px}
-.clock>div+div{border-top:1px solid var(--line)}
-.clock small{color:var(--mute);font-size:12px}
-.clock strong{font:700 24px/1 var(--num);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.clock em{font-style:normal;color:#5d7f8c;font-size:12px}
+    .tool-links{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+    }
+    .tool-links a{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      column-gap:10px;
+      align-items:center;
+      min-height:82px;
+      padding:14px 16px;
+      border-right:1px solid var(--line);
+      color:inherit;
+      text-decoration:none;
+      background:rgba(11,23,31,.35);
+      transition:background .18s ease;
+    }
+    .tool-links a:last-child{border-right:0}
+    .tool-links a:hover{background:rgba(15,32,43,.82)}
+    .tool-links span{color:#658490;font:700 10px var(--num)}
+    .tool-links strong{font-size:12.5px}
+    .tool-links small{grid-column:2;color:var(--mute);font-size:10.5px;margin-top:2px}
+    .tool-links b{grid-row:1/3;grid-column:3;color:var(--cyan);font-size:16px}
 
-/* At-a-glance status ribbon */
-.status-strip{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:28px;
-}
-.status-cell{
-  display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:18px;
-  border:1px solid var(--line);background:rgba(11,23,31,.72);color:var(--ink);text-decoration:none;
-  transition:border-color .18s ease,transform .18s ease;
-}
-a.status-cell:hover{border-color:rgba(98,217,255,.45);transform:translateY(-2px)}
-.status-cell small{color:var(--mute);font-size:12px}
-.status-cell strong{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
-.status-cell strong span{color:var(--green);font-weight:600;font-size:13px}
-.status-cell em{font-style:normal;color:var(--cyan);font-size:12px;font-weight:600;margin-top:auto}
-.strip-code-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.strip-copy-btn{
-  display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:10px;
-  border:1px solid rgba(88,224,166,.38);background:rgba(88,224,166,.1);color:#9af0c6;
-  cursor:pointer;font-family:var(--num);font-size:13px;font-weight:700;white-space:nowrap;
-}
-.strip-copy-btn span{font-family:var(--font-body,sans-serif);font-size:11.5px;color:var(--ink);padding-left:6px;border-left:1px solid rgba(255,255,255,.16)}
-.strip-code-link{color:var(--cyan);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap}
-.strip-code-link:hover{text-decoration:underline}
-
-/* hero */
-.hero{position:relative;min-height:440px;border-radius:26px;overflow:hidden;border:1px solid rgba(98,217,255,.28);box-shadow:0 40px 100px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.02) inset;isolation:isolate}
-.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
-.hero-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(4,10,15,.94) 0%,rgba(4,10,15,.68) 52%,rgba(4,10,15,.12) 100%),linear-gradient(0deg,rgba(4,10,15,.82),transparent 55%)}
-.hero-body{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:14px;min-height:440px;padding:40px;max-width:740px}
-.hero-badges{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
-.hero-kicker-text{color:#b8ced6;font-size:13px;font-weight:600}
-.hero-logo{width:min(70%,260px);max-height:100px;object-fit:contain;object-position:left;filter:drop-shadow(0 8px 24px rgba(0,0,0,.4))}
-.hero h2{font-size:clamp(30px,4vw,46px);letter-spacing:-.04em;line-height:1}
-.hero p{color:#b8ced6;font-size:16px;line-height:1.55;max-width:50ch}
-.hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:4px}
-.hero-btn{
-  display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;
-  font-size:13.5px;font-weight:700;text-decoration:none;white-space:nowrap;transition:transform .16s ease,border-color .16s ease,background .16s ease;
-}
-.hero-btn--primary{background:var(--cyan);color:#04141d}
-.hero-btn--primary:hover{transform:translateY(-1px);background:#82e2ff}
-.hero-btn--ghost{border:1px solid rgba(255,255,255,.22);background:rgba(6,15,22,.72);color:var(--ink)}
-.hero-btn--ghost:hover{border-color:var(--cyan);color:var(--cyan)}
-.hero-foot{display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px;margin-top:8px;padding-top:18px;border-top:1px solid rgba(255,255,255,.14);width:100%}
-.hero-foot small{display:block;color:#8ba7b1;font-size:12px}
-.hero-foot strong{display:block;margin-top:5px;font:700 14px/1 var(--num)}
-.hero-foot strong a{color:var(--cyan);text-decoration:none}
-.hero-foot strong a:hover{text-decoration:underline}
-.hero-foot .ext-link{margin-left:auto;color:var(--cyan);font-size:13.5px;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(98,217,255,.35);padding-bottom:2px;white-space:nowrap}
-.hero-foot .ext-link:hover{border-color:var(--cyan)}
-.hero-foot a:focus-visible,.card:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
-
-/* Maintenance gift companion strip */
-.gift-bar{
-  margin-top:16px;padding:22px 24px;border-radius:20px;border:1px solid rgba(88,224,166,.28);
-  background:linear-gradient(160deg,rgba(12,32,38,.88),rgba(8,19,26,.94));
-  display:grid;grid-template-columns:1.2fr 1fr auto;gap:20px;align-items:center;
-}
-.gift-kicker{display:block;color:var(--green);font-size:12px;font-weight:700;margin-bottom:4px}
-.gift-bar__info h3{font-size:18px;letter-spacing:-.02em}
-.gift-bar__info p{color:var(--mute);font-size:13.5px;line-height:1.5;margin-top:4px}
-.gift-items{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 16px}
-.gift-items li{color:#d8f5e8;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
-.gift-items li::before{content:"✓";color:var(--green);font-weight:800}
-.gift-links{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-.gift-links a{color:var(--cyan);font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap}
-.gift-links a:hover{text-decoration:underline}
-
-.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.06em;background:rgba(5,12,17,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(6px);color:#d5e8ee;white-space:nowrap}
-.badge.live{color:#9af0c6;border-color:rgba(88,224,166,.4)}
-
-/* sections */
-.block{margin-top:72px;scroll-margin-top:96px}
-.block-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px}
-.sec-kicker{color:var(--cyan);font-size:12px;font-weight:700;letter-spacing:.03em;margin-bottom:6px}
-.block-head h2{font-size:clamp(26px,3vw,36px);letter-spacing:-.04em;text-wrap:balance}
-.block-head p{color:var(--mute);font-size:14px;margin-top:6px}
-.sync{color:#5bbf98!important;font-weight:600}
-
-/* filter tabs */
-.filter-tabs{display:inline-flex;flex-wrap:wrap;gap:6px;padding:4px;border-radius:12px;border:1px solid var(--line);background:rgba(11,23,31,.8)}
-.filter-btn{
-  padding:8px 14px;border:0;border-radius:9px;background:transparent;color:var(--mute);
-  font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .16s ease,color .16s ease;
-}
-.filter-btn:hover{color:var(--ink)}
-.filter-btn.is-active{background:rgba(98,217,255,.15);color:var(--cyan)}
-
-/* event cards: identical structure and size, own accent colour */
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.card{--acc:var(--cyan);position:relative;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;background:linear-gradient(170deg,#0e1d27,#08131a);border:1px solid var(--line);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-.card[hidden]{display:none}
-.card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--acc),transparent);z-index:2}
-.card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--acc) 55%,var(--line));box-shadow:0 30px 70px rgba(0,0,0,.4)}
-.card-media{position:relative;aspect-ratio:16/10;background:#071117;overflow:hidden}
-.card-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
-.card:hover .card-media img{transform:scale(1.03)}
-.card-fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,13,19,.15) 0%,rgba(6,13,19,.05) 40%,rgba(8,19,26,.96) 100%)}
-.card-date{position:absolute;left:20px;bottom:14px;display:flex;align-items:baseline;gap:8px}
-.card-date b{font:800 54px/.9 var(--num);letter-spacing:-.06em;color:#fff;text-shadow:0 8px 28px rgba(0,0,0,.5);font-variant-numeric:tabular-nums}
-.card-date span{font-size:15px;font-weight:700;color:var(--acc)}
-.card .badge{position:absolute;top:16px;right:16px}
-.card .badge.soon{color:var(--acc);border-color:color-mix(in srgb,var(--acc) 40%,transparent)}
-.card .badge.live{color:#9af0c6}
-.card-body{display:flex;flex-direction:column;gap:8px;flex:1;padding:20px 22px 22px}
-.card-focus{color:var(--acc);font-size:12px;font-weight:700}
-.card-body h3{font-size:23px;letter-spacing:-.035em;line-height:1.15}
-.card-body p{color:var(--mute);font-size:14px;line-height:1.55}
-.card-count{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
-.card-count small{display:block;color:var(--mute);font-size:11.5px}
-.card-local-time{display:block;font-style:normal;color:#6c8d99;font-size:11.5px;margin-top:2px;font-variant-numeric:tabular-nums}
-.card-count strong{font:800 24px/1 var(--num);letter-spacing:-.05em;color:var(--ink);font-variant-numeric:tabular-nums}
-.card-links{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding-top:12px;margin-top:8px;border-top:1px solid rgba(24,53,66,.6);
-}
-.card-link{font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap}
-.card-link--primary{color:var(--acc)}
-.card-link--primary:hover{text-decoration:underline}
-.card-link--sub{color:var(--mute)}
-.card-link--sub:hover{color:var(--ink)}
-
-/* resets */
-.resets{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.reset{padding:28px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(160deg,#0d1b24,#08131a);display:flex;flex-direction:column}
-.reset.accent{border-color:rgba(98,217,255,.35);background:linear-gradient(160deg,#0c2230,#08151d)}
-.reset-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.reset-top h3{font-size:19px;letter-spacing:-.02em}
-.reset-top span{color:var(--mute);font-size:13px}
-.big{display:block;margin:18px 0 14px;font:800 clamp(36px,4.8vw,52px)/1 var(--num);letter-spacing:-.06em;font-variant-numeric:tabular-nums}
-.accent .big{color:var(--cyan)}
-.cycle-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;margin-bottom:18px}
-.cycle-bar span{display:block;height:100%;width:45%;background:linear-gradient(90deg,var(--cyan),var(--green));border-radius:inherit}
-.reset dl{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-top:16px;border-top:1px solid var(--line)}
-.reset dt{color:#5f8290;font-size:12px}
-.reset dd{margin-top:6px;font:600 13px/1.4 var(--num);color:#d6eaf0;font-variant-numeric:tabular-nums}
-.reset-links{
-  margin-top:16px;padding-top:14px;border-top:1px solid rgba(24,53,66,.65);
-  display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12.5px;color:var(--mute);
-}
-.reset-links a{color:var(--cyan);font-weight:700;text-decoration:none;white-space:nowrap}
-.reset-links a:hover{text-decoration:underline}
-
-/* Daily routine checklist */
-.routine-panel{
-  margin-top:20px;padding:26px 28px;border-radius:22px;border:1px solid var(--line);
-  background:linear-gradient(165deg,#0c1a24,#081219);
-}
-.routine-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:18px}
-.routine-head h3{font-size:21px;letter-spacing:-.03em}
-.routine-head p{color:var(--mute);font-size:13.5px;margin-top:4px}
-.routine-actions{display:flex;align-items:center;gap:12px}
-.routine-progress{font-family:var(--num);font-size:13px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
-.routine-reset-btn{
-  padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);
-  color:var(--mute);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
-}
-.routine-reset-btn:hover{color:var(--ink);border-color:rgba(98,217,255,.35)}
-.routine-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-.routine-row{
-  display:flex;align-items:center;justify-content:space-between;gap:16px;
-  padding:14px 16px;border-radius:15px;border:1px solid rgba(24,53,66,.85);background:rgba(6,14,20,.65);
-  transition:border-color .16s ease,background .16s ease;
-}
-.routine-row.is-done{border-color:rgba(88,224,166,.35);background:rgba(88,224,166,.05)}
-.routine-check{display:flex;align-items:flex-start;gap:12px;cursor:pointer;flex:1;min-width:0}
-.routine-check input{width:18px;height:18px;margin-top:2px;accent-color:var(--green);cursor:pointer;flex:0 0 18px}
-.routine-text{display:grid;gap:3px;min-width:0}
-.routine-text strong{font-size:14.5px;color:var(--ink)}
-.routine-row.is-done .routine-text strong{text-decoration:line-through;color:var(--mute)}
-.routine-text small{color:var(--mute);font-size:12.5px;line-height:1.4}
-.routine-link{
-  padding:8px 14px;border-radius:10px;border:1px solid rgba(98,217,255,.28);background:rgba(98,217,255,.08);
-  color:var(--cyan);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap;
-}
-.routine-link:hover{background:rgba(98,217,255,.16)}
-
-/* Active Event Trackers */
-.trackers-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.tracker-card{
-  padding:28px;border-radius:22px;border:1px solid var(--line);
-  background:linear-gradient(165deg,#0d1c26,#08131a);display:flex;flex-direction:column;gap:14px;
-}
-.tracker-card--cyan{border-color:rgba(98,217,255,.28)}
-.tracker-card--gold{border-color:rgba(255,211,110,.28)}
-.tracker-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.tracker-meta{color:var(--mute);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
-.tracker-card h3{font-size:24px;letter-spacing:-.035em}
-.tracker-card p{color:var(--mute);font-size:14px;line-height:1.55}
-.tracker-stats{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px;
-  border-radius:15px;border:1px solid rgba(24,53,66,.85);background:rgba(6,13,19,.65);
-}
-.tracker-stats small{display:block;color:var(--mute);font-size:11px}
-.tracker-stats strong{display:block;margin-top:4px;font:700 14px/1.2 var(--num);color:var(--ink);font-variant-numeric:tabular-nums}
-.tracker-sublinks{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:8px}
-.tracker-sublinks a{
-  padding:9px 13px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);
-  color:var(--ink);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap;
-}
-.tracker-sublinks a.primary-sublink{background:var(--cyan);color:#04141d;border-color:var(--cyan)}
-.tracker-sublinks a:hover{border-color:var(--cyan)}
-
-.nation-quick-search{display:flex;gap:8px}
-.nation-quick-search input{
-  flex:1;min-width:0;padding:10px 14px;border-radius:12px;border:1px solid var(--line);
-  background:rgba(6,13,19,.8);color:var(--ink);font-size:13.5px;outline:none;
-}
-.nation-quick-search input:focus{border-color:var(--gold)}
-.nation-quick-search button{
-  padding:10px 16px;border-radius:12px;border:1px solid rgba(255,211,110,.45);
-  background:rgba(255,211,110,.14);color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
-}
-.nation-pills{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:auto}
-.nation-pills a{
-  display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 8px;
-  border-radius:13px;border:1px solid var(--line);background:rgba(6,13,19,.65);
-  color:var(--ink);text-decoration:none;text-align:center;transition:border-color .16s ease,transform .16s ease;
-}
-.nation-pills a:hover{border-color:var(--gold);transform:translateY(-2px)}
-.nation-pills span{font-size:18px}
-.nation-pills b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.nation-pills small{color:var(--mute);font-size:10.5px}
-
-/* Spotlight side-event guides */
-.spotlight-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:20px}
-.spotlight-card{
-  padding:20px;border-radius:18px;border:1px solid var(--line);background:rgba(11,23,31,.72);
-  display:flex;flex-direction:column;gap:8px;
-}
-.spotlight-card h3{font-size:17px;letter-spacing:-.02em;line-height:1.25}
-.spotlight-card h3 a{color:var(--ink);text-decoration:none}
-.spotlight-card h3 a:hover{color:var(--cyan)}
-.spotlight-card p{color:var(--mute);font-size:13px;line-height:1.55;flex:1}
-.spotlight-links{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px solid rgba(24,53,66,.65);font-size:12.5px;font-weight:700}
-.spot-primary{color:var(--cyan);text-decoration:none;white-space:nowrap}
-.spot-sub{color:var(--mute);text-decoration:none;white-space:nowrap}
-.spot-sub:hover{color:var(--ink)}
-
-/* Editorial Event Guides */
-.guides-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.guide-card{
-  display:flex;flex-direction:column;border-radius:20px;overflow:hidden;
-  border:1px solid var(--line);background:linear-gradient(170deg,#0d1b24,#081219);
-  color:var(--ink);text-decoration:none;transition:transform .18s ease,border-color .18s ease;
-}
-.guide-card[hidden]{display:none}
-.guide-card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--post-acc,var(--cyan)) 55%,var(--line))}
-.guide-media{aspect-ratio:16/9;background:#071117;overflow:hidden}
-.guide-media img{width:100%;height:100%;object-fit:cover;display:block}
-.guide-fallback{width:100%;height:100%;display:grid;place-items:center;color:var(--mute);font-weight:800;font-size:13px}
-.guide-body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:8px;flex:1}
-.guide-meta{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
-.guide-meta span:first-child{color:var(--post-acc,var(--cyan));font-weight:700}
-.guide-body h3{font-size:17.5px;line-height:1.25;letter-spacing:-.02em}
-.guide-body p{color:var(--mute);font-size:13.5px;line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.guide-read{color:var(--cyan);font-size:12.5px;font-weight:700;margin-top:4px}
-.guides-foot{
-  margin-top:18px;padding:16px 20px;border-radius:16px;border:1px solid rgba(24,53,66,.75);
-  background:rgba(11,23,31,.55);display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px;color:var(--mute);
-}
-.guides-foot a{color:var(--cyan);font-weight:700;text-decoration:none;white-space:nowrap}
-.guides-foot a:hover{text-decoration:underline}
-
-/* Event Preparation Toolkit */
-.toolkit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.toolkit-card{
-  display:flex;flex-direction:column;gap:8px;padding:22px;border-radius:20px;
-  border:1px solid var(--line);background:linear-gradient(165deg,#0d1b24,#081219);
-  color:var(--ink);text-decoration:none;transition:transform .18s ease,border-color .18s ease;
-}
-.toolkit-card:hover{transform:translateY(-3px);border-color:rgba(98,217,255,.45)}
-.toolkit-tag{color:var(--cyan);font-size:12px;font-weight:700}
-.toolkit-card h3{font-size:19px;letter-spacing:-.025em}
-.toolkit-card p{color:var(--mute);font-size:13.5px;line-height:1.55;flex:1}
-.toolkit-cta{color:var(--cyan);font-size:13px;font-weight:700;margin-top:6px}
-
-@media (max-width:1020px){
-  .status-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .gift-bar{grid-template-columns:1fr;gap:14px}
-  .gift-links{align-items:flex-start;flex-direction:row;flex-wrap:wrap;gap:16px}
-  .cards{grid-template-columns:1fr 1fr}
-  .cards .card:last-child{grid-column:1/-1}
-  .cards .card:last-child .card-media{aspect-ratio:21/9}
-  .trackers-grid{grid-template-columns:1fr}
-  .spotlight-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .guides-grid,.toolkit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media (max-width:760px){
-  .hub{padding:24px 16px 72px}
-  .top{grid-template-columns:1fr;gap:24px}
-  .clock{grid-template-columns:1fr 1fr;min-width:0}
-  .clock>div+div{border-top:0;border-left:1px solid var(--line)}
-  .status-strip{grid-template-columns:1fr}
-  .hero,.hero-body{min-height:400px}
-  .hero-body{padding:26px 20px}
-  .hero-shade{background:linear-gradient(0deg,rgba(4,10,15,.95) 0%,rgba(4,10,15,.65) 65%,rgba(4,10,15,.25) 100%)}
-  .hero-foot .ext-link{margin-left:0}
-  .cards,.resets,.spotlight-grid,.guides-grid,.toolkit-grid{grid-template-columns:1fr}
-  .cards .card:last-child .card-media{aspect-ratio:16/10}
-  .block{margin-top:52px}
-  .reset dl{grid-template-columns:1fr}
-  .routine-row{flex-direction:column;align-items:flex-start}
-  .routine-link{align-self:flex-start}
-  .tracker-stats{grid-template-columns:1fr 1fr}
-  .nation-pills{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .nation-quick-search{flex-direction:column}
-}
-@media (prefers-reduced-motion:reduce){
-  .card,.card-media img,.status-cell,.guide-card,.toolkit-card{transition:none}
-  .card:hover,.status-cell:hover,.guide-card:hover,.toolkit-card:hover{transform:none}
-  .card:hover .card-media img{transform:none}
-}
-</style>
+    @media(max-width:1020px){
+      .page-head{align-items:flex-start}
+      .event-grid{grid-template-columns:1fr 1fr}
+      .event-card:last-child{grid-column:1/-1}
+      .event-card:last-child .event-media{aspect-ratio:21/9}
+      .coverage-grid{grid-template-columns:1fr 1fr}
+      .tool-links{grid-template-columns:1fr 1fr}
+      .tool-links a:nth-child(2n){border-right:0}
+      .tool-links a{border-bottom:1px solid var(--line)}
+      .gift{grid-template-columns:1fr;gap:12px}
+      .gift-actions{align-items:flex-start;flex-direction:row;flex-wrap:wrap;gap:15px}
+    }
+    @media(max-width:760px){
+      .hub{padding:22px 16px 68px}
+      .page-head{display:block;padding-bottom:26px}
+      .head-links{justify-content:flex-start;margin-top:18px}
+      .hero,.hero-body{min-height:400px}
+      .hero-body{padding:25px 20px}
+      .hero-shade{
+        background:
+          linear-gradient(0deg,rgba(4,10,15,.96) 0%,rgba(4,10,15,.7) 62%,rgba(4,10,15,.22) 100%);
+      }
+      .hero-logo{width:min(74%,220px)}
+      .official{margin-left:0}
+      .event-grid,.reset-grid,.coverage-grid{grid-template-columns:1fr}
+      .event-card:last-child{grid-column:auto}
+      .event-card:last-child .event-media{aspect-ratio:16/9}
+      .reset-times{grid-template-columns:1fr}
+      .tool-links{grid-template-columns:1fr}
+      .tool-links a{border-right:0!important}
+      .tool-links a:last-child{border-bottom:0}
+      .section{margin-top:52px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .event-card,.coverage-card,.btn{transition:none}
+      .event-card:hover,.coverage-card:hover,.btn:hover{transform:none}
+    }
+  </style>
 </BaseLayout>
