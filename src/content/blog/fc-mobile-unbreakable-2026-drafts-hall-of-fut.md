@@ -1,9 +1,9 @@
 ---
-id: fc-mobile-unbreakable-2026-drafts-hall-of-fut
-slug: "fc-mobile-unbreakable-2026-drafts-hall-of-fut"
+id: fc-mobile-unbreakable-2026-drafts
+slug: "fc-mobile-unbreakable-2026-drafts"
 title: "FC Mobile Unbreakable Coming October 15: 122 OVR Zanetti & Van Nistelrooy Drafts Leaked"
-subtitle: "Zanetti and Van Nistelrooy lead the first reported Unbreakable Drafts, with Theo Walcott, Antonio Valencia and Florenzi listed as Hall of FUT"
-description: "FC Mobile Unbreakable is expected to start on October 15. The first reported Drafts feature 122 OVR Javier Zanetti and Ruud van Nistelrooy, plus Theo Walcott, Antonio Valencia and Alessandro Florenzi in the reported Hall of FUT pool."
+subtitle: "Zanetti and Van Nistelrooy lead the first reported Unbreakable Drafts, with six leaked players across the two pools"
+description: "FC Mobile Unbreakable is expected to start on October 15. The first reported Drafts feature 122 OVR Javier Zanetti and Ruud van Nistelrooy, with Theo Walcott, Antonio Valencia, Alessandro Florenzi and Éder Militão also reported in the pools."
 type: "leaks"
 category: "Leaks"
 author: "TanzimFC"
@@ -16,8 +16,8 @@ image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-t
 imageAlt: "FC Mobile Unbreakable event banner"
 imageCaption: "FC Mobile Unbreakable event banner"
 thumbnail: ""
-excerpt: "The reported Unbreakable Drafts put 122 OVR Javier Zanetti and Ruud van Nistelrooy at the top, with Theo Walcott, Antonio Valencia and Alessandro Florenzi listed as Hall of FUT cards."
-tags: ["FC Mobile 27", "Unbreakable", "Player Leaks", "Draft", "Hall of FUT", "Icons", "122 OVR"]
+excerpt: "The reported Unbreakable Drafts put 122 OVR Javier Zanetti and Ruud van Nistelrooy at the top, with Walcott, Valencia, Florenzi and Militão filling the remaining slots."
+tags: ["FC Mobile 27", "Unbreakable", "Player Leaks", "Draft", "Icons", "122 OVR"]
 relatedPlayers: []
 relatedEvents: ["Unbreakable"]
 relatedArticles: []
@@ -26,14 +26,11 @@ relatedCodes: []
 featured: false
 readingTime: 5
 seoTitle: "FC Mobile Unbreakable 2026: 122 OVR Zanetti & Van Nistelrooy Drafts"
-seoDescription: "FC Mobile Unbreakable is expected October 15 with 122 OVR Zanetti and Van Nistelrooy. See the leaked Drafts and what the Hall of FUT rarity could mean."
+seoDescription: "FC Mobile Unbreakable is expected October 15 with 122 OVR Zanetti and Van Nistelrooy. See the reported Draft A and Draft B pools."
 canonicalUrl: ""
 sources:
   - "https://x.com/MadridistaaFC"
   - "https://www.sportsdunia.com/esports/ea-fc-mobile-unbreakable-draft-predictions"
-  - "https://www.ea.com/games/ea-sports-fc/fc-27/news/fc-27-hall-of-fut"
-  - "https://www.fut.gg/hall-of-fut/"
-  - "https://www.fut.gg/players/1041-javier-zanetti/26-50332689/"
 factStatus: "community-reported"
 lastReviewed: "2026-10-06"
 ---
@@ -64,89 +61,13 @@ The first reported Drafts are already out, and the player mix is the interesting
 
 The reported leak came from **MadridistaaFC** and has since been circulated by several FC Mobile community accounts. The six-player list is consistent across those reports, but the live game is still the final check.
 
-## The strange part: why are Icons and Hall of FUT players in Unbreakable?
+## The player mix is the interesting part
 
-This is the question the leak immediately raises.
+The leaked pools combine different card identities inside the same Unbreakable event. Zanetti and Van Nistelrooy are reported as Icons, while Walcott, Valencia and Florenzi are reported with the newer Hall of FUT identity. Militão is listed as a normal player.
 
-**Zanetti and Ruud van Nistelrooy are Icons in EA SPORTS FC 27 Ultimate Team.** Their current FC 27 entries are still listed as Icons.
+That is worth noting, but it does **not** mean Hall of FUT is the same thing as an Icon or Hero. The Hall of FUT system deserves its own explanation, especially because EA created it specifically for FC 27. We cover that separately rather than mixing the two subjects here.
 
-At the same time, **Theo Walcott, Antonio Valencia and Alessandro Florenzi are Hall of FUT players in FC 27**. The current Hall of FUT roster also includes names such as Alexandre Pato, Hulk, Mario Balotelli, David Luiz and Miguel Layún.
-
-So this does not look like EA simply moving everyone into one new permanent rarity.
-
-It looks more like **Unbreakable is an event that can feature players from different existing card categories**.
-
-That has a precedent.
-
-In EA FC 26, Javier Zanetti had an **Unbreakables ICON** version. In other words, an Icon could receive an Unbreakables version while keeping the Icon identity underneath the event item. citeturn548091search0
-
-That makes the 2026 FC Mobile leak a lot less strange.
-
-## So what exactly is Hall of FUT?
-
-EA introduced **Hall of FUT as a new Player Item type for FC 27**.
-
-The idea is different from the usual Icon route. EA describes Hall of FUT as a way to recognize players who became famous inside Ultimate Team itself, especially through memorable cards, meta gameplay and the nostalgia attached to old FUT eras. EA's first class included **Adebayo Akinfenwa, Marouane Fellaini, Loïc Rémy, Eljero Elia and Giovani dos Santos**. citeturn334031search0
-
-The current FC 27 database has expanded that pool. **Walcott, Valencia and Florenzi are all now listed as Hall of FUT**, alongside several other players strongly associated with old FUT culture. citeturn921423search5turn921423search0
-
-That explains why seeing Walcott in an Unbreakable Draft does not necessarily mean EA has suddenly made him an Icon.
-
-He can remain a **Hall of FUT player** while receiving a higher-rated **Unbreakable event card** in FC Mobile.
-
-## Is Hall of FUT the same thing on FC Mobile?
-
-This is where we need to be careful.
-
-The leak strongly suggests that **Hall of FUT is coming into the FC Mobile player ecosystem**, because Walcott, Valencia and Florenzi are specifically reported with that identity.
-
-But EA has **not yet published a detailed FC Mobile explanation** saying exactly how the Hall of FUT rarity works on mobile, how it relates to Icons and Heroes, or whether the mobile versions will follow the same rules as console Ultimate Team.
-
-So right now, the safe read is:
-
-**Hall of FUT is a real FC 27 card category. The Unbreakable leak suggests FC Mobile is using that category too. The exact mobile implementation is still unconfirmed.**
-
-That is a much stronger conclusion than saying Hall of FUT is just another name for Heroes or Icons.
-
-## What makes the Unbreakable leak interesting?
-
-The card pool itself tells us something.
-
-You have:
-
-**122 OVR Icons**
-- Javier Zanetti
-- Ruud van Nistelrooy
-
-**121 OVR Hall of FUT**
-- Theo Walcott
-- Antonio Valencia
-
-**120 OVR players**
-- Éder Militão
-- Alessandro Florenzi, also reported as Hall of FUT
-
-So Unbreakable appears to be using the **event as the main theme**, while the underlying player identity can still be Icon, Hall of FUT or normal.
-
-That is probably the cleanest way to understand the leak right now.
-
-The word **Unbreakable** looks like the event category. **Icon and Hall of FUT** look like the player's underlying rarity.
-
-We need the live FC Mobile cards to confirm exactly how EA has built it.
-
-## This is not the same situation as last year's Unbreakables
-
-There is another useful piece of history here.
-
-In EA FC 26, Unbreakables included special versions of both **Icons and Heroes**, with Javier Zanetti appearing as an Unbreakables Icon. citeturn548091search2turn548091search3
-
-So EA already has a habit of using the Unbreakables campaign to bring special versions of players from other rarity groups.
-
-That means the 2026 FC Mobile leak is not coming completely out of nowhere.
-
-The new part is the reported **Hall of FUT** presence.
-
-## Unbreakable vs Libertadores
+## Unbreakable vs Libertadores/m
 
 Both events are expected to start on **October 15**.
 
