@@ -14,7 +14,7 @@ relatedArticles: []
 relatedTools: []
 relatedCodes: []
 featured: false
-# EDITORIAL SOURCE RULE: Only ea.com sources may be listed here. The Hall of FUT article may also list the FUT.GG Hall of FUT reference. Do not add other websites, creator profiles, social posts, or competing FC Mobile sites to article Sources.
+# INTERNAL EDITORIAL NOTE: ea.com sources are allowed when an article uses official EA material. The Hall of FUT article previously used FUT.GG as a one-off exception. Do not add source links here unless they are intentionally needed.
 sources: []
 ---
 
