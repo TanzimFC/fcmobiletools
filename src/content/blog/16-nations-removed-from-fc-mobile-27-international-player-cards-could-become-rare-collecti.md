@@ -7,6 +7,8 @@ description: "A breakdown of 16 national-team database changes reported in FC27 
 type: "news"
 category: "Updates"
 author: "TanzimFC"
+series: "FC Mobile 27"
+seriesOrder: 3
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-09-19T07:33:23.201Z"
@@ -31,7 +33,6 @@ canonicalUrl: ""
 sources: []
 factStatus: "partially-verified"
 lastReviewed: ""
-series: ""
 ---
 
 ![Article image](https://res.cloudinary.com/b0qikv7n/image/upload/v1789803003/fc-mobile-tools/fezkwvxksloq9kgyi8ld.png)
