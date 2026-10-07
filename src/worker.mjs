@@ -341,6 +341,7 @@ async function accountApi(request, env, url) {
         method:'PATCH',headers:{Prefer:'return=minimal','content-type':'application/json'},
         body:JSON.stringify({onboarding_complete:true})
       });
+      let questCompleted=false;
       if(!wasComplete) {
         await supabaseRest(env,'activity_events',{
           method:'POST',headers:{Prefer:'return=minimal'},
@@ -351,7 +352,33 @@ async function accountApi(request, env, url) {
           }])
         });
       }
-      return json({ok:true,complete:true});
+      try{
+        const tasks=await supabaseRest(env,'reward_tasks?slug=eq.complete-profile&enabled=eq.true&select=id&limit=1');
+        const task=tasks?.[0];
+        if(task?.id){
+          const start=await supabaseRest(env,'rpc/start_task',{
+            method:'POST',
+            headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+            body:JSON.stringify({p_task_id:task.id,p_idempotency_key:crypto.randomUUID()})
+          });
+          const attemptId=typeof start==='string' ? start : Array.isArray(start) ? start[0] : start?.id || start?.result;
+          if(attemptId){
+            try{
+              await supabaseRest(env,'rpc/complete_task',{
+                method:'POST',
+                headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+                body:JSON.stringify({p_attempt_id:attemptId,p_client_elapsed_ms:1000})
+              });
+              questCompleted=true;
+            }catch(error){
+              if(/already completed/i.test(String(error?.message||''))) questCompleted=true;
+            }
+          }
+        }
+      }catch(error){
+        console.error('[PROFILE_QUEST]',error?.message);
+      }
+      return json({ok:true,complete:true,questCompleted});
     } catch(error) {
       return json({error:String(error?.message||'Unable to save your FC Mobile profile.')},400);
     }
@@ -464,13 +491,13 @@ async function accountApi(request, env, url) {
 
   const missionStartMatch=url.pathname.match(/^\/api\/account\/missions\/([0-9a-f-]+)\/start$/i);
   if(request.method==='POST' && missionStartMatch) {
-    if(!user.email_confirmed_at) return json({error:'Please verify your email before starting a mission.'},403);
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before starting a Quest.'},403);
     const taskId=missionStartMatch[1];
     const input=await request.json().catch(()=>({}));
     let idempotencyKey=input?.idempotencyKey||null;
     try { if(!idempotencyKey) idempotencyKey=crypto.randomUUID(); } catch { idempotencyKey=null; }
     if(!idempotencyKey || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
-      return json({error:'Invalid mission request.'},400);
+      return json({error:'Invalid Quest request.'},400);
     }
     try {
       const result=await supabaseRest(env,'rpc/start_task',{
@@ -480,20 +507,20 @@ async function accountApi(request, env, url) {
       });
       return json({ok:true,attemptId:result});
     } catch(error) {
-      const msg=String(error?.message||'Unable to start this mission.');
+      const msg=String(error?.message||'Unable to start this Quest.');
       return json({error:msg},/verified email|Authentication required|Account not provisioned|eligible/i.test(msg)?403:400);
     }
   }
 
   const missionCompleteMatch=url.pathname.match(/^\/api\/account\/missions\/([0-9a-f-]+)\/complete$/i);
   if(request.method==='POST' && missionCompleteMatch) {
-    if(!user.email_confirmed_at) return json({error:'Please verify your email before completing a mission.'},403);
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before completing a Quest.'},403);
     const taskId=missionCompleteMatch[1];
     const input=await request.json().catch(()=>({}));
     const attemptId=String(input?.attemptId||'').trim();
     const proof=String(input?.proof||'').trim().toLowerCase();
     const clientElapsedMs=Math.max(0,Math.min(86400000,Number(input?.clientElapsedMs||0)));
-    if(!/^[0-9a-f-]{36}$/i.test(attemptId)) return json({error:'Invalid mission attempt.'},400);
+    if(!/^[0-9a-f-]{36}$/i.test(attemptId)) return json({error:'Invalid Quest attempt.'},400);
 
     try {
       const attempts=await supabaseRest(env,
@@ -503,18 +530,18 @@ async function accountApi(request, env, url) {
         '&select=id,task_id,status&limit=1'
       );
       const attempt=attempts?.[0];
-      if(!attempt) return json({error:'Mission attempt not found.'},404);
+      if(!attempt) return json({error:'Quest attempt not found.'},404);
 
       const taskRows=await supabaseRest(env,
         'reward_tasks?id=eq.'+encodeURIComponent(taskId)+
         '&select=id,slug,task_type,verification_method,conditions&limit=1'
       );
       const task=taskRows?.[0];
-      if(!task) return json({error:'Mission not found.'},404);
+      if(!task) return json({error:'Quest not found.'},404);
 
       // Strong checks for missions whose truth already exists on the server.
       if(task.slug==='verify-email' && !user.email_confirmed_at) {
-        return json({error:'Verify your email before claiming this mission.'},403);
+        return json({error:'Verify your email before claiming this Quest.'},403);
       }
       if(task.slug==='complete-profile') {
         const profiles=await supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id)+'&select=fc_mobile_uid,in_game_username,region_server&limit=1');
@@ -561,7 +588,7 @@ async function accountApi(request, env, url) {
           'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=level&limit=1'
         );
         if(Number(progressRows?.[0]?.level||1)<3) {
-          return json({error:'Reach Level 3 through verified progression before claiming this mission.'},409);
+          return json({error:'Reach Level 3 through verified progression before claiming this Quest.'},409);
         }
       }
 
@@ -570,7 +597,7 @@ async function accountApi(request, env, url) {
           'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=current_streak&limit=1'
         );
         if(Number(progressRows?.[0]?.current_streak||0)<3) {
-          return json({error:'Build a 3-day qualifying activity streak before claiming this mission.'},409);
+          return json({error:'Build a 3-day qualifying activity streak before claiming this Quest.'},409);
         }
       }
 
@@ -592,7 +619,7 @@ async function accountApi(request, env, url) {
           '&status=eq.approved&select=id&limit=1'
         );
         if(!approved?.length) {
-          return json({error:'Submit a useful community correction or report and wait for it to be approved before claiming this mission.'},409);
+          return json({error:'Submit a useful community correction or report and wait for it to be approved before claiming this Quest.'},409);
         }
       }
 
@@ -603,7 +630,7 @@ async function accountApi(request, env, url) {
       });
       return json({ok:true,tokenReward:Number(reward||0),status:'completed'});
     } catch(error) {
-      const msg=String(error?.message||'Unable to complete this mission.');
+      const msg=String(error?.message||'Unable to complete this Quest.');
       const status=/already completed|limit reached|cooldown/i.test(msg)?409:/Authentication required|Verified email|not eligible/i.test(msg)?403:400;
       return json({error:msg},status);
     }  }
@@ -649,12 +676,72 @@ async function accountApi(request, env, url) {
         method:'POST',headers:{Prefer:'return=minimal'},
         body:JSON.stringify([{account_id:account.id,event_type:eventType,entity_type:entityType,entity_id:entityId,metadata:{duration_ms:durationMs},source:'client',idempotency_key:key}])
       });
-      return json({ok:true});
+
+      let questCompleted=false;
+      let questSlug='';
+      let questTokenReward=0;
+      try{
+        const today=new Date().toISOString().slice(0,10);
+        const assignments=await supabaseRest(env,
+          'daily_quest_assignments?account_id=eq.'+encodeURIComponent(account.id)+
+          '&utc_date=eq.'+encodeURIComponent(today)+'&status=eq.assigned&select=task_id,slot&order=slot.asc&limit=3'
+        );
+        const ids=(assignments||[]).map(x=>x.task_id).filter(Boolean);
+        if(ids.length){
+          const inList='('+ids.join(',')+')';
+          const tasks=await supabaseRest(env,
+            'reward_tasks?id=in.'+encodeURIComponent(inList)+
+            '&enabled=eq.true&select=id,slug,conditions'
+          );
+          const match=(tasks||[]).find(t=>{
+            const conditions=t.conditions&&typeof t.conditions==='object'?t.conditions:{};
+            return conditions.event===eventType &&
+              String(conditions.page||conditions.tool||'')===entityId;
+          });
+          if(match){
+            const start=await supabaseRest(env,'rpc/start_task',{
+              method:'POST',
+              headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+              body:JSON.stringify({p_task_id:match.id,p_idempotency_key:crypto.randomUUID()})
+            });
+            const attemptId=typeof start==='string' ? start : Array.isArray(start) ? start[0] : start?.id || start?.result;
+            if(attemptId){
+              try{
+                const reward=await supabaseRest(env,'rpc/complete_task',{
+                  method:'POST',
+                  headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+                  body:JSON.stringify({p_attempt_id:attemptId,p_client_elapsed_ms:durationMs})
+                });
+                questCompleted=true;
+                questSlug=match.slug;
+                questTokenReward=Number(reward||0);
+              }catch(error){
+                if(/already completed/i.test(String(error?.message||''))){
+                  questCompleted=true;
+                  questSlug=match.slug;
+                }
+              }
+            }
+          }
+        }
+      }catch(error){
+        console.error('[ACTIVITY_QUEST]',error?.message);
+      }
+      return json({ok:true,questCompleted,questSlug,tokenReward:questTokenReward});
     } catch(error) { return json({error:String(error?.message||'Unable to record activity.')},400); }
   }
 
   if(request.method==='GET' && url.pathname==='/api/account/achievements') {
     if(!user.email_confirmed_at) return json({error:'Please verify your email before using achievements.'},403);
+    try{
+      await supabaseRest(env,'rpc/refresh_achievements',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+        body:'{}'
+      });
+    }catch(error){
+      console.error('[ACHIEVEMENT_REFRESH]',error?.message);
+    }
     const defs=await supabaseRest(env,
       'achievements?active=eq.true&select=id,slug,name,description,icon,requirement,hidden,xp_reward,token_reward,priority&order=priority.asc,created_at.desc&limit=100'
     );
