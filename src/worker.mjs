@@ -1984,18 +1984,16 @@ export function createExports(manifest) {
   const url=new URL(request.url);
   const hostHeader=(request.headers.get('host')||'').split(':')[0].toLowerCase();
 
-  // Never expose a second public origin. Redirect the legacy workers.dev host
-  // and the www hostname to the one canonical public origin before any route,
-  // auth, or tournament handling can return content.
+  // Flatten the legacy workers.dev redirect: return a direct 301 before
+  // any route, auth, tournament, asset, or Astro handling can run.
   if(
     url.hostname === 'tanzimfc.fcmobiletools.workers.dev' ||
     hostHeader === 'tanzimfc.fcmobiletools.workers.dev'
   ) {
-    const destination=new URL(url.pathname + url.search, 'https://fcmobiletools.online');
     return new Response(null,{
       status:301,
       headers:{
-        location:destination.toString(),
+        location:'https://fcmobiletools.com',
         'cache-control':'public, max-age=86400'
       }
     });
