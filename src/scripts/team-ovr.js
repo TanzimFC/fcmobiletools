@@ -353,6 +353,27 @@ if (root) {
     }
   });
 
+  let teamOvrTouched=false;
+  let teamOvrActivityTimer=0;
+  let lastTeamOvrActivitySignature='';
+
+  function scheduleTeamOvrActivity(summary){
+    if(!teamOvrTouched || !summary?.exact || !summary.teamOVR) return;
+    window.clearTimeout(teamOvrActivityTimer);
+    teamOvrActivityTimer=window.setTimeout(()=>{
+      const signature=[summary.startersFilled,summary.teamOVR,...summary.players.slice(0,STARTING_XI_SIZE).map(p=>p.baseOVR+'/'+p.rank)].join('|');
+      if(signature===lastTeamOvrActivitySignature) return;
+      lastTeamOvrActivitySignature=signature;
+      window.dispatchEvent(new CustomEvent('fcmobiletools:tool-activity',{
+        detail:{
+          entityId:'team-ovr',
+          durationMs:3000,
+          metadata:{teamOVR:Number(summary.teamOVR),startersFilled:Number(summary.startersFilled)}
+        }
+      }));
+    },900);
+  }
+
   function update({ syncEditor = false } = {}) {
     const summary = summarizeSquad({ starters: state.starters, bench: state.bench, badges: state.badges });
     lastSummary = summary;
@@ -368,7 +389,15 @@ if (root) {
     renderPlanner(summary, next);
     renderWeak(summary);
     persist();
+    scheduleTeamOvrActivity(summary);
   }
+
+  // A Team OVR Quest requires actual squad input, not a page open.
+  root.addEventListener('input',()=>{ teamOvrTouched=true; },{capture:true});
+  root.addEventListener('click',event=>{
+    if(event.target?.closest('a,[data-site-nav]')) return;
+    teamOvrTouched=true;
+  },{capture:true});
 
   /* ---------------------------------------------------------------- selection + sheet */
   const sheetOpen = () => el.editor.dataset.open === 'true';
