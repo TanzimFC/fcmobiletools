@@ -175,7 +175,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <div class="form-intro">
               <span class="form-eyebrow">NEW ACCOUNT</span>
               <h2>Create your account</h2>
-              <p>New email/password registration is temporarily paused. Start with Google, then finish your FCMobiletools profile.</p>
+              <p>New email/password registration is temporarily paused. Start with Google and finish your FC Mobile profile from your dashboard.</p>
             </div>
 
             <div class="signup-pause">
@@ -566,11 +566,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         return;
       }
 
-      if (body.account.onboardingComplete === false) {
-        showOnboarding(body.account, user);
-        return;
-      }
-
+      // Account creation/sign-in ends here. FC Mobile profile completion is a
+      // dashboard Quest, not a gate in front of the account.
       location.replace('/profile/');
     } catch (error) {
       showMessage(loginMessage, friendlyAuthError(error, 'Could not load your account. Please refresh and try again.'), true);
