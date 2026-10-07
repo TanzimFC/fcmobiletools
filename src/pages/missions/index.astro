@@ -37,13 +37,17 @@ import AccountNav from '../../components/AccountNav.astro';
           <div>
             <span class="streak-kicker">DAILY CHECK-IN · UTC</span>
             <h2 id="streakTitle">Keep your streak alive.</h2>
-            <p id="streakCopy">Check in once each UTC day. A second claim after the reset still has to respect the 6-hour cooldown.</p>
+            <p id="streakCopy">Check in once each UTC day. A second claim after the reset still has to respect the 4-hour safety break.</p>
           </div>
         </div>
         <div class="streak-stats">
           <div><span>Current</span><strong id="streakCurrent">0 days</strong></div>
           <div><span>Best</span><strong id="streakBest">0 days</strong></div>
           <div><span>Freeze</span><strong id="streakFreeze">0</strong></div>
+        </div>
+        <div class="streak-timers" aria-label="Check-in timers">
+          <div><span>UTC RESET</span><strong id="streakResetTimer">24h 00m</strong><small>Next daily window</small></div>
+          <div><span>4H SAFETY BREAK</span><strong id="streakCooldownTimer">Ready</strong><small>After each claim</small></div>
         </div>
         <button type="button" class="streak-checkin" id="streakCheckinBtn">Check in</button>
       </section>
@@ -292,6 +296,22 @@ import AccountNav from '../../components/AccountNav.astro';
     return h ? `${h}h ${String(m).padStart(2,'0')}m` : `${m}m ${String(s).padStart(2,'0')}s`;
   }
 
+  let streakTimer=0;
+  function nextUtcResetMs(){
+    const next=new Date();
+    next.setUTCHours(24,0,0,0);
+    return Math.max(0,next.getTime()-Date.now());
+  }
+  function renderStreakTimers(streak){
+    const reset=document.getElementById('streakResetTimer');
+    const cooldown=document.getElementById('streakCooldownTimer');
+    if(!reset||!cooldown) return;
+    reset.textContent=formatCountdown(nextUtcResetMs());
+    const last=streak?.lastCheckInAt ? new Date(streak.lastCheckInAt) : null;
+    const cooldownLeft=last ? Math.max(0,14400000-(Date.now()-last.getTime())) : 0;
+    cooldown.textContent=cooldownLeft>0 ? formatCountdown(cooldownLeft) : 'Ready';
+  }
+
   function renderStreak(streak) {
     const current=Number(streak?.current||0), best=Number(streak?.longest||0), freezes=Number(streak?.freezes||0);
     const last=streak?.lastCheckInAt ? new Date(streak.lastCheckInAt) : null;
@@ -307,18 +327,10 @@ import AccountNav from '../../components/AccountNav.astro';
         title.textContent='Today is covered.';
         copy.textContent='Your UTC check-in is already done. Come back after the next UTC day to keep it going.';
         btn.textContent='Checked in today ✓'; btn.disabled=true;
-      } else if(elapsed<21600000) {
-        title.textContent='Cooldown is active.';
-        copy.textContent='The next check-in opens after the 6-hour cooldown. This blocks 23:59 → 00:00 double claims.';
-        btn.textContent='Next check-in in '+formatCountdown(21600000-elapsed); btn.disabled=true;
-        if(!btn.dataset.timer) {
-          btn.dataset.timer='1';
-          const timer=setInterval(()=>{
-            if(!btn.isConnected){clearInterval(timer);return;}
-            const left=21600000-(Date.now()-last.getTime());
-            if(left<=0){clearInterval(timer);btn.dataset.timer='';renderStreak(streak);} else btn.textContent='Next check-in in '+formatCountdown(left);
-          },1000);
-        }
+      } else if(elapsed<14400000) {
+        title.textContent='Safety break is active.';
+        copy.textContent='Your next check-in opens after 4 hours. The UTC daily reset is separate.';
+        btn.textContent='Next check-in in '+formatCountdown(14400000-elapsed); btn.disabled=true;
       } else {
         title.textContent=current?'Keep the streak alive.':'Start your streak.';
         copy.textContent='One successful check-in per UTC day. A Streak Freeze can protect one missed UTC day.';
@@ -367,7 +379,17 @@ import AccountNav from '../../components/AccountNav.astro';
 
   document.getElementById('streakCheckinBtn')?.addEventListener('click', handleCheckIn);
 
+  let lastQuestLoadAt=0;
+  async function refreshQuestsOnReturn(){
+    if(Date.now()-lastQuestLoadAt<500) return;
+    lastQuestLoadAt=Date.now();
+    try{ await load(); }catch{}
+  }
+  window.addEventListener('pageshow',event=>{ if(event.persisted) refreshQuestsOnReturn(); });
+  window.addEventListener('fcmobiletools:quest-status-changed',refreshQuestsOnReturn);
+
   async function load() {
+    lastQuestLoadAt=Date.now();
     const session = await accountAuth.auth.getSession();
     if (!session.data?.session) {
       root.innerHTML = `
@@ -552,6 +574,12 @@ import AccountNav from '../../components/AccountNav.astro';
   .streak-checkin{min-width:166px;height:46px;padding:0 18px;border:1px solid #6ed8ff;border-radius:14px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04131c;font:800 12px/1 var(--font-body);cursor:pointer;box-shadow:0 12px 28px rgba(76,201,255,.14)}
   .streak-checkin:hover{filter:brightness(1.03);transform:translateY(-1px)}
   .streak-checkin:disabled{opacity:.58;cursor:not-allowed;transform:none;filter:none}
+  .streak-timers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .streak-timers div{min-width:150px;padding:10px 12px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(5,12,18,.45)}
+  .streak-timers span{display:block;color:#6f8798;font:800 8px/1 var(--font-body);letter-spacing:.12em}
+  .streak-timers strong{display:block;margin-top:6px;color:#dff6ff;font:800 16px/1 var(--font-display)}
+  .streak-timers small{display:block;margin-top:5px;color:#71899a;font:500 10px/1.2 var(--font-body)}
+  @media(max-width:560px){.streak-timers{grid-template-columns:1fr}.streak-timers div{min-width:0}}
   .social-quest-box{display:grid;gap:9px;width:100%}
   .social-proof-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
   .social-proof-row input{min-width:0}
