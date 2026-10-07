@@ -5,13 +5,16 @@ import Tie from '../../components/tournament/Tie.astro';
 import Standings from '../../components/tournament/Standings.astro';
 import Fixture from '../../components/tournament/Fixture.astro';
 import { TOURNAMENT_PUBLICATIONS } from '../../data/tournaments.js';
+import { ROUND_OF_16_SAMPLE } from '../../data/tournament-samples.js';
 import {
   buildKnockout, groupByMatchday, sortStandings, progressOf, nextMatch, championOf,
   tournamentState, formatLabel, matchModeLabel, stageTypeLabel, formatDate
 } from '../../lib/tournamentView.js';
 
+const PUBLIC_TOURNAMENTS = [...TOURNAMENT_PUBLICATIONS, ROUND_OF_16_SAMPLE];
+
 export function getStaticPaths() {
-  return TOURNAMENT_PUBLICATIONS.filter((t) => t.isPublic).map((t) => ({
+  return PUBLIC_TOURNAMENTS.filter((t) => t.isPublic).map((t) => ({
     params: { slug: t.slug },
     props: { tournament: t }
   }));
