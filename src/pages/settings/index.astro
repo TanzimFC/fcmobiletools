@@ -152,24 +152,50 @@ import AccountNav from '../../components/AccountNav.astro';
                 <span class="set-kicker">PRIVATE CREDENTIALS</span>
                 <h2>Email &amp; Security</h2>
               </div>
-              <span class="pill-tag ${isVerified ? 'is-green' : 'is-amber'}">
-                ${isVerified ? 'Verified' : 'Unverified'}
+              <span class="pill-tag \${isVerified ? 'is-green' : 'is-amber'}">
+                \${isVerified ? 'Verified' : 'Unverified'}
               </span>
             </div>
             <div class="sec-info-row">
               <div>
                 <small>LINKED EMAIL ADDRESS (NEVER PUBLIC)</small>
-                <strong>${esc(a.email || 'Protected')}</strong>
+                <strong>\${esc(a.email || 'Protected')}</strong>
               </div>
             </div>
             <p class="sec-note">
-              ${isVerified
-                ? 'Your email address is verified. You can request a password reset any time.'
+              \${isVerified
+                ? 'Your email address is verified. Password changes require your current password.'
                 : 'Your email address is not verified yet. You can resend a fresh verification link whenever you need one.'}
             </p>
+
+            \${!isVerified ? '<div class="sec-actions"><button type="button" class="set-btn-secondary" id="resendVerificationBtn">Resend Verification Email</button></div>' : ''}
+
+            <form class="password-change-form" id="passwordChangeForm" novalidate>
+              <div class="password-change-title">CHANGE PASSWORD</div>
+              <div class="password-change-grid">
+                <div class="field">
+                  <label for="currentPassword">Current password</label>
+                  <input id="currentPassword" type="password" autocomplete="current-password" required minlength="10" placeholder="Enter your current password" />
+                </div>
+                <div class="field">
+                  <label for="newPassword">New password <small>(min 10 characters)</small></label>
+                  <input id="newPassword" type="password" autocomplete="new-password" required minlength="10" placeholder="Create a new password" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="confirmNewPassword">Confirm new password</label>
+                <input id="confirmNewPassword" type="password" autocomplete="new-password" required minlength="10" placeholder="Enter the new password again" />
+              </div>
+              <button class="set-btn-primary" type="submit">Change Password</button>
+              <p class="status-msg" id="passwordMsg" role="status"></p>
+            </form>
+
+            <div class="forgot-help">
+              <strong>Forgot your password?</strong>
+              <span>Password recovery is currently locked. Please contact us on <a href="https://discord.com/invite/B4a7AxuU69" target="_blank" rel="noopener noreferrer">Discord</a> for help.</span>
+            </div>
+
             <div class="sec-actions">
-              ${!isVerified ? '<button type="button" class="set-btn-secondary" id="resendVerificationBtn">Resend Verification Email</button>' : ''}
-              <button type="button" class="set-btn-secondary" id="sendPasswordResetBtn">Send Password Reset Email</button>
               <button type="button" class="set-btn-danger" id="settingsLogoutBtn">Sign out</button>
             </div>
             <p class="status-msg" id="securityMsg" role="status"></p>
@@ -326,25 +352,62 @@ import AccountNav from '../../components/AccountNav.astro';
       }
     });
 
-    // Password reset trigger
-    document.getElementById('sendPasswordResetBtn')?.addEventListener('click', async (event) => {
-      const btn = event.currentTarget;
-      const msg = document.getElementById('securityMsg');
-      if (!a.email) return;
-      btn.disabled = true;
+    // Password changes require verification of the current password first.
+    document.getElementById('passwordChangeForm')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const msg = document.getElementById('passwordMsg');
+      const button = form.querySelector('button[type="submit"]');
+      const currentPassword = String(document.getElementById('currentPassword')?.value || '');
+      const newPassword = String(document.getElementById('newPassword')?.value || '');
+      const confirmPassword = String(document.getElementById('confirmNewPassword')?.value || '');
+
       msg.textContent = '';
+      msg.className = 'status-msg';
+
+      if (currentPassword.length < 10) {
+        msg.textContent = 'Enter your current password.';
+        msg.className = 'status-msg is-err';
+        return;
+      }
+      if (newPassword.length < 10) {
+        msg.textContent = 'Use a new password with at least 10 characters.';
+        msg.className = 'status-msg is-err';
+        return;
+      }
+      if (newPassword === currentPassword) {
+        msg.textContent = 'Your new password must be different from the current password.';
+        msg.className = 'status-msg is-err';
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        msg.textContent = 'The new passwords do not match.';
+        msg.className = 'status-msg is-err';
+        return;
+      }
+
+      button.disabled = true;
       try {
-        const res = await accountAuth.auth.resetPasswordForEmail(a.email, {
-          redirectTo: getAuthRedirectUrl()
+        const currentEmail = String(a.email || '').trim().toLowerCase();
+        if (!currentEmail) throw new Error('Your account email is unavailable. Please sign in again.');
+
+        const verify = await accountAuth.auth.signInWithPassword({
+          email: currentEmail,
+          password: currentPassword
         });
-        if (res.error) throw res.error;
-        msg.textContent = 'Password reset link sent to ' + a.email + '.';
+        if (verify.error) throw new Error('Current password is incorrect.');
+
+        const updated = await accountAuth.auth.updateUser({ password: newPassword });
+        if (updated.error) throw updated.error;
+
+        form.reset();
+        msg.textContent = 'Password changed successfully.';
         msg.className = 'status-msg is-ok';
       } catch (e) {
-        msg.textContent = e.message || 'Could not send reset email.';
+        msg.textContent = e.message || 'Unable to change your password right now.';
         msg.className = 'status-msg is-err';
       } finally {
-        btn.disabled = false;
+        button.disabled = false;
       }
     });
 
@@ -536,6 +599,43 @@ import AccountNav from '../../components/AccountNav.astro';
     border-color: #4cc9ff;
     box-shadow: 0 0 0 4px rgba(76, 201, 255, 0.12);
   }
+  .password-change-form {
+    display: grid;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .password-change-title {
+    color: #8ee0ff;
+    font: 800 10px/1 var(--font-body);
+    letter-spacing: 0.13em;
+  }
+  .password-change-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .forgot-help {
+    display: grid;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 13px;
+    border: 1px solid rgba(255, 190, 125, 0.18);
+    background: rgba(255, 190, 125, 0.045);
+  }
+  .forgot-help strong {
+    color: #ffe0c0;
+    font: 700 12px/1.3 var(--font-body);
+  }
+  .forgot-help span {
+    color: #9b8b7c;
+    font: 500 11.5px/1.45 var(--font-body);
+  }
+  .forgot-help a {
+    color: #ffc58e;
+    font-weight: 800;
+  }
+
   .hint {
     color: #7990a2;
     font: 500 12px/1.45 var(--font-body);

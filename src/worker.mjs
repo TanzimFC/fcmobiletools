@@ -252,6 +252,7 @@ async function accountApi(request, env, url) {
     return json({account:{
       id:account.id,username:account.username,displayName:account.display_name,avatarUrl:account.avatar_url,
       state:account.state,createdAt:account.created_at,updatedAt:account.updated_at,
+      onboardingComplete:account.onboarding_complete !== false,
       email:user.email||null,emailConfirmedAt:user.email_confirmed_at||null,
       level:Number(p.level||1),xp:Number(p.xp_balance||0),currentStreak:Number(p.current_streak||0),
       longestStreak:Number(p.longest_streak||0),lastQualifyingActivityAt:p.last_qualifying_activity_at||null,
@@ -278,6 +279,13 @@ async function accountApi(request, env, url) {
           p_avatar_url:avatarUrl
         })
       });
+      if(input.completeOnboarding===true) {
+        await supabaseRest(env,'accounts?id=eq.'+encodeURIComponent(account.id),{
+          method:'PATCH',
+          headers:{'Prefer':'return=minimal','content-type':'application/json'},
+          body:JSON.stringify({onboarding_complete:true})
+        });
+      }
       return json({ok:true,result});
     } catch(error) {
       const msg=String(error?.message||'Unable to save profile.');
