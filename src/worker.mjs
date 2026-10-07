@@ -362,6 +362,7 @@ async function accountApi(request, env, url) {
     try {
       const result=await supabaseRest(env,'rpc/server_update_profile_settings',{
         method:'POST',
+        headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
         body:JSON.stringify({
           p_account_id:account.id,
           p_profile_public:b('profile_public'),
@@ -371,8 +372,19 @@ async function accountApi(request, env, url) {
           p_show_streak:b('show_streak'),
           p_show_joined_date:b('show_joined_date'),
           p_show_achievements:b('show_achievements'),
-          p_show_tournament_stats:b('show_tournament_stats'),
+          p_show_tournament_stats:false,
           p_show_activity_summary:b('show_activity_summary')
+        })
+      });
+      await supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(account.id),{
+        method:'PATCH',
+        headers:{Prefer:'return=minimal','content-type':'application/json'},
+        body:JSON.stringify({
+          show_fc_mobile_uid:b('show_fc_mobile_uid'),
+          show_in_game_username:b('show_in_game_username'),
+          show_region_server:b('show_region_server'),
+          show_discord_handle:b('show_discord_handle'),
+          show_player_tags:b('show_player_tags')
         })
       });
       return json({ok:true,result});
