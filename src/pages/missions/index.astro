@@ -10,7 +10,7 @@ import AccountNav from '../../components/AccountNav.astro';
 >
   <main class="mod-page">
     <div class="mod-wrap">
-      <AccountNav active="quests" sectionLabel="Quests" />
+      <AccountNav active="missions" sectionLabel="Quests" />
 
       <header class="mod-head acc-anim">
         <div>
@@ -105,7 +105,7 @@ import AccountNav from '../../components/AccountNav.astro';
       return `<div class="social-quest-box"><div class="social-proof-row"><input type="text" maxlength="64" placeholder="Your handle" data-social-proof="${esc(m.id)}" /><a class="mission-action-secondary" href="${social[0]}" target="_blank" rel="noopener">${social[1]}</a></div>${checkButton('Send for Review')}</div>`;
     }
     if (slug==='reach-level-3') return `<div class="mission-actions"><a class="mission-action-secondary" href="/profile/">View Progress</a>${checkButton('Check Level')}</div>`;
-    if (slug==='build-three-day-streak') return `<div class="mission-actions"><a class="mission-action-secondary" href="/quests/">View Streak</a>${checkButton('Check Streak')}</div>`;
+    if (slug==='build-three-day-streak') return `<div class="mission-actions"><a class="mission-action-secondary" href="/missions/">View Streak</a>${checkButton('Check Streak')}</div>`;
     if (slug==='approved-community-contribution') return `<div class="mission-actions"><a class="mission-action-secondary" href="/profile/#contribute">Submit Correction</a>${checkButton('Check Approval')}</div>`;
     return `<div class="mission-actions">${checkButton()}</div>`;
   }
@@ -143,13 +143,13 @@ import AccountNav from '../../components/AccountNav.astro';
             </article>
             <article>
               <strong>Fair Limits</strong>
-              <span>Per-user daily/weekly caps, cooldowns and cooldowns and server checks stop easy repeat claims.</span>
+              <span>Daily caps, cooldowns and server checks stop easy repeat claims.</span>
             </article>
           </div>
           <div class="mod-empty-actions">
             <a class="mod-btn-primary" href="/profile/#contribute">Submit a Correction →</a>
             <a class="mod-btn-secondary" href="/events/">Open Live Events Hub</a>
-            <a class="mod-btn-secondary" href="/tournaments">Browse Tournaments</a>
+
           </div>
         </section>
       `;
@@ -365,7 +365,7 @@ import AccountNav from '../../components/AccountNav.astro';
         <section class="mod-empty-card acc-anim">
           <div class="mod-empty-badge">OPTIONAL ACCOUNT FEATURE</div>
           <h2>Sign in to view your personal quests</h2>
-          <p>Normal calculators, redeem codes, events and guides on FCMobiletools never require an account. Sign in if you want to track mission progress, streaks and XP.</p>
+          <p>Normal calculators, redeem codes, events and guides on FCMobiletools never require an account. Sign in if you want to track Quest progress, streaks and XP.</p>
           <div class="mod-empty-actions">
             <a class="mod-btn-primary" href="/account/">Sign in to Account →</a>
             <a class="mod-btn-secondary" href="/account/?mode=signup">Create Free Account</a>
@@ -410,7 +410,7 @@ import AccountNav from '../../components/AccountNav.astro';
               ? 'Confirm your email address, then return here. You can resend the verification email from Account Settings.'
               : isAuth
                 ? 'Your account session has expired. Sign in again to continue.'
-                : 'The mission service returned an error. Your account is not being marked unverified.'
+                : 'The Quest service hit an error. Your account is still fine. Try again in a moment.'
           )}</p>
           <div class="mod-empty-actions">
             <a class="mod-btn-primary" href="${isVerification ? '/settings/' : '/profile/'}">${isVerification ? 'Account Settings' : 'Back to Profile'}</a>
@@ -420,7 +420,7 @@ import AccountNav from '../../components/AccountNav.astro';
       return;
     }
 
-    allQuests = Array.isArray(b.quests) ? b.quests : (Array.isArray(b.quests) ? b.quests : []);
+    allQuests = Array.isArray(b.quests) ? b.quests : (Array.isArray(b.missions) ? b.missions : []);
     renderQuestsList();
   }
 
@@ -502,6 +502,55 @@ import AccountNav from '../../components/AccountNav.astro';
     border-color: #6ed8ff;
     background: linear-gradient(135deg, #9fe6ff, #4cc9ff);
     font-weight: 800;
+  }
+
+  .streak-panel {
+    position:relative;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    align-items:center;
+    gap:22px;
+    padding:22px 24px;
+    margin:0 0 18px;
+    border:1px solid rgba(76,201,255,.18);
+    border-radius:24px;
+    overflow:hidden;
+    background:
+      radial-gradient(420px 180px at 0% 0%,rgba(76,201,255,.13),transparent 68%),
+      radial-gradient(320px 150px at 100% 100%,rgba(99,212,255,.06),transparent 70%),
+      linear-gradient(145deg,#0f1a26,#09121b);
+    box-shadow:0 20px 70px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .streak-orbit{
+    position:absolute;
+    width:260px;height:260px;
+    left:-150px;top:-130px;
+    border:1px solid rgba(76,201,255,.12);
+    border-radius:50%;
+    box-shadow:0 0 0 34px rgba(76,201,255,.02),0 0 0 70px rgba(76,201,255,.015);
+    pointer-events:none;
+  }
+  .streak-main{position:relative;display:flex;align-items:center;gap:15px;min-width:0}
+  .streak-icon{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;border:1px solid rgba(76,201,255,.22);background:linear-gradient(145deg,rgba(76,201,255,.16),rgba(76,201,255,.05));box-shadow:0 10px 34px rgba(76,201,255,.08)}
+  .streak-icon span{font-size:24px;line-height:1}
+  .streak-kicker{display:block;color:#4cc9ff;font:800 9px/1 var(--font-body);letter-spacing:.15em}
+  .streak-main h2{margin:6px 0 4px;font:700 22px/1.1 var(--font-display);letter-spacing:-.03em;color:#f5f8fb}
+  .streak-main p{margin:0;color:#8fa5b6;font:500 12px/1.5 var(--font-body);max-width:620px}
+  .streak-stats{display:flex;gap:18px}
+  .streak-stats div{min-width:74px;padding:8px 0}
+  .streak-stats span{display:block;color:#738999;font:700 9px/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase}
+  .streak-stats strong{display:block;margin-top:7px;color:#f5f8fb;font:800 18px/1 var(--font-display)}
+  .streak-checkin{min-width:166px;height:46px;padding:0 18px;border:1px solid #6ed8ff;border-radius:14px;background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04131c;font:800 12px/1 var(--font-body);cursor:pointer;box-shadow:0 12px 28px rgba(76,201,255,.14)}
+  .streak-checkin:hover{filter:brightness(1.03);transform:translateY(-1px)}
+  .streak-checkin:disabled{opacity:.58;cursor:not-allowed;transform:none;filter:none}
+  .social-quest-box{display:grid;gap:9px;width:100%}
+  .social-proof-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  .social-proof-row input{min-width:0}
+  .mission-action-secondary{white-space:nowrap}
+  @media(max-width:900px){
+    .streak-panel{grid-template-columns:1fr;gap:16px}
+    .streak-stats{justify-content:space-between}
+    .streak-checkin{width:100%}
   }
 
   .mod-skel-grid,
