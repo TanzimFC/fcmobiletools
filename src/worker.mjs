@@ -387,46 +387,55 @@ async function accountApi(request, env, url) {
     return json({items:rows});
   }
 
-  if(request.method==='GET' && url.pathname==='/api/account/missions') {
-    if(!user.email_confirmed_at) return json({error:'Please verify your email before using missions.'},403);
-    const now=new Date().toISOString();
+  if(request.method==='GET' && (url.pathname==='/api/account/quests' || url.pathname==='/api/account/missions')) {
+    if(!user.email_confirmed_at) return json({error:'Please verify your email before using quests.'},403);
     let tasks=[];
     try {
-      tasks=await supabaseRest(env,
-        'reward_tasks?enabled=eq.true&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,display_order,priority,starts_at,ends_at&order=display_order.asc,priority.asc,created_at.desc&limit=100'
-      );
-      const nowMs=Date.now();
-      tasks=(tasks||[]).filter(t=>
-        (!t.starts_at || new Date(t.starts_at).getTime()<=nowMs) &&
-        (!t.ends_at || new Date(t.ends_at).getTime()>nowMs)
-      );
+      if(url.pathname==='/api/account/quests') {
+        const assigned=await supabaseRest(env,'rpc/ensure_daily_quests',{
+          method:'POST',
+          headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+          body:JSON.stringify({p_account_id:account.id})
+        });
+        const rows=Array.isArray(assigned)?assigned:JSON.parse(String(assigned||'[]'));
+        tasks=(rows||[]).map(x=>({
+          id:x.task?.id,slug:x.task?.slug,title:x.task?.title,description:x.task?.description,
+          task_type:'daily',mission_type:'daily',xp_reward:x.task?.xpReward,token_reward:x.task?.tokenReward,
+          reward_points:x.task?.tokenReward,daily_limit:1,cooldown_seconds:x.task?.cooldownSeconds||0,
+          verification_method:x.task?.verificationMethod,conditions:x.task?.conditions,display_order:x.slot,priority:x.slot
+        })).filter(x=>x.id);
+      } else {
+        tasks=await supabaseRest(env,'reward_tasks?enabled=eq.true&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,display_order,priority,starts_at,ends_at,conditions&order=display_order.asc,priority.asc,created_at.desc&limit=100');
+        const nowMs=Date.now();
+        tasks=(tasks||[]).filter(t=>
+          (!t.starts_at||new Date(t.starts_at).getTime()<=nowMs)&&
+          (!t.ends_at||new Date(t.ends_at).getTime()>nowMs)&&
+          t.slug!=='first-tournament-match'&&
+          t.task_type!=='event'&&
+          String(t.mission_type||'').toLowerCase()!=='tournament'
+        );
+      }
     } catch(error) {
-      console.error('[ACCOUNT_MISSIONS]',error?.message);
-      return json({error:'The mission service is temporarily unavailable.'},503);
+      console.error('[ACCOUNT_QUESTS]',error?.message);
+      return json({error:'Your quest list is temporarily unavailable.'},503);
     }
-    const attempts=await supabaseRest(env,
-      'task_attempts?account_id=eq.'+encodeURIComponent(account.id)+
-      '&select=task_id,status,verification_status,completed_at&order=completed_at.desc&limit=300'
-    );
+    const attempts=await supabaseRest(env,'task_attempts?account_id=eq.'+encodeURIComponent(account.id)+'&select=task_id,status,verification_status,completed_at&order=completed_at.desc&limit=300');
     const latest=new Map();
     for(const a of attempts||[]) if(!latest.has(a.task_id)) latest.set(a.task_id,a);
-    return json({
-      missions:(tasks||[]).map(t=>{
-        const attempt=latest.get(t.id);
-        let statusLabel='Available';
-        if(attempt?.status==='accepted' && attempt.verification_status==='verified') statusLabel='Completed';
-        else if(attempt?.status==='accepted' && attempt.verification_status==='pending') statusLabel='Pending review';
-        return {
-          id:t.id,slug:t.slug,title:t.title,description:t.description,
-          taskType:t.task_type,missionType:t.mission_type,
-          xpReward:Number(t.xp_reward||0),
-          tokenReward:Number(t.token_reward||t.reward_points||0),
-          dailyLimit:t.daily_limit,weeklyLimit:t.weekly_limit,completionLimit:t.completion_limit,
-          cooldownSeconds:t.cooldown_seconds,verificationMethod:t.verification_method,
-          statusLabel
-        };
-      })
+    const payload=(tasks||[]).map(t=>{
+      const attempt=latest.get(t.id);
+      let statusLabel='Available';
+      if(attempt?.status==='accepted'&&attempt?.verification_status==='verified') statusLabel='Completed';
+      else if(attempt?.status==='accepted'&&attempt?.verification_status==='pending') statusLabel='Pending review';
+      return {
+        id:t.id,slug:t.slug,title:t.title,description:t.description,
+        taskType:t.task_type,missionType:t.mission_type,
+        xpReward:Number(t.xp_reward||0),tokenReward:Number(t.token_reward||t.reward_points||0),
+        dailyLimit:t.daily_limit,weeklyLimit:t.weekly_limit,completionLimit:t.completion_limit,
+        cooldownSeconds:t.cooldown_seconds,verificationMethod:t.verification_method,statusLabel
+      };
     });
+    return json({quests:payload,missions:payload});
   }
 
   const missionStartMatch=url.pathname.match(/^\/api\/account\/missions\/([0-9a-f-]+)\/start$/i);
@@ -484,13 +493,30 @@ async function accountApi(request, env, url) {
         return json({error:'Verify your email before claiming this mission.'},403);
       }
       if(task.slug==='complete-profile') {
-        const displayName=String(account.display_name||'').trim();
-        if(!account.username || !displayName) return json({error:'Finish your profile details before claiming this mission.'},403);
+        const profiles=await supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id)+'&select=fc_mobile_uid,in_game_username,region_server&limit=1');
+        const gp=profiles?.[0];
+        if(!gp?.fc_mobile_uid||!gp?.in_game_username||!gp?.region_server) return json({error:'Add your FC Mobile UID, in-game username and Region / Server first.'},403);
       }
-      // Never trust a client-side "proof" string as completion evidence.
-      // Missions below are checked against server-owned account state.
-      if(task.slug==='events-page-visit' || task.slug==='daily-events-check' || task.slug==='calculator-run') {
-        return json({error:'This mission is retired. Refresh the mission list for the current server-verified objectives.'},409);
+      if(task.verification_method==='manual'||task.verification_method==='moderated') {
+        if(proof.length<2) return json({error:'Add your handle or proof before sending this quest for review.'},400);
+        await supabaseRest(env,'task_attempts?id=eq.'+encodeURIComponent(attemptId)+'&account_id=eq.'+encodeURIComponent(account.id),{
+          method:'PATCH',headers:{Prefer:'return=minimal'},
+          body:JSON.stringify({verification_payload:{proof,submittedAt:new Date().toISOString()}})
+        });
+      }
+
+      const conditions=task.conditions&&typeof task.conditions==='object'?task.conditions:{};
+      if(conditions.event==='page_dwell'||conditions.event==='calculator_use') {
+        const eventType=conditions.event;
+        const entityType=eventType==='page_dwell'?'page':'calculator';
+        const entityId=String(conditions.page||conditions.tool||'');
+        const rows=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
+          '&event_type=eq.'+encodeURIComponent(eventType)+'&entity_type=eq.'+encodeURIComponent(entityType)+
+          '&entity_id=eq.'+encodeURIComponent(entityId)+'&created_at=gte.'+
+          encodeURIComponent(new Date(Date.now()-21600000).toISOString())+'&select=id&limit=1');
+        if(!rows?.length) return json({error:eventType==='page_dwell'
+          ?'Open '+entityId+' and spend a few seconds there, then come back and check this quest.'
+          :'Use the '+entityId+' first, then come back and check this quest.'},409);
       }
 
       if(task.slug==='first-tournament-match') {
@@ -557,6 +583,51 @@ async function accountApi(request, env, url) {
       const status=/already completed|limit reached|cooldown/i.test(msg)?409:/Authentication required|Verified email|not eligible/i.test(msg)?403:400;
       return json({error:msg},status);
     }  }
+
+  if(request.method==='POST' && url.pathname==='/api/account/check-in') {
+    if(!user.email_confirmed_at) return json({error:'Verify your email before checking in.'},403);
+    let key; try { key=crypto.randomUUID(); } catch { key=null; }
+    const input=await request.json().catch(()=>({}));
+    if(input?.idempotencyKey) key=input.idempotencyKey;
+    if(!key||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) return json({error:'Invalid check-in request.'},400);
+    try {
+      const result=await supabaseRest(env,'rpc/check_in_daily',{
+        method:'POST',headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+        body:JSON.stringify({p_idempotency_key:key})
+      });
+      if(result?.ok===false&&result?.code==='cooldown') return json(result,409);
+      return json(result||{ok:true});
+    } catch(error) {
+      const msg=String(error?.message||'Unable to check in today.');
+      return json({error:msg},/Verified email|Authentication required|eligible/i.test(msg)?403:400);
+    }
+  }
+
+  if(request.method==='POST' && url.pathname==='/api/account/activity') {
+    if(!user.email_confirmed_at) return json({error:'Verify your email before recording activity.'},403);
+    const input=await request.json().catch(()=>({}));
+    const eventType=String(input.eventType||'').trim();
+    const entityType=String(input.entityType||'').trim();
+    const entityId=String(input.entityId||'').trim();
+    const durationMs=Math.max(0,Math.min(600000,Number(input.durationMs||0)));
+    let key=input.idempotencyKey; try { if(!key) key=crypto.randomUUID(); } catch { key=null; }
+    if(!key||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) return json({error:'Invalid activity request.'},400);
+    const validPage=eventType==='page_dwell'&&entityType==='page'&&['/events','/redeem-codes'].includes(entityId)&&durationMs>=8000;
+    const validCalc=eventType==='calculator_use'&&entityType==='calculator'&&['rank-up-calculator','team-ovr','training-calculator','investment-calculator'].includes(entityId)&&durationMs>=3000;
+    if(!validPage&&!validCalc) return json({error:'That activity cannot be used for a quest.'},400);
+    try {
+      const recent=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
+        '&event_type=eq.'+encodeURIComponent(eventType)+'&entity_type=eq.'+encodeURIComponent(entityType)+
+        '&entity_id=eq.'+encodeURIComponent(entityId)+'&created_at=gte.'+
+        encodeURIComponent(new Date(Date.now()-21600000).toISOString())+'&select=id&limit=1');
+      if(recent?.length) return json({ok:false,code:'cooldown',message:'That activity was already counted recently.'},409);
+      await supabaseRest(env,'activity_events',{
+        method:'POST',headers:{Prefer:'return=minimal'},
+        body:JSON.stringify([{account_id:account.id,event_type:eventType,entity_type:entityType,entity_id:entityId,metadata:{duration_ms:durationMs},source:'client',idempotency_key:key}])
+      });
+      return json({ok:true});
+    } catch(error) { return json({error:String(error?.message||'Unable to record activity.')},400); }
+  }
 
   if(request.method==='GET' && url.pathname==='/api/account/achievements') {
     if(!user.email_confirmed_at) return json({error:'Please verify your email before using achievements.'},403);
