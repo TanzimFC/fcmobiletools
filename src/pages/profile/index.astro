@@ -421,7 +421,7 @@ import AccountNav from '../../components/AccountNav.astro';
                   </div>`
                 : `<div class="empty-state">
                     <strong>No activity events recorded yet</strong>
-                    <p>Meaningful actions—such as completing missions, unlocking achievements, approved corrections—appear here automatically.</p>
+                    <p>Meaningful actions, such as completing Quests, unlocking Achievements or getting a correction approved, appear here automatically.</p>
                   </div>`
             }
           </div>
@@ -431,15 +431,15 @@ import AccountNav from '../../components/AccountNav.astro';
             <div class="view-head">
               <div>
                 <h2>XP Transaction History</h2>
-                <p>Append-only ledger of positive and negative XP adjustments with source and reason.</p>
+                <p>See where your XP came from and when it changed.</p>
               </div>
             </div>
             <div id="xpLedgerList" class="feed-list">
-              <div class="empty-state">Loading XP transactions…</div>
+              <div class="empty-state">Loading XP history…</div>
             </div>
           </div>
 
-          <!-- TAB 3: TOKEN LEDGER -->
+          <!-- TAB 3: TOKEN HISTORY -->
           <div class="ledger-view" id="tab-tokens" hidden>
             <div class="view-head">
               <div>
@@ -448,7 +448,7 @@ import AccountNav from '../../components/AccountNav.astro';
               </div>
             </div>
             <div id="tokenLedgerList" class="feed-list">
-              <div class="empty-state">Loading token ledger…</div>
+              <div class="empty-state">Loading Token history…</div>
             </div>
           </div>
 
@@ -580,23 +580,7 @@ import AccountNav from '../../components/AccountNav.astro';
         const saveBody = await save.json().catch(() => ({}));
         if (!save.ok) throw new Error(saveBody.error || 'Could not save your FC Mobile profile.');
 
-        if (profileQuest?.id) {
-          const start = await accountApi('/api/account/missions/' + encodeURIComponent(profileQuest.id) + '/start', {
-            method: 'POST',
-            body: JSON.stringify({ idempotencyKey: crypto.randomUUID() })
-          });
-          const startBody = await start.json().catch(() => ({}));
-          if (!start.ok || !startBody.attemptId) throw new Error(startBody.error || 'Profile saved, but the Quest could not start.');
-
-          const finish = await accountApi('/api/account/missions/' + encodeURIComponent(profileQuest.id) + '/complete', {
-            method: 'POST',
-            body: JSON.stringify({ attemptId: startBody.attemptId, clientElapsedMs: 1000, proof: '' })
-          });
-          const finishBody = await finish.json().catch(() => ({}));
-          if (!finish.ok) throw new Error(finishBody.error || 'Profile saved, but the Quest reward could not be claimed.');
-        }
-
-        button.textContent = 'Quest complete ✓';
+        button.textContent = saveBody.questCompleted ? 'Quest complete ✓' : 'Profile saved ✓';
         msg.textContent = 'Player profile saved. Your Quest reward is on your balance.';
         msg.className = 'profile-quest-msg is-ok';
         setTimeout(() => loadAuthenticatedProfile(), 650);
