@@ -83,18 +83,18 @@ export function ensureRedeemSchema(db) {
 
       // One-time migrations keep the live D1 database in sync with new codes
       // without replaying the full seed or overwriting admin edits.
-      const migrationVersion = '2026-10-04-3rd-anniversary';
+      const migrationVersion = '2026-10-07-garudajuara';
       const migration = await db.prepare("SELECT value FROM redeem_meta WHERE key='seed-migrations'").first();
       if (migration?.value !== migrationVersion) {
         const c = {
-          code: '3RDANNIVERSARY',
-          reward: '1x Draft Voucher + 100x Rank Up Tokens',
+          code: 'GARUDAJUARA',
+          reward: '2,000 Gems',
           status: 'active',
-          releaseDate: '2026-10-04',
+          releaseDate: '2026-10-07',
           expiryDate: null,
           region: 'Global',
-          lastVerified: '2026-10-06',
-          notes: 'Released starting October 4, 2026.',
+          lastVerified: '2026-10-07',
+          notes: 'New redeem code added October 7, 2026.',
         };
         await db.prepare([
           "INSERT OR IGNORE INTO redeem_codes",
