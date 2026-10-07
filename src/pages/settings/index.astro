@@ -85,7 +85,10 @@ import AccountNav from '../../components/AccountNav.astro';
     const isVerified = Boolean(a.emailConfirmedAt);
     const identitiesResult = await accountAuth.auth.getUserIdentities();
     const identities = identitiesResult.data?.identities || [];
-    const hasPasswordLogin = identities.some(identity => identity.provider === 'email');
+    // Fail closed: if identity lookup fails, keep the safer current-password flow.
+    const hasPasswordLogin = identitiesResult.error
+      ? true
+      : identities.some(identity => identity.provider === 'email');
 
     root.innerHTML = `
       <header class="set-header acc-anim">
