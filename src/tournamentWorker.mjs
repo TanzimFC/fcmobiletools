@@ -245,15 +245,8 @@ const LOGIN_HTML=`<!doctype html><html lang="en"><head><meta charset="utf-8"><me
 
 export async function tournamentWorkerRoute(request,env,url){
   const path=url.pathname;
-  if(path==='/tournaments'||path==='/tournaments/'||path.startsWith('/tournament/')){
-    const publicTournaments=await publicSnapshot(env).catch(()=>[]);
-    if(!publicTournaments.length){
-      return new Response(JSON.stringify({error:'Tournaments are not open yet.'}),{
-        status:404,
-        headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}
-      });
-    }
-  }
+  // Public tournament pages are generated from the committed snapshot.
+  // Do not block those static pages on a live Supabase read.
   if(path==='/api/tournament/login'&&request.method==='POST'){
     const body=await request.json().catch(()=>({})),u=String(body.username||'').trim(),p=String(body.password||'');
     const adminUser=String(env.ADMIN_USERNAME||'').trim(),adminPass=String(env.ADMIN_PASSWORD||'');
