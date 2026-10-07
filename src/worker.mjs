@@ -331,6 +331,8 @@ async function accountApi(request, env, url) {
     if(region.length<2||region.length>40) return json({error:'Enter your Region / Server.'},400);
     if(tags.some(tag=>!allowedTags.has(tag))) return json({error:'One of the player styles is not valid.'},400);
     try {
+      const before=await supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id)+'&select=fc_mobile_uid,in_game_username,region_server&limit=1');
+      const wasComplete=Boolean(before?.[0]?.fc_mobile_uid&&before?.[0]?.in_game_username&&before?.[0]?.region_server);
       await supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id),{
         method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify([{account_id:account.id,fc_mobile_uid:uid,in_game_username:inGame,region_server:region,discord_handle:discord||null,player_tags:tags,updated_at:new Date().toISOString()}])
@@ -339,6 +341,16 @@ async function accountApi(request, env, url) {
         method:'PATCH',headers:{Prefer:'return=minimal','content-type':'application/json'},
         body:JSON.stringify({onboarding_complete:true})
       });
+      if(!wasComplete) {
+        await supabaseRest(env,'activity_events',{
+          method:'POST',headers:{Prefer:'return=minimal'},
+          body:JSON.stringify([{
+            account_id:account.id,event_type:'profile_completed',entity_type:'profile',entity_id:account.id,
+            metadata:{fields:['fc_mobile_uid','in_game_username','region_server']},
+            source:'server',idempotency_key:crypto.randomUUID()
+          }])
+        });
+      }
       return json({ok:true,complete:true});
     } catch(error) {
       return json({error:String(error?.message||'Unable to save your FC Mobile profile.')},400);
