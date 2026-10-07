@@ -517,31 +517,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   });
 
   // New email/password registrations are intentionally disabled for now.
-  // Resend signup verification email. Supabase keeps the response intentionally
-  // non-enumerating, so a user can safely request a fresh message for an existing email.
-  document.getElementById('resendVerificationBtn')?.addEventListener('click', async (event) => {
-    const btn = event.currentTarget;
-    const email = String(signupEmail?.value || '').trim().toLowerCase();
-    if (!validateSignupEmail(email).valid) {
-      showMessage(signupMessage, 'Enter the same permanent email address you used for this account.', true);
-      signupEmail?.focus();
-      return;
-    }
-    btn.disabled = true;
-    try {
-      const result = await accountAuth.auth.resend({
-        type: 'signup',
-        email,
-        options: { emailRedirectTo: getAuthRedirectUrl() }
-      });
-      if (result.error) throw result.error;
-      showMessage(signupMessage, 'A fresh verification email has been requested. Check your inbox and spam folder.', false);
-    } catch (error) {
-      showMessage(signupMessage, friendlyAuthError(error, 'Unable to resend the verification email right now. Please try again shortly.'), true);
-    } finally {
-      btn.disabled = false;
-    }
-  });
 
   // Password reset
   document.getElementById('resetBtn')?.addEventListener('click', async (event) => {
