@@ -201,6 +201,91 @@ const pageSchema = {
   <Footer />
   <SiteAds />
   <ConsentBanner />
+
+  <script is:inline>
+    (() => {
+      const token = () => {
+        try {
+          const raw = localStorage.getItem('fcmobiletools-auth-v1');
+          const data = raw ? JSON.parse(raw) : null;
+          return data?.access_token || data?.session?.access_token || data?.currentSession?.access_token || '';
+        } catch { return ''; }
+      };
+      const track = async (eventType, entityType, entityId, durationMs, metadata = {}) => {
+        const accessToken = token();
+        if (!accessToken) return;
+        try {
+          await fetch('/api/account/activity', {
+            method: 'POST',
+            headers: { authorization: 'Bearer ' + accessToken, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              eventType,
+              entityType,
+              entityId,
+              durationMs,
+              metadata,
+              idempotencyKey: crypto.randomUUID()
+            }),
+            keepalive: true
+          });
+        } catch {}
+      };
+
+      window.addEventListener('fcmobiletools:tool-activity', (event) => {
+        const detail = event.detail;
+        if (!detail?.entityId) return;
+        track(
+          'calculator_use',
+          'calculator',
+          String(detail.entityId),
+          Math.max(3000, Math.min(600000, Number(detail.durationMs || 3000))),
+          detail.metadata || {}
+        );
+      });
+
+      const path = location.pathname.replace(/\/$/, '') || '/';
+      if (path === '/events' || path === '/redeem-codes') {
+        let visibleMs = 0;
+        let lastTick = performance.now();
+        let sent = false;
+        const timer = setInterval(() => {
+          if (sent) { clearInterval(timer); return; }
+          const now = performance.now();
+          if (!document.hidden) visibleMs += Math.max(0, now - lastTick);
+          lastTick = now;
+          if (visibleMs >= 8000) {
+            sent = true;
+            clearInterval(timer);
+            track('page_dwell', 'page', path, 8000);
+          }
+        }, 250);
+        document.addEventListener('visibilitychange', () => { lastTick = performance.now(); }, { passive: true });
+      }
+
+      const fallbackCalculators = {
+        '/training-calculator': 'training-calculator',
+        '/investment-calculator': 'investment-calculator'
+      };
+      const calculator = fallbackCalculators[path];
+      if (calculator) {
+        let touched = false;
+        let timer = 0;
+        const arm = () => {
+          if (touched) return;
+          touched = true;
+          clearTimeout(timer);
+          timer = setTimeout(() => track('calculator_use', 'calculator', calculator, 3000), 3500);
+        };
+        const main = document.querySelector('main');
+        main?.addEventListener('input', arm, { once: true, passive: true });
+        main?.addEventListener('change', arm, { once: true, passive: true });
+        main?.addEventListener('click', (event) => {
+          if (event.target?.closest('a,[data-site-nav]')) return;
+          arm();
+        }, { once: true });
+      }
+    })();
+  </script>
   <script is:inline>
     (() => {
       const loader = document.getElementById('site-loader');
