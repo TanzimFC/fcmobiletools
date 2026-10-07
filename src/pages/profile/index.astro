@@ -206,6 +206,15 @@ import AccountNav from '../../components/AccountNav.astro';
     const display = a.displayName || a.username;
     const initials = String(display || 'FC').slice(0, 2).toUpperCase();
     const isVerified = Boolean(a.emailConfirmedAt);
+    let profileQuest = null;
+    if (isVerified && !a.gameProfile?.complete) {
+      try {
+        const qr = await accountApi('/api/account/missions');
+        const qb = await qr.json().catch(() => ({}));
+        const pool = Array.isArray(qb.quests) ? qb.quests : Array.isArray(qb.missions) ? qb.missions : [];
+        profileQuest = pool.find((q) => q.slug === 'complete-profile') || null;
+      } catch {}
+    }
     const publicUrl = `${location.origin}/profile/${encodeURIComponent(a.username)}/`;
 
     root.innerHTML = `
@@ -260,6 +269,39 @@ import AccountNav from '../../components/AccountNav.astro';
         </div>
       </section>
 
+      ${profileQuest && !a.gameProfile?.complete ? `
+        <section class="profile-quest-card acc-anim acc-anim-d1" id="profileQuestCard">
+          <div class="profile-quest-head">
+            <div class="profile-quest-badge"><span>01</span><small>ONE-TIME QUEST</small></div>
+            <div class="profile-quest-copy">
+              <span class="sec-kicker"><i class="kicker-dot"></i> COMPLETE YOUR PLAYER CARD</span>
+              <h2>Finish your FC Mobile profile</h2>
+              <p>Add your UID, in-game name and Region / Server. Discord and your play style are optional.</p>
+            </div>
+            <div class="profile-quest-rewards"><strong>+100 XP</strong><span>+15 Tokens</span></div>
+          </div>
+          <form id="profileQuestForm" class="profile-quest-form">
+            <div class="profile-quest-fields">
+              <label><span>FC Mobile UID</span><input name="fcMobileUid" required maxlength="32" value="${esc(a.gameProfile?.fcMobileUid || '')}" placeholder="Your FC Mobile UID" /></label>
+              <label><span>In-game username</span><input name="inGameUsername" required maxlength="40" value="${esc(a.gameProfile?.inGameUsername || '')}" placeholder="Your in-game name" /></label>
+              <label><span>Region / Server</span><input name="regionServer" required maxlength="40" value="${esc(a.gameProfile?.regionServer || '')}" placeholder="e.g. Asia, Europe, NA" /></label>
+              <label><span>Discord <small>optional</small></span><input name="discordHandle" maxlength="64" value="${esc(a.gameProfile?.discordHandle || '')}" placeholder="Discord handle" /></label>
+            </div>
+            <div class="profile-quest-tags">
+              <span>How do you play?</span>
+              <div>
+                ${['Competitive H2H','VSA Grinder','Investor','Theme Team Builder','Casual'].map((tag) => `
+                  <label><input type="checkbox" value="${esc(tag)}" ${a.gameProfile?.playerTags?.includes(tag) ? 'checked' : ''} /><span>${esc(tag)}</span></label>
+                `).join('')}
+              </div>
+            </div>
+            <div class="profile-quest-foot">
+              <span id="profileQuestMsg">Required: UID, in-game username and Region / Server.</span>
+              <button class="btn-primary profile-quest-submit" type="submit">Save &amp; Finish Quest →</button>
+            </div>
+          </form>
+        </section>
+      ` : ''}
       <section class="public-game-card auth-game-card acc-anim acc-anim-d1">
         <div><span class="sec-kicker"><i class="kicker-dot"></i> FC MOBILE IDENTITY</span><h2>Your Player Card</h2><p>Keep the details you use in FC Mobile connected to this account.</p></div>
         <div class="public-game-grid">
@@ -458,8 +500,8 @@ import AccountNav from '../../components/AccountNav.astro';
             <div class="module-links">
               <a href="/missions/">
                 <div>
-                  <strong>Missions</strong>
-                  <small>Daily, weekly &amp; event tasks</small>
+                  <strong>Quests</strong>
+                  <small>Daily Quests picked for your account</small>
                 </div>
                 <span>→</span>
               </a>
@@ -505,6 +547,66 @@ import AccountNav from '../../components/AccountNav.astro';
         </aside>
       </section>
     `;
+
+    const profileQuestForm = document.getElementById('profileQuestForm');
+    profileQuestForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      const msg = document.getElementById('profileQuestMsg');
+      const values = Object.fromEntries(new FormData(form).entries());
+      const fcMobileUid = String(values.fcMobileUid || '').trim();
+      const inGameUsername = String(values.inGameUsername || '').trim();
+      const regionServer = String(values.regionServer || '').trim();
+      const discordHandle = String(values.discordHandle || '').trim();
+      const playerTags = [...form.querySelectorAll('.profile-quest-tags input:checked')].map((input) => input.value);
+
+      if (fcMobileUid.length < 3 || fcMobileUid.length > 32 || !inGameUsername || inGameUsername.length > 40 || !regionServer || regionServer.length > 40) {
+        msg.textContent = 'UID, in-game username and Region / Server are required.';
+        msg.className = 'profile-quest-msg is-error';
+        return;
+      }
+
+      button.disabled = true;
+      const previous = button.textContent;
+      button.textContent = 'Saving profile…';
+      msg.textContent = '';
+
+      try {
+        const save = await accountApi('/api/account/game-profile', {
+          method: 'PUT',
+          body: JSON.stringify({ fcMobileUid, inGameUsername, regionServer, discordHandle, playerTags })
+        });
+        const saveBody = await save.json().catch(() => ({}));
+        if (!save.ok) throw new Error(saveBody.error || 'Could not save your FC Mobile profile.');
+
+        if (profileQuest?.id) {
+          const start = await accountApi('/api/account/missions/' + encodeURIComponent(profileQuest.id) + '/start', {
+            method: 'POST',
+            body: JSON.stringify({ idempotencyKey: crypto.randomUUID() })
+          });
+          const startBody = await start.json().catch(() => ({}));
+          if (!start.ok || !startBody.attemptId) throw new Error(startBody.error || 'Profile saved, but the Quest could not start.');
+
+          const finish = await accountApi('/api/account/missions/' + encodeURIComponent(profileQuest.id) + '/complete', {
+            method: 'POST',
+            body: JSON.stringify({ attemptId: startBody.attemptId, clientElapsedMs: 1000, proof: '' })
+          });
+          const finishBody = await finish.json().catch(() => ({}));
+          if (!finish.ok) throw new Error(finishBody.error || 'Profile saved, but the Quest reward could not be claimed.');
+        }
+
+        button.textContent = 'Quest complete ✓';
+        msg.textContent = 'Player profile saved. Your Quest reward is on your balance.';
+        msg.className = 'profile-quest-msg is-ok';
+        setTimeout(() => loadAuthenticatedProfile(), 650);
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = previous;
+        msg.textContent = error?.message || 'Could not finish the profile Quest.';
+        msg.className = 'profile-quest-msg is-error';
+      }
+    });
 
     // Bind Copy Public Profile Link
     const copyBtn = document.getElementById('copyProfileUrlBtn');
@@ -1024,6 +1126,17 @@ import AccountNav from '../../components/AccountNav.astro';
     gap: 12px;
     margin-top: 16px;
   }
+  .profile-quest-card{position:relative;margin:0 0 14px;padding:22px 24px;border:1px solid rgba(76,201,255,.22);border-radius:22px;background:radial-gradient(480px 180px at 0% 0%,rgba(76,201,255,.12),transparent 70%),linear-gradient(145deg,#102235,#0b1722);box-shadow:0 24px 70px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.04)}
+  .profile-quest-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:start}
+  .profile-quest-badge{display:grid;place-items:center;width:58px;height:58px;border-radius:17px;border:1px solid rgba(76,201,255,.25);background:rgba(76,201,255,.09)}
+  .profile-quest-badge span{font:800 18px/1 var(--font-display);color:#f5f8fb}.profile-quest-badge small{font:800 7px/1 var(--font-body);letter-spacing:.08em;color:#4cc9ff}
+  .profile-quest-copy h2{margin:6px 0 5px;font:700 23px/1.1 var(--font-display);letter-spacing:-.03em;color:#f5f8fb}.profile-quest-copy p{margin:0;max-width:700px;color:#90a7b8;font:500 12.5px/1.55 var(--font-body)}
+  .profile-quest-rewards{display:grid;gap:4px;justify-items:end;padding-top:4px}.profile-quest-rewards strong{color:#f5f8fb;font:800 14px/1 var(--font-display)}.profile-quest-rewards span{color:#4cc9ff;font:700 11px/1 var(--font-body)}
+  .profile-quest-form{margin-top:19px;display:grid;gap:14px}.profile-quest-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.profile-quest-fields label{display:grid;gap:6px}.profile-quest-fields label>span,.profile-quest-tags>span{color:#7890a2;font:800 9px/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase}.profile-quest-fields input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:11px;border:1px solid rgba(255,255,255,.07);background:#08131d;color:#f5f8fb;outline:none}.profile-quest-fields input:focus{border-color:rgba(76,201,255,.55);box-shadow:0 0 0 3px rgba(76,201,255,.09)}
+  .profile-quest-tags{display:grid;gap:8px}.profile-quest-tags>div{display:flex;flex-wrap:wrap;gap:7px}.profile-quest-tags label{position:relative;display:inline-flex}.profile-quest-tags input{position:absolute;opacity:0;pointer-events:none}.profile-quest-tags label span{display:inline-flex;padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);color:#a9bac6;font:700 10.5px/1 var(--font-body);cursor:pointer}.profile-quest-tags input:checked+span{border-color:rgba(76,201,255,.32);background:rgba(76,201,255,.10);color:#9ce5ff}
+  .profile-quest-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}.profile-quest-foot>span{color:#7f96a6;font:500 11px/1.4 var(--font-body)}.profile-quest-submit{min-height:42px}.profile-quest-msg.is-error{color:#ff8b91}.profile-quest-msg.is-ok{color:#72dfa0}
+  @media(max-width:980px){.profile-quest-head{grid-template-columns:auto minmax(0,1fr)}.profile-quest-rewards{grid-column:2;justify-items:start;margin-top:-8px}.profile-quest-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:620px){.profile-quest-head{grid-template-columns:1fr}.profile-quest-rewards{grid-column:auto;justify-items:start}.profile-quest-fields{grid-template-columns:1fr}.profile-quest-foot{align-items:stretch;flex-direction:column}.profile-quest-submit{width:100%}}
   .public-game-card{margin:14px 0;padding:22px 24px;border:1px solid rgba(76,201,255,.12);border-radius:20px;background:linear-gradient(145deg,rgba(15,26,38,.92),rgba(9,17,26,.92));box-shadow:0 18px 50px rgba(0,0,0,.22)}
   .public-game-card h2{margin:6px 0 4px;font:700 21px/1.1 var(--font-display);color:#f5f8fb}
   .public-game-card p{margin:0;color:#8da4b4;font:500 12.5px/1.5 var(--font-body)}
