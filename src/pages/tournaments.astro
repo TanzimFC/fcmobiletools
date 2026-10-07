@@ -2,10 +2,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Crest from '../components/tournament/Crest.astro';
 import { TOURNAMENT_PUBLICATIONS } from '../data/tournaments.js';
+import { ROUND_OF_16_SAMPLE } from '../data/tournament-samples.js';
 import { progressOf, tournamentState, championOf, nextMatch, formatLabel, formatDate } from '../lib/tournamentView.js';
 
 const rank = { live: 0, upcoming: 1, finished: 2 };
-const list = TOURNAMENT_PUBLICATIONS
+const PUBLIC_TOURNAMENTS = [...TOURNAMENT_PUBLICATIONS, ROUND_OF_16_SAMPLE];
+const list = PUBLIC_TOURNAMENTS
   .filter((t) => t.isPublic && ['published', 'in_progress', 'completed'].includes(t.status))
   .map((t) => ({ t, state: tournamentState(t), progress: progressOf(t), champion: championOf(t), next: nextMatch(t) }))
   .sort((a, b) => rank[a.state.key] - rank[b.state.key] || String(b.t.startsAt || '').localeCompare(String(a.t.startsAt || '')));
