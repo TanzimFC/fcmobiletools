@@ -630,7 +630,9 @@ async function accountApi(request, env, url) {
       });
       return json({ok:true,tokenReward:Number(reward||0),status:'completed'});
     } catch(error) {
-      const msg=String(error?.message||'Unable to complete this Quest.');
+      let msg=String(error?.message||'Unable to complete this Quest.');
+      if(/^Task already completed$/i.test(msg)) msg='Quest already completed.';
+      msg=msg.replace(/mission/gi,'Quest');
       const status=/already completed|limit reached|cooldown/i.test(msg)?409:/Authentication required|Verified email|not eligible/i.test(msg)?403:400;
       return json({error:msg},status);
     }  }
