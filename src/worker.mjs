@@ -681,6 +681,11 @@ async function accountApi(request, env, url) {
       let questSlug='';
       let questTokenReward=0;
       try{
+        await supabaseRest(env,'rpc/ensure_daily_quests',{
+          method:'POST',
+          headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+          body:JSON.stringify({p_account_id:account.id})
+        });
         const today=new Date().toISOString().slice(0,10);
         const assignments=await supabaseRest(env,
           'daily_quest_assignments?account_id=eq.'+encodeURIComponent(account.id)+
