@@ -68,7 +68,7 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
           tiePlayer2Id: b,
           player1Id: a,
           player2Id: b,
-          status: a && b ? 'ready' : 'completed',
+          status: a && b ? 'ready' : (a || b ? 'completed' : 'scheduled'),
           legsRequired: 2,
           winnerPlayerId: a && !b ? a : null
         });
@@ -81,7 +81,7 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
           tiePlayer2Id: b,
           player1Id: b,
           player2Id: a,
-          status: a && b ? 'ready' : 'completed',
+          status: a && b ? 'ready' : (a || b ? 'completed' : 'scheduled'),
           legsRequired: 2,
           winnerPlayerId: a && !b ? a : null,
           config: { returnLeg: true }
@@ -95,7 +95,7 @@ function buildKnockout(players, { twoLeg = false, bestOf = 1 } = {}) {
           legNumber: 1,
           player1Id: a,
           player2Id: b,
-          status: a && b ? 'ready' : 'completed',
+          status: a && b ? 'ready' : (a || b ? 'completed' : 'scheduled'),
           winnerPlayerId: a && !b ? a : null
         });
       }
