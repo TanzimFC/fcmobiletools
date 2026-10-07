@@ -245,6 +245,15 @@ const LOGIN_HTML=`<!doctype html><html><head><meta charset="utf-8"><meta name="v
 
 export async function tournamentWorkerRoute(request,env,url){
   const path=url.pathname;
+  if(path==='/tournaments'||path==='/tournaments/'||path.startsWith('/tournament/')){
+    const publicTournaments=await publicSnapshot(env).catch(()=>[]);
+    if(!publicTournaments.length){
+      return new Response(JSON.stringify({error:'Tournaments are not open yet.'}),{
+        status:404,
+        headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}
+      });
+    }
+  }
   if(path==='/api/tournament/login'&&request.method==='POST'){
     const body=await request.json().catch(()=>({})),u=String(body.username||'').trim(),p=String(body.password||'');
     const adminUser=String(env.ADMIN_USERNAME||'').trim(),adminPass=String(env.ADMIN_PASSWORD||'');
@@ -266,7 +275,10 @@ export async function tournamentWorkerRoute(request,env,url){
   }
   if(path==='/api/tournament/logout'&&request.method==='POST')return json({ok:true},200,{'set-cookie':TOURNAMENT_COOKIE+'=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict'});
   if(path==='/api/tournament/public'&&request.method==='GET'){
-    const t=await getTournamentBySlug(env,url.searchParams.get('slug')||''); return t&&t.isPublic?json(t):json({error:'Tournament not found.'},404);
+    const publicTournaments=await publicSnapshot(env).catch(()=>[]);
+    if(!publicTournaments.length) return json({error:'Tournaments are not open yet.'},404);
+    const t=await getTournamentBySlug(env,url.searchParams.get('slug')||'');
+    return t&&t.isPublic?json(t):json({error:'Tournament not found.'},404);
   }
   if(path.startsWith('/api/tournament/')){
     const me=await identity(request,env);
