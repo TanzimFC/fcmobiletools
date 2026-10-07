@@ -86,31 +86,49 @@
     try {
       const raw=localStorage.getItem('fcmobiletools-auth-v1');
       const data=raw?JSON.parse(raw):null;
-      return data?.access_token||'';
+      return data?.access_token || data?.session?.access_token || data?.currentSession?.access_token || '';
     } catch { return ''; }
   };
   const trackActivity=async(eventType,entityType,entityId,durationMs)=>{
     const token=getAccountToken();
-    if(!token) return;
+    if(!token) return {ok:false};
     try{
-      await fetch('/api/account/activity',{
+      const response=await fetch('/api/account/activity',{
         method:'POST',
         headers:{authorization:'Bearer '+token,'content-type':'application/json'},
         body:JSON.stringify({eventType,entityType,entityId,durationMs,idempotencyKey:crypto.randomUUID()})
       });
-    }catch{}
+      return await response.json().catch(()=>({ok:response.ok}));
+    }catch{return {ok:false};}
   };
+  window.addEventListener('fcmobiletools:tool-activity',event=>{
+    const detail=event.detail;
+    if(!detail?.entityId) return;
+    trackActivity('calculator_use','calculator',String(detail.entityId),Math.max(3000,Math.min(600000,Number(detail.durationMs||3000))));
+  });
 
   const accountCta=header?.querySelector('.site-cta[href="/account/"] span');
   if(accountCta && getAccountToken()) accountCta.textContent='Your Account';
 
   const route=path;
   if(route==='/events' || route==='/redeem-codes'){
-    window.setTimeout(()=>trackActivity('page_dwell','page',route,8000),8500);
+    let visibleMs=0;
+    let lastTick=performance.now();
+    let done=false;
+    const timer=window.setInterval(()=>{
+      if(done){window.clearInterval(timer);return;}
+      const now=performance.now();
+      if(!document.hidden) visibleMs+=Math.max(0,now-lastTick);
+      lastTick=now;
+      if(visibleMs>=8000){
+        done=true;
+        window.clearInterval(timer);
+        trackActivity('page_dwell','page',route,8000);
+      }
+    },250);
+    document.addEventListener('visibilitychange',()=>{lastTick=performance.now();},{passive:true});
   }
   const calculatorRoutes={
-    '/rank-up-calculator':'rank-up-calculator',
-    '/team-ovr':'team-ovr',
     '/training-calculator':'training-calculator',
     '/investment-calculator':'investment-calculator'
   };
