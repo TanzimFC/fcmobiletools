@@ -23,6 +23,7 @@ const allLinks = [
   { label: 'Home', href: '/', meta: 'Start here', icon: 'home' },
   { label: cta.label, href: cta.href, meta: cta.meta, icon: 'arrow' },
   ...navGroups.flatMap((g) => g.links.map((l) => ({ ...l, group: g.label }))),
+  { label: 'Tournaments', href: '/tournaments', meta: 'Community competitions', icon: 'tournaments' },
   { label: 'Articles', href: '/blog', meta: 'News, leaks, guides', icon: 'articles' }
 ];
 
@@ -40,6 +41,7 @@ const icons = {
   story: '<path d="M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   centre: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>',
   articles: '<path d="M5 4h11l3 3v13H5z"/><path d="M9 11h6M9 15h6M9 7h3"/>',
+  tournaments: '<path d="M7 3h10l-1 5a4 4 0 01-8 0L7 3z"/><path d="M7 6H4a4 4 0 004 4M17 6h3a4 4 0 01-4 4M10 12v4h4M9 20h6"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h10"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
@@ -96,6 +98,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         </div>
       ))}
 
+      <a class:list={['fcmt-link', { active: isActive('/tournaments') }]} href="/tournaments" aria-current={isActive('/tournaments') ? 'page' : undefined}>Tournaments</a>
       <a class:list={['fcmt-link', { active: current.startsWith('/blog') }]} href="/blog" aria-current={current.startsWith('/blog') ? 'page' : undefined}>Articles</a>
     </nav>
 
@@ -117,9 +120,11 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         <kbd>/</kbd>
       </button>
 
-      <a class:list={['fcmt-cta', { active: isActive(cta.href) }]} href={cta.href}>
-        <span class="fcmt-pulse" aria-hidden="true"></span>
-        <span class="fcmt-cta-txt">{cta.label}</span>
+      <a class:list={['fcmt-cta', 'fcmt-account-cta', { active: isActive('/profile/') || isActive('/account/') }]} id="fcmtNavAccountCta" href="/account/" aria-label="Sign in to your FCMobiletools account">
+        <span class="fcmt-account-cta-avatar" id="fcmtNavAccountCtaAvatar" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>
+        </span>
+        <span class="fcmt-cta-txt" id="fcmtNavAccountCtaText">Login</span>
       </a>
 
       <button class="fcmt-burger" id="fcmtBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="fcmtSheet">
@@ -173,6 +178,11 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
           </div>
         </section>
       ))}
+      <a class:list={['fcmt-wide', { active: isActive('/tournaments') }]} href="/tournaments">
+        <span class="fcmt-ico" set:html={ico('tournaments')}></span>
+        <span class="fcmt-item-text"><strong>Tournaments</strong><small>Community competitions</small></span>
+        <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
+      </a>
       <a class:list={['fcmt-wide', { active: current.startsWith('/blog') }]} href="/blog">
         <span class="fcmt-ico" set:html={ico('articles')}></span>
         <span class="fcmt-item-text"><strong>Articles</strong><small>News, leaks, guides</small></span>
@@ -341,6 +351,9 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
     const navBtn = $('fcmtNavAccount');
     const navAvatar = $('fcmtNavAvatar');
     const navName = $('fcmtNavName');
+    const ctaBtn = $('fcmtNavAccountCta');
+    const ctaAvatar = $('fcmtNavAccountCtaAvatar');
+    const ctaText = $('fcmtNavAccountCtaText');
     const navLevel = $('fcmtNavLevel');
     const sheetName = $('fcmtSheetName');
     const sheetMeta = $('fcmtSheetMeta');
@@ -354,6 +367,22 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         const lv = Math.max(1, Number(identity.level) || 1);
         const initials = display.slice(0, 2).toUpperCase();
         navBtn.classList.add('is-authenticated');
+        if (ctaBtn) {
+          ctaBtn.href = '/profile/';
+          ctaBtn.setAttribute('aria-label', 'Open your FCMobiletools profile');
+        }
+        if (ctaText) ctaText.textContent = display;
+        if (ctaAvatar) {
+          if (identity.avatarUrl && /^https?:\/\//i.test(identity.avatarUrl)) {
+            ctaAvatar.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = identity.avatarUrl;
+            img.alt = '';
+            ctaAvatar.appendChild(img);
+          } else {
+            ctaAvatar.textContent = initials;
+          }
+        }
         navBtn.href = '/profile/';
         navName.textContent = display;
         if (navLevel) {
@@ -378,6 +407,14 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         navBtn.href = hasAuth ? '/profile/' : '/account/';
         navName.textContent = 'Account';
         if (navLevel) navLevel.hidden = true;
+        if (ctaBtn) {
+          ctaBtn.href = '/account/';
+          ctaBtn.setAttribute('aria-label', 'Sign in to your FCMobiletools account');
+        }
+        if (ctaText) ctaText.textContent = 'Login';
+        if (ctaAvatar) {
+          ctaAvatar.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>';
+        }
       }
     } catch {}
   };
@@ -391,7 +428,8 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 /* Kill horizontal overflow at the source (fixes the empty strip on the right) */
 html,body{max-width:100%;overflow-x:clip}
 html.fcmt-lock{overflow:hidden}
-.fcmt-account{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px 0 8px;border:1px solid rgba(76,201,255,.18);border-radius:12px;background:rgba(76,201,255,.05);color:#dce9f2;text-decoration:none;font:700 12.5px/1 var(--font-body);transition:border-color .18s ease,background .18s ease,transform .18s ease}.fcmt-account:hover{border-color:rgba(76,201,255,.4);color:#fff;background:rgba(76,201,255,.1);transform:translateY(-1px)}.fcmt-acc-avatar{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:rgba(76,201,255,.14);color:var(--primary);font:800 10px/1 var(--font-display);overflow:hidden;flex:0 0 24px}.fcmt-account.is-authenticated .fcmt-acc-avatar{background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04131c}.fcmt-acc-avatar img{width:100%;height:100%;object-fit:cover}.fcmt-acc-meta{display:flex;align-items:center;gap:6px;white-space:nowrap}.fcmt-acc-meta strong{font-weight:750;font-size:12.5px;color:#f5f8fb}.fcmt-acc-meta small{padding:3px 6px;border-radius:6px;background:rgba(76,201,255,.14);border:1px solid rgba(76,201,255,.25);color:#8ce2ff;font:800 10px/1 var(--font-body)}.fcmt-account-wide{margin-top:8px}.fcmt-account-wide .fcmt-ico{color:var(--primary)}@media(max-width:640px){.fcmt-account{padding:0 8px}.fcmt-acc-meta{display:none}}
+.fcmt-account{display:none;align-items:center;gap:8px;height:38px;padding:0 12px 0 8px;border:1px solid rgba(76,201,255,.18);border-radius:12px;background:rgba(76,201,255,.05);color:#dce9f2;text-decoration:none;font:700 12.5px/1 var(--font-body);transition:border-color .18s ease,background .18s ease,transform .18s ease}.fcmt-account:hover{border-color:rgba(76,201,255,.4);color:#fff;background:rgba(76,201,255,.1);transform:translateY(-1px)}.fcmt-acc-avatar{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:rgba(76,201,255,.14);color:var(--primary);font:800 10px/1 var(--font-display);overflow:hidden;flex:0 0 24px}.fcmt-account.is-authenticated .fcmt-acc-avatar{background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04131c}.fcmt-acc-avatar img{width:100%;height:100%;object-fit:cover}.fcmt-account-cta .fcmt-account-cta-avatar{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:rgba(3,19,28,.12);color:#03131c;font:800 10px/1 var(--font-display);overflow:hidden;flex:0 0 24px}.fcmt-account-cta .fcmt-account-cta-avatar img{width:100%;height:100%;object-fit:cover}.fcmt-account-cta .fcmt-account-cta-avatar svg{display:block}.fcmt-acc-meta{display:flex;align-items:center;gap:6px;white-space:nowrap}.fcmt-acc-meta strong{font-weight:750;font-size:12.5px;color:#f5f8fb}.fcmt-acc-meta small{padding:3px 6px;border-radius:6px;background:rgba(76,201,255,.14);border:1px solid rgba(76,201,255,.25);color:#8ce2ff;font:800 10px/1 var(--font-body)}.fcmt-account-wide{margin-top:8px}.fcmt-account-wide .fcmt-ico{color:var(--primary)}@media(max-width:980px){.fcmt-account{display:inline-flex;order:4}}
+@media(max-width:640px){.fcmt-account{padding:0 8px}.fcmt-acc-meta{display:none}}
 </style>
 
 <style>
