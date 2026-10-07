@@ -102,7 +102,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <div class="form-intro">
               <span class="form-eyebrow">WELCOME BACK</span>
               <h2>Sign in to your account</h2>
-              <p>Sign in with your existing email and password, or continue securely with Google.</p>
+              <p>Existing FCMobiletools accounts can still sign in with email and password. Google sign-in is available too.</p>
             </div>
 
             <button class="google-btn" type="button" id="googleLoginBtn">
@@ -135,10 +135,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             </div>
 
             <div class="field">
-              <div class="field-label-row">
-                <label for="loginPassword">Password</label>
-                <button class="text-btn" type="button" id="resetBtn">Forgot password?</button>
-              </div>
+              <label for="loginPassword">Password</label>
               <div class="input-box">
                 <input
                   id="loginPassword"
@@ -162,55 +159,23 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
             <div class="form-message" id="loginMessage" role="alert" aria-live="polite" hidden></div>
 
+            <div class="forgot-note">
+              <strong>Forgot your password?</strong>
+              <span>Password recovery is currently locked. Please contact us on <a href="https://discord.com/invite/B4a7AxuU69" target="_blank" rel="noopener noreferrer">Discord</a> for help.</span>
+            </div>
+
             <div class="form-foot-note">
               <span>Don’t have an account yet?</span>
               <button type="button" class="text-btn" id="switchToSignup">Create a free account →</button>
             </div>
           </form>
 
-          <!-- PASSWORD RECOVERY FORM -->
-          <form id="recoveryForm" class="auth-form" hidden novalidate>
-            <div class="form-intro">
-              <span class="form-eyebrow">ACCOUNT RECOVERY</span>
-              <h2>Choose a new password</h2>
-              <p>Your reset link is valid. Set a new password below, then sign in normally.</p>
-            </div>
-
-            <div class="field">
-              <label for="recoveryPassword">New password <small>(min 10 characters)</small></label>
-              <div class="input-box">
-                <input id="recoveryPassword" type="password" autocomplete="new-password" minlength="10" required placeholder="At least 10 characters" />
-                <button class="pw-toggle" type="button" data-target="recoveryPassword" aria-label="Toggle password visibility">Show</button>
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="recoveryPasswordConfirm">Confirm new password</label>
-              <div class="input-box">
-                <input id="recoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="10" required placeholder="Repeat your new password" />
-                <button class="pw-toggle" type="button" data-target="recoveryPasswordConfirm" aria-label="Toggle password visibility">Show</button>
-              </div>
-            </div>
-
-            <button class="submit-btn" type="submit">
-              <span>Update Password</span>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-            </button>
-
-            <div class="form-message" id="recoveryMessage" role="alert" aria-live="polite" hidden></div>
-
-            <div class="form-foot-note">
-              <span>Need to start over?</span>
-              <button type="button" class="text-btn" id="recoveryToLogin">Back to sign in →</button>
-            </div>
-          </form>
-
-          <!-- CREATE ACCOUNT FORM -->
+          <!-- GOOGLE ACCOUNT START -->
           <form id="signupForm" class="auth-form" hidden novalidate>
             <div class="form-intro">
               <span class="form-eyebrow">NEW ACCOUNT</span>
               <h2>Create your account</h2>
-              <p>Email/password registration is temporarily paused while we move new account creation to Google sign-in.</p>
+              <p>New email/password registration is temporarily paused. Start with Google, then finish your FCMobiletools profile.</p>
             </div>
 
             <div class="signup-pause">
@@ -222,7 +187,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               </div>
               <div>
                 <strong>Email sign-up is temporarily unavailable</strong>
-                <p>You can still sign in to an existing email/password account. For a new FCMobiletools account, use Google below.</p>
+                <p>Existing email/password accounts still work. New accounts are created through Google.</p>
               </div>
             </div>
 
@@ -245,6 +210,107 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <button type="button" class="text-btn" id="switchToLogin">Sign in instead →</button>
             </div>
           </form>
+
+          <!-- GOOGLE ACCOUNT ONBOARDING -->
+          <form id="onboardingForm" class="auth-form" hidden novalidate>
+            <div class="form-intro">
+              <span class="form-eyebrow">GOOGLE VERIFIED</span>
+              <h2>Finish your account</h2>
+              <p>Your Google email is already verified. Choose your FCMobiletools identity and a password for future email sign-in.</p>
+            </div>
+
+            <div class="verified-email-box">
+              <span class="verified-badge">✓ VERIFIED</span>
+              <div>
+                <small>GOOGLE EMAIL</small>
+                <strong id="onboardingEmail">Verified email</strong>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="onboardingUsername">Username <small>(3–24 chars)</small></label>
+                <div class="input-box has-prefix">
+                  <span class="input-prefix" aria-hidden="true">@</span>
+                  <input
+                    id="onboardingUsername"
+                    name="username"
+                    type="text"
+                    autocomplete="username"
+                    required
+                    minlength="3"
+                    maxlength="24"
+                    pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]"
+                    placeholder="yourname"
+                  />
+                </div>
+                <small class="field-hint" id="onboardingUsernameHint">Lowercase letters, numbers, dots, underscores or hyphens.</small>
+              </div>
+
+              <div class="field">
+                <label for="onboardingDisplayName">Display name <small>(optional)</small></label>
+                <div class="input-box">
+                  <input
+                    id="onboardingDisplayName"
+                    name="display_name"
+                    type="text"
+                    autocomplete="nickname"
+                    maxlength="80"
+                    placeholder="Your display name"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="onboardingPassword">Password <small>(min 10 characters)</small></label>
+              <div class="input-box">
+                <input
+                  id="onboardingPassword"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="10"
+                  placeholder="Create a password"
+                />
+                <button class="pw-toggle" type="button" data-target="onboardingPassword" aria-label="Toggle password visibility">Show</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="onboardingPasswordConfirm">Confirm password</label>
+              <div class="input-box">
+                <input
+                  id="onboardingPasswordConfirm"
+                  name="password_confirm"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="10"
+                  placeholder="Enter the password again"
+                />
+                <button class="pw-toggle" type="button" data-target="onboardingPasswordConfirm" aria-label="Toggle password visibility">Show</button>
+              </div>
+            </div>
+
+            <div class="advisory-box">
+              <div class="advisory-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+              </div>
+              <div>
+                <strong>No email verification needed</strong>
+                <p>Google has already verified the email attached to this account. Once you create your password and profile, you can use either Google or email/password to sign in.</p>
+              </div>
+            </div>
+
+            <button class="submit-btn" type="submit">
+              <span>Create FCMobiletools Account</span>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </button>
+
+            <div class="form-message" id="onboardingMessage" role="alert" aria-live="polite" hidden></div>
+          </form>
         </div>
       </section>
     </div>
@@ -252,55 +318,58 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
-  import { accountAuth, getAuthRedirectUrl, validateSignupEmail } from '../../lib/account-client.js';
+  import { accountAuth, accountApi } from '../../lib/account-client.js';
 
   const loginTab = document.getElementById('loginTab');
   const signupTab = document.getElementById('signupTab');
   const tabPillBg = document.getElementById('tabPillBg');
   const loginForm = document.getElementById('loginForm');
   const signupForm = document.getElementById('signupForm');
-  const recoveryForm = document.getElementById('recoveryForm');
+  const onboardingForm = document.getElementById('onboardingForm');
   const loginMessage = document.getElementById('loginMessage');
   const signupMessage = document.getElementById('signupMessage');
-  const recoveryMessage = document.getElementById('recoveryMessage');
+  const onboardingMessage = document.getElementById('onboardingMessage');
 
-  const signupUsername = document.getElementById('signupUsername');
-  const signupDisplayName = document.getElementById('signupDisplayName');
-  const signupEmail = document.getElementById('signupEmail');
-  const signupPassword = document.getElementById('signupPassword');
-  const usernameHint = document.getElementById('usernameHint');
-  const emailHint = document.getElementById('emailHint');
-  const pwMeterBar = document.getElementById('pwMeterBar');
-  const pwHint = document.getElementById('pwHint');
-
-  const previewAvatar = document.getElementById('previewAvatar');
-  const previewDisplayName = document.getElementById('previewDisplayName');
-  const previewHandle = document.getElementById('previewHandle');
+  const onboardingUsername = document.getElementById('onboardingUsername');
+  const onboardingDisplayName = document.getElementById('onboardingDisplayName');
+  const onboardingEmail = document.getElementById('onboardingEmail');
+  const onboardingUsernameHint = document.getElementById('onboardingUsernameHint');
 
   function showTab(tab) {
     const isLogin = tab === 'login';
-    loginTab.classList.toggle('active', isLogin);
-    signupTab.classList.toggle('active', !isLogin);
-    loginTab.setAttribute('aria-selected', isLogin ? 'true' : 'false');
-    signupTab.setAttribute('aria-selected', !isLogin ? 'true' : 'false');
-    if (tabPillBg) {
-      tabPillBg.style.transform = isLogin ? 'translateX(0%)' : 'translateX(100%)';
-    }
-    loginForm.hidden = !isLogin;
-    signupForm.hidden = isLogin;
-    if (recoveryForm) recoveryForm.hidden = true;
+    loginTab?.classList.toggle('active', isLogin);
+    signupTab?.classList.toggle('active', !isLogin);
+    loginTab?.setAttribute('aria-selected', isLogin ? 'true' : 'false');
+    signupTab?.setAttribute('aria-selected', !isLogin ? 'true' : 'false');
+    if (tabPillBg) tabPillBg.style.transform = isLogin ? 'translateX(0%)' : 'translateX(100%)';
+    if (loginForm) loginForm.hidden = !isLogin;
+    if (signupForm) signupForm.hidden = isLogin;
+    if (onboardingForm) onboardingForm.hidden = true;
     showMessage(loginMessage, '');
     showMessage(signupMessage, '');
-    showMessage(recoveryMessage, '');
+    showMessage(onboardingMessage, '');
   }
 
-  function showRecovery() {
-    loginForm.hidden = true;
-    signupForm.hidden = true;
-    if (recoveryForm) recoveryForm.hidden = false;
+  function showOnboarding(account, user) {
+    if (loginForm) loginForm.hidden = true;
+    if (signupForm) signupForm.hidden = true;
+    if (onboardingForm) onboardingForm.hidden = false;
+    loginTab?.classList.remove('active');
+    signupTab?.classList.add('active');
+    loginTab?.setAttribute('aria-selected', 'false');
+    signupTab?.setAttribute('aria-selected', 'true');
+    if (tabPillBg) tabPillBg.style.transform = 'translateX(100%)';
     showMessage(loginMessage, '');
     showMessage(signupMessage, '');
-    showMessage(recoveryMessage, '');
+    showMessage(onboardingMessage, '');
+
+    const meta = user?.user_metadata || {};
+    const suggestedName = String(meta.full_name || meta.name || '').trim();
+    const suggestedUsername = String(account?.username || '').trim().toLowerCase();
+    if (onboardingEmail) onboardingEmail.textContent = user?.email || 'Verified Google email';
+    if (onboardingUsername && suggestedUsername) onboardingUsername.value = suggestedUsername;
+    if (onboardingDisplayName && suggestedName) onboardingDisplayName.value = suggestedName;
+    onboardingUsername?.dispatchEvent(new Event('input'));
   }
 
   function showMessage(el, text, isError = false) {
@@ -322,37 +391,31 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       return 'The account service rejected its client key. This is a configuration issue, not an email or username error.';
     }
     if (/already registered|already exists|user already/i.test(raw)) {
-      return 'That email is already registered. Switch to Sign in or reset your password.';
+      return 'That email is already registered. Switch to Sign in.';
     }
     if (/duplicate|username.*taken|unique/i.test(raw)) {
       return 'That @username is already taken. Try a different username.';
     }
-    if (/disposable|temporary|alias/i.test(raw)) {
-      return raw;
-    }
-    if (/email.*invalid|invalid.*email/i.test(raw)) {
-      return 'That email address does not look valid. Use a permanent email you control.';
-    }
     if (/password/i.test(raw) && /weak|short|characters/i.test(raw)) {
       return 'Use a stronger password with at least 10 characters.';
-    }
-    if (/over_email_send_rate_limit|email rate limit exceeded/i.test(raw)) {
-      return 'Email delivery is temporarily rate-limited after several account attempts. This is a service cooldown, not an email or username error. Wait for the cooldown to clear before trying again.';
-    }
-    if (/rate limit|too many requests/i.test(raw)) {
-      return 'Too many account requests were made recently. Wait for the service cooldown to clear, then try again.';
     }
     if (/network|fetch/i.test(raw)) {
       return 'Could not reach the account service. Check your connection and try again.';
     }
+    if (/provider.*not.*enabled|google.*not.*enabled/i.test(raw)) {
+      return 'Google sign-in is not enabled yet. Please try again after the account service is configured.';
+    }
     return fallback;
+  }
+
+  function validateUsername(value) {
+    return /^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/.test(String(value || '').trim().toLowerCase());
   }
 
   loginTab?.addEventListener('click', () => showTab('login'));
   signupTab?.addEventListener('click', () => showTab('signup'));
   document.getElementById('switchToSignup')?.addEventListener('click', () => showTab('signup'));
   document.getElementById('switchToLogin')?.addEventListener('click', () => showTab('login'));
-  document.getElementById('recoveryToLogin')?.addEventListener('click', () => showTab('login'));
 
   async function continueWithGoogle(messageEl, button) {
     showMessage(messageEl, '');
@@ -360,17 +423,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     try {
       const result = await accountAuth.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: getAuthRedirectUrl()
-        }
+        options: { redirectTo: 'https://fcmobiletools.online/account/' }
       });
       if (result.error) throw result.error;
     } catch (error) {
-      showMessage(
-        messageEl,
-        friendlyAuthError(error, 'Google sign-in could not be started. Please try again.'),
-        true
-      );
+      showMessage(messageEl, friendlyAuthError(error, 'Google sign-in could not be started. Please try again.'), true);
       if (button) button.disabled = false;
     }
   }
@@ -382,213 +439,108 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     continueWithGoogle(signupMessage, event.currentTarget);
   });
 
-  // Support ?mode=signup or #signup URL deep links
-  const params = new URLSearchParams(location.search);
-  if (params.get('mode') === 'signup' || location.hash === '#signup') {
-    showTab('signup');
-  }
-
-  // Supabase verification links return Auth errors in the URL hash. Handle those
-  // explicitly so an expired/used link does not leave the account screen looking broken.
-  const authHash = new URLSearchParams(location.hash.replace(/^#/, ''));
-  const authErrorCode = authHash.get('error_code');
-  const authError = authHash.get('error');
-  if (authErrorCode === 'otp_expired' || authError === 'access_denied') {
-    showTab('signup');
-    showMessage(
-      signupMessage,
-      authErrorCode === 'otp_expired'
-        ? 'That verification link has expired or was already used. Start again with a fresh verification email.'
-        : 'That verification link is no longer valid. Start again with a fresh verification email.',
-      true
-    );
-    history.replaceState(null, document.title, location.pathname + location.search);
-  }
-
-  // Live preview card updates as user types username / display name
-  function updateLivePreview() {
-    const rawUser = String(signupUsername?.value || '').trim().toLowerCase();
-    const rawDisplay = String(signupDisplayName?.value || '').trim();
-    const handle = rawUser || 'fcmobile_pro';
-    const display = rawDisplay || (rawUser ? rawUser : 'Market Scout');
-    if (previewHandle) previewHandle.textContent = '@' + handle;
-    if (previewDisplayName) previewDisplayName.textContent = display;
-    if (previewAvatar) previewAvatar.textContent = display.slice(0, 2).toUpperCase();
-
-    if (signupUsername && usernameHint) {
-      if (!rawUser) {
-        usernameHint.textContent = 'Lowercase letters, numbers, dots, underscores or hyphens.';
-        usernameHint.className = 'field-hint';
-      } else if (/^[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]$/.test(rawUser)) {
-        usernameHint.textContent = `@${rawUser} looks valid.`;
-        usernameHint.className = 'field-hint is-ok';
-      } else {
-        usernameHint.textContent = 'Use 3–24 lowercase letters, numbers, dots, underscores or hyphens (must start/end with letter or number).';
-        usernameHint.className = 'field-hint is-warn';
-      }
-    }
-  }
-  signupUsername?.addEventListener('input', updateLivePreview);
-  signupDisplayName?.addEventListener('input', updateLivePreview);
-
-  // Live email validation feedback
-  signupEmail?.addEventListener('input', () => {
-    const val = signupEmail.value.trim();
-    if (!val) {
-      emailHint.textContent = 'No Gmail “+” aliases or temporary/disposable email domains.';
-      emailHint.className = 'field-hint';
-      signupEmail.removeAttribute('aria-invalid');
-      return;
-    }
-    const check = validateSignupEmail(val);
-    if (!check.valid) {
-      emailHint.textContent = check.message;
-      emailHint.className = 'field-hint is-warn';
-      signupEmail.setAttribute('aria-invalid', 'true');
+  onboardingUsername?.addEventListener('input', () => {
+    const value = String(onboardingUsername.value || '').trim().toLowerCase();
+    onboardingUsername.value = value;
+    if (!value) {
+      onboardingUsernameHint.textContent = 'Lowercase letters, numbers, dots, underscores or hyphens.';
+      onboardingUsernameHint.className = 'field-hint';
+    } else if (validateUsername(value)) {
+      onboardingUsernameHint.textContent = '@' + value + ' looks valid.';
+      onboardingUsernameHint.className = 'field-hint is-ok';
     } else {
-      emailHint.textContent = 'Permanent email format looks good.';
-      emailHint.className = 'field-hint is-ok';
-      signupEmail.removeAttribute('aria-invalid');
+      onboardingUsernameHint.textContent = 'Use 3–24 lowercase letters, numbers, dots, underscores or hyphens and start/end with a letter or number.';
+      onboardingUsernameHint.className = 'field-hint is-warn';
     }
   });
 
-  // Live password meter
-  signupPassword?.addEventListener('input', () => {
-    const pw = signupPassword.value || '';
-    let score = 0;
-    if (pw.length >= 10) score += 50;
-    else score += Math.round((pw.length / 10) * 35);
-    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score += 20;
-    if (/\d/.test(pw)) score += 15;
-    if (/[^A-Za-z0-9]/.test(pw)) score += 15;
-    score = Math.min(100, score);
-    if (pwMeterBar) {
-      pwMeterBar.style.width = score + '%';
-      pwMeterBar.dataset.strength = pw.length < 10 ? 'weak' : score >= 80 ? 'strong' : 'good';
-    }
-    if (pwHint) {
-      if (!pw) {
-        pwHint.textContent = 'Use at least 10 characters with a mix of letters and numbers.';
-        pwHint.className = 'field-hint';
-      } else if (pw.length < 10) {
-        pwHint.textContent = `${10 - pw.length} more character${10 - pw.length === 1 ? '' : 's'} needed (minimum 10).`;
-        pwHint.className = 'field-hint is-warn';
-      } else {
-        pwHint.textContent = score >= 80 ? 'Strong password.' : 'Password meets length requirements.';
-        pwHint.className = 'field-hint is-ok';
-      }
-    }
-  });
-
-  // Password visibility toggles
-  document.querySelectorAll('.pw-toggle').forEach((toggle) => {
-    toggle.addEventListener('click', () => {
-      const input = document.getElementById(toggle.dataset.target);
-      if (!input) return;
-      const isVisible = input.type === 'text';
-      input.type = isVisible ? 'password' : 'text';
-      toggle.textContent = isVisible ? 'Show' : 'Hide';
-    });
-  });
-
-  // Sign in submission
-  loginForm?.addEventListener('submit', async (event) => {
+  onboardingForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    showMessage(loginMessage, '');
-    if (!loginForm.checkValidity()) {
-      loginForm.reportValidity();
+    showMessage(onboardingMessage, '');
+
+    const username = String(onboardingUsername?.value || '').trim().toLowerCase();
+    const displayName = String(onboardingDisplayName?.value || '').trim();
+    const password = String(document.getElementById('onboardingPassword')?.value || '');
+    const confirm = String(document.getElementById('onboardingPasswordConfirm')?.value || '');
+
+    if (!validateUsername(username)) {
+      showMessage(onboardingMessage, 'Username must be 3–24 characters using lowercase letters, numbers, dots, underscores or hyphens.', true);
+      onboardingUsername?.focus();
       return;
     }
-    const fd = new FormData(loginForm);
-    const button = loginForm.querySelector('.submit-btn');
-    button.disabled = true;
-    try {
-      const result = await accountAuth.auth.signInWithPassword({
-        email: String(fd.get('email') || '').trim().toLowerCase(),
-        password: String(fd.get('password') || '')
-      });
-      if (result.error) throw result.error;
-      location.replace('/profile/');
-    } catch (error) {
-      showMessage(loginMessage, friendlyAuthError(error, 'Email or password is incorrect.'), true);
-    } finally {
-      button.disabled = false;
-    }
-  });
-
-  // New email/password registrations are intentionally disabled for now.
-
-  // Password reset
-  document.getElementById('resetBtn')?.addEventListener('click', async (event) => {
-    showMessage(loginMessage, '');
-    const emailInput = document.getElementById('loginEmail');
-    const email = String(emailInput?.value || '').trim().toLowerCase();
-    if (!email) {
-      showMessage(loginMessage, 'Enter your email address above first, then click “Forgot password?”.', true);
-      emailInput?.focus();
+    if (displayName.length > 80) {
+      showMessage(onboardingMessage, 'Display name must be 80 characters or fewer.', true);
+      onboardingDisplayName?.focus();
       return;
     }
-    const btn = event.currentTarget;
-    btn.disabled = true;
-    try {
-      const result = await accountAuth.auth.resetPasswordForEmail(email, {
-        redirectTo: getAuthRedirectUrl()
-      });
-      if (result.error) throw result.error;
-      showMessage(loginMessage, 'Password reset instructions have been sent. Check your inbox and spam folder.', false);
-    } catch (error) {
-      showMessage(loginMessage, friendlyAuthError(error, 'Unable to send reset instructions right now.'), true);
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // Supabase fires PASSWORD_RECOVERY after a valid recovery link creates a session.
-  let recoveryActive = /(?:^|[&#])type=recovery(?:&|$)/i.test(location.hash);
-  accountAuth.auth.onAuthStateChange((event) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      recoveryActive = true;
-      showRecovery();
-    }
-  });
-
-  recoveryForm?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    showMessage(recoveryMessage, '');
-    const password = String(document.getElementById('recoveryPassword')?.value || '');
-    const confirm = String(document.getElementById('recoveryPasswordConfirm')?.value || '');
     if (password.length < 10) {
-      showMessage(recoveryMessage, 'Use a password with at least 10 characters.', true);
+      showMessage(onboardingMessage, 'Use a password with at least 10 characters.', true);
+      document.getElementById('onboardingPassword')?.focus();
       return;
     }
     if (password !== confirm) {
-      showMessage(recoveryMessage, 'The two passwords do not match.', true);
+      showMessage(onboardingMessage, 'The two passwords do not match.', true);
+      document.getElementById('onboardingPasswordConfirm')?.focus();
       return;
     }
-    const button = recoveryForm.querySelector('.submit-btn');
+
+    const button = onboardingForm.querySelector('.submit-btn');
     button.disabled = true;
+
     try {
-      const result = await accountAuth.auth.updateUser({ password });
-      if (result.error) throw result.error;
-      await accountAuth.auth.signOut();
-      showMessage(recoveryMessage, 'Password updated successfully. You can now sign in with your new password.', false);
-      recoveryForm.reset();
-      recoveryActive = false;
-      history.replaceState(null, document.title, location.pathname + location.search);
-      setTimeout(() => showTab('login'), 900);
+      const userResult = await accountAuth.auth.updateUser({ password });
+      if (userResult.error) throw userResult.error;
+
+      const profileResult = await accountApi('/api/account/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          username,
+          displayName,
+          avatarUrl: '',
+          completeOnboarding: true
+        })
+      });
+      const profileBody = await profileResult.json().catch(() => ({}));
+      if (!profileResult.ok) throw new Error(profileBody.error || 'Could not save your profile.');
+
+      onboardingForm.reset();
+      location.replace('/profile/');
     } catch (error) {
-      showMessage(recoveryMessage, friendlyAuthError(error, 'Unable to update your password. Request a fresh reset link and try again.'), true);
+      showMessage(onboardingMessage, friendlyAuthError(error, 'Could not finish your account setup. Please try again.'), true);
     } finally {
       button.disabled = false;
     }
   });
 
-  accountAuth.auth.getSession().then((result) => {
-    if (result.data?.session && recoveryActive) {
-      showRecovery();
-      return;
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode') === 'signup' || location.hash === '#signup') showTab('signup');
+
+  accountAuth.auth.getSession().then(async (result) => {
+    const session = result.data?.session;
+    if (!session) return;
+
+    try {
+      const [accountResult, userResult] = await Promise.all([
+        accountApi('/api/account/me'),
+        accountAuth.auth.getUser()
+      ]);
+      const body = await accountResult.json().catch(() => ({}));
+      const user = userResult.data?.user || session.user;
+
+      if (!accountResult.ok || !body?.account) {
+        showMessage(loginMessage, body?.error || 'Could not load your account. Please try again.', true);
+        return;
+      }
+
+      if (body.account.onboardingComplete === false) {
+        showOnboarding(body.account, user);
+        return;
+      }
+
+      location.replace('/profile/');
+    } catch (error) {
+      showMessage(loginMessage, friendlyAuthError(error, 'Could not load your account. Please refresh and try again.'), true);
     }
-    if (result.data?.session && !location.hash.includes('error=') && !location.search.includes('mode=recovery')) location.replace('/profile/');
   });
 </script>
 
@@ -1190,6 +1142,63 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     margin: 4px 0 0;
     color: #a58f7e;
     font: 500 12.5px/1.55 var(--font-body);
+  }
+
+  .forgot-note {
+    display: grid;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 190, 125, 0.18);
+    background: rgba(255, 190, 125, 0.045);
+  }
+  .forgot-note strong {
+    color: #ffe0c0;
+    font: 700 12px/1.3 var(--font-body);
+  }
+  .forgot-note span {
+    color: #9b8b7c;
+    font: 500 11.5px/1.45 var(--font-body);
+  }
+  .forgot-note a {
+    color: #ffc58e;
+    font-weight: 800;
+  }
+  .verified-email-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 15px;
+    border-radius: 14px;
+    border: 1px solid rgba(71, 209, 108, 0.22);
+    background: rgba(71, 209, 108, 0.055);
+  }
+  .verified-badge {
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(71, 209, 108, 0.12);
+    border: 1px solid rgba(71, 209, 108, 0.28);
+    color: #8ceca4;
+    font: 800 10px/1 var(--font-body);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .verified-email-box div {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+  .verified-email-box small {
+    color: #6f8c78;
+    font: 800 9px/1 var(--font-body);
+    letter-spacing: 0.1em;
+  }
+  .verified-email-box strong {
+    color: #dff8e5;
+    font: 700 13px/1.3 var(--font-body);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .submit-btn {
