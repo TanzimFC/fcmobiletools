@@ -8,14 +8,14 @@
       <a class="site-link" href="/">Home</a>
       <div class="site-group"><button class="site-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools <span aria-hidden="true">⌄</span></button><div class="site-dropdown"><a href="/team-ovr"><span><strong>Team OVR</strong><small>Squad rating</small></span><b>↗</b></a><a href="/training-calculator"><span><strong>Training Calculator</strong><small>XP &amp; fodder</small></span><b>↗</b></a><a href="/rank-up-calculator"><span><strong>Rank Up Calculator</strong><small>Rank costs</small></span><b>↗</b></a><a href="/investment-calculator"><span><strong>Investment Calculator</strong><small>Market planning</small></span><b>↗</b></a></div></div>
       <div class="site-group"><button class="site-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Live <span aria-hidden="true">⌄</span></button><div class="site-dropdown"><a href="/events"><span><strong>Events &amp; Reset</strong><small>Countdowns &amp; schedules</small></span><b>↗</b></a><a href="/redeem-codes"><span><strong>Redeem Codes</strong><small>Current rewards</small></span><b>↗</b></a><a href="/football-centre"><span><strong>Football Centre</strong><small>Matches &amp; points</small></span><b>↗</b></a><a href="/a-nations-story"><span><strong>A Nation's Story</strong><small>Event answers</small></span><b>↗</b></a><a href="/fc-mobile-27"><span><strong>FC Mobile 27 Update</strong><small>Season 27 guide + install</small></span><b>↗</b></a></div></div>
-      <a class="site-link" href="/blog/">Articles</a><a class="site-link" href="/creator">Creator</a><a class="site-cta" href="/redeem-codes"><i></i><span>Redeem Codes</span></a>
+      <a class="site-link" href="/blog/">Articles</a><a class="site-link" href="/creator">Creator</a><a class="site-cta" href="/account/"><i></i><span>Account</span></a>
     </nav>
     <button class="site-menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav" aria-label="Open menu"><span class="site-menu-grid" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
   </div>
   <nav id="site-mobile-nav" class="site-mobile-nav" aria-label="Mobile navigation">
     <a href="/">Home</a><div class="site-mobile-group"><strong>TOOLS</strong><a href="/team-ovr">Team OVR</a><a href="/training-calculator">Training Calculator</a><a href="/rank-up-calculator">Rank Up Calculator</a><a href="/investment-calculator">Investment Calculator</a></div>
     <div class="site-mobile-group"><strong>LIVE</strong><a href="/events">Events &amp; Reset</a><a href="/redeem-codes">Redeem Codes</a><a href="/football-centre">Football Centre</a><a href="/a-nations-story">A Nation's Story</a><a href="/fc-mobile-27">FC Mobile 27 Update</a></div>
-    <a href="/blog/">Articles</a><a href="/creator">Creator</a><a class="mobile-code" href="/redeem-codes"><i></i><span>Redeem Codes</span></a>
+    <a href="/blog/">Articles</a><a href="/creator">Creator</a><a class="mobile-code" href="/account/"><i></i><span>Account</span></a>
   </nav>
 </header>`;
 
@@ -81,4 +81,55 @@
     closeMobile();
   });
   addEventListener('scroll', () => header?.classList.toggle('is-scrolled', scrollY > 8), { passive: true });
+
+  const getAccountToken=()=>{
+    try {
+      const raw=localStorage.getItem('fcmobiletools-auth-v1');
+      const data=raw?JSON.parse(raw):null;
+      return data?.access_token||'';
+    } catch { return ''; }
+  };
+  const trackActivity=async(eventType,entityType,entityId,durationMs)=>{
+    const token=getAccountToken();
+    if(!token) return;
+    try{
+      await fetch('/api/account/activity',{
+        method:'POST',
+        headers:{authorization:'Bearer '+token,'content-type':'application/json'},
+        body:JSON.stringify({eventType,entityType,entityId,durationMs,idempotencyKey:crypto.randomUUID()})
+      });
+    }catch{}
+  };
+
+  const accountCta=header?.querySelector('.site-cta[href="/account/"] span');
+  if(accountCta && getAccountToken()) accountCta.textContent='Your Account';
+
+  const route=path;
+  if(route==='/events' || route==='/redeem-codes'){
+    window.setTimeout(()=>trackActivity('page_dwell','page',route,8000),8500);
+  }
+  const calculatorRoutes={
+    '/rank-up-calculator':'rank-up-calculator',
+    '/team-ovr':'team-ovr',
+    '/training-calculator':'training-calculator',
+    '/investment-calculator':'investment-calculator'
+  };
+  if(calculatorRoutes[route]){
+    let interactionSeen=false;
+    let interactionTimer=0;
+    const arm=()=>{
+      if(interactionSeen) return;
+      interactionSeen=true;
+      window.clearTimeout(interactionTimer);
+      interactionTimer=window.setTimeout(()=>trackActivity('calculator_use','calculator',calculatorRoutes[route],3000),3500);
+    };
+    const main=document.querySelector('main');
+    main?.addEventListener('input',arm,{once:true,passive:true});
+    main?.addEventListener('change',arm,{once:true,passive:true});
+    main?.addEventListener('click',(event)=>{
+      const target=event.target;
+      if(target?.closest('a,[data-site-nav]')) return;
+      arm();
+    },{once:true});
+  }
 })();
