@@ -1,0 +1,41 @@
+---
+import Crest from './Crest.astro';
+const { rows = [], advance = 0, caption = 'Standings' } = Astro.props;
+const gd = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0');
+---
+<div class="tbl-wrap">
+  <table class="standings">
+    <caption class="sr">{caption}</caption>
+    <thead>
+      <tr><th class="pos">#</th><th class="pl">Player</th><th>P</th><th>W</th><th class="xs">D</th><th class="xs">L</th><th>GD</th><th class="pts">Pts</th></tr>
+    </thead>
+    <tbody>
+      {rows.map((r, i) => (
+        <tr class:list={{ adv: advance > 0 && i < advance }}>
+          <td class="pos">{i + 1}</td>
+          <td class="pl"><span class="pl-in"><Crest player={r.player} size={22} /><span class="nm"><b>{r.player?.displayName || 'TBD'}</b>{r.player?.playerTag ? <i>{r.player.playerTag}</i> : null}</span></span></td>
+          <td>{r.played}</td><td>{r.wins}</td><td class="xs">{r.draws}</td><td class="xs">{r.losses}</td><td>{gd(r.goalDifference)}</td>
+          <td class="pts">{r.points}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+<style>
+  .tbl-wrap{overflow-x:auto}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .standings{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th{padding:10px 8px;font:600 11.5px/1 'Inter',system-ui,sans-serif;color:#6f8294;text-align:center;white-space:nowrap}
+  td{padding:9px 8px;text-align:center;font:500 13.5px/1.2 'Inter',system-ui,sans-serif;color:#b9c7d2;border-top:1px solid rgba(255,255,255,.06)}
+  .pos{width:34px;text-align:center;color:#6f8294}
+  .pl{text-align:left}
+  th.pl{padding-left:0}
+  .pl-in{display:flex;align-items:center;gap:9px;min-width:0}
+  .nm{display:flex;align-items:baseline;gap:6px;min-width:0}
+  .nm b{font-weight:600;color:#eaf1f6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nm i{font-style:normal;font-size:11px;color:#6f8294}
+  .pts{font:700 15px 'Space Grotesk',system-ui,sans-serif;color:#fff}
+  tr.adv td:first-child{box-shadow:inset 3px 0 #4cc9ff;color:#4cc9ff;font-weight:700}
+  tr.adv .pts{color:#4cc9ff}
+  @media(max-width:420px){.xs{display:none}}
+</style>

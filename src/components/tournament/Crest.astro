@@ -1,0 +1,16 @@
+---
+import { monogram } from '../../lib/tournamentView.js';
+interface Props { player?: { displayName?: string; playerTag?: string } | null; size?: number; ring?: boolean }
+const { player = null, size = 28, ring = false } = Astro.props;
+const { letters, hue } = monogram(player);
+---
+{player ? (
+  <span class:list={['crest', { ring }]} style={`--h:${hue};--s:${size}px`} aria-hidden="true">{letters}</span>
+) : (
+  <span class="crest empty" style={`--s:${size}px`} aria-hidden="true"></span>
+)}
+<style>
+  .crest{display:inline-grid;place-items:center;flex:none;width:var(--s);height:var(--s);border-radius:calc(var(--s)*.32);font:700 calc(var(--s)*.4)/1 'Space Grotesk',system-ui,sans-serif;letter-spacing:.02em;color:hsl(var(--h) 85% 84%);background:linear-gradient(150deg,hsl(var(--h) 46% 30%),hsl(var(--h) 52% 18%));box-shadow:inset 0 0 0 1px hsl(var(--h) 55% 46% / .45)}
+  .crest.ring{box-shadow:inset 0 0 0 1px hsl(var(--h) 55% 46% / .45),0 0 0 3px #071018,0 0 0 4px hsl(var(--h) 60% 55% / .55)}
+  .crest.empty{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);border-style:dashed}
+</style>

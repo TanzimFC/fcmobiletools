@@ -1,0 +1,58 @@
+---
+import Crest from './Crest.astro';
+const { tie, final = false } = Astro.props;
+const decided = Boolean(tie.winnerId);
+const sides = [
+  { p: tie.p1, s: tie.s1, pen: tie.pens?.[0] },
+  { p: tie.p2, s: tie.s2, pen: tie.pens?.[1] }
+];
+const empty = tie.bye ? 'Bye' : 'To be decided';
+const legScore = (m) => (m.player1Score != null && m.player2Score != null ? `${m.player1Score}–${m.player2Score}` : null);
+---
+<article class:list={['tie', { decided, final, ready: tie.status === 'ready', bye: tie.bye }]}>
+  {sides.map((side) => (
+    <div class:list={['side', { win: decided && side.p?.id === tie.winnerId, lose: decided && side.p && side.p.id !== tie.winnerId, empty: !side.p }]}>
+      <Crest player={side.p} size={26} />
+      <span class="who">
+        {side.p ? (<><b>{side.p.displayName}</b>{side.p.playerTag ? <i>{side.p.playerTag}</i> : null}</>) : <em>{empty}</em>}
+      </span>
+      {side.p && !tie.bye ? (
+        <span class="score">{side.s ?? (tie.status === 'completed' ? '' : '–')}{side.pen != null ? <sup>({side.pen})</sup> : null}</span>
+      ) : null}
+    </div>
+  ))}
+  {tie.legs && tie.legs.some((m) => legScore(m)) ? (
+    <footer class="foot legs">
+      {tie.legs.map((m, i) => legScore(m) ? <span>Leg {i + 1} <b>{legScore(m)}</b></span> : null)}
+    </footer>
+  ) : null}
+  {!tie.legs && tie.pens ? <footer class="foot">Decided on penalties</footer> : null}
+  {tie.legs && decided && tie.s1 != null && tie.s1 === tie.s2 ? <footer class="foot">Level on aggregate</footer> : null}
+  {tie.status === 'ready' && !tie.legs?.some((m) => legScore(m)) ? <footer class="foot wait">Awaiting result</footer> : null}
+</article>
+<style>
+  .tie{position:relative;width:100%;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:linear-gradient(160deg,#0f1c2a,#0a1520);overflow:hidden;transition:border-color .2s}
+  .tie.ready{border-color:rgba(76,201,255,.28)}
+  .tie.bye{opacity:.55}
+  .side{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 12px 8px 10px;color:#cfdae4;position:relative}
+  .side+.side{border-top:1px solid rgba(255,255,255,.06)}
+  .who{flex:1;min-width:0;display:flex;align-items:baseline;gap:7px}
+  .who b{font:600 14px/1.2 'Inter',system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .who i{font:500 11px/1 'Inter',system-ui,sans-serif;font-style:normal;color:#6f8294}
+  .who em{font:italic 400 13px 'Inter',system-ui,sans-serif;color:#5b6e80}
+  .score{font:700 17px/1 'Space Grotesk',system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#8fa1b1;min-width:18px;text-align:right}
+  .score sup{font-size:10px;font-weight:600;margin-left:2px;color:#6f8294}
+  .side.lose{color:#7d8f9f}
+  .side.lose .who b{font-weight:500}
+  .side.win{color:#fff;background:linear-gradient(90deg,rgba(76,201,255,.14),rgba(76,201,255,0) 70%)}
+  .side.win::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:0 3px 3px 0;background:#4cc9ff}
+  .side.win .score{color:#4cc9ff}
+  .foot{display:flex;gap:14px;padding:7px 12px;border-top:1px solid rgba(255,255,255,.06);font:500 11.5px/1.2 'Inter',system-ui,sans-serif;color:#7d8f9f;background:rgba(255,255,255,.015)}
+  .foot b{color:#cfdae4;font-weight:600;font-variant-numeric:tabular-nums}
+  .foot.wait{color:#4cc9ff}
+  /* the final earns the only gold on the page, once it is decided */
+  .tie.final.decided{border-color:rgba(233,196,106,.55);box-shadow:0 0 0 1px rgba(233,196,106,.12),0 18px 50px -18px rgba(233,196,106,.35)}
+  .tie.final.decided .side.win{background:linear-gradient(90deg,rgba(233,196,106,.16),rgba(233,196,106,0) 70%)}
+  .tie.final.decided .side.win::before{background:#e9c46a}
+  .tie.final.decided .side.win .score{color:#e9c46a}
+</style>

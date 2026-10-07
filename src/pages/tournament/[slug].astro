@@ -1,6 +1,14 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Crest from '../../components/tournament/Crest.astro';
+import Tie from '../../components/tournament/Tie.astro';
+import Standings from '../../components/tournament/Standings.astro';
+import Fixture from '../../components/tournament/Fixture.astro';
 import { TOURNAMENT_PUBLICATIONS } from '../../data/tournaments.js';
+import {
+  buildKnockout, groupByMatchday, sortStandings, progressOf, nextMatch, championOf,
+  tournamentState, formatLabel, matchModeLabel, stageTypeLabel, formatDate
+} from '../../lib/tournamentView.js';
 
 export function getStaticPaths() {
   return TOURNAMENT_PUBLICATIONS.filter((t) => t.isPublic).map((t) => ({
@@ -9,68 +17,302 @@ export function getStaticPaths() {
   }));
 }
 
-const { tournament } = Astro.props;
-const formatLabel = String(tournament?.formatKey || 'single_elimination').replaceAll('_', ' ');
+const { tournament: t } = Astro.props;
+const stages = t?.stages || [];
+const state = t ? tournamentState(t) : null;
+const progress = t ? progressOf(t) : null;
+const champion = t ? championOf(t) : null;
+const next = t && !champion ? nextMatch(t) : null;
+const kickoff = formatDate(t?.startsAt, true);
+const chunk = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));
+
+function contextOf(found) {
+  if (!found) return '';
+  const { match, stage } = found;
+  if (stage.type === 'knockout') return buildKnockout(stage).rounds.find((r) => r.number === match.roundNumber)?.label || stage.name;
+  if (stage.type === 'group') return stage.groups.find((g) => g.id === match.groupId)?.name || stage.name;
+  return `Matchday ${match.matchday ?? match.roundNumber}`;
+}
 ---
-<BaseLayout title={tournament ? `${tournament.name} | FCMOBILETOOLS Tournaments` : 'Tournament'} description={tournament?.description || 'FCMOBILETOOLS tournament bracket.'}>
-  {tournament ? (
-    <main class="tournament-page">
-      <header class="tour-head">
-        <div>
-          <span>FCMOBILETOOLS ORGANIZED · {formatLabel} · {tournament.participantCount} PARTICIPANTS</span>
-          <h1>{tournament.name}</h1>
-          <p>{tournament.description}</p>
+<BaseLayout title={t ? t.name : 'Tournament'} description={t?.description || 'FCMOBILETOOLS tournament bracket.'}>
+  {t ? (
+    <main class="tp">
+      <header class="hero">
+        <svg class="pitch" viewBox="0 0 600 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="420" cy="200" r="150" /><circle cx="420" cy="200" r="5" fill="currentColor" /><path d="M420 -20V420" /><path d="M600 110h-95v180h95" />
+        </svg>
+        <div class="wrap hero-grid">
+          <div class="hero-main">
+            <div class="crumbs">
+              <a href="/tournaments/">All tournaments</a>
+              <span class={`state ${state.key}`}><i></i>{state.label}</span>
+            </div>
+            <h1>{t.name}</h1>
+            {t.description ? <p class="lede">{t.description}</p> : null}
+            <dl class="facts">
+              <div><dt>Format</dt><dd>{formatLabel(t.formatKey)}</dd></div>
+              <div><dt>Players</dt><dd>{t.participantCount}</dd></div>
+              {kickoff ? <div><dt>Kick-off</dt><dd>{kickoff}</dd></div> : null}
+              {progress.total ? <div><dt>Matches played</dt><dd>{progress.done} of {progress.total}</dd></div> : null}
+            </dl>
+          </div>
+
+          <aside class="hero-side" aria-label={champion ? 'Champion' : 'Tournament status'}>
+            {champion ? (
+              <div class="card champion">
+                <svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M10 17h4v3h-4zM8.5 20h7"/></svg>
+                <p class="card-label">Champion</p>
+                <div class="champ-id"><Crest player={champion} size={56} ring /><div><strong>{champion.displayName}</strong>{champion.playerTag ? <small>{champion.playerTag}</small> : null}</div></div>
+              </div>
+            ) : next ? (
+              <div class="card upnext">
+                <p class="card-label">Next match <span>{contextOf(next)}</span></p>
+                <div class="vs">
+                  <div class="vs-p"><Crest player={next.match.player1} size={48} /><b>{next.match.player1.displayName}</b></div>
+                  <span class="vs-x">vs</span>
+                  <div class="vs-p"><Crest player={next.match.player2} size={48} /><b>{next.match.player2.displayName}</b></div>
+                </div>
+                <div class="meter" style={`--p:${progress.pct}%`}><span></span></div>
+                <p class="meter-copy">{progress.done} of {progress.total} matches played</p>
+              </div>
+            ) : (
+              <div class="card upnext">
+                <p class="card-label">Bracket is set</p>
+                <div class="roster">
+                  {t.players.slice(0, 8).map((p) => <Crest player={p} size={38} />)}
+                  {t.players.length > 8 ? <span class="more">+{t.players.length - 8}</span> : null}
+                </div>
+                <p class="meter-copy">{t.participantCount} players are in. Results appear here as soon as matches are played.</p>
+              </div>
+            )}
+          </aside>
         </div>
-        <div class="status">{String(tournament.status).replace('_',' ')}</div>
       </header>
 
-      {tournament.winner ? (
-        <section class="winner"><span>TOURNAMENT CHAMPION</span><strong>{tournament.winner.displayName}</strong>{tournament.winner.playerTag ? <small>{tournament.winner.playerTag}</small> : null}</section>
+      {stages.length > 1 ? (
+        <nav class="stage-nav" aria-label="Tournament stages">
+          <div class="wrap">
+            {stages.map((s) => <a href={`#stage-${s.order}`}>{s.name}</a>)}
+          </div>
+        </nav>
       ) : null}
 
-      <section class="stages">
-        {(tournament.stages || []).map((stage) => (
-          <article class="stage">
-            <div class="stage-head">
-              <div><span>STAGE {stage.order}</span><h2>{stage.name}</h2></div>
-              <b>{stage.type} · {stage.matchMode.replaceAll('_',' ')}</b>
-            </div>
+      <div class="wrap stages">
+        {stages.map((stage) => {
+          const ko = stage.type === 'knockout' ? buildKnockout(stage) : null;
+          const isGroup = stage.type === 'group';
+          const standings = sortStandings(stage.standings || []);
+          const days = !ko && !isGroup ? groupByMatchday(stage.matches || []) : [];
+          const firstOpen = days.findIndex((d) => d.pending);
+          return (
+            <section class="stage" id={`stage-${stage.order}`}>
+              <header class="stage-head">
+                <h2>{stage.name}</h2>
+                <p>{stageTypeLabel(stage.type)}, {matchModeLabel(stage.matchMode)}</p>
+              </header>
 
-            {stage.standings?.length ? (
-              <div class="standings-wrap">
-                <table class="standings">
-                  <thead><tr><th>#</th><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
-                  <tbody>
-                    {stage.standings.slice(0,100).map((row) => (
-                      <tr><td>{row.rank || '—'}</td><td><strong>{row.player?.displayName || 'TBD'}</strong><small>{row.player?.playerTag}</small></td><td>{row.played}</td><td>{row.wins}</td><td>{row.draws}</td><td>{row.losses}</td><td>{row.goalDifference}</td><td><strong>{row.points}</strong></td></tr>
+              {ko ? (
+                <>
+                  <div class="bracket-wrap" tabindex="0" role="group" aria-label={`${stage.name} bracket`}>
+                    <div class="bracket" data-paired={ko.paired}>
+                      {ko.rounds.map((r, ri) => (
+                        <div class:list={['round', { first: ri === 0 }]} style={`--i:${ri}`}>
+                          <h3 class="round-title"><span>{r.label}</span><small>{r.done}/{r.count}</small></h3>
+                          <div class="round-body">
+                            {(ko.paired && r.ties.length > 1 ? chunk(r.ties, 2) : r.ties.map((x) => [x])).map((pair) => (
+                              <div class:list={['pair', { solo: pair.length === 1 }]}>
+                                {pair.map((tie) => (
+                                  <div class:list={['slot', { won: Boolean(tie.winnerId) }]}>
+                                    <Tie tie={tie} final={ri === ko.rounds.length - 1} />
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      <div class="round last" style={`--i:${ko.rounds.length}`}>
+                        <h3 class="round-title"><span>Champion</span></h3>
+                        <div class="round-body">
+                          <div class="pair solo"><div class="slot">
+                            <div class:list={['throne', { crowned: Boolean(ko.champion) }]}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M10 17h4v3h-4zM8.5 20h7"/></svg>
+                              {ko.champion ? <><Crest player={ko.champion} size={44} ring /><b>{ko.champion.displayName}</b></> : <span>Decided in the final</span>}
+                            </div>
+                          </div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {ko.thirdPlace ? (
+                    <div class="third">
+                      <h3>Third-place play-off</h3>
+                      <div class="third-card"><Tie tie={ko.thirdPlace} /></div>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+
+              {isGroup ? (
+                <>
+                  <p class="legend"><i></i>{stage.advancePerGroup ? `Top ${stage.advancePerGroup} from each group advance` : 'Qualification spots are marked in each group'}</p>
+                  <div class:list={['groups', { even: [2, 4].includes(stage.groups.length) }]}>
+                    {(stage.groups.length ? stage.groups : [{ id: null, name: 'Group' }]).map((g) => {
+                      const rows = sortStandings(standings.filter((r) => (g.id == null ? true : r.groupId === g.id)));
+                      const gm = (stage.matches || []).filter((m) => (g.id == null ? true : m.groupId === g.id));
+                      const played = gm.filter((m) => m.status === 'completed').length;
+                      return (
+                        <article class="group">
+                          <header><h3>{g.name}</h3><small>{played} of {gm.length} played</small></header>
+                          <Standings rows={rows} advance={stage.advancePerGroup || 0} caption={`${g.name} standings`} />
+                          <details>
+                            <summary>Fixtures and results</summary>
+                            {groupByMatchday(gm).map((d) => (
+                              <div class="day"><h4>Matchday {d.day}</h4>{d.matches.map((m) => <Fixture m={m} />)}</div>
+                            ))}
+                          </details>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : null}
+
+              {!ko && !isGroup ? (
+                <>
+                  <div class="league">
+                    <Standings rows={standings.slice(0, 200)} advance={Number(stage.config?.qualifiers || 0)} caption={`${stage.name} table`} />
+                    {standings.length > 200 ? <p class="cap-note">Showing the top 200 of {standings.length} players.</p> : null}
+                  </div>
+                  <div class="days">
+                    {days.map((d, i) => (
+                      <details class="day-box" open={i === firstOpen || (firstOpen === -1 && i === days.length - 1)}>
+                        <summary>Matchday {d.day}<small>{d.matches.filter((m) => m.status === 'completed').length} of {d.matches.length} played</small></summary>
+                        <div class="fx-grid">{d.matches.map((m) => <Fixture m={m} />)}</div>
+                      </details>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : null}
-
-            <div class="matches">
-              {(stage.matches || []).map((m) => (
-                <article class="match">
-                  <div class="match-meta"><span>Match {m.matchNumber}{m.legNumber > 1 ? ` · Leg ${m.legNumber}` : ''}</span><b>{m.status}</b></div>
-                  <div class:list={['player', { winner: m.winnerPlayerId && m.winnerPlayerId === m.player1?.id }]}>
-                    <span>{m.player1?.displayName || 'TBD'}</span><strong>{m.player1Score ?? '—'}</strong>
                   </div>
-                  <div class:list={['player', { winner: m.winnerPlayerId && m.winnerPlayerId === m.player2?.id }]}>
-                    <span>{m.player2?.displayName || 'TBD'}</span><strong>{m.player2Score ?? '—'}</strong>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
-        ))}
-      </section>
+                </>
+              ) : null}
+            </section>
+          );
+        })}
+      </div>
     </main>
   ) : (
-    <main class="not-found"><h1>Tournament not found</h1><p>This tournament is not currently published.</p></main>
+    <main class="tp missing"><div class="wrap"><h1>Tournament not found</h1><p>This tournament is not published right now.</p><a href="/tournaments/">See all tournaments</a></div></main>
   )}
 </BaseLayout>
 
 <style>
-.tournament-page{max-width:1450px;margin:0 auto;padding:120px 24px 90px}.tour-head{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:24px}.tour-head>div:first-child>span,.stage-head>div>span,.status,.winner span{font:800 9px/1.2 'Space Grotesk';letter-spacing:.13em;text-transform:uppercase;color:#4cc9ff}.tour-head h1{margin:8px 0;font:700 clamp(38px,6vw,68px)/.95 'Space Grotesk';letter-spacing:-.055em}.tour-head p{max-width:780px;margin:0;color:#a7b4c3}.status{padding:10px 13px;border:1px solid #294150;border-radius:999px;color:#47d16c;background:#0c1815}.winner{max-width:620px;margin:0 0 22px;padding:20px 22px;border:1px solid #2a6476;border-radius:18px;background:#0d1d25}.winner strong{display:block;margin-top:6px;font:700 30px 'Space Grotesk';color:#f5f8fb}.winner small{display:block;margin-top:3px;color:#8fa1b1}.stages{display:grid;gap:18px}.stage{border:1px solid rgba(255,255,255,.08);border-radius:20px;background:linear-gradient(145deg,#0b151f,#071018);overflow:hidden}.stage-head{display:flex;justify-content:space-between;align-items:end;gap:16px;padding:20px 22px;border-bottom:1px solid #1d303d}.stage-head h2{margin:6px 0 0;font:700 24px 'Space Grotesk'}.stage-head b{padding:7px 9px;border:1px solid #263b4a;border-radius:999px;color:#8fa1b1;font-size:9px;text-transform:uppercase}.standings-wrap{padding:0 22px;overflow:auto}.standings{width:100%;border-collapse:collapse;font-size:10px}.standings th,.standings td{padding:10px 7px;border-bottom:1px solid #1b2b37;text-align:left}.standings th{color:#718497;font-size:8px;text-transform:uppercase}.standings td small{display:block;color:#718497;margin-top:2px}.matches{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:10px;padding:20px 22px}.match{padding:11px;border:1px solid #1d303d;border-radius:12px;background:#0f1a26}.match-meta{display:flex;justify-content:space-between;color:#718497;font-size:8px;text-transform:uppercase}.match-meta b{color:#47d16c}.player{display:flex;justify-content:space-between;gap:10px;padding:9px 7px;color:#dbe6ee}.player+.player{border-top:1px solid #1d303d}.player strong{color:#a7b4c3}.player.winner{background:#10252b;color:#f5f8fb;border-radius:8px}.player.winner strong{color:#4cc9ff}.not-found{max-width:900px;margin:0 auto;padding:150px 24px}@media(max-width:750px){.tour-head{align-items:start;flex-direction:column}.stage-head{align-items:start;flex-direction:column}}
+  .tp{--ink:#071018;--panel:#0c1824;--line:rgba(255,255,255,.08);--cyan:#4cc9ff;--gold:#e9c46a;--live:#47d16c;--text:#f5f8fb;--muted:#8fa1b1;--gap:32px;color:var(--text);padding:0 0 72px}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+
+  /* hero */
+  .hero{position:relative;overflow:hidden;padding:clamp(104px,14vw,138px) 0 44px;border-bottom:1px solid var(--line)}
+  .pitch{position:absolute;right:-60px;top:20px;width:min(760px,95vw);color:var(--cyan);opacity:.07;pointer-events:none}
+  .hero-grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:44px;align-items:end}
+  .crumbs{display:flex;align-items:center;gap:16px;margin-bottom:22px;font:500 13.5px 'Inter',system-ui,sans-serif}
+  .crumbs a{color:var(--muted);text-decoration:none}
+  .crumbs a:hover{color:var(--text)}
+  .state{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 10px;border-radius:999px;font:600 12.5px/1 'Inter',system-ui,sans-serif;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.03)}
+  .state i{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .state.live{color:var(--live);border-color:rgba(71,209,108,.35);background:rgba(71,209,108,.08)}
+  .state.live i{box-shadow:0 0 0 0 rgba(71,209,108,.6);animation:ping 1.8s infinite}
+  .state.finished{color:var(--gold);border-color:rgba(233,196,106,.35);background:rgba(233,196,106,.07)}
+  .state.upcoming{color:var(--cyan);border-color:rgba(76,201,255,.3);background:rgba(76,201,255,.07)}
+  h1{margin:0;font:700 clamp(40px,6.4vw,72px)/.96 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.05em;text-wrap:balance}
+  .lede{max-width:56ch;margin:18px 0 0;color:#a7b4c3;font:400 16.5px/1.65 'Inter',system-ui,sans-serif}
+  .facts{display:flex;flex-wrap:wrap;gap:12px 38px;margin:32px 0 0}
+  .facts div{display:grid;gap:5px}
+  .facts dt{font:500 12.5px/1 'Inter',system-ui,sans-serif;color:#6f8294}
+  .facts dd{margin:0;font:600 16px/1.2 'Space Grotesk',system-ui,sans-serif;color:var(--text)}
+
+  .card{position:relative;padding:22px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(160deg,#0f1d2b,#09131c);box-shadow:0 30px 70px -30px #000}
+  .card-label{display:flex;justify-content:space-between;gap:10px;margin:0 0 18px;font:600 13px/1 'Inter',system-ui,sans-serif;color:var(--muted)}
+  .card-label span{color:var(--cyan)}
+  .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+  .vs-p{display:grid;justify-items:center;gap:10px;text-align:center;min-width:0}
+  .vs-p b{font:600 14.5px/1.2 'Inter',system-ui,sans-serif;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vs-x{font:500 13px 'Inter',system-ui,sans-serif;color:#566a7c}
+  .meter{height:4px;margin-top:22px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden}
+  .meter span{display:block;width:var(--p);height:100%;border-radius:4px;background:linear-gradient(90deg,#2aa8e8,var(--cyan))}
+  .meter-copy{margin:10px 0 0;font:400 13px/1.5 'Inter',system-ui,sans-serif;color:var(--muted)}
+  .roster{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .roster .more{display:inline-grid;place-items:center;height:38px;padding:0 12px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line);font:600 13px 'Inter',system-ui,sans-serif;color:var(--muted)}
+  .champion{border-color:rgba(233,196,106,.4);background:radial-gradient(120% 90% at 100% 0,rgba(233,196,106,.16),transparent 60%),linear-gradient(160deg,#17202a,#0a131c);box-shadow:0 30px 80px -30px rgba(233,196,106,.35)}
+  .champion .card-label{color:var(--gold)}
+  .cup{position:absolute;right:20px;top:18px;width:34px;height:34px;color:var(--gold);opacity:.9}
+  .champ-id{display:flex;align-items:center;gap:16px}
+  .champ-id strong{display:block;font:700 30px/1.05 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.03em}
+  .champ-id small{display:block;margin-top:6px;font:500 13px 'Inter',system-ui,sans-serif;color:var(--muted)}
+
+  /* stage nav */
+  .stage-nav{position:sticky;top:64px;z-index:20;border-bottom:1px solid var(--line);background:rgba(7,16,24,.86);backdrop-filter:blur(14px)}
+  .stage-nav .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px;scrollbar-width:none}
+  .stage-nav a{flex:none;padding:8px 14px;border-radius:999px;font:600 13.5px/1 'Inter',system-ui,sans-serif;color:var(--muted);text-decoration:none}
+  .stage-nav a:hover{color:var(--text);background:rgba(255,255,255,.05)}
+
+  /* stages */
+  .stages{display:grid;gap:64px;padding-top:44px}
+  .stage{scroll-margin-top:130px}
+  .stage-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .stage-head h2{margin:0;font:700 clamp(26px,3.4vw,34px)/1.1 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.035em}
+  .stage-head p{margin:0;font:400 14px 'Inter',system-ui,sans-serif;color:var(--muted)}
+
+  /* bracket */
+  .bracket-wrap{overflow-x:auto;margin:0 calc(clamp(16px,4vw,32px)*-1);padding:6px clamp(16px,4vw,32px) 22px;scroll-snap-type:x proximity;scrollbar-color:#27465a transparent;outline-offset:-2px}
+  .bracket{display:flex;align-items:stretch;gap:var(--gap);width:max-content;min-width:100%}
+  .round{display:flex;flex-direction:column;width:min(264px,78vw);scroll-snap-align:start}
+  .round.last{width:min(220px,70vw)}
+  .round-title{display:flex;align-items:baseline;justify-content:space-between;height:34px;margin:0;padding:0 2px 12px;font:700 15px/1 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.01em}
+  .round-title small{font:500 12.5px 'Inter',system-ui,sans-serif;color:#6f8294;font-variant-numeric:tabular-nums}
+  .round-body{display:flex;flex-direction:column;flex:1}
+  .pair{position:relative;flex:1;display:flex;flex-direction:column}
+  .slot{position:relative;flex:1;display:flex;align-items:center;padding:7px 0}
+  .bracket[data-paired="true"] .round:not(.last) .slot::after{content:'';position:absolute;left:100%;top:50%;width:calc(var(--gap)/2);height:2px;margin-top:-1px;background:#1f3445}
+  .bracket[data-paired="true"] .round:not(.last) .slot.won::after{background:var(--cyan)}
+  .bracket[data-paired="true"] .round:not(.first) .slot::before{content:'';position:absolute;right:100%;top:50%;width:calc(var(--gap)/2);height:2px;margin-top:-1px;background:#1f3445}
+  .bracket[data-paired="true"] .round:not(.last) .pair:not(.solo)::after{content:'';position:absolute;left:calc(100% + var(--gap)/2 - 1px);top:25%;bottom:25%;width:2px;background:#1f3445}
+  .throne{width:100%;display:grid;justify-items:center;gap:10px;padding:22px 14px;border:1px dashed rgba(233,196,106,.28);border-radius:16px;text-align:center;color:rgba(233,196,106,.55);font:500 13px 'Inter',system-ui,sans-serif}
+  .throne svg{width:28px;height:28px}
+  .throne.crowned{border-style:solid;border-color:rgba(233,196,106,.55);background:radial-gradient(110% 90% at 50% 0,rgba(233,196,106,.16),transparent 70%);color:var(--gold);box-shadow:0 20px 50px -20px rgba(233,196,106,.4)}
+  .throne b{font:700 18px/1.2 'Space Grotesk',system-ui,sans-serif;color:var(--text)}
+  .third{margin-top:8px;display:grid;gap:12px;max-width:264px}
+  .third h3{margin:0;font:700 15px 'Space Grotesk',system-ui,sans-serif}
+
+  /* groups + leagues */
+  .legend{display:flex;align-items:center;gap:10px;margin:-6px 0 18px;font:400 13.5px 'Inter',system-ui,sans-serif;color:var(--muted)}
+  .legend i{width:3px;height:16px;border-radius:2px;background:var(--cyan)}
+  .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:18px}
+  @media(min-width:800px){.groups.even{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .group,.league{padding:6px 18px 8px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(160deg,#0d1925,#09131c)}
+  .group header{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 6px}
+  .group h3{margin:0;font:700 19px 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.02em}
+  .group header small{font:400 12.5px 'Inter',system-ui,sans-serif;color:#6f8294}
+  .group details{border-top:1px solid var(--line);margin-top:6px}
+  summary{cursor:pointer;list-style:none;padding:14px 0;font:600 14px 'Inter',system-ui,sans-serif;color:#cfdae4;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:'';width:8px;height:8px;border-right:2px solid #6f8294;border-bottom:2px solid #6f8294;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+  details[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+  summary small{margin-left:auto;margin-right:10px;font:400 12.5px 'Inter',system-ui,sans-serif;color:#6f8294}
+  .day h4{margin:14px 0 4px;font:600 12.5px 'Inter',system-ui,sans-serif;color:#6f8294}
+  .day{padding-bottom:10px}
+  .league{padding-bottom:14px}
+  .cap-note{margin:10px 0 0;font:400 13px 'Inter',system-ui,sans-serif;color:#6f8294}
+  .days{display:grid;gap:10px;margin-top:18px}
+  .day-box{border:1px solid var(--line);border-radius:16px;background:#0a141e;padding:0 18px}
+  .fx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));column-gap:28px;padding-bottom:10px}
+
+  .missing{padding-top:150px}
+  .missing a{color:var(--cyan)}
+
+  @keyframes ping{70%{box-shadow:0 0 0 8px rgba(71,209,108,0)}100%{box-shadow:0 0 0 0 rgba(71,209,108,0)}}
+  @keyframes draw{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:no-preference){.bracket .round{animation:draw .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i)*110ms)}}
+  @media(prefers-reduced-motion:reduce){.state.live i{animation:none}}
+  a:focus-visible,summary:focus-visible,.bracket-wrap:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:8px}
+
+  @media(max-width:960px){.hero-grid{grid-template-columns:1fr;gap:30px;align-items:start}.hero-side{max-width:460px}}
+  @media(max-width:560px){.tp{--gap:26px}.facts{gap:14px 28px}.champ-id strong{font-size:24px}.stages{gap:48px}}
 </style>
