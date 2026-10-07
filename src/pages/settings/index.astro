@@ -83,6 +83,9 @@ import AccountNav from '../../components/AccountNav.astro';
     const display = a.displayName || a.username;
     const initials = String(display || 'FC').slice(0, 2).toUpperCase();
     const isVerified = Boolean(a.emailConfirmedAt);
+    const identitiesResult = await accountAuth.auth.getUserIdentities();
+    const identities = identitiesResult.data?.identities || [];
+    const hasPasswordLogin = identities.some(identity => identity.provider === 'email');
 
     root.innerHTML = `
       <header class="set-header acc-anim">
@@ -196,15 +199,18 @@ import AccountNav from '../../components/AccountNav.astro';
               </div>
             </div>
             <p class="sec-note">
-              ${isVerified
-                ? 'Your email address is verified. Password changes require your current password.'
-                : 'Your email address is not verified yet. You can resend a fresh verification link whenever you need one.'}
+              ${hasPasswordLogin
+                ? (isVerified
+                  ? 'Your email address is verified. Changing your password requires your current password.'
+                  : 'Your email address is not verified yet. You can resend a fresh verification link whenever you need one.')
+                : 'You signed in with Google and do not have an email/password login yet. Set a password here so you can also sign in with your email.'}
             </p>
 
             ${!isVerified ? '<div class="sec-actions"><button type="button" class="set-btn-secondary" id="resendVerificationBtn">Resend Verification Email</button></div>' : ''}
 
             <form class="password-change-form" id="passwordChangeForm" novalidate>
-              <div class="password-change-title">CHANGE PASSWORD</div>
+              <div class="password-change-title">${hasPasswordLogin ? 'CHANGE PASSWORD' : 'SET PASSWORD'}</div>
+              ${hasPasswordLogin ? `
               <div class="password-change-grid">
                 <div class="field">
                   <label for="currentPassword">Current password</label>
@@ -215,11 +221,17 @@ import AccountNav from '../../components/AccountNav.astro';
                   <input id="newPassword" type="password" autocomplete="new-password" required minlength="10" placeholder="Create a new password" />
                 </div>
               </div>
+              ` : `
               <div class="field">
-                <label for="confirmNewPassword">Confirm new password</label>
-                <input id="confirmNewPassword" type="password" autocomplete="new-password" required minlength="10" placeholder="Enter the new password again" />
+                <label for="newPassword">Password <small>(min 10 characters)</small></label>
+                <input id="newPassword" type="password" autocomplete="new-password" required minlength="10" placeholder="Create a password" />
               </div>
-              <button class="set-btn-primary" type="submit">Change Password</button>
+              `}
+              <div class="field">
+                <label for="confirmNewPassword">Confirm ${hasPasswordLogin ? 'new ' : ''}password</label>
+                <input id="confirmNewPassword" type="password" autocomplete="new-password" required minlength="10" placeholder="Enter the password again" />
+              </div>
+              <button class="set-btn-primary" type="submit">${hasPasswordLogin ? 'Change Password' : 'Set Password'}</button>
               <p class="status-msg" id="passwordMsg" role="status"></p>
             </form>
 
@@ -417,7 +429,8 @@ import AccountNav from '../../components/AccountNav.astro';
       }
     });
 
-    // Password changes require verification of the current password first.
+    // Existing email/password users re-authenticate before changing their password.
+    // OAuth-only users can set their first password from the authenticated session.
     document.getElementById('passwordChangeForm')?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const form = event.currentTarget;
@@ -430,46 +443,56 @@ import AccountNav from '../../components/AccountNav.astro';
       msg.textContent = '';
       msg.className = 'status-msg';
 
-      if (currentPassword.length < 10) {
+      if (hasPasswordLogin && currentPassword.length < 10) {
         msg.textContent = 'Enter your current password.';
         msg.className = 'status-msg is-err';
         return;
       }
       if (newPassword.length < 10) {
-        msg.textContent = 'Use a new password with at least 10 characters.';
+        msg.textContent = hasPasswordLogin
+          ? 'Use a new password with at least 10 characters.'
+          : 'Use a password with at least 10 characters.';
         msg.className = 'status-msg is-err';
         return;
       }
-      if (newPassword === currentPassword) {
+      if (hasPasswordLogin && newPassword === currentPassword) {
         msg.textContent = 'Your new password must be different from the current password.';
         msg.className = 'status-msg is-err';
         return;
       }
       if (newPassword !== confirmPassword) {
-        msg.textContent = 'The new passwords do not match.';
+        msg.textContent = 'The passwords do not match.';
         msg.className = 'status-msg is-err';
         return;
       }
 
       button.disabled = true;
       try {
-        const currentEmail = String(a.email || '').trim().toLowerCase();
-        if (!currentEmail) throw new Error('Your account email is unavailable. Please sign in again.');
+        if (hasPasswordLogin) {
+          const currentEmail = String(a.email || '').trim().toLowerCase();
+          if (!currentEmail) throw new Error('Your account email is unavailable. Please sign in again.');
 
-        const verify = await accountAuth.auth.signInWithPassword({
-          email: currentEmail,
-          password: currentPassword
-        });
-        if (verify.error) throw new Error('Current password is incorrect.');
+          const verify = await accountAuth.auth.signInWithPassword({
+            email: currentEmail,
+            password: currentPassword
+          });
+          if (verify.error) throw new Error('Current password is incorrect.');
+        }
 
         const updated = await accountAuth.auth.updateUser({ password: newPassword });
         if (updated.error) throw updated.error;
 
-        form.reset();
-        msg.textContent = 'Password changed successfully.';
-        msg.className = 'status-msg is-ok';
+        if (hasPasswordLogin) {
+          form.reset();
+          msg.textContent = 'Password changed successfully.';
+          msg.className = 'status-msg is-ok';
+        } else {
+          msg.textContent = 'Password set successfully. You can now sign in with Google or your email and password.';
+          msg.className = 'status-msg is-ok';
+          setTimeout(() => loadSettings(), 700);
+        }
       } catch (e) {
-        msg.textContent = e.message || 'Unable to change your password right now.';
+        msg.textContent = e.message || 'Unable to update your password right now.';
         msg.className = 'status-msg is-err';
       } finally {
         button.disabled = false;
