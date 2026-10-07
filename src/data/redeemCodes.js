@@ -1,6 +1,16 @@
 // FC Mobile redeem-code database.
 export const REDEEM_CODES = [
   {
+    "code": "GARUDAJUARA",
+    "reward": "2,000 Gems",
+    "status": "active",
+    "releaseDate": "2026-10-07",
+    "expiryDate": null,
+    "region": "Global",
+    "lastVerified": "2026-10-07",
+    "notes": "New redeem code added October 7, 2026."
+  },
+  {
     "code": "3RDANNIVERSARY",
     "reward": "1x Draft Voucher + 100x Rank Up Tokens",
     "status": "active",
