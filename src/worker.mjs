@@ -194,8 +194,16 @@ function validateAvatarUrl(value) {
   return raw.slice(0,2048);
 }
 
+async function tournamentFeatureIsLive(env) {
+  try {
+    const rows=await supabaseRest(env,'tournaments?is_public=eq.true&status=in.(published,in_progress,completed)&select=id&limit=1');
+    return Array.isArray(rows) && rows.length>0;
+  } catch { return false; }
+}
+
 async function fetchTournamentStatsForAccount(env, accountId) {
   if (!accountId) return null;
+  if (!(await tournamentFeatureIsLive(env))) return null;
   try {
     const players = await supabaseRest(
       env,
@@ -241,23 +249,39 @@ async function accountApi(request, env, url) {
 
   const {account,user}=context;
   if(request.method==='GET' && url.pathname==='/api/account/me') {
-    const [progress,settings,rewards,activity,tournamentStats]=await Promise.all([
+    const [progress,settings,rewards,activity,gameProfile,dailyStreak,tournamentStats]=await Promise.all([
       supabaseRest(env,'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&limit=1'),
       supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(account.id)+'&select=*&limit=1'),
       supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance,lifetime_earned,lifetime_spent,lifetime_reversed&limit=1'),
       supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=12'),
+      supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id)+'&select=fc_mobile_uid,in_game_username,region_server,discord_handle,player_tags,updated_at&limit=1'),
+      (async()=>{
+        const defs=await supabaseRest(env,'streak_definitions?slug=eq.daily-check-in&select=id&limit=1');
+        const id=defs?.[0]?.id;
+        if(!id) return null;
+        const rows=await supabaseRest(env,'user_streaks?account_id=eq.'+encodeURIComponent(account.id)+'&streak_definition_id=eq.'+encodeURIComponent(id)+'&select=current_count,longest_count,last_qualified_at,last_checkin_utc_date,streak_freezes&limit=1');
+        return rows?.[0]||null;
+      })(),
       fetchTournamentStatsForAccount(env,account.id)
     ]);
-    const p=progress?.[0]||{}, st=settings?.[0]||{}, rw=rewards?.[0]||{};
+    const p=progress?.[0]||{}, st=settings?.[0]||{}, rw=rewards?.[0]||{}, gp=gameProfile?.[0]||{}, ds=dailyStreak||{};
+    const gameProfileComplete=Boolean(String(gp.fc_mobile_uid||'').trim()&&String(gp.in_game_username||'').trim()&&String(gp.region_server||'').trim());
     return json({account:{
       id:account.id,username:account.username,displayName:account.display_name,avatarUrl:account.avatar_url,
       state:account.state,createdAt:account.created_at,updatedAt:account.updated_at,
-      onboardingComplete:account.onboarding_complete !== false,
+      onboardingComplete:gameProfileComplete && account.onboarding_complete !== false,
       email:user.email||null,emailConfirmedAt:user.email_confirmed_at||null,
-      level:Number(p.level||1),xp:Number(p.xp_balance||0),currentStreak:Number(p.current_streak||0),
-      longestStreak:Number(p.longest_streak||0),lastQualifyingActivityAt:p.last_qualifying_activity_at||null,
+      level:Number(p.level||1),xp:Number(p.xp_balance||0),currentStreak:Number(ds.current_count??p.current_streak??0),
+      longestStreak:Number(ds.longest_count??p.longest_streak??0),lastQualifyingActivityAt:p.last_qualifying_activity_at||null,
       tokens:Number(rw.balance||0),lifetimeEarnedTokens:Number(rw.lifetime_earned||0),lifetimeSpentTokens:Number(rw.lifetime_spent||0)
-    },settings:st,activity:activity||[],tournamentStats});
+    },settings:st,gameProfile:{
+      fcMobileUid:gp.fc_mobile_uid||'',inGameUsername:gp.in_game_username||'',regionServer:gp.region_server||'',
+      discordHandle:gp.discord_handle||'',playerTags:Array.isArray(gp.player_tags)?gp.player_tags:[],updatedAt:gp.updated_at||null,
+      complete:gameProfileComplete
+    },streak:{
+      current:Number(ds.current_count??p.current_streak??0),longest:Number(ds.longest_count??p.longest_streak??0),
+      lastCheckInAt:ds.last_qualified_at||null,lastCheckInUtcDate:ds.last_checkin_utc_date||null,freezes:Number(ds.streak_freezes||0)
+    },activity:activity||[],tournamentStats});
   }
 
   if(request.method==='PUT' && url.pathname==='/api/account/profile') {
@@ -293,6 +317,33 @@ async function accountApi(request, env, url) {
     }
   }
 
+  if(request.method==='PUT' && url.pathname==='/api/account/game-profile') {
+    if(['closed','fraud_removed'].includes(account.state)) return json({error:'This account is not available for profile changes.'},403);
+    const input=await request.json().catch(()=>({}));
+    const uid=String(input.fcMobileUid||'').trim();
+    const inGame=String(input.inGameUsername||'').trim();
+    const region=String(input.regionServer||'').trim();
+    const discord=String(input.discordHandle||'').trim().slice(0,64);
+    const tags=Array.isArray(input.playerTags)?[...new Set(input.playerTags.map(x=>String(x).trim()))]:[];
+    const allowedTags=new Set(['Competitive H2H','VSA Grinder','Investor','Theme Team Builder','Casual']);
+    if(uid.length<3||uid.length>32) return json({error:'Enter a valid FC Mobile UID.'},400);
+    if(inGame.length<1||inGame.length>40) return json({error:'Enter your in-game username.'},400);
+    if(region.length<2||region.length>40) return json({error:'Enter your Region / Server.'},400);
+    if(tags.some(tag=>!allowedTags.has(tag))) return json({error:'One of the player styles is not valid.'},400);
+    try {
+      await supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id),{
+        method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify([{account_id:account.id,fc_mobile_uid:uid,in_game_username:inGame,region_server:region,discord_handle:discord||null,player_tags:tags,updated_at:new Date().toISOString()}])
+      });
+      await supabaseRest(env,'accounts?id=eq.'+encodeURIComponent(account.id),{
+        method:'PATCH',headers:{Prefer:'return=minimal','content-type':'application/json'},
+        body:JSON.stringify({onboarding_complete:true})
+      });
+      return json({ok:true,complete:true});
+    } catch(error) {
+      return json({error:String(error?.message||'Unable to save your FC Mobile profile.')},400);
+    }
+  }
   if(request.method==='PUT' && url.pathname==='/api/account/settings') {
     const input=await request.json().catch(()=>({}));
     const b=(key)=>Boolean(input?.[key]);
