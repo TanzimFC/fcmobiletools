@@ -11,10 +11,10 @@ import {
   tournamentState, formatLabel, matchModeLabel, stageTypeLabel, formatDate
 } from '../../lib/tournamentView.js';
 
-const PUBLIC_TOURNAMENTS = [...TOURNAMENT_PUBLICATIONS, ROUND_OF_16_SAMPLE];
-
 export function getStaticPaths() {
-  return PUBLIC_TOURNAMENTS.filter((t) => t.isPublic).map((t) => ({
+  return [...TOURNAMENT_PUBLICATIONS, ROUND_OF_16_SAMPLE]
+    .filter((t) => t.isPublic)
+    .map((t) => ({
     params: { slug: t.slug },
     props: { tournament: t }
   }));
