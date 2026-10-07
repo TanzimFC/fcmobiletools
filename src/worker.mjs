@@ -497,8 +497,7 @@ async function accountApi(request, env, url) {
       const msg=String(error?.message||'Unable to complete this mission.');
       const status=/already completed|limit reached|cooldown/i.test(msg)?409:/Authentication required|Verified email|not eligible/i.test(msg)?403:400;
       return json({error:msg},status);
-    }
-  }
+    }  }
 
   if(request.method==='GET' && url.pathname==='/api/account/achievements') {
     if(!user.email_confirmed_at) return json({error:'Please verify your email before using achievements.'},403);
@@ -997,8 +996,7 @@ function parseSiteAds(text) {
   try { return JSON.parse(match[1]); } catch { throw new Error('Ad configuration is not valid JSON.'); }
 }
 
-function validateSiteAds(content) {
-  if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
+function validateSiteAds(content) {  if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
   content.enabled=Boolean(content.enabled);
   content.provider=String(content.provider||'Monetag').trim()||'Monetag';
 
@@ -1497,8 +1495,7 @@ async function api(request,env,path) {
       const id=Number(path.split('/')[2]);
       if(!Number.isInteger(id)||id<1) return json({error:'Invalid creator ID.'},400);
       const input=await request.json();
-      const database=await d1(env);
-      const current=await database.prepare('SELECT id, username FROM creators WHERE id=? LIMIT 1').bind(id).first();
+      const database=await d1(env);      const current=await database.prepare('SELECT id, username FROM creators WHERE id=? LIMIT 1').bind(id).first();
       if(!current) return json({error:'Creator not found.'},404);
       const fields=[], values=[];
       if(input.displayName!==undefined){fields.push('display_name=?');values.push(String(input.displayName).trim());}
@@ -1729,7 +1726,7 @@ export function createExports(manifest) {
   ) {
     const destination=new URL(url.pathname + url.search, 'https://fcmobiletools.online');
     return new Response(null,{
-      status:308,
+      status:301,
       headers:{
         location:destination.toString(),
         'cache-control':'public, max-age=86400'
@@ -1743,7 +1740,7 @@ export function createExports(manifest) {
   ) {
     const destination=new URL(url.pathname + url.search, 'https://fcmobiletools.online');
     return new Response(null,{
-      status:308,
+      status:301,
       headers:{
         location:destination.toString(),
         'cache-control':'public, max-age=86400'
@@ -1867,4 +1864,3 @@ export function createExports(manifest) {
     }
   };
 }
-
