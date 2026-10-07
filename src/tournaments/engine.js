@@ -193,6 +193,8 @@ export function buildTournamentStructure(tournament, players) {
   switch (format.key) {
     case 'single_elimination':
       return [buildKnockout(players, { twoLeg: cfg.matchMode === 'home_away' })];
+    case 'round_of_16':
+      return [buildKnockout(players, { twoLeg: false })];
     case 'single_elimination_two_leg':
       return [buildKnockout(players, { twoLeg: true })];
     case 'round_robin':
