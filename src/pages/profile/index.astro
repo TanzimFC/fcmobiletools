@@ -581,7 +581,9 @@ import AccountNav from '../../components/AccountNav.astro';
         if (!save.ok) throw new Error(saveBody.error || 'Could not save your FC Mobile profile.');
 
         button.textContent = saveBody.questCompleted ? 'Quest complete ✓' : 'Profile saved ✓';
-        msg.textContent = 'Player profile saved. Your Quest reward is on your balance.';
+        msg.textContent = saveBody.questCompleted
+          ? 'Player profile saved. Your Quest reward is on your balance.'
+          : 'Player profile saved. Your Quest status will update automatically.';
         msg.className = 'profile-quest-msg is-ok';
         setTimeout(() => loadAuthenticatedProfile(), 650);
       } catch (error) {
