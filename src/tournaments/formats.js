@@ -10,6 +10,16 @@ export const TOURNAMENT_FORMATS = [
     defaults: { matchMode: 'home_away', thirdPlace: false }
   },
   {
+    key: 'round_of_16',
+    category: 'Knockout',
+    name: 'Round of 16',
+    summary: 'A dedicated 16-player knockout bracket from the Round of 16 to the final.',
+    participantMin: 16,
+    participantMax: 16,
+    matchModes: ['single'],
+    defaults: { matchMode: 'single', thirdPlace: false }
+  },
+  {
     key: 'single_elimination_two_leg',
     category: 'Knockout',
     name: 'Two-Leg Knockout',
