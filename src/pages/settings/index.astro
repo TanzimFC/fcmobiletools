@@ -39,7 +39,12 @@ import AccountNav from '../../components/AccountNav.astro';
     ['show_streak', 'Show activity streak', 'Display your current and longest qualifying day streak.'],
     ['show_joined_date', 'Show joined date', 'Display the month and year you joined FCMobiletools.'],
     ['show_achievements', 'Show unlocked achievements', 'Display your unlocked milestone badges on your public profile.'],
-    ['show_tournament_stats', 'Show tournament record', 'Display your verified tournament wins, losses and win rate.'],
+    ['show_fc_mobile_uid', 'Show FC Mobile UID', 'Display your FC Mobile UID publicly. Off by default.'],
+    ['show_in_game_username', 'Show in-game username', 'Display your FC Mobile in-game name publicly.'],
+    ['show_region_server', 'Show Region / Server', 'Display your FC Mobile region or server publicly.'],
+    ['show_discord_handle', 'Show Discord handle', 'Display your Discord handle publicly.'],
+    ['show_player_tags', 'Show player style tags', 'Show tags like Competitive H2H, VSA Grinder or Investor.'],
+    ['show_tournament_stats', 'Show tournament record', 'Only used when FCMobiletools tournaments are public.'],
     ['show_activity_summary', 'Show activity summary', 'Allow public activity summary metrics when enabled.']
   ];
 
@@ -140,9 +145,37 @@ import AccountNav from '../../components/AccountNav.astro';
             </div>
 
             <div class="panel-foot">
-              <button class="set-btn-primary" type="submit">Save Profile Changes</button>
+              <button class="set-btn-primary" type="submit">Save Name & Avatar</button>
               <p class="status-msg" id="profileMsg" role="status"></p>
             </div>
+          </form>
+
+          <form class="set-panel" id="gameProfileForm">
+            <div class="panel-head">
+              <div>
+                <span class="set-kicker">FC MOBILE IDENTITY</span>
+                <h2>Your Player Profile</h2>
+              </div>
+              <span class="pill-tag">${a.gameProfile?.complete ? 'Complete' : 'Finish setup'}</span>
+            </div>
+            <p class="privacy-intro">This is the FC Mobile info that powers your account. UID, in-game name and Region / Server are required. Discord and player style tags are optional.</p>
+            <div class="field-grid">
+              <div class="field"><label for="fcMobileUid">FC Mobile UID</label><input id="fcMobileUid" maxlength="32" required value="${esc(a.gameProfile?.fcMobileUid || '')}" placeholder="Your FC Mobile UID" /></div>
+              <div class="field"><label for="inGameUsername">In-game username</label><input id="inGameUsername" maxlength="40" required value="${esc(a.gameProfile?.inGameUsername || '')}" placeholder="Your in-game name" /></div>
+            </div>
+            <div class="field-grid">
+              <div class="field"><label for="regionServer">Region / Server</label><input id="regionServer" maxlength="40" required value="${esc(a.gameProfile?.regionServer || '')}" placeholder="e.g. Asia, Europe, NA" /></div>
+              <div class="field"><label for="discordHandle">Discord Handle <small>(optional)</small></label><input id="discordHandle" maxlength="64" value="${esc(a.gameProfile?.discordHandle || '')}" placeholder="name or name#1234" /></div>
+            </div>
+            <div class="field">
+              <label>How do you play FC Mobile? <small>(optional)</small></label>
+              <div class="tag-select" id="playerTagSelect">
+                ${['Competitive H2H','VSA Grinder','Investor','Theme Team Builder','Casual'].map(tag => `
+                  <label class="tag-choice"><input type="checkbox" value="${esc(tag)}" ${a.gameProfile?.playerTags?.includes(tag) ? 'checked' : ''} /><span>${esc(tag)}</span></label>
+                `).join('')}
+              </div>
+            </div>
+            <div class="panel-foot"><button class="set-btn-primary" type="submit">Save FC Mobile Profile</button><p class="status-msg" id="gameProfileMsg" role="status"></p></div>
           </form>
 
           <!-- Security & Account Box -->
@@ -207,7 +240,7 @@ import AccountNav from '../../components/AccountNav.astro';
           <div class="panel-head">
             <div>
               <span class="set-kicker">VISIBILITY CONTROLS</span>
-              <h2>Public Profile Privacy</h2>
+              <h2>What Other Players Can See</h2>
             </div>
           </div>
           <p class="privacy-intro">
@@ -232,7 +265,7 @@ import AccountNav from '../../components/AccountNav.astro';
           </div>
 
           <div class="panel-foot">
-            <button class="set-btn-primary" type="submit">Save Privacy Preferences</button>
+            <button class="set-btn-primary" type="submit">Save Privacy</button>
             <p class="status-msg" id="privacyMsg" role="status"></p>
           </div>
         </form>
@@ -297,6 +330,38 @@ import AccountNav from '../../components/AccountNav.astro';
       } finally {
         button.disabled = false;
       }
+    });
+
+    document.getElementById('gameProfileForm')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const msg = document.getElementById('gameProfileMsg');
+      const button = form.querySelector('button[type="submit"]');
+      msg.textContent = '';
+      msg.className = 'status-msg';
+      button.disabled = true;
+      try {
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        const playerTags = [...form.querySelectorAll('#playerTagSelect input:checked')].map(input => input.value);
+        const r = await accountApi('/api/account/game-profile', {
+          method: 'PUT',
+          body: JSON.stringify({
+            fcMobileUid: document.getElementById('fcMobileUid').value.trim(),
+            inGameUsername: document.getElementById('inGameUsername').value.trim(),
+            regionServer: document.getElementById('regionServer').value.trim(),
+            discordHandle: document.getElementById('discordHandle').value.trim(),
+            playerTags
+          })
+        });
+        const out = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(out.error || 'Unable to save your FC Mobile profile.');
+        msg.textContent = 'FC Mobile profile saved.';
+        msg.className = 'status-msg is-ok';
+        window.setTimeout(() => location.reload(), 500);
+      } catch (e) {
+        msg.textContent = e.message;
+        msg.className = 'status-msg is-err';
+      } finally { button.disabled = false; }
     });
 
     // Save Privacy Settings
