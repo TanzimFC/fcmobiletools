@@ -37,3 +37,11 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+
+      - name: Verify legacy workers.dev redirect
+        run: |
+          set -euo pipefail
+          headers="$(curl -sSIL --max-redirs 0 --retry 4 --retry-delay 3 --connect-timeout 10 --max-time 30 https://tanzimfc.fcmobiletools.workers.dev/)"
+          printf '%s\n' "$headers"
+          printf '%s\n' "$headers" | grep -Eiq '^HTTP/[0-9.]+ 301($| )' || { echo 'Legacy hostname did not return HTTP 301.' >&2; exit 1; }
+          printf '%s\n' "$headers" | grep -Eiq '^location: https://fcmobiletools\.online/?\r? || { echo 'Legacy homepage does not redirect to the canonical homepage.' >&2; exit 1; }
