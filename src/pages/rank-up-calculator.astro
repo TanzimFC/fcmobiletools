@@ -291,6 +291,7 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
           const value = Number(button.dataset.value);
           current.value = String(value);
           if(Number(target.value) <= value) target.value = String(Math.min(5, value + 1));
+          rankTouched=true;
           render();
         });
       });
@@ -299,6 +300,7 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
         button.addEventListener('click', () => {
           if(button.disabled) return;
           target.value = button.dataset.value;
+          rankTouched=true;
           render();
         });
       });
@@ -343,6 +345,32 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
       ).join('');
     }
 
+    let rankTouched=false;
+    let rankActivityTimer=0;
+    let lastRankActivitySignature='';
+
+    function scheduleRankActivity(data){
+      if(!rankTouched || !data?.valid) return;
+      window.clearTimeout(rankActivityTimer);
+      rankActivityTimer=window.setTimeout(()=>{
+        const signature=[data.baseOVR,data.currentRank,data.targetRank,data.requiredRP].join(':');
+        if(signature===lastRankActivitySignature) return;
+        lastRankActivitySignature=signature;
+        window.dispatchEvent(new CustomEvent('fcmobiletools:tool-activity',{
+          detail:{
+            entityId:'rank-up-calculator',
+            durationMs:3000,
+            metadata:{
+              baseOVR:Number(data.baseOVR),
+              currentRank:Number(data.currentRank),
+              targetRank:Number(data.targetRank),
+              requiredRP:Number(data.requiredRP)
+            }
+          }
+        }));
+      },900);
+    }
+
     function render(){
       syncSelectors();
 
@@ -372,10 +400,14 @@ const RP_ICON = '/assets/images/fc_c2_IMG_FC_C02_07.png';
       $('routeToLarge').textContent = rankName(data.targetRank);
 
       renderTable(data);
+      scheduleRankActivity(data);
     }
 
     buildSelectors();
-    [base, available].forEach((field) => field.addEventListener('input', render));
+    [base, available].forEach((field) => field.addEventListener('input', () => {
+      rankTouched=true;
+      render();
+    }));
     render();
   </script>
 
