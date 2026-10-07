@@ -31,6 +31,7 @@ export function progressOf(t) {
 export function formatLabel(key) {
   const map = {
     single_elimination: 'Single elimination',
+    round_of_16: 'Round of 16',
     single_elimination_two_leg: 'Two-leg knockout',
     round_robin: 'Round robin',
     home_away_round_robin: 'Home and away league',
