@@ -3,26 +3,26 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import AccountNav from '../../components/AccountNav.astro';
 ---
 <BaseLayout
-  title="Missions | FCMobiletools Account"
-  description="Configurable daily, weekly, event and community missions with server-side verification on FCMobiletools."
+  title="Quests | FCMobiletools Account"
+  description="Daily Quests, one-time objectives and checked rewards for your FCMobiletools account."
   robots="noindex,nofollow"
   googlebot="noindex,nofollow"
 >
   <main class="mod-page">
     <div class="mod-wrap">
-      <AccountNav active="missions" sectionLabel="Missions" />
+      <AccountNav active="quests" sectionLabel="Quests" />
 
       <header class="mod-head acc-anim">
         <div>
-          <span class="mod-kicker"><i class="mod-dot"></i> CONFIGURABLE PROGRESSION</span>
-          <h1>Useful activity, not a click farm.</h1>
+          <span class="mod-kicker"><i class="mod-dot"></i> QUEST BOARD</span>
+          <h1>Your Quests. Your streak. Your Tokens.</h1>
           <p>
-            Missions reward real, server-verified progression. Reaching a level, building a streak, completing different missions, playing tournaments or getting a community contribution approved can unlock rewards. Clicking a button alone never qualifies.
+            Daily Quests are picked for you automatically. One-time Quests cover things like finishing your FC Mobile profile or connecting your socials. A button click alone never pays out.
           </p>
         </div>
 
-        <div class="mod-filters" id="missionFilters" role="group" aria-label="Filter missions">
-          <button type="button" class="filter-pill active" data-filter="all">All Missions</button>
+        <div class="mod-filters" id="missionFilters" role="group" aria-label="Filter quests">
+          <button type="button" class="filter-pill active" data-filter="all">All Quests</button>
           <button type="button" class="filter-pill" data-filter="daily">Daily</button>
           <button type="button" class="filter-pill" data-filter="weekly">Weekly</button>
           <button type="button" class="filter-pill" data-filter="one_time">One-Time</button>
@@ -30,8 +30,26 @@ import AccountNav from '../../components/AccountNav.astro';
         </div>
       </header>
 
+      <section id="streakPanel" class="streak-panel acc-anim acc-anim-d1" aria-live="polite">
+        <div class="streak-orbit" aria-hidden="true"></div>
+        <div class="streak-main">
+          <div class="streak-icon"><span>🔥</span></div>
+          <div>
+            <span class="streak-kicker">DAILY CHECK-IN · UTC</span>
+            <h2 id="streakTitle">Keep your streak alive.</h2>
+            <p id="streakCopy">Check in once each UTC day. A second claim after the reset still has to respect the 6-hour cooldown.</p>
+          </div>
+        </div>
+        <div class="streak-stats">
+          <div><span>Current</span><strong id="streakCurrent">0 days</strong></div>
+          <div><span>Best</span><strong id="streakBest">0 days</strong></div>
+          <div><span>Freeze</span><strong id="streakFreeze">0</strong></div>
+        </div>
+        <button type="button" class="streak-checkin" id="streakCheckinBtn">Check in</button>
+      </section>
+
       <div id="root" class="mod-root">
-        <div class="mod-skel-grid" aria-label="Loading missions">
+        <div class="mod-skel-grid" aria-label="Loading quests">
           <div class="acc-skel mod-skel-card"></div>
           <div class="acc-skel mod-skel-card"></div>
         </div>
@@ -50,77 +68,53 @@ import AccountNav from '../../components/AccountNav.astro';
       .replaceAll('_', ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  let allMissions = [];
+  let allQuests = [];
   let currentFilter = 'all';
+  let accountState = null;
 
-  function missionActionFor(m) {
+  function questActionFor(m) {
     if (m.statusLabel === 'Completed') return '<span class="mission-complete-note">Reward claimed ✓</span>';
-    if (m.statusLabel === 'Pending review') return '<span class="mission-complete-note">Waiting for review</span>';
+    if (m.statusLabel === 'Pending review') return '<span class="mission-complete-note">Sent for review</span>';
 
     const slug=String(m.slug||'').toLowerCase();
-    const checkButton = (label='Verify & Claim') =>
+    const checkButton=(label='Check Quest')=>
       `<button type="button" class="mission-action-primary" data-mission-complete="${esc(m.id)}" data-mission-proof="">${label}</button>`;
 
-    if (slug==='verify-email') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/settings/">Open Settings</a>
-          ${checkButton('Verify & Claim')}
-        </div>`;
-    }
     if (slug==='complete-profile') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/settings/">Finish Profile</a>
-          ${checkButton('Verify & Claim')}
-        </div>`;
+      return `<div class="mission-actions"><a class="mission-action-secondary" href="/settings/">Finish Profile</a>${checkButton('Check Profile')}</div>`;
     }
-    if (slug==='first-tournament-match') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/tournaments">Open Tournaments</a>
-          ${checkButton('Check Match')}
-        </div>`;
+    if (slug==='verify-email') {
+      return `<div class="mission-actions"><a class="mission-action-secondary" href="/settings/">Open Settings</a>${checkButton('Check Email')}</div>`;
     }
-    if (slug==='reach-level-3') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/profile/">View Progress</a>
-          ${checkButton('Check Level')}
-        </div>`;
+    const links={
+      'daily-events-check':['/events/','Open Events'],
+      'daily-redeem-codes-check':['/redeem-codes/','Open Codes'],
+      'daily-rank-up-check':['/rank-up-calculator/','Open Rank Up'],
+      'daily-team-ovr-check':['/team-ovr/','Open Team OVR'],
+      'daily-training-check':['/training-calculator/','Open Training']
+    };
+    if(links[slug]){
+      return `<div class="mission-actions"><a class="mission-action-secondary" href="${links[slug][0]}">${links[slug][1]}</a>${checkButton()}</div>`;
     }
-    if (slug==='build-three-day-streak') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/profile/">View Streak</a>
-          ${checkButton('Check Streak')}
-        </div>`;
+    if(['follow-x','join-discord','subscribe-youtube'].includes(slug)){
+      const social={
+        'follow-x':['https://x.com/TanzimFC','Open X'],
+        'join-discord':['https://discord.com/invite/B4a7AxuU69','Join Discord'],
+        'subscribe-youtube':['https://www.youtube.com/@tanzimfc','Open YouTube']
+      }[slug];
+      return `<div class="social-quest-box"><div class="social-proof-row"><input type="text" maxlength="64" placeholder="Your handle" data-social-proof="${esc(m.id)}" /><a class="mission-action-secondary" href="${social[0]}" target="_blank" rel="noopener">${social[1]}</a></div>${checkButton('Send for Review')}</div>`;
     }
-    if (slug==='complete-three-mission-types' || slug==='complete-five-missions') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/missions/">Keep Playing</a>
-          ${checkButton('Check Progress')}
-        </div>`;
-    }
-    if (slug==='approved-community-contribution') {
-      return `
-        <div class="mission-actions">
-          <a class="mission-action-secondary" href="/profile/#contribute">Submit Correction</a>
-          ${checkButton('Check Approval')}
-        </div>`;
-    }
-    return `
-      <div class="mission-actions">
-        ${checkButton()}
-      </div>`;
+    if (slug==='reach-level-3') return `<div class="mission-actions"><a class="mission-action-secondary" href="/profile/">View Progress</a>${checkButton('Check Level')}</div>`;
+    if (slug==='build-three-day-streak') return `<div class="mission-actions"><a class="mission-action-secondary" href="/quests/">View Streak</a>${checkButton('Check Streak')}</div>`;
+    if (slug==='approved-community-contribution') return `<div class="mission-actions"><a class="mission-action-secondary" href="/profile/#contribute">Submit Correction</a>${checkButton('Check Approval')}</div>`;
+    return `<div class="mission-actions">${checkButton()}</div>`;
   }
 
-  function renderMissionsList() {
+  function renderQuestsList() {
     const filtered =
       currentFilter === 'all'
-        ? allMissions
-        : allMissions.filter(
+        ? allQuests
+        : allQuests.filter(
             (m) =>
               String(m.missionType || '').toLowerCase() === currentFilter ||
               String(m.taskType || '').toLowerCase() === currentFilter
@@ -129,27 +123,27 @@ import AccountNav from '../../components/AccountNav.astro';
     if (!filtered.length) {
       root.innerHTML = `
         <section class="mod-empty-card acc-anim">
-          <div class="mod-empty-badge">SERVER-VERIFIED MISSION ENGINE</div>
-          <h2>${allMissions.length ? 'No missions in this category' : 'No missions are active right now'}</h2>
+          <div class="mod-empty-badge">AUTOMATIC QUEST ENGINE</div>
+          <h2>${allQuests.length ? 'No quests in this category' : 'No quests are active right now'}</h2>
           <p>
             ${
-              allMissions.length
-                ? 'Switch the filter above to view available missions in other categories.'
-                : 'The FCMobiletools mission engine is ready, and missions appear here automatically as soon as the team enables them in the Admin Workspace.'
+              allQuests.length
+                ? 'Switch the filter above to see another Quest type.'
+                : 'Your daily Quests are picked automatically from the active Quest pool.'
             }
           </p>
           <div class="mod-pillar-row">
             <article>
-              <strong>Server-Observable</strong>
+              <strong>Checked Activity</strong>
               <span>Tournament participation, calculator milestones and streak progression verified server-side.</span>
             </article>
             <article>
-              <strong>Moderated Contributions</strong>
+              <strong>Community Review</strong>
               <span>Corrections and community reports follow a pending → approved → rewarded review path.</span>
             </article>
             <article>
-              <strong>Anti-Farming Limits</strong>
-              <span>Per-user daily/weekly caps, cooldowns and idempotent ledgers prevent spam loops.</span>
+              <strong>Fair Limits</strong>
+              <span>Per-user daily/weekly caps, cooldowns and cooldowns and server checks stop easy repeat claims.</span>
             </article>
           </div>
           <div class="mod-empty-actions">
@@ -168,13 +162,13 @@ import AccountNav from '../../components/AccountNav.astro';
           .map((m) => {
             const isDone = m.statusLabel === 'Completed';
             const isPending = m.statusLabel === 'Pending review';
-            const action = missionActionFor(m);
+            const action = questActionFor(m);
 
             return `
               <article class="mission-card ${isDone ? 'is-completed' : ''}">
                 <div class="mission-top">
                   <div class="mission-tags">
-                    <span class="tag-type">${esc(titleCase(m.missionType || m.taskType || 'Mission'))}</span>
+                    <span class="tag-type">${esc(titleCase(m.missionType || m.taskType || 'Quest'))}</span>
                     <span class="tag-verify">
                       ${m.verificationMethod === 'moderated' ? 'Moderated Review' : 'Server Checked'}
                     </span>
@@ -204,7 +198,7 @@ import AccountNav from '../../components/AccountNav.astro';
     `;
   }
 
-  async function completeMission(taskId, proof, button) {
+  async function completeQuest(taskId, proof, button) {
     const msg = root.querySelector(`[data-mission-msg="${CSS.escape(taskId)}"]`);
     const session = await accountAuth.auth.getSession();
     if (!session.data?.session) throw new Error('Your session expired. Sign in again.');
@@ -241,7 +235,7 @@ import AccountNav from '../../components/AccountNav.astro';
         }
       }
 
-      if (!start.ok || !startBody?.attemptId) throw new Error(startBody?.error || 'Unable to start this mission.');
+      if (!start.ok || !startBody?.attemptId) throw new Error(startBody?.error || 'Unable to start this quest.');
 
       const complete = await fetch('/api/account/missions/' + encodeURIComponent(taskId) + '/complete', {
         method: 'POST',
@@ -256,12 +250,12 @@ import AccountNav from '../../components/AccountNav.astro';
         })
       });
       const body = await complete.json().catch(() => ({}));
-      if (!complete.ok) throw new Error(body?.error || 'Unable to complete this mission.');
+      if (!complete.ok) throw new Error(body?.error || 'Unable to complete this quest.');
 
       if (msg) {
         msg.hidden = false;
         msg.className = 'mission-action-msg is-ok';
-        msg.textContent = 'Mission complete. XP and Tokens have been added to your progression ledger.';
+        msg.textContent = 'Quest complete. XP and Tokens are now on your balance.';
       }
       button.textContent = 'Completed ✓';
       window.setTimeout(() => load(), 650);
@@ -271,7 +265,7 @@ import AccountNav from '../../components/AccountNav.astro';
       if (msg) {
         msg.hidden = false;
         msg.className = 'mission-action-msg is-err';
-        msg.textContent = error?.message || 'Unable to complete this mission.';
+        msg.textContent = error?.message || 'Unable to complete this quest.';
       }
     }
   }
@@ -279,7 +273,8 @@ import AccountNav from '../../components/AccountNav.astro';
   root.addEventListener('click', (event) => {
     const button = event.target.closest('[data-mission-complete]');
     if (!button) return;
-    completeMission(button.dataset.missionComplete, button.dataset.missionProof || '', button).catch(() => {});
+    const proofInput = root.querySelector(`[data-social-proof="${CSS.escape(button.dataset.missionComplete)}"]`);
+    completeQuest(button.dataset.missionComplete, proofInput?.value?.trim() || button.dataset.missionProof || '', button).catch(() => {});
   });
 
   document.querySelectorAll('#missionFilters .filter-pill').forEach((btn) => {
@@ -287,9 +282,81 @@ import AccountNav from '../../components/AccountNav.astro';
       document.querySelectorAll('#missionFilters .filter-pill').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       currentFilter = btn.dataset.filter || 'all';
-      if (allMissions.length) renderMissionsList();
+      if (allQuests.length) renderQuestsList();
     });
   });
+
+  function formatCountdown(ms) {
+    const total=Math.max(0,Math.ceil(ms/1000));
+    const h=Math.floor(total/3600), m=Math.floor((total%3600)/60), s=total%60;
+    return h ? `${h}h ${String(m).padStart(2,'0')}m` : `${m}m ${String(s).padStart(2,'0')}s`;
+  }
+
+  function renderStreak(streak) {
+    const current=Number(streak?.current||0), best=Number(streak?.longest||0), freezes=Number(streak?.freezes||0);
+    const last=streak?.lastCheckInAt ? new Date(streak.lastCheckInAt) : null;
+    const btn=document.getElementById('streakCheckinBtn');
+    document.getElementById('streakCurrent').textContent=current+' day'+(current===1?'':'s');
+    document.getElementById('streakBest').textContent=best+' day'+(best===1?'':'s');
+    document.getElementById('streakFreeze').textContent=String(freezes);
+    const copy=document.getElementById('streakCopy');
+    const title=document.getElementById('streakTitle');
+    if(last) {
+      const now=Date.now(), elapsed=now-last.getTime(), sameUtc=new Date().toISOString().slice(0,10)===String(streak.lastCheckInUtcDate||'');
+      if(sameUtc) {
+        title.textContent='Today is covered.';
+        copy.textContent='Your UTC check-in is already done. Come back after the next UTC day to keep it going.';
+        btn.textContent='Checked in today ✓'; btn.disabled=true;
+      } else if(elapsed<21600000) {
+        title.textContent='Cooldown is active.';
+        copy.textContent='The next check-in opens after the 6-hour cooldown. This blocks 23:59 → 00:00 double claims.';
+        btn.textContent='Next check-in in '+formatCountdown(21600000-elapsed); btn.disabled=true;
+        if(!btn.dataset.timer) {
+          btn.dataset.timer='1';
+          const timer=setInterval(()=>{
+            if(!btn.isConnected){clearInterval(timer);return;}
+            const left=21600000-(Date.now()-last.getTime());
+            if(left<=0){clearInterval(timer);btn.dataset.timer='';renderStreak(streak);} else btn.textContent='Next check-in in '+formatCountdown(left);
+          },1000);
+        }
+      } else {
+        title.textContent=current?'Keep the streak alive.':'Start your streak.';
+        copy.textContent='One successful check-in per UTC day. A Streak Freeze can protect one missed UTC day.';
+        btn.textContent=current?'Check in & keep streak':'Start check-in'; btn.disabled=false;
+      }
+    } else {
+      title.textContent='Start your streak.';
+      copy.textContent='One successful check-in per UTC day. Your first check-in starts at 1 day.';
+      btn.textContent='Check in'; btn.disabled=false;
+    }
+  }
+
+  async function handleCheckIn() {
+    const btn=document.getElementById('streakCheckinBtn');
+    if(!btn||btn.disabled) return;
+    btn.disabled=true; const previous=btn.textContent; btn.textContent='Checking…';
+    try {
+      const session=await accountAuth.auth.getSession();
+      const r=await fetch('/api/account/check-in',{method:'POST',headers:{authorization:'Bearer '+session.data.session.access_token,'content-type':'application/json'},body:JSON.stringify({idempotencyKey:crypto.randomUUID()})});
+      const body=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(body.error||body.message||'Unable to check in right now.');
+      if(body.xpReward||body.tokenReward){
+        btn.textContent='Checked in ✓';
+      } else if(body.alreadyCheckedIn){
+        btn.textContent='Checked in today ✓';
+      }
+      const me=await fetch('/api/account/me',{headers:{authorization:'Bearer '+session.data.session.access_token},cache:'no-store'});
+      const state=await me.json().catch(()=>({}));
+      accountState=state.account||accountState;
+      renderStreak(state.streak||{});
+      setTimeout(()=>load(),450);
+    } catch(error) {
+      btn.disabled=false; btn.textContent=previous;
+      const copy=document.getElementById('streakCopy'); if(copy) copy.textContent=error.message;
+    }
+  }
+
+  document.getElementById('streakCheckinBtn')?.addEventListener('click', handleCheckIn);
 
   async function load() {
     const session = await accountAuth.auth.getSession();
@@ -297,7 +364,7 @@ import AccountNav from '../../components/AccountNav.astro';
       root.innerHTML = `
         <section class="mod-empty-card acc-anim">
           <div class="mod-empty-badge">OPTIONAL ACCOUNT FEATURE</div>
-          <h2>Sign in to view your personal missions</h2>
+          <h2>Sign in to view your personal quests</h2>
           <p>Normal calculators, redeem codes, events and guides on FCMobiletools never require an account. Sign in if you want to track mission progress, streaks and XP.</p>
           <div class="mod-empty-actions">
             <a class="mod-btn-primary" href="/account/">Sign in to Account →</a>
@@ -308,19 +375,25 @@ import AccountNav from '../../components/AccountNav.astro';
       return;
     }
 
-    async function fetchMissions(accessToken) {
-      return fetch('/api/account/missions', {
+    async function fetchQuests(accessToken) {
+      return fetch('/api/account/quests', {
         headers: { authorization: 'Bearer ' + accessToken },
         cache: 'no-store'
       });
     }
 
-    let r = await fetchMissions(session.data.session.access_token);
+    const sessionToken=session.data.session.access_token;
+    const meResponse=await fetch('/api/account/me',{headers:{authorization:'Bearer '+sessionToken},cache:'no-store'});
+    const meBody=await meResponse.json().catch(()=>({}));
+    accountState=meBody.account||null;
+    renderStreak(meBody.streak||{});
+
+    let r = await fetchQuests(sessionToken);
 
     if (r.status === 401 || r.status === 403) {
       const refreshed = await accountAuth.auth.refreshSession();
       if (refreshed.data?.session?.access_token) {
-        r = await fetchMissions(refreshed.data.session.access_token);
+        r = await fetchQuests(refreshed.data.session.access_token);
       }
     }
 
@@ -330,8 +403,8 @@ import AccountNav from '../../components/AccountNav.astro';
       const isAuth = r.status === 401;
       root.innerHTML = `
         <section class="mod-empty-card acc-anim">
-          <div class="mod-empty-badge">${isVerification ? 'VERIFICATION REQUIRED' : isAuth ? 'SESSION EXPIRED' : 'MISSION SERVICE'}</div>
-          <h2>${esc(b.error || 'Unable to load missions')}</h2>
+          <div class="mod-empty-badge">${isVerification ? 'VERIFICATION REQUIRED' : isAuth ? 'SESSION EXPIRED' : 'QUEST SERVICE'}</div>
+          <h2>${esc(b.error || 'Unable to load quests')}</h2>
           <p>${esc(
             isVerification
               ? 'Confirm your email address, then return here. You can resend the verification email from Account Settings.'
@@ -347,12 +420,12 @@ import AccountNav from '../../components/AccountNav.astro';
       return;
     }
 
-    allMissions = Array.isArray(b.missions) ? b.missions : [];
-    renderMissionsList();
+    allQuests = Array.isArray(b.quests) ? b.quests : (Array.isArray(b.quests) ? b.quests : []);
+    renderQuestsList();
   }
 
   load().catch((e) => {
-    root.innerHTML = `<section class="mod-empty-card"><h2>Unable to load missions</h2><p>${esc(e.message)}</p></section>`;
+    root.innerHTML = `<section class="mod-empty-card"><h2>Unable to load quests</h2><p>${esc(e.message)}</p></section>`;
   });
 </script>
 
