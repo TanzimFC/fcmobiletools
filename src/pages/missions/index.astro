@@ -297,11 +297,14 @@ import AccountNav from '../../components/AccountNav.astro';
   }
 
   let streakTimer=0;
+  let streakState={};
+
   function nextUtcResetMs(){
     const next=new Date();
     next.setUTCHours(24,0,0,0);
     return Math.max(0,next.getTime()-Date.now());
   }
+
   function renderStreakTimers(streak){
     const reset=document.getElementById('streakResetTimer');
     const cooldown=document.getElementById('streakCooldownTimer');
@@ -313,6 +316,7 @@ import AccountNav from '../../components/AccountNav.astro';
   }
 
   function renderStreak(streak) {
+    streakState=streak||{};
     const current=Number(streak?.current||0), best=Number(streak?.longest||0), freezes=Number(streak?.freezes||0);
     const last=streak?.lastCheckInAt ? new Date(streak.lastCheckInAt) : null;
     const btn=document.getElementById('streakCheckinBtn');
@@ -341,6 +345,21 @@ import AccountNav from '../../components/AccountNav.astro';
       copy.textContent='One successful check-in per UTC day. Your first check-in starts at 1 day.';
       btn.textContent='Check in'; btn.disabled=false;
     }
+  }
+
+  if(!streakTimer){
+    streakTimer=window.setInterval(()=>{
+      renderStreakTimers(streakState);
+      const btn=document.getElementById('streakCheckinBtn');
+      const last=streakState?.lastCheckInAt ? new Date(streakState.lastCheckInAt) : null;
+      if(btn && last){
+        const today=new Date().toISOString().slice(0,10);
+        const sameUtc=today===String(streakState.lastCheckInUtcDate||'');
+        const cooldownLeft=Math.max(0,14400000-(Date.now()-last.getTime()));
+        const shouldDisable=sameUtc||cooldownLeft>0;
+        if(btn.disabled!==shouldDisable) renderStreak(streakState);
+      }
+    },1000);
   }
 
   async function handleCheckIn() {
