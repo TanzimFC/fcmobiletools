@@ -783,6 +783,25 @@ async function publicProfileApi(request, env, url) {
 
   const accountId=p.account_id || null;
 
+  let gameProfile=null;
+  let livePrivacy=null;
+  if(accountId){
+    [gameProfile]=await Promise.all([
+      supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(accountId)+'&select=fc_mobile_uid,in_game_username,region_server,discord_handle,player_tags&limit=1').catch(()=>[])
+    ]);
+    try{
+      const rows=await supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(accountId)+'&select=show_fc_mobile_uid,show_in_game_username,show_region_server,show_discord_handle,show_player_tags&limit=1');
+      livePrivacy=rows?.[0]||null;
+    }catch{}
+  }
+  const gp=gameProfile?.[0]||{};
+  const pv=livePrivacy||{};
+  if(pv.show_fc_mobile_uid && gp.fc_mobile_uid) profile.fc_mobile_uid=gp.fc_mobile_uid;
+  if(pv.show_in_game_username && gp.in_game_username) profile.in_game_username=gp.in_game_username;
+  if(pv.show_region_server && gp.region_server) profile.region_server=gp.region_server;
+  if(pv.show_discord_handle && gp.discord_handle) profile.discord_handle=gp.discord_handle;
+  if(pv.show_player_tags && Array.isArray(gp.player_tags)) profile.player_tags=gp.player_tags;
+
   if(accountId && p.show_achievements){
     const achievements=await supabaseRest(env,
       'user_achievements?account_id=eq.'+encodeURIComponent(accountId)+
