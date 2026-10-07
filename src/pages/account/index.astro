@@ -36,7 +36,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <span class="stage-kicker"><i class="pulse-dot"></i> FCMOBILETOOLS ACCOUNT</span>
             <h1>Your personal<br /><em>FC Mobile identity.</em></h1>
             <p class="stage-lede">
-              Build your track record across calculators, events, tournaments and community contributions. Every public tool on FCMobiletools remains 100% open without an account.
+              Build your FC Mobile profile, keep a streak, finish daily Quests and earn Tokens. The main FCMobiletools tools stay open without an account.
             </p>
           </div>
 
@@ -61,9 +61,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <div class="preview-bar"><i></i></div>
             </div>
             <div class="preview-badges">
-              <span>🏆 Tournament Debut</span>
+              <span>🔥 8-day streak</span>
               <span>📈 Market Watcher</span>
-              <span>🔎 Verified Member</span>
+              <span>⚡ Quest Runner</span>
             </div>
           </div>
 
@@ -74,7 +74,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             </article>
             <article>
               <b>02 · Verified Progression</b>
-              <p>Ledger-backed XP, streaks, configurable missions and tournament record integration.</p>
+              <p>XP, streaks, daily Quests and reward history that stay tied to your account.</p>
             </article>
             <article>
               <b>03 · Zero Forced Walls</b>
@@ -214,94 +214,80 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           <!-- GOOGLE ACCOUNT ONBOARDING -->
           <form id="onboardingForm" class="auth-form" hidden novalidate>
             <div class="form-intro">
-              <span class="form-eyebrow">GOOGLE VERIFIED</span>
-              <h2>Finish your account</h2>
-              <p>Your Google email is already verified. Choose your FCMobiletools identity and a password for future email sign-in.</p>
+              <span class="form-eyebrow">ONE LAST STEP</span>
+              <h2>Build your FC Mobile profile</h2>
+              <p>Your Google email is already verified. Add the in-game details used for your FCMobiletools identity and progression.</p>
             </div>
 
             <div class="verified-email-box">
               <span class="verified-badge">✓ VERIFIED</span>
-              <div>
-                <small>GOOGLE EMAIL</small>
-                <strong id="onboardingEmail">Verified email</strong>
-              </div>
+              <div><small>GOOGLE EMAIL</small><strong id="onboardingEmail">Verified email</strong></div>
             </div>
 
             <div class="field-grid">
               <div class="field">
                 <label for="onboardingUsername">Username <small>(3–24 chars)</small></label>
-                <div class="input-box has-prefix">
-                  <span class="input-prefix" aria-hidden="true">@</span>
-                  <input
-                    id="onboardingUsername"
-                    name="username"
-                    type="text"
-                    autocomplete="username"
-                    required
-                    minlength="3"
-                    maxlength="24"
-                    pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]"
-                    placeholder="yourname"
-                  />
-                </div>
+                <div class="input-box has-prefix"><span class="input-prefix" aria-hidden="true">@</span><input id="onboardingUsername" name="username" type="text" autocomplete="username" required minlength="3" maxlength="24" pattern="[a-z0-9][a-z0-9._-]{1,22}[a-z0-9]" placeholder="yourname" /></div>
                 <small class="field-hint" id="onboardingUsernameHint">Lowercase letters, numbers, dots, underscores or hyphens.</small>
               </div>
-
               <div class="field">
                 <label for="onboardingDisplayName">Display name <small>(optional)</small></label>
-                <div class="input-box">
-                  <input
-                    id="onboardingDisplayName"
-                    name="display_name"
-                    type="text"
-                    autocomplete="nickname"
-                    maxlength="80"
-                    placeholder="Your display name"
-                  />
-                </div>
+                <div class="input-box"><input id="onboardingDisplayName" name="display_name" type="text" autocomplete="nickname" maxlength="80" placeholder="Your display name" /></div>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="onboardingUid">FC Mobile UID</label>
+                <div class="input-box"><input id="onboardingUid" required maxlength="32" placeholder="Your FC Mobile UID" /></div>
+              </div>
+              <div class="field">
+                <label for="onboardingInGame">In-game username</label>
+                <div class="input-box"><input id="onboardingInGame" required maxlength="40" placeholder="Your in-game name" /></div>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="onboardingRegion">Region / Server</label>
+                <div class="input-box"><input id="onboardingRegion" required maxlength="40" placeholder="e.g. Asia, Europe, NA" /></div>
+              </div>
+              <div class="field">
+                <label for="onboardingDiscord">Discord Handle <small>(optional)</small></label>
+                <div class="input-box"><input id="onboardingDiscord" maxlength="64" placeholder="Your Discord handle" /></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Your FC Mobile style <small>(optional)</small></label>
+              <div class="onboard-tags" id="onboardingTags">
+                
+                  <label><input type="checkbox" value="Competitive H2H" /><span>Competitive H2H</span></label>
+                
+                  <label><input type="checkbox" value="VSA Grinder" /><span>VSA Grinder</span></label>
+                
+                  <label><input type="checkbox" value="Investor" /><span>Investor</span></label>
+                
+                  <label><input type="checkbox" value="Theme Team Builder" /><span>Theme Team Builder</span></label>
+                
+                  <label><input type="checkbox" value="Casual" /><span>Casual</span></label>
+                
               </div>
             </div>
 
             <div class="field">
               <label for="onboardingPassword">Password <small>(min 10 characters)</small></label>
-              <div class="input-box">
-                <input
-                  id="onboardingPassword"
-                  name="password"
-                  type="password"
-                  autocomplete="new-password"
-                  required
-                  minlength="10"
-                  placeholder="Create a password"
-                />
-                <button class="pw-toggle" type="button" data-target="onboardingPassword" aria-label="Toggle password visibility">Show</button>
-              </div>
+              <div class="input-box"><input id="onboardingPassword" name="password" type="password" autocomplete="new-password" required minlength="10" placeholder="Create a password" /><button class="pw-toggle" type="button" data-target="onboardingPassword">Show</button></div>
             </div>
 
             <div class="field">
               <label for="onboardingPasswordConfirm">Confirm password</label>
-              <div class="input-box">
-                <input
-                  id="onboardingPasswordConfirm"
-                  name="password_confirm"
-                  type="password"
-                  autocomplete="new-password"
-                  required
-                  minlength="10"
-                  placeholder="Enter the password again"
-                />
-                <button class="pw-toggle" type="button" data-target="onboardingPasswordConfirm" aria-label="Toggle password visibility">Show</button>
-              </div>
+              <div class="input-box"><input id="onboardingPasswordConfirm" name="password_confirm" type="password" autocomplete="new-password" required minlength="10" placeholder="Enter the password again" /><button class="pw-toggle" type="button" data-target="onboardingPasswordConfirm">Show</button></div>
             </div>
 
             <div class="advisory-box">
-              <div class="advisory-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-              </div>
-              <div>
-                <strong>No email verification needed</strong>
-                <p>Google has already verified the email attached to this account. Once you create your password and profile, you can use either Google or email/password to sign in.</p>
-              </div>
+              <div class="advisory-icon" aria-hidden="true">✓</div>
+              <div><strong>Almost there.</strong><p>UID, in-game username and Region / Server are required to finish your profile. Discord and player style tags can be added later.</p></div>
             </div>
 
             <button class="submit-btn" type="submit">
@@ -334,6 +320,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const onboardingDisplayName = document.getElementById('onboardingDisplayName');
   const onboardingEmail = document.getElementById('onboardingEmail');
   const onboardingUsernameHint = document.getElementById('onboardingUsernameHint');
+  const onboardingUid = document.getElementById('onboardingUid');
+  const onboardingInGame = document.getElementById('onboardingInGame');
+  const onboardingRegion = document.getElementById('onboardingRegion');
+  const onboardingDiscord = document.getElementById('onboardingDiscord');
+  const onboardingTags = document.getElementById('onboardingTags');
 
   function showTab(tab) {
     const isLogin = tab === 'login';
@@ -369,6 +360,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     if (onboardingEmail) onboardingEmail.textContent = user?.email || 'Verified Google email';
     if (onboardingUsername && suggestedUsername) onboardingUsername.value = suggestedUsername;
     if (onboardingDisplayName && suggestedName) onboardingDisplayName.value = suggestedName;
+    const gp = account?.gameProfile || {};
+    if (onboardingUid) onboardingUid.value = gp.fcMobileUid || '';
+    if (onboardingInGame) onboardingInGame.value = gp.inGameUsername || '';
+    if (onboardingRegion) onboardingRegion.value = gp.regionServer || '';
+    if (onboardingDiscord) onboardingDiscord.value = gp.discordHandle || '';
+    if (onboardingTags && Array.isArray(gp.playerTags)) {
+      onboardingTags.querySelectorAll('input').forEach(input => { input.checked = gp.playerTags.includes(input.value); });
+    }
     onboardingUsername?.dispatchEvent(new Event('input'));
   }
 
@@ -484,6 +483,28 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       return;
     }
 
+    const fcUid = String(onboardingUid?.value || '').trim();
+    const inGame = String(onboardingInGame?.value || '').trim();
+    const region = String(onboardingRegion?.value || '').trim();
+    const discord = String(onboardingDiscord?.value || '').trim();
+    const playerTags = [...(onboardingTags?.querySelectorAll('input:checked') || [])].map(input => input.value);
+
+    if (fcUid.length < 3 || fcUid.length > 32) {
+      showMessage(onboardingMessage, 'Enter your FC Mobile UID.', true);
+      onboardingUid?.focus();
+      return;
+    }
+    if (!inGame || inGame.length > 40) {
+      showMessage(onboardingMessage, 'Enter your in-game username.', true);
+      onboardingInGame?.focus();
+      return;
+    }
+    if (!region || region.length > 40) {
+      showMessage(onboardingMessage, 'Enter your Region / Server.', true);
+      onboardingRegion?.focus();
+      return;
+    }
+
     const button = onboardingForm.querySelector('.submit-btn');
     button.disabled = true;
 
@@ -497,11 +518,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           username,
           displayName,
           avatarUrl: '',
-          completeOnboarding: true
+          completeOnboarding: false
         })
       });
       const profileBody = await profileResult.json().catch(() => ({}));
       if (!profileResult.ok) throw new Error(profileBody.error || 'Could not save your profile.');
+
+      const gameResult = await accountApi('/api/account/game-profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          fcMobileUid: fcUid,
+          inGameUsername: inGame,
+          regionServer: region,
+          discordHandle: discord,
+          playerTags
+        })
+      });
+      const gameBody = await gameResult.json().catch(() => ({}));
+      if (!gameResult.ok) throw new Error(gameBody.error || 'Could not save your FC Mobile profile.');
 
       onboardingForm.reset();
       location.replace('/profile/');
