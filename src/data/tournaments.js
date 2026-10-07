@@ -12,7 +12,7 @@ export const TOURNAMENT_PUBLICATIONS = [
       "matchMode": "single",
       "thirdPlace": false
     },
-    "status": "published",
+    "status": "completed",
     "isPublic": true,
     "startsAt": "2026-10-02T17:46",
     "players": [
@@ -388,7 +388,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 688,
               "displayName": "TanzimFC",
@@ -399,9 +399,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "DhakaFC",
               "playerTag": "DHK"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 9,
+            "player2Score": 2,
+            "winnerPlayerId": 688,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -415,7 +415,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 693,
               "displayName": "Blaze",
@@ -426,9 +426,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "Phoenix",
               "playerTag": "PHX"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 0,
+            "player2Score": 6,
+            "winnerPlayerId": 695,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -442,12 +442,20 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "scheduled",
-            "player1": null,
-            "player2": null,
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "status": "completed",
+            "player1": {
+              "id": 688,
+              "displayName": "TanzimFC",
+              "playerTag": "TZFC"
+            },
+            "player2": {
+              "id": 695,
+              "displayName": "Phoenix",
+              "playerTag": "PHX"
+            },
+            "player1Score": 4,
+            "player2Score": 3,
+            "winnerPlayerId": 688,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -577,7 +585,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 688,
               "displayName": "TanzimFC",
@@ -588,9 +596,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "DhakaFC",
               "playerTag": "DHK"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 9,
+            "player2Score": 2,
+            "winnerPlayerId": 688,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -604,7 +612,7 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "ready",
+            "status": "completed",
             "player1": {
               "id": 693,
               "displayName": "Blaze",
@@ -615,9 +623,9 @@ export const TOURNAMENT_PUBLICATIONS = [
               "displayName": "Phoenix",
               "playerTag": "PHX"
             },
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "player1Score": 0,
+            "player2Score": 6,
+            "winnerPlayerId": 695,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -631,12 +639,20 @@ export const TOURNAMENT_PUBLICATIONS = [
             "stageId": 22,
             "groupId": null,
             "tieId": null,
-            "status": "scheduled",
-            "player1": null,
-            "player2": null,
-            "player1Score": null,
-            "player2Score": null,
-            "winnerPlayerId": null,
+            "status": "completed",
+            "player1": {
+              "id": 688,
+              "displayName": "TanzimFC",
+              "playerTag": "TZFC"
+            },
+            "player2": {
+              "id": 695,
+              "displayName": "Phoenix",
+              "playerTag": "PHX"
+            },
+            "player1Score": 4,
+            "player2Score": 3,
+            "winnerPlayerId": 688,
             "extraTime": false,
             "penaltiesHome": null,
             "penaltiesAway": null
@@ -644,7 +660,11 @@ export const TOURNAMENT_PUBLICATIONS = [
         ]
       }
     ],
-    "winner": null,
+    "winner": {
+      "id": 688,
+      "displayName": "TanzimFC",
+      "playerTag": "TZFC"
+    },
     "publishedAt": "2026-10-01T17:48:44.791+00:00"
   }
 ];
