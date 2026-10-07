@@ -4,7 +4,7 @@ import AccountNav from '../../components/AccountNav.astro';
 ---
 <BaseLayout
   title="My Profile | FCMobiletools Account"
-  description="Your FCMobiletools personal profile, XP progression, streaks, tournament record, token ledger and account activity."
+  description="Your FCMobiletools profile, XP progression, streaks, Quests, Tokens and account activity."
   robots="noindex,nofollow"
   googlebot="noindex,nofollow"
 >
@@ -68,7 +68,7 @@ import AccountNav from '../../components/AccountNav.astro';
           <p class="guest-lede">
             ${esc(
               reasonSub ||
-                'Track your progression, custom @username, daily streaks, tournament record and community contributions in one personal hub. Every calculator, event timer and redeem code on FCMobiletools works without signing in.'
+                'Track your progression, custom @username, daily check-ins, Quests and community contributions in one personal hub. Every calculator, event timer and redeem code on FCMobiletools works without signing in.'
             )}
           </p>
           <div class="guest-actions">
@@ -85,8 +85,8 @@ import AccountNav from '../../components/AccountNav.astro';
           </article>
           <article>
             <span>02 · Progression</span>
-            <strong>Ledger-Backed XP &amp; Streaks</strong>
-            <p>Earn verified XP from missions, achievements, tournament matches and approved community contributions.</p>
+            <strong>XP, Streaks &amp; Quest Progress</strong>
+            <p>Earn verified XP from Quests, Achievements and approved community contributions.</p>
           </article>
           <article>
             <span>03 · Ecosystem</span>
@@ -152,11 +152,21 @@ import AccountNav from '../../components/AccountNav.astro';
           <span>${p.longest_streak != null ? `Best: ${fmt(p.longest_streak)}d` : 'Qualifying streak'}</span>
         </article>
         <article class="kpi-card">
-          <small>TOURNAMENTS</small>
-          <strong>${tStats ? `${fmt(tStats.wins)}W – ${fmt(tStats.losses)}L` : '—'}</strong>
-          <span>${tStats && tStats.matchesPlayed ? `${tStats.winRate}% Win Rate (${tStats.matchesPlayed} played)` : 'Match record'}</span>
+          <small>FC MOBILE</small>
+          <strong>${p.in_game_username ? esc(p.in_game_username) : "Player"}</strong>
+          <span>${p.region_server ? esc(p.region_server) : "Region private"}</span>
         </article>
+      </section>      <section class="public-game-card acc-anim acc-anim-d2">
+        <div><span class="sec-kicker"><i class="kicker-dot"></i> FC MOBILE IDENTITY</span><h2>Player details</h2></div>
+        <div class="public-game-grid">
+          ${p.in_game_username ? `<div><small>IN-GAME USERNAME</small><strong>${esc(p.in_game_username)}</strong></div>` : ""}
+          ${p.fc_mobile_uid ? `<div><small>FC MOBILE UID</small><strong>${esc(p.fc_mobile_uid)}</strong></div>` : ""}
+          ${p.region_server ? `<div><small>REGION / SERVER</small><strong>${esc(p.region_server)}</strong></div>` : ""}
+          ${p.discord_handle ? `<div><small>DISCORD</small><strong>${esc(p.discord_handle)}</strong></div>` : ""}
+          ${Array.isArray(p.player_tags) && p.player_tags.length ? `<div class="public-tags"><small>PLAY STYLE</small><div>${p.player_tags.map(tag=>`<span>${esc(tag)}</span>`).join("")}</div></div>` : ""}
+        </div>
       </section>
+
     `;
   }
 
@@ -190,7 +200,7 @@ import AccountNav from '../../components/AccountNav.astro';
     setCachedIdentity(a);
 
     const activity = Array.isArray(body.activity) ? body.activity : [];
-    const tStats = body.tournamentStats || { tournamentsPlayed: 0, matchesPlayed: 0, wins: 0, losses: 0, winRate: 0 };
+    const tStats = body.tournamentStats;
     const lvInfo = computeLevelProgress(a.level, a.xp);
     const display = a.displayName || a.username;
     const initials = String(display || 'FC').slice(0, 2).toUpperCase();
@@ -236,7 +246,7 @@ import AccountNav from '../../components/AccountNav.astro';
           <div class="xp-strip-head">
             <div>
               <strong>Level ${fmt(lvInfo.level)} Progression</strong>
-              <span>Ledger-backed XP balance · Next milestone active</span>
+              <span>XP balance · Next milestone in sight</span>
             </div>
             <div class="xp-strip-numbers">
               <b>${fmt(a.xp)} XP</b>
@@ -249,11 +259,21 @@ import AccountNav from '../../components/AccountNav.astro';
         </div>
       </section>
 
+      <section class="public-game-card auth-game-card acc-anim acc-anim-d1">
+        <div><span class="sec-kicker"><i class="kicker-dot"></i> FC MOBILE IDENTITY</span><h2>Your Player Card</h2><p>Keep the details you use in FC Mobile connected to this account.</p></div>
+        <div class="public-game-grid">
+          <div><small>IN-GAME USERNAME</small><strong>${esc(a.gameProfile?.inGameUsername || "Not added")}</strong></div>
+          <div><small>FC MOBILE UID</small><strong>${esc(a.gameProfile?.fcMobileUid || "Not added")}</strong></div>
+          <div><small>REGION / SERVER</small><strong>${esc(a.gameProfile?.regionServer || "Not added")}</strong></div>
+          <div><small>DISCORD</small><strong>${esc(a.gameProfile?.discordHandle || "Optional")}</strong></div>
+          ${Array.isArray(a.gameProfile?.playerTags) && a.gameProfile.playerTags.length ? `<div class="public-tags"><small>PLAY STYLE</small><div>${a.gameProfile.playerTags.map(tag=>`<span>${esc(tag)}</span>`).join("")}</div></div>` : ""}
+        </div>
+      </section>
       ${!isVerified ? `
         <aside class="verify-banner acc-anim acc-anim-d1">
           <div>
             <strong>Verify your email address to unlock account-only features</strong>
-            <p>Check your inbox (${esc(a.email || 'your email')}) for the confirmation link so you can participate in missions, achievements, community submissions and reward redemptions.</p>
+            <p>Check your inbox (${esc(a.email || 'your email')}) for the confirmation link so you can use Quests, Achievements, community submissions and reward redemptions.</p>
           </div>
           <a class="btn-secondary" href="/settings/">Account Settings →</a>
         </aside>
@@ -267,8 +287,8 @@ import AccountNav from '../../components/AccountNav.astro';
             <span class="kpi-badge">Level ${fmt(a.level)}</span>
           </div>
           <strong>${fmt(a.xp)} <small>XP</small></strong>
-          <p>Derived from verified append-only XP transactions.</p>
-          <button type="button" class="kpi-link" data-jump-tab="xp">View XP ledger →</button>
+          <p>Verified XP from your account activity.</p>
+          <button type="button" class="kpi-link" data-jump-tab="xp">View XP history →</button>
         </article>
 
         <article class="kpi-card">
@@ -278,7 +298,7 @@ import AccountNav from '../../components/AccountNav.astro';
           </div>
           <strong>${fmt(a.tokens)} <small>TKN</small></strong>
           <p>Earned: ${fmt(a.lifetimeEarnedTokens)} · Spent: ${fmt(a.lifetimeSpentTokens)} · Loyalty perks</p>
-          <button type="button" class="kpi-link" data-jump-tab="tokens">View token ledger →</button>
+          <button type="button" class="kpi-link" data-jump-tab="tokens">View Token history →</button>
         </article>
 
         <article class="kpi-card">
@@ -288,17 +308,17 @@ import AccountNav from '../../components/AccountNav.astro';
           </div>
           <strong>🔥 ${fmt(a.currentStreak)} <small>Days</small></strong>
           <p>${a.lastQualifyingActivityAt ? `Last active ${esc(fmtDate(a.lastQualifyingActivityAt))}` : 'Updated on qualifying actions.'}</p>
-          <a class="kpi-link" href="/missions/">Browse missions →</a>
+          <a class="kpi-link" href="/missions/">Open Quests →</a>
         </article>
 
         <article class="kpi-card">
           <div class="kpi-top">
-            <small>TOURNAMENT RECORD</small>
-            <span class="kpi-badge">${fmt(tStats.tournamentsPlayed)} Events</span>
+            <small>STREAK</small>
+            <span class="kpi-badge">UTC Check-In</span>
           </div>
-          <strong>${fmt(tStats.wins)}W – ${fmt(tStats.losses)}L</strong>
-          <p>${tStats.matchesPlayed > 0 ? `${tStats.winRate}% Win Rate across ${fmt(tStats.matchesPlayed)} matches` : 'Play in FCMobiletools tournaments to build your record.'}</p>
-          <a class="kpi-link" href="/tournaments">Open Tournaments →</a>
+          <strong>🔥 ${fmt(a.currentStreak)} days</strong>
+          <p>Keep checking in each UTC day to build your streak.</p>
+          <a class="kpi-link" href="/missions/">Check in →</a>
         </article>
       </section>
 
@@ -308,22 +328,22 @@ import AccountNav from '../../components/AccountNav.astro';
           <h2>Progress &amp; activity</h2>
           <p>Keep an eye on your verified progression, token history and community activity from one place.</p>
         </div>
-        <a class="btn-primary" href="/missions/">Open Missions →</a>
+        <a class="btn-primary" href="/missions/">Open Quests →</a>
       </div>
 
       <!-- MAIN WORKSPACE GRID -->
       <section class="workspace-grid acc-anim acc-anim-d3">
-        <!-- Left: Tabbed Activity, XP Ledger, Token Ledger & Community Submission -->
+        <!-- Left: Tabbed Activity, XP History, Token History & Community Submission -->
         <div class="ledger-panel">
           <div class="ledger-tabs" role="tablist" aria-label="Account history and contributions">
             <button type="button" class="ledger-tab active" data-tab="activity" role="tab" aria-selected="true">
               Recent Activity
             </button>
             <button type="button" class="ledger-tab" data-tab="xp" role="tab" aria-selected="false">
-              XP Ledger
+              XP History
             </button>
             <button type="button" class="ledger-tab" data-tab="tokens" role="tab" aria-selected="false">
-              Token Ledger
+              Token History
             </button>
             <button type="button" class="ledger-tab" data-tab="contribute" role="tab" aria-selected="false">
               Submit Correction
@@ -358,7 +378,7 @@ import AccountNav from '../../components/AccountNav.astro';
                   </div>`
                 : `<div class="empty-state">
                     <strong>No activity events recorded yet</strong>
-                    <p>Meaningful actions—such as completing missions, unlocking achievements, tournament participation, and approved corrections—appear here automatically.</p>
+                    <p>Meaningful actions—such as completing missions, unlocking achievements, approved corrections—appear here automatically.</p>
                   </div>`
             }
           </div>
@@ -380,8 +400,8 @@ import AccountNav from '../../components/AccountNav.astro';
           <div class="ledger-view" id="tab-tokens" hidden>
             <div class="view-head">
               <div>
-                <h2>Token Ledger</h2>
-                <p>Complete history of token earns, redemptions, admin adjustments and expiration metadata.</p>
+                <h2>Token History</h2>
+                <p>See where your Tokens came from and what you spent.</p>
               </div>
             </div>
             <div id="tokenLedgerList" class="feed-list">
@@ -1003,6 +1023,17 @@ import AccountNav from '../../components/AccountNav.astro';
     gap: 12px;
     margin-top: 16px;
   }
+  .public-game-card{margin:14px 0;padding:22px 24px;border:1px solid rgba(76,201,255,.12);border-radius:20px;background:linear-gradient(145deg,rgba(15,26,38,.92),rgba(9,17,26,.92));box-shadow:0 18px 50px rgba(0,0,0,.22)}
+  .public-game-card h2{margin:6px 0 4px;font:700 21px/1.1 var(--font-display);color:#f5f8fb}
+  .public-game-card p{margin:0;color:#8da4b4;font:500 12.5px/1.5 var(--font-body)}
+  .public-game-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
+  .public-game-grid>div{padding:12px 13px;border:1px solid rgba(255,255,255,.06);border-radius:13px;background:#09141e}
+  .public-game-grid small{display:block;color:#718797;font:800 9px/1 var(--font-body);letter-spacing:.1em}
+  .public-game-grid strong{display:block;margin-top:7px;color:#ecf7fc;font:700 13px/1.25 var(--font-body);word-break:break-word}
+  .public-tags{grid-column:1/-1}
+  .public-tags>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .public-tags span{padding:6px 9px;border-radius:999px;border:1px solid rgba(76,201,255,.18);background:rgba(76,201,255,.08);color:#9de5ff;font:700 11px/1 var(--font-body)}
+  @media(max-width:800px){.public-game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.public-tags{grid-column:1/-1}}
   .kpi-card {
     padding: 20px;
     border-radius: 20px;
