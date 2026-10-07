@@ -170,7 +170,7 @@ import AccountNav from '../../components/AccountNav.astro';
                   <div class="mission-tags">
                     <span class="tag-type">${esc(titleCase(m.missionType || m.taskType || 'Quest'))}</span>
                     <span class="tag-verify">
-                      ${m.verificationMethod === 'moderated' ? 'Moderated Review' : 'Server Checked'}
+                      ${m.verificationMethod === 'moderated' ? 'Community Review' : 'Server Checked'}
                     </span>
                   </div>
                   <span class="status-badge ${isDone ? 'is-done' : isPending ? 'is-pending' : ''}">
@@ -334,9 +334,18 @@ import AccountNav from '../../components/AccountNav.astro';
   async function handleCheckIn() {
     const btn=document.getElementById('streakCheckinBtn');
     if(!btn||btn.disabled) return;
+    const session=await accountAuth.auth.getSession();
+    if(!session.data?.session){
+      btn.textContent='Sign in to check in';
+      btn.disabled=false;
+      const copy=document.getElementById('streakCopy');
+      if(copy) copy.textContent='Sign in to start your UTC streak and earn the daily check-in reward.';
+      btn.onclick=()=>{ location.href='/account/'; };
+      return;
+    }
+    btn.onclick=null;
     btn.disabled=true; const previous=btn.textContent; btn.textContent='Checking…';
     try {
-      const session=await accountAuth.auth.getSession();
       const r=await fetch('/api/account/check-in',{method:'POST',headers:{authorization:'Bearer '+session.data.session.access_token,'content-type':'application/json'},body:JSON.stringify({idempotencyKey:crypto.randomUUID()})});
       const body=await r.json().catch(()=>({}));
       if(!r.ok) throw new Error(body.error||body.message||'Unable to check in right now.');
