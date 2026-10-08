@@ -123,21 +123,30 @@
 /* vertical card */
 .bl-card--card .bl-card-media { aspect-ratio: 16 / 10; }
 
-/* overlay variants: lead + tile */
-.bl-card--lead, .bl-card--tile { justify-content: flex-end; color: #fff; }
-.bl-card--lead .bl-card-media, .bl-card--tile .bl-card-media { position: absolute; inset: 0; z-index: 0; background: #08131c; }
-.bl-card-shade { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(4, 12, 19, 0) 20%, rgba(4, 12, 19, .78) 66%, rgba(4, 12, 19, .96) 100%); }
-.bl-card--lead { min-height: 620px; }
-.bl-card--lead .bl-card-body { flex: none; max-width: 800px; padding: 44px; gap: 14px; }
-.bl-card--lead .bl-card-title { font-size: clamp(32px, 4vw, 54px); line-height: 1.04; letter-spacing: -.035em; font-weight: 700; }
-.bl-card--lead .bl-card-excerpt { max-width: 62ch; color: #cbd8e2; font-size: 16.5px; }
-.bl-card--lead .bl-card-meta { margin-top: 4px; color: #b6c6d2; }
+/* featured + tile cards: keep thumbnails visible instead of burying them under copy */
+.bl-card--lead, .bl-card--tile { justify-content: flex-start; color: #fff; }
+.bl-card--lead .bl-card-media, .bl-card--tile .bl-card-media {
+  position: relative;
+  inset: auto;
+  z-index: 0;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  flex: none;
+  background: #08131c;
+}
+.bl-card--lead .bl-card-media { aspect-ratio: 16 / 8; }
+.bl-card-shade { display: none; }
+.bl-card--lead { min-height: 0; }
+.bl-card--lead .bl-card-body { flex: 1; max-width: none; padding: 30px 34px 32px; gap: 14px; background: var(--bl-panel); }
+.bl-card--lead .bl-card-title { font-size: clamp(30px, 3.4vw, 48px); line-height: 1.05; letter-spacing: -.035em; font-weight: 700; }
+.bl-card--lead .bl-card-excerpt { max-width: 72ch; color: var(--bl-soft); font-size: 16.5px; }
+.bl-card--lead .bl-card-meta { margin-top: 4px; color: var(--bl-mute); }
 .bl-card-cta { display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; margin-top: 10px; height: 46px; padding: 0 22px; border-radius: 999px; background: var(--bl-accent); color: #04131c; font: 800 14px/1 var(--font-body); transition: gap .25s, box-shadow .25s; }
 .bl-card--lead:hover .bl-card-cta { gap: 16px; box-shadow: 0 14px 34px color-mix(in srgb, var(--bl-accent) 40%, transparent); }
-.bl-card--tile { min-height: 300px; }
-.bl-card--tile .bl-card-body { flex: none; padding: 26px; gap: 10px; }
+.bl-card--tile { min-height: 0; }
+.bl-card--tile .bl-card-body { flex: 1; padding: 22px 24px 24px; gap: 10px; background: var(--bl-panel); }
 .bl-card--tile .bl-card-title { font-size: clamp(20px, 1.9vw, 25px); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.bl-card--tile .bl-card-meta { color: #b6c6d2; }
+.bl-card--tile .bl-card-meta { color: var(--bl-mute); }
 
 /* horizontal row */
 .bl-card--row { flex-direction: row; align-items: stretch; }
@@ -495,8 +504,8 @@ html.bl-lock, html.bl-lock body { overflow: hidden; }
 }
 @media (max-width: 1020px) {
   .bl-bento { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
-  .bl-bento > .bl-card--lead { grid-column: 1 / -1; grid-row: auto; min-height: 520px; }
-  .bl-bento > .bl-card--tile { min-height: 280px; }
+  .bl-bento > .bl-card--lead { grid-column: 1 / -1; grid-row: auto; min-height: 0; }
+  .bl-bento > .bl-card--tile { min-height: 0; }
   .bl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bl-bar-inner { flex-direction: column; align-items: stretch; }
   .bl-search { flex: none; width: 100%; }
@@ -552,8 +561,8 @@ html.bl-lock, html.bl-lock body { overflow: hidden; }
   .bl-glance { width: 100%; grid-template-columns: repeat(3, 1fr); }
   .bl-glance li { padding: 16px 14px; }
   .bl-bento { grid-template-columns: 1fr; }
-  .bl-bento > .bl-card--lead { min-height: 500px; }
-  .bl-card--lead .bl-card-body { padding: 26px; }
+  .bl-bento > .bl-card--lead { min-height: 0; }
+  .bl-card--lead .bl-card-body { padding: 24px 22px 26px; }
   .bl-grid { grid-template-columns: 1fr; gap: 18px; }
   .bl-card--row { flex-direction: column; }
   .bl-card--row .bl-card-media { flex: none; aspect-ratio: 16 / 10; min-height: 0; }
