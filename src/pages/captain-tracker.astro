@@ -232,7 +232,6 @@ const barPoints = (values, width = 220, height = 64) => {
         <div class="ct-heat-head">
           <span>Captain</span>
           {tasks.map((task) => <span>{task.short}</span>)}
-          <span>LIVE OVR</span>
         </div>
         {players.map((player) => (
           <div class="ct-heat-row" data-player-live={player.id}>
@@ -250,7 +249,6 @@ const barPoints = (values, width = 220, height = 64) => {
                 </b>
               );
             })}
-            <em class="ct-live-ovr">{player.projected}</em>
           </div>
         ))}
       </div>
@@ -259,8 +257,8 @@ const barPoints = (values, width = 220, height = 64) => {
     <section class="ct-heat ct-model-board" aria-label="Task probability matrix">
       <header>
         <span class="ct-section-kicker">PRE-MATCH OUTLOOK</span>
-        <h2>Projected chance by task</h2>
-        <p>These percentages are pre-match projections based on the fixture, form and available player data. The actual result comes from what happens on the pitch.</p>
+        <h2>Chance by task</h2>
+        <p>These percentages are pre-match estimates based on the fixture, form and available player data. The actual result comes from what happens on the pitch.</p>
       </header>
       <div class="ct-heat-table">
         <div class="ct-heat-head">
@@ -519,10 +517,6 @@ const barPoints = (values, width = 220, height = 64) => {
             cell.setAttribute('aria-label', complete ? 'Complete' : miss ? 'Failed' : 'Result not updated');
           });
         });
-
-        const current = Number(player.baseOvr || source.baseOvr || 116) + confirmed;
-        const ovr = card.querySelector('[data-ovr]');
-        if (ovr) ovr.textContent = String(current);
 
         const completeAll = confirmed === tasks.length;
         card.classList.toggle('is-complete', completeAll);
