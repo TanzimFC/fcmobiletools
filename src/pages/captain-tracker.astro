@@ -143,7 +143,7 @@ const barPoints = (values, width = 220, height = 64) => {
         <div>
           <span class="ct-section-kicker">COMMUNITY PICKS</span>
           <h2>Who are you backing?</h2>
-          <p>Pick one of the six captains. Your choice is saved to your account and you can change it later.</p>
+          <p>Pick one of the six captains. You can change your choice until the first Matchday 7 fixture begins.</p>
         </div>
         <div class="ct-vote-total">
           <strong data-vote-total>0</strong>
@@ -172,9 +172,12 @@ const barPoints = (values, width = 220, height = 64) => {
         ))}
       </div>
 
-      <p class="ct-vote-status" data-vote-status aria-live="polite">
-        Sign in to save your pick.
-      </p>
+      <div class="ct-vote-foot">
+        <p class="ct-vote-status" data-vote-status aria-live="polite">
+          Sign in to save your pick.
+        </p>
+        <span class="ct-vote-lock" data-vote-lock>Pick window open</span>
+      </div>
     </section>
 
     {pick && (
@@ -609,10 +612,48 @@ const barPoints = (values, width = 220, height = 64) => {
       }
     };
 
+    const voteLock = voteRoot?.querySelector('[data-vote-lock]');
+    let voteLocked = false;
+    let voteLockAtUtc = null;
+
+    const formatLockTime = (iso) => {
+      const timestamp = Date.parse(iso || '');
+      if (!Number.isFinite(timestamp)) return '';
+      try {
+        return new Intl.DateTimeFormat(undefined, {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        }).format(new Date(timestamp));
+      } catch {
+        return new Date(timestamp).toLocaleString();
+      }
+    };
+
+    const applyVoteLockState = () => {
+      voteRoot?.querySelectorAll('[data-vote-player]').forEach((node) => {
+        node.disabled = voteLocked;
+        node.classList.toggle('is-locked', voteLocked);
+        node.setAttribute('aria-disabled', voteLocked ? 'true' : 'false');
+      });
+
+      if (voteLock) {
+        if (voteLocked) {
+          const when = formatLockTime(voteLockAtUtc);
+          voteLock.textContent = when ? 'Picks locked · ' + when : 'Picks locked';
+          voteLock.dataset.state = 'locked';
+        } else {
+          voteLock.textContent = 'Pick window open';
+          voteLock.dataset.state = 'open';
+        }
+      }
+    };
+
     const updateVoteUI = (payload) => {
       const counts = payload?.counts || {};
       const selected = payload?.selected || null;
       const total = Number(payload?.total || 0);
+      voteLocked = Boolean(payload?.locked);
+      voteLockAtUtc = payload?.lockAtUtc || null;
 
       if (voteTotal) voteTotal.textContent = String(total);
 
@@ -642,11 +683,17 @@ const barPoints = (values, width = 220, height = 64) => {
       });
 
       setVoteStatus(
-        selected
-          ? 'You picked ' + ((voteSource.players || []).find((player) => player.id === selected)?.name || 'a captain') + '. You can change it any time.'
-          : 'Pick one captain to save your choice.',
-        selected ? 'selected' : 'neutral'
+        voteLocked
+          ? (selected
+            ? 'Your pick is locked. Matchday 7 voting is closed.'
+            : 'Voting is locked because the first Matchday 7 fixture has started.')
+          : (selected
+            ? 'You picked ' + ((voteSource.players || []).find((player) => player.id === selected)?.name || 'a captain') + '. You can still change it before kickoff.'
+            : 'Pick one captain to save your choice.'),
+        selected ? 'selected' : (voteLocked ? 'locked' : 'neutral')
       );
+
+      applyVoteLockState();
     };
 
     const loadVotes = async () => {
@@ -688,6 +735,13 @@ const barPoints = (values, width = 220, height = 64) => {
             'Sign in to save your pick',
             'Your session is not active. Sign in to keep your captain pick attached to your account.'
           );
+          return;
+        }
+        if (response.status === 409 && payload.locked) {
+          voteLocked = true;
+          voteLockAtUtc = payload.lockAtUtc || voteLockAtUtc;
+          applyVoteLockState();
+          setVoteStatus(payload.error || 'Captain picks are locked.', 'locked');
           return;
         }
         if (!response.ok) throw new Error(payload.error || 'Could not save your captain pick.');
@@ -998,6 +1052,44 @@ const barPoints = (values, width = 220, height = 64) => {
       text-transform:uppercase;
     }
     .ct-vote-selected[hidden] { display:none; }
+    .ct-vote-foot {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
+    .ct-vote-foot .ct-vote-status { margin:0; }
+    .ct-vote-lock {
+      display:inline-flex;
+      align-items:center;
+      min-height:30px;
+      padding:7px 10px;
+      border:1px solid rgba(76,201,255,.16);
+      border-radius:999px;
+      background:rgba(76,201,255,.06);
+      color:#89ddff;
+      font:800 9px/1 Inter,sans-serif;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .ct-vote-lock[data-state="locked"] {
+      border-color:rgba(71,209,108,.2);
+      background:rgba(71,209,108,.06);
+      color:#79e795;
+    }
+    .ct-vote-tile.is-locked {
+      cursor:not-allowed;
+      opacity:.88;
+    }
+    .ct-vote-tile.is-locked::after {
+      opacity:.04;
+    }
+    .ct-vote-tile:disabled {
+      cursor:not-allowed;
+    }
     .ct-vote-status {
       margin:12px 0 0;
       color:#7790a0;
