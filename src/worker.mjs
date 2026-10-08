@@ -21,7 +21,156 @@ const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(dat
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...extra },
 });
 
-const ADMIN_LOGIN_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>FC Mobile Tools Admin</title><style>@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');:root{--bg:#070b10;--panel:#0d141b;--line:#22343f;--text:#f4f8fb;--muted:#8ea2b0;--cyan:#56d6ff;--blue:#4f7dff;--good:#67e7a6;--sans:'Manrope',system-ui,sans-serif;--display:'Sora',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(720px 470px at 12% 2%,#56d6ff1b,transparent 60%),radial-gradient(700px 480px at 92% 8%,#4f7dff1b,transparent 58%),#070b10;color:var(--text);font-family:var(--sans);overflow:hidden}body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(#ffffff03 1px,transparent 1px),linear-gradient(90deg,#ffffff03 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(to bottom,black,transparent 88%);pointer-events:none}.shell{width:min(440px,100%);position:relative}.orb{position:absolute;border-radius:50%;filter:blur(55px);pointer-events:none}.orb-a{width:160px;height:160px;background:var(--cyan);top:-70px;left:-70px;opacity:.16}.orb-b{width:140px;height:140px;background:var(--blue);right:-55px;bottom:-60px;opacity:.14}.card{position:relative;padding:28px;border:1px solid #29404d;border-radius:25px;background:linear-gradient(145deg,#0f1820f3,#091116ef);box-shadow:0 35px 110px #000c}.brand{display:flex;align-items:center;gap:11px}.mark{width:44px;height:44px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#70e1ff,#4f7dff);color:#04131c;font:800 11px var(--mono);box-shadow:0 0 38px #56d6ff20}.brand b{display:block;font:700 15px var(--display);letter-spacing:-.025em}.brand small{display:block;margin-top:2px;color:#687f8d;font-size:9px}.eyebrow{display:flex;align-items:center;gap:8px;margin-top:28px;color:var(--cyan);font:700 7px var(--mono);letter-spacing:.15em}.eyebrow i{width:20px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}h1{font:700 35px/1.02 var(--display);letter-spacing:-.05em;margin:10px 0 8px}p{margin:0;color:var(--muted);font-size:10px;line-height:1.7}.field{display:block;margin-top:17px}.field span{display:block;margin-bottom:7px;color:#c8d8e0;font-size:9px;font-weight:700}input,button{width:100%;padding:12px 13px;border-radius:11px;border:1px solid #2a3e49;background:#081117;color:#f5f8fb;font:600 10px var(--sans);outline:0}input:focus{border-color:#56d6ff;box-shadow:0 0 0 3px #56d6ff10}.login-action{margin-top:20px}.login-action button{width:100%;min-height:46px;margin-top:0;display:flex;align-items:center;justify-content:center;gap:8px;border-color:#69dcff;background:linear-gradient(135deg,#69e0ff,#2aa8e8);color:#04131c;font:800 9px var(--mono);cursor:pointer;box-shadow:0 14px 35px #56d6ff10}.login-action button.loading:before{content:"";width:11px;height:11px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:loginSpin .7s linear infinite}@keyframes loginSpin{to{transform:rotate(360deg)}}.login-action button:disabled{opacity:.72;cursor:wait}.error{min-height:20px;margin-top:12px;color:#ff9f95;font:700 8px var(--mono)}.hint{margin-top:18px;padding-top:16px;border-top:1px solid #20303a;color:#667e8d;font-size:8px}.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.chip{padding:7px 8px;border:1px solid #243843;border-radius:999px;background:#091217;color:#6f8998;font:700 7px var(--mono)}@media(max-width:520px){.card{padding:23px}.shell{max-width:390px}h1{font-size:31px}}</style></head><body><div class="shell"><div class="orb orb-a"></div><div class="orb orb-b"></div><form class="card" id="login"><div class="brand"><div class="mark">FC</div><div><b>FC Mobile Tools</b><small>Private admin workspace</small></div></div><div class="eyebrow"><i></i> SECURE ENTRY</div><h1>Welcome back</h1><p>Sign in to manage redeem codes, Football Centre content and the shared media library</p><label class="field"><span>Username</span><input name="username" autocomplete="username" required></label><label class="field"><span>Password</span><input name="password" type="password" autocomplete="current-password" required></label><div class="login-action"><button id="submit" type="submit">Enter workspace</button></div><div class="error" id="error" role="alert"></div><div class="hint">Admin access only<div class="chips"><span class="chip">CONTENT</span><span class="chip">FOOTBALL</span><span class="chip">MEDIA</span></div></div></form></div><script>const form=document.getElementById('login'),error=document.getElementById('error'),submit=document.getElementById('submit');form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';submit.disabled=true;submit.classList.add('loading');submit.textContent='Opening workspace…';try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify(Object.fromEntries(new FormData(form)))});const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||'Sign in failed');location.replace('/admin/')}catch(x){error.textContent=x.message;submit.classList.remove('loading');submit.disabled=false;submit.textContent='Enter workspace'}})</script></body></html>`;
+// Keep in sync with admin/login.html (this inline copy is what the Worker serves).
+const ADMIN_LOGIN_HTML = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#050b12">
+<title>Sign in · FC Mobile Tools Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root{
+  --bg:#050b12;--cyan:#4cc9ff;--violet:#9a8cff;--gold:#f6c453;--good:#4ee0a0;--bad:#ff8f86;
+  --text:#f5f8fb;--muted:#8aa2b4;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.17);
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;--display:'Space Grotesk',var(--sans);
+  --ease:cubic-bezier(.22,1,.36,1)
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;display:grid;place-items:center;padding:24px;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bg i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55;animation:drift 18s ease-in-out infinite}
+.bg i:nth-child(1){width:560px;height:560px;left:-160px;top:-140px;background:#1488c4}
+.bg i:nth-child(2){width:480px;height:480px;right:-140px;top:10%;background:#5b4cd6;animation-delay:-6s;opacity:.4}
+.bg i:nth-child(3){width:420px;height:420px;left:35%;bottom:-200px;background:#0f6e5a;animation-delay:-11s;opacity:.35}
+.bg:after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:56px 56px;-webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,#000 25%,transparent 80%);mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,#000 25%,transparent 80%)}
+@keyframes drift{50%{transform:translate(40px,30px) scale(1.08)}}
+
+.shell{position:relative;z-index:1;width:min(980px,100%);display:grid;grid-template-columns:1.05fr .95fr;border:1px solid transparent;border-radius:30px;overflow:hidden;
+  background:linear-gradient(165deg,rgba(13,24,36,.9),rgba(6,12,19,.94)) padding-box,linear-gradient(150deg,rgba(76,201,255,.6),rgba(255,255,255,.06) 40%,rgba(154,140,255,.45)) border-box;
+  box-shadow:0 60px 140px -40px #000,0 0 120px -40px rgba(76,201,255,.4);backdrop-filter:blur(24px);animation:rise .7s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(18px) scale(.985)}}
+
+.brand-side{position:relative;padding:44px 42px;display:flex;flex-direction:column;justify-content:space-between;gap:34px;border-right:1px solid var(--line);
+  background:radial-gradient(420px 300px at 0 0,rgba(76,201,255,.2),transparent 65%),radial-gradient(360px 280px at 100% 100%,rgba(154,140,255,.16),transparent 65%)}
+.logo{display:flex;align-items:center;gap:13px}
+.mark{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#b6ecff,#2eb4ee);color:#04131c;font:800 15px var(--display);letter-spacing:-.02em;box-shadow:0 14px 30px -10px rgba(76,201,255,.7),inset 0 1px 0 rgba(255,255,255,.6)}
+.logo b{display:block;font:700 17px var(--display);letter-spacing:-.03em}
+.logo small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
+.kicker{display:inline-flex;align-items:center;gap:9px;padding:7px 13px;border:1px solid rgba(76,201,255,.35);border-radius:999px;background:rgba(76,201,255,.08);color:#8fe0ff;font:700 11.5px var(--sans);letter-spacing:.16em}
+.kicker i{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px rgba(76,201,255,.15),0 0 12px var(--cyan)}
+h1{margin:18px 0 12px;font:700 clamp(34px,4.4vw,48px)/1.02 var(--display);letter-spacing:-.055em;background:linear-gradient(180deg,#fff 35%,#a9c6d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 em{font-style:normal;background:linear-gradient(100deg,#7fe0ff,#4cc9ff 45%,#9a8cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:0;color:var(--muted);max-width:420px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{padding:14px 15px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03);transition:.3s var(--ease)}
+.tile:hover{transform:translateY(-3px);border-color:rgba(76,201,255,.4);background:rgba(76,201,255,.06)}
+.tile b{display:block;font:700 13.5px var(--display);letter-spacing:-.01em}
+.tile span{display:block;margin-top:3px;color:var(--muted);font-size:12.5px;line-height:1.45}
+.tile svg{display:block;margin-bottom:9px;color:var(--cyan)}
+
+.form-side{padding:44px 42px;display:flex;align-items:center}
+form{width:100%}
+.eyebrow{color:#7fe0ff;font:700 11.5px var(--sans);letter-spacing:.2em}
+h2{margin:8px 0 6px;font:700 31px/1.05 var(--display);letter-spacing:-.05em}
+.sub{margin:0 0 26px;color:var(--muted);font-size:14.5px}
+.field{display:block;margin-top:16px}
+.field>span{display:block;margin-bottom:8px;color:#c3d5e1;font:700 13px var(--sans)}
+.box{position:relative;display:flex;align-items:center;border:1px solid var(--line2);border-radius:14px;background:rgba(3,8,13,.75);box-shadow:inset 0 2px 6px rgba(0,0,0,.4);transition:.2s}
+.box:focus-within{border-color:rgba(76,201,255,.8);box-shadow:inset 0 2px 6px rgba(0,0,0,.4),0 0 0 4px rgba(76,201,255,.15),0 0 30px -8px rgba(76,201,255,.5)}
+.box svg{flex:0 0 auto;margin-left:14px;color:#5d7587}
+.box:focus-within svg{color:var(--cyan)}
+.box input{flex:1;min-width:0;padding:15px 14px;border:0;background:transparent;color:var(--text);font:500 15px var(--sans);outline:0}
+.box input::placeholder{color:#587083}
+.eye{margin-right:8px;padding:8px 11px;border:0;border-radius:9px;background:rgba(255,255,255,.06);color:#9fb4c3;font:700 12px var(--sans);cursor:pointer;transition:.2s}
+.eye:hover{background:rgba(255,255,255,.12);color:#fff}
+.caps{display:none;margin-top:8px;color:var(--gold);font:600 12.5px var(--sans)}
+.caps.on{display:block}
+.go{position:relative;overflow:hidden;width:100%;min-height:54px;margin-top:24px;border:0;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;color:#04131c;font:800 15px var(--sans);
+  background:linear-gradient(180deg,#b6ecff,#5ccfff 48%,#2eb4ee);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,70,110,.25),0 18px 34px -14px rgba(76,201,255,.75),0 0 0 1px rgba(110,216,255,.55);transition:transform .2s var(--ease),box-shadow .2s}
+.go:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);transform:translateX(-120%);transition:transform .7s var(--ease)}
+.go:hover:not(:disabled){transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 24px 40px -14px rgba(76,201,255,.9),0 0 0 1px rgba(150,228,255,.8)}
+.go:hover:not(:disabled):after{transform:translateX(120%)}
+.go:active{transform:scale(.985)}
+.go:disabled{cursor:wait;filter:saturate(.6) brightness(.9)}
+.go.loading .arrow{display:none}
+.go.loading:before{content:"";width:16px;height:16px;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{display:none;align-items:flex-start;gap:10px;margin-top:16px;padding:12px 14px;border:1px solid rgba(255,143,134,.4);border-radius:13px;background:rgba(255,143,134,.09);color:#ffc0ba;font:600 13.5px/1.45 var(--sans)}
+.err.on{display:flex;animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.foot{display:flex;align-items:center;gap:9px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);color:#6f879a;font-size:12.5px}
+.foot i{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px rgba(78,224,160,.14)}
+@media(max-width:860px){
+  .shell{grid-template-columns:1fr;max-width:480px}
+  .brand-side{padding:28px 26px;border-right:0;border-bottom:1px solid var(--line);gap:22px}
+  .tiles,.lede{display:none}
+  h1{font-size:30px;margin:14px 0 0}
+  .form-side{padding:28px 26px 30px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
+<main class="shell">
+  <section class="brand-side">
+    <div>
+      <div class="logo"><div class="mark">FC</div><div><b>FC Mobile Tools</b><small>Admin workspace</small></div></div>
+      <div style="margin-top:38px">
+        <span class="kicker"><i></i> PRIVATE ACCESS</span>
+        <h1>Your command<br><em>centre.</em></h1>
+        <p class="lede">Publish articles, manage redeem codes, run tournaments and keep the community accounts healthy, all from one place.</p>
+      </div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"/></svg><b>Editorial</b><span>Write, review and publish</span></div>
+      <div class="tile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/></svg><b>Codes &amp; rewards</b><span>Live to the site instantly</span></div>
+      <div class="tile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg><b>Accounts</b><span>XP, tokens and moderation</span></div>
+      <div class="tile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0z"/></svg><b>Tournaments</b><span>Brackets and fixtures</span></div>
+    </div>
+  </section>
+  <section class="form-side">
+    <form id="login" novalidate>
+      <div class="eyebrow">SECURE ENTRY</div>
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to continue to the workspace.</p>
+      <label class="field"><span>Username</span>
+        <div class="box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg><input name="username" autocomplete="username" required autofocus placeholder="Your admin username"></div>
+      </label>
+      <label class="field"><span>Password</span>
+        <div class="box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><input id="pw" name="password" type="password" autocomplete="current-password" required placeholder="Enter your password"><button class="eye" id="eye" type="button" aria-label="Show password">Show</button></div>
+        <div class="caps" id="caps">Caps Lock is on</div>
+      </label>
+      <button class="go" id="submit" type="submit"><span id="label">Enter workspace</span><svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
+      <div class="err" id="error" role="alert" aria-live="polite"></div>
+      <div class="foot"><i></i>Encrypted session · Admin access only</div>
+    </form>
+  </section>
+</main>
+<script>
+(function(){
+  var form=document.getElementById('login'),error=document.getElementById('error'),submit=document.getElementById('submit'),label=document.getElementById('label'),pw=document.getElementById('pw'),eye=document.getElementById('eye'),caps=document.getElementById('caps');
+  eye.addEventListener('click',function(){var show=pw.type==='password';pw.type=show?'text':'password';eye.textContent=show?'Hide':'Show';eye.setAttribute('aria-label',show?'Hide password':'Show password')});
+  pw.addEventListener('keyup',function(e){caps.classList.toggle('on',!!(e.getModifierState&&e.getModifierState('CapsLock')))});
+  pw.addEventListener('blur',function(){caps.classList.remove('on')});
+  function fail(msg){error.textContent=msg;error.classList.remove('on');void error.offsetWidth;error.classList.add('on');submit.disabled=false;submit.classList.remove('loading');label.textContent='Enter workspace'}
+  form.addEventListener('submit',async function(e){
+    e.preventDefault();error.classList.remove('on');submit.disabled=true;submit.classList.add('loading');label.textContent='Opening workspace…';
+    try{
+      var r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify(Object.fromEntries(new FormData(form)))});
+      var b=await r.json().catch(function(){return {}});
+      if(!r.ok)throw Error(b.error||'Sign in failed');
+      location.replace('/admin/');
+    }catch(x){fail(x.message||'Sign in failed')}
+  });
+})();
+</script>
+</body>
+</html>`;
 
 const ADMIN_DASHBOARD_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
@@ -1984,16 +2133,18 @@ export function createExports(manifest) {
   const url=new URL(request.url);
   const hostHeader=(request.headers.get('host')||'').split(':')[0].toLowerCase();
 
-  // Flatten the legacy workers.dev redirect: return a direct 301 before
-  // any route, auth, tournament, asset, or Astro handling can run.
+  // Never expose a second public origin. Redirect the legacy workers.dev host
+  // and the www hostname to the one canonical public origin before any route,
+  // auth, or tournament handling can return content.
   if(
     url.hostname === 'tanzimfc.fcmobiletools.workers.dev' ||
     hostHeader === 'tanzimfc.fcmobiletools.workers.dev'
   ) {
+    const destination=new URL(url.pathname + url.search, 'https://fcmobiletools.online');
     return new Response(null,{
       status:301,
       headers:{
-        location:'https://fcmobiletools.com',
+        location:destination.toString(),
         'cache-control':'public, max-age=86400'
       }
     });

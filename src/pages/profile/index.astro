@@ -59,6 +59,23 @@ import AccountNav from '../../components/AccountNav.astro';
       .replaceAll('_', ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const rankTitle = (lv) => {
+    const n = Number(lv) || 1;
+    return n >= 35 ? 'Legend' : n >= 20 ? 'Elite' : n >= 10 ? 'Pro' : n >= 5 ? 'Challenger' : 'Rookie';
+  };
+  const ICON = {
+    bolt: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
+    coin: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1-1.7 2.5-1.7s2.5.7 2.5 1.7-1 1.5-2.5 1.8-2.5.8-2.5 1.8 1 1.7 2.5 1.7 2.5-.7 2.5-1.7"/></svg>',
+    flame: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.4 0 7-2.9 7-6.6 0-2.6-1.5-4.4-3-6-.4 1.5-1.2 2.4-2.2 3 .3-3.4-1.2-6.4-4.3-8.9.2 3-1.2 4.5-2.6 6.4C5.6 11.7 5 13.2 5 15.4 5 19.1 7.6 22 12 22Z"/></svg>',
+    check: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M9 15.5l2 2 4-4"/></svg>'
+  };
+  const avatarRing = (pct) => `
+    <svg class="ring" viewBox="0 0 112 112" aria-hidden="true">
+      <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4cc9ff"/><stop offset="1" stop-color="#7ff0c4"/></linearGradient></defs>
+      <circle class="ring-track" cx="56" cy="56" r="52"/>
+      <circle class="ring-fill" cx="56" cy="56" r="52" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${100 - Math.max(0, Math.min(100, pct))}"/>
+    </svg>`;
+
   function renderGuestState(reasonTitle = 'Your FC Mobile companion identity.', reasonSub = '') {
     root.innerHTML = `
       <section class="guest-card acc-anim">
@@ -222,12 +239,14 @@ import AccountNav from '../../components/AccountNav.astro';
       <section class="hero-card acc-anim">
         <div class="hero-identity">
           <div class="hero-avatar">
+            ${avatarRing(lvInfo.percent)}
             ${a.avatarUrl ? `<img src="${esc(a.avatarUrl)}" alt="${esc(display)}" />` : `<span>${esc(initials)}</span>`}
-            <b class="avatar-lvl">Lv. ${fmt(a.level)}</b>
+            <b class="avatar-lvl">LV ${fmt(a.level)}</b>
           </div>
 
           <div class="hero-copy">
             <div class="hero-badges">
+              <span class="pill pill-gold">${esc(rankTitle(a.level))}</span>
               <span class="pill pill-cyan">FCMobiletools Account</span>
               <span class="pill ${a.state === 'active' ? 'pill-green' : 'pill-amber'}">${esc(titleCase(a.state || 'active'))}</span>
               <span class="pill ${isVerified ? 'pill-green' : 'pill-amber'}">
@@ -265,6 +284,10 @@ import AccountNav from '../../components/AccountNav.astro';
           </div>
           <div class="xp-bar-track" role="progressbar" aria-valuenow="${lvInfo.percent}" aria-valuemin="0" aria-valuemax="100">
             <span class="xp-bar-fill" style="width:${lvInfo.percent}%"></span>
+          </div>
+          <div class="xp-strip-foot">
+            <span>Level <b>${fmt(lvInfo.level)}</b></span>
+            <span><b>${lvInfo.percent}%</b> to Level <b>${fmt(lvInfo.level + 1)}</b></span>
           </div>
         </div>
       </section>
@@ -324,43 +347,39 @@ import AccountNav from '../../components/AccountNav.astro';
 
       <!-- 4-CARD KPI GRID -->
       <section class="kpi-grid acc-anim acc-anim-d1" aria-label="Account statistics">
-        <article class="kpi-card">
-          <div class="kpi-top">
-            <small>PROGRESSION</small>
-            <span class="kpi-badge">Level ${fmt(a.level)}</span>
-          </div>
-          <strong>${fmt(a.xp)} <small>XP</small></strong>
+        <article class="kpi-card kpi-card--xp">
+          <div class="kpi-top"><span class="kpi-badge">Level ${fmt(a.level)}</span></div>
+          <span class="kpi-ico">${ICON.bolt}</span>
+          <span class="kpi-label">Progression</span>
+          <strong><span data-count="${Number(a.xp || 0)}">${fmt(a.xp)}</span> <small>XP</small></strong>
           <p>Verified XP from your account activity.</p>
           <button type="button" class="kpi-link" data-jump-tab="xp">View XP history →</button>
         </article>
 
-        <article class="kpi-card">
-          <div class="kpi-top">
-            <small>REWARD CURRENCY</small>
-            <span class="kpi-badge kpi-badge--mint">Tokens</span>
-          </div>
-          <strong>${fmt(a.tokens)} <small>TKN</small></strong>
-          <p>Earned: ${fmt(a.lifetimeEarnedTokens)} · Spent: ${fmt(a.lifetimeSpentTokens)} · Loyalty perks</p>
+        <article class="kpi-card kpi-card--tokens">
+          <div class="kpi-top"><span class="kpi-badge kpi-badge--mint">Tokens</span></div>
+          <span class="kpi-ico">${ICON.coin}</span>
+          <span class="kpi-label">Reward currency</span>
+          <strong><span data-count="${Number(a.tokens || 0)}">${fmt(a.tokens)}</span> <small>TKN</small></strong>
+          <p>Earned ${fmt(a.lifetimeEarnedTokens)} · Spent ${fmt(a.lifetimeSpentTokens)}</p>
           <button type="button" class="kpi-link" data-jump-tab="tokens">View Token history →</button>
         </article>
 
-        <article class="kpi-card">
-          <div class="kpi-top">
-            <small>ACTIVITY STREAK</small>
-            <span class="kpi-badge kpi-badge--amber">Best: ${fmt(a.longestStreak)}d</span>
-          </div>
-          <strong>🔥 ${fmt(a.currentStreak)} <small>Days</small></strong>
+        <article class="kpi-card kpi-card--streak">
+          <div class="kpi-top"><span class="kpi-badge kpi-badge--amber">Best ${fmt(a.longestStreak)}d</span></div>
+          <span class="kpi-ico">${ICON.flame}</span>
+          <span class="kpi-label">Activity streak</span>
+          <strong>${fmt(a.currentStreak)} <small>DAYS</small></strong>
           <p>${a.lastQualifyingActivityAt ? `Last active ${esc(fmtDate(a.lastQualifyingActivityAt))}` : 'Updated on qualifying actions.'}</p>
           <a class="kpi-link" href="/missions/">Open Quests →</a>
         </article>
 
-        <article class="kpi-card">
-          <div class="kpi-top">
-            <small>STREAK</small>
-            <span class="kpi-badge">UTC Check-In</span>
-          </div>
-          <strong>🔥 ${fmt(a.currentStreak)} days</strong>
-          <p>Keep checking in each UTC day to build your streak.</p>
+        <article class="kpi-card kpi-card--checkin">
+          <div class="kpi-top"><span class="kpi-badge">UTC</span></div>
+          <span class="kpi-ico">${ICON.check}</span>
+          <span class="kpi-label">Daily check-in</span>
+          <strong>Claim <small>TODAY</small></strong>
+          <p>Check in each UTC day to keep your streak alive.</p>
           <a class="kpi-link" href="/missions/">Check in →</a>
         </article>
       </section>
@@ -408,7 +427,7 @@ import AccountNav from '../../components/AccountNav.astro';
                       .map(
                         (item) => `
                       <div class="feed-row">
-                        <span class="feed-ico">${item.event_type?.includes('xp') ? 'XP' : item.event_type?.includes('token') ? 'TK' : '★'}</span>
+                        <span class="feed-ico" data-kind="${item.event_type?.includes('xp') ? 'xp' : item.event_type?.includes('token') ? 'token' : 'star'}">${item.event_type?.includes('xp') ? 'XP' : item.event_type?.includes('token') ? 'TK' : '★'}</span>
                         <div class="feed-main">
                           <strong>${esc(titleCase(item.event_type))}</strong>
                           <small>${esc(item.entity_type ? titleCase(item.entity_type) : 'Verified account event')}</small>
@@ -1232,7 +1251,7 @@ import AccountNav from '../../components/AccountNav.astro';
 
   .workspace-grid {
     display: grid;
-    grid-template-columns: 1.38fr 0.62fr;
+    grid-template-columns: minmax(0, 1.38fr) minmax(0, 0.62fr);
     gap: 16px;
     margin-top: 16px;
     align-items: start;
@@ -1497,7 +1516,7 @@ import AccountNav from '../../components/AccountNav.astro';
     }
     .guest-card,
     .workspace-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     .kpi-grid,
     .skel-kpi-grid {

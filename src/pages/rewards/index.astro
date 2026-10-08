@@ -39,6 +39,30 @@ import AccountNav from '../../components/AccountNav.astro';
       .replaceAll('_', ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const ART = {
+    frame: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="48" height="48" rx="14"/><rect x="16" y="16" width="32" height="32" rx="9" stroke-opacity=".55"/><circle cx="32" cy="27" r="6"/><path d="M20 44c2-6 6-8 12-8s10 2 12 8"/><path d="M8 20l6-6M50 14l6 6" stroke-opacity=".6"/></svg>',
+    title: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h48v20H8z" rx="4"/><path d="M8 22l6-8h36l6 8M16 32h14M16 37h8M40 30l2.5 5 5.5.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9 5.5-.8z" stroke-opacity=".85"/></svg>',
+    badge: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 6l20 7v16c0 13-8.5 22-20 27C20.500 51 12 42 12 29V13z"/><path d="M32 20l4 8.200 9 1.300-6.500 6.300 1.500 9-8-4.300-8 4.300 1.500-9L19 29.500l9-1.300z"/></svg>',
+    cosmetic: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 6c14 0 24 9 24 21 0 8-5 11-11 11h-5c-3 0-4 2-3 5 1.500 4-1 8-6 8-12 0-23-9-23-23C8 15 18 6 32 6z"/><circle cx="21" cy="26" r="3"/><circle cx="32" cy="18" r="3"/><circle cx="44" cy="24" r="3"/></svg>',
+    perk: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M34 6 14 34h15l-3 24 24-32H35z"/></svg>',
+    community: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="24" width="48" height="12" rx="3"/><path d="M32 24v32M52 36v14a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V36"/><path d="M32 24c-6 0-12-2-12-8s7-6 12 8c5-14 12-14 12-8s-6 8-12 8z"/></svg>'
+  };
+  const artFor = (type) => {
+    const t = String(type || '').toLowerCase();
+    if (t.includes('frame')) return ART.frame;
+    if (t.includes('title')) return ART.title;
+    if (t.includes('badge')) return ART.badge;
+    if (t.includes('cosmetic') || t.includes('colour') || t.includes('color')) return ART.cosmetic;
+    if (t.includes('community') || t.includes('promo') || t.includes('drop')) return ART.community;
+    return ART.perk;
+  };
+  // Visual tier is derived from price only, so pricier perks look rarer.
+  const tierFor = (cost) => {
+    const c = Number(cost || 0);
+    return c >= 1500 ? 'legendary' : c >= 800 ? 'epic' : c >= 400 ? 'rare' : 'common';
+  };
+  const COIN_SVG = '<svg class="rw-coin" viewBox="0 0 96 96" aria-hidden="true"><defs><radialGradient id="cg" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#fff6d0"/><stop offset=".5" stop-color="#f6c453"/><stop offset="1" stop-color="#a87a14"/></radialGradient></defs><circle cx="48" cy="48" r="44" fill="url(#cg)"/><circle cx="48" cy="48" r="34" fill="none" stroke="#8a6410" stroke-opacity=".55" stroke-width="3"/><path d="M48 26l5.500 14.500H69L56.500 49.500 61 65 48 56 35 65l4.500-15.500L27 40.500h15.500z" fill="#8a6410" fill-opacity=".7"/></svg>';
+
   async function load() {
     const session = await accountAuth.auth.getSession();
     if (!session.data?.session) {
@@ -102,12 +126,24 @@ import AccountNav from '../../components/AccountNav.astro';
     const balance = Number(b.tokenBalance || 0);
     const rewards = Array.isArray(b.rewards) ? b.rewards : [];
 
+    const locked = rewards
+      .filter((r) => Number(r.cost || 0) > balance && !(r.stock !== null && Number(r.stock) <= 0))
+      .sort((x, y) => Number(x.cost) - Number(y.cost))[0];
+    const nextBlock = locked
+      ? `<div class="rw-next">
+           <div class="rw-next-row"><span>Next unlock · ${esc(locked.name)}</span><b>${fmt(balance)} / ${fmt(locked.cost)}</b></div>
+           <div class="qb-bar"><i style="width:${Math.min(100, Math.round((balance / Number(locked.cost)) * 100))}%"></i></div>
+         </div>`
+      : '';
+
     const balanceBar = `
       <section class="rw-balance-bar acc-anim">
+        ${COIN_SVG}
         <div class="rw-bal-main">
           <span class="rw-bal-label">AVAILABLE BALANCE</span>
-          <strong>${fmt(balance)} <small>${esc(economy.display_name || 'Tokens')}</small></strong>
+          <strong><span data-count="${balance}">${fmt(balance)}</span> <small>${esc(economy.display_name || 'Tokens')}</small></strong>
           <p>Verified balance · XP and Tokens have no fixed cash value.</p>
+          ${nextBlock}
         </div>
         <div class="rw-bal-actions">
           <a class="rw-btn-secondary" href="/profile/#tokens">View Token History →</a>
@@ -153,33 +189,37 @@ import AccountNav from '../../components/AccountNav.astro';
           .map((item) => {
             const canAfford = balance >= Number(item.cost || 0);
             const outOfStock = item.stock !== null && Number(item.stock) <= 0;
+            const tier = tierFor(item.cost);
+            const pct = Math.min(100, Math.round((balance / Math.max(1, Number(item.cost || 1))) * 100));
             return `
-              <article class="rw-card">
+              <article class="rw-card" data-tier="${tier}">
+                <div class="rw-art" aria-hidden="true">${artFor(item.rewardType)}</div>
                 <div class="rw-card-top">
                   <span class="rw-type-pill">${esc(titleCase(item.rewardType || 'Perk'))}</span>
                   <span class="rw-stock-pill ${outOfStock ? 'is-out' : ''}">
                     ${item.stock === null ? 'Available' : outOfStock ? 'Out of stock' : `${fmt(item.stock)} left`}
                   </span>
                 </div>
-
-                <h2>${esc(item.name)}</h2>
-                <p>${esc(item.description || 'Optional FCMobiletools community reward.')}</p>
-
-                <div class="rw-card-foot">
-                  <div class="rw-cost">
-                    <small>COST</small>
-                    <strong>${fmt(item.cost)} ${esc(item.currencyCode || 'Tokens')}</strong>
+                <div class="rw-body">
+                  <h2>${esc(item.name)}</h2>
+                  <p>${esc(item.description || 'Optional FCMobiletools community reward.')}</p>
+                  ${!canAfford && !outOfStock ? `<div class="rw-meter"><div class="rw-meter-row"><span>Your progress</span><b>${fmt(Math.max(0, Number(item.cost) - balance))} more to go</b></div><div class="qb-bar"><i style="width:${pct}%"></i></div></div>` : ''}
+                  <div class="rw-card-foot">
+                    <div class="rw-cost">
+                      <small>COST</small>
+                      <strong>${fmt(item.cost)} ${esc(item.currencyCode || 'Tokens')}</strong>
+                    </div>
+                    <button
+                      type="button"
+                      class="rw-redeem-btn"
+                      data-redeem="${esc(item.id)}"
+                      ${!canAfford || outOfStock ? 'disabled' : ''}
+                    >
+                      ${outOfStock ? 'Sold Out' : !canAfford ? 'Locked' : 'Redeem'}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    class="rw-redeem-btn"
-                    data-redeem="${esc(item.id)}"
-                    ${!canAfford || outOfStock ? 'disabled' : ''}
-                  >
-                    ${outOfStock ? 'Sold Out' : !canAfford ? 'Insufficient Tokens' : 'Redeem Reward'}
-                  </button>
+                  <p class="rw-card-msg" data-msg-for="${esc(item.id)}" hidden></p>
                 </div>
-                <p class="rw-card-msg" data-msg-for="${esc(item.id)}" hidden></p>
               </article>
             `;
           })

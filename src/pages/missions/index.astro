@@ -49,6 +49,7 @@ import AccountNav from '../../components/AccountNav.astro';
           <div><span>UTC RESET</span><strong id="streakResetTimer">24h 00m</strong><small>Next daily window</small></div>
           <div><span>4H SAFETY BREAK</span><strong id="streakCooldownTimer">Ready</strong><small>After each claim</small></div>
         </div>
+        <div class="streak-week" id="streakWeek" aria-label="Weekly streak progress"></div>
         <button type="button" class="streak-checkin" id="streakCheckinBtn">Check in</button>
       </section>
 
@@ -71,6 +72,39 @@ import AccountNav from '../../components/AccountNav.astro';
     String(v || 'mission')
       .replaceAll('_', ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const QICON = {
+    daily: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/><path d="M12 8v4l2.5 2"/></svg>',
+    one_time: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+    weekly: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M8 15h3M13 15h3"/></svg>',
+    community: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.7 3.2 2.4 3.6 5.2"/></svg>'
+  };
+  const BOLT = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>';
+  const COIN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>';
+  const kindOf = (m) => {
+    const k = String(m.missionType || m.taskType || 'daily').toLowerCase();
+    return QICON[k] ? k : 'daily';
+  };
+
+  function summaryRibbon(list) {
+    const total = list.length;
+    const done = list.filter((m) => m.statusLabel === 'Completed').length;
+    const open = list.filter((m) => m.statusLabel !== 'Completed');
+    const xp = open.reduce((n, m) => n + Number(m.xpReward || 0), 0);
+    const tk = open.reduce((n, m) => n + Number(m.tokenReward || 0), 0);
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    return `
+      <section class="qb-summary" aria-label="Quest progress">
+        <div class="qb-stat">
+          <small>Board progress</small>
+          <strong>${fmt(done)} <em>/ ${fmt(total)} complete</em></strong>
+          <div class="qb-bar"><i style="width:${pct}%"></i></div>
+        </div>
+        <div class="qb-stat qb-stat--cyan"><small>XP available</small><strong>+${fmt(xp)}</strong></div>
+        <div class="qb-stat qb-stat--gold"><small>Tokens available</small><strong>+${fmt(tk)}</strong></div>
+        <div class="qb-stat"><small>Awaiting review</small><strong>${fmt(list.filter((m) => m.statusLabel === 'Pending review').length)}</strong></div>
+      </section>`;
+  }
 
   let allQuests = [];
   let currentFilter = 'all';
@@ -160,7 +194,7 @@ import AccountNav from '../../components/AccountNav.astro';
       return;
     }
 
-    root.innerHTML = `
+    root.innerHTML = summaryRibbon(allQuests) + `
       <div class="mod-grid acc-anim">
         ${filtered
           .map((m) => {
@@ -169,7 +203,8 @@ import AccountNav from '../../components/AccountNav.astro';
             const action = questActionFor(m);
 
             return `
-              <article class="mission-card ${isDone ? 'is-completed' : ''}">
+              <article class="mission-card ${isDone ? 'is-completed' : ''}" data-kind="${kindOf(m)}">
+                <span class="q-ico" aria-hidden="true">${isDone ? '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : QICON[kindOf(m)]}</span>
                 <div class="mission-top">
                   <div class="mission-tags">
                     <span class="tag-type">${esc(titleCase(m.missionType || m.taskType || 'Quest'))}</span>
@@ -187,8 +222,8 @@ import AccountNav from '../../components/AccountNav.astro';
 
                 <div class="mission-foot">
                   <div class="reward-pills">
-                    ${m.xpReward > 0 ? `<span class="rw-xp">+${fmt(m.xpReward)} XP</span>` : ''}
-                    ${m.tokenReward > 0 ? `<span class="rw-tk">+${fmt(m.tokenReward)} Tokens</span>` : ''}
+                    ${m.xpReward > 0 ? `<span class="rw-xp">${BOLT}+${fmt(m.xpReward)} XP</span>` : ''}
+                    ${m.tokenReward > 0 ? `<span class="rw-tk">${COIN}+${fmt(m.tokenReward)} Tokens</span>` : ''}
                     ${m.dailyLimit ? `<span class="rw-limit">${fmt(m.dailyLimit)}/day max</span>` : ''}
                   </div>
                   ${action}
@@ -320,6 +355,15 @@ import AccountNav from '../../components/AccountNav.astro';
     const current=Number(streak?.current||0), best=Number(streak?.longest||0), freezes=Number(streak?.freezes||0);
     const last=streak?.lastCheckInAt ? new Date(streak.lastCheckInAt) : null;
     const btn=document.getElementById('streakCheckinBtn');
+    const weekEl=document.getElementById('streakWeek');
+    if(weekEl){
+      const inWeek=current===0?0:((current-1)%7)+1;
+      const sameDay=last && new Date().toISOString().slice(0,10)===String(streak?.lastCheckInUtcDate||'');
+      weekEl.innerHTML='<span class="lbl">7-day cycle</span>'+Array.from({length:7},(_,i)=>{
+        const on=i<inWeek, today=on&&i===inWeek-1&&sameDay;
+        return `<span class="streak-pip${on?' on':''}${today?' today':''}${i===6?' final':''}">${i===6?'★':i+1}</span>`;
+      }).join('');
+    }
     document.getElementById('streakCurrent').textContent=current+' day'+(current===1?'':'s');
     document.getElementById('streakBest').textContent=best+' day'+(best===1?'':'s');
     document.getElementById('streakFreeze').textContent=String(freezes);
