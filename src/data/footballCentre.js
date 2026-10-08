@@ -302,15 +302,15 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "note": "292 Premier League minutes from four appearances. The 60-minute route is realistic, but the Chelsea away trip and 3 G/A condition make 121 difficult.",
         "result": {
           "minutes": "complete",
-          "win": "pending",
-          "cleanSheet": "pending",
+          "win": "failed",
+          "cleanSheet": "failed",
           "setPiece": "pending",
           "threeContrib": "pending"
         },
         "failed": {
           "minutes": false,
-          "win": false,
-          "cleanSheet": false,
+          "win": true,
+          "cleanSheet": true,
           "setPiece": false,
           "threeContrib": false
         }
@@ -398,14 +398,14 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "minutes": "complete",
           "win": "pending",
           "cleanSheet": "pending",
-          "setPiece": "pending",
+          "setPiece": "failed",
           "threeContrib": "pending"
         },
         "failed": {
           "minutes": false,
           "win": false,
           "cleanSheet": false,
-          "setPiece": false,
+          "setPiece": true,
           "threeContrib": false
         }
       },
@@ -562,7 +562,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": 1,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:30:04.819Z"
+        "updatedAt": "2026-10-08T16:32:10.707Z"
       },
       {
         "id": "brentford-liverpool",
@@ -571,10 +571,10 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "kickoffUtc": "2026-10-17T14:00:00.000Z",
         "status": "scheduled",
         "score": {
-          "home": null,
-          "away": null
+          "home": 4,
+          "away": 0
         },
-        "updatedAt": "2026-10-08T16:30:04.819Z"
+        "updatedAt": "2026-10-08T16:32:10.707Z"
       },
       {
         "id": "newcastle-villa",
@@ -586,7 +586,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:30:04.819Z"
+        "updatedAt": "2026-10-08T16:32:10.707Z"
       },
       {
         "id": "leeds-united",
@@ -598,7 +598,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": 5,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:30:04.819Z"
+        "updatedAt": "2026-10-08T16:32:10.707Z"
       },
       {
         "id": "brighton-palace",
@@ -610,9 +610,9 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:30:04.819Z"
+        "updatedAt": "2026-10-08T16:32:10.707Z"
       }
     ],
-    "lastUpdated": "2026-10-08T16:30:04.819Z"
+    "lastUpdated": "2026-10-08T16:32:10.707Z"
   }
 };
