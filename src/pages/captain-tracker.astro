@@ -14,6 +14,14 @@ const baseOvr = Number(tracker.baseOvr ?? analysis.baseOvr ?? 116);
 const ceiling = Number(analysis.ceiling ?? 121);
 
 const analysisById = analysis.players;
+const modelTaskId = (id) => id === 'threeContrib' ? 'contributions' : id;
+const taskResult = (player, task) => {
+  const value = player.result?.[task.id];
+  if (value === 'complete' || value === 'failed' || value === 'pending') return value;
+  if (player.completed?.[task.id] === true) return 'complete';
+  if (player.failed?.[task.id] === true) return 'failed';
+  return 'pending';
+};
 const resolveAnalysis = (player) => {
   const direct = analysisById[player.id];
   if (direct) return direct;
@@ -25,10 +33,16 @@ const resolveAnalysis = (player) => {
 
 const players = (tracker.players ?? []).map((player, index) => {
   const model = resolveAnalysis(player);
-  const probability = model?.marginal || player.probability || {};
-  const completed = player.completed || {};
-  const failed = player.failed || {};
-  const confirmed = tasks.filter((task) => Boolean(completed[task.id])).length;
+  const probability = tasks.reduce((out, task) => {
+    out[task.id] = Number(model?.marginal?.[modelTaskId(task.id)] ?? player.probability?.[task.id] ?? 0);
+    return out;
+  }, {});
+  const result = tasks.reduce((out, task) => {
+    out[task.id] = taskResult(player, task);
+    return out;
+  }, {});
+  const confirmed = tasks.filter((task) => result[task.id] === 'complete').length;
+  const failedCount = tasks.filter((task) => result[task.id] === 'failed').length;
   const projected = Number(player.baseOvr ?? baseOvr) + confirmed;
   const chance121 = Number(model?.climb?.[4] ?? 0);
   const match = model?.matchId ? analysis.matches[model.matchId] : null;
@@ -37,9 +51,9 @@ const players = (tracker.players ?? []).map((player, index) => {
     index,
     model,
     probability,
-    completed,
-    failed,
+    result,
     confirmed,
+    failedCount,
     projected,
     chance121,
     match,
@@ -47,8 +61,28 @@ const players = (tracker.players ?? []).map((player, index) => {
   };
 });
 
+const trackerMatches = (Array.isArray(tracker.matches) && tracker.matches.length
+  ? tracker.matches
+  : Object.values(analysis.matches).map((match) => ({
+      id: match.id,
+      home: match.home,
+      away: match.away,
+      kickoffUtc: match.kickoff,
+      status: 'scheduled',
+      score: { home: null, away: null },
+      updatedAt: null,
+    }))
+).map((match) => ({ ...match, analysis: analysis.matches[match.id] || null }));
+
+const matchStatus = (match) => {
+  if (match.status === 'final') return 'FINAL';
+  if (match.status === 'live') return 'LIVE';
+  if (Date.parse(match.kickoffUtc || '') > Date.now()) return 'NOT STARTED';
+  return 'AWAITING UPDATE';
+};
+
 const ranked = [...players].sort((a, b) => b.chance121 - a.chance121);
-const pick = ranked[0] || players.find((p) => p.id === 'fernandes') || players[0];
+const pick = ranked[0] || players.find((p) => p.id === 'bruno-fernandes') || players[0];
 const max121 = Math.max(0.5, ...ranked.map((p) => p.chance121));
 const maxTask = Math.max(
   1,
@@ -152,10 +186,52 @@ const barPoints = (values, width = 220, height = 64) => {
       </ol>
     </section>
 
-    <section class="ct-heat" aria-label="Task probability matrix">
+    <section class="ct-live-results ct-heat" aria-label="Live captain task results">
       <header>
-        <h2>Task board</h2>
-        <p>Realistic chance of completing each condition. Confirmed tasks lock green from the Football Centre admin editor.</p>
+        <div>
+          <span class="ct-section-kicker">LIVE RESULT BOARD</span>
+          <h2>Every task. Every captain.</h2>
+          <p>Only confirmed committee results change the live OVR. A blank cell means no result has been reported.</p>
+        </div>
+        <div class="ct-result-legend" aria-label="Result legend">
+          <span><i class="ct-result-dot is-complete">✓</i> Complete</span>
+          <span><i class="ct-result-dot is-failed">×</i> Failed</span>
+          <span><i class="ct-result-dot is-pending"></i> Awaiting</span>
+        </div>
+      </header>
+      <div class="ct-heat-table ct-results-table">
+        <div class="ct-heat-head">
+          <span>Captain</span>
+          {tasks.map((task) => <span>{task.short}</span>)}
+          <span>LIVE OVR</span>
+        </div>
+        {players.map((player) => (
+          <div class="ct-heat-row" data-player-live={player.id}>
+            <span>{player.flag || ''} {player.name}</span>
+            {tasks.map((task) => {
+              const result = player.result[task.id];
+              return (
+                <b
+                  class:list={['ct-cell', 'ct-result-cell', result === 'complete' ? 'is-done' : '', result === 'failed' ? 'is-miss' : '', result === 'pending' ? 'is-pending' : '']}
+                  data-task={task.id}
+                  title={task.title}
+                  aria-label={result === 'complete' ? 'Complete' : result === 'failed' ? 'Failed' : 'Result not updated'}
+                >
+                  {result === 'complete' ? '✓' : result === 'failed' ? '×' : ''}
+                </b>
+              );
+            })}
+            <em class="ct-live-ovr">{player.projected}</em>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="ct-heat ct-model-board" aria-label="Task probability matrix">
+      <header>
+        <span class="ct-section-kicker">PRE-MATCH MODEL</span>
+        <h2>Probability by task</h2>
+        <p>These figures are analysis estimates. They do not count as a result until the committee updates the tracker.</p>
       </header>
       <div class="ct-heat-table">
         <div class="ct-heat-head">
@@ -167,16 +243,10 @@ const barPoints = (values, width = 220, height = 64) => {
           <div class="ct-heat-row" data-player-heat={player.id}>
             <span>{player.flag || ''} {player.name}</span>
             {tasks.map((task) => {
-              const done = Boolean(player.completed[task.id]);
-              const miss = Boolean(player.failed[task.id]);
               const chance = Number(player.probability[task.id] || 0);
               return (
-                <b
-                  class:list={['ct-cell', heatTone(chance), done ? 'is-done' : '', miss ? 'is-miss' : '']}
-                  data-task={task.id}
-                  title={task.title}
-                >
-                  {done ? 'DONE' : miss ? 'OUT' : fmt(chance) + '%'}
+                <b class:list={['ct-cell', heatTone(chance)]} data-task={task.id} title={task.title}>
+                  {fmt(chance)}%
                 </b>
               );
             })}
@@ -186,14 +256,22 @@ const barPoints = (values, width = 220, height = 64) => {
       </div>
     </section>
 
-    <section class="ct-fixtures" aria-label="Matchday fixtures">
-      {Object.values(analysis.matches).map((match) => (
-        <article>
-          <small>{match.ukTime}</small>
-          <strong>{match.home} {fmt(match.probs.home)}% · {fmt(match.probs.draw)}% · {fmt(match.probs.away)}% {match.away}</strong>
-          <span>{match.venue}</span>
-        </article>
-      ))}
+    <section class="ct-fixtures" aria-label="Tracked match status">
+      {trackerMatches.map((match) => {
+        const info = match.analysis;
+        const score = match.score || {};
+        const hasScore = Number.isFinite(Number(score.home)) && Number.isFinite(Number(score.away));
+        return (
+          <article data-match-live={match.id}>
+            <div class="ct-fixture-top">
+              <small>{matchStatus(match)}</small>
+              {hasScore && <b>{score.home}–{score.away}</b>}
+            </div>
+            <strong>{match.home} <span class="ct-vs">vs</span> {match.away}</strong>
+            <span>{info?.ukTime || new Date(match.kickoffUtc).toLocaleString()} · {info?.venue || 'Matchday fixture'}</span>
+          </article>
+        );
+      })}
     </section>
 
     <section class="ct-feed" aria-label="Captain dossiers">
@@ -276,15 +354,16 @@ const barPoints = (values, width = 220, height = 64) => {
 
               <div class="ct-tasks" aria-label="Captain conditions">
                 {tasks.map((task, taskIndex) => {
-                  const done = Boolean(player.completed[task.id]);
-                  const miss = Boolean(player.failed[task.id]);
+                  const result = player.result[task.id];
+                  const done = result === 'complete';
+                  const miss = result === 'failed';
                   const chance = Number(player.probability[task.id] || 0);
                   return (
                     <div class:list={['ct-task', done ? 'is-complete' : '', miss ? 'is-failed' : '']} data-task={task.id}>
                       <div class="ct-task-top">
                         <span>{String(taskIndex + 1).padStart(2, '0')}</span>
                         <strong>{task.short}</strong>
-                        <b data-chance>{done ? 'CONFIRMED' : miss ? 'FAILED' : fmt(chance) + '%'}</b>
+                        <b data-chance>{done ? '✓ CONFIRMED' : miss ? '× FAILED' : fmt(chance) + '%'}</b>
                       </div>
                       <p>{model?.notes?.[task.id] || task.title}</p>
                     </div>
@@ -344,10 +423,19 @@ const barPoints = (values, width = 220, height = 64) => {
       players: players.map((player) => ({
         id: player.id,
         baseOvr: player.baseOvr ?? baseOvr,
+        result: player.result,
         completed: player.completed,
         failed: player.failed,
         probability: player.probability,
         chance121: player.chance121,
+      })),
+      matches: trackerMatches.map((match) => ({
+        id: match.id,
+        home: match.home,
+        away: match.away,
+        kickoffUtc: match.kickoffUtc,
+        status: match.status,
+        score: match.score || { home: null, away: null },
       })),
     })}</script>
   </main>
@@ -357,7 +445,7 @@ const barPoints = (values, width = 220, height = 64) => {
       const root = document.querySelector('[data-captain-tracker]');
       if (!root) return;
 
-      let source = { baseOvr: 116, ceiling: 121, tasks: [], players: [] };
+      let source = { baseOvr: 116, ceiling: 121, tasks: [], players: [], matches: [] };
       try {
         source = JSON.parse(document.getElementById('captain-data')?.textContent || '{}');
       } catch {}
@@ -371,15 +459,30 @@ const barPoints = (values, width = 220, height = 64) => {
         return n.toFixed(2);
       };
 
+      const updateMatch = (match) => {
+        const row = root.querySelector('[data-match-live="' + match.id + '"]');
+        if (!row) return;
+        const status = row.querySelector('.ct-fixture-top small');
+        const score = row.querySelector('.ct-fixture-top b');
+        const statusText = match.status === 'final' ? 'FINAL' : match.status === 'live' ? 'LIVE' : (Date.parse(match.kickoffUtc || '') > Date.now() ? 'NOT STARTED' : 'AWAITING UPDATE');
+        if (status) status.textContent = statusText;
+        if (score && match.score && Number.isFinite(Number(match.score.home)) && Number.isFinite(Number(match.score.away))) {
+          score.textContent = String(match.score.home) + '–' + String(match.score.away);
+        }
+      };
+
       const updateCard = (player) => {
         const card = root.querySelector('[data-player="' + player.id + '"]');
         const heat = root.querySelector('[data-player-heat="' + player.id + '"]');
+        const live = root.querySelector('[data-player-live="' + player.id + '"]');
         if (!card) return;
 
         let confirmed = 0;
         tasks.forEach((task) => {
-          const complete = Boolean(player.completed?.[task.id]);
-          const miss = Boolean(player.failed?.[task.id]);
+          const value = player.result?.[task.id];
+          const complete = value === 'complete' || (value === undefined && player.completed?.[task.id] === true);
+          const miss = value === 'failed' || (value === undefined && player.failed?.[task.id] === true);
+          const pending = !complete && !miss;
           const chance = Number(player.probability?.[task.id] || 0);
           if (complete) confirmed += 1;
 
@@ -388,15 +491,21 @@ const barPoints = (values, width = 220, height = 64) => {
             row.classList.toggle('is-done', complete);
             row.classList.toggle('is-failed', miss);
             const label = row.querySelector('[data-chance]');
-            if (label) label.textContent = complete ? 'CONFIRMED' : miss ? 'FAILED' : fmt(chance) + '%';
+            if (label) label.textContent = complete ? '✓ CONFIRMED' : miss ? '× FAILED' : fmt(chance) + '%';
             const fill = row.querySelector('i');
             if (fill && row.classList.contains('ct-bar')) fill.style.width = (complete ? 100 : Math.min(100, chance)) + '%';
           });
 
           heat?.querySelectorAll('[data-task="' + task.id + '"]').forEach((cell) => {
+            cell.textContent = fmt(chance) + '%';
+          });
+
+          live?.querySelectorAll('[data-task="' + task.id + '"]').forEach((cell) => {
             cell.classList.toggle('is-done', complete);
             cell.classList.toggle('is-miss', miss);
-            cell.textContent = complete ? 'DONE' : miss ? 'OUT' : fmt(chance) + '%';
+            cell.classList.toggle('is-pending', pending);
+            cell.textContent = complete ? '✓' : miss ? '×' : '';
+            cell.setAttribute('aria-label', complete ? 'Complete' : miss ? 'Failed' : 'Result not updated');
           });
         });
 
@@ -419,6 +528,7 @@ const barPoints = (values, width = 220, height = 64) => {
       };
 
       (source.players || []).forEach(updateCard);
+      (source.matches || []).forEach(updateMatch);
 
       const reveal = () => {
         if ('IntersectionObserver' in window) {
@@ -441,10 +551,17 @@ const barPoints = (values, width = 220, height = 64) => {
         .then((payload) => {
           const live = payload?.content?.captainTracker;
           if (!live?.players) return;
-          live.players.forEach((player) => {
+          live.players?.forEach((player) => {
             const current = (source.players || []).find((item) => item.id === player.id) || player;
-            updateCard({ ...current, completed: player.completed, failed: player.failed || {} });
+            updateCard({
+              ...current,
+              ...player,
+              result: player.result || current.result || {},
+              completed: player.completed || {},
+              failed: player.failed || {},
+            });
           });
+          live.matches?.forEach(updateMatch);
         })
         .catch(() => {});
     })();
@@ -452,6 +569,55 @@ const barPoints = (values, width = 220, height = 64) => {
 
   <style>
     :global(html), :global(body) { background:#071018; }
+
+    .ct-section-kicker {
+      display:inline-block;
+      margin-bottom:7px;
+      color:#70d9ff;
+      font:800 10px/1 Inter,sans-serif;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+    .ct-live-results header {
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:18px;
+      flex-wrap:wrap;
+    }
+    .ct-live-results h2 { margin-top:0; }
+    .ct-result-legend {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      color:#718795;
+      font:700 10px Inter,sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+    .ct-result-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .ct-result-dot {
+      display:inline-grid;
+      place-items:center;
+      width:20px;
+      height:20px;
+      border-radius:50%;
+      border:1px solid rgba(255,255,255,.08);
+      font:900 12px/1 Inter,sans-serif;
+    }
+    .ct-result-dot.is-complete { background:rgba(71,209,108,.18); color:#79e795; border-color:rgba(71,209,108,.28); }
+    .ct-result-dot.is-failed { background:rgba(255,107,122,.16); color:#ff98a5; border-color:rgba(255,107,122,.26); }
+    .ct-result-dot.is-pending { background:rgba(255,255,255,.025); }
+    .ct-result-cell { font-size:15px !important; min-width:44px; }
+    .ct-result-cell.is-pending { background:rgba(255,255,255,.018); border-color:rgba(255,255,255,.05); color:transparent; }
+    .ct-result-cell.is-done { background:rgba(71,209,108,.16); color:#79e795; border-color:rgba(71,209,108,.28); }
+    .ct-result-cell.is-miss { background:rgba(255,107,122,.14); color:#ff98a5; border-color:rgba(255,107,122,.25); }
+    .ct-live-ovr { color:#dff7ff; font:900 12px/1 Inter,sans-serif; }
+    .ct-fixture-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .ct-fixture-top b { color:#f4fbff; font:900 13px Inter,sans-serif; }
+    .ct-vs { color:#526976; font-size:10px; text-transform:uppercase; margin:0 3px; }
+    .ct-model-board { margin-top:16px; }
 
     .ct {
       --cyan:#4cc9ff;
