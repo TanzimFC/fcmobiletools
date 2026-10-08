@@ -78,7 +78,7 @@ const matchStatus = (match) => {
   if (match.status === 'final') return 'FINAL';
   if (match.status === 'live') return 'LIVE';
   if (Date.parse(match.kickoffUtc || '') > Date.now()) return 'NOT STARTED';
-  return 'AWAITING UPDATE';
+  return 'RESULT PENDING';
 };
 
 const ranked = [...players].sort((a, b) => b.chance121 - a.chance121);
@@ -127,7 +127,7 @@ const barPoints = (values, width = 220, height = 64) => {
         <h1>Captain OVR Tracker</h1>
         <p>
           Six captains. Five conditions. One 121. Modelled from 7,000,000 match simulations,
-          then live-updated when admin confirms each task.
+          then updated throughout Matchday 7 as the fixtures are played.
         </p>
         <div class="ct-hero-meta">
           <span>Updated {analysis.updatedLabel}</span>
@@ -189,14 +189,14 @@ const barPoints = (values, width = 220, height = 64) => {
     <section class="ct-live-results ct-heat" aria-label="Live captain task results">
       <header>
         <div>
-          <span class="ct-section-kicker">LIVE RESULT BOARD</span>
+          <span class="ct-section-kicker">MATCHDAY RESULTS</span>
           <h2>Every task. Every captain.</h2>
-          <p>Only confirmed committee results change the live OVR. A blank cell means no result has been reported.</p>
+          <p>Results are updated as the Matchday fixtures are played. A blank cell means the outcome is not available yet.</p>
         </div>
         <div class="ct-result-legend" aria-label="Result legend">
           <span><i class="ct-result-dot is-complete">✓</i> Complete</span>
           <span><i class="ct-result-dot is-failed">×</i> Failed</span>
-          <span><i class="ct-result-dot is-pending"></i> Awaiting</span>
+          <span><i class="ct-result-dot is-pending"></i> Pending</span>
         </div>
       </header>
       <div class="ct-heat-table ct-results-table">
@@ -229,9 +229,9 @@ const barPoints = (values, width = 220, height = 64) => {
 
     <section class="ct-heat ct-model-board" aria-label="Task probability matrix">
       <header>
-        <span class="ct-section-kicker">PRE-MATCH MODEL</span>
-        <h2>Probability by task</h2>
-        <p>These figures are analysis estimates. They do not count as a result until the committee updates the tracker.</p>
+        <span class="ct-section-kicker">PRE-MATCH OUTLOOK</span>
+        <h2>Projected chance by task</h2>
+        <p>These percentages are pre-match projections based on the fixture, form and available player data. The actual result comes from what happens on the pitch.</p>
       </header>
       <div class="ct-heat-table">
         <div class="ct-heat-head">
@@ -413,7 +413,7 @@ const barPoints = (values, width = 220, height = 64) => {
           <p><strong>{item.title}.</strong> {item.body}</p>
         ))}
       </div>
-      <p>{analysis.caveat} Completed conditions are controlled from the Captain Tracker committee control room.</p>
+      <p>{analysis.caveat}</p>
     </footer>
 
     <script type="application/json" id="captain-data">{JSON.stringify({
@@ -464,7 +464,7 @@ const barPoints = (values, width = 220, height = 64) => {
         if (!row) return;
         const status = row.querySelector('.ct-fixture-top small');
         const score = row.querySelector('.ct-fixture-top b');
-        const statusText = match.status === 'final' ? 'FINAL' : match.status === 'live' ? 'LIVE' : (Date.parse(match.kickoffUtc || '') > Date.now() ? 'NOT STARTED' : 'AWAITING UPDATE');
+        const statusText = match.status === 'final' ? 'FINAL' : match.status === 'live' ? 'LIVE' : (Date.parse(match.kickoffUtc || '') > Date.now() ? 'NOT STARTED' : 'RESULT PENDING');
         if (status) status.textContent = statusText;
         if (score && match.score && Number.isFinite(Number(match.score.home)) && Number.isFinite(Number(match.score.away))) {
           score.textContent = String(match.score.home) + '–' + String(match.score.away);
