@@ -585,6 +585,10 @@ const barPoints = (values, width = 220, height = 64) => {
     const voteRoot = document.querySelector('[data-captain-tracker]');
     const voteStatus = voteRoot?.querySelector('[data-vote-status]');
     const voteTotal = voteRoot?.querySelector('[data-vote-total]');
+    let voteSource = { players: [] };
+    try {
+      voteSource = JSON.parse(document.getElementById('captain-data')?.textContent || '{"players":[]}');
+    } catch {}
     const gateOpen = (title, message) => {
       window.FCAccountGate?.open({
         title,
@@ -618,7 +622,7 @@ const barPoints = (values, width = 220, height = 64) => {
 
       if (voteTotal) voteTotal.textContent = String(total);
 
-      (source.players || []).forEach((player) => {
+      (voteSource.players || []).forEach((player) => {
         const count = Number(counts[player.id] || 0);
         const share = total > 0 ? Math.round((count / total) * 100) : 0;
 
@@ -645,7 +649,7 @@ const barPoints = (values, width = 220, height = 64) => {
 
       setVoteStatus(
         selected
-          ? 'You picked ' + ((source.players || []).find((player) => player.id === selected)?.name || 'a captain') + '. You can change it any time.'
+          ? 'You picked ' + ((voteSource.players || []).find((player) => player.id === selected)?.name || 'a captain') + '. You can change it any time.'
           : 'Pick one captain to save your choice.',
         selected ? 'selected' : 'neutral'
       );
