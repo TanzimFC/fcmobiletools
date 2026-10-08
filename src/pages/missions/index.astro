@@ -17,7 +17,7 @@ import AccountNav from '../../components/AccountNav.astro';
           <span class="mod-kicker"><i class="mod-dot"></i> QUEST BOARD</span>
           <h1>Your Quests. Your streak. Your Tokens.</h1>
           <p>
-            Daily Quests are picked for you automatically. One-time Quests cover things like finishing your FC Mobile profile or connecting your socials. A button click alone never pays out.
+            Daily Quests rotate automatically at 00:00 UTC. Weekly Quests rotate every Thursday at 00:00 UTC. One-time Quests cover things like finishing your FC Mobile profile or connecting your socials. A button click alone never pays out.
           </p>
         </div>
 
@@ -95,6 +95,10 @@ import AccountNav from '../../components/AccountNav.astro';
     const pct = total ? Math.round((done / total) * 100) : 0;
     return `
       <section class="qb-summary" aria-label="Quest progress">
+        <div class="qb-periods">
+          <span><b>Daily reset</b> 00:00 UTC</span>
+          <span><b>Weekly reset</b> ${esc(questPeriods.weeklyResetLabel || 'Thursday 00:00 UTC')}</span>
+        </div>
         <div class="qb-stat">
           <small>Board progress</small>
           <strong>${fmt(done)} <em>/ ${fmt(total)} complete</em></strong>
@@ -109,6 +113,12 @@ import AccountNav from '../../components/AccountNav.astro';
   let allQuests = [];
   let currentFilter = 'all';
   let accountState = null;
+  let questPeriods = {
+    dailyResetAt: null,
+    weeklyResetAt: null,
+    weeklyResetLabel: 'Thursday 00:00 UTC'
+  };
+  let questRefreshTimer = 0;
 
   function questActionFor(m) {
     if (m.statusLabel === 'Completed') return '<span class="mission-complete-note">Reward claimed ✓</span>';
@@ -167,7 +177,7 @@ import AccountNav from '../../components/AccountNav.astro';
             ${
               allQuests.length
                 ? 'Switch the filter above to see another Quest type.'
-                : 'Your daily Quests are picked automatically from the active Quest pool.'
+                : 'Daily Quests rotate from the active pool at 00:00 UTC. Weekly Quests rotate every Thursday at 00:00 UTC.'
             }
           </p>
           <div class="mod-pillar-row">
@@ -225,6 +235,7 @@ import AccountNav from '../../components/AccountNav.astro';
                     ${m.xpReward > 0 ? `<span class="rw-xp">${BOLT}+${fmt(m.xpReward)} XP</span>` : ''}
                     ${m.tokenReward > 0 ? `<span class="rw-tk">${COIN}+${fmt(m.tokenReward)} Tokens</span>` : ''}
                     ${m.dailyLimit ? `<span class="rw-limit">${fmt(m.dailyLimit)}/day max</span>` : ''}
+                    ${m.weeklyLimit ? `<span class="rw-limit">${fmt(m.weeklyLimit)}/week max</span>` : ''}
                   </div>
                   ${action}
                 </div>
@@ -515,6 +526,13 @@ import AccountNav from '../../components/AccountNav.astro';
     }
 
     allQuests = Array.isArray(b.quests) ? b.quests : (Array.isArray(b.missions) ? b.missions : []);
+    questPeriods = b.periods || questPeriods;
+
+    if (questRefreshTimer) window.clearTimeout(questRefreshTimer);
+    const dailyResetMs = questPeriods.dailyResetAt ? Math.max(1000, new Date(questPeriods.dailyResetAt).getTime() - Date.now() + 500) : 86400000;
+    const weeklyResetMs = questPeriods.weeklyResetAt ? Math.max(1000, new Date(questPeriods.weeklyResetAt).getTime() - Date.now() + 500) : 604800000;
+    questRefreshTimer = window.setTimeout(() => load().catch(() => {}), Math.min(dailyResetMs, weeklyResetMs));
+
     renderQuestsList();
   }
 
