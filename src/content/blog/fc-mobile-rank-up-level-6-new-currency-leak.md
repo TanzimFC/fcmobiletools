@@ -42,7 +42,7 @@ Let's get this out of the way first.
 
 **There is no Rank Up Level 6 in the live game at the time of writing.** This is a leak, not an EA announcement.
 
-The current Rank Up system goes through five ranks. EA's documented rank colours run from Green at Rank 1 through Orange at Rank 5. citeturn322904search2
+The current Rank Up system goes through five ranks, ending at the Orange tier at Rank 5.
 
 So if this leak turns out to be real, EA would be adding another progression step on top of the system we already have.
 
@@ -88,7 +88,7 @@ Players who spent everything during the current progression period could end up 
 
 It could even create what I would call a **hoard reset**.
 
-Not necessarily a full season reset. FC Mobile 27 already launched without a traditional season reset, according to EA's own announcements. citeturn239263search0
+Not necessarily a full season reset. FC Mobile 27 launched without a traditional season reset, so this would be a progression change rather than a full club wipe.
 
 Instead, EA could reset the economy without resetting the club.
 
@@ -104,15 +104,13 @@ That is a much more interesting possibility than simply adding another button ca
 
 ## Could Rank 6 give another Skill Point?
 
-One community theory is that another Rank Up level could grant another **Skill Point**.
+My theory is that another Rank Up level could grant another **Skill Point**.
 
-That would make sense with the way the Rank Up system has worked. Rank Ups increase OVR and provide Skill Points as part of player progression. citeturn322904search2
+That would fit the way Rank Ups already work, where pushing a player through the system increases OVR and gives Skill Points along the way.
 
-The bigger theory is even more interesting:
+I also think there is a real possibility of a **third PlayStyle slot unlocked at Rank 6**.
 
-**Could Rank 6 unlock a third PlayStyle slot?**
-
-Again, that is only a theory right now.
+That is my theory, not part of the reported leak.
 
 But if EA combines another Rank Up with another Skill Point and an additional PlayStyle slot, the value of Rank 6 would be much bigger than just **+1 OVR**.
 
@@ -130,23 +128,9 @@ F2P players do not have that luxury.
 
 They have to grind events, complete objectives, make smart exchanges and protect every valuable resource. P2W players can simply buy their way further into the new progression when the opportunity appears.
 
-So if Rank 6 arrives with a new currency, the important question should not just be **"How much does Rank 6 cost?"**
+If Rank 6 arrives with a new currency, the supply of that currency will decide whether the system feels fair or turns into another paywall. A normal F2P player should be able to build it steadily through regular events and gameplay, not watch the free supply fall miles behind paid packs.
 
-It should be:
-
-**How obtainable is that currency for a normal F2P player?**
-
-Can you earn enough through regular events?
-
-Is there a reasonable weekly supply?
-
-Does the Market help at all?
-
-Will the new currency appear in paid packs at a much better rate than free rewards?
-
-And how quickly will the cost climb as OVR keeps going up?
-
-Those are the questions that matter.
+The Market could also become important depending on whether the new currency is tradable, while the real red flag would be a system where the fastest route to Rank 6 sits behind paid offers. The cost will matter too, especially as OVR keeps moving higher and the new tier becomes something serious players feel forced to chase.
 
 Because adding another resource sink every time the OVR ceiling moves can easily turn progression into a treadmill.
 
@@ -200,11 +184,11 @@ That is not really an easier progression system. It is a new wall.
 
 And if that new wall can be bypassed through paid offers, then we have a pretty obvious reason to be skeptical about the design.
 
-## What about the next reset?
+## What about the FC Mobile 28 reset?
 
 There is also a timing problem.
 
-FC Mobile 27 was launched with **no traditional season reset**, so the current club progression continues into the new season. citeturn239263search0
+FC Mobile 27 launched without a traditional season reset, but the next major season is expected to be **FC Mobile 28**, where another reset or major progression change could eventually happen.
 
 That makes a future Rank 6 especially interesting.
 
@@ -212,7 +196,7 @@ Why introduce another permanent progression layer if another major reset could e
 
 Maybe EA plans to keep this progression for a long time.
 
-Maybe Rank 6 is designed specifically for the longer FC Mobile 27 cycle.
+Maybe Rank 6 is designed to carry through the FC Mobile 27 cycle and into FC Mobile 28.
 
 Or maybe EA is gradually raising the ceiling before the next major change.
 
@@ -240,9 +224,9 @@ Then do the math.
 
 That is exactly why the Rank Up Calculator exists.
 
-## The bottom line
+## Summary
 
-**Rank Up Level 6 could be coming, but it is not in the game yet.**
+**Rank Up Level 6 could be coming, but it is still not in the game.**
 
 The reported separate currency is the detail I am watching most closely.
 
