@@ -394,7 +394,22 @@ async function fetchTournamentStatsForAccount(env, accountId) {
 
 const CAPTAIN_VOTE_CONFIG = Object.freeze({
   trackerKey: 'premier-league-matchday-7',
-  playerIds: new Set(['james', 'fernandes', 'vandijk', 'dunk', 'mcginn', 'ampadu'])
+  playerIds: new Set([
+    'reece-james',
+    'bruno-fernandes',
+    'virgil-van-dijk',
+    'lewis-dunk',
+    'john-mcginn',
+    'ethan-ampadu'
+  ]),
+  aliases: new Map([
+    ['james', 'reece-james'],
+    ['fernandes', 'bruno-fernandes'],
+    ['vandijk', 'virgil-van-dijk'],
+    ['dunk', 'lewis-dunk'],
+    ['mcginn', 'john-mcginn'],
+    ['ampadu', 'ethan-ampadu']
+  ])
 });
 
 async function captainVotesApi(request, env, url) {
@@ -419,7 +434,8 @@ async function captainVotesApi(request, env, url) {
 
   if (request.method === 'POST') {
     const input = await request.json().catch(() => ({}));
-    const playerId = String(input?.playerId || '').trim().toLowerCase();
+    const requestedPlayerId = String(input?.playerId || '').trim().toLowerCase();
+    const playerId = CAPTAIN_VOTE_CONFIG.aliases.get(requestedPlayerId) || requestedPlayerId;
     if (!CAPTAIN_VOTE_CONFIG.playerIds.has(playerId)) {
       return json({ error: 'That captain is not available for this tracker.' }, 400);
     }
