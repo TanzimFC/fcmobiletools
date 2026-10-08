@@ -293,7 +293,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "threeContrib": "very-low"
         },
         "completed": {
-          "minutes": true,
+          "minutes": false,
           "win": false,
           "cleanSheet": false,
           "setPiece": false,
@@ -301,16 +301,16 @@ export const FOOTBALL_CENTRE_CONTENT = {
         },
         "note": "292 Premier League minutes from four appearances. The 60-minute route is realistic, but the Chelsea away trip and 3 G/A condition make 121 difficult.",
         "result": {
-          "minutes": "complete",
-          "win": "failed",
-          "cleanSheet": "failed",
+          "minutes": "pending",
+          "win": "pending",
+          "cleanSheet": "pending",
           "setPiece": "pending",
           "threeContrib": "pending"
         },
         "failed": {
           "minutes": false,
-          "win": true,
-          "cleanSheet": true,
+          "win": false,
+          "cleanSheet": false,
           "setPiece": false,
           "threeContrib": false
         }
@@ -340,7 +340,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "threeContrib": "possible"
         },
         "completed": {
-          "minutes": true,
+          "minutes": false,
           "win": false,
           "cleanSheet": false,
           "setPiece": false,
@@ -348,7 +348,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         },
         "note": "Best attacking route. Bruno has 3 goals and 1 assist in five Premier League starts, plus a free-kick goal and 23 corners taken. Fitness is the main watch.",
         "result": {
-          "minutes": "complete",
+          "minutes": "pending",
           "win": "pending",
           "cleanSheet": "pending",
           "setPiece": "pending",
@@ -387,7 +387,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "threeContrib": "very-low"
         },
         "completed": {
-          "minutes": true,
+          "minutes": false,
           "win": false,
           "cleanSheet": false,
           "setPiece": false,
@@ -395,17 +395,17 @@ export const FOOTBALL_CENTRE_CONTENT = {
         },
         "note": "Safest defensive captain. He has started all five league matches, played every minute and already has three clean sheets. He also scored from a corner for the Netherlands.",
         "result": {
-          "minutes": "complete",
+          "minutes": "pending",
           "win": "pending",
           "cleanSheet": "pending",
-          "setPiece": "failed",
+          "setPiece": "pending",
           "threeContrib": "pending"
         },
         "failed": {
           "minutes": false,
           "win": false,
           "cleanSheet": false,
-          "setPiece": true,
+          "setPiece": false,
           "threeContrib": false
         }
       },
@@ -434,7 +434,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "threeContrib": "very-low"
         },
         "completed": {
-          "minutes": true,
+          "minutes": false,
           "win": false,
           "cleanSheet": false,
           "setPiece": false,
@@ -442,7 +442,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         },
         "note": "Brighton's defensive profile makes the win and clean-sheet tasks attractive, and Dunk already has a league goal. His neck injury is the big problem.",
         "result": {
-          "minutes": "complete",
+          "minutes": "pending",
           "win": "pending",
           "cleanSheet": "pending",
           "setPiece": "pending",
@@ -481,7 +481,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "threeContrib": "low"
         },
         "completed": {
-          "minutes": true,
+          "minutes": false,
           "win": false,
           "cleanSheet": false,
           "setPiece": false,
@@ -489,7 +489,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         },
         "note": "Two league assists and set-piece responsibility give him a better attacking route than his role suggests, but Newcastle away is a rough win and clean-sheet combination.",
         "result": {
-          "minutes": "complete",
+          "minutes": "pending",
           "win": "pending",
           "cleanSheet": "pending",
           "setPiece": "pending",
@@ -528,7 +528,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "threeContrib": "very-low"
         },
         "completed": {
-          "minutes": true,
+          "minutes": false,
           "win": false,
           "cleanSheet": false,
           "setPiece": false,
@@ -536,7 +536,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         },
         "note": "Excellent 60-minute candidate: he has played every available Premier League minute for Leeds. The set-piece and 3 G/A tasks are the real wall.",
         "result": {
-          "minutes": "complete",
+          "minutes": "pending",
           "win": "pending",
           "cleanSheet": "pending",
           "setPiece": "pending",
@@ -559,10 +559,10 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "kickoffUtc": "2026-10-17T11:30:00.000Z",
         "status": "scheduled",
         "score": {
-          "home": 1,
+          "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:32:10.707Z"
+        "updatedAt": null
       },
       {
         "id": "brentford-liverpool",
@@ -571,10 +571,10 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "kickoffUtc": "2026-10-17T14:00:00.000Z",
         "status": "scheduled",
         "score": {
-          "home": 4,
-          "away": 0
+          "home": null,
+          "away": null
         },
-        "updatedAt": "2026-10-08T16:32:10.707Z"
+        "updatedAt": null
       },
       {
         "id": "newcastle-villa",
@@ -586,19 +586,19 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:32:10.707Z"
+        "updatedAt": null
       },
       {
         "id": "leeds-united",
         "home": "Leeds United",
         "away": "Manchester United",
         "kickoffUtc": "2026-10-18T13:00:00.000Z",
-        "status": "live",
+        "status": "scheduled",
         "score": {
-          "home": 5,
+          "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:32:10.707Z"
+        "updatedAt": null
       },
       {
         "id": "brighton-palace",
@@ -610,9 +610,9 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:32:10.707Z"
+        "updatedAt": null
       }
     ],
-    "lastUpdated": "2026-10-08T16:32:10.707Z"
+    "lastUpdated": null
   }
 };
