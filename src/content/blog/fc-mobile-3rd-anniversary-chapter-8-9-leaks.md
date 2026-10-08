@@ -17,7 +17,7 @@ publishedAt: "2026-10-08T16:25:00.000Z"
 image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1791024730/fc-mobile-tools/yd1rntt4gdbwzsiyusfd.png"
 imageAlt: "FC Mobile 3rd Anniversary leaked player cards"
 imageCaption: "Reported FC Mobile 3rd Anniversary Chapter 8 and Chapter 9 player leaks"
-thumbnail: ""
+thumbnail: "https://res.cloudinary.com/b0qikv7n/image/upload/v1791482802/fc-mobile-tools/h1nxyuczpjj4qlot4xxn.jpg"
 excerpt: "Chapter 8 reportedly brings 122 OVR Beckham, while Chapter 9 introduces Gemini Verse, Swap Verse, Morphoverse and a 121 OVR Petit Card Design Exchange."
 tags: ["FC Mobile 27", "3rd Anniversary", "Player Leaks", "Glorious Eras", "Footyverse", "122 OVR", "121 OVR"]
 relatedPlayers: []
