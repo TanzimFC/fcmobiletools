@@ -1,0 +1,222 @@
+---
+const {
+  feature = 'this feature',
+  title = 'Create an account to use this feature',
+  message = 'Your FCMobiletools account keeps your choices tied to you and unlocks more community features.'
+} = Astro.props;
+---
+<div class="fc-account-gate" data-account-gate hidden>
+  <div class="fc-account-gate-backdrop" data-account-gate-close></div>
+  <section class="fc-account-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="fc-account-gate-title">
+    <button class="fc-account-gate-close" type="button" data-account-gate-close aria-label="Close">×</button>
+    <div class="fc-account-gate-icon" aria-hidden="true">
+      <span></span>
+    </div>
+    <span class="fc-account-gate-kicker">ACCOUNT REQUIRED</span>
+    <h2 id="fc-account-gate-title" data-account-gate-title>{title}</h2>
+    <p data-account-gate-message>{message}</p>
+    <div class="fc-account-gate-feature" data-account-gate-feature>
+      <span>Why?</span>
+      <strong>Save {feature} to your personal account.</strong>
+    </div>
+    <a class="fc-account-gate-primary" href="/account/?mode=signup">Create free account <span>→</span></a>
+    <a class="fc-account-gate-secondary" href="/account/">Already have an account? Sign in</a>
+  </section>
+</div>
+
+<script is:inline>
+  (() => {
+    const gate = document.querySelector('[data-account-gate]');
+    if (!gate) return;
+
+    const close = () => {
+      gate.hidden = true;
+      document.documentElement.classList.remove('fc-account-gate-open');
+    };
+
+    const open = (options = {}) => {
+      const title = gate.querySelector('[data-account-gate-title]');
+      const message = gate.querySelector('[data-account-gate-message]');
+      const feature = gate.querySelector('[data-account-gate-feature] strong');
+      if (title && options.title) title.textContent = options.title;
+      if (message && options.message) message.textContent = options.message;
+      if (feature && options.feature) feature.textContent = 'Save ' + options.feature + ' to your personal account.';
+      gate.hidden = false;
+      document.documentElement.classList.add('fc-account-gate-open');
+      requestAnimationFrame(() => gate.querySelector('.fc-account-gate-dialog')?.classList.add('is-visible'));
+    };
+
+    gate.addEventListener('click', (event) => {
+      if (event.target.closest('[data-account-gate-close]')) {
+        close();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !gate.hidden) close();
+    });
+
+    window.FCAccountGate = window.FCAccountGate || {};
+    window.FCAccountGate.open = open;
+    window.FCAccountGate.close = close;
+  })();
+</script>
+
+<style>
+  html.fc-account-gate-open { overflow:hidden; }
+
+  .fc-account-gate[hidden] { display:none; }
+  .fc-account-gate {
+    position:fixed;
+    inset:0;
+    z-index:1200;
+    display:grid;
+    place-items:center;
+    padding:20px;
+  }
+  .fc-account-gate-backdrop {
+    position:absolute;
+    inset:0;
+    background:rgba(2,8,13,.76);
+    backdrop-filter:blur(16px) saturate(125%);
+    animation:fcGateFade .22s ease both;
+  }
+  .fc-account-gate-dialog {
+    position:relative;
+    z-index:1;
+    width:min(460px,100%);
+    padding:30px;
+    border:1px solid rgba(76,201,255,.22);
+    border-radius:24px;
+    background:
+      radial-gradient(260px 150px at 0 0, rgba(76,201,255,.16), transparent 72%),
+      linear-gradient(155deg,#122230 0%,#0a141d 72%);
+    box-shadow:0 34px 100px rgba(0,0,0,.58), 0 0 70px rgba(76,201,255,.11);
+    opacity:0;
+    transform:translateY(18px) scale(.985);
+    transition:opacity .28s ease, transform .38s cubic-bezier(.22,1,.36,1);
+  }
+  .fc-account-gate-dialog.is-visible {
+    opacity:1;
+    transform:none;
+  }
+  .fc-account-gate-close {
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:34px;
+    height:34px;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;
+    background:rgba(255,255,255,.035);
+    color:#8ea7b8;
+    font:700 21px/1 Inter,sans-serif;
+    cursor:pointer;
+    transition:.16s ease;
+  }
+  .fc-account-gate-close:hover { color:#f5f8fb; background:rgba(255,255,255,.08); transform:rotate(4deg); }
+
+  .fc-account-gate-icon {
+    position:relative;
+    width:58px;
+    height:58px;
+    margin-bottom:18px;
+    display:grid;
+    place-items:center;
+    border-radius:18px;
+    border:1px solid rgba(76,201,255,.28);
+    background:rgba(76,201,255,.08);
+    box-shadow:0 0 40px rgba(76,201,255,.12);
+  }
+  .fc-account-gate-icon::before {
+    content:"";
+    position:absolute;
+    width:24px;
+    height:24px;
+    border:2px solid #70d9ff;
+    border-radius:8px;
+    transform:rotate(45deg);
+  }
+  .fc-account-gate-icon span {
+    position:relative;
+    width:10px;
+    height:10px;
+    border:2px solid #e8f9ff;
+    border-radius:50%;
+  }
+  .fc-account-gate-kicker {
+    color:#70d9ff;
+    font:800 10px/1 Inter,sans-serif;
+    letter-spacing:.16em;
+  }
+  .fc-account-gate-dialog h2 {
+    margin:10px 0 8px;
+    color:#f5f8fb;
+    font:700 30px/1.02 "Space Grotesk",Inter,sans-serif;
+    letter-spacing:-.045em;
+  }
+  .fc-account-gate-dialog > p {
+    margin:0;
+    color:#9eb1bf;
+    font:500 14px/1.65 Inter,sans-serif;
+  }
+  .fc-account-gate-feature {
+    display:grid;
+    gap:4px;
+    margin-top:18px;
+    padding:12px 14px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:14px;
+    background:rgba(255,255,255,.025);
+  }
+  .fc-account-gate-feature span {
+    color:#627b8c;
+    font:800 9px/1 Inter,sans-serif;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+  }
+  .fc-account-gate-feature strong {
+    color:#d9e8f0;
+    font:700 12.5px/1.4 Inter,sans-serif;
+  }
+  .fc-account-gate-primary,
+  .fc-account-gate-secondary {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    text-decoration:none;
+    border-radius:13px;
+    font:800 13px/1 Inter,sans-serif;
+  }
+  .fc-account-gate-primary {
+    min-height:48px;
+    margin-top:16px;
+    gap:10px;
+    background:linear-gradient(135deg,#9fe6ff,#4cc9ff);
+    color:#04131c;
+    box-shadow:0 14px 30px -10px rgba(76,201,255,.5);
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .fc-account-gate-primary:hover { transform:translateY(-2px); box-shadow:0 20px 36px -10px rgba(76,201,255,.68); }
+  .fc-account-gate-primary span { font-size:17px; }
+  .fc-account-gate-secondary {
+    min-height:40px;
+    margin-top:6px;
+    color:#7f9aac;
+    transition:color .16s ease;
+  }
+  .fc-account-gate-secondary:hover { color:#c9dce7; }
+
+  @keyframes fcGateFade { from { opacity:0; } to { opacity:1; } }
+
+  @media (max-width:560px) {
+    .fc-account-gate { padding:12px; }
+    .fc-account-gate-dialog { padding:24px 20px; border-radius:20px; }
+    .fc-account-gate-dialog h2 { font-size:25px; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .fc-account-gate-backdrop,
+    .fc-account-gate-dialog { animation:none!important; transition:none!important; }
+  }
+</style>
