@@ -1007,11 +1007,13 @@ async function accountApi(request, env, url) {
     const entityType=String(input.entityType||'').trim();
     const entityId=String(input.entityId||'').trim();
     const durationMs=Math.max(0,Math.min(600000,Number(input.durationMs||0)));
+    const progress=Math.max(0,Math.min(100,Number(input.progress||0)));
     let key=input.idempotencyKey; try { if(!key) key=crypto.randomUUID(); } catch { key=null; }
     if(!key||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) return json({error:'Invalid activity request.'},400);
     const validPage=eventType==='page_dwell'&&entityType==='page'&&['/events','/redeem-codes'].includes(entityId)&&durationMs>=8000;
     const validCalc=eventType==='calculator_use'&&entityType==='calculator'&&['rank-up-calculator','team-ovr','training-calculator','investment-calculator'].includes(entityId)&&durationMs>=3000;
-    if(!validPage&&!validCalc) return json({error:'That activity cannot be used for a quest.'},400);
+    const validArticle=eventType==='article_read'&&entityType==='article'&&/^[a-z0-9][a-z0-9-]{2,159}$/.test(entityId)&&durationMs>=10000&&progress>=65;
+    if(!validPage&&!validCalc&&!validArticle) return json({error:'That activity cannot be used for a quest.'},400);
     try {
       const recent=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
         '&event_type=eq.'+encodeURIComponent(eventType)+'&entity_type=eq.'+encodeURIComponent(entityType)+
@@ -1020,16 +1022,31 @@ async function accountApi(request, env, url) {
       if(recent?.length) return json({ok:false,code:'cooldown',message:'That activity was already counted recently.'},409);
 
       const dailyActivity=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
-        '&event_type=in.(page_dwell,calculator_use)&created_at=gte.'+
+        '&event_type=in.(page_dwell,calculator_use,article_read)&created_at=gte.'+
         encodeURIComponent(new Date(new Date().toISOString().slice(0,10)+'T00:00:00.000Z').toISOString())+
         '&select=id&limit=21');
       if((dailyActivity||[]).length>=20) {
         return json({ok:false,code:'daily_activity_limit',message:'Daily activity limit reached. Come back after the next UTC reset.'},429);
       }
 
+      if(validArticle){
+        const priorArticle=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
+          '&event_type=eq.article_read&entity_type=eq.article&entity_id=eq.'+encodeURIComponent(entityId)+
+          '&select=id&limit=1');
+        if(priorArticle?.length) return json({ok:false,code:'article_already_read',message:'That article was already counted for your account.'},409);
+      }
+
       await supabaseRest(env,'activity_events',{
         method:'POST',headers:{Prefer:'return=minimal'},
-        body:JSON.stringify([{account_id:account.id,event_type:eventType,entity_type:entityType,entity_id:entityId,metadata:{duration_ms:durationMs},source:'server',idempotency_key:key}])
+        body:JSON.stringify([{
+          account_id:account.id,
+          event_type:eventType,
+          entity_type:entityType,
+          entity_id:entityId,
+          metadata:{duration_ms:durationMs,progress,first_read:validArticle},
+          source:'server',
+          idempotency_key:key
+        }])
       });
 
       let questCompleted=false;
@@ -1055,8 +1072,9 @@ async function accountApi(request, env, url) {
           );
           const match=(tasks||[]).find(t=>{
             const conditions=t.conditions&&typeof t.conditions==='object'?t.conditions:{};
-            return conditions.event===eventType &&
-              String(conditions.page||conditions.tool||'')===entityId;
+            if(conditions.event!==eventType) return false;
+            if(eventType==='article_read') return conditions.anyArticle===true;
+            return String(conditions.page||conditions.tool||'')===entityId;
           });
           if(match){
             const start=await supabaseRest(env,'rpc/start_task',{
