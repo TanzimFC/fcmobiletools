@@ -116,7 +116,7 @@ const barPoints = (values, width = 220, height = 64) => {
 
 <BaseLayout
   title="Captain OVR Tracker · Premier League Matchday 7"
-  description="Live analysis of the Matchday 7 captains racing from 116 to 121 OVR. Modelled chances, task charts and admin-updated completions."
+  description="Live analysis of the Matchday 7 captains racing from 116 to 121 OVR, with pre-match projections, task-by-task results and fixture updates."
 >
   <main class="ct" data-captain-tracker>
     <section class="ct-hero">
@@ -363,7 +363,7 @@ const barPoints = (values, width = 220, height = 64) => {
                       <div class="ct-task-top">
                         <span>{String(taskIndex + 1).padStart(2, '0')}</span>
                         <strong>{task.short}</strong>
-                        <b data-chance>{done ? '✓ CONFIRMED' : miss ? '× FAILED' : fmt(chance) + '%'}</b>
+                        <b data-chance>{done ? '✓ COMPLETE' : miss ? '× FAILED' : fmt(chance) + '%'}</b>
                       </div>
                       <p>{model?.notes?.[modelTaskId(task.id)] || task.title}</p>
                     </div>
@@ -491,7 +491,7 @@ const barPoints = (values, width = 220, height = 64) => {
             row.classList.toggle('is-done', complete);
             row.classList.toggle('is-failed', miss);
             const label = row.querySelector('[data-chance]');
-            if (label) label.textContent = complete ? '✓ CONFIRMED' : miss ? '× FAILED' : fmt(chance) + '%';
+            if (label) label.textContent = complete ? '✓ COMPLETE' : miss ? '× FAILED' : fmt(chance) + '%';
             const fill = row.querySelector('i');
             if (fill && row.classList.contains('ct-bar')) fill.style.width = (complete ? 100 : Math.min(100, chance)) + '%';
           });
