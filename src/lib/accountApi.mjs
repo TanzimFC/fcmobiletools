@@ -332,7 +332,7 @@ async function adminCrud(request, env, url) {
     }
 
     const proof = String(attempt.verification_payload?.proof || '').trim();
-    const taskName = task.slug === 'subscribe-youtube' ? 'YouTube subscription quest' : String(task.title || 'manual mission');
+    const taskName = String(task.title || 'manual mission');
     const auditReason = reason + ' · ' + taskName + (proof ? ' · proof: ' + proof : '');
 
     if (decision === 'rejected') {
