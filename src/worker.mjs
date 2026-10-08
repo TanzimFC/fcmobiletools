@@ -1570,8 +1570,59 @@ function parseFootball(text) {
   try { return JSON.parse(match[1]); } catch { throw new Error('Football Centre data file is not JSON-compatible.'); }
 }
 
+function validateCaptainTracker(content) {
+  const tracker=content?.captainTracker;
+  if(!tracker) return;
+  if(!Array.isArray(tracker.tasks)||!tracker.tasks.length) throw new Error('Captain tracker needs at least one task.');
+  const taskIds=new Set();
+  for(const task of tracker.tasks){
+    if(!task?.id||taskIds.has(task.id)) throw new Error('Captain tracker task IDs must be unique.');
+    if(!String(task.short||'').trim()||!String(task.title||'').trim()) throw new Error('Every captain task needs a short label and title.');
+    taskIds.add(task.id);
+  }
+  if(!Array.isArray(tracker.players)||!tracker.players.length) throw new Error('Captain tracker needs at least one player.');
+  const resultValues=new Set(['pending','complete','failed']);
+  for(const player of tracker.players){
+    if(!player?.id||!String(player.name||'').trim()) throw new Error('Every captain needs an ID and name.');
+    player.result=player.result&&typeof player.result==='object'?player.result:{};
+    player.completed=player.completed&&typeof player.completed==='object'?player.completed:{};
+    player.failed=player.failed&&typeof player.failed==='object'?player.failed:{};
+    for(const taskId of taskIds){
+      const legacy=player.completed[taskId]===true?'complete':player.failed[taskId]===true?'failed':'pending';
+      const value=player.result[taskId]===undefined?legacy:String(player.result[taskId]);
+      if(!resultValues.has(value)) throw new Error('Captain task result must be pending, complete, or failed.');
+      player.result[taskId]=value;
+      player.completed[taskId]=value==='complete';
+      player.failed[taskId]=value==='failed';
+    }
+  }
+  if(!Array.isArray(tracker.matches)) tracker.matches=[];
+  const matchIds=new Set();
+  for(const match of tracker.matches){
+    if(!match?.id||matchIds.has(match.id)) throw new Error('Captain tracker match IDs must be unique.');
+    if(!String(match.home||'').trim()||!String(match.away||'').trim()) throw new Error('Every captain match needs home and away teams.');
+    if(!match.kickoffUtc || Number.isNaN(Date.parse(match.kickoffUtc))) throw new Error('Every captain match needs a valid kickoff time.');
+    if(!['scheduled','live','final'].includes(match.status)) throw new Error('Captain match status must be scheduled, live, or final.');
+    match.score=match.score&&typeof match.score==='object'?match.score:{home:null,away:null};
+    if(match.status==='final'){
+      if(!Number.isSafeInteger(Number(match.score.home))||Number(match.score.home)<0||!Number.isSafeInteger(Number(match.score.away))||Number(match.score.away)<0) {
+        throw new Error('Final captain matches need both scores.');
+      }
+      match.score.home=Number(match.score.home); match.score.away=Number(match.score.away);
+    } else {
+      if(match.score.home!==null && match.score.home!=='' && (!Number.isSafeInteger(Number(match.score.home))||Number(match.score.home)<0)) throw new Error('Home score must be a non-negative whole number.');
+      if(match.score.away!==null && match.score.away!=='' && (!Number.isSafeInteger(Number(match.score.away))||Number(match.score.away)<0)) throw new Error('Away score must be a non-negative whole number.');
+      match.score.home=match.score.home===null||match.score.home===''?null:Number(match.score.home);
+      match.score.away=match.score.away===null||match.score.away===''?null:Number(match.score.away);
+    }
+    match.updatedAt=match.updatedAt||null;
+    matchIds.add(match.id);
+  }
+}
+
 function validateFootball(content) {
   if(!content || typeof content !== 'object' || !content.clubs || !Array.isArray(content.matches) || !content.analysis || !content.totw || !content.settings) throw new Error('Football Centre content is incomplete.');
+  validateCaptainTracker(content);
   for(const [id, club] of Object.entries(content.clubs)) {
     if(!id || !club || !club.name || !club.short || !club.logo) throw new Error('Every club needs an ID, name, short name, and logo URL.');
   }
