@@ -13,7 +13,7 @@ export const CAPTAIN_ANALYSIS = {
   matchday: 7,
   baseOvr: 116,
   ceiling: 121,
-  simulations: 6000000,
+  simulations: 7000000,
   pick: {
     id: 'fernandes',
     name: 'Bruno Fernandes',
@@ -381,7 +381,7 @@ export const CAPTAIN_ANALYSIS = {
     },
     {
       title: 'Simulation',
-      body: 'Each captain gets 6,000,000 simulated matches. Every one draws the score, whether he is fit, how long he plays, whether he is booked and which goals he is part of. All five conditions are read from the same match, so win, clean sheet and goal involvement move together.',
+      body: 'Each captain gets 7,000,000 simulated matches. Every one draws the score, whether he is fit, how long he plays, whether he is booked and which goals he is part of. All five conditions are read from the same match, so win, clean sheet and goal involvement move together.',
     },
     {
       title: 'Player factors',
