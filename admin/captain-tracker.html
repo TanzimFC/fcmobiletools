@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Captain Tracker Control · FCMobiletools</title>
+  <link rel="icon" href="/assets/images/favicon.png">
+  <style>
+    :root{
+      --bg:#071018;--panel:#0f1a26;--panel2:#12202d;--line:rgba(255,255,255,.075);
+      --text:#f5f8fb;--muted:#91a4b4;--cyan:#4cc9ff;--cyan2:#7adfff;
+      --green:#47d16c;--red:#ff6878;--amber:#f0c36a;--shadow:0 24px 70px rgba(0,0,0,.34);
+    }
+    *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:
+      radial-gradient(900px 420px at 20% -5%,rgba(76,201,255,.08),transparent 65%),
+      radial-gradient(900px 460px at 100% 20%,rgba(240,195,106,.045),transparent 70%),var(--bg);
+      color:var(--text);font:500 14px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+    button,input,select,textarea{font:inherit}
+    a{color:inherit;text-decoration:none}
+    .shell{min-height:100vh;max-width:1500px;margin:0 auto;padding:22px}
+    .top{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:12px}.brand img{width:48px;height:48px;object-fit:contain}
+    .brand b{display:block;font:700 18px/1 "Space Grotesk",Inter,sans-serif;letter-spacing:-.03em}
+    .brand small{display:block;color:var(--muted);margin-top:4px;font-size:11px}
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn{border:1px solid var(--line);background:rgba(255,255,255,.03);color:#dcebf2;padding:10px 13px;border-radius:12px;cursor:pointer;font-weight:800;font-size:12px}
+    .btn:hover{border-color:rgba(76,201,255,.28);background:rgba(76,201,255,.05)}
+    .btn.primary{background:linear-gradient(135deg,#4cc9ff,#79ddff);color:#041017;border-color:transparent;box-shadow:0 10px 28px rgba(76,201,255,.16)}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .hero{border:1px solid rgba(76,201,255,.13);background:
+      radial-gradient(560px 220px at 0 0,rgba(76,201,255,.11),transparent 70%),
+      linear-gradient(150deg,#111f2c,#0b151e);border-radius:24px;padding:25px 26px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:5%;top:-130px;background:rgba(76,201,255,.08);filter:blur(10px)}
+    .eyebrow{color:var(--cyan2);font:900 10px/1 Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase}
+    h1{font:700 clamp(32px,4vw,52px)/.98 "Space Grotesk",Inter,sans-serif;letter-spacing:-.05em;margin:9px 0}
+    .hero p{max-width:760px;margin:0;color:var(--muted);font-size:14px}
+    .hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+    .chip{border:1px solid var(--line);background:rgba(255,255,255,.025);padding:7px 10px;border-radius:999px;color:#b8cad5;font-size:11px;font-weight:800}
+    .grid{display:grid;gap:14px}
+    .stats{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:14px}
+    .stat{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:17px 18px;box-shadow:var(--shadow)}
+    .stat small{display:block;color:#718795;font:900 9px/1 Inter,sans-serif;letter-spacing:.13em}
+    .stat strong{display:block;margin-top:7px;font:800 26px/1 "Space Grotesk",Inter,sans-serif}
+    .stat span{display:block;margin-top:5px;color:var(--muted);font-size:11px}
+    .section{border:1px solid var(--line);background:rgba(15,26,38,.92);border-radius:20px;padding:18px;margin-top:14px;box-shadow:var(--shadow)}
+    .head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-bottom:14px}
+    .head h2{margin:3px 0 0;font:700 22px/1.05 "Space Grotesk",Inter,sans-serif;letter-spacing:-.035em}
+    .head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+    .matchgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .match{border:1px solid var(--line);background:linear-gradient(150deg,#111f2c,#0d1821);border-radius:16px;padding:15px}
+    .match-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .status-badge{font:900 9px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:6px 8px;border-radius:999px;border:1px solid var(--line);color:#9fb0bc;background:rgba(255,255,255,.025)}
+    .status-badge.live{color:#7adfff;border-color:rgba(76,201,255,.25);background:rgba(76,201,255,.08)}
+    .status-badge.final{color:#7ce493;border-color:rgba(71,209,108,.24);background:rgba(71,209,108,.07)}
+    .match h3{margin:11px 0 2px;font:800 15px/1.2 "Space Grotesk",Inter,sans-serif}
+    .match small{color:#6f8594;font-size:11px}
+    .fields{display:grid;grid-template-columns:1.3fr .7fr .7fr;gap:8px;margin-top:12px}
+    .field{display:grid;gap:6px}.field label{color:#718795;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em}
+    .input,.select,.text{width:100%;border:1px solid var(--line);background:#0b151e;color:#eef6fa;border-radius:10px;padding:9px 10px;outline:none}
+    .input:focus,.select:focus,.text:focus{border-color:rgba(76,201,255,.35);box-shadow:0 0 0 3px rgba(76,201,255,.07)}
+    .result-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:880px}
+    th,td{padding:12px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:center}
+    th{position:sticky;top:0;background:#0d1821;z-index:2;color:#738895;font:900 9px/1.2 Inter,sans-serif;text-transform:uppercase;letter-spacing:.09em}
+    th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:#0d1821;z-index:3}
+    tr:last-child td{border-bottom:0}
+    th:last-child,td:last-child{border-right:0}
+    .player{display:flex;align-items:center;gap:10px;min-width:190px}.player img{width:38px;height:52px;object-fit:contain;border-radius:6px}.player b{font:800 13px/1.15 "Space Grotesk",Inter,sans-serif}.player small{display:block;color:#718795;margin-top:4px;font-size:10px}
+    .result-tools{display:inline-flex;gap:5px}
+    .result-btn{width:31px;height:31px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.025);color:#5f7684;cursor:pointer;font-weight:900}
+    .result-btn:hover{border-color:rgba(255,255,255,.18);color:#c5d5dd}
+    .result-btn.active.pending{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#d8e4e9}
+    .result-btn.active.complete{border-color:rgba(71,209,108,.34);background:rgba(71,209,108,.13);color:#7be695}
+    .result-btn.active.failed{border-color:rgba(255,104,120,.35);background:rgba(255,104,120,.12);color:#ff98a5}
+    .ovr{font:900 13px/1 "Space Grotesk",Inter,sans-serif}.ovr span{color:#697e8a;font-size:10px;font-weight:700}
+    .below{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+    details{border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.015)}
+    summary{cursor:pointer;padding:13px 14px;font:800 12px/1 "Space Grotesk",Inter,sans-serif;color:#cfe2ea;list-style:none}
+    summary::-webkit-details-marker{display:none}
+    .detail-body{padding:0 14px 14px;border-top:1px solid var(--line)}
+    .player-edit{display:grid;grid-template-columns:.7fr 1.2fr 2fr;gap:10px;padding-top:13px}
+    .task-model{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px}
+    .savebar{position:sticky;bottom:12px;margin-top:18px;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(76,201,255,.16);border-radius:16px;background:rgba(9,17,24,.88);backdrop-filter:blur(16px);box-shadow:0 18px 60px rgba(0,0,0,.35)}
+    .savebar span{color:#8197a5;font-size:11px}.savebar b{color:#bfeeff}
+    .notice{border:1px solid rgba(76,201,255,.12);background:rgba(76,201,255,.04);border-radius:13px;padding:12px 13px;color:#9bb2be;font-size:11px}
+    .error{border-color:rgba(255,104,120,.28);background:rgba(255,104,120,.05);color:#ffb0b8}
+    .toast{position:fixed;right:18px;bottom:18px;z-index:50;min-width:260px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#0e1a25;box-shadow:0 16px 50px rgba(0,0,0,.4);font-weight:800;font-size:12px}
+    .toast.bad{border-color:rgba(255,104,120,.3);color:#ffb0b8}.toast.ok{border-color:rgba(71,209,108,.25);color:#9cf0af}
+    .loading{padding:30px;text-align:center;color:var(--muted)}
+    @media(max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.matchgrid{grid-template-columns:1fr}.player-edit{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr 1fr}}
+    @media(max-width:560px){.shell{padding:12px}.top{align-items:flex-start}.brand img{width:40px;height:40px}.stats{grid-template-columns:1fr 1fr}.hero,.section{padding:15px}.savebar{align-items:flex-start;flex-direction:column}.savebar .btn{width:100%}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <a class="brand" href="/admin/">
+      <img src="/assets/images/logo.png" alt="FCMobiletools">
+      <span><b>Captain Tracker Control</b><small>Committee result room · protected admin workspace</small></span>
+    </a>
+    <div class="actions">
+      <a class="btn" href="/captain-tracker" target="_blank" rel="noopener">Open public tracker ↗</a>
+      <a class="btn" href="/admin/">Admin home</a>
+      <button class="btn" id="reload">Reload</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <span class="eyebrow">MATCHDAY 7 · LIVE CONTROL</span>
+    <h1>Captain OVR results</h1>
+    <p>Update the match state and every player condition from one board. Blank means no result has been reported. Green confirms the condition. Red marks it failed.</p>
+    <div class="hero-meta">
+      <span class="chip">No raw JSON editing</span>
+      <span class="chip">Three-state results</span>
+      <span class="chip">Match state + score</span>
+      <span class="chip">One commit per save</span>
+    </div>
+  </section>
+
+  <div id="app"><div class="loading">Loading live tracker data…</div></div>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(() => {
+  const app=document.getElementById('app');
+  const toast=document.getElementById('toast');
+  let content=null;
+  let dirty=false;
+  let saving=false;
+
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const api=async(path,opt={})=>{
+    const r=await fetch('/api/admin'+path,{credentials:'same-origin',cache:'no-store',...opt});
+    const b=await r.json().catch(()=>({}));
+    if(r.status===401){location.href='/admin/';throw new Error('Admin session expired.')}
+    if(!r.ok)throw new Error(b.error||'Request failed');
+    return b;
+  };
+  const notify=(message,bad=false)=>{
+    toast.textContent=message;toast.className='toast '+(bad?'bad':'ok');toast.hidden=false;
+    clearTimeout(window.__toast);window.__toast=setTimeout(()=>toast.hidden=true,3600);
+  };
+  const resultFor=(p,id)=>{
+    if(p.result?.[id]==='complete'||p.result?.[id]==='failed'||p.result?.[id]==='pending')return p.result[id];
+    if(p.completed?.[id]===true)return 'complete';
+    if(p.failed?.[id]===true)return 'failed';
+    return 'pending';
+  };
+  const setResult=(p,id,value)=>{
+    p.result=p.result||{};p.completed=p.completed||{};p.failed=p.failed||{};
+    p.result[id]=value;p.completed[id]=value==='complete';p.failed[id]=value==='failed';
+    dirty=true;
+  };
+  const taskIds=()=>content?.captainTracker?.tasks||[];
+  const playerById=id=>(content?.captainTracker?.players||[]).find(p=>p.id===id);
+  const fmtDate=iso=>iso?new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(iso)):'—';
+  const localValue=iso=>{
+    if(!iso)return '';
+    const d=new Date(iso),p=n=>String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());
+  };
+  const utcValue=v=>v?new Date(v).toISOString():'';
+  const derivedMatches=()=>{
+    const tracker=content.captainTracker||{};
+    if(Array.isArray(tracker.matches)&&tracker.matches.length)return tracker.matches;
+    const byId={};
+    const analysis=window.__analysisFallback||{};
+    return Object.values(analysis).map(x=>({id:x.id,home:x.home,away:x.away,kickoffUtc:x.kickoff,status:'scheduled',score:{home:null,away:null},updatedAt:null}));
+  };
+  const matchLabel=m=>m.status==='final'?'FINAL':m.status==='live'?'LIVE':(Date.parse(m.kickoffUtc||'')>Date.now()?'NOT STARTED':'AWAITING UPDATE');
+
+  function shellStats(){
+    const players=content.captainTracker.players||[],tasks=taskIds();
+    let complete=0,failed=0,pending=0;
+    players.forEach(p=>tasks.forEach(t=>{
+      const s=resultFor(p,t.id);
+      if(s==='complete')complete++;else if(s==='failed')failed++;else pending++;
+    }));
+    const finals=(content.captainTracker.matches||[]).filter(m=>m.status==='final').length;
+    return {complete,failed,pending,finals,players:players.length,matches:(content.captainTracker.matches||[]).length};
+  }
+
+  function render(){
+    const tracker=content.captainTracker||{},tasks=tracker.tasks||[],players=tracker.players||[],matches=tracker.matches||[];
+    const stats=shellStats();
+    app.innerHTML=`
+      <section class="stats grid">
+        <div class="stat"><small>CAPTAINS</small><strong>${players.length}</strong><span>Tracked this matchday</span></div>
+        <div class="stat"><small>CONFIRMED</small><strong>${stats.complete}</strong><span>Green task results</span></div>
+        <div class="stat"><small>FAILED</small><strong>${stats.failed}</strong><span>Red task results</span></div>
+        <div class="stat"><small>AWAITING</small><strong>${stats.pending}</strong><span>Blank task results</span></div>
+      </section>
+
+      <section class="section">
+        <div class="head">
+          <div><span class="eyebrow">MATCH CONTROL</span><h2>Fixture state</h2><p>Set kickoff, mark matches live/final and add the score. Final matches require a score.</p></div>
+          <span class="chip">${stats.finals}/${matches.length} FINAL</span>
+        </div>
+        <div class="matchgrid">
+          ${matches.map((m,i)=>`
+            <article class="match" data-match="${esc(m.id)}">
+              <div class="match-top">
+                <span class="status-badge ${m.status==='live'?'live':m.status==='final'?'final':''}" data-match-badge>${matchLabel(m)}</span>
+                <small>${esc(m.id)}</small>
+              </div>
+              <h3>${esc(m.home)} <span style="color:#5f7784">vs</span> ${esc(m.away)}</h3>
+              <small data-match-time>${fmtDate(m.kickoffUtc)}</small>
+              <div class="fields">
+                <div class="field"><label>Status</label>
+                  <select class="select" data-match-field="status">
+                    <option value="scheduled" ${m.status==='scheduled'?'selected':''}>Not started</option>
+                    <option value="live" ${m.status==='live'?'selected':''}>Live</option>
+                    <option value="final" ${m.status==='final'?'selected':''}>Final</option>
+                  </select>
+                </div>
+                <div class="field"><label>Home</label><input class="input" type="number" min="0" step="1" data-match-field="homeScore" value="${m.score?.home??''}"></div>
+                <div class="field"><label>Away</label><input class="input" type="number" min="0" step="1" data-match-field="awayScore" value="${m.score?.away??''}"></div>
+              </div>
+              <div class="field" style="margin-top:8px"><label>Kickoff</label><input class="input" type="datetime-local" data-match-field="kickoff" value="${localValue(m.kickoffUtc)}"></div>
+            </article>`).join('')}
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="head">
+          <div><span class="eyebrow">LIVE RESULT MATRIX</span><h2>Committee decisions</h2><p>Use · for no update, ✓ for completed, × for failed. Every click updates the in-memory tracker until you save.</p></div>
+          <span class="chip">CURRENT OVR = BASE + COMPLETED</span>
+        </div>
+        <div class="result-wrap">
+          <table>
+            <thead><tr><th>Captain</th>${tasks.map(t=>`<th title="${esc(t.title)}">${esc(t.short)}</th>`).join('')}<th>LIVE OVR</th></tr></thead>
+            <tbody>
+              ${players.map(p=>{
+                const completed=tasks.filter(t=>resultFor(p,t.id)==='complete').length;
+                return `<tr data-player="${esc(p.id)}">
+                  <td><div class="player"><img src="${esc(p.image||'')}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.club||'')} · ${esc(p.fixture||'')}</small></span></div></td>
+                  ${tasks.map(t=>{
+                    const s=resultFor(p,t.id);
+                    return `<td><div class="result-tools" role="group" aria-label="${esc(t.short)} result">
+                      <button type="button" class="result-btn ${s==='pending'?'active pending':''}" data-result="${esc(p.id)}" data-task="${esc(t.id)}" data-value="pending" aria-pressed="${s==='pending'}">·</button>
+                      <button type="button" class="result-btn ${s==='complete'?'active complete':''}" data-result="${esc(p.id)}" data-task="${esc(t.id)}" data-value="complete" aria-pressed="${s==='complete'}">✓</button>
+                      <button type="button" class="result-btn ${s==='failed'?'active failed':''}" data-result="${esc(p.id)}" data-task="${esc(t.id)}" data-value="failed" aria-pressed="${s==='failed'}">×</button>
+                    </div></td>`;
+                  }).join('')}
+                  <td><div class="ovr">${Number(p.baseOvr||tracker.baseOvr||116)+completed}<span>/ 121</span></div></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="head"><div><span class="eyebrow">PLAYER CONTROL</span><h2>Analysis inputs</h2><p>Keep probabilities, status bands, availability and notes alongside the live result without leaving this control room.</p></div></div>
+        <div class="below">
+          ${players.map((p,pi)=>`
+            <details data-player-edit="${esc(p.id)}">
+              <summary>${esc(p.name)} <span style="float:right;color:#6f8594">${esc(p.club||'')}</span></summary>
+              <div class="detail-body">
+                <div class="player-edit">
+                  <div class="field"><label>Availability</label><input class="input" data-edit="availability" value="${esc(p.availability||'')}"></div>
+                  <div class="field"><label>Fixture</label><input class="input" data-edit="fixture" value="${esc(p.fixture||'')}"></div>
+                  <div class="field"><label>Scouting note</label><input class="input" data-edit="note" value="${esc(p.note||'')}"></div>
+                </div>
+                <div class="task-model">
+                  ${tasks.map(t=>{
+                    const chance=Number(p.probability?.[t.id]||0);
+                    const band=p.status?.[t.id]||'low';
+                    return `<div class="field"><label>${esc(t.short)} chance</label><input class="input" type="number" min="0" max="100" data-prob="${esc(p.id)}" data-task="${esc(t.id)}" value="${chance}"></div>
+                      <div class="field"><label>${esc(t.short)} model band</label><select class="select" data-band="${esc(p.id)}" data-task="${esc(t.id)}">
+                        ${['very-high','high','possible','low','very-low'].map(x=>`<option value="${x}" ${band===x?'selected':''}>${x.replaceAll('-',' ')}</option>`).join('')}
+                      </select></div>`;
+                  }).join('')}
+                </div>
+              </div>
+            </details>`).join('')}
+        </div>
+      </section>
+
+      <div class="savebar"><span><b>Protected save</b> · changes write to Football Centre content through the authenticated admin API.</span><button class="btn primary" id="save">Save tracker changes</button></div>
+    `;
+
+    app.querySelectorAll('[data-result]').forEach(btn=>btn.onclick=()=>{
+      const p=playerById(btn.dataset.result);
+      if(!p)return;
+      setResult(p,btn.dataset.task,btn.dataset.value);
+      render();
+    });
+
+    app.querySelectorAll('[data-match]').forEach(card=>{
+      const m=matches.find(x=>x.id===card.dataset.match);
+      if(!m)return;
+      const get=s=>card.querySelector('[data-match-field="'+s+'"]');
+      get('status').onchange=e=>{m.status=e.target.value;dirty=true;render();};
+      get('homeScore').oninput=e=>{m.score=m.score||{home:null,away:null};m.score.home=e.target.value===''?null:Number(e.target.value);dirty=true;};
+      get('awayScore').oninput=e=>{m.score=m.score||{home:null,away:null};m.score.away=e.target.value===''?null:Number(e.target.value);dirty=true;};
+      get('kickoff').onchange=e=>{m.kickoffUtc=utcValue(e.target.value);dirty=true;render();};
+    });
+
+    app.querySelectorAll('[data-edit]').forEach(el=>el.oninput=()=>{
+      const p=el.closest('[data-player-edit]')?.dataset.playerEdit;
+      const player=playerById(p); if(!player)return;
+      player[el.dataset.edit]=el.value;dirty=true;
+    });
+    app.querySelectorAll('[data-prob]').forEach(el=>el.oninput=()=>{
+      const p=playerById(el.dataset.prob); if(!p)return;
+      p.probability=p.probability||{};p.probability[el.dataset.task]=Math.max(0,Math.min(100,Number(el.value)||0));dirty=true;
+    });
+    app.querySelectorAll('[data-band]').forEach(el=>el.onchange=()=>{
+      const p=playerById(el.dataset.band); if(!p)return;
+      p.status=p.status||{};p.status[el.dataset.task]=el.value;dirty=true;
+    });
+    document.getElementById('save').onclick=save;
+  }
+
+  async function load(){
+    try{
+      const me=await api('/me');
+      if(me?.role!=='admin')throw new Error('Owner/admin access is required.');
+      const r=await api('/football');
+      content=r.content;
+      if(!content?.captainTracker?.players?.length)throw new Error('Captain tracker data is missing from Football Centre content.');
+      if(!Array.isArray(content.captainTracker.matches))content.captainTracker.matches=[];
+      dirty=false;render();
+    }catch(e){
+      app.innerHTML='<div class="section notice error"><b>Unable to load tracker control.</b><br>'+esc(e.message)+'</div>';
+    }
+  }
+
+  async function save(){
+    if(saving)return;
+    const tracker=content.captainTracker,btn=document.getElementById('save');
+    saving=true;btn.disabled=true;btn.textContent='Saving…';
+    try{
+      tracker.lastUpdated=new Date().toISOString();
+      for(const m of tracker.matches||[]){
+        m.updatedAt=new Date().toISOString();
+        if(m.status==='final' && (!Number.isSafeInteger(Number(m.score?.home))||!Number.isSafeInteger(Number(m.score?.away)))) {
+          throw new Error(m.home+' vs '+m.away+' is marked Final but has no complete score.');
+        }
+      }
+      const result=await api('/football',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({content})});
+      dirty=false;notify(result?.ok?'Captain tracker saved.':'Saved.');
+      await load();
+    }catch(e){notify(e.message,true);}
+    finally{saving=false;}
+  }
+
+  document.getElementById('reload').onclick=()=>{
+    if(dirty&&!confirm('Discard unsaved tracker changes?'))return;
+    load();
+  };
+  window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+  load();
+})();
+</script>
+</body>
+</html>
