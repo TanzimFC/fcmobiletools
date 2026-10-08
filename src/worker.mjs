@@ -493,7 +493,7 @@ async function captainVotesApi(request, env, url) {
       }
     );
 
-    const result = stats && !Array.isArray(stats) ? stats : {};
+    const result = Array.isArray(stats) ? (stats[0] || {}) : (stats || {});
     const counts = result?.counts && typeof result.counts === 'object' ? result.counts : {};
     const total = Number.isFinite(Number(result?.total)) ? Number(result.total) : 0;
 
