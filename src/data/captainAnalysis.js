@@ -44,7 +44,6 @@ export const CAPTAIN_ANALYSIS = {
       venue: 'Hill Dickinson Stadium',
       probs: { home: 32.4, draw: 25.2, away: 42.4 },
       goals: { home: 1.25, away: 1.46 },
-      source: 'Blend of Stats Insider and de-vigged Bet365 prices',
     },
     'brentford-liverpool': {
       id: 'brentford-liverpool',
@@ -55,7 +54,6 @@ export const CAPTAIN_ANALYSIS = {
       venue: 'Brentford Community Stadium',
       probs: { home: 28.7, draw: 22.5, away: 48.7 },
       goals: { home: 1.3, away: 1.77 },
-      source: 'Dimers',
     },
     'newcastle-villa': {
       id: 'newcastle-villa',
@@ -66,7 +64,6 @@ export const CAPTAIN_ANALYSIS = {
       venue: "St James' Park",
       probs: { home: 43.3, draw: 24.5, away: 32.1 },
       goals: { home: 1.55, away: 1.3 },
-      source: 'Dimers',
     },
     'leeds-united': {
       id: 'leeds-united',
@@ -77,7 +74,6 @@ export const CAPTAIN_ANALYSIS = {
       venue: 'Elland Road',
       probs: { home: 36.0, draw: 24.2, away: 39.9 },
       goals: { home: 1.4, away: 1.48 },
-      source: 'Dimers',
       note: 'Bruno and Ampadu play each other. Only one of them can collect the win condition, and a 0-0 would give both a clean sheet.',
     },
     'brighton-palace': {
@@ -89,7 +85,6 @@ export const CAPTAIN_ANALYSIS = {
       venue: 'Amex Stadium',
       probs: { home: 57.0, draw: 22.0, away: 21.0 },
       goals: { home: 1.87, away: 1.04 },
-      source: 'Dimers',
     },
   },
 
@@ -109,7 +104,7 @@ export const CAPTAIN_ANALYSIS = {
       notes: {
         minutes:
           'Five starts and five full 90s this season. The risk is a knock he has been managing since the Champions League win over Sabah. He sat out Portugal\'s game in Norway as a precaution, then played against Denmark. His card record is light, so fitness is the main worry.',
-        win: 'Slight favourites at Elland Road in the public models, about 40% against 36% for Leeds. United have gone three league games without a win.',
+        win: 'Slight favourites at Elland Road in the pre-match projections, about 40% against 36% for Leeds. United have gone three league games without a win.',
         cleanSheet:
           'United have not kept a clean sheet in five league games, and Leeds have scored in four of their five. The model gives Leeds about 1.4 expected goals.',
         setPiece:
@@ -282,7 +277,7 @@ export const CAPTAIN_ANALYSIS = {
       side: 'away',
       verdict: 'A tough fixture with a thin route.',
       summary:
-        'Villa have one win in five and a minus five goal difference, and they travel to a Newcastle side that is the clear favourite in the public models. McGinn starts every game and has two assists already, but his card record and Villa\'s defence cap four of the five conditions.',
+        'Villa have one win in five and a minus five goal difference, and they travel to a Newcastle side that is favoured in the pre-match projections. McGinn starts every game and has two assists already, but his card record and Villa\'s defence cap four of the five conditions.',
       climb: [76.53, 30.41, 10.46, 0.46, 0.01],
       outcomes: [23.47, 46.12, 19.95, 10.0, 0.46, 0.01],
       marginal: { minutes: 61.7, win: 32.0, cleanSheet: 21.2, setPiece: 2.9, contributions: 0.11 },
@@ -381,16 +376,16 @@ export const CAPTAIN_ANALYSIS = {
 
   method: [
     {
-      title: 'Match odds',
-      body: 'Win and draw chances come from public models: Dimers for four of the fixtures and a Stats Insider and Bet365 blend for Everton v Chelsea. They are converted into expected goals for each side.',
+      title: 'Match probabilities',
+      body: 'Win and draw chances are pre-match projections that are converted into expected goals for each side.',
     },
     {
       title: 'Simulation',
       body: 'Each captain gets 6,000,000 simulated matches. Every one draws the score, whether he is fit, how long he plays, whether he is booked and which goals he is part of. All five conditions are read from the same match, so win, clean sheet and goal involvement move together.',
     },
     {
-      title: 'Player inputs',
-      body: 'Minutes, card rates, set-piece roles and share of team goals come from 2025-26 and 2026-27 league data (FotMob, FBref, ESPN, Fantasy Football Scout) and club news up to 8 October.',
+      title: 'Player factors',
+      body: 'Minutes, card rates, set-piece roles, team involvement and recent form are used to build the player projections.',
     },
   ],
 
@@ -402,5 +397,5 @@ export const CAPTAIN_ANALYSIS = {
   ],
 
   caveat:
-    'Lineups arrive about an hour before kickoff and can move any number here. Chances are estimates, not betting advice.',
+    'Lineups arrive about an hour before kickoff and can move any number here. Chances are estimates and can change with team news, lineups and match conditions.',
 };
