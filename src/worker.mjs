@@ -395,6 +395,9 @@ async function fetchTournamentStatsForAccount(env, accountId) {
 
 const CAPTAIN_VOTE_CONFIG = Object.freeze({
   trackerKey: 'premier-league-matchday-7',
+  // Voting stays open until the first tracked Matchday 7 fixture kicks off.
+  // Keep this in UTC so the server remains authoritative regardless of visitor timezone.
+  lockAtUtc: '2026-10-17T11:30:00.000Z',
   playerIds: new Set([
     'reece-james',
     'bruno-fernandes',
@@ -423,6 +426,9 @@ async function captainVotesApi(request, env, url) {
     return json({ error: 'Captain tracker not found.' }, 404);
   }
 
+  const lockAtMs = Date.parse(CAPTAIN_VOTE_CONFIG.lockAtUtc);
+  const locked = Number.isFinite(lockAtMs) && Date.now() >= lockAtMs;
+
   let context = null;
   const token = bearerToken(request);
   if (token) {
@@ -434,6 +440,14 @@ async function captainVotesApi(request, env, url) {
   }
 
   if (request.method === 'POST') {
+    if (locked) {
+      return json({
+        error: 'Captain picks are locked because the first Matchday 7 fixture has started.',
+        locked: true,
+        lockAtUtc: CAPTAIN_VOTE_CONFIG.lockAtUtc
+      }, 409);
+    }
+
     const input = await request.json().catch(() => ({}));
     const requestedPlayerId = String(input?.playerId || '').trim().toLowerCase();
     const playerId = CAPTAIN_VOTE_CONFIG.aliases.get(requestedPlayerId) || requestedPlayerId;
@@ -466,47 +480,36 @@ async function captainVotesApi(request, env, url) {
   }
 
   try {
-    const playerIds = [...CAPTAIN_VOTE_CONFIG.playerIds];
-    const countRows = await Promise.all(playerIds.map(async (playerId) => {
-      const result = await supabaseRest(
-        env,
-        'captain_tracker_votes?tracker_key=eq.' + encodeURIComponent(trackerKey) +
-        '&player_id=eq.' + encodeURIComponent(playerId) +
-        '&select=id&limit=1',
-        {
-          returnMeta: true,
-          headers: { Prefer: 'count=exact' }
-        }
-      );
-      const range = result.headers.get('content-range') || '';
-      const match = range.match(/\/(\d+)$/);
-      return [playerId, match ? Number(match[1]) : Number(result.body?.length || 0)];
-    }));
+    const stats = await supabaseRest(
+      env,
+      'rpc/get_captain_tracker_vote_stats',
+      {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({
+          p_tracker_key: trackerKey,
+          p_account_id: context?.account.id || null
+        })
+      }
+    );
 
-    const selectedRows = context
-      ? await supabaseRest(
-          env,
-          'captain_tracker_votes?tracker_key=eq.' + encodeURIComponent(trackerKey) +
-          '&account_id=eq.' + encodeURIComponent(context.account.id) +
-          '&select=player_id&limit=1'
-        )
-      : [];
-
-    const counts = Object.fromEntries(countRows);
-    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    const result = stats && !Array.isArray(stats) ? stats : {};
+    const counts = result?.counts && typeof result.counts === 'object' ? result.counts : {};
+    const total = Number.isFinite(Number(result?.total)) ? Number(result.total) : 0;
 
     return json({
       trackerKey,
       total,
       counts,
-      selected: selectedRows?.[0]?.player_id || null
+      selected: result?.selected || null,
+      locked,
+      lockAtUtc: CAPTAIN_VOTE_CONFIG.lockAtUtc
     });
   } catch (error) {
     console.error('[CAPTAIN_VOTES]', error?.message);
     return json({ error: 'Captain picks are temporarily unavailable.' }, 503);
   }
 }
-
 async function accountApi(request, env, url) {
   if(!url.pathname.startsWith('/api/account/')) return null;
   const context=await accountContext(request,env);
