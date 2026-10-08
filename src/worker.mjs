@@ -391,6 +391,87 @@ async function fetchTournamentStatsForAccount(env, accountId) {
   }
 }
 
+
+const CAPTAIN_VOTE_CONFIG = Object.freeze({
+  trackerKey: 'premier-league-matchday-7',
+  playerIds: new Set(['james', 'fernandes', 'vandijk', 'dunk', 'mcginn', 'ampadu'])
+});
+
+async function captainVotesApi(request, env, url) {
+  if (!['GET', 'POST'].includes(request.method)) {
+    return json({ error: 'Method not allowed.' }, 405);
+  }
+
+  const trackerKey = String(url.searchParams.get('tracker') || CAPTAIN_VOTE_CONFIG.trackerKey).trim();
+  if (trackerKey !== CAPTAIN_VOTE_CONFIG.trackerKey) {
+    return json({ error: 'Captain tracker not found.' }, 404);
+  }
+
+  let context = null;
+  const token = bearerToken(request);
+  if (token) {
+    context = await accountContext(request, env);
+  }
+
+  if (request.method === 'POST' && !context) {
+    return json({ error: 'Authentication required.' }, 401);
+  }
+
+  if (request.method === 'POST') {
+    const input = await request.json().catch(() => ({}));
+    const playerId = String(input?.playerId || '').trim().toLowerCase();
+    if (!CAPTAIN_VOTE_CONFIG.playerIds.has(playerId)) {
+      return json({ error: 'That captain is not available for this tracker.' }, 400);
+    }
+
+    try {
+      await supabaseRest(env, 'captain_tracker_votes?on_conflict=tracker_key,account_id', {
+        method: 'POST',
+        headers: {
+          Prefer: 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify([{
+          tracker_key: trackerKey,
+          player_id: playerId,
+          account_id: context.account.id,
+          updated_at: new Date().toISOString()
+        }])
+      });
+    } catch (error) {
+      console.error('[CAPTAIN_VOTE_SAVE]', error?.message);
+      return json({ error: 'Your captain pick could not be saved right now.' }, 503);
+    }
+  }
+
+  try {
+    const rows = await supabaseRest(
+      env,
+      'captain_tracker_votes?tracker_key=eq.' + encodeURIComponent(trackerKey) +
+      '&select=player_id,account_id&limit=50000'
+    );
+
+    const counts = {};
+    for (const playerId of CAPTAIN_VOTE_CONFIG.playerIds) counts[playerId] = 0;
+    for (const row of rows || []) {
+      if (CAPTAIN_VOTE_CONFIG.playerIds.has(row.player_id)) {
+        counts[row.player_id] += 1;
+      }
+    }
+
+    return json({
+      trackerKey,
+      total: Object.values(counts).reduce((sum, count) => sum + count, 0),
+      counts,
+      selected: context
+        ? ((rows || []).find((row) => row.account_id === context.account.id)?.player_id || null)
+        : null
+    });
+  } catch (error) {
+    console.error('[CAPTAIN_VOTES]', error?.message);
+    return json({ error: 'Captain picks are temporarily unavailable.' }, 503);
+  }
+}
+
 async function accountApi(request, env, url) {
   if(!url.pathname.startsWith('/api/account/')) return null;
   const context=await accountContext(request,env);
@@ -2340,6 +2421,7 @@ export function createExports(manifest) {
   }
   const publicLeaderboardResponse=await publicLeaderboardApi(request,env,url);
   if(publicLeaderboardResponse) return publicLeaderboardResponse;
+  if(url.pathname==='/api/captain-votes') return captainVotesApi(request,env,url);
   if(url.pathname.startsWith('/api/account/')) return accountApi(request,env,url);
 
   if(
