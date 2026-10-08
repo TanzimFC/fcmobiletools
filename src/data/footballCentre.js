@@ -231,241 +231,345 @@ export const FOOTBALL_CENTRE_CONTENT = {
       "1,333 Rank Up Points"
     ],
     "source": "https://www.threads.com/@easfcmobile/post/DdpR3ZKlQ7G/fc-mobile-update-maintenance-has-started-estimated-downtime-hours-watch-fc/"
+  },
+  "captainTracker": {
+    "enabled": true,
+    "matchday": 7,
+    "label": "PREMIER LEAGUE · MATCHDAY 7",
+    "title": "Captain OVR Tracker",
+    "subtitle": "Five performance tasks stand between each captain and a potential 121 OVR card. Track the route, compare the risk and update each result as the matches are played.",
+    "baseOvr": 116,
+    "updatedLabel": "Analysis baseline · 8 Oct 2026",
+    "tasks": [
+      {
+        "id": "minutes",
+        "short": "60+ MIN",
+        "title": "Play 60+ minutes without a booking"
+      },
+      {
+        "id": "win",
+        "short": "WIN",
+        "title": "Club wins the next match"
+      },
+      {
+        "id": "cleanSheet",
+        "short": "CS",
+        "title": "Keep a clean sheet"
+      },
+      {
+        "id": "setPiece",
+        "short": "SET PIECE",
+        "title": "Contribute to a set-piece goal"
+      },
+      {
+        "id": "threeContrib",
+        "short": "3 G/A",
+        "title": "Record 3 goal contributions"
+      }
+    ],
+    "players": [
+      {
+        "id": "reece-james",
+        "name": "Reece James",
+        "club": "Chelsea",
+        "flag": "🏴🇬🇧",
+        "fixture": "Everton vs Chelsea",
+        "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/James_256_fc_25_download_1.png",
+        "baseOvr": 116,
+        "currentOvr": 116,
+        "availability": "Monitor",
+        "probability": {
+          "minutes": 72,
+          "win": 44,
+          "cleanSheet": 22,
+          "setPiece": 12,
+          "threeContrib": 3
+        },
+        "status": {
+          "minutes": "high",
+          "win": "high",
+          "cleanSheet": "low",
+          "setPiece": "possible",
+          "threeContrib": "very-low"
+        },
+        "completed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
+        },
+        "note": "292 Premier League minutes from four appearances. The 60-minute route is realistic, but the Chelsea away trip and 3 G/A condition make 121 difficult.",
+        "result": {
+          "minutes": "pending",
+          "win": "pending",
+          "cleanSheet": "pending",
+          "setPiece": "pending",
+          "threeContrib": "pending"
+        }
+      },
+      {
+        "id": "bruno-fernandes",
+        "name": "Bruno Fernandes",
+        "club": "Manchester United",
+        "flag": "🇵🇹",
+        "fixture": "Leeds United vs Manchester United",
+        "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441774/Bruno_Fernandes_256_fc_25_download.png",
+        "baseOvr": 116,
+        "currentOvr": 116,
+        "availability": "Watch fitness",
+        "probability": {
+          "minutes": 82,
+          "win": 30,
+          "cleanSheet": 18,
+          "setPiece": 25,
+          "threeContrib": 15
+        },
+        "status": {
+          "minutes": "high",
+          "win": "possible",
+          "cleanSheet": "low",
+          "setPiece": "high",
+          "threeContrib": "possible"
+        },
+        "completed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
+        },
+        "note": "Best attacking route. Bruno has 3 goals and 1 assist in five Premier League starts, plus a free-kick goal and 23 corners taken. Fitness is the main watch.",
+        "result": {
+          "minutes": "pending",
+          "win": "pending",
+          "cleanSheet": "pending",
+          "setPiece": "pending",
+          "threeContrib": "pending"
+        }
+      },
+      {
+        "id": "virgil-van-dijk",
+        "name": "Virgil van Dijk",
+        "club": "Liverpool",
+        "flag": "🇳🇱",
+        "fixture": "Brentford vs Liverpool",
+        "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/van_Dijk_256_fc_25_download.png",
+        "baseOvr": 116,
+        "currentOvr": 116,
+        "availability": "Available",
+        "probability": {
+          "minutes": 86,
+          "win": 38,
+          "cleanSheet": 55,
+          "setPiece": 18,
+          "threeContrib": 2
+        },
+        "status": {
+          "minutes": "very-high",
+          "win": "possible",
+          "cleanSheet": "very-high",
+          "setPiece": "possible",
+          "threeContrib": "very-low"
+        },
+        "completed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
+        },
+        "note": "Safest defensive captain. He has started all five league matches, played every minute and already has three clean sheets. He also scored from a corner for the Netherlands.",
+        "result": {
+          "minutes": "pending",
+          "win": "pending",
+          "cleanSheet": "pending",
+          "setPiece": "pending",
+          "threeContrib": "pending"
+        }
+      },
+      {
+        "id": "lewis-dunk",
+        "name": "Lewis Dunk",
+        "club": "Brighton",
+        "flag": "🏴🇬🇧",
+        "fixture": "Brighton vs Crystal Palace",
+        "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/Dunk_256_fc_25_download_1.png",
+        "baseOvr": 116,
+        "currentOvr": 116,
+        "availability": "Doubtful",
+        "probability": {
+          "minutes": 70,
+          "win": 54,
+          "cleanSheet": 58,
+          "setPiece": 12,
+          "threeContrib": 2
+        },
+        "status": {
+          "minutes": "possible",
+          "win": "very-high",
+          "cleanSheet": "very-high",
+          "setPiece": "possible",
+          "threeContrib": "very-low"
+        },
+        "completed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
+        },
+        "note": "Brighton's defensive profile makes the win and clean-sheet tasks attractive, and Dunk already has a league goal. His neck injury is the big problem.",
+        "result": {
+          "minutes": "pending",
+          "win": "pending",
+          "cleanSheet": "pending",
+          "setPiece": "pending",
+          "threeContrib": "pending"
+        }
+      },
+      {
+        "id": "john-mcginn",
+        "name": "John McGinn",
+        "club": "Aston Villa",
+        "flag": "🏴🇬🇧",
+        "fixture": "Newcastle United vs Aston Villa",
+        "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/McGinn_256_fc_25_download.png",
+        "baseOvr": 116,
+        "currentOvr": 116,
+        "availability": "Available",
+        "probability": {
+          "minutes": 74,
+          "win": 30,
+          "cleanSheet": 20,
+          "setPiece": 18,
+          "threeContrib": 5
+        },
+        "status": {
+          "minutes": "high",
+          "win": "possible",
+          "cleanSheet": "low",
+          "setPiece": "possible",
+          "threeContrib": "low"
+        },
+        "completed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
+        },
+        "note": "Two league assists and set-piece responsibility give him a better attacking route than his role suggests, but Newcastle away is a rough win and clean-sheet combination.",
+        "result": {
+          "minutes": "pending",
+          "win": "pending",
+          "cleanSheet": "pending",
+          "setPiece": "pending",
+          "threeContrib": "pending"
+        }
+      },
+      {
+        "id": "ethan-ampadu",
+        "name": "Ethan Ampadu",
+        "club": "Leeds United",
+        "flag": "🏴🇬🇧",
+        "fixture": "Leeds United vs Manchester United",
+        "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441774/Ampadu_256_fc_25_download.png",
+        "baseOvr": 116,
+        "currentOvr": 116,
+        "availability": "Available",
+        "probability": {
+          "minutes": 88,
+          "win": 48,
+          "cleanSheet": 35,
+          "setPiece": 7,
+          "threeContrib": 1
+        },
+        "status": {
+          "minutes": "very-high",
+          "win": "high",
+          "cleanSheet": "possible",
+          "setPiece": "low",
+          "threeContrib": "very-low"
+        },
+        "completed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
+        },
+        "note": "Excellent 60-minute candidate: he has played every available Premier League minute for Leeds. The set-piece and 3 G/A tasks are the real wall.",
+        "result": {
+          "minutes": "pending",
+          "win": "pending",
+          "cleanSheet": "pending",
+          "setPiece": "pending",
+          "threeContrib": "pending"
+        }
+      }
+    ],
+    "matches": [
+      {
+        "id": "everton-chelsea",
+        "home": "Everton",
+        "away": "Chelsea",
+        "kickoffUtc": "2026-10-17T11:30:00.000Z",
+        "status": "scheduled",
+        "score": {
+          "home": null,
+          "away": null
+        },
+        "updatedAt": null
+      },
+      {
+        "id": "brentford-liverpool",
+        "home": "Brentford",
+        "away": "Liverpool",
+        "kickoffUtc": "2026-10-17T14:00:00.000Z",
+        "status": "scheduled",
+        "score": {
+          "home": null,
+          "away": null
+        },
+        "updatedAt": null
+      },
+      {
+        "id": "newcastle-villa",
+        "home": "Newcastle United",
+        "away": "Aston Villa",
+        "kickoffUtc": "2026-10-17T16:30:00.000Z",
+        "status": "scheduled",
+        "score": {
+          "home": null,
+          "away": null
+        },
+        "updatedAt": null
+      },
+      {
+        "id": "leeds-united",
+        "home": "Leeds United",
+        "away": "Manchester United",
+        "kickoffUtc": "2026-10-18T13:00:00.000Z",
+        "status": "scheduled",
+        "score": {
+          "home": null,
+          "away": null
+        },
+        "updatedAt": null
+      },
+      {
+        "id": "brighton-palace",
+        "home": "Brighton",
+        "away": "Crystal Palace",
+        "kickoffUtc": "2026-10-18T13:00:00.000Z",
+        "status": "scheduled",
+        "score": {
+          "home": null,
+          "away": null
+        },
+        "updatedAt": null
+      }
+    ]
   }
-  ,"captainTracker": {
-  "enabled": true,
-  "matchday": 7,
-  "label": "PREMIER LEAGUE · MATCHDAY 7",
-  "title": "Captain OVR Tracker",
-  "subtitle": "Five performance tasks stand between each captain and a potential 121 OVR card. Track the route, compare the risk and update each result as the matches are played.",
-  "baseOvr": 116,
-  "updatedLabel": "Analysis baseline · 8 Oct 2026",
-  "tasks": [
-    {
-      "id": "minutes",
-      "short": "60+ MIN",
-      "title": "Play 60+ minutes without a booking"
-    },
-    {
-      "id": "win",
-      "short": "WIN",
-      "title": "Club wins the next match"
-    },
-    {
-      "id": "cleanSheet",
-      "short": "CS",
-      "title": "Keep a clean sheet"
-    },
-    {
-      "id": "setPiece",
-      "short": "SET PIECE",
-      "title": "Contribute to a set-piece goal"
-    },
-    {
-      "id": "threeContrib",
-      "short": "3 G/A",
-      "title": "Record 3 goal contributions"
-    }
-  ],
-  "players": [
-    {
-      "id": "reece-james",
-      "name": "Reece James",
-      "club": "Chelsea",
-      "flag": "🏴🇬🇧",
-      "fixture": "Everton vs Chelsea",
-      "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/James_256_fc_25_download_1.png",
-      "baseOvr": 116,
-      "currentOvr": 116,
-      "availability": "Monitor",
-      "probability": {
-        "minutes": 72,
-        "win": 44,
-        "cleanSheet": 22,
-        "setPiece": 12,
-        "threeContrib": 3
-      },
-      "status": {
-        "minutes": "high",
-        "win": "high",
-        "cleanSheet": "low",
-        "setPiece": "possible",
-        "threeContrib": "very-low"
-      },
-      "completed": {
-        "minutes": false,
-        "win": false,
-        "cleanSheet": false,
-        "setPiece": false,
-        "threeContrib": false
-      },
-      "note": "292 Premier League minutes from four appearances. The 60-minute route is realistic, but the Chelsea away trip and 3 G/A condition make 121 difficult."
-    },
-    {
-      "id": "bruno-fernandes",
-      "name": "Bruno Fernandes",
-      "club": "Manchester United",
-      "flag": "🇵🇹",
-      "fixture": "Leeds United vs Manchester United",
-      "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441774/Bruno_Fernandes_256_fc_25_download.png",
-      "baseOvr": 116,
-      "currentOvr": 116,
-      "availability": "Watch fitness",
-      "probability": {
-        "minutes": 82,
-        "win": 30,
-        "cleanSheet": 18,
-        "setPiece": 25,
-        "threeContrib": 15
-      },
-      "status": {
-        "minutes": "high",
-        "win": "possible",
-        "cleanSheet": "low",
-        "setPiece": "high",
-        "threeContrib": "possible"
-      },
-      "completed": {
-        "minutes": false,
-        "win": false,
-        "cleanSheet": false,
-        "setPiece": false,
-        "threeContrib": false
-      },
-      "note": "Best attacking route. Bruno has 3 goals and 1 assist in five Premier League starts, plus a free-kick goal and 23 corners taken. Fitness is the main watch."
-    },
-    {
-      "id": "virgil-van-dijk",
-      "name": "Virgil van Dijk",
-      "club": "Liverpool",
-      "flag": "🇳🇱",
-      "fixture": "Brentford vs Liverpool",
-      "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/van_Dijk_256_fc_25_download.png",
-      "baseOvr": 116,
-      "currentOvr": 116,
-      "availability": "Available",
-      "probability": {
-        "minutes": 86,
-        "win": 38,
-        "cleanSheet": 55,
-        "setPiece": 18,
-        "threeContrib": 2
-      },
-      "status": {
-        "minutes": "very-high",
-        "win": "possible",
-        "cleanSheet": "very-high",
-        "setPiece": "possible",
-        "threeContrib": "very-low"
-      },
-      "completed": {
-        "minutes": false,
-        "win": false,
-        "cleanSheet": false,
-        "setPiece": false,
-        "threeContrib": false
-      },
-      "note": "Safest defensive captain. He has started all five league matches, played every minute and already has three clean sheets. He also scored from a corner for the Netherlands."
-    },
-    {
-      "id": "lewis-dunk",
-      "name": "Lewis Dunk",
-      "club": "Brighton",
-      "flag": "🏴🇬🇧",
-      "fixture": "Brighton vs Crystal Palace",
-      "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/Dunk_256_fc_25_download_1.png",
-      "baseOvr": 116,
-      "currentOvr": 116,
-      "availability": "Doubtful",
-      "probability": {
-        "minutes": 70,
-        "win": 54,
-        "cleanSheet": 58,
-        "setPiece": 12,
-        "threeContrib": 2
-      },
-      "status": {
-        "minutes": "possible",
-        "win": "very-high",
-        "cleanSheet": "very-high",
-        "setPiece": "possible",
-        "threeContrib": "very-low"
-      },
-      "completed": {
-        "minutes": false,
-        "win": false,
-        "cleanSheet": false,
-        "setPiece": false,
-        "threeContrib": false
-      },
-      "note": "Brighton's defensive profile makes the win and clean-sheet tasks attractive, and Dunk already has a league goal. His neck injury is the big problem."
-    },
-    {
-      "id": "john-mcginn",
-      "name": "John McGinn",
-      "club": "Aston Villa",
-      "flag": "🏴🇬🇧",
-      "fixture": "Newcastle United vs Aston Villa",
-      "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/McGinn_256_fc_25_download.png",
-      "baseOvr": 116,
-      "currentOvr": 116,
-      "availability": "Available",
-      "probability": {
-        "minutes": 74,
-        "win": 30,
-        "cleanSheet": 20,
-        "setPiece": 18,
-        "threeContrib": 5
-      },
-      "status": {
-        "minutes": "high",
-        "win": "possible",
-        "cleanSheet": "low",
-        "setPiece": "possible",
-        "threeContrib": "low"
-      },
-      "completed": {
-        "minutes": false,
-        "win": false,
-        "cleanSheet": false,
-        "setPiece": false,
-        "threeContrib": false
-      },
-      "note": "Two league assists and set-piece responsibility give him a better attacking route than his role suggests, but Newcastle away is a rough win and clean-sheet combination."
-    },
-    {
-      "id": "ethan-ampadu",
-      "name": "Ethan Ampadu",
-      "club": "Leeds United",
-      "flag": "🏴🇬🇧",
-      "fixture": "Leeds United vs Manchester United",
-      "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441774/Ampadu_256_fc_25_download.png",
-      "baseOvr": 116,
-      "currentOvr": 116,
-      "availability": "Available",
-      "probability": {
-        "minutes": 88,
-        "win": 48,
-        "cleanSheet": 35,
-        "setPiece": 7,
-        "threeContrib": 1
-      },
-      "status": {
-        "minutes": "very-high",
-        "win": "high",
-        "cleanSheet": "possible",
-        "setPiece": "low",
-        "threeContrib": "very-low"
-      },
-      "completed": {
-        "minutes": false,
-        "win": false,
-        "cleanSheet": false,
-        "setPiece": false,
-        "threeContrib": false
-      },
-      "note": "Excellent 60-minute candidate: he has played every available Premier League minute for Leeds. The set-piece and 3 G/A tasks are the real wall."
-    }
-  ]
-}
 };
