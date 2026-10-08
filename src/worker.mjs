@@ -899,9 +899,18 @@ async function accountApi(request, env, url) {
         '&entity_id=eq.'+encodeURIComponent(entityId)+'&created_at=gte.'+
         encodeURIComponent(new Date(Date.now()-21600000).toISOString())+'&select=id&limit=1');
       if(recent?.length) return json({ok:false,code:'cooldown',message:'That activity was already counted recently.'},409);
+
+      const dailyActivity=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
+        '&event_type=in.(page_dwell,calculator_use)&created_at=gte.'+
+        encodeURIComponent(new Date(new Date().toISOString().slice(0,10)+'T00:00:00.000Z').toISOString())+
+        '&select=id&limit=21');
+      if((dailyActivity||[]).length>=20) {
+        return json({ok:false,code:'daily_activity_limit',message:'Daily activity limit reached. Come back after the next UTC reset.'},429);
+      }
+
       await supabaseRest(env,'activity_events',{
         method:'POST',headers:{Prefer:'return=minimal'},
-        body:JSON.stringify([{account_id:account.id,event_type:eventType,entity_type:entityType,entity_id:entityId,metadata:{duration_ms:durationMs},source:'client',idempotency_key:key}])
+        body:JSON.stringify([{account_id:account.id,event_type:eventType,entity_type:entityType,entity_id:entityId,metadata:{duration_ms:durationMs},source:'server',idempotency_key:key}])
       });
 
       let questCompleted=false;
