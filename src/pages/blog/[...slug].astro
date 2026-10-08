@@ -87,7 +87,7 @@ const breadcrumbSchema = {
 <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)}></script>
 <div class="bl-progress" aria-hidden="true"><span id="blProgress"></span></div>
 
-<main class="bl bl-post" style={'--bl-accent:' + (post?.section?.accent || '#67dbff')} data-post-page data-cover={post.cover} data-title={shareText} data-url={url}>
+<main class="bl bl-post" style={'--bl-accent:' + (post?.section?.accent || '#67dbff')} data-post-page data-cover={post.cover} data-title={shareText} data-url={url} data-article-slug={post.slug}>
   <BlogEffects />
 
   <header class="bl-article-hero">
@@ -388,10 +388,51 @@ const breadcrumbSchema = {
   /* reading progress */
   const bar = $('#blProgress'), meter = $('#blMeter'), pct = $('#blPercent'), dockPct = $('#blDockPct');
   const article = $('#blArticle');
+
+  /* Account reading quest: report one meaningful read milestone per article. */
+  const accountToken = () => {
+    try {
+      const raw = localStorage.getItem('fcmobiletools-auth-v1');
+      const data = raw ? JSON.parse(raw) : null;
+      return data?.access_token || data?.session?.access_token || data?.currentSession?.access_token || '';
+    } catch { return ''; }
+  };
+  let articleReadSent = false;
+  let visibleReadMs = 0;
+  let lastReadTick = performance.now();
+  let maxArticleProgress = 0;
+
+  const sendArticleRead = async () => {
+    if (articleReadSent) return;
+    const token = accountToken();
+    if (!token) return;
+    const slug = String(root.dataset.articleSlug || '').trim();
+    if (!slug || maxArticleProgress < 0.65 || visibleReadMs < 10000) return;
+    articleReadSent = true;
+    try {
+      const response = await fetch('/api/account/activity', {
+        method: 'POST',
+        headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          eventType: 'article_read',
+          entityType: 'article',
+          entityId: slug,
+          durationMs: Math.min(600000, Math.round(visibleReadMs)),
+          progress: Math.round(maxArticleProgress * 100),
+          idempotencyKey: crypto.randomUUID()
+        }),
+        keepalive: true
+      });
+      if (!response.ok) articleReadSent = false;
+    } catch {
+      articleReadSent = false;
+    }
+  };
   const update = () => {
     const r = prose.getBoundingClientRect();
     const total = Math.max(1, r.height - innerHeight * 0.6);
     const p = Math.min(1, Math.max(0, -r.top / total));
+    maxArticleProgress = Math.max(maxArticleProgress, p);
     const v = Math.round(p * 100);
     if (bar) bar.style.width = v + '%';
     if (meter) meter.style.width = v + '%';
@@ -399,6 +440,15 @@ const breadcrumbSchema = {
     if (dockPct) dockPct.textContent = v + '%';
   };
   addEventListener('scroll', update, { passive: true }); addEventListener('resize', update); update();
+
+  const readTimer = window.setInterval(() => {
+    const now = performance.now();
+    if (!document.hidden) visibleReadMs += Math.max(0, now - lastReadTick);
+    lastReadTick = now;
+    void sendArticleRead();
+  }, 1000);
+  document.addEventListener('visibilitychange', () => { lastReadTick = performance.now(); }, { passive: true });
+  window.addEventListener('pagehide', () => { void sendArticleRead(); window.clearInterval(readTimer); }, { once: true });
 
   /* table of contents: active section */
   const links = $$('[data-toc]');
