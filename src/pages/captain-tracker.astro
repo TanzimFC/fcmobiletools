@@ -207,82 +207,8 @@ const tasks = tracker.tasks ?? [];
       .catch(() => {});
   })();
 </script>
+
 </BaseLayout>
-
-<script is:inline>
-  (() => {
-    const root = document.querySelector('[data-captain-tracker]');
-    if (!root) return;
-
-    let source = { baseOvr: 116, tasks: [], players: [] };
-    try {
-      source = JSON.parse(document.getElementById('captain-data')?.textContent || '{}');
-    } catch {}
-
-    const tasks = source.tasks || [];
-
-    const updateCard = (player) => {
-      const card = root.querySelector('[data-player="' + player.id + '"]');
-      if (!card) return;
-
-      let confirmed = 0;
-
-      tasks.forEach((task) => {
-        const complete = Boolean(player.completed?.[task.id]);
-        if (complete) confirmed += 1;
-
-        const routeNode = card.querySelector('[data-task="' + task.id + '"]');
-        if (routeNode) {
-          routeNode.classList.toggle('is-complete', complete);
-          const icon = routeNode.querySelector('[data-check]');
-          if (icon) icon.textContent = complete ? '✓' : String(Number(player.probability?.[task.id] || 0)) + '%';
-        }
-
-        const detail = card.querySelector('[data-detail-task="' + task.id + '"]');
-        if (detail) {
-          const chance = Number(player.probability?.[task.id] || 0);
-          detail.classList.toggle('is-complete', complete);
-          const icon = detail.querySelector('[data-detail-check]');
-          const value = detail.querySelector('[data-detail-chance]');
-          if (icon) icon.textContent = complete ? '✓' : '•';
-          if (value) value.textContent = complete ? 'CONFIRMED' : chance + '%';
-        }
-      });
-
-      const current = Number(player.baseOvr || source.baseOvr || 116) + confirmed;
-      const ovr = card.querySelector('[data-ovr]');
-      const note = card.querySelector('[data-note]');
-      if (ovr) ovr.textContent = String(current);
-      if (note && player.note) note.textContent = player.note;
-    };
-
-    (source.players || []).forEach(updateCard);
-
-    const cards = [...root.querySelectorAll('.captain-card')];
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver((entries, instance) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('is-visible');
-          instance.unobserve(entry.target);
-        });
-      }, { threshold: 0.08 });
-      cards.forEach((card) => observer.observe(card));
-    } else {
-      cards.forEach((card) => card.classList.add('is-visible'));
-    }
-
-    fetch('/api/football?captains=' + Date.now(), { cache: 'no-store' })
-      .then((response) => response.ok ? response.json() : null)
-      .then((payload) => {
-        const live = payload?.content?.captainTracker;
-        if (!live?.players) return;
-        live.players.forEach(updateCard);
-      })
-      .catch(() => {});
-  })();
-</script>
-
 <style>
   :global(html), :global(body) { background:#071018; }
 
