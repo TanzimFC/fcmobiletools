@@ -592,18 +592,59 @@ async function accountApi(request, env, url) {
     let tasks=[];
     try {
       if(url.pathname==='/api/account/quests') {
-        const assigned=await supabaseRest(env,'rpc/ensure_daily_quests',{
-          method:'POST',
-          headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
-          body:JSON.stringify({p_account_id:account.id})
-        });
-        const rows=Array.isArray(assigned)?assigned:JSON.parse(String(assigned||'[]'));
-        tasks=(rows||[]).map(x=>({
-          id:x.task?.id,slug:x.task?.slug,title:x.task?.title,description:x.task?.description,
-          task_type:'daily',mission_type:'daily',xp_reward:x.task?.xpReward,token_reward:x.task?.tokenReward,
-          reward_points:x.task?.tokenReward,daily_limit:1,cooldown_seconds:x.task?.cooldownSeconds||0,
-          verification_method:x.task?.verificationMethod,conditions:x.task?.conditions,display_order:x.slot,priority:x.slot
-        })).filter(x=>x.id);
+        const parseRpcArray=(value)=>{
+          if(Array.isArray(value)) return value;
+          try{return JSON.parse(String(value||'[]'));}catch{return [];}
+        };
+
+        const [dailyAssignedRaw,weeklyAssignedRaw,otherTasksRaw]=await Promise.all([
+          supabaseRest(env,'rpc/ensure_daily_quests',{
+            method:'POST',
+            headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+            body:JSON.stringify({p_account_id:account.id})
+          }),
+          supabaseRest(env,'rpc/ensure_weekly_quests',{
+            method:'POST',
+            headers:{Authorization:'Bearer '+context.token,Prefer:'return=representation'},
+            body:JSON.stringify({p_account_id:account.id})
+          }),
+          supabaseRest(env,'reward_tasks?enabled=eq.true&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,starts_at,ends_at,conditions&order=display_order.asc,priority.asc,created_at.desc&limit=100')
+        ]);
+
+        const dailyAssigned=parseRpcArray(dailyAssignedRaw);
+        const weeklyAssigned=parseRpcArray(weeklyAssignedRaw);
+        const nowMs=Date.now();
+        const otherTasks=(otherTasksRaw||[]).filter(t=>
+          String(t.mission_type||'').toLowerCase()!=='daily' &&
+          String(t.mission_type||'').toLowerCase()!=='weekly' &&
+          t.slug!=='first-tournament-match' &&
+          t.task_type!=='event' &&
+          String(t.mission_type||'').toLowerCase()!=='tournament' &&
+          (!t.starts_at||new Date(t.starts_at).getTime()<=nowMs) &&
+          (!t.ends_at||new Date(t.ends_at).getTime()>nowMs)
+        );
+
+        const fromAssigned=(rows,kind)=>rows.map(x=>({
+          id:x.task?.id||x.task_id,
+          slug:x.task?.slug,
+          title:x.task?.title,
+          description:x.task?.description,
+          task_type:kind,
+          mission_type:kind,
+          xp_reward:x.task?.xpReward,
+          token_reward:x.task?.tokenReward,
+          reward_points:x.task?.tokenReward,
+          daily_limit:x.task?.dailyLimit??(kind==='daily'?1:null),
+          weekly_limit:x.task?.weeklyLimit??(kind==='weekly'?1:null),
+          completion_limit:x.task?.completionLimit??null,
+          cooldown_seconds:x.task?.cooldownSeconds||0,
+          verification_method:x.task?.verificationMethod,
+          conditions:x.task?.conditions,
+          display_order:x.slot,
+          priority:x.slot
+        })).filter(x=>x.id&&x.slug);
+
+        tasks=[...fromAssigned(dailyAssigned,'daily'),...fromAssigned(weeklyAssigned,'weekly'),...otherTasks];
       } else {
         tasks=await supabaseRest(env,'reward_tasks?enabled=eq.true&select=id,slug,title,description,task_type,mission_type,xp_reward,token_reward,reward_points,daily_limit,weekly_limit,completion_limit,cooldown_seconds,verification_method,display_order,priority,starts_at,ends_at,conditions&order=display_order.asc,priority.asc,created_at.desc&limit=100');
         const nowMs=Date.now();
@@ -619,14 +660,38 @@ async function accountApi(request, env, url) {
       console.error('[ACCOUNT_QUESTS]',error?.message);
       return json({error:'Your quest list is temporarily unavailable.'},503);
     }
-    const attempts=await supabaseRest(env,'task_attempts?account_id=eq.'+encodeURIComponent(account.id)+'&select=task_id,status,verification_status,completed_at&order=completed_at.desc&limit=300');
+
+    const now=new Date();
+    const dayKey=now.toISOString().slice(0,10);
+    const dayStart=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
+    const weekday=dayStart.getUTCDay();
+    const daysFromThursday=(weekday+7-4)%7;
+    const weekStart=new Date(dayStart.getTime()-daysFromThursday*86400000);
+    const nextDayReset=new Date(dayStart.getTime()+86400000);
+    const nextWeekReset=new Date(weekStart.getTime()+7*86400000);
+
+    const attempts=await supabaseRest(env,'task_attempts?account_id=eq.'+encodeURIComponent(account.id)+'&select=task_id,status,verification_status,completed_at,started_at,created_at&order=created_at.desc&limit=500');
     const latest=new Map();
-    for(const a of attempts||[]) if(!latest.has(a.task_id)) latest.set(a.task_id,a);
-    const payload=(tasks||[]).map(t=>{
+
+    for(const a of attempts||[]){
+      const task=tasks.find(t=>String(t.id)===String(a.task_id));
+      if(!task||latest.has(a.task_id)) continue;
+      const relevantStart=String(task.mission_type||'').toLowerCase()==='daily'
+        ? dayStart
+        : String(task.mission_type||'').toLowerCase()==='weekly'
+          ? weekStart
+          : null;
+      const activityTime=new Date(a.completed_at||a.created_at||a.started_at||0).getTime();
+      if(relevantStart&&(!Number.isFinite(activityTime)||activityTime<relevantStart.getTime())) continue;
+      latest.set(a.task_id,a);
+    }
+
+    const payload=tasks.map(t=>{
       const attempt=latest.get(t.id);
       let statusLabel='Available';
       if(attempt?.status==='accepted'&&attempt?.verification_status==='verified') statusLabel='Completed';
       else if(attempt?.status==='accepted'&&attempt?.verification_status==='pending') statusLabel='Pending review';
+      else if(attempt?.status==='started') statusLabel='In progress';
       return {
         id:t.id,slug:t.slug,title:t.title,description:t.description,
         taskType:t.task_type,missionType:t.mission_type,
@@ -635,7 +700,18 @@ async function accountApi(request, env, url) {
         cooldownSeconds:t.cooldown_seconds,verificationMethod:t.verification_method,statusLabel
       };
     });
-    return json({quests:payload,missions:payload});
+
+    return json({
+      quests:payload,
+      missions:payload,
+      periods:{
+        dailyUtcDate:dayKey,
+        dailyResetAt:nextDayReset.toISOString(),
+        weeklyResetUtcDate:weekStart.toISOString().slice(0,10),
+        weeklyResetAt:nextWeekReset.toISOString(),
+        weeklyResetLabel:'Thursday 00:00 UTC'
+      }
+    });
   }
 
   const missionStartMatch=url.pathname.match(/^\/api\/account\/missions\/([0-9a-f-]+)\/start$/i);
