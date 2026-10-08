@@ -559,10 +559,10 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "kickoffUtc": "2026-10-17T11:30:00.000Z",
         "status": "scheduled",
         "score": {
-          "home": null,
+          "home": 1,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:27:22.811Z"
+        "updatedAt": "2026-10-08T16:30:04.819Z"
       },
       {
         "id": "brentford-liverpool",
@@ -574,7 +574,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:27:22.811Z"
+        "updatedAt": "2026-10-08T16:30:04.819Z"
       },
       {
         "id": "newcastle-villa",
@@ -586,7 +586,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:27:22.811Z"
+        "updatedAt": "2026-10-08T16:30:04.819Z"
       },
       {
         "id": "leeds-united",
@@ -595,10 +595,10 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "kickoffUtc": "2026-10-18T13:00:00.000Z",
         "status": "live",
         "score": {
-          "home": 4,
+          "home": 5,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:27:22.811Z"
+        "updatedAt": "2026-10-08T16:30:04.819Z"
       },
       {
         "id": "brighton-palace",
@@ -610,9 +610,9 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": "2026-10-08T16:27:22.811Z"
+        "updatedAt": "2026-10-08T16:30:04.819Z"
       }
     ],
-    "lastUpdated": "2026-10-08T16:27:22.811Z"
+    "lastUpdated": "2026-10-08T16:30:04.819Z"
   }
 };
