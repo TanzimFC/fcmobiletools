@@ -437,6 +437,11 @@ async function captainVotesApi(request, env, url) {
     const requestedPlayerId = String(input?.playerId || '').trim().toLowerCase();
     const playerId = CAPTAIN_VOTE_CONFIG.aliases.get(requestedPlayerId) || requestedPlayerId;
     if (!CAPTAIN_VOTE_CONFIG.playerIds.has(playerId)) {
+      console.warn('[CAPTAIN_VOTE_INVALID_PLAYER]', {
+        trackerKey,
+        requestedPlayerId,
+        normalizedPlayerId: playerId
+      });
       return json({ error: 'That captain is not available for this tracker.' }, 400);
     }
 
@@ -460,27 +465,34 @@ async function captainVotesApi(request, env, url) {
   }
 
   try {
-    const rows = await supabaseRest(
-      env,
-      'captain_tracker_votes?tracker_key=eq.' + encodeURIComponent(trackerKey) +
-      '&select=player_id,account_id&limit=50000'
-    );
+    const playerIds = [...CAPTAIN_VOTE_CONFIG.playerIds];
+    const countRows = await Promise.all(playerIds.map(async (playerId) => {
+      const rows = await supabaseRest(
+        env,
+        'captain_tracker_votes?tracker_key=eq.' + encodeURIComponent(trackerKey) +
+        '&player_id=eq.' + encodeURIComponent(playerId) +
+        '&select=id&limit=1'
+      );
+      return [playerId, Number(rows?.[0]?.count || 0)];
+    }));
 
-    const counts = {};
-    for (const playerId of CAPTAIN_VOTE_CONFIG.playerIds) counts[playerId] = 0;
-    for (const row of rows || []) {
-      if (CAPTAIN_VOTE_CONFIG.playerIds.has(row.player_id)) {
-        counts[row.player_id] += 1;
-      }
-    }
+    const selectedRows = context
+      ? await supabaseRest(
+          env,
+          'captain_tracker_votes?tracker_key=eq.' + encodeURIComponent(trackerKey) +
+          '&account_id=eq.' + encodeURIComponent(context.account.id) +
+          '&select=player_id&limit=1'
+        )
+      : [];
+
+    const counts = Object.fromEntries(countRows);
+    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
 
     return json({
       trackerKey,
-      total: Object.values(counts).reduce((sum, count) => sum + count, 0),
+      total,
       counts,
-      selected: context
-        ? ((rows || []).find((row) => row.account_id === context.account.id)?.player_id || null)
-        : null
+      selected: selectedRows?.[0]?.player_id || null
     });
   } catch (error) {
     console.error('[CAPTAIN_VOTES]', error?.message);
