@@ -298,7 +298,7 @@ async function adminCrud(request, env, url) {
     });
   }
 
-  const missionSubmissionMatch = path.match(/^\\/api\\/admin\\/mission-submissions\\/([0-9a-f-]+)$/i);
+  const missionSubmissionMatch = path.match(/^\/api\/admin\/mission-submissions\/([0-9a-f-]+)$/i);
   if (missionSubmissionMatch && request.method === 'POST') {
     const attemptId = ensureUuid(missionSubmissionMatch[1]);
     const input = await request.json().catch(() => ({}));
