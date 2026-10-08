@@ -5,189 +5,143 @@ import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
 const tracker = FOOTBALL_CENTRE_CONTENT.captainTracker;
 const players = tracker.players ?? [];
 const tasks = tracker.tasks ?? [];
-const featuredPlayer = players[1] ?? players[0];
 ---
 
 <BaseLayout
   title="Captain OVR Tracker · Premier League Matchday 7"
-  description="Follow the FC Mobile Matchday 7 captains, their five upgrade conditions and the route to 121 OVR."
+  description="Track the Matchday 7 captains and every condition on the route to 121 OVR."
 >
   <main class="captain-page" data-captain-tracker>
-    <div class="ambient ambient-one"></div>
-    <div class="ambient ambient-two"></div>
-
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="kicker"><span class="kicker-dot"></span>{tracker.label}</div>
-        <h1>Five conditions.<br /><span>One 121 OVR chase.</span></h1>
-        <p class="hero-lede">
-          Each captain starts at {tracker.baseOvr} OVR. Every confirmed condition adds +1. This tracker follows the
-          route as Matchday 7 plays out.
-        </p>
-        <div class="hero-stats" aria-label="Tracker summary">
-          <div><strong>{players.length}</strong><span>Captains</span></div>
-          <div><strong>{tasks.length}</strong><span>Conditions</span></div>
-          <div><strong>116 → 121</strong><span>OVR route</span></div>
-        </div>
+    <header class="tracker-bar">
+      <div class="tracker-brand">
+        <span class="live-mark"><i></i> {tracker.label}</span>
+        <h1>Captain OVR Tracker</h1>
       </div>
 
-      <div class="hero-target" aria-label="Maximum OVR 121">
-        <div class="target-orbit"></div>
-        <div class="target-core"><span>121</span><small>MAX OVR</small></div>
+      <div class="tracker-target">
+        <span>MAX</span>
+        <strong>121</strong>
+        <small>OVR</small>
       </div>
-    </section>
+    </header>
 
-    <section class="editorial-callout">
-      <div class="callout-index">01</div>
-      <div class="callout-main">
-        <span class="section-label">OUR READ</span>
-        <h2>{featuredPlayer?.name} has the cleanest 121 route.</h2>
-        <p>{featuredPlayer?.note}</p>
-      </div>
-      <div class="callout-metric">
-        <small>TOP ROUTE</small>
-        <strong>{featuredPlayer?.name?.split(' ')[0]}</strong>
-        <span>{featuredPlayer?.club}</span>
-      </div>
-    </section>
-
-    <section class="conditions">
-      <div class="section-head">
-        <div>
-          <span class="section-label">THE UPGRADE ROUTE</span>
-          <h2>Every condition that adds +1 OVR.</h2>
-        </div>
-        <span class="section-meta">{tracker.updatedLabel}</span>
+    <section class="route-strip" aria-label="Captain upgrade conditions">
+      <div class="route-intro">
+        <span class="section-label">121 ROUTE</span>
+        <strong>{tracker.baseOvr} → 121</strong>
       </div>
 
-      <div class="condition-grid">
+      <div class="route-steps">
         {tasks.map((task, index) => (
-          <article class="condition">
-            <span class="condition-number">{String(index + 1).padStart(2, '0')}</span>
-            <div><strong>{task.short}</strong><p>{task.title}</p></div>
-          </article>
+          <div class="route-step">
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <strong>{task.short}</strong>
+          </div>
         ))}
       </div>
     </section>
 
-    <section class="tracker-section">
-      <div class="section-head tracker-heading">
+    <section class="captains">
+      <div class="section-head">
         <div>
-          <span class="section-label">MATCHDAY 7</span>
-          <h2>The captains, side by side.</h2>
-          <p>Percentages are directional estimates. Confirmed results replace estimates as matches finish.</p>
+          <span class="section-label">PREMIER LEAGUE · MATCHDAY 7</span>
+          <h2>Six captains. Every condition visible.</h2>
         </div>
-        <div class="tracker-key">
-          <span><i class="key-line"></i>Estimated chance</span>
-          <span><i class="key-dot"></i>Confirmed</span>
-        </div>
+        <p>Green checks mark results already confirmed by the tracker.</p>
       </div>
 
-      <div class="player-list">
+      <div class="captain-grid">
         {players.map((player, index) => (
           <article
-            class:list={['player-card', player.id === featuredPlayer?.id ? 'is-featured' : '']}
+            class:list={['captain-card', index === 1 ? 'is-featured' : '']}
             data-player={player.id}
-            style={"--card-delay:" + index * 70 + "ms"}
+            style={"--delay:" + index * 55 + "ms"}
           >
-            <div class="player-card-glow"></div>
-            <div class="player-rank"><span>#{String(index + 1).padStart(2, '0')}</span></div>
+            <div class="card-sheen"></div>
 
-            <div class="player-art">
-              <div class="art-floor"></div>
+            <div class="card-topline">
+              <span class="player-number">#{String(index + 1).padStart(2, '0')}</span>
+              <span class="matchday-label">MATCHDAY 7</span>
+            </div>
+
+            <div class="art-stage">
+              <div class="art-halo"></div>
+              <div class="art-shadow"></div>
               <img
                 src={player.image}
                 alt={player.name + ' FC Mobile captain card'}
                 loading={index < 2 ? 'eager' : 'lazy'}
                 decoding="async"
               />
+              <div class="art-corner">
+                <span>BASE</span>
+                <strong>{player.baseOvr ?? tracker.baseOvr}</strong>
+              </div>
             </div>
 
-            <div class="player-main">
-              <div class="player-heading">
-                <div>
-                  <span class="mini-label">CAPTAIN</span>
-                  <h3>{player.name}</h3>
-                  <p>{player.club} <span>·</span> {player.fixture}</p>
-                </div>
-                <div class="ovr-block">
-                  <span>ROUTE</span>
-                  <div><strong data-ovr>{player.currentOvr}</strong><em>→ 121</em></div>
-                  <small data-progress>0 / {tasks.length} confirmed</small>
-                </div>
+            <div class="identity">
+              <div>
+                <span class="club-line">{player.club}</span>
+                <h3>{player.name}</h3>
+                <p>{player.fixture}</p>
               </div>
+              <div class="projected">
+                <span>PROJECTED</span>
+                <strong data-ovr>{player.currentOvr ?? tracker.baseOvr}</strong>
+              </div>
+            </div>
 
-              <div class="condition-list">
-                {tasks.map((task) => {
-                  const probability = Number(player.probability?.[task.id] ?? 0);
-                  const done = Boolean(player.completed?.[task.id]);
-                  return (
-                    <div class:list={['condition-row', done ? 'is-complete' : '']} data-task={task.id}>
-                      <div class="condition-copy">
-                        <strong>{task.short}</strong><span>{task.title}</span>
+            <div class="route-map" aria-label={player.name + ' condition progress'}>
+              {tasks.map((task) => {
+                const done = Boolean(player.completed?.[task.id]);
+                const chance = Number(player.probability?.[task.id] ?? 0);
+                return (
+                  <div class:list={['route-node', done ? 'is-complete' : '']} data-task={task.id} title={task.title}>
+                    <span class="route-node-icon" data-check aria-hidden="true">
+                      {done ? '✓' : String(chance) + '%'}
+                    </span>
+                    <small>{task.short}</small>
+                  </div>
+                );
+              })}
+            </div>
+
+            <details class="player-brief">
+              <summary>
+                <span>Player analysis</span>
+                <span class="summary-arrow" aria-hidden="true">+</span>
+              </summary>
+
+              <div class="brief-body">
+                <div class="brief-note" data-note>{player.note}</div>
+
+                <div class="brief-conditions">
+                  {tasks.map((task) => {
+                    const chance = Number(player.probability?.[task.id] ?? 0);
+                    const done = Boolean(player.completed?.[task.id]);
+                    return (
+                      <div class:list={['brief-condition', done ? 'is-complete' : '']} data-detail-task={task.id}>
+                        <div class="brief-condition-icon" data-detail-check aria-hidden="true">{done ? '✓' : '•'}</div>
+                        <div>
+                          <strong>{task.short}</strong>
+                          <span>{task.title}</span>
+                        </div>
+                        <b data-detail-chance>{done ? 'CONFIRMED' : chance + '%'}</b>
                       </div>
-                      <div class="chance-track" aria-hidden="true"><i style={"--chance:" + probability + "%"}></i></div>
-                      <strong class="chance-value" data-chance>{probability}%</strong>
-                      <span class="condition-state" data-state>{done ? 'CONFIRMED' : 'OPEN'}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-
-              <div class="player-footer">
-                <p>{player.note}</p>
-                <button type="button" class="brief-button" data-open-brief={player.id}>
-                  <span>Player brief</span>
-                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4.5 12.5 10 7 15.5" /></svg>
-                </button>
-              </div>
-            </div>
+            </details>
           </article>
         ))}
       </div>
     </section>
 
-    <section class="tracker-note">
-      <div>
-        <span class="section-label">HOW TO READ IT</span>
-        <h2>One strong condition does not make a 121 card.</h2>
-      </div>
-      <p>
-        A defender can own the clean-sheet route and still fall short because the attacking conditions remain open.
-        The tracker keeps each condition separate so the OVR projection changes only when a result is actually
-        confirmed.
-      </p>
-    </section>
-
-    <p class="disclaimer">
-      Independent FCMOBILETOOLS analysis. Player availability, lineups and match outcomes can change. Percentages are
-      directional estimates, not official EA odds or betting advice.
-    </p>
-
-    <dialog class="brief-modal" data-brief-modal aria-label="Player brief">
-      <div class="modal-shell">
-        <button class="modal-close" type="button" data-close-brief aria-label="Close player brief">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg>
-        </button>
-        <div class="modal-hero">
-          <div class="modal-art"><img data-modal-image alt="" /></div>
-          <div class="modal-identity">
-            <span class="section-label">PLAYER BRIEF</span>
-            <h2 data-modal-name></h2>
-            <p data-modal-fixture></p>
-            <div class="modal-ovr"><span>START</span><strong data-modal-ovr>116</strong><em>→ 121</em></div>
-          </div>
-        </div>
-        <div class="modal-section">
-          <span class="section-label">THE READ</span>
-          <p class="modal-note" data-modal-note></p>
-        </div>
-        <div class="modal-section">
-          <span class="section-label">CONDITION MAP</span>
-          <div class="modal-condition-list" data-modal-conditions></div>
-        </div>
-      </div>
-    </dialog>
+    <footer class="tracker-footer">
+      <span>FCMOBILETOOLS · INDEPENDENT MATCH ANALYSIS</span>
+      <p>Lineups and results can change. Percentages are directional estimates, not official EA odds or betting advice.</p>
+    </footer>
 
     <script type="application/json" id="captain-data">{JSON.stringify({ baseOvr: tracker.baseOvr, tasks, players })}</script>
   </main>
@@ -203,106 +157,46 @@ const featuredPlayer = players[1] ?? players[0];
       source = JSON.parse(document.getElementById('captain-data')?.textContent || '{}');
     } catch {}
 
-    const playerMap = new Map((source.players || []).map((player) => [player.id, player]));
     const tasks = source.tasks || [];
-    const modal = root.querySelector('[data-brief-modal]');
-    const modalImage = modal?.querySelector('[data-modal-image]');
-    const modalName = modal?.querySelector('[data-modal-name]');
-    const modalFixture = modal?.querySelector('[data-modal-fixture]');
-    const modalOvr = modal?.querySelector('[data-modal-ovr]');
-    const modalNote = modal?.querySelector('[data-modal-note]');
-    const modalConditions = modal?.querySelector('[data-modal-conditions]');
 
     const updateCard = (player) => {
       const card = root.querySelector('[data-player="' + player.id + '"]');
       if (!card) return;
 
       let confirmed = 0;
+
       tasks.forEach((task) => {
-        const row = card.querySelector('[data-task="' + task.id + '"]');
-        if (!row) return;
         const complete = Boolean(player.completed?.[task.id]);
         if (complete) confirmed += 1;
 
-        const chance = Number(player.probability?.[task.id] || 0);
-        const bar = row.querySelector('.chance-track i');
-        const value = row.querySelector('[data-chance]');
-        const state = row.querySelector('[data-state]');
+        const routeNode = card.querySelector('[data-task="' + task.id + '"]');
+        if (routeNode) {
+          routeNode.classList.toggle('is-complete', complete);
+          const icon = routeNode.querySelector('[data-check]');
+          if (icon) icon.textContent = complete ? '✓' : String(Number(player.probability?.[task.id] || 0)) + '%';
+        }
 
-        if (bar) bar.style.setProperty('--chance', chance + '%');
-        if (value) value.textContent = chance + '%';
-        row.classList.toggle('is-complete', complete);
-        if (state) state.textContent = complete ? 'CONFIRMED' : 'OPEN';
+        const detail = card.querySelector('[data-detail-task="' + task.id + '"]');
+        if (detail) {
+          const chance = Number(player.probability?.[task.id] || 0);
+          detail.classList.toggle('is-complete', complete);
+          const icon = detail.querySelector('[data-detail-check]');
+          const value = detail.querySelector('[data-detail-chance]');
+          if (icon) icon.textContent = complete ? '✓' : '•';
+          if (value) value.textContent = complete ? 'CONFIRMED' : chance + '%';
+        }
       });
 
+      const current = Number(player.baseOvr || source.baseOvr || 116) + confirmed;
       const ovr = card.querySelector('[data-ovr]');
-      const progress = card.querySelector('[data-progress]');
-      const projected = Number(player.baseOvr || source.baseOvr || 116) + confirmed;
-      if (ovr) ovr.textContent = String(projected);
-      if (progress) progress.textContent = confirmed + ' / ' + tasks.length + ' confirmed';
+      const note = card.querySelector('[data-note]');
+      if (ovr) ovr.textContent = String(current);
+      if (note && player.note) note.textContent = player.note;
     };
 
     (source.players || []).forEach(updateCard);
 
-    const openBrief = (id, replaceHash = true) => {
-      const player = playerMap.get(id);
-      if (!player || !modal) return;
-
-      const confirmed = tasks.filter((task) => Boolean(player.completed?.[task.id])).length;
-      const currentOvr = Number(player.baseOvr || source.baseOvr || 116) + confirmed;
-
-      if (modalImage) {
-        modalImage.src = player.image;
-        modalImage.alt = player.name + ' FC Mobile captain card';
-      }
-      if (modalName) modalName.textContent = player.name;
-      if (modalFixture) modalFixture.textContent = player.club + ' · ' + player.fixture;
-      if (modalOvr) modalOvr.textContent = String(currentOvr);
-      if (modalNote) modalNote.textContent = player.note;
-
-      if (modalConditions) {
-        modalConditions.innerHTML = tasks.map((task) => {
-          const chance = Number(player.probability?.[task.id] || 0);
-          const complete = Boolean(player.completed?.[task.id]);
-          return '<div class="modal-condition' + (complete ? ' is-complete' : '') + '">' +
-            '<div><strong>' + task.short + '</strong><span>' + task.title + '</span></div>' +
-            '<div class="modal-probability"><div class="modal-track"><i style="width:' + chance + '%"></i></div>' +
-            '<b>' + (complete ? 'CONFIRMED' : chance + '%') + '</b></div></div>';
-        }).join('');
-      }
-
-      modal.showModal();
-      document.body.classList.add('captain-modal-open');
-      if (replaceHash) history.replaceState(null, '', '#' + encodeURIComponent(id));
-    };
-
-    const closeBrief = (clearHash = true) => {
-      if (!modal) return;
-      modal.close();
-      document.body.classList.remove('captain-modal-open');
-      if (clearHash) history.replaceState(null, '', window.location.pathname + window.location.search);
-    };
-
-    root.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-open-brief]');
-      if (button) openBrief(button.getAttribute('data-open-brief'));
-      if (event.target.closest('[data-close-brief]')) closeBrief();
-    });
-
-    modal?.addEventListener('click', (event) => {
-      if (event.target === modal) closeBrief();
-    });
-
-    window.addEventListener('hashchange', () => {
-      const id = decodeURIComponent(window.location.hash.slice(1));
-      if (id && playerMap.has(id)) openBrief(id, false);
-      else if (modal?.open) closeBrief(false);
-    });
-
-    const initialId = decodeURIComponent(window.location.hash.slice(1));
-    if (initialId && playerMap.has(initialId)) requestAnimationFrame(() => openBrief(initialId, false));
-
-    const cards = [...root.querySelectorAll('.player-card')];
+    const cards = [...root.querySelectorAll('.captain-card')];
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver((entries, instance) => {
         entries.forEach((entry) => {
@@ -310,7 +204,7 @@ const featuredPlayer = players[1] ?? players[0];
           entry.target.classList.add('is-visible');
           instance.unobserve(entry.target);
         });
-      }, { threshold: 0.12 });
+      }, { threshold: 0.08 });
       cards.forEach((card) => observer.observe(card));
     } else {
       cards.forEach((card) => card.classList.add('is-visible'));
@@ -321,7 +215,6 @@ const featuredPlayer = players[1] ?? players[0];
       .then((payload) => {
         const live = payload?.content?.captainTracker;
         if (!live?.players) return;
-        live.players.forEach((player) => playerMap.set(player.id, player));
         live.players.forEach(updateCard);
       })
       .catch(() => {});
@@ -329,771 +222,633 @@ const featuredPlayer = players[1] ?? players[0];
 </script>
 
 <style>
-  :global(body.captain-modal-open) { overflow: hidden; }
+  :global(html) { background: #071018; }
+  :global(body) { background: #071018; }
 
   .captain-page {
     --cyan: #4cc9ff;
-    --cyan-soft: #a4e8ff;
+    --cyan-soft: #b1ecff;
     --success: #47d16c;
-    --text: #f5f8fb;
-    --muted: #8ca0b0;
-    position: relative;
-    width: min(1220px, calc(100% - 32px));
+    --ink: #f5f8fb;
+    --muted: #8195a5;
+    --line: rgba(255,255,255,.075);
+    width: min(1260px, calc(100% - 30px));
     margin: 0 auto;
-    padding: 46px 0 36px;
-    color: var(--text);
-    isolation: isolate;
+    padding: 26px 0 34px;
+    color: var(--ink);
   }
 
-  .captain-page::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -3;
-    pointer-events: none;
+  .tracker-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    min-height: 104px;
+    padding: 15px 18px 15px 23px;
+    border: 1px solid rgba(76,201,255,.13);
+    border-radius: 22px;
     background:
-      radial-gradient(circle at 50% -10%, rgba(76,201,255,.13), transparent 34%),
-      linear-gradient(180deg, #071018 0%, #071018 58%, #08121b 100%);
+      radial-gradient(440px 150px at 0% 0%, rgba(76,201,255,.10), transparent 74%),
+      linear-gradient(145deg, #0f1d29, #09131c);
+    box-shadow: 0 20px 55px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.028);
+    animation: enter .55s cubic-bezier(.22,1,.36,1) both;
   }
 
-  .captain-page::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -2;
-    pointer-events: none;
-    opacity: .2;
-    background-image:
-      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: linear-gradient(to bottom, #000, rgba(0,0,0,.2) 66%, transparent);
+  .tracker-brand h1 {
+    margin: 8px 0 0;
+    font: 700 clamp(27px, 4vw, 44px)/.98 "Space Grotesk", Inter, sans-serif;
+    letter-spacing: -.055em;
   }
 
-  .ambient {
-    position: absolute;
-    z-index: -1;
-    width: 330px;
-    height: 330px;
-    border-radius: 50%;
-    filter: blur(70px);
-    opacity: .14;
-    pointer-events: none;
-    animation: ambientFloat 9s ease-in-out infinite;
-  }
-  .ambient-one { top: 250px; left: -190px; background: #168cca; }
-  .ambient-two { top: 980px; right: -210px; background: #2358a7; animation-delay: -4s; }
-
-  .hero {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0,1fr) 260px;
-    gap: 28px;
-    overflow: hidden;
-    padding: clamp(30px,5vw,56px);
-    border: 1px solid rgba(76,201,255,.18);
-    border-radius: 30px;
-    background:
-      radial-gradient(580px 340px at 0% 0%, rgba(76,201,255,.16), transparent 68%),
-      radial-gradient(420px 280px at 100% 100%, rgba(61,117,194,.09), transparent 70%),
-      linear-gradient(145deg, rgba(17,32,46,.98), rgba(8,17,25,.98));
-    box-shadow: 0 30px 90px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.03);
-    animation: heroEnter .8s cubic-bezier(.22,1,.36,1) both;
-  }
-
-  .hero::before {
-    content: '';
-    position: absolute;
-    inset: 1px;
-    border-radius: inherit;
-    pointer-events: none;
-    background: linear-gradient(115deg, rgba(255,255,255,.05), transparent 22%, transparent 75%, rgba(255,255,255,.025));
-  }
-
-  .kicker,
-  .section-label,
-  .section-meta,
-  .mini-label,
-  .tracker-key,
-  .player-rank,
-  .ovr-block span,
-  .ovr-block small,
-  .disclaimer {
-    font-family: Inter, system-ui, sans-serif;
-  }
-
-  .kicker {
+  .live-mark {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    color: var(--cyan-soft);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .17em;
-  }
-
-  .kicker-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--cyan);
-    box-shadow: 0 0 20px rgba(76,201,255,.75);
-    animation: dotPulse 2s ease-in-out infinite;
-  }
-
-  .hero h1 {
-    max-width: 820px;
-    margin: 15px 0 19px;
-    font: 700 clamp(44px,6.1vw,78px)/.93 "Space Grotesk", Inter, sans-serif;
-    letter-spacing: -.065em;
-  }
-
-  .hero h1 span {
-    color: var(--cyan-soft);
-    text-shadow: 0 0 42px rgba(76,201,255,.16);
-  }
-
-  .hero-lede {
-    max-width: 760px;
-    margin: 0;
-    color: #9eb0bf;
-    font-size: 15px;
-    line-height: 1.72;
-  }
-
-  .hero-stats {
-    display: flex;
-    flex-wrap: wrap;
     gap: 8px;
-    margin-top: 28px;
-  }
-
-  .hero-stats div {
-    min-width: 142px;
-    padding: 11px 14px;
-    border: 1px solid rgba(255,255,255,.075);
-    border-radius: 13px;
-    background: rgba(255,255,255,.025);
-    backdrop-filter: blur(8px);
-  }
-  .hero-stats strong, .hero-stats span { display: block; }
-  .hero-stats strong { font: 700 16px "Space Grotesk", Inter, sans-serif; }
-  .hero-stats span {
-    margin-top: 3px;
-    color: #6f8493;
-    font: 700 8px Inter, sans-serif;
-    letter-spacing: .12em;
+    color: #76dbff;
+    font: 800 8px Inter, system-ui, sans-serif;
+    letter-spacing: .16em;
     text-transform: uppercase;
   }
 
-  .hero-target {
-    position: relative;
+  .live-mark i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 16px rgba(76,201,255,.8);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .tracker-target {
     display: grid;
-    place-items: center;
-    min-height: 250px;
-  }
-
-  .target-core {
-    position: relative;
-    z-index: 2;
-    display: grid;
-    place-items: center;
-    align-content: center;
-    width: 188px;
-    height: 188px;
-    border: 1px solid rgba(76,201,255,.34);
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(76,201,255,.10), rgba(7,16,24,.75) 68%);
-    box-shadow: 0 0 70px rgba(76,201,255,.09), inset 0 0 42px rgba(76,201,255,.05);
-  }
-
-  .target-core::after {
-    content: '';
-    position: absolute;
-    inset: 14px;
-    border: 1px solid rgba(255,255,255,.06);
-    border-radius: 50%;
-  }
-  .target-core span { font: 700 66px/.86 "Space Grotesk", Inter, sans-serif; letter-spacing: -.07em; }
-  .target-core small {
-    margin-top: 10px;
-    color: #708697;
-    font: 800 9px Inter, sans-serif;
-    letter-spacing: .17em;
-  }
-
-  .target-orbit {
-    position: absolute;
-    width: 244px;
-    height: 244px;
-    border: 1px dashed rgba(76,201,255,.17);
-    border-radius: 50%;
-    animation: orbit 14s linear infinite;
-  }
-  .target-orbit::before {
-    content: '';
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #d8f7ff;
-    box-shadow: 0 0 20px rgba(76,201,255,.95);
-    transform: translateX(-50%);
-  }
-
-  .section-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: end;
-    gap: 24px;
-    margin-bottom: 14px;
-  }
-
-  .section-label {
-    color: #74d8ff;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: .17em;
-  }
-
-  .section-head h2, .tracker-note h2 {
-    margin: 7px 0 0;
-    font: 700 clamp(22px,3vw,30px)/1.08 "Space Grotesk", Inter, sans-serif;
-    letter-spacing: -.045em;
-  }
-
-  .section-meta {
-    color: #637a8b;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: .07em;
+    grid-template-columns: auto auto auto;
+    align-items: baseline;
+    gap: 7px;
+    padding: 11px 15px;
+    border: 1px solid rgba(76,201,255,.17);
+    border-radius: 14px;
+    background: rgba(76,201,255,.035);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
     white-space: nowrap;
   }
 
-  .editorial-callout {
-    display: grid;
-    grid-template-columns: 48px minmax(0,1fr) 180px;
-    gap: 20px;
-    align-items: center;
-    margin-top: 14px;
-    padding: 21px 23px;
-    border: 1px solid rgba(76,201,255,.14);
-    border-radius: 20px;
-    background: linear-gradient(105deg, rgba(76,201,255,.055), transparent 52%), rgba(11,22,32,.9);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
-  }
-
-  .callout-index {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid rgba(76,201,255,.18);
-    border-radius: 11px;
-    color: var(--cyan);
-    font: 800 9px Inter, sans-serif;
-  }
-
-  .callout-main h2 {
-    margin: 6px 0 5px;
-    font: 700 19px "Space Grotesk", Inter, sans-serif;
-    letter-spacing: -.03em;
-  }
-  .callout-main p, .tracker-heading p, .tracker-note p {
-    margin: 0;
-    color: #7f94a4;
-    font-size: 12px;
-    line-height: 1.65;
-  }
-
-  .callout-metric {
-    min-height: 72px;
-    padding-left: 20px;
-    border-left: 1px solid rgba(255,255,255,.08);
-  }
-  .callout-metric small, .callout-metric span {
-    display: block;
-    font: 800 8px Inter, sans-serif;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-  }
-  .callout-metric small { color: #52697a; }
-  .callout-metric strong {
-    display: block;
-    margin: 7px 0 3px;
-    color: var(--cyan-soft);
-    font: 700 22px "Space Grotesk", Inter, sans-serif;
-  }
-  .callout-metric span { color: #6d8392; letter-spacing: .04em; }
-
-  .conditions, .tracker-section { margin-top: 38px; }
-
-  .condition-grid {
-    display: grid;
-    grid-template-columns: repeat(5,minmax(0,1fr));
-    gap: 9px;
-  }
-
-  .condition {
-    min-height: 120px;
-    padding: 16px;
-    border: 1px solid rgba(255,255,255,.065);
-    border-radius: 16px;
-    background: linear-gradient(145deg,#101e2a,#0a141d);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.022);
-    transition: transform .28s ease, border-color .28s ease, background .28s ease;
-  }
-  .condition:hover {
-    transform: translateY(-4px);
-    border-color: rgba(76,201,255,.2);
-    background: linear-gradient(145deg,#122536,#0b151e);
-  }
-  .condition-number {
-    display: block;
-    color: #4f687a;
-    font: 800 8px Inter, sans-serif;
-    letter-spacing: .12em;
-  }
-  .condition strong {
-    display: block;
-    margin-top: 21px;
-    font: 800 11px "Space Grotesk", Inter, sans-serif;
-  }
-  .condition p {
-    margin: 5px 0 0;
-    color: #708597;
-    font-size: 9.5px;
-    line-height: 1.42;
-  }
-
-  .tracker-heading { margin-bottom: 18px; }
-
-  .tracker-key {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 12px;
-    color: #64798a;
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-  .tracker-key span { display: inline-flex; align-items: center; gap: 7px; }
-  .key-line { width: 21px; height: 4px; border-radius: 999px; background: linear-gradient(90deg,#238bb8,var(--cyan)); }
-  .key-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 14px rgba(71,209,108,.42); }
-
-  .player-list { display: grid; gap: 14px; }
-
-  .player-card {
-    --card-border: rgba(255,255,255,.075);
-    position: relative;
-    display: grid;
-    grid-template-columns: 42px 180px minmax(0,1fr);
-    overflow: hidden;
-    border: 1px solid var(--card-border);
-    border-radius: 23px;
-    background: radial-gradient(500px 240px at 0% 100%, rgba(76,201,255,.035), transparent 72%), linear-gradient(145deg,#0f1b27,#09131c);
-    box-shadow: 0 20px 65px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.02);
-    opacity: 0;
-    transform: translateY(18px);
-    transition: transform .55s cubic-bezier(.22,1,.36,1), opacity .55s ease, border-color .28s ease, box-shadow .28s ease;
-  }
-  .player-card.is-visible { opacity: 1; transform: translateY(0); transition-delay: var(--card-delay); }
-  .player-card:hover {
-    border-color: rgba(76,201,255,.18);
-    box-shadow: 0 28px 82px rgba(0,0,0,.38), 0 0 50px rgba(76,201,255,.05);
-  }
-  .player-card.is-featured {
-    --card-border: rgba(76,201,255,.28);
-    background: radial-gradient(600px 260px at 0% 100%, rgba(76,201,255,.07), transparent 72%), linear-gradient(145deg,#102130,#09131c);
-  }
-
-  .player-card-glow {
-    position: absolute;
-    top: -120px;
-    right: -80px;
-    width: 260px;
-    height: 260px;
-    border-radius: 50%;
-    background: rgba(76,201,255,.05);
-    filter: blur(45px);
-    pointer-events: none;
-  }
-
-  .player-rank {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    padding-top: 22px;
-    border-right: 1px solid rgba(255,255,255,.065);
-    color: #516879;
-    font-size: 8px;
-    font-weight: 800;
-  }
-  .player-rank span { position: sticky; top: 15px; }
-
-  .player-art {
-    position: relative;
-    display: grid;
-    place-items: end center;
-    min-height: 270px;
-    padding: 17px 7px 10px;
-    border-right: 1px solid rgba(255,255,255,.065);
-    overflow: hidden;
-    background: radial-gradient(circle at 50% 24%, rgba(76,201,255,.10), transparent 40%), linear-gradient(180deg, rgba(255,255,255,.018), rgba(0,0,0,.08));
-  }
-
-  .art-floor {
-    position: absolute;
-    left: 50%;
-    bottom: 11px;
-    width: 112px;
-    height: 18px;
-    border-radius: 50%;
-    background: rgba(0,0,0,.52);
-    filter: blur(11px);
-    transform: translateX(-50%);
-  }
-
-  .player-art img {
-    position: relative;
-    z-index: 1;
-    width: min(172px,100%);
-    height: 243px;
-    object-fit: contain;
-    filter: drop-shadow(0 18px 18px rgba(0,0,0,.62));
-    transform: translateY(3px);
-    transition: transform .4s cubic-bezier(.22,1,.36,1), filter .4s ease;
-  }
-  .player-card:hover .player-art img {
-    transform: translateY(-6px) scale(1.035);
-    filter: drop-shadow(0 23px 25px rgba(0,0,0,.68));
-  }
-
-  .player-main { min-width: 0; padding: 20px 22px 18px; }
-
-  .player-heading {
-    display: grid;
-    grid-template-columns: minmax(0,1fr) 108px;
-    gap: 18px;
-    align-items: start;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255,255,255,.065);
-  }
-
-  .mini-label {
-    color: #526a7b;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .15em;
-  }
-  .player-heading h3 {
-    margin: 6px 0 4px;
-    font: 700 25px/1 "Space Grotesk", Inter, sans-serif;
-    letter-spacing: -.04em;
-  }
-  .player-heading p {
-    margin: 0;
-    color: #8196a5;
-    font-size: 10.5px;
-    line-height: 1.5;
-  }
-  .player-heading p span { color: #52697b; padding: 0 4px; }
-
-  .ovr-block { text-align: right; }
-  .ovr-block span, .ovr-block small { display: block; }
-  .ovr-block span {
-    color: #607786;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .12em;
-  }
-  .ovr-block div {
-    display: flex;
-    justify-content: flex-end;
-    align-items: baseline;
-    gap: 5px;
-    margin-top: 4px;
-  }
-  .ovr-block strong {
-    font: 700 44px/.86 "Space Grotesk", Inter, sans-serif;
-    letter-spacing: -.07em;
-  }
-  .ovr-block em { color: #6c8291; font: 700 11px Inter, sans-serif; font-style: normal; }
-  .ovr-block small { margin-top: 7px; color: #587183; font-size: 8px; font-weight: 700; letter-spacing: .06em; }
-
-  .condition-list { padding-top: 3px; }
-
-  .condition-row {
-    display: grid;
-    grid-template-columns: minmax(190px,1.35fr) minmax(140px,.8fr) 42px 67px;
-    gap: 11px;
-    align-items: center;
-    min-height: 53px;
-    border-top: 1px solid rgba(255,255,255,.05);
-  }
-  .condition-copy strong, .condition-copy span { display: block; }
-  .condition-copy strong { color: #d9e3ea; font: 800 9px "Space Grotesk", Inter, sans-serif; }
-  .condition-copy span { margin-top: 4px; color: #667d8d; font-size: 8.5px; line-height: 1.35; }
-
-  .chance-track {
-    height: 5px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: #08121a;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
-  }
-  .chance-track i {
-    display: block;
-    width: var(--chance);
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg,#237ea8,var(--cyan));
-    transition: width .65s cubic-bezier(.22,1,.36,1);
-  }
-  .chance-value { color: #9eb2c0; font: 800 9px Inter, sans-serif; text-align: right; }
-
-  .condition-state {
-    justify-self: end;
-    padding: 6px 8px;
-    border: 1px solid rgba(255,255,255,.07);
-    border-radius: 999px;
-    background: rgba(255,255,255,.025);
-    color: #5f7483;
+  .tracker-target span,
+  .tracker-target small {
+    color: #597181;
     font: 800 7px Inter, sans-serif;
-    letter-spacing: .08em;
+    letter-spacing: .12em;
   }
-  .condition-row.is-complete .chance-track i { background: linear-gradient(90deg,#2caa51,var(--success)); box-shadow: 0 0 14px rgba(71,209,108,.22); }
-  .condition-row.is-complete .chance-value, .condition-row.is-complete .condition-state { color: var(--success); }
-  .condition-row.is-complete .condition-state { border-color: rgba(71,209,108,.24); background: rgba(71,209,108,.06); }
 
-  .player-footer {
+  .tracker-target strong {
+    color: var(--cyan-soft);
+    font: 700 31px/.85 "Space Grotesk", Inter, sans-serif;
+    letter-spacing: -.06em;
+  }
+
+  .route-strip {
     display: grid;
-    grid-template-columns: minmax(0,1fr) auto;
-    gap: 18px;
-    align-items: end;
-    margin-top: 9px;
-    padding-top: 13px;
-    border-top: 1px solid rgba(255,255,255,.065);
-  }
-  .player-footer p { margin: 0; color: #748999; font-size: 9.5px; line-height: 1.58; }
-
-  .brief-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 9px 11px;
-    border: 1px solid rgba(76,201,255,.18);
-    border-radius: 10px;
-    background: rgba(76,201,255,.045);
-    color: #9bdfff;
-    font: 800 8px Inter, sans-serif;
-    letter-spacing: .04em;
-    cursor: pointer;
-    transition: transform .22s ease, background .22s ease, border-color .22s ease;
-  }
-  .brief-button:hover { transform: translateY(-2px); border-color: rgba(76,201,255,.38); background: rgba(76,201,255,.09); }
-  .brief-button svg, .modal-close svg {
-    width: 14px;
-    height: 14px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .tracker-note {
-    display: grid;
-    grid-template-columns: minmax(0,.86fr) 1.14fr;
-    gap: 30px;
-    margin-top: 34px;
-    padding: 24px;
-    border-top: 1px solid rgba(76,201,255,.14);
-    border-bottom: 1px solid rgba(255,255,255,.06);
-  }
-
-  .disclaimer {
-    max-width: 900px;
-    margin: 15px auto 0;
-    color: #4f6677;
-    font-size: 9px;
-    line-height: 1.6;
-    text-align: center;
-  }
-
-  .brief-modal {
-    width: min(720px,calc(100% - 24px));
-    max-height: min(780px,calc(100dvh - 24px));
-    padding: 0;
-    border: 1px solid rgba(76,201,255,.22);
-    border-radius: 24px;
-    background: #0a141d;
-    color: var(--text);
-    box-shadow: 0 40px 120px rgba(0,0,0,.62), 0 0 60px rgba(76,201,255,.08);
-  }
-  .brief-modal::backdrop { background: rgba(1,7,12,.78); backdrop-filter: blur(8px); }
-
-  .modal-shell { position: relative; overflow: auto; max-height: inherit; padding: 22px; }
-
-  .modal-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 5;
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 10px;
-    background: rgba(0,0,0,.22);
-    color: #96aab8;
-    cursor: pointer;
-    transition: transform .2s ease, border-color .2s ease, color .2s ease;
-  }
-  .modal-close:hover { color: #fff; border-color: rgba(76,201,255,.3); transform: rotate(4deg); }
-
-  .modal-hero {
-    display: grid;
-    grid-template-columns: 150px minmax(0,1fr);
-    gap: 22px;
-    align-items: center;
-    padding: 18px;
-    border: 1px solid rgba(255,255,255,.06);
-    border-radius: 18px;
-    background: radial-gradient(300px 180px at 10% 100%, rgba(76,201,255,.09), transparent 72%), linear-gradient(145deg,#101f2c,#0b151e);
-  }
-
-  .modal-art { display: grid; place-items: end center; min-height: 205px; }
-  .modal-art img {
-    width: 150px;
-    height: 202px;
-    object-fit: contain;
-    filter: drop-shadow(0 18px 22px rgba(0,0,0,.62));
-    animation: modalCardIn .45s cubic-bezier(.22,1,.36,1) both;
-  }
-  .modal-identity h2 {
-    max-width: 380px;
-    margin: 8px 0 5px;
-    font: 700 32px/1 "Space Grotesk", Inter, sans-serif;
-    letter-spacing: -.05em;
-  }
-  .modal-identity p { margin: 0; color: #7f95a4; font-size: 11px; line-height: 1.5; }
-
-  .modal-ovr { display: flex; align-items: baseline; gap: 8px; margin-top: 19px; }
-  .modal-ovr span { color: #5a7182; font: 800 8px Inter, sans-serif; letter-spacing: .12em; }
-  .modal-ovr strong { font: 700 52px/.82 "Space Grotesk", Inter, sans-serif; letter-spacing: -.06em; }
-  .modal-ovr em { color: #6e8492; font: 700 11px Inter, sans-serif; font-style: normal; }
-
-  .modal-section { margin-top: 19px; padding-top: 17px; border-top: 1px solid rgba(255,255,255,.07); }
-  .modal-note { margin: 8px 0 0; color: #91a4b2; font-size: 11px; line-height: 1.72; }
-
-  .modal-condition-list { display: grid; gap: 7px; margin-top: 9px; }
-  .modal-condition {
-    display: grid;
-    grid-template-columns: minmax(0,1fr) 180px;
+    grid-template-columns: 145px minmax(0,1fr);
     gap: 16px;
-    align-items: center;
-    padding: 10px 11px;
-    border: 1px solid rgba(255,255,255,.055);
+    align-items: stretch;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(12,24,35,.85);
+  }
+
+  .route-intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 11px 13px;
     border-radius: 12px;
     background: rgba(255,255,255,.022);
   }
-  .modal-condition strong, .modal-condition span { display: block; }
-  .modal-condition strong { color: #dbe5eb; font: 800 9px "Space Grotesk", Inter, sans-serif; }
-  .modal-condition span { margin-top: 3px; color: #677e8d; font-size: 8px; }
-  .modal-probability { display: grid; grid-template-columns: 1fr 58px; gap: 8px; align-items: center; }
-  .modal-track { height: 4px; overflow: hidden; border-radius: 999px; background: #08121a; }
-  .modal-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#237ea8,var(--cyan)); }
-  .modal-probability b { color: #91a7b5; font: 800 8px Inter, sans-serif; text-align: right; white-space: nowrap; }
-  .modal-condition.is-complete { border-color: rgba(71,209,108,.2); }
-  .modal-condition.is-complete .modal-track i { background: linear-gradient(90deg,#2caa51,var(--success)); }
-  .modal-condition.is-complete .modal-probability b { color: var(--success); }
 
-  @keyframes heroEnter { from { opacity:0; transform:translateY(16px) scale(.99); } to { opacity:1; transform:none; } }
-  @keyframes modalCardIn { from { opacity:0; transform:translateY(10px) scale(.97); } to { opacity:1; transform:none; } }
-  @keyframes dotPulse { 50% { transform:scale(1.22); box-shadow:0 0 28px rgba(76,201,255,.92); } }
-  @keyframes orbit { to { transform:rotate(360deg); } }
-  @keyframes ambientFloat { 50% { transform:translate3d(20px,-14px,0) scale(1.04); } }
-
-  @media (max-width:1000px) {
-    .hero { grid-template-columns:minmax(0,1fr) 200px; }
-    .condition-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
-    .player-card { grid-template-columns:36px 152px minmax(0,1fr); }
-    .player-art img { width:142px; height:224px; }
+  .section-label {
+    color: #72d9ff;
+    font: 800 8px Inter, system-ui, sans-serif;
+    letter-spacing: .16em;
+    text-transform: uppercase;
   }
 
-  @media (max-width:760px) {
-    .captain-page { width:min(100% - 18px,1220px); padding-top:24px; }
-    .hero { grid-template-columns:1fr; padding:28px 22px; border-radius:24px; }
-    .hero-target { min-height:205px; }
-    .hero h1 { font-size:47px; }
-    .hero-stats div { min-width:0; flex:1 1 30%; }
-    .editorial-callout { grid-template-columns:38px minmax(0,1fr); gap:14px; padding:18px; }
-    .callout-metric { grid-column:2; min-height:0; padding:10px 0 0; border-left:0; border-top:1px solid rgba(255,255,255,.08); }
-    .section-head { align-items:flex-start; flex-direction:column; }
-    .section-meta { white-space:normal; }
-    .tracker-key { justify-content:flex-start; }
-    .condition-grid { grid-template-columns:1fr 1fr; }
-    .player-card { grid-template-columns:1fr; }
-    .player-rank {
-      position:absolute;
-      top:14px;
-      left:14px;
-      z-index:4;
-      width:31px;
-      height:31px;
-      align-items:center;
-      padding:0;
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:10px;
-      background:rgba(5,13,19,.55);
-      backdrop-filter:blur(7px);
-    }
-    .player-rank span { position:static; }
-    .player-art { min-height:300px; border-right:0; border-bottom:1px solid rgba(255,255,255,.07); }
-    .player-art img { width:205px; height:289px; }
-    .player-main { padding:17px 14px 15px; }
-    .player-heading { grid-template-columns:minmax(0,1fr) auto; gap:12px; }
-    .player-heading h3 { font-size:22px; }
-    .ovr-block strong { font-size:38px; }
-    .condition-row { grid-template-columns:minmax(0,1fr) 84px 37px; gap:7px; min-height:50px; }
-    .condition-state { display:none; }
-    .player-footer { grid-template-columns:1fr; align-items:stretch; }
-    .brief-button { justify-content:center; }
-    .tracker-note { grid-template-columns:1fr; gap:14px; margin-top:28px; padding:21px 2px; }
-    .modal-shell { padding:14px; }
-    .modal-hero { grid-template-columns:118px minmax(0,1fr); gap:14px; padding:13px; }
-    .modal-art, .modal-art img { width:118px; height:175px; min-height:175px; }
-    .modal-identity h2 { font-size:25px; padding-right:20px; }
-    .modal-condition { grid-template-columns:1fr; gap:8px; }
+  .route-intro strong {
+    margin-top: 6px;
+    font: 700 18px "Space Grotesk", Inter, sans-serif;
+    letter-spacing: -.035em;
   }
 
-  @media (max-width:470px) {
-    .hero h1 { font-size:40px; }
-    .hero-lede { font-size:13px; }
-    .hero-stats { display:grid; grid-template-columns:1fr 1fr; }
-    .hero-stats div:last-child { grid-column:1 / -1; }
-    .condition-grid { grid-template-columns:1fr; }
-    .player-art { min-height:268px; }
-    .player-art img { width:180px; height:255px; }
-    .player-heading { grid-template-columns:1fr; }
-    .ovr-block { text-align:left; padding-top:11px; border-top:1px solid rgba(255,255,255,.06); }
-    .ovr-block div { justify-content:flex-start; }
-    .condition-row { grid-template-columns:minmax(0,1fr) 72px 34px; }
-    .condition-copy span { display:none; }
-    .modal-hero { grid-template-columns:100px minmax(0,1fr); }
-    .modal-art, .modal-art img { width:100px; height:155px; min-height:155px; }
+  .route-steps {
+    display: grid;
+    grid-template-columns: repeat(5,minmax(0,1fr));
+    gap: 6px;
   }
 
-  @media (prefers-reduced-motion:reduce) {
-    .hero, .player-card, .kicker-dot, .target-orbit, .ambient, .modal-art img { animation:none !important; }
-    .player-card { opacity:1; transform:none; }
-    .player-card, .condition, .brief-button, .player-art img { transition:none !important; }
+  .route-step {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 9px 11px;
+    border: 1px solid rgba(255,255,255,.05);
+    border-radius: 12px;
+    background: rgba(255,255,255,.018);
+    transition: transform .22s ease, border-color .22s ease, background .22s ease;
+  }
+
+  .route-step:hover {
+    transform: translateY(-2px);
+    border-color: rgba(76,201,255,.18);
+    background: rgba(76,201,255,.035);
+  }
+
+  .route-step span {
+    color: #4f6879;
+    font: 800 7px Inter, sans-serif;
+  }
+
+  .route-step strong {
+    margin-top: 8px;
+    overflow: hidden;
+    color: #dce6eb;
+    font: 800 9px "Space Grotesk", Inter, sans-serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .captains { margin-top: 30px; }
+
+  .section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    margin: 0 0 13px;
+  }
+
+  .section-head h2 {
+    margin: 6px 0 0;
+    font: 700 clamp(21px, 3vw, 30px)/1.02 "Space Grotesk", Inter, sans-serif;
+    letter-spacing: -.045em;
+  }
+
+  .section-head p {
+    margin: 0;
+    max-width: 360px;
+    color: #667c8d;
+    font: 600 9px/1.5 Inter, sans-serif;
+    text-align: right;
+  }
+
+  .captain-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 15px;
+  }
+
+  .captain-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background:
+      radial-gradient(440px 300px at 50% 5%, rgba(76,201,255,.055), transparent 67%),
+      linear-gradient(145deg, #0f1a26, #09131b);
+    box-shadow: 0 22px 65px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.024);
+    opacity: 0;
+    transform: translateY(17px);
+    transition: transform .45s cubic-bezier(.22,1,.36,1), opacity .45s ease, border-color .25s ease, box-shadow .25s ease;
+  }
+
+  .captain-card.is-visible {
+    opacity: 1;
+    transform: none;
+    transition-delay: var(--delay);
+  }
+
+  .captain-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(76,201,255,.18);
+    box-shadow: 0 30px 80px rgba(0,0,0,.4), 0 0 50px rgba(76,201,255,.035);
+  }
+
+  .captain-card.is-featured {
+    border-color: rgba(76,201,255,.26);
+    background:
+      radial-gradient(460px 300px at 50% 4%, rgba(76,201,255,.09), transparent 66%),
+      linear-gradient(145deg, #102130, #09131b);
+  }
+
+  .card-sheen {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 120px;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.028), transparent);
+  }
+
+  .card-topline {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 15px 0;
+  }
+
+  .player-number {
+    color: #50697a;
+    font: 800 8px Inter, sans-serif;
+    letter-spacing: .1em;
+  }
+
+  .matchday-label {
+    color: #567181;
+    font: 800 7px Inter, sans-serif;
+    letter-spacing: .13em;
+  }
+
+  .art-stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: clamp(330px, 39vw, 430px);
+    padding: 17px 20px 3px;
+    overflow: hidden;
+  }
+
+  .art-halo {
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: rgba(76,201,255,.07);
+    filter: blur(55px);
+    animation: halo 5s ease-in-out infinite;
+  }
+
+  .art-shadow {
+    position: absolute;
+    left: 50%;
+    bottom: 15px;
+    width: 180px;
+    height: 25px;
+    border-radius: 50%;
+    background: rgba(0,0,0,.58);
+    filter: blur(15px);
+    transform: translateX(-50%);
+  }
+
+  .art-stage img {
+    position: relative;
+    z-index: 1;
+    width: min(340px, 82%);
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+    transform: translateY(4px) scale(1.02);
+    filter: drop-shadow(0 24px 28px rgba(0,0,0,.66));
+    transition: transform .45s cubic-bezier(.22,1,.36,1), filter .45s ease;
+  }
+
+  .captain-card:hover .art-stage img {
+    transform: translateY(-7px) scale(1.065);
+    filter: drop-shadow(0 30px 32px rgba(0,0,0,.72));
+  }
+
+  .art-corner {
+    position: absolute;
+    z-index: 3;
+    left: 15px;
+    bottom: 20px;
+    display: grid;
+    gap: 2px;
+    min-width: 55px;
+    padding: 7px 8px;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 10px;
+    background: rgba(5,13,19,.62);
+    backdrop-filter: blur(9px);
+  }
+
+  .art-corner span {
+    color: #5d7383;
+    font: 800 6px Inter, sans-serif;
+    letter-spacing: .13em;
+  }
+
+  .art-corner strong {
+    color: #dce8ed;
+    font: 700 18px/.9 "Space Grotesk", Inter, sans-serif;
+  }
+
+  .identity {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) 82px;
+    gap: 14px;
+    align-items: end;
+    padding: 0 17px 16px;
+  }
+
+  .club-line {
+    color: #5f7787;
+    font: 800 7px Inter, sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .identity h3 {
+    margin: 6px 0 3px;
+    font: 700 clamp(21px, 2.6vw, 28px)/1 "Space Grotesk", Inter, sans-serif;
+    letter-spacing: -.05em;
+  }
+
+  .identity p {
+    margin: 0;
+    color: #7d92a0;
+    font: 600 9.5px/1.45 Inter, sans-serif;
+  }
+
+  .projected {
+    text-align: right;
+  }
+
+  .projected span {
+    display: block;
+    color: #5c7483;
+    font: 800 6px Inter, sans-serif;
+    letter-spacing: .13em;
+  }
+
+  .projected strong {
+    display: block;
+    margin-top: 5px;
+    color: #f4f8fa;
+    font: 700 clamp(36px, 4vw, 48px)/.82 "Space Grotesk", Inter, sans-serif;
+    letter-spacing: -.07em;
+  }
+
+  .route-map {
+    display: grid;
+    grid-template-columns: repeat(5,1fr);
+    gap: 7px;
+    padding: 12px 15px;
+    border-top: 1px solid rgba(255,255,255,.06);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    background: rgba(0,0,0,.09);
+  }
+
+  .route-node {
+    display: grid;
+    justify-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .route-node-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 50%;
+    background: rgba(255,255,255,.025);
+    color: #7790a0;
+    font: 800 7px Inter, sans-serif;
+    transition: transform .22s ease, background .22s ease, border-color .22s ease, color .22s ease;
+  }
+
+  .route-node small {
+    max-width: 100%;
+    overflow: hidden;
+    color: #536b7b;
+    font: 800 6px Inter, sans-serif;
+    letter-spacing: .05em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .route-node.is-complete .route-node-icon {
+    border-color: rgba(71,209,108,.48);
+    background: rgba(71,209,108,.12);
+    color: var(--success);
+    box-shadow: 0 0 20px rgba(71,209,108,.13);
+    transform: scale(1.06);
+  }
+
+  .route-node.is-complete small { color: rgba(71,209,108,.8); }
+
+  .player-brief {
+    border: 0;
+  }
+
+  .player-brief summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 15px 14px;
+    color: #91a6b4;
+    font: 800 8px Inter, sans-serif;
+    letter-spacing: .06em;
+    list-style: none;
+    cursor: pointer;
+    transition: color .2s ease, background .2s ease;
+  }
+
+  .player-brief summary::-webkit-details-marker { display: none; }
+  .player-brief summary:hover { color: var(--cyan-soft); background: rgba(76,201,255,.025); }
+
+  .summary-arrow {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 7px;
+    color: #6b8190;
+    font: 400 14px/1 Inter, sans-serif;
+    transition: transform .25s ease, color .25s ease, border-color .25s ease;
+  }
+
+  .player-brief[open] .summary-arrow {
+    transform: rotate(45deg);
+    border-color: rgba(76,201,255,.23);
+    color: var(--cyan);
+  }
+
+  .brief-body {
+    padding: 0 15px 16px;
+  }
+
+  .brief-note {
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px;
+    background: rgba(255,255,255,.018);
+    color: #8499a8;
+    font: 600 9.5px/1.62 Inter, sans-serif;
+  }
+
+  .brief-conditions {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .brief-condition {
+    display: grid;
+    grid-template-columns: 22px minmax(0,1fr) auto;
+    gap: 9px;
+    align-items: center;
+    padding: 8px 9px;
+    border: 1px solid rgba(255,255,255,.045);
+    border-radius: 10px;
+    background: rgba(255,255,255,.014);
+  }
+
+  .brief-condition-icon {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.035);
+    color: #6d8392;
+    font: 800 10px Inter, sans-serif;
+  }
+
+  .brief-condition strong,
+  .brief-condition span {
+    display: block;
+  }
+
+  .brief-condition strong {
+    color: #dbe4e9;
+    font: 800 8px "Space Grotesk", Inter, sans-serif;
+  }
+
+  .brief-condition span {
+    margin-top: 2px;
+    color: #647b8b;
+    font: 600 7.5px/1.35 Inter, sans-serif;
+  }
+
+  .brief-condition b {
+    color: #8297a5;
+    font: 800 7px Inter, sans-serif;
+    white-space: nowrap;
+  }
+
+  .brief-condition.is-complete {
+    border-color: rgba(71,209,108,.18);
+    background: rgba(71,209,108,.028);
+  }
+
+  .brief-condition.is-complete .brief-condition-icon {
+    background: rgba(71,209,108,.11);
+    color: var(--success);
+    box-shadow: 0 0 14px rgba(71,209,108,.10);
+  }
+
+  .brief-condition.is-complete strong,
+  .brief-condition.is-complete b { color: var(--success); }
+
+  .tracker-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 18px;
+    padding-top: 13px;
+    border-top: 1px solid rgba(255,255,255,.055);
+  }
+
+  .tracker-footer span {
+    color: #52697a;
+    font: 800 7px Inter, sans-serif;
+    letter-spacing: .12em;
+    white-space: nowrap;
+  }
+
+  .tracker-footer p {
+    max-width: 520px;
+    margin: 0;
+    color: #4e6575;
+    font: 600 7.5px/1.5 Inter, sans-serif;
+    text-align: right;
+  }
+
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @keyframes pulse {
+    50% { transform: scale(1.2); box-shadow: 0 0 23px rgba(76,201,255,.92); }
+  }
+
+  @keyframes halo {
+    50% { transform: scale(1.08); opacity: .8; }
+  }
+
+  @media (max-width: 900px) {
+    .captain-grid { grid-template-columns: 1fr; }
+    .art-stage { min-height: clamp(360px, 56vw, 500px); }
+    .art-stage img { width: min(390px, 70vw); }
+  }
+
+  @media (max-width: 680px) {
+    .captain-page { width: min(100% - 16px, 1260px); padding-top: 18px; }
+    .tracker-bar { min-height: 85px; padding: 12px 12px 12px 15px; border-radius: 18px; }
+    .tracker-brand h1 { font-size: 26px; }
+    .live-mark { font-size: 7px; letter-spacing: .12em; }
+    .tracker-target { padding: 9px 10px; gap: 5px; }
+    .tracker-target strong { font-size: 25px; }
+    .route-strip { grid-template-columns: 1fr; padding: 8px; }
+    .route-intro { min-height: 58px; }
+    .route-steps { grid-template-columns: repeat(5,minmax(0,1fr)); }
+    .route-step { padding: 8px 6px; }
+    .route-step strong { font-size: 7px; text-align: center; }
+    .section-head { align-items: flex-start; flex-direction: column; }
+    .section-head p { text-align: left; }
+    .captains { margin-top: 24px; }
+    .captain-card { border-radius: 19px; }
+    .art-stage { min-height: 330px; padding-top: 12px; }
+    .art-stage img { width: min(330px, 84vw); }
+    .identity { grid-template-columns: minmax(0,1fr) 73px; padding: 0 13px 13px; }
+    .identity h3 { font-size: 23px; }
+    .projected strong { font-size: 38px; }
+    .route-map { padding: 10px 10px; gap: 4px; }
+    .route-node-icon { width: 28px; height: 28px; }
+    .route-node small { font-size: 5.5px; }
+    .player-brief summary { padding: 12px 13px 13px; }
+    .brief-body { padding: 0 13px 13px; }
+    .tracker-footer { flex-direction: column; gap: 7px; }
+    .tracker-footer p { text-align: left; }
+  }
+
+  @media (max-width: 430px) {
+    .tracker-bar { align-items: flex-start; }
+    .tracker-target { margin-top: 2px; }
+    .tracker-target span, .tracker-target small { display: none; }
+    .route-intro { flex-direction: row; align-items: center; justify-content: space-between; }
+    .route-intro strong { margin-top: 0; }
+    .route-step span { display: none; }
+    .art-stage { min-height: 300px; }
+    .art-stage img { width: min(300px, 80vw); }
+    .identity { grid-template-columns: 1fr; gap: 9px; }
+    .projected { text-align: left; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.055); }
+    .projected strong { font-size: 35px; }
+    .route-map { grid-template-columns: repeat(5,1fr); }
+    .route-node-icon { width: 25px; height: 25px; font-size: 6px; }
+    .brief-condition { grid-template-columns: 21px minmax(0,1fr) auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tracker-bar, .captain-card, .live-mark i, .art-halo { animation: none !important; }
+    .captain-card { opacity: 1; transform: none; }
+    .captain-card:hover, .route-step:hover { transform: none; }
+    .art-stage img, .route-node-icon, .summary-arrow { transition: none !important; }
   }
 </style>
