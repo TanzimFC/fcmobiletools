@@ -279,23 +279,24 @@ function supabaseConfig(env){
 }
 async function supabaseRest(env,path,options={}){
   const {base,key}=supabaseConfig(env);
+  const {returnMeta=false,...requestOptions}=options;
   const response=await fetch(base+'/rest/v1/'+path,{
-    ...options,
+    ...requestOptions,
     headers:{
       apikey:key,
       Accept:'application/json',
-      ...(options.body?{'content-type':'application/json'}:{}),
-      ...(options.headers||{})
+      ...(requestOptions.body?{'content-type':'application/json'}:{}),
+      ...(requestOptions.headers||{})
     }
   });
   const text=await response.text();
   let body=null;
   try{body=text?JSON.parse(text):null;}catch{throw new Error('Supabase returned invalid JSON.');}
-  if(!response.ok){
+  if(!response.ok && response.status!==206){
     const message=body?.message||body?.hint||body?.details||'Supabase request failed ('+response.status+').';
     throw new Error(message);
   }
-  return body;
+  return returnMeta ? {body,headers:response.headers,status:response.status} : body;
 }
 
 async function supabaseAuthUser(env, token) {
@@ -467,13 +468,19 @@ async function captainVotesApi(request, env, url) {
   try {
     const playerIds = [...CAPTAIN_VOTE_CONFIG.playerIds];
     const countRows = await Promise.all(playerIds.map(async (playerId) => {
-      const rows = await supabaseRest(
+      const result = await supabaseRest(
         env,
         'captain_tracker_votes?tracker_key=eq.' + encodeURIComponent(trackerKey) +
         '&player_id=eq.' + encodeURIComponent(playerId) +
-        '&select=id&limit=1'
+        '&select=id&limit=1',
+        {
+          returnMeta: true,
+          headers: { Prefer: 'count=exact' }
+        }
       );
-      return [playerId, Number(rows?.[0]?.count || 0)];
+      const range = result.headers.get('content-range') || '';
+      const match = range.match(/\/(\d+)$/);
+      return [playerId, match ? Number(match[1]) : Number(result.body?.length || 0)];
     }));
 
     const selectedRows = context
