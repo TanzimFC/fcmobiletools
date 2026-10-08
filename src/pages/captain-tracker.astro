@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
 import { CAPTAIN_ANALYSIS } from '../data/captainAnalysis.js';
+import AccountGateModal from '../components/AccountGateModal.astro';
 
 const tracker = FOOTBALL_CENTRE_CONTENT.captainTracker ?? {};
 const analysis = CAPTAIN_ANALYSIS;
@@ -116,7 +117,7 @@ const barPoints = (values, width = 220, height = 64) => {
 
 <BaseLayout
   title="Captain OVR Tracker · Premier League Matchday 7"
-  description="Live analysis of the Matchday 7 captains racing from 116 to 121 OVR, with pre-match projections, task-by-task results and fixture updates."
+  description="Live Matchday 7 analysis for six Premier League captain candidates, with task results, fixture updates and community captain picks."
 >
   <main class="ct" data-captain-tracker>
     <section class="ct-hero">
@@ -131,21 +132,49 @@ const barPoints = (values, width = 220, height = 64) => {
         </p>
         <div class="ct-hero-meta">
           <span>Updated {analysis.updatedLabel}</span>
-          <span>Base {baseOvr}</span>
-          <span>Ceiling {ceiling}</span>
+          <span>Live task results</span>
+          <span>Community captain picks</span>
         </div>
       </div>
-      <div class="ct-route" aria-label="OVR route">
+    </section>
+
+    <section class="ct-votes" aria-label="Community captain picks">
+      <header class="ct-vote-head">
         <div>
-          <small>START</small>
-          <strong>{baseOvr}</strong>
+          <span class="ct-section-kicker">COMMUNITY PICKS</span>
+          <h2>Who are you backing?</h2>
+          <p>Pick one of the six captains. Your choice is saved to your account and you can change it later.</p>
         </div>
-        <em>→</em>
-        <div>
-          <small>CEILING</small>
-          <strong class="is-cyan">{ceiling}</strong>
+        <div class="ct-vote-total">
+          <strong data-vote-total>0</strong>
+          <span>community picks</span>
         </div>
+      </header>
+
+      <div class="ct-vote-grid">
+        {players.map((player, voteIndex) => (
+          <button
+            class="ct-vote-tile"
+            type="button"
+            data-vote-player={player.id}
+            aria-pressed="false"
+            style={"--vote-delay:" + voteIndex * 60 + "ms"}
+          >
+            <span class="ct-vote-number">{String(voteIndex + 1).padStart(2, '0')}</span>
+            <img src={player.image} alt="" loading="lazy" decoding="async" />
+            <span class="ct-vote-info">
+              <strong>{player.fullName || player.name}</strong>
+              <span data-vote-count>0 users picked him</span>
+              <i class="ct-vote-track"><b data-vote-fill></b></i>
+            </span>
+            <span class="ct-vote-selected" data-vote-selected hidden>Your pick</span>
+          </button>
+        ))}
       </div>
+
+      <p class="ct-vote-status" data-vote-status aria-live="polite">
+        Sign in to save your pick.
+      </p>
     </section>
 
     {pick && (
@@ -294,10 +323,6 @@ const barPoints = (values, width = 220, height = 64) => {
                 loading={player.index < 2 ? 'eager' : 'lazy'}
                 decoding="async"
               />
-              <div class="ct-art-tag">
-                <small>BASE</small>
-                <strong>{player.baseOvr ?? baseOvr}</strong>
-              </div>
               {player.allDone && <div class="ct-stamp"><span>✓</span><b>COMPLETE</b></div>}
             </div>
 
@@ -307,11 +332,16 @@ const barPoints = (values, width = 220, height = 64) => {
                 <h2>{player.fullName || player.name}</h2>
                 <p>{player.fixture}</p>
                 {model && <em>{model.verdict}</em>}
-              </div>
-              <div class="ct-ovr" aria-label={'Projected OVR ' + player.projected}>
-                <span>PROJECTED</span>
-                <strong data-ovr>{player.projected}</strong>
-                <i>/ {ceiling}</i>
+                <button
+                  class="ct-pick-button"
+                  type="button"
+                  data-vote-player={player.id}
+                  aria-pressed="false"
+                >
+                  <span class="ct-pick-button-icon">+</span>
+                  <span data-pick-label>Pick as captain</span>
+                  <b data-pick-count>0</b>
+                </button>
               </div>
 
               <div class="ct-charts">
@@ -329,25 +359,6 @@ const barPoints = (values, width = 220, height = 64) => {
                         </div>
                       );
                     })}
-                  </div>
-                </figure>
-                <figure>
-                  <figcaption>Finish distribution {baseOvr}–{ceiling}</figcaption>
-                  <svg viewBox="0 0 220 72" class="ct-spark" aria-hidden="true">
-                    <polyline points={line} fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" />
-                    {outcomes.map((value, i) => {
-                      const x = (i / Math.max(1, outcomes.length - 1)) * 220;
-                      const y = 68 - (Number(value) / Math.max(1, ...outcomes)) * 56;
-                      return <circle cx={x} cy={y} r="2.4" />;
-                    })}
-                  </svg>
-                  <div class="ct-ovr-scale">
-                    {outcomes.map((_, i) => <span>{baseOvr + i}</span>)}
-                  </div>
-                  <div class="ct-climb">
-                    <span>119+ {fmt(climb[2] || 0)}%</span>
-                    <span>120+ {fmt(climb[3] || 0)}%</span>
-                    <span>121 {fmt(climb[4] || 0)}%</span>
                   </div>
                 </figure>
               </div>
@@ -539,9 +550,9 @@ const barPoints = (values, width = 220, height = 64) => {
               instance.unobserve(entry.target);
             });
           }, { threshold: 0.08 });
-          root.querySelectorAll('.ct-card, .ct-rank li, .ct-verdict, .ct-heat, .ct-board').forEach((node) => observer.observe(node));
+          root.querySelectorAll('.ct-card, .ct-rank li, .ct-verdict, .ct-votes, .ct-heat, .ct-board').forEach((node) => observer.observe(node));
         } else {
-          root.querySelectorAll('.ct-card, .ct-rank li, .ct-verdict, .ct-heat, .ct-board').forEach((node) => node.classList.add('is-visible'));
+          root.querySelectorAll('.ct-card, .ct-rank li, .ct-verdict, .ct-votes, .ct-heat, .ct-board').forEach((node) => node.classList.add('is-visible'));
         }
       };
       reveal();
@@ -566,6 +577,149 @@ const barPoints = (values, width = 220, height = 64) => {
         .catch(() => {});
     })();
   </script>
+
+
+  <script>
+    import { accountAuth, accountApi } from '../lib/account-client.js';
+
+    const voteRoot = document.querySelector('[data-captain-tracker]');
+    const voteStatus = voteRoot?.querySelector('[data-vote-status]');
+    const voteTotal = voteRoot?.querySelector('[data-vote-total]');
+    const gateOpen = (title, message) => {
+      window.FCAccountGate?.open({
+        title,
+        message,
+        feature: 'your captain pick'
+      });
+    };
+
+    const setVoteStatus = (text, kind = 'neutral') => {
+      if (!voteStatus) return;
+      voteStatus.textContent = text;
+      voteStatus.dataset.state = kind;
+    };
+
+    const animateCount = (node, value) => {
+      if (!node) return;
+      const previous = Number(node.dataset.lastCount ?? -1);
+      node.textContent = value === 1 ? '1 user picked him' : value + ' users picked him';
+      node.dataset.lastCount = String(value);
+      if (previous !== value) {
+        node.classList.remove('is-bump');
+        void node.offsetWidth;
+        node.classList.add('is-bump');
+      }
+    };
+
+    const updateVoteUI = (payload) => {
+      const counts = payload?.counts || {};
+      const selected = payload?.selected || null;
+      const total = Number(payload?.total || 0);
+
+      if (voteTotal) voteTotal.textContent = String(total);
+
+      (source.players || []).forEach((player) => {
+        const count = Number(counts[player.id] || 0);
+        const share = total > 0 ? Math.round((count / total) * 100) : 0;
+
+        voteRoot?.querySelectorAll('[data-vote-player="' + player.id + '"]').forEach((node) => {
+          const isTile = node.classList.contains('ct-vote-tile');
+          const isSelected = selected === player.id;
+          node.classList.toggle('is-selected', isSelected);
+          node.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+
+          if (isTile) {
+            animateCount(node.querySelector('[data-vote-count]'), count);
+            const fill = node.querySelector('[data-vote-fill]');
+            if (fill) fill.style.width = Math.max(share, count > 0 ? 5 : 0) + '%';
+            const selectedLabel = node.querySelector('[data-vote-selected]');
+            if (selectedLabel) selectedLabel.hidden = !isSelected;
+          } else {
+            const label = node.querySelector('[data-pick-label]');
+            if (label) label.textContent = isSelected ? 'Your pick' : 'Pick as captain';
+            const countNode = node.querySelector('[data-pick-count]');
+            if (countNode) countNode.textContent = count + (count === 1 ? ' pick' : ' picks');
+          }
+        });
+      });
+
+      setVoteStatus(
+        selected
+          ? 'You picked ' + ((source.players || []).find((player) => player.id === selected)?.name || 'a captain') + '. You can change it any time.'
+          : 'Pick one captain to save your choice.',
+        selected ? 'selected' : 'neutral'
+      );
+    };
+
+    const loadVotes = async () => {
+      try {
+        const response = await accountApi('/api/captain-votes?tracker=premier-league-matchday-7');
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || 'Could not load captain picks.');
+        updateVoteUI(payload);
+      } catch {
+        setVoteStatus('Captain picks are temporarily unavailable.', 'error');
+      }
+    };
+
+    const saveVote = async (playerId, trigger) => {
+      try {
+        const session = await accountAuth.auth.getSession();
+        if (!session.data?.session) {
+          gateOpen(
+            'Pick your captain',
+            'Create a free FCMobiletools account to save your captain pick and return to the tracker whenever you want.'
+          );
+          return;
+        }
+
+        if (trigger) {
+          trigger.disabled = true;
+          trigger.classList.add('is-saving');
+        }
+        setVoteStatus('Saving your pick…', 'saving');
+
+        const response = await accountApi('/api/captain-votes?tracker=premier-league-matchday-7', {
+          method: 'POST',
+          body: JSON.stringify({ playerId })
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          gateOpen(
+            'Sign in to save your pick',
+            'Your session is not active. Sign in to keep your captain pick attached to your account.'
+          );
+          return;
+        }
+        if (!response.ok) throw new Error(payload.error || 'Could not save your captain pick.');
+
+        updateVoteUI(payload);
+      } catch (error) {
+        setVoteStatus(error?.message || 'Could not save your captain pick.', 'error');
+      } finally {
+        if (trigger) {
+          trigger.disabled = false;
+          trigger.classList.remove('is-saving');
+        }
+      }
+    };
+
+    voteRoot?.querySelectorAll('[data-vote-player]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const playerId = button.dataset.votePlayer;
+        if (playerId) saveVote(playerId, button);
+      });
+    });
+
+    accountAuth.auth.onAuthStateChange(() => {
+      loadVotes();
+    });
+
+    loadVotes();
+  </script>
+
+  <AccountGateModal feature="your captain pick" title="Create an account to pick your captain" message="Your pick is saved to your profile so you can return and change it later." />
 
   <style>
     :global(html), :global(body) { background:#071018; }
@@ -691,12 +845,216 @@ const barPoints = (values, width = 220, height = 64) => {
     .ct-route .is-cyan { color:var(--cyan-soft); text-shadow:0 0 24px rgba(76,201,255,.25); }
     .ct-route em { color:#56707f; font-style:normal; }
 
-    .ct-verdict, .ct-board, .ct-heat, .ct-card {
+    .ct-verdict, .ct-board, .ct-heat, .ct-votes, .ct-card {
       opacity:0; transform:translateY(18px);
       transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1);
     }
-    .ct-verdict.is-visible, .ct-board.is-visible, .ct-heat.is-visible, .ct-card.is-visible,
+    .ct-verdict.is-visible, .ct-board.is-visible, .ct-heat.is-visible, .ct-votes.is-visible, .ct-card.is-visible,
     .ct-rank li.is-visible { opacity:1; transform:none; }
+
+    .ct-votes {
+      margin-top:16px;
+      padding:22px 24px 20px;
+      border-color:rgba(76,201,255,.2);
+      background:
+        radial-gradient(520px 180px at 5% 0, rgba(76,201,255,.11), transparent 68%),
+        linear-gradient(160deg,#101f2b,#09141c);
+    }
+    .ct-vote-head {
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:18px;
+      margin-bottom:16px;
+    }
+    .ct-vote-head h2 {
+      margin:0 0 6px;
+      font:700 24px/1.05 "Space Grotesk",Inter,sans-serif;
+      letter-spacing:-.045em;
+    }
+    .ct-vote-head p {
+      margin:0;
+      color:var(--muted);
+      font:500 13px/1.5 Inter,sans-serif;
+    }
+    .ct-vote-total {
+      min-width:128px;
+      padding:10px 13px;
+      border:1px solid rgba(76,201,255,.16);
+      border-radius:14px;
+      background:rgba(76,201,255,.055);
+      text-align:right;
+    }
+    .ct-vote-total strong {
+      display:block;
+      color:var(--cyan-soft);
+      font:700 28px/.95 "Space Grotesk",Inter,sans-serif;
+    }
+    .ct-vote-total span {
+      color:#6f8797;
+      font:800 9px/1 Inter,sans-serif;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .ct-vote-grid {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:9px;
+    }
+    .ct-vote-tile {
+      position:relative;
+      display:grid;
+      grid-template-columns:34px 48px minmax(0,1fr);
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:15px;
+      background:rgba(255,255,255,.025);
+      color:inherit;
+      text-align:left;
+      cursor:pointer;
+      overflow:hidden;
+      transition:transform .22s cubic-bezier(.22,1,.36,1), border-color .22s ease, background .22s ease, box-shadow .22s ease;
+      animation:ctVoteIn .5s cubic-bezier(.22,1,.36,1) var(--vote-delay) both;
+    }
+    .ct-vote-tile::after {
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(120deg,transparent 32%,rgba(255,255,255,.09) 50%,transparent 68%);
+      transform:translateX(-120%);
+      transition:transform .55s cubic-bezier(.22,1,.36,1);
+      pointer-events:none;
+    }
+    .ct-vote-tile:hover {
+      transform:translateY(-3px);
+      border-color:rgba(76,201,255,.26);
+      background:rgba(76,201,255,.04);
+      box-shadow:0 16px 30px rgba(0,0,0,.25);
+    }
+    .ct-vote-tile:hover::after { transform:translateX(120%); }
+    .ct-vote-tile.is-selected {
+      border-color:rgba(76,201,255,.5);
+      background:linear-gradient(145deg,rgba(76,201,255,.12),rgba(76,201,255,.035));
+      box-shadow:0 0 0 1px rgba(76,201,255,.08),0 18px 34px rgba(0,0,0,.24);
+    }
+    .ct-vote-number {
+      color:#526c7c;
+      font:900 10px/1 Inter,sans-serif;
+      letter-spacing:.08em;
+    }
+    .ct-vote-tile img {
+      width:48px;
+      height:62px;
+      object-fit:contain;
+      filter:drop-shadow(0 7px 10px rgba(0,0,0,.45));
+      transition:transform .28s cubic-bezier(.22,1,.36,1);
+    }
+    .ct-vote-tile:hover img,
+    .ct-vote-tile.is-selected img { transform:translateY(-3px) scale(1.06); }
+    .ct-vote-info { min-width:0; display:grid; gap:5px; }
+    .ct-vote-info strong {
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      color:#edf5f9;
+      font:700 12.5px/1.15 Inter,sans-serif;
+    }
+    .ct-vote-info > span {
+      color:#8197a6;
+      font:600 10px/1.2 Inter,sans-serif;
+    }
+    .ct-vote-track {
+      display:block;
+      height:4px;
+      overflow:hidden;
+      border-radius:999px;
+      background:#061017;
+      font-style:normal;
+    }
+    .ct-vote-track b {
+      display:block;
+      width:0;
+      height:100%;
+      border-radius:inherit;
+      background:linear-gradient(90deg,#2585ad,var(--cyan));
+      transition:width .55s cubic-bezier(.22,1,.36,1);
+    }
+    .ct-vote-selected {
+      position:absolute;
+      top:8px;
+      right:8px;
+      padding:4px 7px;
+      border-radius:999px;
+      border:1px solid rgba(76,201,255,.32);
+      background:rgba(4,16,24,.8);
+      color:#8ce4ff;
+      font:900 8px/1 Inter,sans-serif;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .ct-vote-selected[hidden] { display:none; }
+    .ct-vote-status {
+      margin:12px 0 0;
+      color:#7790a0;
+      font:700 11px/1.4 Inter,sans-serif;
+    }
+    .ct-vote-status[data-state="selected"] { color:#80dcff; }
+    .ct-vote-status[data-state="error"] { color:#ff9aa5; }
+    .ct-vote-status[data-state="saving"] { color:#c8d7e0; }
+    .ct-pick-button {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      min-height:36px;
+      margin-top:12px;
+      padding:0 11px;
+      border:1px solid rgba(76,201,255,.16);
+      border-radius:11px;
+      background:rgba(76,201,255,.05);
+      color:#b7d7e5;
+      font:800 11px/1 Inter,sans-serif;
+      cursor:pointer;
+      transition:transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+    }
+    .ct-pick-button:hover {
+      transform:translateY(-2px);
+      border-color:rgba(76,201,255,.4);
+      background:rgba(76,201,255,.09);
+      color:#effbff;
+    }
+    .ct-pick-button.is-selected {
+      border-color:rgba(76,201,255,.46);
+      background:rgba(76,201,255,.1);
+      color:#8fe5ff;
+    }
+    .ct-pick-button.is-saving { opacity:.6; cursor:wait; }
+    .ct-pick-button-icon {
+      display:grid;
+      place-items:center;
+      width:18px;
+      height:18px;
+      border-radius:6px;
+      border:1px solid currentColor;
+      font:900 12px/1 Inter,sans-serif;
+    }
+    .ct-pick-button b {
+      margin-left:2px;
+      color:#647f90;
+      font:800 9px/1 Inter,sans-serif;
+    }
+    .is-bump { animation:ctVoteBump .34s cubic-bezier(.22,1,.36,1); }
+
+    @keyframes ctVoteIn {
+      from { opacity:0; transform:translateY(12px); }
+      to { opacity:1; transform:none; }
+    }
+    @keyframes ctVoteBump {
+      40% { transform:translateY(-2px) scale(1.035); color:#c8f4ff; }
+      100% { transform:none; }
+    }
 
     .ct-verdict {
       display:grid; grid-template-columns:1fr auto; gap:20px; align-items:center;
@@ -798,7 +1156,7 @@ const barPoints = (values, width = 220, height = 64) => {
     .ct-stamp { right:14px; display:flex; align-items:center; gap:6px; color:var(--success); border-color:rgba(71,209,108,.3); animation:ctPop .35s ease both; }
 
     .ct-body { padding:22px 22px 16px; }
-    .ct-identity { padding-right:110px; position:relative; }
+    .ct-identity { position:relative; }
     .ct-identity span { color:#7d93a2; font:800 11px Inter,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
     .ct-identity h2 { margin:6px 0 4px; font:700 clamp(26px,3vw,36px)/.95 "Space Grotesk",Inter,sans-serif; letter-spacing:-.05em; }
     .ct-identity p { margin:0 0 8px; color:#8aa0b0; font:500 13px Inter,sans-serif; }
@@ -809,7 +1167,7 @@ const barPoints = (values, width = 220, height = 64) => {
     .ct-ovr i { color:#6d8493; font-style:normal; }
     .ct-card.is-complete .ct-ovr strong { color:var(--success); }
 
-    .ct-charts { display:grid; grid-template-columns:1.15fr .85fr; gap:14px; margin-top:18px; }
+    .ct-charts { display:block; margin-top:18px; }
     .ct-charts figure { margin:0; padding:12px; border:1px solid rgba(255,255,255,.06); border-radius:14px; background:rgba(255,255,255,.02); }
     .ct-charts figcaption { margin-bottom:10px; color:#8aa0b0; font:800 10px Inter,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
     .ct-bars { display:grid; gap:8px; }
@@ -871,8 +1229,9 @@ const barPoints = (values, width = 220, height = 64) => {
     @keyframes ctPop { from { opacity:0; transform:scale(.86); } to { opacity:1; transform:none; } }
 
     @media (max-width:1080px) {
-      .ct-hero, .ct-verdict, .ct-card, .ct-charts { grid-template-columns:1fr; }
+      .ct-hero, .ct-verdict, .ct-card { grid-template-columns:1fr; }
       .ct-fixtures, .ct-reads { grid-template-columns:1fr 1fr; }
+      .ct-vote-grid { grid-template-columns:1fr 1fr; }
       .ct-tasks { grid-template-columns:1fr 1fr; }
       .ct-identity { padding-right:0; }
       .ct-ovr { position:static; text-align:left; margin-top:10px; }
@@ -884,13 +1243,14 @@ const barPoints = (values, width = 220, height = 64) => {
       .ct-hero h1 { font-size:32px; }
       .ct-rank li { grid-template-columns:32px 36px minmax(0,1fr) 58px; }
       .ct-rank-bar { display:none; }
-      .ct-fixtures, .ct-reads, .ct-tasks, .ct-stats { grid-template-columns:1fr; }
+      .ct-fixtures, .ct-reads, .ct-tasks, .ct-stats, .ct-vote-grid { grid-template-columns:1fr; }
+      .ct-vote-head { align-items:flex-start; }
       .ct-bar { grid-template-columns:1fr auto; }
       .ct-bar div { grid-column:1 / -1; }
     }
     @media (prefers-reduced-motion:reduce) {
       .ct-hero, .ct-orb, .ct-kicker i, .ct-glow, .ct-bar i, .ct-rank-bar i, .ct-stamp { animation:none !important; }
-      .ct-verdict, .ct-board, .ct-heat, .ct-card, .ct-rank li { opacity:1; transform:none; }
+      .ct-verdict, .ct-board, .ct-heat, .ct-votes, .ct-card, .ct-rank li { opacity:1; transform:none; }
       .ct-card:hover, .ct-art img { transform:none !important; }
     }
   </style>
