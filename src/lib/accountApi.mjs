@@ -252,6 +252,181 @@ async function adminCrud(request, env, url) {
   const stateMatch = path.match(/^\/api\/admin\/account-users\/([0-9a-f-]+)\/state$/i);
   if (stateMatch && request.method === 'POST') return json(await adminSetState(env, stateMatch[1], await request.json().catch(() => ({}))));
 
+  if (path === '/api/admin/mission-submissions' && request.method === 'GET') {
+    const status = ['pending','rejected','approved'].includes(url.searchParams.get('status') || '')
+      ? url.searchParams.get('status')
+      : 'pending';
+    const attempts = await rest(
+      env,
+      'task_attempts?select=id,account_id,task_id,status,verification_status,verification_payload,created_at,completed_at&verification_status=eq.' +
+        encodeURIComponent(status) +
+        '&order=created_at.asc&limit=100'
+    );
+    if (!attempts?.length) return json({ submissions: [] });
+
+    const accountIds = [...new Set(attempts.map((x) => x.account_id).filter(Boolean))];
+    const taskIds = [...new Set(attempts.map((x) => x.task_id).filter(Boolean))];
+    const accountsPath = 'accounts?select=id,username,display_name&id=in.' + encodeURIComponent('(' + accountIds.join(',') + ')');
+    const tasksPath = 'reward_tasks?select=id,slug,title,xp_reward,token_reward,reward_points,verification_method&id=in.' + encodeURIComponent('(' + taskIds.join(',') + ')');
+    const [accounts, tasks] = await Promise.all([rest(env, accountsPath), rest(env, tasksPath)]);
+    const accountMap = new Map((accounts || []).map((x) => [x.id, x]));
+    const taskMap = new Map((tasks || []).map((x) => [x.id, x]));
+
+    return json({
+      submissions: attempts.map((attempt) => {
+        const task = taskMap.get(attempt.task_id) || {};
+        const account = accountMap.get(attempt.account_id) || {};
+        const payload = attempt.verification_payload && typeof attempt.verification_payload === 'object'
+          ? attempt.verification_payload
+          : {};
+        return {
+          attemptId: attempt.id,
+          accountId: attempt.account_id,
+          username: account.username || 'unknown',
+          displayName: account.display_name || '',
+          taskId: attempt.task_id,
+          slug: task.slug || '',
+          title: task.title || 'Manual mission',
+          xpReward: Number(task.xp_reward || 0),
+          tokenReward: Number(task.token_reward || task.reward_points || 0),
+          verificationMethod: task.verification_method || '',
+          proof: String(payload.proof || ''),
+          submittedAt: payload.submittedAt || attempt.completed_at || attempt.created_at,
+          createdAt: attempt.created_at
+        };
+      })
+    });
+  }
+
+  const missionSubmissionMatch = path.match(/^\\/api\\/admin\\/mission-submissions\\/([0-9a-f-]+)$/i);
+  if (missionSubmissionMatch && request.method === 'POST') {
+    const attemptId = ensureUuid(missionSubmissionMatch[1]);
+    const input = await request.json().catch(() => ({}));
+    const decision = input.status === 'approved' || input.status === 'rejected' ? input.status : '';
+    const reason = String(input.reason || '').trim().slice(0, 500);
+    if (!decision) throw new Error('Review status is required.');
+    if (!reason) throw new Error('A review reason is required.');
+
+    const attempts = await rest(
+      env,
+      'task_attempts?select=id,account_id,task_id,status,verification_status,verification_payload&id=eq.' +
+        encodeURIComponent(attemptId) +
+        '&limit=1'
+    );
+    const attempt = attempts?.[0];
+    if (!attempt) throw new Error('Mission submission not found.');
+    if (attempt.status !== 'accepted' || attempt.verification_status !== 'pending') {
+      throw new Error('This mission submission has already been reviewed.');
+    }
+
+    const tasks = await rest(
+      env,
+      'reward_tasks?select=id,slug,title,xp_reward,token_reward,reward_points,verification_method&id=eq.' +
+        encodeURIComponent(attempt.task_id) +
+        '&limit=1'
+    );
+    const task = tasks?.[0];
+    if (!task) throw new Error('Mission definition not found.');
+    if (!['manual','moderated'].includes(task.verification_method)) {
+      throw new Error('This mission does not use manual review.');
+    }
+
+    const proof = String(attempt.verification_payload?.proof || '').trim();
+    const taskName = task.slug === 'subscribe-youtube' ? 'YouTube subscription quest' : String(task.title || 'manual mission');
+    const auditReason = reason + ' · ' + taskName + (proof ? ' · proof: ' + proof : '');
+
+    if (decision === 'rejected') {
+      await rest(env, 'task_attempts?id=eq.' + encodeURIComponent(attemptId), {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          status: 'rejected',
+          verification_status: 'rejected',
+          completed_at: new Date().toISOString()
+        })
+      });
+      await rest(env, 'activity_events', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify([{
+          account_id: attempt.account_id,
+          event_type: 'mission_rejected',
+          entity_type: 'mission',
+          entity_id: task.id,
+          metadata: { task_attempt_id: attemptId, reason, proof: proof || null },
+          source: 'admin',
+          idempotency_key: attemptId
+        }])
+      });
+      return json({ ok: true, status: 'rejected' });
+    }
+
+    const xp = Math.max(0, Number(task.xp_reward || 0));
+    const tokens = Math.max(0, Number(task.token_reward || task.reward_points || 0));
+    if (xp > 0) {
+      await adminAdjustXp(env, attempt.account_id, {
+        amount: xp,
+        reason: auditReason,
+        idempotencyKey: attemptId
+      });
+    }
+    if (tokens > 0) {
+      await adminAdjustTokens(env, attempt.account_id, {
+        amount: tokens,
+        reason: auditReason,
+        idempotencyKey: attemptId
+      });
+    }
+
+    await rest(env, 'task_attempts?id=eq.' + encodeURIComponent(attemptId), {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        status: 'accepted',
+        verification_status: 'verified',
+        completed_at: new Date().toISOString()
+      })
+    });
+    await rest(env, 'activity_events', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify([{
+        account_id: attempt.account_id,
+        event_type: 'mission_completed',
+        entity_type: 'mission',
+        entity_id: task.id,
+        metadata: {
+          task_attempt_id: attemptId,
+          xp_reward: xp,
+          token_reward: tokens,
+          proof: proof || null,
+          reviewed_manually: true
+        },
+        source: 'admin',
+        idempotency_key: attemptId
+      }])
+    });
+    await rest(env, 'account_admin_actions', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify([{
+        target_account_id: attempt.account_id,
+        admin_account_id: await systemAccountId(env),
+        action_type: 'mission_review',
+        reason,
+        metadata: {
+          task_id: task.id,
+          task_attempt_id: attemptId,
+          decision: 'approved',
+          xp: xp,
+          tokens: tokens,
+          proof: proof || null
+        }
+      }])
+    });
+    return json({ ok: true, status: 'approved', xp, tokens });
+  }
+
   if (path === '/api/admin/missions' && request.method === 'GET') {
     const rows = await rest(env, 'reward_tasks?select=*&order=display_order.asc,priority.asc,created_at.desc');
     return json({ missions: rows || [] });
