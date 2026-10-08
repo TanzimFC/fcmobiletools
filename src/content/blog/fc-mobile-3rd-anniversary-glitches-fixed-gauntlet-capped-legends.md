@@ -59,29 +59,31 @@ The problem came from the way the quest checked Gauntlet progress. Players who h
 
 For anyone opening the Anniversary quests and seeing the Gauntlet requirement still sitting there, the first thing to try is the reset.
 
-## The capped Legends glitch is fixed
+## The Anniversary token glitch is fixed
 
-The other issue getting attention was the **capped Legends glitch**.
+The **capped Legends glitch and the Anniversary Token repeat-reward glitch were the same issue**.
 
-That has also been fixed, with the fix landing **roughly two hours ago** at the time of this update.
+The bug allowed a completed skill game to behave as though its reward had not already been claimed, letting players receive **3rd Anniversary Tokens** again instead of the activity staying permanently completed.
 
-That closes another one of the odd post-update problems that players were running into after the Anniversary content went live.
+That is why the issue was described in different ways across player reports, including the capped Legends glitch.
 
-There is no need to keep testing the old exploit or build a strategy around it now that the issue has been patched.
+![FC Mobile 3rd Anniversary capped Legends glitch](https://res.cloudinary.com/b0qikv7n/image/upload/v1791482667/fc-mobile-tools/sugr6bzu0pdorctbwqaz.jpg)
 
-## The Anniversary token glitch was real, but I never used it
+The issue has now been **fixed**, with the fix landing **roughly two hours ago** at the time of this update.
 
-One of the earlier reports focused on a way to repeatedly receive **3rd Anniversary Tokens** from a skill game.
+There is no point building a strategy around the old repeat-reward behaviour now.
 
-The reported behaviour allowed a completed activity to award Anniversary Tokens again instead of staying permanently claimed.
+I also did **not use the token trick myself**. I simply did not get the same chance to play that some other players had before the issue was fixed.
 
-That led to players being able to farm large amounts of Anniversary Tokens before the issue was fixed.
+So I am not going to pretend I personally farmed thousands of Anniversary Tokens.
 
-But there is an important personal note here: **I did not use the token trick myself.** I simply did not get the same chance to play that some other players had before the issue was fixed.
+## Anniversary Tokens and the rewards
 
-So this article is not going to pretend I personally farmed the rewards.
+The exploit attracted attention because it could accelerate access to Anniversary rewards, but I did not personally find a huge amount of use for the Anniversary Tokens themselves.
 
-The token glitch has now been fixed as well, along with the **capped Legends glitch**, so the old repeat-reward method should not be treated as a current farming route.
+There were still rewards available through the Anniversary content, including **Gems and other rewards**.
+
+The important distinction is between the normal event rewards and what players could get by repeatedly triggering the same reward because of the glitch.
 
 ## 10,000 Gems for 100 games
 
