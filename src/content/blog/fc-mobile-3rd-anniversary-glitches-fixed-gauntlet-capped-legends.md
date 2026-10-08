@@ -12,7 +12,7 @@ seriesOrder: 3
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-10-08T17:50:00.000Z"
-updatedAt: "2026-10-08T17:50:00.000Z"
+updatedAt: "2026-10-08T18:05:00.000Z"
 publishedAt: "2026-10-08T17:50:00.000Z"
 image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1791024730/fc-mobile-tools/yd1rntt4gdbwzsiyusfd.png"
 imageAlt: "FC Mobile 3rd Anniversary event"
@@ -26,7 +26,7 @@ relatedArticles: ["fc-mobile-3rd-anniversary-leaked-player-pools-weeks-1-4", "fc
 relatedTools: []
 relatedCodes: []
 featured: false
-readingTime: 5
+readingTime: 4
 seoTitle: "FC Mobile 3rd Anniversary Glitches Fixed: Gauntlet & Legends"
 seoDescription: "FC Mobile 3rd Anniversary bug update covering the Gauntlet quest reset fix, capped Legends glitch fix, Anniversary token reports and League Gems."
 canonicalUrl: ""
@@ -75,17 +75,23 @@ One of the earlier reports focused on a way to repeatedly receive **3rd Annivers
 
 The reported behaviour allowed a completed activity to award Anniversary Tokens again instead of staying permanently claimed.
 
-That led to claims that players could farm thousands of tokens.
+That led to players being able to farm large amounts of Anniversary Tokens before the issue was fixed.
 
 But there is an important personal note here: **I did not use the token trick myself.** I simply did not get the same chance to play that some other players had before the issue was fixed.
 
 So this article is not going to pretend I personally farmed the rewards.
 
-There were also claims that playing **100 games** could have resulted in around **10,000 Gems** under the wider set of Anniversary reward issues.
+The token glitch has now been fixed as well, along with the **capped Legends glitch**, so the old repeat-reward method should not be treated as a current farming route.
 
-That figure is still **unverified** from my side. I am not treating it as a confirmed reward or telling players they could definitely have collected 10,000 Gems.
+## 10,000 Gems for 100 games
 
-The distinction matters. A screenshot, a report and a confirmed reward table are not the same thing.
+There was also discussion around the rewards available from playing **100 games**.
+
+The **10,000 Gems reward for 100 games is confirmed**.
+
+So the Gem figure itself does not need to be treated as a rumour. The part that varies is whether an individual player actually had the chance to take advantage of the related glitch before it was fixed.
+
+That is a very different claim from saying that everyone automatically received 10,000 Gems.
 
 ## Anniversary Tokens had limited value outside the affected rewards
 
@@ -113,16 +119,6 @@ So I am leaving that one as an account-dependent report rather than declaring th
 
 The only safe statement from my own experience is that **I did not experience the League Gems issue**.
 
-## What is actually confirmed in this update
-
-| Issue | Current status | What to do |
-| :--- | :--- | :--- |
-| **Anniversary Gauntlet quest** | **Fixed** | Reset the Gauntlet if you already played it |
-| **Capped Legends glitch** | **Fixed** | No workaround needed |
-| **Anniversary Token repeat reward** | **Fixed / no longer usable** | Do not rely on the old farming method |
-| **Reported 10,000 Gem claim** | **Unverified** | No confirmed total yet |
-| **League Gems issue** | **Mixed reports** | My account showed no problem |
-
 ## The Anniversary event is moving quickly
 
 This is why old glitch guides become risky so fast in FC Mobile.
@@ -137,7 +133,7 @@ It is the current state of the fixes.
 
 The **capped Legends glitch is fixed**.
 
-The larger **10,000 Gem claim remains unconfirmed** from my own testing.
+The **10,000 Gem reward for 100 games is confirmed**.
 
 And on League Gems, my experience still does not match the reports from players who were affected.
 
