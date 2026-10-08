@@ -306,6 +306,13 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "cleanSheet": "pending",
           "setPiece": "pending",
           "threeContrib": "pending"
+        },
+        "failed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
         }
       },
       {
@@ -346,6 +353,13 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "cleanSheet": "pending",
           "setPiece": "pending",
           "threeContrib": "pending"
+        },
+        "failed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
         }
       },
       {
@@ -386,6 +400,13 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "cleanSheet": "pending",
           "setPiece": "pending",
           "threeContrib": "pending"
+        },
+        "failed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
         }
       },
       {
@@ -426,6 +447,13 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "cleanSheet": "pending",
           "setPiece": "pending",
           "threeContrib": "pending"
+        },
+        "failed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
         }
       },
       {
@@ -466,6 +494,13 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "cleanSheet": "pending",
           "setPiece": "pending",
           "threeContrib": "pending"
+        },
+        "failed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
         }
       },
       {
@@ -506,6 +541,13 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "cleanSheet": "pending",
           "setPiece": "pending",
           "threeContrib": "pending"
+        },
+        "failed": {
+          "minutes": false,
+          "win": false,
+          "cleanSheet": false,
+          "setPiece": false,
+          "threeContrib": false
         }
       }
     ],
@@ -520,7 +562,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-08T16:27:06.660Z"
       },
       {
         "id": "brentford-liverpool",
@@ -532,7 +574,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-08T16:27:06.660Z"
       },
       {
         "id": "newcastle-villa",
@@ -544,19 +586,19 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-08T16:27:06.660Z"
       },
       {
         "id": "leeds-united",
         "home": "Leeds United",
         "away": "Manchester United",
         "kickoffUtc": "2026-10-18T13:00:00.000Z",
-        "status": "scheduled",
+        "status": "live",
         "score": {
-          "home": null,
+          "home": 4,
           "away": null
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-08T16:27:06.660Z"
       },
       {
         "id": "brighton-palace",
@@ -568,8 +610,9 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "home": null,
           "away": null
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-08T16:27:06.660Z"
       }
-    ]
+    ],
+    "lastUpdated": "2026-10-08T16:27:06.660Z"
   }
 };
