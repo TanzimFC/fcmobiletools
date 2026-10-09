@@ -344,9 +344,19 @@ function rewardForm(r){
 }
 async function loadCommunity(){
  const v=$('#communityView');v.innerHTML='<div class="panel loading">Loading community queue…</div>';
- try{const d=await api('/api/admin/community-submissions?status=submitted');v.innerHTML='<section class="panel"><div class="head"><div><div class="eyebrow">COMMUNITY</div><h2>Contribution review</h2><p>Submissions can be approved before any XP or token reward is granted.</p></div><button class="btn" id="communityRefresh">Refresh</button></div><div class="grid">'+(d.submissions||[]).map(s=>'<article class="card"><h3>'+esc(s.title)+'</h3><p>'+esc(s.body||'').slice(0,300)+'</p><div class="meta"><span>'+esc(s.submission_type)+'</span><span>XP '+Number(s.reward_xp||0)+'</span><span>Tokens '+Number(s.reward_tokens||0)+'</span></div><div class="tools" style="margin-top:12px"><button class="btn primary" data-review="'+s.id+'" data-status="approved">Approve</button><button class="btn danger" data-review="'+s.id+'" data-status="rejected">Reject</button></div></article>').join('')||'<div class="empty">Nothing waiting for review.</div>'+'</div></section>';
- $('#communityRefresh').onclick=loadCommunity;
- v.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/community-submissions/'+b.dataset.review,{method:'POST',body:JSON.stringify({status:b.dataset.status,reason:b.dataset.status==='approved'?'Approved by admin':'Rejected by admin'})});loadCommunity()}catch(e){alert(e.message)}});
+ try{
+  const d=await api('/api/admin/community-submissions?status=submitted');
+  const cards=(d.submissions||[]).map(s=>{
+   const fullBody=String(s.body||'');
+   const screenshot=fullBody.match(/\[Screenshot:\s*(https:\/\/i\.ibb\.co(?:\.com)?\/[A-Za-z0-9_-]{3,32}\/[A-Za-z0-9._-]{1,100})\]/i);
+   const summary=fullBody.replace(/\[Screenshot:\s*https:\/\/i\.ibb\.co(?:\.com)?\/[A-Za-z0-9_-]{3,32}\/[A-Za-z0-9._-]{1,100}\]/i,'').replace(/^\[Page:\s*[^\]]+\]\s*/i,'').trim();
+   return '<article class="card"><h3>'+esc(s.title)+'</h3>'
+    +(screenshot?'<a href="'+esc(screenshot[1])+'" target="_blank" rel="noopener noreferrer" aria-label="Open attached screenshot"><img src="'+esc(screenshot[1])+'" alt="Attached screenshot" loading="lazy" style="display:block;width:100%;max-height:280px;object-fit:contain;margin:10px 0;border:1px solid #2a3740;border-radius:12px;background:#080d12"></a>':'')
+    +'<p>'+esc(summary||'No description supplied.').slice(0,300)+'</p><div class="meta"><span>'+esc(s.submission_type)+'</span><span>XP '+Number(s.reward_xp||0)+'</span><span>Tokens '+Number(s.reward_tokens||0)+'</span></div><div class="tools" style="margin-top:12px"><button class="btn primary" data-review="'+s.id+'" data-status="approved">Approve</button><button class="btn danger" data-review="'+s.id+'" data-status="rejected">Reject</button></div></article>';
+  }).join('');
+  v.innerHTML='<section class="panel"><div class="head"><div><div class="eyebrow">COMMUNITY</div><h2>Contribution review</h2><p>Submissions can be approved before any XP or token reward is granted.</p></div><button class="btn" id="communityRefresh">Refresh</button></div><div class="grid">'+(cards||'<div class="empty">Nothing waiting for review.</div>')+'</div></section>';
+  $('#communityRefresh').onclick=loadCommunity;
+  v.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/community-submissions/'+b.dataset.review,{method:'POST',body:JSON.stringify({status:b.dataset.status,reason:b.dataset.status==='approved'?'Approved by admin':'Rejected by admin'})});loadCommunity()}catch(e){alert(e.message)}});
  }catch(e){v.innerHTML='<div class="panel"><div class="empty">'+esc(e.message)+'</div></div>'}
 }
 loadUsers();
