@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>FCMobiletools · Surveys</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root{
+  --bg:#060d14;--ink:#f5f8fb;--mut:#8aa2b4;--dim:#5f7788;--cy:#4cc9ff;--cy2:#9fe6ff;--vi:#9a8cff;--go:#f6c453;--ok:#4ee0a0;--bad:#ff8f86;
+  --line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);
+  --glass:linear-gradient(165deg,rgba(26,43,62,.62),rgba(9,17,26,.9));
+  --ease:cubic-bezier(.22,1,.36,1);
+  --disp:'Space Grotesk','Inter',system-ui,sans-serif;--sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html{background:var(--bg);color-scheme:dark}
+body{margin:0;min-height:100vh;color:var(--ink);font:14.5px/1.55 var(--sans);
+  background:radial-gradient(900px 520px at 4% -8%,rgba(76,201,255,.13),transparent 60%),radial-gradient(760px 500px at 100% 0,rgba(154,140,255,.1),transparent 58%),var(--bg)}
+a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+*{scrollbar-width:thin;scrollbar-color:#27465a transparent}
+body.av-lock{overflow:hidden}
+
+.av-shell{width:min(1280px,calc(100% - 32px));margin:0 auto;padding:30px 0 80px}
+.av-top{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:22px;animation:avUp .5s var(--ease) both}
+.av-eyebrow{display:inline-flex;align-items:center;gap:9px;color:var(--cy);font:800 11.5px/1 var(--sans);letter-spacing:.18em}
+.av-eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--cy);box-shadow:0 0 0 4px rgba(76,201,255,.15),0 0 12px var(--cy)}
+.av-top h1{margin:12px 0 6px;font:700 clamp(30px,4vw,46px)/1.02 var(--disp);letter-spacing:-.05em;background:linear-gradient(180deg,#fff 35%,#a9c6d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.av-top p{margin:0;max-width:640px;color:var(--mut)}
+.av-back{padding:10px 14px;border:1px solid var(--line2);border-radius:12px;background:rgba(255,255,255,.04);color:#cfe0ec;font:700 13px/1 var(--sans);transition:.2s var(--ease)}
+.av-back:hover{border-color:rgba(76,201,255,.5);color:#fff}
+
+.av-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.av-stat{position:relative;overflow:hidden;padding:18px 20px;border:1px solid var(--line);border-radius:20px;background:var(--glass);box-shadow:0 24px 50px -32px #000;animation:avUp .55s var(--ease) both;animation-delay:calc(var(--i)*60ms)}
+.av-stat::before{content:"";position:absolute;left:20px;right:20px;top:0;height:2px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,var(--c,var(--cy)),transparent)}
+.av-stat small{display:block;color:var(--dim);font:800 10.5px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.av-stat strong{display:block;margin-top:12px;font:700 30px/1 var(--disp);letter-spacing:-.04em}
+
+.av-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.av-filters{display:flex;gap:6px;flex-wrap:wrap;padding:5px;border:1px solid var(--line);border-radius:14px;background:rgba(9,19,29,.8)}
+.av-filters button{border:0;border-radius:10px;background:transparent;color:var(--mut);padding:9px 14px;font:700 12.5px/1 var(--sans);transition:.2s var(--ease)}
+.av-filters button:hover{color:#fff}
+.av-filters button.on{background:rgba(76,201,255,.14);color:#fff;box-shadow:inset 0 0 0 1px rgba(76,201,255,.3)}
+
+.av-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border:1px solid var(--line2);border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));color:#e6f1f8;font:700 13px/1 var(--sans);transition:.2s var(--ease)}
+.av-btn:hover:not(:disabled){transform:translateY(-1px);border-color:rgba(76,201,255,.55);color:#fff}
+.av-btn:disabled{opacity:.45;cursor:not-allowed}
+.av-btn.pri{border:0;color:#04131c;font-weight:800;background:linear-gradient(180deg,#b6ecff,#5ccfff 48%,#2eb4ee);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 14px 28px -12px rgba(76,201,255,.65)}
+.av-btn.bad{border-color:rgba(255,143,134,.4);color:#ffb1aa;background:rgba(255,143,134,.07)}
+.av-btn.sm{min-height:34px;padding:0 12px;font-size:12.5px}
+.av-btn:focus-visible,.av-filters button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+
+.av-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.av-card{position:relative;display:flex;flex-direction:column;gap:12px;padding:22px;border:1px solid var(--line);border-radius:22px;background:var(--glass);box-shadow:0 26px 50px -32px #000;overflow:hidden;opacity:0;transform:translateY(12px);animation:avIn .5s var(--ease) forwards;animation-delay:calc(var(--i)*55ms + 80ms);transition:border-color .25s,transform .25s}
+.av-card:hover{border-color:rgba(76,201,255,.35);transform:translateY(-3px)}
+.av-card.live::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--ok),var(--cy),var(--vi),var(--ok));background-size:300% 100%;animation:avFlow 5s linear infinite}
+.av-card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.av-card h3{margin:0;font:700 18px/1.25 var(--disp);letter-spacing:-.02em}
+.av-slug{color:var(--dim);font:600 12px/1.4 var(--sans);word-break:break-all}
+.av-card p{margin:0;color:var(--mut);font-size:13.5px}
+.av-pill{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;padding:5px 11px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.05);color:#b9cddb;font:800 10.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase}
+.av-pill.live{border-color:rgba(78,224,160,.45);background:rgba(78,224,160,.12);color:#9ff0c9}
+.av-pill.live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);animation:avBlink 1.6s ease-in-out infinite}
+.av-pill.draft{border-color:rgba(246,196,83,.45);background:rgba(246,196,83,.1);color:#ffe29a}
+.av-pill.closed{border-color:rgba(255,143,134,.4);background:rgba(255,143,134,.08);color:#ffc0ba}
+.av-chips{display:flex;flex-wrap:wrap;gap:6px}
+.av-chip{padding:6px 10px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#a9bccb;font:600 12px/1 var(--sans)}
+.av-chip.xp{border-color:rgba(154,140,255,.4);color:#cdc5ff;background:rgba(154,140,255,.1)}
+.av-chip.tk{border-color:rgba(246,196,83,.4);color:#ffe29a;background:rgba(246,196,83,.09)}
+.av-meter{height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.av-meter i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--cy),var(--vi));transition:width .9s var(--ease)}
+.av-resp{display:flex;justify-content:space-between;color:var(--mut);font:600 12.5px/1 var(--sans)}
+.av-resp b{color:#fff}
+.av-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+
+.av-empty{grid-column:1/-1;padding:46px 20px;border:1px dashed var(--line2);border-radius:20px;text-align:center;color:var(--mut)}
+.av-empty h3{margin:0 0 6px;color:#fff;font:700 20px var(--disp)}
+.av-skel{min-height:200px;border-radius:22px;background:linear-gradient(90deg,rgba(22,37,54,.55) 25%,rgba(76,201,255,.12) 50%,rgba(22,37,54,.55) 75%);background-size:200% 100%;animation:avShim 1.6s ease-in-out infinite}
+
+/* modal */
+.av-modal{position:fixed;inset:0;z-index:100;display:none;align-items:flex-start;justify-content:center;padding:28px 16px;overflow-y:auto;background:rgba(2,6,10,.78);backdrop-filter:blur(10px)}
+.av-modal.open{display:flex;animation:avFade .25s ease both}
+.av-dialog{width:min(920px,100%);padding:26px;border:1px solid var(--line2);border-radius:26px;background:linear-gradient(165deg,#12202f,#09121b);box-shadow:0 60px 120px -30px #000;animation:avPop .4s var(--ease) both}
+.av-dh{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+.av-dh h2{margin:6px 0 0;font:700 24px/1.15 var(--disp);letter-spacing:-.035em}
+.av-x{width:38px;height:38px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-size:20px;line-height:1;transition:.2s}
+.av-x:hover{border-color:rgba(255,143,134,.5);color:#ffb1aa}
+.av-note{padding:12px 14px;margin-bottom:14px;border-radius:14px;border:1px solid rgba(246,196,83,.35);background:rgba(246,196,83,.08);color:#ffe29a;font:600 13px/1.5 var(--sans)}
+.av-msg{margin:12px 0 0;font:600 13px/1.5 var(--sans)}.av-msg.err{color:#ffb1aa}.av-msg.ok{color:#9ff0c9}
+
+.av-form{display:grid;gap:14px}
+.av-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.av-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.av-row4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.av-f{display:grid;gap:6px;min-width:0}
+.av-f>span{color:#b9cddb;font:700 12.5px/1 var(--sans)}
+.av-f small{color:var(--dim);font:500 12px/1.4 var(--sans)}
+.av-in,.av-form select,.av-form textarea{width:100%;min-height:42px;padding:0 13px;border:1px solid var(--line2);border-radius:12px;background:rgba(3,8,13,.7);color:#f1f8fd;font:500 14px var(--sans);box-shadow:inset 0 2px 6px rgba(0,0,0,.35);transition:.2s}
+.av-form textarea{padding:11px 13px;line-height:1.55;min-height:80px;resize:vertical}
+.av-in:focus,.av-form select:focus,.av-form textarea:focus{outline:none;border-color:rgba(76,201,255,.75);box-shadow:inset 0 2px 6px rgba(0,0,0,.35),0 0 0 4px rgba(76,201,255,.14)}
+.av-in:disabled{opacity:.55}
+.av-check{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03);cursor:pointer}
+.av-check input{width:18px;height:18px;accent-color:var(--cy)}
+.av-check span{font:600 13.5px/1.3 var(--sans)}.av-check small{display:block;color:var(--dim);font:500 12px/1.3 var(--sans);margin-top:2px}
+
+.av-sec{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 2px}
+.av-sec h3{margin:0;font:700 17px var(--disp);letter-spacing:-.02em}
+.av-qs{display:grid;gap:12px}
+.av-q{padding:16px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.025);animation:avIn .35s var(--ease) both}
+.av-qh{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.av-qn{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:rgba(76,201,255,.14);color:var(--cy2);font:800 13px/1 var(--sans)}
+.av-qh select{width:auto;min-width:160px}
+.av-qh .sp{flex:1}
+.av-ib{width:34px;height:34px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-size:15px;transition:.2s}
+.av-ib:hover:not(:disabled){border-color:rgba(76,201,255,.5)}.av-ib:disabled{opacity:.35;cursor:not-allowed}.av-ib.bad:hover:not(:disabled){border-color:rgba(255,143,134,.6);color:#ffb1aa}
+.av-opts{display:grid;gap:8px;margin-top:10px}
+.av-opt{display:flex;gap:8px;align-items:center}
+.av-opt .av-in{flex:1}
+
+/* results */
+.av-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.av-kpi{padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03)}
+.av-kpi small{display:block;color:var(--dim);font:800 10.5px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.av-kpi strong{display:block;margin-top:9px;font:700 24px/1 var(--disp);letter-spacing:-.03em}
+.av-res{padding:18px;margin-bottom:12px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.025)}
+.av-res h4{margin:0 0 4px;font:700 15.5px/1.35 var(--sans)}
+.av-res .sub{margin:0 0 14px;color:var(--dim);font:600 12px/1 var(--sans)}
+.av-bars{display:grid;gap:9px}
+.av-b{display:grid;grid-template-columns:minmax(90px,200px) 1fr 86px;gap:12px;align-items:center;font:600 13px/1.3 var(--sans)}
+.av-b .lbl{color:#cfe0ec;overflow-wrap:anywhere}
+.av-track{height:12px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.av-track i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--cy),var(--vi));transition:width .9s var(--ease);transition-delay:calc(var(--k)*70ms)}
+.av-b .num{text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
+.av-avg{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.av-avg b{font:700 34px/1 var(--disp);letter-spacing:-.04em;color:var(--go)}
+.av-avg span{color:var(--mut);font-weight:600}
+.av-texts{display:grid;gap:8px;max-height:300px;overflow:auto;padding-right:4px}
+.av-t{padding:11px 13px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);overflow-wrap:anywhere}
+.av-t small{display:block;margin-top:6px;color:var(--dim);font:600 11.5px/1 var(--sans)}
+
+.av-toast{position:fixed;left:50%;bottom:26px;z-index:200;transform:translate(-50%,20px);padding:12px 18px;border-radius:14px;border:1px solid var(--line2);background:#0f1c2a;box-shadow:0 20px 50px -10px #000;font:700 13.5px/1.3 var(--sans);opacity:0;pointer-events:none;transition:.35s var(--ease)}
+.av-toast.show{opacity:1;transform:translate(-50%,0)}.av-toast.err{border-color:rgba(255,143,134,.5);color:#ffc0ba}.av-toast.ok{border-color:rgba(78,224,160,.5);color:#b6f5d9}
+
+@keyframes avUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes avIn{to{opacity:1;transform:none}}
+@keyframes avFade{from{opacity:0}to{opacity:1}}
+@keyframes avPop{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes avFlow{to{background-position:300% 0}}
+@keyframes avBlink{50%{opacity:.35}}
+@keyframes avShim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media(max-width:980px){.av-stats{grid-template-columns:repeat(2,1fr)}.av-row4{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.av-list{grid-template-columns:1fr}.av-row2,.av-row3,.av-row4,.av-kpis{grid-template-columns:1fr}.av-kpis{grid-template-columns:1fr 1fr}.av-b{grid-template-columns:1fr 70px}.av-b .av-track{grid-column:1/-1;order:3}.av-dialog{padding:18px 14px}.av-qh{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-delay:0s!important;transition-duration:.001ms!important}.av-card,.av-stat{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<main class="av-shell">
+  <header class="av-top">
+    <div>
+      <span class="av-eyebrow"><i></i> SURVEYS</span>
+      <h1>Ask the community. Reward honest answers.</h1>
+      <p>Build surveys, set the XP and Token reward, watch results come in and export them. Members see an honesty notice before they start, and every account can answer once.</p>
+    </div>
+    <a class="av-back" href="/admin/accounts/">&larr; Account System</a>
+  </header>
+
+  <section class="av-stats" id="stats"></section>
+
+  <div class="av-bar">
+    <div class="av-filters" id="filters" role="group" aria-label="Filter surveys">
+      <button type="button" class="on" data-f="all">All</button>
+      <button type="button" data-f="live">Live</button>
+      <button type="button" data-f="draft">Draft</button>
+      <button type="button" data-f="closed">Closed</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="av-btn" type="button" id="refresh">Refresh</button>
+      <button class="av-btn pri" type="button" id="newSurvey">New survey</button>
+    </div>
+  </div>
+
+  <section class="av-list" id="list"><div class="av-skel"></div><div class="av-skel"></div><div class="av-skel"></div></section>
+</main>
+
+<div class="av-modal" id="modal"><div class="av-dialog" id="dialog" role="dialog" aria-modal="true"></div></div>
+<div class="av-toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var state={surveys:[],totals:{},filter:'all',draft:null,results:null};
+
+function api(path,opt){
+  opt=opt||{};
+  var headers={'content-type':'application/json'};
+  return fetch(path,{method:opt.method||'GET',credentials:'same-origin',cache:'no-store',headers:headers,body:opt.body}).then(function(r){
+    return r.json().catch(function(){return {}}).then(function(b){
+      if(!r.ok){var e=new Error(b.error||'Request failed.');e.status=r.status;throw e}
+      return b;
+    });
+  });
+}
+var toastT=0;
+function toast(msg,kind){var t=$('#toast');t.textContent=msg;t.className='av-toast show '+(kind||'');clearTimeout(toastT);toastT=setTimeout(function(){t.className='av-toast '+(kind||'')},2800)}
+function fmt(n){return Number(n||0).toLocaleString()}
+function dt(iso){if(!iso)return '';var d=new Date(iso);return isNaN(d)?'':d.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function toLocalInput(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d))return '';var p=function(n){return String(n).padStart(2,'0')};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())}
+function fromLocalInput(v){if(!v)return null;var d=new Date(v);return isNaN(d)?null:d.toISOString()}
+function countUp(el){
+  var target=Number(el.dataset.count||0);
+  if(reduce||target<10){el.textContent=fmt(target);return}
+  var t0=performance.now(),dur=900;
+  (function tick(t){var k=Math.min(1,(t-t0)/dur);el.textContent=fmt(Math.round(target*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(tick)})(t0);
+}
+
+/* ------------------------------------------------------------ list */
+function renderStats(){
+  var t=state.totals||{};
+  var items=[['Surveys',t.surveys,'#4cc9ff'],['Live now',t.live,'#4ee0a0'],['Responses',t.responses,'#9a8cff'],['XP paid',t.xpPaid,'#f6c453'],['Tokens paid',t.tokensPaid,'#ff9a57']];
+  $('#stats').innerHTML=items.map(function(x,i){return '<div class="av-stat" style="--i:'+i+';--c:'+x[2]+'"><small>'+x[0]+'</small><strong data-count="'+Number(x[1]||0)+'">0</strong></div>'}).join('');
+  $$('#stats [data-count]').forEach(countUp);
+}
+function renderList(){
+  var list=state.surveys.filter(function(s){return state.filter==='all'||(state.filter==='closed'?(s.status==='closed'||s.status==='archived'):s.status===state.filter)});
+  var box=$('#list');
+  if(!list.length){
+    box.innerHTML='<div class="av-empty"><h3>'+(state.surveys.length?'Nothing in this filter':'No surveys yet')+'</h3><p>'+(state.surveys.length?'Switch the filter to see the others.':'Create your first survey. It stays hidden from members until you set it live.')+'</p></div>';
+    return;
+  }
+  box.innerHTML=list.map(function(s,i){
+    var cap=s.maxResponses?Math.min(100,Math.round(s.responseCount/s.maxResponses*100)):null;
+    var pill='<span class="av-pill '+esc(s.status==='archived'?'closed':s.status)+'">'+esc(s.status)+'</span>';
+    var acts='<button class="av-btn sm" data-act="edit" data-id="'+esc(s.id)+'">Edit</button>'
+      +'<button class="av-btn sm" data-act="results" data-id="'+esc(s.id)+'">Results</button>'
+      +(s.status==='live'?'<button class="av-btn sm" data-act="status" data-to="closed" data-id="'+esc(s.id)+'">Close</button>':'')
+      +((s.status==='draft'||s.status==='closed')&&s.questionCount>0?'<button class="av-btn sm pri" data-act="status" data-to="live" data-id="'+esc(s.id)+'">Set live</button>':'')
+      +'<button class="av-btn sm" data-act="copy" data-slug="'+esc(s.slug)+'">Copy link</button>'
+      +(s.responseCount===0?'<button class="av-btn sm bad" data-act="delete" data-id="'+esc(s.id)+'">Delete</button>':'');
+    return '<article class="av-card '+(s.status==='live'?'live':'')+'" style="--i:'+i+'">'
+      +'<div class="av-card-h"><div><h3>'+esc(s.title)+'</h3><div class="av-slug">/surveys/?s='+esc(s.slug)+'</div></div>'+pill+'</div>'
+      +(s.description?'<p>'+esc(s.description)+'</p>':'')
+      +'<div class="av-chips"><span class="av-chip">'+fmt(s.questionCount)+' questions</span>'
+      +(s.rewardXp?'<span class="av-chip xp">+'+fmt(s.rewardXp)+' XP</span>':'')+(s.rewardTokens?'<span class="av-chip tk">+'+fmt(s.rewardTokens)+' Tokens</span>':'')
+      +(s.anonymous?'<span class="av-chip">Anonymous</span>':'')
+      +(s.endsAt?'<span class="av-chip">Ends '+esc(dt(s.endsAt))+'</span>':'')+'</div>'
+      +'<div><div class="av-resp"><span><b>'+fmt(s.responseCount)+'</b> '+(s.maxResponses?'of '+fmt(s.maxResponses)+' responses':'responses')+'</span><span>'+(s.lastResponseAt?'Last '+esc(dt(s.lastResponseAt)):'No responses yet')+'</span></div>'
+      +'<div class="av-meter" style="margin-top:8px"><i data-w="'+(cap==null?(s.responseCount>0?100:0):cap)+'"></i></div></div>'
+      +'<div class="av-acts">'+acts+'</div></article>';
+  }).join('');
+  requestAnimationFrame(function(){$$('.av-meter i',box).forEach(function(i){i.style.width=i.dataset.w+'%'})});
+}
+function load(){
+  return api('/api/admin/surveys').then(function(d){state.surveys=d.surveys||[];state.totals=d.totals||{};renderStats();renderList()}).catch(function(e){
+    $('#list').innerHTML='<div class="av-empty"><h3>Could not load surveys</h3><p>'+esc(e.message)+'</p><p style="margin-top:10px;font-size:12.5px">If this says a function was not found, run the survey SQL migration in Supabase first.</p></div>';
+  });
+}
+$('#filters').addEventListener('click',function(e){var b=e.target.closest('[data-f]');if(!b)return;state.filter=b.dataset.f;$$('#filters button').forEach(function(x){x.classList.toggle('on',x===b)});renderList()});
+$('#refresh').addEventListener('click',function(){load().then(function(){toast('Refreshed','ok')})});
+$('#newSurvey').addEventListener('click',function(){openBuilder(null)});
+$('#list').addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]');if(!b)return;
+  var act=b.dataset.act,id=b.dataset.id;
+  if(act==='edit')openBuilder(id);
+  else if(act==='results')openResults(id);
+  else if(act==='copy'){var link=location.origin+'/surveys/?s='+b.dataset.slug;(navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject()).then(function(){toast('Link copied','ok')},function(){toast(link)})}
+  else if(act==='status'){
+    var to=b.dataset.to;
+    if(to==='closed'&&!confirm('Close this survey? Members will not be able to start or submit it.'))return;
+    b.disabled=true;
+    api('/api/admin/surveys/'+id+'/status',{method:'POST',body:JSON.stringify({status:to})}).then(function(){toast(to==='live'?'Survey is live':'Survey closed','ok');load()}).catch(function(x){b.disabled=false;toast(x.message,'err')});
+  }
+  else if(act==='delete'){
+    if(!confirm('Delete this survey permanently? This cannot be undone.'))return;
+    api('/api/admin/surveys/'+id,{method:'DELETE'}).then(function(){toast('Survey deleted','ok');load()}).catch(function(x){toast(x.message,'err')});
+  }
+});
+
+/* ------------------------------------------------------------ modal */
+var modal=$('#modal'),dialog=$('#dialog');
+function openModal(html){dialog.innerHTML=html;modal.classList.add('open');document.body.classList.add('av-lock');modal.scrollTop=0}
+function closeModal(){modal.classList.remove('open');document.body.classList.remove('av-lock');dialog.innerHTML='';state.draft=null}
+modal.addEventListener('mousedown',function(e){if(e.target===modal&&!state.draft)closeModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal.classList.contains('open')){if(state.draft&&!confirm('Close without saving?'))return;closeModal()}});
+dialog.addEventListener('click',function(e){if(e.target.closest('[data-close]')){if(state.draft&&!confirm('Close without saving?'))return;closeModal()}});
+
+/* ------------------------------------------------------------ builder */
+var TYPES=[['single','Single choice'],['multiple','Multiple choice'],['yes_no','Yes or no'],['rating','Rating scale'],['text','Free text']];
+function blankQuestion(type){
+  var q={type:type||'single',prompt:'',helpText:'',required:true,options:[],config:{}};
+  if(q.type==='single'||q.type==='multiple')q.options=[{id:'o1',label:''},{id:'o2',label:''}];
+  if(q.type==='rating')q.config={max:5,lowLabel:'',highLabel:''};
+  if(q.type==='text')q.config={maxLength:600};
+  return q;
+}
+function nextOptId(q){var n=0;q.options.forEach(function(o){var m=/^o(\d+)$/.exec(o.id);if(m)n=Math.max(n,Number(m[1]))});return 'o'+(n+1)}
+function slugify(t){return String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,64)}
+
+function openBuilder(id){
+  if(!id){
+    state.draft={id:null,locked:false,slugTouched:false,survey:{slug:'',title:'',description:'',intro:'',status:'draft',rewardXp:25,rewardTokens:10,anonymous:false,maxResponses:'',minSeconds:'',startsAt:'',endsAt:''},questions:[blankQuestion('single')]};
+    renderBuilder();return;
+  }
+  api('/api/admin/surveys/'+id).then(function(d){
+    var s=d.survey;
+    state.draft={id:s.id,locked:!!d.questionsLocked,responseCount:d.responseCount,slugTouched:true,survey:{slug:s.slug,title:s.title,description:s.description,intro:s.intro,status:s.status,rewardXp:s.rewardXp,rewardTokens:s.rewardTokens,anonymous:s.anonymous,maxResponses:s.maxResponses==null?'':s.maxResponses,minSeconds:s.minSeconds==null?'':s.minSeconds,startsAt:toLocalInput(s.startsAt),endsAt:toLocalInput(s.endsAt)},
+      questions:(d.questions||[]).map(function(q){return {type:q.type,prompt:q.prompt,helpText:q.helpText||'',required:q.required,options:(q.options||[]).map(function(o){return {id:o.id,label:o.label}}),config:q.config||{}}})};
+    renderBuilder();
+  }).catch(function(e){toast(e.message,'err')});
+}
+
+function questionHtml(q,i,total,locked){
+  var dis=locked?' disabled':'';
+  var body='';
+  if(q.type==='single'||q.type==='multiple'){
+    body='<div class="av-opts">'+q.options.map(function(o,k){
+      return '<div class="av-opt"><input class="av-in" data-oi="'+k+'" placeholder="Option '+(k+1)+'" maxlength="120" value="'+esc(o.label)+'"'+dis+'><button type="button" class="av-ib bad" data-q="'+i+'" data-act="delopt" data-k="'+k+'"'+(locked||q.options.length<=2?' disabled':'')+' aria-label="Remove option">&times;</button></div>'}).join('')
+      +'</div><div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><button type="button" class="av-btn sm" data-q="'+i+'" data-act="addopt"'+(locked||q.options.length>=12?' disabled':'')+'>Add option</button>'
+      +(q.type==='multiple'?'<label class="av-f" style="display:flex;align-items:center;gap:8px;grid-template-columns:none"><span>Max choices</span><input class="av-in" style="width:80px" type="number" min="1" max="'+q.options.length+'" data-cfg="maxSelect" value="'+esc(q.config.maxSelect||'')+'" placeholder="all"'+dis+'></label>':'')+'</div>';
+  }else if(q.type==='rating'){
+    body='<div class="av-row3" style="margin-top:10px"><label class="av-f"><span>Scale</span><select data-cfg="max"'+dis+'><option value="5"'+(Number(q.config.max)===5?' selected':'')+'>1 to 5</option><option value="10"'+(Number(q.config.max)===10?' selected':'')+'>1 to 10</option></select></label>'
+      +'<label class="av-f"><span>Low label</span><input class="av-in" data-cfg="lowLabel" maxlength="40" value="'+esc(q.config.lowLabel||'')+'" placeholder="Not good"'+dis+'></label>'
+      +'<label class="av-f"><span>High label</span><input class="av-in" data-cfg="highLabel" maxlength="40" value="'+esc(q.config.highLabel||'')+'" placeholder="Excellent"'+dis+'></label></div>';
+  }else if(q.type==='text'){
+    body='<div class="av-row3" style="margin-top:10px"><label class="av-f"><span>Max characters</span><input class="av-in" type="number" min="20" max="2000" data-cfg="maxLength" value="'+esc(q.config.maxLength||600)+'"'+dis+'></label></div>';
+  }
+  return '<div class="av-q" data-qi="'+i+'"><div class="av-qh"><span class="av-qn">'+(i+1)+'</span>'
+    +'<select data-qtype'+dis+'>'+TYPES.map(function(t){return '<option value="'+t[0]+'"'+(q.type===t[0]?' selected':'')+'>'+t[1]+'</option>'}).join('')+'</select>'
+    +'<label class="av-check" style="padding:8px 12px"><input type="checkbox" data-qreq'+(q.required?' checked':'')+dis+'><span>Required</span></label><span class="sp"></span>'
+    +'<button type="button" class="av-ib" data-q="'+i+'" data-act="up"'+(locked||i===0?' disabled':'')+' aria-label="Move up">&uarr;</button>'
+    +'<button type="button" class="av-ib" data-q="'+i+'" data-act="down"'+(locked||i===total-1?' disabled':'')+' aria-label="Move down">&darr;</button>'
+    +'<button type="button" class="av-ib bad" data-q="'+i+'" data-act="delq"'+(locked?' disabled':'')+' aria-label="Delete question">&times;</button></div>'
+    +'<label class="av-f"><span>Question</span><input class="av-in" data-qprompt maxlength="300" value="'+esc(q.prompt)+'" placeholder="What do you want to ask?"'+dis+'></label>'
+    +'<label class="av-f" style="margin-top:10px"><span>Help text <small>optional</small></span><input class="av-in" data-qhelp maxlength="300" value="'+esc(q.helpText)+'"'+dis+'></label>'
+    +body+'</div>';
+}
+
+function renderBuilder(){
+  var d=state.draft,s=d.survey,locked=d.locked,editing=!!d.id;
+  var html='<div class="av-dh"><div><span class="av-eyebrow"><i></i> '+(editing?'EDIT SURVEY':'NEW SURVEY')+'</span><h2>'+esc(s.title||'Untitled survey')+'</h2></div><button class="av-x" type="button" data-close aria-label="Close">&times;</button></div>'
+   +(locked?'<div class="av-note">This survey already has '+fmt(d.responseCount)+' response'+(d.responseCount===1?'':'s')+'. Questions and anonymity are locked so the data stays valid. You can still change the title, text, rewards, limits, dates and status.</div>':'')
+   +'<form class="av-form" id="bForm" novalidate>'
+   +'<div class="av-row2"><label class="av-f"><span>Title</span><input class="av-in" id="fTitle" maxlength="120" value="'+esc(s.title)+'" placeholder="What members will see"></label>'
+   +'<label class="av-f"><span>Slug</span><input class="av-in" id="fSlug" maxlength="64" value="'+esc(s.slug)+'" placeholder="launch-feedback"'+(editing?' disabled':'')+'><small>'+(editing?'The slug cannot change after creation.':'Used in the link. Lowercase letters, numbers and hyphens.')+'</small></label></div>'
+   +'<label class="av-f"><span>Short description <small>shown on the card</small></span><input class="av-in" id="fDesc" maxlength="400" value="'+esc(s.description)+'"></label>'
+   +'<label class="av-f"><span>Intro <small>shown before they start</small></span><textarea id="fIntro" maxlength="1200">'+esc(s.intro)+'</textarea></label>'
+   +'<div class="av-row4"><label class="av-f"><span>XP reward</span><input class="av-in" id="fXp" type="number" min="0" max="100000" value="'+esc(s.rewardXp)+'"></label>'
+   +'<label class="av-f"><span>Token reward</span><input class="av-in" id="fTk" type="number" min="0" max="100000" value="'+esc(s.rewardTokens)+'"></label>'
+   +'<label class="av-f"><span>Response limit <small>blank = none</small></span><input class="av-in" id="fMax" type="number" min="1" value="'+esc(s.maxResponses)+'"></label>'
+   +'<label class="av-f"><span>Min seconds <small>blank = auto</small></span><input class="av-in" id="fMin" type="number" min="0" max="3600" value="'+esc(s.minSeconds)+'"></label></div>'
+   +'<div class="av-row3"><label class="av-f"><span>Status</span><select id="fStatus">'+['draft','live','closed','archived'].map(function(x){return '<option'+(s.status===x?' selected':'')+'>'+x+'</option>'}).join('')+'</select></label>'
+   +'<label class="av-f"><span>Opens <small>optional</small></span><input class="av-in" id="fStart" type="datetime-local" value="'+esc(s.startsAt)+'"></label>'
+   +'<label class="av-f"><span>Closes <small>optional</small></span><input class="av-in" id="fEnd" type="datetime-local" value="'+esc(s.endsAt)+'"></label></div>'
+   +'<label class="av-check"><input type="checkbox" id="fAnon"'+(s.anonymous?' checked':'')+(locked?' disabled':'')+'><span>Anonymous answers<small>Admins see results without usernames. One response per account still applies. Cannot be changed after the first response.</small></span></label>'
+   +'<div class="av-sec"><h3>Questions <span style="color:var(--dim);font-weight:600;font-size:13px">('+d.questions.length+'/30)</span></h3></div>'
+   +'<div class="av-qs" id="qList">'+d.questions.map(function(q,i){return questionHtml(q,i,d.questions.length,locked)}).join('')+'</div>'
+   +'<div style="display:flex;gap:8px;flex-wrap:wrap">'+TYPES.map(function(t){return '<button type="button" class="av-btn sm" data-add="'+t[0]+'"'+(locked||d.questions.length>=30?' disabled':'')+'>+ '+t[1]+'</button>'}).join('')+'</div>'
+   +'<p class="av-msg" id="bMsg" role="alert"></p>'
+   +'<div style="display:flex;justify-content:flex-end;gap:10px"><button type="button" class="av-btn" data-close>Cancel</button><button type="submit" class="av-btn pri" id="bSave">'+(editing?'Save changes':'Create survey')+'</button></div></form>';
+  openModal(html);
+  bindBuilder();
+}
+
+function bindBuilder(){
+  var d=state.draft,s=d.survey;
+  function sync(){
+    s.title=$('#fTitle').value;s.description=$('#fDesc').value;s.intro=$('#fIntro').value;
+    s.rewardXp=$('#fXp').value;s.rewardTokens=$('#fTk').value;s.maxResponses=$('#fMax').value;s.minSeconds=$('#fMin').value;
+    s.status=$('#fStatus').value;s.startsAt=$('#fStart').value;s.endsAt=$('#fEnd').value;s.anonymous=$('#fAnon').checked;
+    if(!d.id)s.slug=$('#fSlug').value;
+  }
+  $('#fTitle').addEventListener('input',function(){
+    $('#dialog .av-dh h2').textContent=this.value||'Untitled survey';
+    if(!d.id&&!d.slugTouched){$('#fSlug').value=slugify(this.value)}
+  });
+  var slugEl=$('#fSlug');if(slugEl)slugEl.addEventListener('input',function(){d.slugTouched=true});
+  $$('#bForm input:not([data-qprompt]):not([data-qhelp]):not([data-oi]):not([data-cfg]):not([data-qreq]),#bForm textarea,#bForm select:not([data-qtype]):not([data-cfg])').forEach(function(el){el.addEventListener('input',sync);el.addEventListener('change',sync)});
+
+  var list=$('#qList');
+  list.addEventListener('input',function(e){
+    var card=e.target.closest('[data-qi]');if(!card)return;
+    var q=d.questions[Number(card.dataset.qi)];
+    if(e.target.matches('[data-qprompt]'))q.prompt=e.target.value;
+    else if(e.target.matches('[data-qhelp]'))q.helpText=e.target.value;
+    else if(e.target.matches('[data-oi]'))q.options[Number(e.target.dataset.oi)].label=e.target.value;
+    else if(e.target.matches('[data-cfg]')){
+      var key=e.target.dataset.cfg,v=e.target.value;
+      if(key==='max'||key==='maxLength'||key==='maxSelect')q.config[key]=v===''?'':Number(v);else q.config[key]=v;
+    }
+  });
+  list.addEventListener('change',function(e){
+    var card=e.target.closest('[data-qi]');if(!card)return;
+    var i=Number(card.dataset.qi),q=d.questions[i];
+    if(e.target.matches('[data-qreq]')){q.required=e.target.checked}
+    if(e.target.matches('[data-qtype]')){
+      var keep={prompt:q.prompt,helpText:q.helpText,required:q.required};
+      var nq=blankQuestion(e.target.value);nq.prompt=keep.prompt;nq.helpText=keep.helpText;nq.required=keep.required;
+      d.questions[i]=nq;sync();renderBuilder();
+    }
+  });
+  list.addEventListener('click',function(e){
+    var b=e.target.closest('[data-act]');if(!b)return;
+    var i=Number(b.dataset.q),q=d.questions[i],act=b.dataset.act;
+    sync();
+    if(act==='addopt'){q.options.push({id:nextOptId(q),label:''})}
+    else if(act==='delopt'){q.options.splice(Number(b.dataset.k),1)}
+    else if(act==='delq'){d.questions.splice(i,1)}
+    else if(act==='up'&&i>0){var t=d.questions[i-1];d.questions[i-1]=q;d.questions[i]=t}
+    else if(act==='down'&&i<d.questions.length-1){var t2=d.questions[i+1];d.questions[i+1]=q;d.questions[i]=t2}
+    renderBuilder();
+  });
+  $$('[data-add]').forEach(function(b){b.addEventListener('click',function(){sync();d.questions.push(blankQuestion(b.dataset.add));renderBuilder();var qs=$$('.av-q');if(qs.length)qs[qs.length-1].scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})})});
+
+  $('#bForm').addEventListener('submit',function(e){
+    e.preventDefault();sync();
+    var msg=$('#bMsg');msg.className='av-msg';msg.textContent='';
+    var err=validate(d);
+    if(err){msg.className='av-msg err';msg.textContent=err;return}
+    var payload={survey:{title:s.title.trim(),description:s.description.trim(),intro:s.intro.trim(),status:s.status,rewardXp:Number(s.rewardXp||0),rewardTokens:Number(s.rewardTokens||0),anonymous:!!s.anonymous,
+        maxResponses:s.maxResponses===''?null:Number(s.maxResponses),minSeconds:s.minSeconds===''?null:Number(s.minSeconds),startsAt:fromLocalInput(s.startsAt),endsAt:fromLocalInput(s.endsAt)},
+      questions:d.questions.map(function(q){
+        var cfg={};
+        if(q.type==='multiple'&&q.config.maxSelect!=='')cfg.maxSelect=Number(q.config.maxSelect);
+        if(q.type==='rating')cfg={max:Number(q.config.max||5),lowLabel:q.config.lowLabel||'',highLabel:q.config.highLabel||''};
+        if(q.type==='text')cfg={maxLength:Number(q.config.maxLength||600)};
+        return {type:q.type,prompt:q.prompt.trim(),helpText:q.helpText.trim(),required:!!q.required,options:(q.options||[]).map(function(o){return {id:o.id,label:o.label.trim()}}),config:cfg};
+      })};
+    if(!d.id)payload.survey.slug=s.slug.trim().toLowerCase();
+    var btn=$('#bSave');btn.disabled=true;btn.textContent='Saving...';
+    api(d.id?'/api/admin/surveys/'+d.id:'/api/admin/surveys',{method:d.id?'PUT':'POST',body:JSON.stringify(payload)}).then(function(){
+      state.draft=null;closeModal();toast(d.id?'Survey updated':'Survey created','ok');load();
+    }).catch(function(x){btn.disabled=false;btn.textContent=d.id?'Save changes':'Create survey';msg.className='av-msg err';msg.textContent=x.message});
+  });
+}
+
+function validate(d){
+  var s=d.survey;
+  if(s.title.trim().length<3)return 'Give the survey a title of at least 3 characters.';
+  if(!d.id&&!/^[a-z0-9][a-z0-9-]{2,63}$/.test(String(s.slug).trim().toLowerCase()))return 'The slug needs 3 to 64 characters: lowercase letters, numbers and hyphens.';
+  if(s.startsAt&&s.endsAt&&new Date(s.endsAt)<=new Date(s.startsAt))return 'The closing time must be after the opening time.';
+  if(s.status==='live'&&!d.questions.length)return 'Add at least one question before setting the survey live.';
+  if(d.locked)return '';
+  for(var i=0;i<d.questions.length;i++){
+    var q=d.questions[i],n=i+1;
+    if(q.prompt.trim().length<3)return 'Question '+n+' needs a prompt of at least 3 characters.';
+    if(q.type==='single'||q.type==='multiple'){
+      var labels=q.options.map(function(o){return o.label.trim()});
+      if(labels.some(function(l){return !l}))return 'Question '+n+' has an empty option.';
+      if(new Set(labels.map(function(l){return l.toLowerCase()})).size!==labels.length)return 'Question '+n+' has two options with the same text.';
+      if(q.type==='multiple'&&q.config.maxSelect!==''&&q.config.maxSelect!=null&&(Number(q.config.maxSelect)<1||Number(q.config.maxSelect)>q.options.length))return 'Question '+n+': max choices must be between 1 and the number of options.';
+    }
+    if(q.type==='text'){var m=Number(q.config.maxLength||600);if(!(m>=20&&m<=2000))return 'Question '+n+': max characters must be between 20 and 2000.'}
+  }
+  return '';
+}
+
+/* ------------------------------------------------------------ results */
+function openResults(id){
+  openModal('<div class="av-dh"><div><span class="av-eyebrow"><i></i> RESULTS</span><h2>Loading...</h2></div><button class="av-x" type="button" data-close aria-label="Close">&times;</button></div><div class="av-skel"></div>');
+  api('/api/admin/surveys/'+id+'/results').then(function(r){renderResults(id,r)}).catch(function(e){
+    dialog.innerHTML='<div class="av-dh"><div><span class="av-eyebrow"><i></i> RESULTS</span><h2>Could not load results</h2></div><button class="av-x" type="button" data-close aria-label="Close">&times;</button></div><div class="av-note">'+esc(e.message)+'</div>';
+  });
+}
+function renderResults(id,r){
+  var t=r.totals||{},sv=r.survey||{};
+  var html='<div class="av-dh"><div><span class="av-eyebrow"><i></i> RESULTS</span><h2>'+esc(sv.title)+'</h2></div><div style="display:flex;gap:8px;align-items:center"><button class="av-btn sm" type="button" id="csvBtn"'+(t.responses?'':' disabled')+'>Export CSV</button><button class="av-x" type="button" data-close aria-label="Close">&times;</button></div></div>'
+   +'<div class="av-kpis"><div class="av-kpi"><small>Responses</small><strong data-count="'+Number(t.responses||0)+'">0</strong></div><div class="av-kpi"><small>Avg time</small><strong>'+Number(t.avgSeconds||0)+'s</strong></div><div class="av-kpi"><small>XP paid</small><strong data-count="'+Number(t.xpPaid||0)+'">0</strong></div><div class="av-kpi"><small>Tokens paid</small><strong data-count="'+Number(t.tokensPaid||0)+'">0</strong></div></div>'
+   +(sv.anonymous?'<div class="av-note">This survey is anonymous. Usernames are hidden here and in the export.</div>':'')
+   +(r.questions||[]).map(function(q){
+      var head='<h4>'+q.position+'. '+esc(q.prompt)+'</h4><p class="sub">'+fmt(q.answered)+' answered'+(q.required?'':' · optional')+'</p>';
+      var body='';
+      if(q.options){
+        var max=Math.max.apply(null,q.options.map(function(o){return o.count}).concat([1]));
+        body='<div class="av-bars">'+q.options.map(function(o,k){return '<div class="av-b"><span class="lbl">'+esc(o.label)+'</span><div class="av-track"><i style="--k:'+k+'" data-w="'+(o.count/max*100)+'"></i></div><span class="num">'+fmt(o.count)+' · '+Number(o.pct||0)+'%</span></div>'}).join('')+'</div>';
+      }else if(q.distribution){
+        var mx=Math.max.apply(null,q.distribution.map(function(o){return o.count}).concat([1]));
+        body='<div class="av-avg"><b>'+(q.average==null?'-':Number(q.average).toFixed(2))+'</b><span>average out of '+q.max+'</span></div><div class="av-bars">'+q.distribution.map(function(o,k){return '<div class="av-b"><span class="lbl">'+o.value+'</span><div class="av-track"><i style="--k:'+k+'" data-w="'+(o.count/mx*100)+'"></i></div><span class="num">'+fmt(o.count)+'</span></div>'}).join('')+'</div>';
+      }else if(q.texts){
+        body=q.texts.length?'<div class="av-texts">'+q.texts.map(function(x){return '<div class="av-t">'+esc(x.text)+'<small>'+(x.username?'@'+esc(x.username)+' · ':'')+esc(dt(x.submittedAt))+'</small></div>'}).join('')+'</div>':'<p class="sub">No written answers yet.</p>';
+      }
+      return '<section class="av-res">'+head+body+'</section>';
+   }).join('')
+   +((r.questions||[]).length?'':'<div class="av-empty">This survey has no questions.</div>');
+  dialog.innerHTML=html;
+  $$('#dialog [data-count]').forEach(countUp);
+  requestAnimationFrame(function(){requestAnimationFrame(function(){$$('#dialog .av-track i').forEach(function(i){i.style.width=i.dataset.w+'%'})})});
+  var btn=$('#csvBtn');if(btn)btn.addEventListener('click',function(){exportCsv(id,r,btn)});
+}
+
+/* ------------------------------------------------------------ csv */
+function csvCell(v){
+  var s=v==null?'':String(v);
+  if(/^[=+\-@\t\r]/.test(s))s="'"+s;
+  return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+}
+function exportCsv(id,res,btn){
+  btn.disabled=true;btn.textContent='Preparing...';
+  api('/api/admin/surveys/'+id).then(function(detail){
+    var questions=detail.questions||[];
+    var rows=[],offset=0;
+    function page(){
+      return api('/api/admin/surveys/'+id+'/responses?limit=500&offset='+offset).then(function(d){
+        rows=rows.concat(d.responses||[]);offset+=(d.responses||[]).length;
+        if((d.responses||[]).length&&offset<d.total&&offset<20000)return page();
+        return d;
+      });
+    }
+    return page().then(function(d){
+      var anon=!!d.anonymous;
+      var header=['submitted_at',anon?null:'username','seconds','xp','tokens'].filter(function(x){return x!==null}).concat(questions.map(function(q){return q.position+'. '+q.prompt}));
+      var lines=[header.map(csvCell).join(',')];
+      rows.forEach(function(r){
+        var base=[r.submittedAt];if(!anon)base.push(r.username);base=base.concat([r.elapsedSeconds,r.rewardXp,r.rewardTokens]);
+        var cells=questions.map(function(q){
+          var v=(r.answers||{})[q.id];
+          if(v==null)return '';
+          if(q.type==='single'){var o=q.options.filter(function(x){return x.id===v})[0];return o?o.label:v}
+          if(q.type==='multiple')return (v||[]).map(function(id2){var o=q.options.filter(function(x){return x.id===id2})[0];return o?o.label:id2}).join('; ');
+          if(q.type==='yes_no')return v?'Yes':'No';
+          return v;
+        });
+        lines.push(base.concat(cells).map(csvCell).join(','));
+      });
+      var blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+      var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(res.survey.slug||'survey')+'-responses.csv';document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+      toast('Exported '+rows.length+' responses','ok');
+    });
+  }).catch(function(e){toast(e.message,'err')}).then(function(){btn.disabled=false;btn.textContent='Export CSV'});
+}
+
+load();
+})();
+</script>
+</body>
+</html>
