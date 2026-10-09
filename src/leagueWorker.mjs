@@ -319,7 +319,10 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     ).catch(() => [])
   ]);
   const confirmedIds = new Set((recentConfirmations || []).map(row => row.listing_id));
-  const shareByListing = new Map((myShares || []).map(row => [row.listing_id, row]));
+  const shareByListing = new Map();
+  for (const share of (myShares || [])) {
+    if (!shareByListing.has(share.listing_id)) shareByListing.set(share.listing_id, share);
+  }
   const visibleLeagues = (leagues || []).map(row => ({
     ...row,
     confirmedByMe: confirmedIds.has(row.id),
@@ -598,9 +601,9 @@ async function submitTeamShare(request, env, authContext, match, supabaseRest, j
 
   const listingRows = await supabaseRest(env,
     'league_listings?id=eq.' + encodeURIComponent(match[1]) +
-    '&status=eq.approved&recruiting_open=eq.true&select=id,owner_account_id,name&limit=1');
+    '&status=eq.approved&recruiting_open=eq.true&select=id,owner_account_id,name,is_demo&limit=1');
   const listing = listingRows?.[0];
-  if (!listing) return json({ error: 'This league is not currently accepting team submissions.' }, 404);
+  if (!listing || listing.is_demo) return json({ error: 'This sample listing is for preview only and is not accepting real team submissions.' }, 404);
   if (listing.owner_account_id === account.id) return json({ error: 'You cannot send a team to your own league.' }, 400);
 
   const pendingRows = await supabaseRest(env,
@@ -664,7 +667,7 @@ async function getTeamShares(request, env, authContext, supabaseRest, json) {
   const playerIds = [...new Set((rows || []).map(row => row.player_account_id).filter(Boolean))];
   const [profiles, accounts] = await Promise.all([
     playerIds.length ? supabaseRest(env,
-      'league_profiles?select=account_id,in_game_username,ovr,region_server,preferred_languages,tournament_sizes,availability,play_style,avatar_url&account_id=in.' +
+      'league_profiles?select=account_id,status,in_game_username,ovr,region_server,preferred_languages,tournament_sizes,availability,play_style,avatar_url&account_id=in.' +
       encodeURIComponent('(' + playerIds.join(',') + ')')) : [],
     playerIds.length ? supabaseRest(env,
       'accounts?select=id,username,display_name,avatar_url&id=in.' +
@@ -672,7 +675,9 @@ async function getTeamShares(request, env, authContext, supabaseRest, json) {
   ]);
   const profileMap = new Map((profiles || []).map(row => [row.account_id, row]));
   const accountMap = new Map((accounts || []).map(row => [row.id, row]));
-  const shares = (rows || []).map(row => {
+  const shares = (rows || []).filter(row =>
+    profileMap.get(row.player_account_id)?.status === 'looking_for_league'
+  ).map(row => {
     const p = profileMap.get(row.player_account_id) || {};
     const a = accountMap.get(row.player_account_id) || {};
     return {
