@@ -316,6 +316,11 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
   function playVideo(video) {
     if (!video?.youtubeId) return;
     closeQuiz();
+    const stage = $('#ftvPlayerStage');
+    if (stage) {
+      const smoothScroll = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      stage.scrollIntoView({behavior: smoothScroll ? 'smooth' : 'auto', block: 'center'});
+    }
     const changed = selectedId !== video.id;
     selectedId = video.id;
     updateSelectedDetails(video);
@@ -358,7 +363,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
           playerReady = true;
           try { player.setPlaybackRate(1); } catch {}
           const pending = pendingYoutubeId;
-          const shouldPlay = pendingPlay;
+          const shouldPlay = pendingPlay && !document.hidden;
           pendingYoutubeId = '';
           pendingPlay = false;
           if (pending && pending !== currentYoutubeId) {
