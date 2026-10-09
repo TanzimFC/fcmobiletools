@@ -116,6 +116,8 @@ export function bindImageUploads(container = document) {
         }
 
         uploadedUrl = String(result.image.url);
+        selectedFile = null;
+        fileInput.value = '';
         urlInput.value = uploadedUrl;
         revokePreview();
         previewImage.src = uploadedUrl;
