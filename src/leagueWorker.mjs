@@ -298,7 +298,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
       outreachRemaining: 3
     });
   }
-  const [leagues, ownListings, recentConfirmations] = await Promise.all([
+  const [leagues, ownListings, recentConfirmations, myShares] = await Promise.all([
     publicLeagues(env, supabaseRest).catch(error => {
       console.error('[LEAGUE_DIRECTORY_READ]', error?.message);
       return [];
@@ -311,10 +311,25 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
       'league_active_confirmations?account_id=eq.' + encodeURIComponent(account.id) +
       '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) +
       '&select=listing_id&limit=200'
+    ).catch(() => []),
+    supabaseRest(env,
+      'league_team_shares?player_account_id=eq.' + encodeURIComponent(account.id) +
+      '&expires_at=gt.' + encodeURIComponent(nowIso()) +
+      '&select=id,listing_id,status,submitted_at,expires_at&order=submitted_at.desc&limit=100'
     ).catch(() => [])
   ]);
   const confirmedIds = new Set((recentConfirmations || []).map(row => row.listing_id));
-  const visibleLeagues = (leagues || []).map(row => ({ ...row, confirmedByMe: confirmedIds.has(row.id) }));
+  const shareByListing = new Map((myShares || []).map(row => [row.listing_id, row]));
+  const visibleLeagues = (leagues || []).map(row => ({
+    ...row,
+    confirmedByMe: confirmedIds.has(row.id),
+    myTeamShare: shareByListing.get(row.id) ? {
+      id: shareByListing.get(row.id).id,
+      status: shareByListing.get(row.id).status,
+      submittedAt: shareByListing.get(row.id).submitted_at,
+      expiresAt: shareByListing.get(row.id).expires_at
+    } : null
+  }));
   const decoratedOwn = await decorateListings(env, ownListings || [], supabaseRest);
   const approvedOwner = profile.status === 'league_owner' && (ownListings || []).some(row => row.status === 'approved' && row.recruiting_open);
   const usedToday = approvedOwner ? await outreachUsage(env, account.id, supabaseRest).catch(() => 0) : 0;
