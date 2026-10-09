@@ -66,6 +66,8 @@ const setImageAttribute = (attrs, name, value) => {
 // For raw HTML images embedded in Markdown or stored in the editorial CMS.
 export const optimizeHtmlImages = (html) => String(html ?? '').replace(/<img\b([^>]*)>/gi, (full, rawAttrs) => {
   let attrs = rawAttrs;
+  const selfClosing = /\/\s*$/.test(attrs);
+  if (selfClosing) attrs = attrs.replace(/\s*\/\s*$/, '');
   const srcMatch = attrs.match(/\s+src\s*=\s*(["'])(.*?)\1/i);
   if (!srcMatch) return full;
 
@@ -82,7 +84,7 @@ export const optimizeHtmlImages = (html) => String(html ?? '').replace(/<img\b([
 
   if (!/\s+loading\s*=/i.test(attrs)) attrs += ' loading="lazy"';
   if (!/\s+decoding\s*=/i.test(attrs)) attrs += ' decoding="async"';
-  return '<img' + attrs + '>';
+  return '<img' + attrs + (selfClosing ? ' /' : '') + '>';
 });
 
 // Rehype plugin for Markdown-generated <img> elements. Raw HTML nodes are handled above.
