@@ -1,0 +1,118 @@
+---
+export interface Props {
+  label?: string;
+  hint?: string;
+  name?: string;
+  id?: string;
+  maxMb?: number;
+  expirationDays?: number;
+}
+
+const {
+  label = 'Attach an image (optional)',
+  hint = 'Add a screenshot or image to support your submission.',
+  name = '',
+  id = 'fcm-image-upload-' + Math.random().toString(36).slice(2, 10),
+  maxMb = 8,
+  expirationDays = 30
+} = Astro.props;
+
+const safeMaxMb = Math.max(1, Math.min(8, Number(maxMb) || 8));
+const safeExpirationDays = Math.max(1, Math.min(180, Math.floor(Number(expirationDays) || 30)));
+---
+
+<section
+  id={id}
+  class="fcm-image-upload"
+  data-fcm-image-upload
+  data-max-bytes={safeMaxMb * 1024 * 1024}
+  data-expiration-days={safeExpirationDays}
+>
+  <div class="fcm-upload-heading">
+    <div>
+      <label class="fcm-upload-label" for={id + '-file'}>{label}</label>
+      <p class="fcm-upload-hint">{hint}</p>
+    </div>
+    <span class="fcm-upload-optional">OPTIONAL</span>
+  </div>
+
+  <input
+    id={id + '-file'}
+    type="file"
+    accept="image/jpeg,image/png,image/webp,image/gif"
+    data-upload-file
+    hidden
+  />
+
+  <div class="fcm-upload-drop" data-upload-drop>
+    <span class="fcm-upload-symbol" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 16V4m-4 4 4-4 4 4" />
+        <path d="M20 16.5v2A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-2" />
+      </svg>
+    </span>
+    <div class="fcm-upload-drop-copy">
+      <strong>Drop an image here</strong>
+      <span>or choose a file from your device</span>
+    </div>
+    <button type="button" class="fcm-upload-btn" data-upload-trigger>Choose image</button>
+  </div>
+
+  <div class="fcm-upload-preview" data-upload-preview hidden>
+    <img data-upload-preview-image alt="Selected image preview" />
+    <div class="fcm-upload-preview-copy">
+      <strong data-upload-filename>Selected image</strong>
+      <span data-upload-meta></span>
+    </div>
+    <div class="fcm-upload-preview-actions">
+      <button type="button" class="fcm-upload-copy" data-upload-copy hidden>Copy link</button>
+      <button type="button" class="fcm-upload-clear" data-upload-clear>Clear</button>
+    </div>
+  </div>
+
+  <div class="fcm-upload-footer">
+    <p class="fcm-upload-status" data-upload-status role="status" aria-live="polite">
+      JPG, PNG, WebP or GIF · Up to {safeMaxMb} MB · Auto-removes after {safeExpirationDays} days.
+    </p>
+    <button type="button" class="fcm-upload-submit" data-upload-submit disabled>Upload image</button>
+  </div>
+  {name ? <input type="hidden" name={name} value="" data-upload-url /> : <input type="hidden" value="" data-upload-url />}
+</section>
+
+<style>
+  .fcm-image-upload{width:100%;margin:14px 0;color:#f5f8fb;font:inherit}
+  .fcm-upload-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .fcm-upload-label{display:block;color:#d9e6ee;font-size:13px;font-weight:750}
+  .fcm-upload-hint{margin:4px 0 0;color:#91a6b6;font-size:12.5px;line-height:1.45}
+  .fcm-upload-optional{flex:none;padding:4px 7px;border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#91a6b6;font-size:9px;font-weight:800;letter-spacing:.09em}
+  .fcm-upload-drop{display:flex;align-items:center;gap:13px;min-height:86px;padding:14px;border:1px dashed rgba(76,201,255,.3);border-radius:14px;background:linear-gradient(125deg,rgba(76,201,255,.055),rgba(255,255,255,.018));transition:border-color .18s,background .18s}
+  .fcm-upload-drop.is-dragging{border-color:#4cc9ff;background:rgba(76,201,255,.1)}
+  .fcm-upload-symbol{width:42px;height:42px;flex:none;display:grid;place-items:center;border:1px solid rgba(76,201,255,.2);border-radius:12px;background:rgba(76,201,255,.07);color:#4cc9ff}
+  .fcm-upload-drop-copy{display:grid;gap:2px;flex:1;min-width:0}
+  .fcm-upload-drop-copy strong{font-size:12.5px;font-weight:750}
+  .fcm-upload-drop-copy span{color:#91a6b6;font-size:11.5px;overflow-wrap:anywhere}
+  .fcm-upload-btn,.fcm-upload-submit,.fcm-upload-copy,.fcm-upload-clear{appearance:none;border:1px solid rgba(255,255,255,.13);border-radius:10px;padding:9px 12px;background:#142432;color:#e5f5ff;font:inherit;font-size:11.5px;font-weight:700;line-height:1.2;cursor:pointer;transition:border-color .18s,background .18s,transform .18s}
+  .fcm-upload-btn:hover,.fcm-upload-copy:hover,.fcm-upload-clear:hover{border-color:rgba(76,201,255,.55);background:#1a3142}
+  .fcm-upload-submit{flex:none;border-color:rgba(76,201,255,.4);background:linear-gradient(180deg,#8be0ff,#4cc9ff);color:#06131b;min-width:104px}
+  .fcm-upload-submit:hover:not(:disabled){transform:translateY(-1px);background:#72d7ff}
+  .fcm-upload-submit:disabled{opacity:.45;cursor:not-allowed}
+  .fcm-upload-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}
+  .fcm-upload-status{margin:0;color:#8298a8;font-size:11.5px;line-height:1.45;overflow-wrap:anywhere}
+  .fcm-upload-status.is-error{color:#ffaaa1}
+  .fcm-upload-status.is-success{color:#8fe6b2}
+  .fcm-upload-preview{display:flex;align-items:center;gap:12px;margin-top:10px;min-width:0;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.025)}
+  .fcm-upload-preview[hidden]{display:none}
+  .fcm-upload-preview>img{width:58px;height:58px;flex:none;object-fit:contain;border-radius:9px;background:#071018}
+  .fcm-upload-preview-copy{display:grid;gap:3px;min-width:0;flex:1}
+  .fcm-upload-preview-copy strong{font-size:12px;overflow-wrap:anywhere}
+  .fcm-upload-preview-copy span{color:#91a6b6;font-size:11px;overflow-wrap:anywhere}
+  .fcm-upload-preview-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .fcm-upload-copy,.fcm-upload-clear{padding:7px 9px}
+  @media(max-width:540px){.fcm-upload-drop{flex-wrap:wrap}.fcm-upload-drop-copy{min-width:calc(100% - 58px)}.fcm-upload-btn{margin-left:55px}.fcm-upload-footer{align-items:flex-start;flex-direction:column}.fcm-upload-submit{width:100%}.fcm-upload-preview{flex-wrap:wrap}.fcm-upload-preview-actions{width:100%;justify-content:flex-start}}
+  @media(prefers-reduced-motion:reduce){.fcm-image-upload *{transition:none!important}}
+</style>
+
+<script>
+  import { bindImageUploads } from '../lib/image-upload-client.js';
+  bindImageUploads(document);
+</script>
