@@ -2710,6 +2710,10 @@ async function imageUploadApi(request, env, url) {
   }
 
   const appliedExpiration = Number(image.expiration);
+  if (permanent && appliedExpiration !== 0) {
+    console.warn('[IMAGE_UPLOAD] Permanent upload was not confirmed by the image host.');
+    return json({ error: 'The image host did not confirm this upload without an expiry. Please try again.' }, 503);
+  }
   if (!permanent && (!Number.isFinite(appliedExpiration) || appliedExpiration < 60)) {
     console.warn('[IMAGE_UPLOAD] Automatic image expiry was not confirmed.');
     return json({ error: 'The image could not be uploaded with temporary storage. Please try again.' }, 503);
