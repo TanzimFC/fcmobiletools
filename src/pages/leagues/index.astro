@@ -1069,6 +1069,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   $('#playerSizeFilter').addEventListener('change', loadPlayers);
   $('#playerMinOvr').addEventListener('change', loadPlayers);
   $('#ownerPanel').addEventListener('click', async event => {
+    const editButton = event.target.closest('[data-edit-listing]');
+    if (editButton) {
+      const editRow = (state.ownListings || []).find(item => item.id === editButton.dataset.editListing);
+      if (editRow) openListingEditor(editRow);
+      return;
+    }
     const button = event.target.closest('#kickoffBtn');
     if (!button) return;
     const row = (state.ownListings || [])[0];
