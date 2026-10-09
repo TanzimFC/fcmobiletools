@@ -1,0 +1,799 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AccountNav from '../../components/AccountNav.astro';
+---
+<BaseLayout
+  title="Surveys | FCMobiletools Account"
+  description="Short community surveys that pay XP and Tokens to members who answer honestly."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="sv-page">
+    <div class="sv-wrap">
+      <AccountNav active="surveys" sectionLabel="Surveys" />
+
+      <header class="sv-head acc-anim" id="svHead">
+        <span class="sv-kicker"><i class="sv-dot"></i> COMMUNITY SURVEYS</span>
+        <h1>Your answers shape what we build.</h1>
+        <p>
+          Short surveys about the tools, the site and FC Mobile. Finish one and the XP and Tokens are added to your account straight away. One response per account, and honest answers only.
+        </p>
+      </header>
+
+      <div id="svRoot" class="sv-root">
+        <div class="sv-grid">
+          <div class="acc-skel sv-skel"></div>
+          <div class="acc-skel sv-skel"></div>
+          <div class="acc-skel sv-skel"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { accountAuth, accountApi, setCachedIdentity, escapeHtml as esc } from '../../lib/account-client.js';
+
+  const root = document.getElementById('svRoot');
+  const head = document.getElementById('svHead');
+  const fmt = (v) => Number(v || 0).toLocaleString();
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const ICON = {
+    clipboard: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2.5"/><path d="M9 4.5V3.8A1.3 1.3 0 0 1 10.3 2.5h3.4A1.3 1.3 0 0 1 15 3.8v.7M9.5 11h5M9.5 15h3"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
+    coin: '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6" fill="none" stroke="#04131c" stroke-opacity=".35" stroke-width="1.6"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    list: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 7.6-8 9-4.8-1.4-8-4.5-8-9V6z"/><path d="M12 8v5M12 16.2v.01"/></svg>',
+    check: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    user: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>'
+  };
+
+  let data = { surveys: [], summary: { completed: 0, xpEarned: 0, tokensEarned: 0 } };
+  let run = null;
+  let modalEl = null;
+  let lastFocus = null;
+
+  async function api(path, options) {
+    const res = await accountApi(path, options);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(body?.error || 'Something went wrong. Please try again.');
+      err.status = res.status;
+      throw err;
+    }
+    return body;
+  }
+
+  function when(iso) {
+    if (!iso) return '';
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t)) return '';
+    return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function closesIn(iso) {
+    if (!iso) return '';
+    const ms = new Date(iso).getTime() - Date.now();
+    if (!Number.isFinite(ms) || ms <= 0) return 'Closed';
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    if (d >= 2) return 'Closes in ' + d + ' days';
+    if (d === 1) return 'Closes in 1 day ' + h + 'h';
+    if (h >= 1) return 'Closes in ' + h + 'h';
+    return 'Closes in under an hour';
+  }
+  function rewardChips(xp, tokens, earned) {
+    const parts = [];
+    if (Number(xp) > 0) parts.push('<span class="sv-chip sv-chip--xp">' + ICON.bolt + (earned ? '' : '+') + fmt(xp) + ' XP</span>');
+    if (Number(tokens) > 0) parts.push('<span class="sv-chip sv-chip--tk">' + ICON.coin + (earned ? '' : '+') + fmt(tokens) + ' Tokens</span>');
+    if (!parts.length) parts.push('<span class="sv-chip">No reward, help only</span>');
+    return parts.join('');
+  }
+
+  function countUp(el) {
+    const target = Number(el.dataset.count || 0);
+    if (reduceMotion || target < 10) { el.textContent = fmt(target); return; }
+    const t0 = performance.now();
+    const dur = 900;
+    const tick = (t) => {
+      const k = Math.min(1, (t - t0) / dur);
+      el.textContent = fmt(Math.round(target * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  function runCounts(scope) { scope.querySelectorAll('[data-count]').forEach(countUp); }
+
+  // ------------------------------------------------------------------ states
+  function guestCard() {
+    root.innerHTML = `
+      <section class="sv-empty acc-anim">
+        <span class="sv-badge">MEMBERS ONLY</span>
+        <h2>Sign in to take surveys</h2>
+        <p>Surveys reward verified members. The rest of the site stays free and open without an account.</p>
+        <div class="sv-actions">
+          <a class="sv-btn sv-btn--primary" href="/account/">Sign in</a>
+          <a class="sv-btn" href="/account/?mode=signup">Create free account</a>
+        </div>
+      </section>`;
+  }
+  function messageCard(title, text, linkHref, linkText) {
+    root.innerHTML = `
+      <section class="sv-empty acc-anim">
+        <span class="sv-badge">SURVEYS</span>
+        <h2>${esc(title)}</h2>
+        <p>${esc(text)}</p>
+        ${linkHref ? `<div class="sv-actions"><a class="sv-btn sv-btn--primary" href="${esc(linkHref)}">${esc(linkText)}</a></div>` : ''}
+      </section>`;
+  }
+
+  // --------------------------------------------------------------------- hub
+  function renderHub() {
+    run = null;
+    head.hidden = false;
+    document.title = 'Surveys | FCMobiletools Account';
+    const s = data.summary || {};
+    const open = data.surveys.filter((x) => x.state === 'available');
+    const rest = data.surveys.filter((x) => x.state !== 'available');
+    const ribbon = `
+      <section class="sv-ribbon acc-anim acc-anim-d1" aria-label="Your survey totals">
+        <div><small>Completed</small><strong data-count="${Number(s.completed || 0)}">0</strong></div>
+        <div class="sv-r-xp"><small>XP earned</small><strong data-count="${Number(s.xpEarned || 0)}">0</strong></div>
+        <div class="sv-r-tk"><small>Tokens earned</small><strong data-count="${Number(s.tokensEarned || 0)}">0</strong></div>
+        <div><small>Open now</small><strong data-count="${open.length}">0</strong></div>
+      </section>`;
+
+    if (!data.surveys.length) {
+      root.innerHTML = ribbon + `
+        <section class="sv-empty acc-anim acc-anim-d2">
+          <span class="sv-badge">NOTHING OPEN</span>
+          <h2>No surveys right now</h2>
+          <p>New surveys appear here when we have something to ask. Check back soon.</p>
+          <div class="sv-actions"><a class="sv-btn sv-btn--primary" href="/missions/">Open Quests</a></div>
+        </section>`;
+      runCounts(root);
+      return;
+    }
+
+    const card = (sv, i) => {
+      const done = sv.state === 'completed';
+      const cta = done
+        ? `<span class="sv-done-note">${ICON.check} Completed ${esc(when(sv.completedAt))}</span>`
+        : sv.state === 'full'
+          ? '<span class="sv-muted-note">Response limit reached</span>'
+          : sv.state === 'upcoming'
+            ? `<span class="sv-muted-note">Opens ${esc(when(sv.startsAt))}</span>`
+            : `<button class="sv-btn sv-btn--primary" type="button" data-open="${esc(sv.slug)}">Start survey</button>`;
+      const spots = Number.isFinite(Number(sv.spotsLeft)) && sv.spotsLeft !== null
+        ? `<span class="sv-meta">${fmt(sv.spotsLeft)} spots left</span>` : '';
+      const close = sv.state === 'available' && sv.endsAt ? `<span class="sv-meta">${esc(closesIn(sv.endsAt))}</span>` : '';
+      return `
+        <article class="sv-card sv-card--${esc(sv.state)}" style="--i:${i}" data-card>
+          <div class="sv-card-top">
+            <span class="sv-card-ico">${ICON.clipboard}</span>
+            <span class="sv-state">${done ? 'Done' : sv.state === 'available' ? 'Open' : sv.state === 'full' ? 'Full' : 'Soon'}</span>
+          </div>
+          <h3>${esc(sv.title)}</h3>
+          <p>${esc(sv.description || 'A short survey from the FCMobiletools team.')}</p>
+          <div class="sv-metas">
+            <span class="sv-meta">${ICON.list} ${fmt(sv.questionCount)} questions</span>
+            <span class="sv-meta">${ICON.clock} about ${fmt(sv.estimatedMinutes)} min</span>
+            ${sv.anonymous ? `<span class="sv-meta">${ICON.user} Anonymous</span>` : ''}
+            ${spots}${close}
+          </div>
+          <div class="sv-card-foot">
+            <div class="sv-chips">${rewardChips(done ? sv.earnedXp : sv.rewardXp, done ? sv.earnedTokens : sv.rewardTokens, done)}</div>
+            ${cta}
+          </div>
+        </article>`;
+    };
+
+    const all = [...open, ...rest];
+    root.innerHTML = ribbon + `<section class="sv-grid" aria-label="Surveys">${all.map(card).join('')}</section>`;
+    runCounts(root);
+    root.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openSurvey(b.dataset.open, true)));
+  }
+
+  // ------------------------------------------------------------------ detail
+  function renderDetail(sv) {
+    run = null;
+    head.hidden = true;
+    document.title = sv.title + ' | Surveys';
+    const state = sv.state;
+    const blocked =
+      state === 'completed' ? 'You already completed this survey. Thank you.' :
+      state === 'full' ? 'This survey has reached its response limit.' :
+      state === 'upcoming' ? 'This survey opens on ' + when(sv.startsAt) + '.' : '';
+    root.innerHTML = `
+      <section class="sv-detail acc-anim">
+        <button class="sv-back" type="button" id="svBack">&larr; All surveys</button>
+        <div class="sv-detail-card">
+          <span class="sv-badge">SURVEY</span>
+          <h2>${esc(sv.title)}</h2>
+          <p class="sv-lede">${esc(sv.intro || sv.description || '')}</p>
+          <div class="sv-metas">
+            <span class="sv-meta">${ICON.list} ${fmt(sv.questionCount)} questions</span>
+            <span class="sv-meta">${ICON.clock} about ${fmt(sv.estimatedMinutes)} min</span>
+            <span class="sv-meta">${ICON.user} ${sv.anonymous ? 'Anonymous answers' : 'Linked to your account'}</span>
+            ${sv.endsAt && state === 'available' ? `<span class="sv-meta">${esc(closesIn(sv.endsAt))}</span>` : ''}
+          </div>
+          <div class="sv-chips sv-chips--lg">${rewardChips(state === 'completed' ? sv.earnedXp : sv.rewardXp, state === 'completed' ? sv.earnedTokens : sv.rewardTokens, state === 'completed')}</div>
+          ${blocked
+            ? `<p class="sv-blocked">${esc(blocked)}</p>`
+            : `<button class="sv-btn sv-btn--primary sv-btn--lg" type="button" id="svStart">Start survey</button>`}
+        </div>
+      </section>`;
+    document.getElementById('svBack').addEventListener('click', goHub);
+    document.getElementById('svStart')?.addEventListener('click', () => showHonesty(sv));
+  }
+
+  // ---------------------------------------------------------- honesty notice
+  function showHonesty(sv) {
+    closeModal();
+    lastFocus = document.activeElement;
+    modalEl = document.createElement('div');
+    modalEl.className = 'sv-modal';
+    modalEl.innerHTML = `
+      <div class="sv-modal-card" role="dialog" aria-modal="true" aria-labelledby="svHTitle">
+        <div class="sv-shield">${ICON.shield}</div>
+        <h2 id="svHTitle">Before you start</h2>
+        <p class="sv-h-sub">This survey only helps if the answers are real. Please read this first.</p>
+        <ul class="sv-rules">
+          <li><b>Answer for yourself.</b> Say what you actually think and do, not what you guess we want to hear.</li>
+          <li><b>Nothing to gain by lying.</b> The reward is the same for every honest answer, so there is no reason to pad or invent.</li>
+          <li><b>Rushing is checked.</b> Random clicks, empty text and very fast submissions are rejected and earn nothing.</li>
+          <li><b>One response per account.</b> You can submit once and cannot retake it. Extra accounts do not count.</li>
+          <li><b>${sv.anonymous ? 'Your answers are anonymous.' : 'Your answers are linked to your account.'}</b> ${sv.anonymous ? 'Admins see results without your username.' : 'Admins can see which account sent each answer.'}</li>
+        </ul>
+        <label class="sv-ack"><input type="checkbox" id="svAck"><span>I will answer honestly and for myself.</span></label>
+        <p class="sv-h-err" id="svHErr" role="alert" hidden></p>
+        <div class="sv-modal-actions">
+          <button class="sv-btn" type="button" id="svHCancel">Not now</button>
+          <button class="sv-btn sv-btn--primary" type="button" id="svHGo" disabled>Start survey</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modalEl);
+    document.body.classList.add('sv-lock');
+    const ack = modalEl.querySelector('#svAck');
+    const go = modalEl.querySelector('#svHGo');
+    const err = modalEl.querySelector('#svHErr');
+    ack.addEventListener('change', () => { go.disabled = !ack.checked; });
+    modalEl.querySelector('#svHCancel').addEventListener('click', closeModal);
+    modalEl.addEventListener('mousedown', (e) => { if (e.target === modalEl) closeModal(); });
+    modalEl.addEventListener('keydown', trapKeys);
+    go.addEventListener('click', async () => {
+      if (!ack.checked) return;
+      go.disabled = true;
+      go.textContent = 'Starting...';
+      err.hidden = true;
+      try {
+        const res = await api('/api/account/surveys/' + encodeURIComponent(sv.id) + '/start', {
+          method: 'POST',
+          body: JSON.stringify({ acknowledged: true })
+        });
+        closeModal();
+        beginRun(sv, res);
+      } catch (e) {
+        err.textContent = e.message;
+        err.hidden = false;
+        go.textContent = 'Start survey';
+        go.disabled = !ack.checked;
+      }
+    });
+    requestAnimationFrame(() => modalEl && modalEl.classList.add('open'));
+    ack.focus();
+  }
+  function trapKeys(e) {
+    if (e.key === 'Escape') { closeModal(); return; }
+    if (e.key !== 'Tab' || !modalEl) return;
+    const f = [...modalEl.querySelectorAll('button:not([disabled]), input, a[href]')];
+    if (!f.length) return;
+    const first = f[0];
+    const last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  function closeModal() {
+    if (!modalEl) return;
+    modalEl.remove();
+    modalEl = null;
+    document.body.classList.remove('sv-lock');
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  // ------------------------------------------------------------------- taking
+  const draftKey = (sid) => 'fcmt-survey-draft:' + sid;
+  function saveDraft() {
+    if (!run) return;
+    try { sessionStorage.setItem(draftKey(run.sessionId), JSON.stringify({ answers: run.answers, step: run.step })); } catch {}
+  }
+  function loadDraft(sid) {
+    try { return JSON.parse(sessionStorage.getItem(draftKey(sid)) || 'null'); } catch { return null; }
+  }
+  function clearDraft(sid) { try { sessionStorage.removeItem(draftKey(sid)); } catch {} }
+
+  function beginRun(sv, started) {
+    const draft = loadDraft(started.sessionId);
+    const ids = new Set(started.questions.map((q) => q.id));
+    const answers = {};
+    if (draft && draft.answers) {
+      for (const [k, v] of Object.entries(draft.answers)) if (ids.has(k)) answers[k] = v;
+    }
+    run = {
+      survey: sv,
+      sessionId: started.sessionId,
+      questions: started.questions,
+      answers,
+      step: Math.min(Number(draft?.step || 0), started.questions.length),
+      dir: 1,
+      busy: false,
+      error: ''
+    };
+    head.hidden = true;
+    renderRun();
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  function isAnswered(q) {
+    const v = run.answers[q.id];
+    if (v === undefined || v === null) return false;
+    if (q.type === 'multiple') return Array.isArray(v) && v.length > 0;
+    if (q.type === 'text') return String(v).trim().length > 0;
+    return true;
+  }
+  function canAdvance(q) {
+    if (!isAnswered(q)) return !q.required;
+    if (q.type === 'text' && q.required) return String(run.answers[q.id]).trim().length >= 2;
+    return true;
+  }
+  function answerLabel(q) {
+    const v = run.answers[q.id];
+    if (!isAnswered(q)) return '<em>Skipped</em>';
+    if (q.type === 'single') return esc((q.options.find((o) => o.id === v) || {}).label || '');
+    if (q.type === 'multiple') return esc(v.map((id) => (q.options.find((o) => o.id === id) || {}).label || '').join(', '));
+    if (q.type === 'yes_no') return v ? 'Yes' : 'No';
+    if (q.type === 'rating') return esc(v + ' / ' + (q.config?.max || 5));
+    return esc(String(v).length > 110 ? String(v).slice(0, 110) + '...' : String(v));
+  }
+
+  function inputFor(q) {
+    const v = run.answers[q.id];
+    if (q.type === 'single') {
+      return `<div class="sv-opts" role="radiogroup" aria-label="${esc(q.prompt)}">${q.options.map((o, i) => `
+        <button type="button" class="sv-opt${v === o.id ? ' on' : ''}" role="radio" aria-checked="${v === o.id}" data-pick="${esc(o.id)}">
+          <span class="sv-key">${i + 1}</span><span class="sv-opt-l">${esc(o.label)}</span><span class="sv-tick">${ICON.check}</span>
+        </button>`).join('')}</div>`;
+    }
+    if (q.type === 'multiple') {
+      const max = Number(q.config?.maxSelect || q.options.length);
+      const cur = Array.isArray(v) ? v : [];
+      return `<p class="sv-hint">Pick up to ${max}.</p><div class="sv-opts" role="group" aria-label="${esc(q.prompt)}">${q.options.map((o, i) => `
+        <button type="button" class="sv-opt${cur.includes(o.id) ? ' on' : ''}" role="checkbox" aria-checked="${cur.includes(o.id)}" data-toggle="${esc(o.id)}">
+          <span class="sv-key">${i + 1}</span><span class="sv-opt-l">${esc(o.label)}</span><span class="sv-tick">${ICON.check}</span>
+        </button>`).join('')}</div>`;
+    }
+    if (q.type === 'yes_no') {
+      return `<div class="sv-yn" role="radiogroup" aria-label="${esc(q.prompt)}">
+        <button type="button" class="sv-opt sv-opt--yn${v === true ? ' on' : ''}" role="radio" aria-checked="${v === true}" data-yn="1"><span class="sv-key">1</span><span class="sv-opt-l">Yes</span></button>
+        <button type="button" class="sv-opt sv-opt--yn${v === false ? ' on' : ''}" role="radio" aria-checked="${v === false}" data-yn="0"><span class="sv-key">2</span><span class="sv-opt-l">No</span></button>
+      </div>`;
+    }
+    if (q.type === 'rating') {
+      const max = Number(q.config?.max || 5);
+      const pills = Array.from({ length: max }, (_, i) => i + 1).map((n) => `
+        <button type="button" class="sv-rate${Number(v) >= n ? ' fill' : ''}${Number(v) === n ? ' on' : ''}" role="radio" aria-checked="${Number(v) === n}" aria-label="${n} of ${max}" data-rate="${n}">${n}</button>`).join('');
+      return `<div class="sv-rates" role="radiogroup" aria-label="${esc(q.prompt)}" style="--n:${max}">${pills}</div>
+        <div class="sv-rate-ends"><span>${esc(q.config?.lowLabel || '')}</span><span>${esc(q.config?.highLabel || '')}</span></div>`;
+    }
+    const max = Number(q.config?.maxLength || 600);
+    const val = typeof v === 'string' ? v : '';
+    return `<textarea class="sv-text" id="svText" rows="5" maxlength="${max}" placeholder="Type your answer" aria-label="${esc(q.prompt)}">${esc(val)}</textarea>
+      <div class="sv-count"><span id="svCount">${val.length}</span> / ${max}</div>`;
+  }
+
+  function renderRun() {
+    const total = run.questions.length;
+    const onReview = run.step >= total;
+    const pct = Math.round((Math.min(run.step, total) / total) * 100);
+    let body = '';
+    if (!onReview) {
+      const q = run.questions[run.step];
+      const ok = canAdvance(q);
+      body = `
+        <div class="sv-step ${run.dir > 0 ? 'fwd' : 'back'}" key="${run.step}">
+          <span class="sv-qnum">Question ${run.step + 1} of ${total}${q.required ? '' : ' <i>optional</i>'}</span>
+          <h2 class="sv-q">${esc(q.prompt)}</h2>
+          ${q.helpText ? `<p class="sv-help">${esc(q.helpText)}</p>` : ''}
+          ${inputFor(q)}
+        </div>
+        <div class="sv-nav">
+          <button class="sv-btn" type="button" id="svPrev" ${run.step === 0 ? 'disabled' : ''}>Back</button>
+          <button class="sv-btn sv-btn--primary" type="button" id="svNext" ${ok ? '' : 'disabled'}>${!isAnswered(q) && !q.required ? 'Skip' : run.step === total - 1 ? 'Review answers' : 'Next'}</button>
+        </div>`;
+    } else {
+      body = `
+        <div class="sv-step ${run.dir > 0 ? 'fwd' : 'back'}">
+          <span class="sv-qnum">Last step</span>
+          <h2 class="sv-q">Check your answers</h2>
+          <p class="sv-help">You cannot change them after submitting.</p>
+          <ol class="sv-review">${run.questions.map((q, i) => `
+            <li><button type="button" data-jump="${i}"><span class="sv-rv-q">${esc(q.prompt)}</span><span class="sv-rv-a">${answerLabel(q)}</span></button></li>`).join('')}</ol>
+          ${run.error ? `<p class="sv-h-err" role="alert">${esc(run.error)}</p>` : ''}
+        </div>
+        <div class="sv-nav">
+          <button class="sv-btn" type="button" id="svPrev" ${run.busy ? 'disabled' : ''}>Back</button>
+          <button class="sv-btn sv-btn--primary" type="button" id="svSubmit" ${run.busy ? 'disabled' : ''}>${run.busy ? 'Submitting...' : 'Submit survey'}</button>
+        </div>`;
+    }
+    root.innerHTML = `
+      <section class="sv-run">
+        <div class="sv-run-head">
+          <div><span class="sv-badge">${esc(run.survey.title)}</span></div>
+          <div class="sv-run-rw">${rewardChips(run.survey.rewardXp, run.survey.rewardTokens, false)}</div>
+        </div>
+        <div class="sv-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+        <div class="sv-run-card">${body}</div>
+        <button class="sv-leave" type="button" id="svLeave">Save and leave</button>
+      </section>`;
+    bindRun();
+  }
+
+  function bindRun() {
+    const total = run.questions.length;
+    const q = run.questions[run.step];
+    const setAnswer = (val) => { run.answers[q.id] = val; run.error = ''; saveDraft(); };
+    const refresh = () => {
+      const next = document.getElementById('svNext');
+      if (!next) return;
+      next.disabled = !canAdvance(q);
+      next.textContent = !isAnswered(q) && !q.required ? 'Skip' : run.step === total - 1 ? 'Review answers' : 'Next';
+    };
+    root.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => {
+      setAnswer(b.dataset.pick);
+      root.querySelectorAll('[data-pick]').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
+      refresh();
+    }));
+    root.querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
+      const max = Number(q.config?.maxSelect || q.options.length);
+      const cur = Array.isArray(run.answers[q.id]) ? [...run.answers[q.id]] : [];
+      const id = b.dataset.toggle;
+      const idx = cur.indexOf(id);
+      if (idx >= 0) cur.splice(idx, 1);
+      else if (cur.length < max) cur.push(id);
+      else { b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 400); return; }
+      setAnswer(cur);
+      root.querySelectorAll('[data-toggle]').forEach((x) => { const on = cur.includes(x.dataset.toggle); x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
+      refresh();
+    }));
+    root.querySelectorAll('[data-yn]').forEach((b) => b.addEventListener('click', () => {
+      setAnswer(b.dataset.yn === '1');
+      root.querySelectorAll('[data-yn]').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
+      refresh();
+    }));
+    root.querySelectorAll('[data-rate]').forEach((b) => b.addEventListener('click', () => {
+      const n = Number(b.dataset.rate);
+      setAnswer(n);
+      root.querySelectorAll('[data-rate]').forEach((x) => {
+        const k = Number(x.dataset.rate);
+        x.classList.toggle('fill', k <= n);
+        x.classList.toggle('on', k === n);
+        x.setAttribute('aria-checked', String(k === n));
+      });
+      refresh();
+    }));
+    const text = document.getElementById('svText');
+    if (text) {
+      text.addEventListener('input', () => {
+        setAnswer(text.value);
+        const c = document.getElementById('svCount');
+        if (c) c.textContent = String(text.value.length);
+        refresh();
+      });
+      if (!reduceMotion) setTimeout(() => text.focus({ preventScroll: true }), 260);
+    }
+    root.querySelectorAll('[data-jump]').forEach((b) => b.addEventListener('click', () => { run.dir = -1; run.step = Number(b.dataset.jump); saveDraft(); renderRun(); }));
+    document.getElementById('svPrev')?.addEventListener('click', () => { run.dir = -1; run.step = Math.max(0, run.step - 1); saveDraft(); renderRun(); });
+    document.getElementById('svNext')?.addEventListener('click', () => {
+      if (!canAdvance(q)) return;
+      if (!isAnswered(q)) delete run.answers[q.id];
+      run.dir = 1; run.step += 1; saveDraft(); renderRun();
+    });
+    document.getElementById('svSubmit')?.addEventListener('click', submitRun);
+    document.getElementById('svLeave')?.addEventListener('click', () => { saveDraft(); goHub(); });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (!run || modalEl || run.step >= run.questions.length) return;
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+    const q = run.questions[run.step];
+    if (/^[1-9]$/.test(e.key)) {
+      const n = Number(e.key) - 1;
+      if (q.type === 'single' || q.type === 'multiple') root.querySelectorAll(q.type === 'single' ? '[data-pick]' : '[data-toggle]')[n]?.click();
+      else if (q.type === 'yes_no') root.querySelectorAll('[data-yn]')[n]?.click();
+      else if (q.type === 'rating') root.querySelectorAll('[data-rate]')[n]?.click();
+    } else if (e.key === 'Enter' && tag !== 'BUTTON' && tag !== 'A') {
+      const next = document.getElementById('svNext');
+      if (next && !next.disabled) next.click();
+    }
+  });
+
+  async function submitRun() {
+    if (!run || run.busy) return;
+    const missing = run.questions.findIndex((q) => !canAdvance(q) || (q.required && !isAnswered(q)));
+    if (missing >= 0) {
+      run.error = 'Question ' + (missing + 1) + ' still needs an answer.';
+      run.dir = -1; run.step = missing; saveDraft(); renderRun();
+      return;
+    }
+    run.busy = true; run.error = ''; renderRun();
+    const answers = run.questions.filter((q) => isAnswered(q)).map((q) => ({
+      questionId: q.id,
+      value: q.type === 'text' ? String(run.answers[q.id]).trim() : run.answers[q.id]
+    }));
+    try {
+      const res = await api('/api/account/surveys/' + encodeURIComponent(run.survey.id) + '/submit', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: run.sessionId, answers })
+      });
+      clearDraft(run.sessionId);
+      const sv = run.survey;
+      run = null;
+      renderDone(sv, res);
+      refreshIdentity();
+    } catch (e) {
+      run.busy = false;
+      run.error = e.message;
+      if (e.status === 404 || e.status === 409) clearDraft(run.sessionId);
+      renderRun();
+    }
+  }
+
+  async function refreshIdentity() {
+    try {
+      const res = await accountApi('/api/account/me');
+      if (res.ok) { const b = await res.json(); if (b?.account) setCachedIdentity(b.account); }
+    } catch {}
+  }
+
+  function renderDone(sv, res) {
+    const xp = Number(res.rewardXp || 0);
+    const tk = Number(res.rewardTokens || 0);
+    root.innerHTML = `
+      <section class="sv-done acc-anim">
+        <div class="sv-burst" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => `<i style="--a:${i * (360 / 14)}deg;--d:${(i % 3) * 0.06}s"></i>`).join('')}</div>
+        <div class="sv-ring"><svg viewBox="0 0 52 52" width="92" height="92"><circle class="sv-ring-c" cx="26" cy="26" r="23"/><path class="sv-ring-t" d="M15 27l8 8 14-16"/></svg></div>
+        <h2>Thank you, that is submitted.</h2>
+        <p>${esc(sv.title)} is done. ${xp || tk ? 'Your rewards are already on your account.' : 'Your answers are saved.'}</p>
+        ${xp || tk ? `<div class="sv-rewards">
+          ${xp ? `<div class="sv-rw sv-rw--xp"><small>XP</small><strong data-count="${xp}">0</strong></div>` : ''}
+          ${tk ? `<div class="sv-rw sv-rw--tk"><small>Tokens</small><strong data-count="${tk}">0</strong></div>` : ''}
+        </div>` : ''}
+        <div class="sv-actions">
+          <a class="sv-btn sv-btn--primary" href="/profile/">View profile</a>
+          <button class="sv-btn" type="button" id="svDoneBack">More surveys</button>
+        </div>
+      </section>`;
+    runCounts(root);
+    document.getElementById('svDoneBack').addEventListener('click', async () => { await loadList(); goHub(); });
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  // ------------------------------------------------------------------ routing
+  function goHub() {
+    closeModal();
+    history.pushState({}, '', '/surveys/');
+    renderHub();
+  }
+  async function openSurvey(slug, push) {
+    const sv = data.surveys.find((x) => x.slug === slug);
+    if (!sv) { messageCard('Survey not found', 'That survey does not exist or is no longer open.', '/surveys/', 'All surveys'); return; }
+    if (push) history.pushState({}, '', '/surveys/?s=' + encodeURIComponent(slug));
+    renderDetail(sv);
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+  function routeFromUrl() {
+    closeModal();
+    const slug = new URLSearchParams(location.search).get('s');
+    if (slug) openSurvey(slug, false);
+    else renderHub();
+  }
+  window.addEventListener('popstate', routeFromUrl);
+
+  async function loadList() {
+    const body = await api('/api/account/surveys');
+    data = { surveys: body.surveys || [], summary: body.summary || data.summary };
+  }
+
+  async function init() {
+    const session = await accountAuth.auth.getSession();
+    if (!session.data?.session) { guestCard(); return; }
+    try {
+      await loadList();
+    } catch (e) {
+      if (e.status === 401) { guestCard(); return; }
+      if (e.status === 403) { messageCard('Verify your email first', e.message, '/settings/', 'Open settings'); return; }
+      messageCard('Surveys are unavailable', e.message, '/missions/', 'Back to Quests');
+      return;
+    }
+    routeFromUrl();
+  }
+
+  document.addEventListener('pointermove', (e) => {
+    const c = e.target instanceof Element ? e.target.closest('[data-card]') : null;
+    if (!c) return;
+    const r = c.getBoundingClientRect();
+    c.style.setProperty('--mx', e.clientX - r.left + 'px');
+    c.style.setProperty('--my', e.clientY - r.top + 'px');
+  }, { passive: true });
+
+  init();
+</script>
+
+<style is:global>
+  .sv-page { min-height: calc(100vh - 80px); padding: 36px 18px 110px; background: radial-gradient(880px 440px at 85% 0%, rgba(154, 140, 255, 0.08), transparent 65%), radial-gradient(760px 420px at 8% 0%, rgba(76, 201, 255, 0.07), transparent 65%); }
+  .sv-wrap { width: min(1140px, 100%); margin: 0 auto; }
+  body.sv-lock { overflow: hidden; }
+
+  .sv-head { margin-bottom: 24px; }
+  .sv-kicker, .sv-badge { display: inline-flex; align-items: center; gap: 8px; color: #4cc9ff; font: 800 11px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; }
+  .sv-dot { width: 7px; height: 7px; border-radius: 50%; background: #4cc9ff; box-shadow: 0 0 10px #4cc9ff; animation: svPulse 2.2s ease-in-out infinite; }
+  .sv-head h1 { margin: 10px 0 8px; font: 700 clamp(30px, 4.5vw, 48px)/1.04 var(--font-display); letter-spacing: -.04em; color: #f5f8fb; }
+  .sv-head p { margin: 0; max-width: 660px; color: #93a8b8; font: 500 14.5px/1.65 var(--font-body); }
+
+  .sv-ribbon { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .sv-ribbon > div { position: relative; overflow: hidden; padding: 16px 18px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 18px; background: linear-gradient(165deg, rgba(26, 43, 62, .62), rgba(10, 18, 28, .85)); }
+  .sv-ribbon > div::before { content: ""; position: absolute; left: 18px; right: 18px; top: 0; height: 2px; border-radius: 0 0 3px 3px; background: linear-gradient(90deg, #4cc9ff, transparent); }
+  .sv-ribbon .sv-r-xp::before { background: linear-gradient(90deg, #9a8cff, transparent); }
+  .sv-ribbon .sv-r-tk::before { background: linear-gradient(90deg, #f6c453, transparent); }
+  .sv-ribbon small { display: block; color: #7d94a6; font: 800 10.5px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; }
+  .sv-ribbon strong { display: block; margin-top: 10px; color: #f5f8fb; font: 700 28px/1 var(--font-display); letter-spacing: -.03em; }
+
+  .sv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .sv-skel { min-height: 230px; }
+  .sv-card { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 22px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 22px; overflow: hidden; background: linear-gradient(165deg, rgba(26, 43, 62, .62), rgba(10, 18, 28, .88)); box-shadow: 0 26px 50px -30px rgba(0, 0, 0, .8); opacity: 0; transform: translateY(14px); animation: svRise .5s cubic-bezier(.22, 1, .36, 1) forwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); transition: border-color .25s ease, transform .25s ease; }
+  .sv-card::before { content: ""; position: absolute; inset: 0; background: radial-gradient(260px 160px at var(--mx, 50%) var(--my, 0%), rgba(76, 201, 255, .14), transparent 70%); opacity: 0; transition: opacity .25s ease; pointer-events: none; }
+  .sv-card:hover { border-color: rgba(76, 201, 255, .38); transform: translateY(-3px); }
+  .sv-card:hover::before { opacity: 1; }
+  .sv-card--completed { opacity: .86; }
+  .sv-card-top { display: flex; align-items: center; justify-content: space-between; }
+  .sv-card-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: #04131c; background: linear-gradient(145deg, #b6ecff, #4cc9ff); box-shadow: 0 10px 20px -8px rgba(76, 201, 255, .6); }
+  .sv-card--completed .sv-card-ico { background: linear-gradient(145deg, #b8f5d6, #4ee0a0); box-shadow: 0 10px 20px -8px rgba(78, 224, 160, .5); }
+  .sv-state { padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(76, 201, 255, .3); background: rgba(76, 201, 255, .08); color: #8ee0ff; font: 800 10.5px/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; }
+  .sv-card--completed .sv-state { border-color: rgba(78, 224, 160, .4); background: rgba(78, 224, 160, .1); color: #9ff0c9; }
+  .sv-card--full .sv-state, .sv-card--upcoming .sv-state { border-color: rgba(255, 255, 255, .15); background: rgba(255, 255, 255, .05); color: #a8bccb; }
+  .sv-card h3 { margin: 0; color: #f5f8fb; font: 700 19px/1.2 var(--font-display); letter-spacing: -.02em; }
+  .sv-card p { margin: 0; color: #93a8b8; font: 500 13.5px/1.6 var(--font-body); flex: 1; }
+  .sv-metas { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sv-meta { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 9px; background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .06); color: #9fb4c4; font: 600 11.5px/1 var(--font-body); }
+  .sv-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 4px; }
+  .sv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sv-chips--lg { margin: 18px 0 22px; }
+  .sv-chip { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .05); color: #cfe0ec; font: 800 12px/1 var(--font-body); }
+  .sv-chip--xp { border-color: rgba(154, 140, 255, .45); background: rgba(154, 140, 255, .12); color: #cdc5ff; }
+  .sv-chip--tk { border-color: rgba(246, 196, 83, .45); background: rgba(246, 196, 83, .11); color: #ffe29a; }
+  .sv-chip--xp::after, .sv-chip--tk::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .28) 50%, transparent 65%); transform: translateX(-120%); animation: svShine 4.5s ease-in-out infinite; }
+  .sv-done-note { display: inline-flex; align-items: center; gap: 6px; color: #9ff0c9; font: 700 12.5px/1 var(--font-body); }
+  .sv-muted-note { color: #8aa0b1; font: 600 12.5px/1 var(--font-body); }
+
+  .sv-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 18px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .15); background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .025)); color: #e6f1f8; font: 700 13.5px/1 var(--font-body); text-decoration: none; cursor: pointer; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, opacity .2s ease; }
+  .sv-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(76, 201, 255, .55); }
+  .sv-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .sv-btn--primary { border: 0; color: #04131c; font-weight: 800; background: linear-gradient(180deg, #b6ecff, #5ccfff 48%, #2eb4ee); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 14px 28px -12px rgba(76, 201, 255, .65); }
+  .sv-btn--primary:hover:not(:disabled) { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 20px 34px -12px rgba(76, 201, 255, .8); }
+  .sv-btn--lg { min-height: 50px; padding: 0 28px; font-size: 14.5px; }
+  .sv-btn:focus-visible, .sv-opt:focus-visible, .sv-rate:focus-visible, .sv-back:focus-visible, .sv-leave:focus-visible { outline: 2px solid #4cc9ff; outline-offset: 3px; }
+
+  .sv-empty, .sv-detail-card, .sv-done { padding: 34px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 24px; background: linear-gradient(165deg, rgba(26, 43, 62, .62), rgba(10, 18, 28, .88)); }
+  .sv-empty { text-align: center; }
+  .sv-empty h2, .sv-detail-card h2, .sv-done h2 { margin: 12px 0 8px; color: #f5f8fb; font: 700 clamp(24px, 3.4vw, 34px)/1.1 var(--font-display); letter-spacing: -.035em; }
+  .sv-empty p, .sv-done p { margin: 0 auto; max-width: 520px; color: #93a8b8; font: 500 14.5px/1.65 var(--font-body); }
+  .sv-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+  .sv-back { margin-bottom: 14px; padding: 8px 0; border: 0; background: none; color: #8ea5b6; font: 700 13px/1 var(--font-body); cursor: pointer; transition: color .2s; }
+  .sv-back:hover { color: #f5f8fb; }
+  .sv-detail-card .sv-lede { margin: 0 0 18px; max-width: 680px; color: #a9bccb; font: 500 15px/1.7 var(--font-body); }
+  .sv-blocked { margin: 0; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .04); color: #b9cddb; font: 600 14px/1.5 var(--font-body); }
+
+  /* honesty notice */
+  .sv-modal { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 18px; overflow-y: auto; background: rgba(2, 7, 12, .78); backdrop-filter: blur(10px); opacity: 0; transition: opacity .25s ease; }
+  .sv-modal.open { opacity: 1; }
+  .sv-modal-card { width: min(560px, 100%); padding: 30px; border: 1px solid rgba(246, 196, 83, .3); border-radius: 26px; background: radial-gradient(360px 160px at 50% 0%, rgba(246, 196, 83, .1), transparent 70%), linear-gradient(165deg, #12202f, #09121b); box-shadow: 0 60px 120px -30px #000; transform: translateY(18px) scale(.97); transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
+  .sv-modal.open .sv-modal-card { transform: none; }
+  .sv-shield { display: grid; place-items: center; width: 60px; height: 60px; margin: 0 auto 14px; border-radius: 20px; color: #f6c453; background: rgba(246, 196, 83, .12); border: 1px solid rgba(246, 196, 83, .35); animation: svFloat 3.4s ease-in-out infinite; }
+  .sv-modal-card h2 { margin: 0; text-align: center; color: #f5f8fb; font: 700 26px/1.1 var(--font-display); letter-spacing: -.03em; }
+  .sv-h-sub { margin: 8px 0 16px; text-align: center; color: #93a8b8; font: 500 14px/1.6 var(--font-body); }
+  .sv-rules { list-style: none; display: grid; gap: 8px; margin: 0 0 16px; padding: 0; }
+  .sv-rules li { padding: 11px 13px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .07); background: rgba(255, 255, 255, .03); color: #b4c7d5; font: 500 13.5px/1.55 var(--font-body); }
+  .sv-rules b { color: #f5f8fb; }
+  .sv-ack { display: flex; align-items: center; gap: 10px; padding: 13px 14px; border-radius: 14px; border: 1px solid rgba(76, 201, 255, .25); background: rgba(76, 201, 255, .06); color: #e6f1f8; font: 700 14px/1.3 var(--font-body); cursor: pointer; }
+  .sv-ack input { width: 20px; height: 20px; accent-color: #4cc9ff; flex: 0 0 auto; }
+  .sv-h-err { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 143, 134, .4); background: rgba(255, 143, 134, .08); color: #ffc0ba; font: 600 13px/1.5 var(--font-body); }
+  .sv-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+  /* taking */
+  .sv-run { max-width: 760px; margin: 0 auto; }
+  .sv-run-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .sv-run-rw { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sv-progress { height: 8px; margin-bottom: 18px; border-radius: 999px; background: rgba(255, 255, 255, .07); overflow: hidden; }
+  .sv-progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #4cc9ff, #9a8cff); box-shadow: 0 0 14px rgba(76, 201, 255, .6); transition: width .5s cubic-bezier(.22, 1, .36, 1); }
+  .sv-run-card { padding: 28px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 24px; background: linear-gradient(165deg, rgba(26, 43, 62, .62), rgba(10, 18, 28, .9)); box-shadow: 0 30px 60px -34px #000; overflow: hidden; }
+  .sv-step.fwd { animation: svInFwd .4s cubic-bezier(.22, 1, .36, 1) both; }
+  .sv-step.back { animation: svInBack .4s cubic-bezier(.22, 1, .36, 1) both; }
+  .sv-qnum { color: #4cc9ff; font: 800 11.5px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; }
+  .sv-qnum i { margin-left: 6px; color: #8aa0b1; font-style: normal; letter-spacing: .04em; text-transform: none; font-weight: 600; }
+  .sv-q { margin: 12px 0 6px; color: #f5f8fb; font: 700 clamp(21px, 3vw, 27px)/1.2 var(--font-display); letter-spacing: -.03em; }
+  .sv-help, .sv-hint { margin: 0 0 14px; color: #8aa0b1; font: 500 13.5px/1.55 var(--font-body); }
+  .sv-hint { margin-top: 12px; margin-bottom: 10px; }
+  .sv-opts { display: grid; gap: 8px; margin-top: 16px; }
+  .sv-hint + .sv-opts { margin-top: 0; }
+  .sv-opt { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .03); color: #dbe8f0; font: 600 14.5px/1.35 var(--font-body); text-align: left; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+  .sv-opt:hover { border-color: rgba(76, 201, 255, .4); background: rgba(76, 201, 255, .05); transform: translateX(3px); }
+  .sv-opt.on { border-color: #4cc9ff; background: linear-gradient(90deg, rgba(76, 201, 255, .18), rgba(76, 201, 255, .05)); color: #fff; animation: svPop .28s ease; }
+  .sv-opt.shake { animation: svShake .35s ease; }
+  .sv-key { display: grid; place-items: center; width: 26px; height: 26px; flex: 0 0 auto; border-radius: 8px; background: rgba(255, 255, 255, .07); color: #8aa0b1; font: 800 12px/1 var(--font-body); }
+  .sv-opt.on .sv-key { background: #4cc9ff; color: #04131c; }
+  .sv-opt-l { flex: 1; }
+  .sv-tick { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #4cc9ff; color: #04131c; opacity: 0; transform: scale(.4); transition: opacity .2s, transform .25s cubic-bezier(.34, 1.56, .64, 1); }
+  .sv-opt.on .sv-tick { opacity: 1; transform: none; }
+  .sv-yn { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .sv-opt--yn { justify-content: center; padding: 22px 16px; font-size: 17px; }
+  .sv-rates { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+  .sv-rate { min-height: 52px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .03); color: #a9bccb; font: 800 16px/1 var(--font-display); cursor: pointer; transition: all .2s ease; }
+  .sv-rate:hover { border-color: rgba(76, 201, 255, .5); transform: translateY(-2px); }
+  .sv-rate.fill { border-color: rgba(76, 201, 255, .5); background: rgba(76, 201, 255, .14); color: #e6f8ff; }
+  .sv-rate.on { background: linear-gradient(180deg, #b6ecff, #4cc9ff); color: #04131c; border-color: transparent; animation: svPop .28s ease; }
+  .sv-rate-ends { display: flex; justify-content: space-between; margin-top: 8px; color: #7d94a6; font: 600 12px/1 var(--font-body); }
+  .sv-text { display: block; width: 100%; margin-top: 16px; padding: 14px 15px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(3, 8, 13, .7); color: #f1f8fd; font: 500 15px/1.6 var(--font-body); resize: vertical; min-height: 130px; transition: border-color .2s, box-shadow .2s; }
+  .sv-text:focus { outline: none; border-color: rgba(76, 201, 255, .75); box-shadow: 0 0 0 4px rgba(76, 201, 255, .14); }
+  .sv-count { margin-top: 6px; text-align: right; color: #7d94a6; font: 600 12px/1 var(--font-body); }
+  .sv-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; }
+  .sv-leave { display: block; margin: 16px auto 0; border: 0; background: none; color: #7d94a6; font: 600 12.5px/1 var(--font-body); cursor: pointer; }
+  .sv-leave:hover { color: #dbe8f0; }
+  .sv-review { list-style: none; display: grid; gap: 8px; margin: 14px 0 0; padding: 0; }
+  .sv-review button { display: grid; gap: 4px; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .08); background: rgba(255, 255, 255, .03); text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
+  .sv-review button:hover { border-color: rgba(76, 201, 255, .4); background: rgba(76, 201, 255, .05); }
+  .sv-rv-q { color: #8aa0b1; font: 600 12.5px/1.4 var(--font-body); }
+  .sv-rv-a { color: #f5f8fb; font: 700 14px/1.4 var(--font-body); }
+  .sv-rv-a em { color: #7d94a6; font-weight: 500; }
+
+  /* done */
+  .sv-done { position: relative; max-width: 640px; margin: 0 auto; text-align: center; overflow: hidden; }
+  .sv-ring { width: 92px; margin: 0 auto 6px; }
+  .sv-ring-c { fill: rgba(78, 224, 160, .1); stroke: #4ee0a0; stroke-width: 3; stroke-dasharray: 145; stroke-dashoffset: 145; stroke-linecap: round; animation: svDraw .7s ease forwards; transform-origin: center; }
+  .sv-ring-t { fill: none; stroke: #9ff0c9; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: svDraw .45s .55s ease forwards; }
+  .sv-burst { position: absolute; left: 50%; top: 84px; width: 0; height: 0; pointer-events: none; }
+  .sv-burst i { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: #f6c453; opacity: 0; animation: svBurst .9s .5s ease-out forwards; animation-delay: calc(.5s + var(--d)); }
+  .sv-burst i:nth-child(3n) { background: #4cc9ff; }
+  .sv-burst i:nth-child(3n+1) { background: #9a8cff; }
+  .sv-rewards { display: flex; justify-content: center; gap: 12px; margin-top: 22px; }
+  .sv-rw { min-width: 140px; padding: 16px 20px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .04); animation: svRise .5s .6s both; }
+  .sv-rw small { display: block; font: 800 11px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: #8aa0b1; }
+  .sv-rw strong { display: block; margin-top: 8px; font: 700 34px/1 var(--font-display); letter-spacing: -.03em; }
+  .sv-rw--xp { border-color: rgba(154, 140, 255, .4); } .sv-rw--xp strong { color: #cdc5ff; }
+  .sv-rw--tk { border-color: rgba(246, 196, 83, .4); } .sv-rw--tk strong { color: #ffe29a; }
+
+  @keyframes svRise { to { opacity: 1; transform: none; } }
+  @keyframes svPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(76, 201, 255, .5); } 50% { box-shadow: 0 0 0 6px rgba(76, 201, 255, 0); } }
+  @keyframes svShine { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+  @keyframes svFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  @keyframes svInFwd { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+  @keyframes svInBack { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+  @keyframes svPop { 0% { transform: scale(.97); } 60% { transform: scale(1.02); } 100% { transform: scale(1); } }
+  @keyframes svShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  @keyframes svDraw { to { stroke-dashoffset: 0; } }
+  @keyframes svBurst { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-120px); } }
+
+  @media (max-width: 760px) {
+    .sv-ribbon { grid-template-columns: 1fr 1fr; }
+    .sv-grid { grid-template-columns: 1fr; }
+    .sv-run-card, .sv-empty, .sv-detail-card, .sv-done { padding: 22px 18px; }
+    .sv-modal-card { padding: 22px 18px; }
+    .sv-rewards { flex-direction: column; align-items: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sv-card, .sv-step, .sv-opt, .sv-rate, .sv-rw, .sv-modal-card, .sv-shield, .sv-chip::after, .sv-dot, .sv-burst i, .sv-ring-c, .sv-ring-t { animation: none !important; transition: none !important; }
+    .sv-card, .sv-rw { opacity: 1; transform: none; }
+    .sv-ring-c, .sv-ring-t { stroke-dashoffset: 0; }
+  }
+</style>
