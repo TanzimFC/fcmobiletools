@@ -2657,6 +2657,9 @@ async function imageUploadApi(request, env, url) {
     return json({ error: 'The selected file does not appear to be a valid image.' }, 415);
   }
 
+  // League crests and player avatars need to stay available for the life of a listing.
+  // Other upload callers keep the existing temporary-expiry default.
+  const permanent = fields.get('permanent') === 'true';
   let expirationDays = Number.parseInt(String(fields.get('expirationDays') || ''), 10);
   if (!Number.isInteger(expirationDays)) expirationDays = IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS;
   expirationDays = Math.max(1, Math.min(180, expirationDays));
@@ -2683,7 +2686,7 @@ async function imageUploadApi(request, env, url) {
   try {
     const endpoint = new URL('https://api.imgbb.com/1/upload');
     endpoint.searchParams.set('key', String(env.IMAGEBB_API_KEY).trim());
-    endpoint.searchParams.set('expiration', String(expirationSeconds));
+    if (!permanent) endpoint.searchParams.set('expiration', String(expirationSeconds));
     upstream = await fetch(endpoint.toString(), { method: 'POST', body: outgoing });
     result = await upstream.json().catch(() => null);
   } catch {
@@ -2707,7 +2710,7 @@ async function imageUploadApi(request, env, url) {
   }
 
   const appliedExpiration = Number(image.expiration);
-  if (!Number.isFinite(appliedExpiration) || appliedExpiration < 60) {
+  if (!permanent && (!Number.isFinite(appliedExpiration) || appliedExpiration < 60)) {
     console.warn('[IMAGE_UPLOAD] Automatic image expiry was not confirmed.');
     return json({ error: 'The image could not be uploaded with temporary storage. Please try again.' }, 503);
   }
@@ -2719,8 +2722,9 @@ async function imageUploadApi(request, env, url) {
       width: Math.max(0, Number(image.width) || 0),
       height: Math.max(0, Number(image.height) || 0),
       size: Math.max(0, Number(image.size) || file.size),
-      expirationDays: Math.max(1, Math.ceil(appliedExpiration / (24 * 60 * 60))),
-      expiresAt: new Date(Date.now() + appliedExpiration * 1000).toISOString()
+      permanent,
+      expirationDays: permanent ? null : Math.max(1, Math.ceil(appliedExpiration / (24 * 60 * 60))),
+      expiresAt: permanent ? null : new Date(Date.now() + appliedExpiration * 1000).toISOString()
     }
   });
 }
