@@ -13,12 +13,25 @@ const isExcluded = SITE_ADS.excludedPathPrefixes.some((prefix) =>
       if (window.__FCMOBILETOOLS_SITE_ADS__) return;
       window.__FCMOBILETOOLS_SITE_ADS__ = true;
 
+      const hasAdvertisingConsent = () => {
+        const name = 'fcmobiletools_consent=';
+        const row = document.cookie.split(';').map((part) => part.trim()).find((part) => part.startsWith(name));
+        if (!row) return false;
+        try {
+          const choice = JSON.parse(decodeURIComponent(row.slice(name.length)));
+          return choice?.version === '1' && choice?.advertising === true;
+        } catch {
+          return false;
+        }
+      };
+
       const root = document.body || document.documentElement;
       if (!root) return;
 
-      if (config.popunder?.enabled) {
-        const loaded = document.documentElement.dataset.sitePopunderLoaded;
-        if (!loaded) {
+      const loadConfiguredAds = () => {
+        if (!hasAdvertisingConsent()) return;
+
+        if (config.popunder?.enabled && document.documentElement.dataset.sitePopunderLoaded !== '1') {
           document.documentElement.dataset.sitePopunderLoaded = '1';
           const script = document.createElement('script');
           script.dataset.zone = config.popunder.zone;
@@ -26,24 +39,27 @@ const isExcluded = SITE_ADS.excludedPathPrefixes.some((prefix) =>
           script.async = true;
           root.appendChild(script);
         }
-      }
 
-      if (config.push?.enabled) {
-        window.setTimeout(() => {
-          if (document.visibilityState === 'prerender') return;
-          if (document.documentElement.dataset.sitePushLoaded === '1') return;
+        if (config.push?.enabled &&
+            document.documentElement.dataset.sitePushLoaded !== '1' &&
+            document.documentElement.dataset.sitePushScheduled !== '1') {
+          document.documentElement.dataset.sitePushScheduled = '1';
+          window.setTimeout(() => {
+            delete document.documentElement.dataset.sitePushScheduled;
+            if (!hasAdvertisingConsent() || document.visibilityState === 'prerender') return;
+            if (document.documentElement.dataset.sitePushLoaded === '1') return;
 
-          document.documentElement.dataset.sitePushLoaded = '1';
-          const script = document.createElement('script');
-          script.src = config.push.src + '?z=' + encodeURIComponent(config.push.zone);
-          script.setAttribute('data-cfasync', 'false');
-          script.async = true;
-          document.body.appendChild(script);
-        }, config.push.delayMs);
-      }
+            document.documentElement.dataset.sitePushLoaded = '1';
+            const script = document.createElement('script');
+            script.src = config.push.src + '?z=' + encodeURIComponent(config.push.zone);
+            script.setAttribute('data-cfasync', 'false');
+            script.async = true;
+            (document.body || root).appendChild(script);
+          }, config.push.delayMs);
+        }
 
-      if (config.videoSlider?.enabled && config.videoSlider.src) {
-        if (document.documentElement.dataset.siteVideoSliderLoaded !== '1') {
+        if (config.videoSlider?.enabled && config.videoSlider.src &&
+            document.documentElement.dataset.siteVideoSliderLoaded !== '1') {
           document.documentElement.dataset.siteVideoSliderLoaded = '1';
           const script = document.createElement('script');
           script.settings = {};
@@ -52,7 +68,29 @@ const isExcluded = SITE_ADS.excludedPathPrefixes.some((prefix) =>
           script.referrerPolicy = 'no-referrer-when-downgrade';
           root.appendChild(script);
         }
-      }
+      };
+
+      window.addEventListener('fcmobiletools:consent-updated', (event) => {
+        if (event.detail?.advertising === true) {
+          loadConfiguredAds();
+          return;
+        }
+
+        // Reload only when third-party ad scripts have already started, so a revoked
+        // preference removes their runtime from the current page as well.
+        const dataset = document.documentElement.dataset;
+        if (dataset.sitePopunderLoaded === '1' ||
+            dataset.sitePushLoaded === '1' ||
+            dataset.siteVideoSliderLoaded === '1') {
+          window.location.reload();
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') loadConfiguredAds();
+      });
+
+      loadConfiguredAds();
     })();
   </script>
 )}
