@@ -470,7 +470,14 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
       }
     } else if (wasPlayingBeforeHide) {
       wasPlayingBeforeHide = false;
-      $('#ftvPlayerStatus').textContent = 'Paused';
+      $('#ftvPlayerStatus').textContent = tabSwitchCount >= 2 ? 'Reset to 0:00' : 'Paused';
+      const prompt = $('#ftvFocusPrompt');
+      if (prompt && !prompt.hidden) {
+        prompt.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'nearest'
+        });
+      }
     }
   });
 
