@@ -564,21 +564,22 @@ async function accountSection(){
 async function adSettings(){
   const out=await api('/ad-settings');
   const c=out.settings;
-  app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> MONETIZATION CONTROL</div><h2>Ad Settings</h2><p>Control the public-site Monetag layer from one place. The private admin workspace is always excluded.</p></div><div class="hero-tools"><span class="ad-locked">ADMIN / API EXCLUDED</span></div></div>'
+  app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> MONETIZATION CONTROL</div><h2>Ad Settings</h2><p>Control public-site ad formats from one place. The admin workspace and excluded routes never load these ads.</p></div><div class="hero-tools"><span class="ad-locked">ADMIN / API EXCLUDED</span></div></div>'
     +'<div class="ad-settings-grid">'
     +'<section class="card ad-setting-card"><div class="head"><div><h3>Public advertising</h3><p>These switches affect public pages only.</p></div></div>'
     +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>Master ad switch</b><span>Turn every configured ad format on or off.</span></div><label class="ad-switch"><input id="adsEnabled" type="checkbox" '+(c.enabled?'checked':'')+'><span></span></label></div>'
     +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>Popunder</b><span>Monetag popunder zone · '+esc(c.popunder.zone)+'</span></div><label class="ad-switch"><input id="popEnabled" type="checkbox" '+(c.popunder.enabled?'checked':'')+'><span></span></label></div>'
     +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>Push notification ads</b><span>Monetag push zone · loaded after the configured delay.</span></div><label class="ad-switch"><input id="pushEnabled" type="checkbox" '+(c.push.enabled?'checked':'')+'><span></span></label></div>'
+    +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>HilltopAds Video Slider</b><span>Standalone floating video ad · zone #'+esc(c.videoSlider.zone)+'</span></div><label class="ad-switch"><input id="videoSliderEnabled" type="checkbox" '+(c.videoSlider.enabled?'checked':'')+'><span></span></label></div>'
     +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>Push delay</b><span>Delay before the push script is loaded on public pages.</span></div><div class="ad-delay"><input id="pushDelay" class="input" type="number" min="5" max="300" step="5" value="'+Math.round(Number(c.push.delayMs||30000)/1000)+'"><span class="muted">seconds</span></div></div>'
     +'<div class="ad-actions"><button class="btn primary" id="saveAds">Save ad settings</button><button class="btn" id="disableAds">Disable all ads</button></div>'
     +'</section>'
     +'<section class="card ad-setting-card"><div class="head"><div><h3>Current setup</h3><p>The provider and network IDs are stored centrally.</p></div></div>'
-    +'<div class="ad-status-grid"><div class="ad-status"><small>PROVIDER</small><strong>'+esc(c.provider||'Monetag')+'</strong></div><div class="ad-status"><small>PUBLIC STATUS</small><strong>'+(c.enabled?'ENABLED':'DISABLED')+'</strong></div><div class="ad-status"><small>POPUNDER</small><strong>'+(c.popunder.enabled?'ON':'OFF')+'</strong></div><div class="ad-status"><small>PUSH</small><strong>'+(c.push.enabled?'ON':'OFF')+'</strong></div></div>'
+    +'<div class="ad-status-grid"><div class="ad-status"><small>PROVIDER</small><strong>'+esc(c.provider||'Monetag')+'</strong></div><div class="ad-status"><small>PUBLIC STATUS</small><strong>'+(c.enabled?'ENABLED':'DISABLED')+'</strong></div><div class="ad-status"><small>POPUNDER</small><strong>'+(c.popunder.enabled?'ON':'OFF')+'</strong></div><div class="ad-status"><small>PUSH</small><strong>'+(c.push.enabled?'ON':'OFF')+'</strong></div><div class="ad-status"><small>HILLTOPADS VIDEO</small><strong>'+(c.videoSlider.enabled?'ON':'OFF')+' · #'+esc(c.videoSlider.zone)+'</strong></div></div>'
     +'<div class="ad-warning"><b>AdSense preparation:</b> when you are ready to submit for Google AdSense, switch the master ad switch off here. You do not need to remove code from individual pages.</div>'
     +'<div class="notice" style="margin-top:12px">Private routes <b>/admin</b>, <b>/api</b> and <b>/creator/login</b> are enforced as permanent exclusions in the Worker.</div>'
     +'</section></div>';
-  $('#disableAds').onclick=()=>{$('#adsEnabled').checked=false;$('#popEnabled').checked=false;$('#pushEnabled').checked=false;state('Ads disabled locally — click Save to publish')};
+  $('#disableAds').onclick=()=>{$('#adsEnabled').checked=false;$('#popEnabled').checked=false;$('#pushEnabled').checked=false;$('#videoSliderEnabled').checked=false;state('Ads disabled locally — click Save to publish')};
   $('#saveAds').onclick=async()=>{
     const b=$('#saveAds');busy(b,true);
     try{
@@ -587,7 +588,8 @@ async function adSettings(){
       const result=await api('/ad-settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
         enabled:$('#adsEnabled').checked,
         popunder:{enabled:$('#popEnabled').checked},
-        push:{enabled:$('#pushEnabled').checked,delayMs:delaySeconds*1000}
+        push:{enabled:$('#pushEnabled').checked,delayMs:delaySeconds*1000},
+        videoSlider:{enabled:$('#videoSliderEnabled').checked}
       })});
       state(result.settings.enabled?'Public ads enabled':'Public ads disabled');
       await adSettings();
