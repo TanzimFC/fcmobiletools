@@ -122,6 +122,7 @@ function validateProfile(input) {
   if (input.avatarUrl && avatar === undefined) throw new Error('Upload your profile image again.');
   if (input.teamScreenshotUrl && teamScreenshot === undefined) throw new Error('Upload your team screenshot again.');
   if (showTeamToOwners && !teamScreenshot) throw new Error('Upload a team screenshot before showing it to league owners.');
+  if (showTeamToOwners && status !== 'looking_for_league') throw new Error('Set your profile status to Looking for a league before showing your squad to recruiters.');
   return {
     status,
     fc_mobile_uid: uid,
