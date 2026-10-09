@@ -728,6 +728,95 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
   }
 
+  async function submitTeamToLeague(button) {
+    const listingId = button.dataset.id;
+    if (!activeTeamScreenshot()) {
+      toast('Upload a current team screenshot in My player profile first.', true);
+      openLeagueProfile();
+      return;
+    }
+    button.disabled = true;
+    try {
+      const result = await api('/api/leagues/listings/' + encodeURIComponent(listingId) + '/team-share', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      const row = state.leagues.find(item => item.id === listingId);
+      if (row) {
+        row.myTeamShare = {
+          id: result.share?.id || '',
+          status: 'pending',
+          submittedAt: result.share?.submitted_at || new Date().toISOString(),
+          expiresAt: result.share?.expires_at || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        };
+      }
+      filterLeagues();
+      toast('Team screenshot sent to ' + (result.leagueName || 'the league') + '. It expires within 7 days.');
+    } catch (error) {
+      toast(error.message || 'Could not send your team screenshot.', true);
+      button.disabled = false;
+    }
+  }
+
+  function renderTeamShares() {
+    const rows = state.teamShares || [];
+    $('#teamSubmissionCount').textContent = String(rows.filter(row => row.status === 'pending').length);
+    $('#teamShareResultsLabel').textContent = rows.length + (rows.length === 1 ? ' current submission' : ' current submissions');
+    $('#teamShareList').innerHTML = rows.map((share, index) => {
+      const p = share.player || {};
+      const statusLabel = ({ pending: 'Awaiting review', accepted: 'Accepted', declined: 'Declined' })[share.status] || share.status;
+      const statusClass = share.status === 'accepted' ? '' : (share.status === 'pending' ? ' pending' : ' rejected');
+      const shot = '<a class="fl-team-shot" href="' + esc(share.screenshotUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Open squad screenshot for ' + esc(p.displayName || 'player') + '"><img src="' + esc(share.screenshotUrl) + '" loading="lazy" alt="Temporary FC Mobile squad screenshot" referrerpolicy="no-referrer"></a>';
+      const tags = (p.tournamentSizes || []).map(size => '<span class="fl-tag cyan">' + esc(size) + '</span>').join('') +
+        (p.preferredLanguages || []).slice(0, 3).map(lang => '<span class="fl-tag">' + esc(lang) + '</span>').join('');
+      const action = share.status === 'pending'
+        ? '<button class="fl-small-btn accept" data-team-review="accepted" data-id="' + esc(share.id) + '" type="button">Accept team</button><button class="fl-small-btn decline" data-team-review="declined" data-id="' + esc(share.id) + '" type="button">Decline</button>'
+        : '';
+      return '<article class="fl-team-share-card" style="animation-delay:' + Math.min(index * 35, 210) + 'ms">' + shot +
+        '<div class="fl-team-share-body"><div class="fl-team-share-top"><div><h3>' + esc(p.displayName || 'FC Mobile player') + '</h3><div class="fl-team-share-meta">@' + esc(p.username || 'player') + ' · ' + esc(p.regionServer || 'Region not set') + '<br>' + fmt(p.ovr) + ' OVR · Sent ' + esc(new Date(share.submittedAt).toLocaleDateString()) + '</div></div><span class="fl-status-pill' + statusClass + '">' + esc(statusLabel) + '</span></div>' +
+        '<div class="fl-card-tags" style="margin-top:11px">' + tags + '</div>' +
+        '<div class="fl-team-share-meta" style="margin-top:10px">League: ' + esc(share.listingName) + ' · Screenshot expiry: ' + esc(new Date(share.expiresAt).toLocaleDateString()) + '</div>' +
+        (share.playerNote ? '<div class="fl-team-share-note">' + esc(share.playerNote) + '</div>' : '') +
+        (share.reviewNote ? '<div class="fl-team-share-note">Review note: ' + esc(share.reviewNote) + '</div>' : '') +
+        '<div class="fl-team-share-actions">' + action + '</div></div></article>';
+    }).join('');
+    $('#teamShareList').hidden = rows.length === 0;
+    $('#teamShareEmpty').hidden = rows.length > 0;
+  }
+
+  async function loadTeamShares() {
+    $('#teamShareList').innerHTML = '<div class="fl-skeleton"></div><div class="fl-skeleton"></div>';
+    $('#teamShareList').hidden = false;
+    $('#teamShareEmpty').hidden = true;
+    try {
+      const result = await api('/api/leagues/team-shares');
+      state.teamShares = result.shares || [];
+      renderTeamShares();
+    } catch (error) {
+      state.teamShares = [];
+      $('#teamShareList').innerHTML = '';
+      $('#teamShareList').hidden = true;
+      $('#teamShareEmpty').hidden = false;
+      $('#teamShareEmpty').querySelector('h3').textContent = 'Team submissions are unavailable.';
+      $('#teamShareEmpty').querySelector('p').textContent = error.message || 'Refresh and try again.';
+    }
+  }
+
+  async function reviewTeamShare(button) {
+    button.disabled = true;
+    try {
+      await api('/api/leagues/team-shares/' + encodeURIComponent(button.dataset.id) + '/review', {
+        method: 'POST',
+        body: JSON.stringify({ status: button.dataset.teamReview })
+      });
+      toast(button.dataset.teamReview === 'accepted' ? 'Team submission accepted.' : 'Team submission declined.');
+      await loadTeamShares();
+    } catch (error) {
+      toast(error.message || 'Could not update this submission.', true);
+      button.disabled = false;
+    }
+  }
+
   async function loadPlayers() {
     $('#playerList').innerHTML = '<div class="fl-skeleton"></div><div class="fl-skeleton"></div><div class="fl-skeleton"></div>';
     try {
@@ -751,6 +840,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     $('#playerList').innerHTML = rows.map((row, index) => {
       const tags = (row.tournamentSizes || []).map(size => '<span class="fl-tag cyan">' + esc(size) + '</span>').join('') +
         (row.preferredLanguages || []).slice(0, 2).map(lang => '<span class="fl-tag">' + esc(lang) + '</span>').join('');
+      const squadPreview = row.teamScreenshotUrl
+        ? '<a class="fl-inline-squad" href="' + esc(row.teamScreenshotUrl) + '" target="_blank" rel="noopener noreferrer"><img src="' + esc(row.teamScreenshotUrl) + '" loading="lazy" alt="" referrerpolicy="no-referrer"><span>Open shared squad screenshot</span></a>'
+        : '';
       const revealed = state.revealed.get(row.accountId);
       const revealPanel = revealed ? '<div class="fl-revealed"><h4>Contact details</h4><dl><dt>UID</dt><dd>' + esc(revealed.fcMobileUid) + '</dd><dt>In-game name</dt><dd>' + esc(revealed.inGameUsername) + '</dd><dt>Discord</dt><dd>' + esc(revealed.discordHandle || 'Not provided') + '</dd><dt>Region</dt><dd>' + esc(revealed.regionServer) + '</dd></dl></div>' : '';
       return '<article class="fl-player-card" style="animation-delay:' + Math.min(index * 25, 150) + 'ms">' +
@@ -759,6 +851,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         '<div class="fl-player-tags">' + tags + '</div>' +
         '<p class="fl-player-note">' + esc(row.availability || 'Availability not specified') + (row.playStyle ? ' · ' + esc(row.playStyle) : '') + '</p>' +
         (row.notes ? '<p class="fl-player-note">' + esc(row.notes) + '</p>' : '') +
+        squadPreview +
+        (row.teamScreenshotNote && row.teamScreenshotUrl ? '<p class="fl-player-note">' + esc(row.teamScreenshotNote) + '</p>' : '') +
         '<button type="button" class="fl-small-btn fl-player-reveal" data-id="' + esc(row.accountId) + '" ' + (state.outreachRemaining <= 0 && !revealed ? 'disabled' : '') + '>' + (revealed ? 'Contact already unlocked' : 'Unlock contact · uses 1 daily contact') + '</button>' +
         revealPanel + '</article>';
     }).join('');
