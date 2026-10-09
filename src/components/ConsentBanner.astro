@@ -297,6 +297,7 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
     updateGoogleConsent(choice);
     hideBanner();
     closeModal(false);
+    window.dispatchEvent(new CustomEvent('fcmobiletools:consent-updated', { detail: choice }));
   };
 
   banner.querySelector('[data-consent="accept"]')?.addEventListener('click', () => apply({ analytics: true, advertising: true }));
