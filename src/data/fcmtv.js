@@ -52,6 +52,16 @@ export const FCMTV_CONTENT = {
       "featured": false,
       "published": true,
       "sortOrder": 40
+    },
+    {
+      "id": "fc-mobile-27-gems-new-account",
+      "title": "How I Got Gems Fast on a New FC Mobile 27 Account",
+      "description": "A practical look at building up gems on a fresh FC Mobile 27 account, with methods to consider as you progress.",
+      "youtubeId": "JbO0KgZUVsQ",
+      "category": "Gems & Resources",
+      "featured": false,
+      "published": true,
+      "sortOrder": 50
     }
   ]
 };
