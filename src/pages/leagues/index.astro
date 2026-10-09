@@ -179,6 +179,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <label class="fl-field"><span>Player commitment <b>*</b></span><select name="playerCommitment" required><option value="casual">Casual, no pressure</option><option value="regular" selected>Regular play</option><option value="competitive">Competitive</option></select></label>
             <label class="fl-field"><span>Open spots <b>*</b></span><input name="openSpots" type="number" min="0" max="50" required value="5"></label>
             <label class="fl-field"><span>Discord invite link <small>Optional</small></span><input name="discordInviteUrl" type="url" placeholder="https://discord.gg/..." maxlength="500"></label>
+            <label class="fl-field"><span>Public Discord contact <small>Optional</small></span><input name="contactDiscord" maxlength="100" placeholder="@clubadmin or Discord handle"></label>
           </div>
           <label class="fl-field"><span>Describe your league <b>*</b></span><textarea name="description" required minlength="20" maxlength="700" rows="4" placeholder="Tell players how your club plays, what you expect and what makes it a good fit."></textarea></label>
           <div class="fl-upload-row">
@@ -461,6 +462,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const ownerAvatar = row.owner?.avatarUrl ? '<img src="' + esc(row.owner.avatarUrl) + '" alt="" loading="lazy" onerror="this.remove()">' : '';
     const kickoff = row.lastKickoffAt && row.kickoffActive ? '<span class="fl-status-pill"><span class="fl-kickoff-icon">↗</span> KICKOFF ACTIVE</span>' : '<span class="fl-status-pill">RECRUITING</span>';
     const invite = row.discordInviteUrl ? '<a class="fl-small-btn external" href="' + esc(row.discordInviteUrl) + '" target="_blank" rel="noopener noreferrer">Apply / Join ↗</a>' : '';
+    const contactDiscord = row.contactDiscord ? '<button class="fl-small-btn" data-contact-discord="' + esc(row.contactDiscord) + '" type="button">Copy Discord</button>' : '';
     const activeText = row.lastActiveAt ? 'Last confirmed ' + esc(new Date(row.lastActiveAt).toLocaleDateString()) : 'Awaiting first activity check';
     const activeLabel = row.confirmedByMe ? 'Confirmed · 24h' : 'League active';
     return '<article class="fl-league-card" style="animation-delay:' + Math.min(index * 35, 210) + 'ms"><div class="fl-card-accent"></div><div class="fl-card-inner">' +
@@ -472,7 +474,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       '<div class="fl-card-tags">' + sizes + languages + '</div>' +
       '<div class="fl-card-stats"><div><span>Minimum OVR</span><strong>' + fmt(row.minOvr) + '+ OVR</strong></div><div><span>Tournament rhythm</span><strong>' + esc(labelFrequency(row.tournamentFrequency)) + '</strong></div><div><span>Club culture</span><strong>' + esc(labelCommitment(row.playerCommitment)) + '</strong></div></div>' +
       '<div class="fl-card-bottom"><div class="fl-owner-line">' + ownerAvatar + '<span>Managed by ' + esc(row.owner?.displayName || 'FC Mobile player') + '</span></div><div class="fl-card-actions">' +
-      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + (row.confirmedByMe ? 'disabled' : '') + '>' + activeLabel + '</button>' + invite +
+      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + (row.confirmedByMe ? 'disabled' : '') + '>' + activeLabel + '</button>' + invite + contactDiscord +
       '</div></div><div class="fl-confirm-note">' + activeText + (row.discordRequired ? ' · Discord required' : ' · Discord optional') + '</div>' +
       '</div></article>';
   }
@@ -616,6 +618,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     form.elements.minOvr.value = row?.minOvr ?? '';
     form.elements.weeklyRewards.value = row?.weeklyRewards || '';
     form.elements.discordInviteUrl.value = row?.discordInviteUrl || '';
+    form.elements.contactDiscord.value = row?.contactDiscord || '';
     form.elements.discordRequired.checked = Boolean(row?.discordRequired);
     state.logoUrl = row?.logoUrl || '';
     form.elements.logoUrl.value = state.logoUrl;
@@ -791,6 +794,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         playerCommitment: form.elements.playerCommitment.value,
         weeklyRewards: form.elements.weeklyRewards.value.trim(),
         discordInviteUrl: form.elements.discordInviteUrl.value.trim(),
+        contactDiscord: form.elements.contactDiscord.value.trim(),
         openSpots: Number(form.elements.openSpots.value),
         discordRequired: form.elements.discordRequired.checked,
         recruitingOpen: form.elements.recruitingOpen.checked
@@ -849,6 +853,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   $('#emptyListBtn').addEventListener('click', openListingEditor);
   $('#createListingBtn').addEventListener('click', openListingEditor);
   $('#cancelListing').addEventListener('click', () => { $('#listingEditor').hidden = true; $('#workspace').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('#leagueList').addEventListener('click', async event => {
+    const button = event.target.closest('[data-contact-discord]');
+    if (!button) return;
+    const value = button.dataset.contactDiscord || '';
+    try {
+      await navigator.clipboard.writeText(value);
+      toast('Discord contact copied.');
+    } catch {
+      toast('Copy failed. Discord handle: ' + value, true);
+    }
+  });
+
   $('#leagueSearch').addEventListener('input', filterLeagues);
   $('#regionFilter').addEventListener('change', filterLeagues);
   $('#frequencyFilter').addEventListener('change', filterLeagues);
