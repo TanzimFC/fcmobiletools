@@ -576,10 +576,11 @@ async function adminApi(request, env, url, authenticated, supabaseRest, json) {
       'league_profiles?select=account_id,fc_mobile_uid,in_game_username,ovr,region_server,discord_handle&account_id=in.' +
       encodeURIComponent('(' + ownerIds.join(',') + ')')) : [];
     const ownerProfiles = new Map((profileRows || []).map(row => [row.account_id, row]));
-    return json({ listings: decorated.map((row, index) => ({
+    const ownerByListingId = new Map((rows || []).map(row => [row.id, row.owner_account_id]));
+    return json({ listings: decorated.map(row => ({
       ...row,
       ownerGameProfile: (() => {
-        const p = ownerProfiles.get((rows || [])[index]?.owner_account_id) || {};
+        const p = ownerProfiles.get(ownerByListingId.get(row.id)) || {};
         return {
           fcMobileUid: p.fc_mobile_uid || '',
           inGameUsername: p.in_game_username || '',
