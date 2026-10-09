@@ -59,7 +59,13 @@ export function bindImageUploads(container = document) {
 
     const pickFile = (file) => {
       if (!file) return;
-      if (!ALLOWED_MIME.has(file.type)) {
+      const extensionMime = /\.jpe?g$/i.test(file.name) ? 'image/jpeg'
+        : /\.png$/i.test(file.name) ? 'image/png'
+        : /\.webp$/i.test(file.name) ? 'image/webp'
+        : /\.gif$/i.test(file.name) ? 'image/gif'
+        : '';
+      const selectedMime = ALLOWED_MIME.has(file.type) ? file.type : (!file.type || file.type === 'application/octet-stream' ? extensionMime : '');
+      if (!ALLOWED_MIME.has(selectedMime)) {
         setStatus('Use a JPG, PNG, WebP, or GIF image.', 'error');
         return;
       }
