@@ -253,6 +253,31 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     '&select=fc_mobile_uid,in_game_username,region_server,discord_handle&limit=1'
   ).catch(() => []);
   const gameProfile = suggested?.[0] || {};
+  if (!profile) {
+    return json({
+      account: {
+        id: account.id,
+        username: account.username,
+        displayName: account.display_name || account.username,
+        avatarUrl: account.avatar_url || null,
+        emailConfirmed: Boolean(user.email_confirmed_at)
+      },
+      profile: null,
+      needsProfile: true,
+      suggestedProfile: {
+        fcMobileUid: gameProfile.fc_mobile_uid || '',
+        inGameUsername: gameProfile.in_game_username || '',
+        regionServer: gameProfile.region_server || '',
+        discordHandle: gameProfile.discord_handle || ''
+      },
+      leagues: [],
+      ownListings: [],
+      approvedOwner: false,
+      canFindPlayers: false,
+      outreachUsedToday: 0,
+      outreachRemaining: 3
+    });
+  }
   const [leagues, ownListings] = await Promise.all([
     publicLeagues(env, supabaseRest).catch(error => {
       console.error('[LEAGUE_DIRECTORY_READ]', error?.message);
@@ -373,37 +398,47 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
     '&select=' + encodeURIComponent(LISTING_COLUMNS) + '&limit=1');
   const old = rows?.[0];
   if (!old) return json({ error: 'League listing not found.' }, 404);
+
+  const input = await request.json().catch(() => ({}));
   let fields;
   try {
-    fields = validateListing({ ...old, ...await request.json().catch(() => ({})),
-      logoUrl: (await request.clone().json().catch(() => ({}))).logoUrl ?? old.logo_url,
-      discordInviteUrl: (await request.clone().json().catch(() => ({}))).discordInviteUrl ?? old.discord_invite_url,
-      tournamentFrequency: (await request.clone().json().catch(() => ({}))).tournamentFrequency ?? old.tournament_frequency,
-      tournamentSizes: (await request.clone().json().catch(() => ({}))).tournamentSizes ?? old.tournament_sizes,
-      preferredLanguages: (await request.clone().json().catch(() => ({}))).preferredLanguages ?? old.preferred_languages,
-      playerCommitment: (await request.clone().json().catch(() => ({}))).playerCommitment ?? old.player_commitment,
-      minOvr: (await request.clone().json().catch(() => ({}))).minOvr ?? old.min_ovr,
-      openSpots: (await request.clone().json().catch(() => ({}))).openSpots ?? old.open_spots,
-      regionServer: (await request.clone().json().catch(() => ({}))).regionServer ?? old.region_server,
-      leagueGameId: (await request.clone().json().catch(() => ({}))).leagueGameId ?? old.league_game_id,
-      weeklyRewards: (await request.clone().json().catch(() => ({}))).weeklyRewards ?? old.weekly_rewards,
-      discordRequired: (await request.clone().json().catch(() => ({}))).discordRequired ?? old.discord_required,
-      recruitingOpen: (await request.clone().json().catch(() => ({}))).recruitingOpen ?? old.recruiting_open
+    fields = validateListing({
+      name: old.name,
+      description: input.description ?? old.description,
+      logoUrl: input.logoUrl ?? old.logo_url,
+      leagueGameId: input.leagueGameId ?? old.league_game_id,
+      regionServer: input.regionServer ?? old.region_server,
+      preferredLanguages: input.preferredLanguages ?? old.preferred_languages,
+      minOvr: input.minOvr ?? old.min_ovr,
+      tournamentFrequency: input.tournamentFrequency ?? old.tournament_frequency,
+      tournamentSizes: input.tournamentSizes ?? old.tournament_sizes,
+      discordRequired: input.discordRequired ?? old.discord_required,
+      playerCommitment: input.playerCommitment ?? old.player_commitment,
+      weeklyRewards: input.weeklyRewards ?? old.weekly_rewards,
+      discordInviteUrl: input.discordInviteUrl ?? old.discord_invite_url,
+      openSpots: input.openSpots ?? old.open_spots,
+      recruitingOpen: input.recruitingOpen ?? old.recruiting_open
     });
   } catch (error) {
     return json({ error: error?.message || 'Check your league listing.' }, 400);
   }
   delete fields.slug;
   delete fields.name;
-  delete fields.status;
-  delete fields.moderation_note;
   const saved = await supabaseRest(env,
     'league_listings?id=eq.' + encodeURIComponent(id) +
     '&owner_account_id=eq.' + encodeURIComponent(account.id), {
       method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ ...fields, status: 'pending', moderation_note: null, reviewed_by: null, reviewed_at: null, updated_at: nowIso() })
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({
+        ...fields,
+        status: 'pending',
+        moderation_note: null,
+        reviewed_by: null,
+        reviewed_at: null,
+        updated_at: nowIso()
+      })
     });
+  if (!saved?.length) return json({ error: 'League listing could not be updated.' }, 500);
   return json({ ok: true, status: 'pending', message: 'Your changes were sent for approval.' });
 }
 
@@ -591,6 +626,10 @@ export async function leagueWorkerRoute({ request, env, url, authenticated, acco
     const { context } = auth;
     if (request.method === 'POST' && url.pathname === '/api/leagues/profile') {
       return await saveProfile(request, env, context, supabaseRest, json);
+    }
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    if (!leagueProfile) {
+      return json({ error: 'Complete your league profile first.', needsProfile: true }, 428);
     }
     if (request.method === 'POST' && url.pathname === '/api/leagues/listings') {
       return await createListing(request, env, context, supabaseRest, json);
