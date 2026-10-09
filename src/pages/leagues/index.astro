@@ -76,6 +76,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <div id="profileAvatarPreview" class="fl-logo-preview">Player</div>
             <input type="hidden" name="avatarUrl">
           </div>
+          <div class="fl-upload-row">
+            <label class="fl-upload" for="teamScreenshotFile"><span class="fl-upload-icon">↑</span><span><strong>Temporary squad screenshot</strong><small>JPG, PNG, WebP or GIF · under 8 MB · expires after 7 days</small></span><input id="teamScreenshotFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+            <div id="teamScreenshotPreview" class="fl-logo-preview">SQUAD</div>
+            <input type="hidden" name="teamScreenshotUrl">
+          </div>
+          <div class="fl-team-options">
+            <label class="fl-check-line"><input type="checkbox" name="showTeamToOwners"><span>Show my squad to approved league owners searching for players</span></label>
+            <span id="teamScreenshotExpiry" class="fl-team-expiry">Or keep it private and send it to one league at a time.</span>
+          </div>
+          <label class="fl-field"><span>Note with your team screenshot <small>Optional</small></span><textarea name="teamScreenshotNote" rows="2" maxlength="300" placeholder="Formation, play style, or what the league should know about this squad."></textarea></label>
           <fieldset class="fl-choice-group">
             <legend>Preferred languages</legend>
             <div class="fl-choice-row">
@@ -109,6 +119,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <div class="fl-tabs" role="tablist" aria-label="League directory">
           <button class="fl-tab active" id="tabLeagues" type="button" role="tab" aria-selected="true">Find a League <span id="leagueCount">0</span></button>
           <button class="fl-tab" id="tabPlayers" type="button" role="tab" aria-selected="false" hidden>Find Players</button>
+          <button class="fl-tab" id="tabTeams" type="button" role="tab" aria-selected="false" hidden>Team submissions <span id="teamSubmissionCount">0</span></button>
           <span class="fl-tabs-spacer"></span>
           <span class="fl-account-chip"><i></i><span id="signedInAs">Signed in</span></span>
         </div>
@@ -152,6 +163,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           <div class="fl-results-meta"><span id="playerResultsLabel">Players looking for a league</span><span class="fl-private-note">UID and Discord stay hidden until you unlock a contact.</span></div>
           <div id="playerList" class="fl-player-grid"></div>
           <div class="fl-empty" id="playerEmpty" hidden><span class="fl-empty-icon" aria-hidden="true">⌕</span><h3>No players match those filters.</h3><p>Try a wider region or tournament-size filter.</p></div>
+        </section>
+
+        <section class="fl-view" id="teamsView" hidden>
+          <div class="fl-directory-head">
+            <div><h2>Squads sent to your league.</h2><p>Team screenshots are temporary. Review the lineup, then accept or decline the submission. Private UID and Discord details stay protected by player-contact limits.</p></div>
+          </div>
+          <div class="fl-results-meta"><span id="teamShareResultsLabel">Current team submissions</span><span class="fl-private-note">Screenshots expire after 7 days</span></div>
+          <div id="teamShareList" class="fl-team-share-grid"></div>
+          <div class="fl-empty" id="teamShareEmpty" hidden><span class="fl-empty-icon" aria-hidden="true">⌕</span><h3>No active team submissions.</h3><p>When players send their current squad to your league, their screenshots will appear here.</p></div>
         </section>
 
         <section class="fl-owner-panel" id="ownerPanel" hidden>
@@ -343,6 +363,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   .fl-revealed dl{display:grid;grid-template-columns:76px minmax(0,1fr);gap:6px 9px;margin:0;font-size:10.5px;overflow-wrap:anywhere}
   .fl-revealed dt{color:#769183}.fl-revealed dd{margin:0;color:#d6f0e4;overflow-wrap:anywhere}
   .fl-owner-panel{margin-top:24px;padding:21px;border:1px solid var(--fl-border);border-radius:18px;background:linear-gradient(130deg,#0f1b26,#0a141d)}
+  .fl-team-options{display:grid;gap:7px;padding:11px 12px;border:1px solid #ffffff12;border-radius:11px;background:#07121b}
+  .fl-team-expiry{color:#8298a8;font-size:10.5px;line-height:1.5}
+  .fl-team-share-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+  .fl-team-share-card{min-width:0;overflow:hidden;border:1px solid var(--fl-border);border-radius:16px;background:linear-gradient(150deg,#101e2a,#09141d);animation:fl-rise .3s both}
+  .fl-team-shot{display:block;position:relative;overflow:hidden;aspect-ratio:16/9;background:#06111a;border-bottom:1px solid #ffffff12}
+  .fl-team-shot img{display:block;width:100%;height:100%;object-fit:contain}
+  .fl-team-share-body{padding:15px}
+  .fl-team-share-top{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+  .fl-team-share-top h3{margin:0 0 5px;font:700 16px/1.2 'Space Grotesk',Inter,sans-serif}
+  .fl-team-share-meta{color:#8398a8;font-size:10.5px;line-height:1.55}
+  .fl-team-share-note{margin:12px 0 0;padding:10px;border:1px solid #ffffff10;border-radius:10px;background:#07121b;color:#b7c7d2;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+  .fl-team-share-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:13px}
+  .fl-small-btn.accept{border-color:#75e3b34a;color:#8ce7bc;background:#75e3b30b}
+  .fl-small-btn.decline{border-color:#ff9b9140;color:#ffaca3;background:#ff9b9108}
+  .fl-inline-squad{display:flex;align-items:center;gap:8px;margin:0 0 13px;padding:9px;border:1px solid #4cc9ff25;border-radius:10px;background:#4cc9ff08}
+  .fl-inline-squad img{width:55px;height:40px;object-fit:cover;border-radius:6px;background:#07121b}
+  .fl-inline-squad span{color:#9fc9db;font-size:10.5px}
+  .fl-status-pill.demo{border-color:#c2a3ff46;background:#c2a3ff0d;color:#d2bdff}
   .fl-owner-head{margin-bottom:18px}
   .fl-owner-head h2{margin-top:8px}
   .fl-owner-head p{margin:0;color:#8ba0b0;font-size:11.5px}
@@ -377,6 +415,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   @keyframes fl-spin{to{transform:rotate(360deg)}}
   @keyframes fl-shimmer{to{background-position:-220% 0}}
   @media(max-width:900px){.fl-player-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fl-filters{grid-template-columns:minmax(220px,1.5fr) repeat(2,minmax(130px,.8fr))}.fl-filters select:last-child{grid-column:auto}}
+  @media(max-width:900px){.fl-team-share-grid{grid-template-columns:1fr}}
   @media(max-width:650px){.fl-wrap{width:min(100% - 26px,1180px)}.fl-page{padding-top:28px}.fl-heading{align-items:flex-start;flex-direction:column;gap:16px;margin-bottom:23px}.fl-heading-actions{justify-content:flex-start}.fl-heading h1{font-size:42px}.fl-tabs{flex-wrap:wrap}.fl-tabs-spacer{display:none}.fl-account-chip{margin-left:auto}.fl-directory-head,.fl-owner-head{align-items:flex-start}.fl-directory-head{flex-direction:column}.fl-filters{grid-template-columns:1fr 1fr}.fl-search{grid-column:1/-1}.fl-league-grid{grid-template-columns:1fr}.fl-player-grid{grid-template-columns:1fr}.fl-form-grid{grid-template-columns:1fr}.fl-profile-actions{align-items:stretch;flex-direction:column}.fl-profile-actions .fl-btn{width:100%}.fl-setup-top{flex-direction:column}.fl-step{display:none}.fl-owner-listing{align-items:flex-start;flex-wrap:wrap}.fl-owner-listing-actions{width:100%;justify-content:flex-start}.fl-owner-create{align-items:flex-start;flex-direction:column}.fl-owner-create .fl-btn{width:100%}.fl-usage{white-space:normal}.fl-player-filters select{min-width:0}.fl-results-meta{align-items:flex-start}.fl-private-note{text-align:right;max-width:48%}}
   @media(max-width:390px){.fl-filters{grid-template-columns:1fr}.fl-search{grid-column:auto}.fl-tabs{align-items:stretch}.fl-tab{flex:1;padding:0 10px}.fl-account-chip{width:100%;padding:7px 8px 3px}.fl-card-stats{gap:5px}.fl-card-stats strong{font-size:10.5px}}
   @media(prefers-reduced-motion:reduce){.fl-page *{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
