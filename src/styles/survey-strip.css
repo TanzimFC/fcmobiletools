@@ -1,0 +1,14 @@
+#surveyStrip { display: none; }
+#surveyStrip.svs-on { display: block; margin: 0 0 18px; animation: svsIn .5s cubic-bezier(.22, 1, .36, 1) both; }
+.svs { position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 1px solid rgba(154, 140, 255, .3); border-radius: 20px; background: radial-gradient(360px 120px at 0% 0%, rgba(154, 140, 255, .16), transparent 70%), linear-gradient(145deg, #0f1a26, #09121b); color: inherit; text-decoration: none; transition: border-color .2s ease, transform .2s ease; }
+.svs:hover { border-color: rgba(154, 140, 255, .6); transform: translateY(-2px); }
+.svs::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .07) 50%, transparent 65%); transform: translateX(-120%); animation: svsShine 6s ease-in-out infinite; pointer-events: none; }
+.svs-ico { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto; border-radius: 14px; color: #1b1440; background: linear-gradient(145deg, #d9d3ff, #9a8cff); box-shadow: 0 10px 20px -8px rgba(154, 140, 255, .6); }
+.svs-text { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.svs-text strong { color: #f5f8fb; font: 700 15px/1.2 var(--font-display, system-ui); letter-spacing: -.01em; }
+.svs-text small { color: #93a8b8; font: 500 13px/1.4 var(--font-body, system-ui); }
+.svs-go { flex: 0 0 auto; padding: 9px 14px; border-radius: 11px; color: #04131c; font: 800 12.5px/1 var(--font-body, system-ui); background: linear-gradient(180deg, #b6ecff, #4cc9ff); }
+@keyframes svsIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes svsShine { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@media (max-width: 560px) { .svs { flex-wrap: wrap; } .svs-go { width: 100%; text-align: center; } }
+@media (prefers-reduced-motion: reduce) { #surveyStrip.svs-on, .svs::after { animation: none !important; } }

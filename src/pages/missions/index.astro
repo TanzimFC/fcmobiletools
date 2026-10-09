@@ -30,6 +30,8 @@ import AccountNav from '../../components/AccountNav.astro';
         </div>
       </header>
 
+      <div id="surveyStrip"></div>
+
       <section id="streakPanel" class="streak-panel acc-anim acc-anim-d1" aria-live="polite">
         <div class="streak-orbit" aria-hidden="true"></div>
         <div class="streak-main">
@@ -63,6 +65,9 @@ import AccountNav from '../../components/AccountNav.astro';
   </main>
 </BaseLayout>
 
+<script>
+  import '../../scripts/survey-strip.js';
+</script>
 <script>
   import { accountAuth, escapeHtml as esc } from '../../lib/account-client.js';
 
@@ -145,11 +150,13 @@ import AccountNav from '../../components/AccountNav.astro';
     if(links[slug]){
       return `<div class="mission-actions"><a class="mission-action-secondary" href="${links[slug][0]}">${links[slug][1]}</a>${checkButton()}</div>`;
     }
-    if(['follow-x','join-discord','subscribe-youtube'].includes(slug)){
+    if(slug==='subscribe-youtube'){
+      return `<div class="social-quest-box"><div class="social-proof-row"><input type="text" maxlength="64" placeholder="Your YouTube handle" data-social-proof="${esc(m.id)}" /><a class="mission-action-secondary" href="https://www.youtube.com/@tanzimfc" target="_blank" rel="noopener">Open YouTube</a></div><small class="mission-action-note">YouTube subscriptions cannot be confirmed from a handle alone. This quest has a lower reward and is granted only after manual review.</small>${checkButton('Submit for Review')}</div>`;
+    }
+    if(['follow-x','join-discord'].includes(slug)){
       const social={
         'follow-x':['https://x.com/TanzimFC','Open X'],
-        'join-discord':['https://discord.com/invite/B4a7AxuU69','Join Discord'],
-        'subscribe-youtube':['https://www.youtube.com/@tanzimfc','Open YouTube']
+        'join-discord':['https://discord.com/invite/B4a7AxuU69','Join Discord']
       }[slug];
       return `<div class="social-quest-box"><div class="social-proof-row"><input type="text" maxlength="64" placeholder="Your handle" data-social-proof="${esc(m.id)}" /><a class="mission-action-secondary" href="${social[0]}" target="_blank" rel="noopener">${social[1]}</a></div>${checkButton('Send for Review')}</div>`;
     }

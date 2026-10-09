@@ -200,7 +200,7 @@ html body .toast{border-radius:16px;font-size:13.5px}
     <button data-tab="missions">Missions</button>
     <button data-tab="achievements">Achievements</button>
     <button data-tab="rewards">Rewards</button>
-    <button data-tab="community">Community</button>
+    <button data-tab="community">Community</button><button type="button" onclick="location.href='/admin/surveys/'">Surveys</button>
   </nav>
 
   <section id="usersView"></section>
@@ -275,10 +275,46 @@ function setUserState(id){
 
 async function loadMissions(){
   const v=$('#missionsView');v.innerHTML='<div class="panel loading">Loading missions…</div>';
-  try{const d=await api('/api/admin/missions');v.innerHTML='<section class="panel"><div class="head"><div><div class="eyebrow">MISSIONS</div><h2>Mission definitions</h2><p>No mission is live unless an admin enables it.</p></div><button class="btn primary" id="newMission">New mission</button></div><div class="grid">'+(d.missions||[]).map(m=>'<article class="card"><h3>'+esc(m.title)+'</h3><p>'+esc(m.description||'')+'</p><div class="meta"><span>'+esc(m.mission_type)+'</span><span>XP '+Number(m.xp_reward||0)+'</span><span>Tokens '+Number(m.token_reward||m.reward_points||0)+'</span><span class="pill '+(m.enabled?'green':'red')+'">'+(m.enabled?'Live':'Off')+'</span></div><div class="tools" style="margin-top:12px"><button class="btn" data-mission="'+m.id+'">Edit</button></div></article>').join('')||'<div class="empty">No missions configured.</div>'+'</div></section>';
+  try{
+    const [d,pending] = await Promise.all([
+      api('/api/admin/missions'),
+      api('/api/admin/mission-submissions?status=pending')
+    ]);
+
+    const reviewCards=(pending.submissions||[]).map(s=>
+      '<article class="card">'
+      +'<h3>'+esc(s.title)+'</h3>'
+      +'<p><b>@'+esc(s.username)+'</b>'+(s.displayName?' · '+esc(s.displayName):'')+' submitted <b>'+esc(s.proof||'No handle')+'</b>.</p>'
+      +'<div class="meta"><span>XP '+Number(s.xpReward||0)+'</span><span>Tokens '+Number(s.tokenReward||0)+'</span><span>'+esc(s.slug||'manual')+'</span><span class="pill pending">Pending</span></div>'
+      +'<small style="display:block;margin-top:10px;color:#a7b4c3">Submitted '+esc(new Date(s.submittedAt||s.createdAt).toLocaleString())+'</small>'
+      +'<div class="tools" style="margin-top:12px"><button class="btn primary" data-mission-review="approve" data-attempt="'+esc(s.attemptId)+'">Approve &amp; grant</button><button class="btn danger" data-mission-review="reject" data-attempt="'+esc(s.attemptId)+'">Reject</button></div>'
+      +'</article>'
+    ).join('');
+
+    v.innerHTML=
+      '<section class="panel">'
+      +'<div class="head"><div><div class="eyebrow">MANUAL REVIEW</div><h2>Mission submissions</h2><p>Handle-based social quests are not auto-verified. Approve only when the submitted proof is credible.</p></div><button class="btn" id="missionReviewRefresh">Refresh</button></div>'
+      +(reviewCards||'<div class="empty">No manual mission submissions waiting.</div>')
+      +'</section>'
+      +'<section class="panel" style="margin-top:14px"><div class="head"><div><div class="eyebrow">MISSIONS</div><h2>Mission definitions</h2><p>No mission is live unless an admin enables it.</p></div><button class="btn primary" id="newMission">New mission</button></div>'
+      +'<div class="grid">'+((d.missions||[]).map(m=>'<article class="card"><h3>'+esc(m.title)+'</h3><p>'+esc(m.description||'')+'</p><div class="meta"><span>'+esc(m.mission_type)+'</span><span>XP '+Number(m.xp_reward||0)+'</span><span>Tokens '+Number(m.token_reward||m.reward_points||0)+'</span><span class="pill '+(m.enabled?'green':'red')+'">'+(m.enabled?'Live':'Off')+'</span></div><div class="tools" style="margin-top:12px"><button class="btn" data-mission="'+m.id+'">Edit</button></div></article>').join('')||'<div class="empty">No missions configured.</div>')+'</div></section>';
+
     $('#newMission').onclick=()=>missionForm();
+    $('#missionReviewRefresh').onclick=loadMissions;
     v.querySelectorAll('[data-mission]').forEach(b=>b.onclick=()=>missionForm((d.missions||[]).find(x=>x.id===b.dataset.mission)));
+    v.querySelectorAll('[data-mission-review]').forEach(b=>b.onclick=()=>reviewMissionAttempt(b.dataset.attempt,b.dataset.missionReview));
   }catch(e){v.innerHTML='<div class="panel"><div class="empty">'+esc(e.message)+'</div></div>'}
+}
+async function reviewMissionAttempt(attemptId, decision){
+  const action=decision==='approve'?'Approve and grant the configured reward':'Reject this submission';
+  const reason=window.prompt(action+' — enter a review note:');
+  if(reason===null) return;
+  const trimmed=String(reason).trim();
+  if(!trimmed){alert('A review reason is required.');return;}
+  try{
+    await api('/api/admin/mission-submissions/'+encodeURIComponent(attemptId),{method:'POST',body:JSON.stringify({status:decision==='approve'?'approved':'rejected',reason:trimmed})});
+    loadMissions();
+  }catch(e){alert(e.message)}
 }
 function missionForm(m){
  const edit=!!m;openModal(edit?'Edit mission':'New mission','<form class="form" id="missionForm"><div class="two"><label><span>Slug</span><input class="input" name="slug" '+(edit?'readonly':'required')+' value="'+esc(m?.slug||'')+'"></label><label><span>Title</span><input class="input" name="title" required value="'+esc(m?.title||'')+'"></label></div><label><span>Description</span><textarea name="description">'+esc(m?.description||'')+'</textarea></label><div class="three"><label><span>Type</span><select class="select" name="missionType">'+['daily','weekly','one_time','repeatable','achievement','event','community','tournament','calculator','database'].map(x=>'<option '+(m?.mission_type===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label><label><span>Verification</span><select class="select" name="verificationMethod">'+['server_event','moderated','manual'].map(x=>'<option '+(m?.verification_method===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label><label><span>Task type</span><select class="select" name="taskType">'+['one_time','daily','repeatable','event'].map(x=>'<option '+(m?.task_type===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div><div class="two"><label><span>XP reward</span><input class="input" name="xpReward" type="number" min="0" value="'+Number(m?.xp_reward||0)+'"></label><label><span>Token reward</span><input class="input" name="tokenReward" type="number" min="0" value="'+Number(m?.token_reward||m?.reward_points||0)+'"></label></div><div class="two"><label><span>Daily limit</span><input class="input" name="dailyLimit" type="number" min="1" value="'+(m?.daily_limit??'')+'"></label><label><span>Weekly limit</span><input class="input" name="weeklyLimit" type="number" min="1" value="'+(m?.weekly_limit??'')+'"></label></div><label class="check"><input type="checkbox" name="enabled" '+(m?.enabled?'checked':'')+'><span>Enable this mission</span></label><button class="btn primary" type="submit">'+(edit?'Save mission':'Create mission')+'</button><p class="message" id="formMsg"></p></form>');
