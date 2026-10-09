@@ -39,7 +39,7 @@ import AccountNav from '../../components/AccountNav.astro';
           <div>
             <span class="streak-kicker">DAILY CHECK-IN · UTC</span>
             <h2 id="streakTitle">Keep your streak alive.</h2>
-            <p id="streakCopy">Check in once each UTC day. A second claim after the reset still has to respect the 4-hour safety break.</p>
+            <p id="streakCopy">Check in once every 24 hours. Your streak is still tracked by UTC date.</p>
           </div>
         </div>
         <div class="streak-stats">
@@ -48,8 +48,8 @@ import AccountNav from '../../components/AccountNav.astro';
           <div><span>Freeze</span><strong id="streakFreeze">0</strong></div>
         </div>
         <div class="streak-timers" aria-label="Check-in timers">
-          <div><span>UTC RESET</span><strong id="streakResetTimer">24h 00m</strong><small>Next daily window</small></div>
-          <div><span>4H SAFETY BREAK</span><strong id="streakCooldownTimer">Ready</strong><small>After each claim</small></div>
+          <div><span>UTC RESET</span><strong id="streakResetTimer">24h 00m</strong><small>UTC streak date changes</small></div>
+          <div><span>24H COOLDOWN</span><strong id="streakCooldownTimer">Ready</strong><small>After each successful check-in</small></div>
         </div>
         <div class="streak-week" id="streakWeek" aria-label="Weekly streak progress"></div>
         <button type="button" class="streak-checkin" id="streakCheckinBtn">Check in</button>
@@ -347,6 +347,7 @@ import AccountNav from '../../components/AccountNav.astro';
     return h ? `${h}h ${String(m).padStart(2,'0')}m` : `${m}m ${String(s).padStart(2,'0')}s`;
   }
 
+  const CHECK_IN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
   let streakTimer=0;
   let streakState={};
 
@@ -362,7 +363,7 @@ import AccountNav from '../../components/AccountNav.astro';
     if(!reset||!cooldown) return;
     reset.textContent=formatCountdown(nextUtcResetMs());
     const last=streak?.lastCheckInAt ? new Date(streak.lastCheckInAt) : null;
-    const cooldownLeft=last ? Math.max(0,14400000-(Date.now()-last.getTime())) : 0;
+    const cooldownLeft=last ? Math.max(0,CHECK_IN_COOLDOWN_MS-(Date.now()-last.getTime())) : 0;
     cooldown.textContent=cooldownLeft>0 ? formatCountdown(cooldownLeft) : 'Ready';
   }
 
@@ -386,23 +387,20 @@ import AccountNav from '../../components/AccountNav.astro';
     const copy=document.getElementById('streakCopy');
     const title=document.getElementById('streakTitle');
     if(last) {
-      const now=Date.now(), elapsed=now-last.getTime(), sameUtc=new Date().toISOString().slice(0,10)===String(streak.lastCheckInUtcDate||'');
-      if(sameUtc) {
-        title.textContent='Today is covered.';
-        copy.textContent='Your UTC check-in is already done. Come back after the next UTC day to keep it going.';
-        btn.textContent='Checked in today ✓'; btn.disabled=true;
-      } else if(elapsed<14400000) {
-        title.textContent='Safety break is active.';
-        copy.textContent='Your next check-in opens after 4 hours. The UTC daily reset is separate.';
-        btn.textContent='Next check-in in '+formatCountdown(14400000-elapsed); btn.disabled=true;
+      const elapsed=Date.now()-last.getTime();
+      const cooldownLeft=Math.max(0,CHECK_IN_COOLDOWN_MS-elapsed);
+      if(cooldownLeft>0) {
+        title.textContent='Check-in cooldown is active.';
+        copy.textContent='Your next check-in opens 24 hours after your last successful check-in. The UTC streak reset is shown separately.';
+        btn.textContent='Next check-in in '+formatCountdown(cooldownLeft); btn.disabled=true;
       } else {
         title.textContent=current?'Keep the streak alive.':'Start your streak.';
-        copy.textContent='One successful check-in per UTC day. A Streak Freeze can protect one missed UTC day.';
+        copy.textContent='Your 24-hour cooldown is complete. A Streak Freeze can protect one missed UTC day.';
         btn.textContent=current?'Check in & keep streak':'Start check-in'; btn.disabled=false;
       }
     } else {
       title.textContent='Start your streak.';
-      copy.textContent='One successful check-in per UTC day. Your first check-in starts at 1 day.';
+      copy.textContent='Your first successful check-in starts your streak at 1 day. After that, check in every 24 hours.';
       btn.textContent='Check in'; btn.disabled=false;
     }
   }
@@ -413,10 +411,8 @@ import AccountNav from '../../components/AccountNav.astro';
       const btn=document.getElementById('streakCheckinBtn');
       const last=streakState?.lastCheckInAt ? new Date(streakState.lastCheckInAt) : null;
       if(btn && last){
-        const today=new Date().toISOString().slice(0,10);
-        const sameUtc=today===String(streakState.lastCheckInUtcDate||'');
-        const cooldownLeft=Math.max(0,14400000-(Date.now()-last.getTime()));
-        const shouldDisable=sameUtc||cooldownLeft>0;
+        const cooldownLeft=Math.max(0,CHECK_IN_COOLDOWN_MS-(Date.now()-last.getTime()));
+        const shouldDisable=cooldownLeft>0;
         if(btn.disabled!==shouldDisable) renderStreak(streakState);
       }
     },1000);
