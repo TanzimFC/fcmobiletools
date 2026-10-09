@@ -56,7 +56,9 @@ export default defineConfig({
         '/leaderboard',
         '/leaderboard/',
         '/rewards',
-        '/rewards/'
+        '/rewards/',
+        '/surveys',
+        '/surveys/'
       ].includes(pathname);
     }
   })],
