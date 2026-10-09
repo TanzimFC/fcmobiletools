@@ -39,7 +39,7 @@ import AccountNav from '../../components/AccountNav.astro';
           <div>
             <span class="streak-kicker">DAILY CHECK-IN · UTC</span>
             <h2 id="streakTitle">Keep your streak alive.</h2>
-            <p id="streakCopy">Check in once every 24 hours. Your streak is still tracked by UTC date.</p>
+            <p id="streakCopy">Check in once per UTC day. A 4-hour safety break prevents back-to-back claims across midnight.</p>
           </div>
         </div>
         <div class="streak-stats">
@@ -49,7 +49,7 @@ import AccountNav from '../../components/AccountNav.astro';
         </div>
         <div class="streak-timers" aria-label="Check-in timers">
           <div><span>UTC RESET</span><strong id="streakResetTimer">24h 00m</strong><small>UTC streak date changes</small></div>
-          <div><span>24H COOLDOWN</span><strong id="streakCooldownTimer">Ready</strong><small>After each successful check-in</small></div>
+          <div><span>4H SAFETY BREAK</span><strong id="streakCooldownTimer">Ready</strong><small>Minimum gap between claims</small></div>
         </div>
         <div class="streak-week" id="streakWeek" aria-label="Weekly streak progress"></div>
         <button type="button" class="streak-checkin" id="streakCheckinBtn">Check in</button>
@@ -347,7 +347,7 @@ import AccountNav from '../../components/AccountNav.astro';
     return h ? `${h}h ${String(m).padStart(2,'0')}m` : `${m}m ${String(s).padStart(2,'0')}s`;
   }
 
-  const CHECK_IN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+  const CHECK_IN_COOLDOWN_MS = 4 * 60 * 60 * 1000;
   let streakTimer=0;
   let streakState={};
 
@@ -389,18 +389,23 @@ import AccountNav from '../../components/AccountNav.astro';
     if(last) {
       const elapsed=Date.now()-last.getTime();
       const cooldownLeft=Math.max(0,CHECK_IN_COOLDOWN_MS-elapsed);
-      if(cooldownLeft>0) {
-        title.textContent='Check-in cooldown is active.';
-        copy.textContent='Your next check-in opens 24 hours after your last successful check-in. The UTC streak reset is shown separately.';
+      const sameUtc=new Date().toISOString().slice(0,10)===String(streak.lastCheckInUtcDate||'');
+      if(sameUtc) {
+        title.textContent='Today is covered.';
+        copy.textContent='You have already checked in for this UTC day. The next claim opens after the UTC reset and the 4-hour safety break.';
+        btn.textContent='Checked in today ✓'; btn.disabled=true;
+      } else if(cooldownLeft>0) {
+        title.textContent='Safety break is active.';
+        copy.textContent='Your next check-in opens after four hours. The UTC daily reset is separate.';
         btn.textContent='Next check-in in '+formatCountdown(cooldownLeft); btn.disabled=true;
       } else {
         title.textContent=current?'Keep the streak alive.':'Start your streak.';
-        copy.textContent='Your 24-hour cooldown is complete. A Streak Freeze can protect one missed UTC day.';
+        copy.textContent='You can check in once per UTC day, with at least four hours between claims. A Streak Freeze can protect one missed UTC day.';
         btn.textContent=current?'Check in & keep streak':'Start check-in'; btn.disabled=false;
       }
     } else {
       title.textContent='Start your streak.';
-      copy.textContent='Your first successful check-in starts your streak at 1 day. After that, check in every 24 hours.';
+      copy.textContent='Your first successful check-in starts your streak at 1 day. After that, check in once per UTC day with a 4-hour minimum between claims.';
       btn.textContent='Check in'; btn.disabled=false;
     }
   }
@@ -411,8 +416,10 @@ import AccountNav from '../../components/AccountNav.astro';
       const btn=document.getElementById('streakCheckinBtn');
       const last=streakState?.lastCheckInAt ? new Date(streakState.lastCheckInAt) : null;
       if(btn && last){
+        const today=new Date().toISOString().slice(0,10);
+        const sameUtc=today===String(streakState.lastCheckInUtcDate||'');
         const cooldownLeft=Math.max(0,CHECK_IN_COOLDOWN_MS-(Date.now()-last.getTime()));
-        const shouldDisable=cooldownLeft>0;
+        const shouldDisable=sameUtc||cooldownLeft>0;
         if(btn.disabled!==shouldDisable) renderStreak(streakState);
       }
     },1000);
