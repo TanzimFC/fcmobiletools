@@ -1,0 +1,80 @@
+insert into public.league_profiles (
+  account_id, status, fc_mobile_uid, in_game_username, ovr, region_server,
+  preferred_languages, discord_handle, tournament_sizes, availability,
+  play_style, notes, avatar_url, team_screenshot_show_to_owners
+) values (
+  '240a51d5-b0ed-47f2-b47b-2f91be60a952',
+  'league_owner',
+  'DEMO-UID-001',
+  'FCM Sample League',
+  130,
+  'Asia',
+  array['English','Bengali']::text[],
+  null,
+  array['4v4','8v8']::text[],
+  'Flexible',
+  'Regular play',
+  'Demonstration account used to preview the league directory.',
+  null,
+  false
+)
+on conflict (account_id) do update set
+  status = excluded.status,
+  fc_mobile_uid = excluded.fc_mobile_uid,
+  in_game_username = excluded.in_game_username,
+  ovr = excluded.ovr,
+  region_server = excluded.region_server,
+  preferred_languages = excluded.preferred_languages,
+  tournament_sizes = excluded.tournament_sizes,
+  availability = excluded.availability,
+  play_style = excluded.play_style,
+  notes = excluded.notes;
+
+insert into public.league_listings (
+  owner_account_id, slug, name, description, region_server, preferred_languages,
+  min_ovr, tournament_frequency, tournament_sizes, discord_required,
+  player_commitment, weekly_rewards, open_spots, recruiting_open, status,
+  last_kickoff_at, last_active_at, is_demo, moderation_note, reviewed_by, reviewed_at
+) values (
+  '240a51d5-b0ed-47f2-b47b-2f91be60a952',
+  'fcm-sample-league-demo',
+  'FCM Sample League',
+  'DEMO LISTING. This card previews the Find a League directory and its filters. It is not a real recruitment offer.',
+  'Asia',
+  array['English','Bengali']::text[],
+  50,
+  'several_weekly',
+  array['4v4','8v8']::text[],
+  false,
+  'regular',
+  'Demo placeholder. No rewards are advertised.',
+  5,
+  true,
+  'approved',
+  now(),
+  now(),
+  true,
+  'Sample listing. Replace or remove before featuring a real club.',
+  'site-admin',
+  now()
+)
+on conflict (slug) do update set
+  name = excluded.name,
+  description = excluded.description,
+  region_server = excluded.region_server,
+  preferred_languages = excluded.preferred_languages,
+  min_ovr = excluded.min_ovr,
+  tournament_frequency = excluded.tournament_frequency,
+  tournament_sizes = excluded.tournament_sizes,
+  discord_required = excluded.discord_required,
+  player_commitment = excluded.player_commitment,
+  weekly_rewards = excluded.weekly_rewards,
+  open_spots = excluded.open_spots,
+  recruiting_open = excluded.recruiting_open,
+  status = 'approved',
+  last_kickoff_at = now(),
+  last_active_at = now(),
+  is_demo = true,
+  moderation_note = excluded.moderation_note,
+  reviewed_by = 'site-admin',
+  reviewed_at = now();

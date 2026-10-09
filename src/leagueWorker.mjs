@@ -1,7 +1,8 @@
 const PROFILE_COLUMNS = [
   'account_id','status','fc_mobile_uid','in_game_username','ovr','region_server',
   'preferred_languages','discord_handle','tournament_sizes','availability',
-  'play_style','notes','avatar_url','updated_at'
+  'play_style','notes','avatar_url','team_screenshot_url','team_screenshot_note',
+  'team_screenshot_show_to_owners','team_screenshot_expires_at','updated_at'
 ].join(',');
 
 const LISTING_COLUMNS = [
@@ -9,7 +10,7 @@ const LISTING_COLUMNS = [
   'region_server','preferred_languages','min_ovr','tournament_frequency',
   'tournament_sizes','discord_required','player_commitment','weekly_rewards',
   'discord_invite_url','contact_discord','open_spots','recruiting_open','status','moderation_note',
-  'last_kickoff_at','last_active_at','created_at','updated_at'
+  'last_kickoff_at','last_active_at','is_demo','created_at','updated_at'
 ].join(',');
 
 const ACTIVE_ACCOUNT_BLOCKS = new Set(['closed','fraud_removed','frozen','restricted']);
@@ -28,6 +29,13 @@ const safeArray = (value, allowed, max = 6) =>
   [...new Set((Array.isArray(value) ? value : []).map(x => clean(x, 40)).filter(x => allowed.has(x)))].slice(0, max);
 const utcStart = () => new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z').toISOString();
 const nowIso = () => new Date().toISOString();
+const TEAM_SCREENSHOT_DAYS = 7;
+const TEAM_SCREENSHOT_MS = TEAM_SCREENSHOT_DAYS * 24 * 60 * 60 * 1000;
+const screenshotIsActive = profile => Boolean(
+  profile?.team_screenshot_url &&
+  profile?.team_screenshot_expires_at &&
+  Date.parse(profile.team_screenshot_expires_at) > Date.now()
+);
 
 function imageUrl(value) {
   const raw = clean(value, 2048);
@@ -103,12 +111,18 @@ function validateProfile(input) {
   const notes = clean(input.notes, 500);
   const discordHandle = clean(input.discordHandle, 100);
   const avatar = imageUrl(input.avatarUrl || '');
+  const teamScreenshot = imageUrl(input.teamScreenshotUrl || '');
+  const teamScreenshotNote = clean(input.teamScreenshotNote, 300);
+  const showTeamToOwners = Boolean(input.showTeamToOwners);
   if (!PROFILE_STATUSES.has(status)) throw new Error('Choose a profile status.');
   if (uid.length < 3) throw new Error('Enter your FC Mobile UID.');
   if (inGameUsername.length < 2) throw new Error('Enter your in-game username.');
   if (ovr === null) throw new Error('Enter a valid OVR between 50 and 200.');
   if (region.length < 2) throw new Error('Choose your region or server.');
   if (input.avatarUrl && avatar === undefined) throw new Error('Upload your profile image again.');
+  if (input.teamScreenshotUrl && teamScreenshot === undefined) throw new Error('Upload your team screenshot again.');
+  if (showTeamToOwners && !teamScreenshot) throw new Error('Upload a team screenshot before showing it to league owners.');
+  if (showTeamToOwners && status !== 'looking_for_league') throw new Error('Set your profile status to Looking for a league before showing your squad to recruiters.');
   return {
     status,
     fc_mobile_uid: uid,
@@ -122,6 +136,9 @@ function validateProfile(input) {
     play_style: playStyle || null,
     notes: notes || null,
     avatar_url: avatar || null,
+    team_screenshot_url: teamScreenshot || null,
+    team_screenshot_note: teamScreenshotNote || null,
+    team_screenshot_show_to_owners: showTeamToOwners && Boolean(teamScreenshot),
     updated_at: nowIso()
   };
 }
@@ -208,6 +225,7 @@ async function decorateListings(env, listings, supabaseRest) {
       moderationNote: row.moderation_note || '',
       lastKickoffAt: row.last_kickoff_at || null,
       kickoffActive: kickoffAt > now - 6 * 60 * 60 * 1000,
+      isDemo: Boolean(row.is_demo),
       lastActiveAt: row.last_active_at || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -281,7 +299,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
       outreachRemaining: 3
     });
   }
-  const [leagues, ownListings, recentConfirmations] = await Promise.all([
+  const [leagues, ownListings, recentConfirmations, myShares] = await Promise.all([
     publicLeagues(env, supabaseRest).catch(error => {
       console.error('[LEAGUE_DIRECTORY_READ]', error?.message);
       return [];
@@ -294,10 +312,28 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
       'league_active_confirmations?account_id=eq.' + encodeURIComponent(account.id) +
       '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) +
       '&select=listing_id&limit=200'
+    ).catch(() => []),
+    supabaseRest(env,
+      'league_team_shares?player_account_id=eq.' + encodeURIComponent(account.id) +
+      '&expires_at=gt.' + encodeURIComponent(nowIso()) +
+      '&select=id,listing_id,status,submitted_at,expires_at&order=submitted_at.desc&limit=100'
     ).catch(() => [])
   ]);
   const confirmedIds = new Set((recentConfirmations || []).map(row => row.listing_id));
-  const visibleLeagues = (leagues || []).map(row => ({ ...row, confirmedByMe: confirmedIds.has(row.id) }));
+  const shareByListing = new Map();
+  for (const share of (myShares || [])) {
+    if (!shareByListing.has(share.listing_id)) shareByListing.set(share.listing_id, share);
+  }
+  const visibleLeagues = (leagues || []).map(row => ({
+    ...row,
+    confirmedByMe: confirmedIds.has(row.id),
+    myTeamShare: shareByListing.get(row.id) ? {
+      id: shareByListing.get(row.id).id,
+      status: shareByListing.get(row.id).status,
+      submittedAt: shareByListing.get(row.id).submitted_at,
+      expiresAt: shareByListing.get(row.id).expires_at
+    } : null
+  }));
   const decoratedOwn = await decorateListings(env, ownListings || [], supabaseRest);
   const approvedOwner = profile.status === 'league_owner' && (ownListings || []).some(row => row.status === 'approved' && row.recruiting_open);
   const usedToday = approvedOwner ? await outreachUsage(env, account.id, supabaseRest).catch(() => 0) : 0;
@@ -332,8 +368,31 @@ async function saveProfile(request, env, authContext, supabaseRest, json) {
   const { account } = authContext;
   const input = await request.json().catch(() => ({}));
   let row;
+  let existing;
   try {
-    row = validateProfile(input);
+    existing = await loadLeagueProfile(env, account.id, supabaseRest);
+    const normalizedInput = {
+      ...input,
+      teamScreenshotUrl: Object.prototype.hasOwnProperty.call(input, 'teamScreenshotUrl')
+        ? input.teamScreenshotUrl : (existing?.team_screenshot_url || ''),
+      teamScreenshotNote: Object.prototype.hasOwnProperty.call(input, 'teamScreenshotNote')
+        ? input.teamScreenshotNote : (existing?.team_screenshot_note || ''),
+      showTeamToOwners: Object.prototype.hasOwnProperty.call(input, 'showTeamToOwners')
+        ? input.showTeamToOwners : Boolean(existing?.team_screenshot_show_to_owners)
+    };
+    row = validateProfile(normalizedInput);
+    if (!row.team_screenshot_url) {
+      row.team_screenshot_expires_at = null;
+      row.team_screenshot_show_to_owners = false;
+    } else if (row.team_screenshot_url !== existing?.team_screenshot_url) {
+      row.team_screenshot_expires_at = new Date(Date.now() + TEAM_SCREENSHOT_MS).toISOString();
+    } else {
+      row.team_screenshot_expires_at = existing?.team_screenshot_expires_at || null;
+    }
+    if (row.team_screenshot_show_to_owners &&
+        (!row.team_screenshot_expires_at || Date.parse(row.team_screenshot_expires_at) <= Date.now())) {
+      return json({ error: 'Your team screenshot has expired. Upload a fresh one before showing it to owners.' }, 400);
+    }
   } catch (error) {
     return json({ error: error?.message || 'Check your league profile.' }, 400);
   }
@@ -346,6 +405,15 @@ async function saveProfile(request, env, authContext, supabaseRest, json) {
         headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
         body: JSON.stringify([row])
       });
+    if (existing?.status === 'looking_for_league' && row.status !== 'looking_for_league') {
+      await supabaseRest(env,
+        'league_team_shares?player_account_id=eq.' + encodeURIComponent(account.id) +
+        '&status=in.(pending,accepted)&expires_at=gt.' + encodeURIComponent(nowIso()), {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'expired' })
+        }).catch(error => console.warn('[LEAGUE_TEAM_SHARE_EXPIRE]', error?.message || error));
+    }
     return json({ ok: true, profile: saved?.[0] || row });
   } catch (error) {
     console.error('[LEAGUE_PROFILE_SAVE]', error?.message);
@@ -510,7 +578,9 @@ async function listPlayers(request, env, authContext, url, supabaseRest, json) {
       tournamentSizes: row.tournament_sizes || [],
       availability: row.availability || '',
       playStyle: row.play_style || '',
-      notes: row.notes || '',
+      teamScreenshotUrl: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? row.team_screenshot_url : null,
+      teamScreenshotNote: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? (row.team_screenshot_note || '') : '',
+      teamScreenshotExpiresAt: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? row.team_screenshot_expires_at : null,
       updatedAt: row.updated_at
     };
   });
@@ -523,6 +593,179 @@ async function listPlayers(request, env, authContext, url, supabaseRest, json) {
   if (size) players = players.filter(p => p.tournamentSizes.includes(size));
   players = players.filter(p => p.ovr >= minOvr);
   return json({ players });
+}
+
+
+async function submitTeamShare(request, env, authContext, match, supabaseRest, json) {
+  const blocked = requireVerified(authContext, json);
+  if (blocked) return blocked;
+  const { account } = authContext;
+  const player = await loadLeagueProfile(env, account.id, supabaseRest);
+  if (player?.status !== 'looking_for_league') {
+    return json({ error: 'Set your profile status to Looking for a league before sending your team.' }, 403);
+  }
+  if (!screenshotIsActive(player)) {
+    return json({ error: 'Upload a fresh team screenshot in your league profile first.' }, 400);
+  }
+
+  const listingRows = await supabaseRest(env,
+    'league_listings?id=eq.' + encodeURIComponent(match[1]) +
+    '&status=eq.approved&recruiting_open=eq.true&select=id,owner_account_id,name,is_demo&limit=1');
+  const listing = listingRows?.[0];
+  if (!listing || listing.is_demo) return json({ error: 'This sample listing is for preview only and is not accepting real team submissions.' }, 404);
+  if (listing.owner_account_id === account.id) return json({ error: 'You cannot send a team to your own league.' }, 400);
+
+  const activeRows = await supabaseRest(env,
+    'league_team_shares?listing_id=eq.' + encodeURIComponent(listing.id) +
+    '&player_account_id=eq.' + encodeURIComponent(account.id) +
+    '&status=in.(pending,accepted)&expires_at=gt.' + encodeURIComponent(nowIso()) +
+    '&select=id,status,expires_at&limit=1');
+  const activeShare = activeRows?.[0];
+  if (activeShare) {
+    return json({
+      error: activeShare.status === 'accepted'
+        ? 'This league has already accepted your team. The share remains active for a few days.'
+        : 'You already sent a team to this league. Your submission is still active.',
+      status: activeShare.status
+    }, 409);
+  }
+  const expiredPending = await supabaseRest(env,
+    'league_team_shares?listing_id=eq.' + encodeURIComponent(listing.id) +
+    '&player_account_id=eq.' + encodeURIComponent(account.id) +
+    '&status=eq.pending&expires_at=lte.' + encodeURIComponent(nowIso()) +
+    '&select=id&limit=1');
+  if (expiredPending?.[0]) {
+    await supabaseRest(env, 'league_team_shares?id=eq.' + encodeURIComponent(expiredPending[0].id), {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'expired' })
+    });
+  }
+
+  const screenshotExpiry = Date.parse(player.team_screenshot_expires_at);
+  const expiresAt = new Date(Math.min(Date.now() + TEAM_SCREENSHOT_MS, screenshotExpiry)).toISOString();
+  try {
+    const saved = await supabaseRest(env, 'league_team_shares?select=id,listing_id,status,submitted_at,expires_at', {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify([{
+        listing_id: listing.id,
+        player_account_id: account.id,
+        screenshot_url: player.team_screenshot_url,
+        player_note: player.team_screenshot_note || null,
+        status: 'pending',
+        submitted_at: nowIso(),
+        expires_at: expiresAt
+      }])
+    });
+    return json({ ok: true, share: saved?.[0] || null, leagueName: listing.name }, 201);
+  } catch (error) {
+    if (/duplicate key|unique/i.test(String(error?.message || ''))) {
+      return json({ error: 'A team submission to this league is already active.' }, 409);
+    }
+    console.error('[LEAGUE_TEAM_SHARE_CREATE]', error?.message || error);
+    return json({ error: 'Your team could not be sent. Please try again.' }, 500);
+  }
+}
+
+async function getTeamShares(request, env, authContext, supabaseRest, json) {
+  const { account } = authContext;
+  const profile = await loadLeagueProfile(env, account.id, supabaseRest);
+  if (profile?.status !== 'league_owner') {
+    return json({ error: 'Team submissions are available to league owners.' }, 403);
+  }
+  const listings = await supabaseRest(env,
+    'league_listings?owner_account_id=eq.' + encodeURIComponent(account.id) +
+    '&status=eq.approved&recruiting_open=eq.true&select=id,name&limit=10');
+  if (!listings?.length) return json({ error: 'You need an approved recruiting league to review team submissions.' }, 403);
+  const listingMap = new Map(listings.map(row => [row.id, row.name]));
+  const rows = await supabaseRest(env,
+    'league_team_shares?listing_id=in.' + encodeURIComponent('(' + listings.map(row => row.id).join(',') + ')') +
+    '&expires_at=gt.' + encodeURIComponent(nowIso()) +
+    '&status=in.(pending,accepted,declined)&select=id,listing_id,player_account_id,screenshot_url,player_note,status,submitted_at,expires_at,reviewed_at,review_note' +
+    '&order=submitted_at.desc&limit=100');
+  const playerIds = [...new Set((rows || []).map(row => row.player_account_id).filter(Boolean))];
+  const [profiles, accounts] = await Promise.all([
+    playerIds.length ? supabaseRest(env,
+      'league_profiles?select=account_id,status,in_game_username,ovr,region_server,preferred_languages,tournament_sizes,availability,play_style,avatar_url&account_id=in.' +
+      encodeURIComponent('(' + playerIds.join(',') + ')')) : [],
+    playerIds.length ? supabaseRest(env,
+      'accounts?select=id,username,display_name,avatar_url&id=in.' +
+      encodeURIComponent('(' + playerIds.join(',') + ')')) : []
+  ]);
+  const profileMap = new Map((profiles || []).map(row => [row.account_id, row]));
+  const accountMap = new Map((accounts || []).map(row => [row.id, row]));
+  const shares = (rows || []).filter(row =>
+    profileMap.get(row.player_account_id)?.status === 'looking_for_league'
+  ).map(row => {
+    const p = profileMap.get(row.player_account_id) || {};
+    const a = accountMap.get(row.player_account_id) || {};
+    return {
+      id: row.id,
+      listingId: row.listing_id,
+      listingName: listingMap.get(row.listing_id) || 'League',
+      screenshotUrl: row.screenshot_url,
+      playerNote: row.player_note || '',
+      status: row.status,
+      submittedAt: row.submitted_at,
+      expiresAt: row.expires_at,
+      reviewedAt: row.reviewed_at || null,
+      reviewNote: row.review_note || '',
+      player: {
+        accountId: row.player_account_id,
+        username: a.username || 'FC Mobile player',
+        displayName: a.display_name || a.username || 'FC Mobile player',
+        avatarUrl: p.avatar_url || a.avatar_url || null,
+        inGameUsername: p.in_game_username || '',
+        ovr: Number(p.ovr || 0),
+        regionServer: p.region_server || '',
+        preferredLanguages: p.preferred_languages || [],
+        tournamentSizes: p.tournament_sizes || [],
+        availability: p.availability || '',
+        playStyle: p.play_style || ''
+      }
+    };
+  });
+  return json({ shares });
+}
+
+async function reviewTeamShare(request, env, authContext, match, supabaseRest, json) {
+  const blocked = requireVerified(authContext, json);
+  if (blocked) return blocked;
+  const { account } = authContext;
+  const profile = await loadLeagueProfile(env, account.id, supabaseRest);
+  if (profile?.status !== 'league_owner') return json({ error: 'Only league owners can review team submissions.' }, 403);
+  const input = await request.json().catch(() => ({}));
+  const status = clean(input.status, 20);
+  if (!['accepted','declined'].includes(status)) return json({ error: 'Choose accept or decline.' }, 400);
+  const note = clean(input.note, 300);
+
+  const rows = await supabaseRest(env,
+    'league_team_shares?id=eq.' + encodeURIComponent(match[1]) +
+    '&status=eq.pending&expires_at=gt.' + encodeURIComponent(nowIso()) +
+    '&select=id,listing_id&limit=1');
+  const share = rows?.[0];
+  if (!share) return json({ error: 'This team submission has expired or was already reviewed.' }, 404);
+  const owned = await supabaseRest(env,
+    'league_listings?id=eq.' + encodeURIComponent(share.listing_id) +
+    '&owner_account_id=eq.' + encodeURIComponent(account.id) +
+    '&status=eq.approved&recruiting_open=eq.true&select=id&limit=1');
+  if (!owned?.length) return json({ error: 'You cannot review submissions for this league.' }, 403);
+
+  const updated = await supabaseRest(env,
+    'league_team_shares?id=eq.' + encodeURIComponent(share.id) +
+    '&status=eq.pending&expires_at=gt.' + encodeURIComponent(nowIso()) +
+    '&select=id,status', {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({
+        status,
+        review_note: note || null,
+        reviewed_at: nowIso()
+      })
+    });
+  if (!updated?.length) return json({ error: 'This submission was already reviewed.' }, 409);
+  return json({ ok: true, status: updated[0].status });
 }
 
 async function revealPlayer(request, env, authContext, match, supabaseRest, json) {
@@ -647,6 +890,17 @@ export async function leagueWorkerRoute({ request, env, url, authenticated, acco
     }
     if (request.method === 'POST' && url.pathname === '/api/leagues/listings') {
       return await createListing(request, env, context, supabaseRest, json);
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/team-shares') {
+      return await getTeamShares(request, env, context, supabaseRest, json);
+    }
+    const teamShareMatch = url.pathname.match(/^\/api\/leagues\/listings\/([0-9a-f-]+)\/team-share$/i);
+    if (request.method === 'POST' && teamShareMatch) {
+      return await submitTeamShare(request, env, context, teamShareMatch, supabaseRest, json);
+    }
+    const reviewTeamShareMatch = url.pathname.match(/^\/api\/leagues\/team-shares\/([0-9a-f-]+)\/review$/i);
+    if (request.method === 'POST' && reviewTeamShareMatch) {
+      return await reviewTeamShare(request, env, context, reviewTeamShareMatch, supabaseRest, json);
     }
     const updateMatch = url.pathname.match(/^\/api\/leagues\/listings\/([0-9a-f-]+)\/update$/i);
     if (request.method === 'POST' && updateMatch) {

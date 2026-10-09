@@ -76,6 +76,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <div id="profileAvatarPreview" class="fl-logo-preview">Player</div>
             <input type="hidden" name="avatarUrl">
           </div>
+          <div class="fl-upload-row">
+            <label class="fl-upload" for="teamScreenshotFile"><span class="fl-upload-icon">↑</span><span><strong>Temporary squad screenshot</strong><small>JPG, PNG, WebP or GIF · under 8 MB · expires after 7 days</small></span><input id="teamScreenshotFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+            <div id="teamScreenshotPreview" class="fl-logo-preview">SQUAD</div>
+            <input type="hidden" name="teamScreenshotUrl">
+          </div>
+          <div class="fl-team-options">
+            <label class="fl-check-line"><input type="checkbox" name="showTeamToOwners"><span>Show my squad to approved league owners searching for players</span></label>
+            <span id="teamScreenshotExpiry" class="fl-team-expiry">Or keep it private and send it to one league at a time.</span>
+          </div>
+          <label class="fl-field"><span>Note with your team screenshot <small>Optional</small></span><textarea name="teamScreenshotNote" rows="2" maxlength="300" placeholder="Formation, play style, or what the league should know about this squad."></textarea></label>
           <fieldset class="fl-choice-group">
             <legend>Preferred languages</legend>
             <div class="fl-choice-row">
@@ -109,6 +119,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <div class="fl-tabs" role="tablist" aria-label="League directory">
           <button class="fl-tab active" id="tabLeagues" type="button" role="tab" aria-selected="true">Find a League <span id="leagueCount">0</span></button>
           <button class="fl-tab" id="tabPlayers" type="button" role="tab" aria-selected="false" hidden>Find Players</button>
+          <button class="fl-tab" id="tabTeams" type="button" role="tab" aria-selected="false" hidden>Team submissions <span id="teamSubmissionCount">0</span></button>
           <span class="fl-tabs-spacer"></span>
           <span class="fl-account-chip"><i></i><span id="signedInAs">Signed in</span></span>
         </div>
@@ -152,6 +163,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           <div class="fl-results-meta"><span id="playerResultsLabel">Players looking for a league</span><span class="fl-private-note">UID and Discord stay hidden until you unlock a contact.</span></div>
           <div id="playerList" class="fl-player-grid"></div>
           <div class="fl-empty" id="playerEmpty" hidden><span class="fl-empty-icon" aria-hidden="true">⌕</span><h3>No players match those filters.</h3><p>Try a wider region or tournament-size filter.</p></div>
+        </section>
+
+        <section class="fl-view" id="teamsView" hidden>
+          <div class="fl-directory-head">
+            <div><h2>Squads sent to your league.</h2><p>Team screenshots are temporary. Review the lineup, then accept or decline the submission. Private UID and Discord details stay protected by player-contact limits.</p></div>
+          </div>
+          <div class="fl-results-meta"><span id="teamShareResultsLabel">Current team submissions</span><span class="fl-private-note">Screenshots expire after 7 days</span></div>
+          <div id="teamShareList" class="fl-team-share-grid"></div>
+          <div class="fl-empty" id="teamShareEmpty" hidden><span class="fl-empty-icon" aria-hidden="true">⌕</span><h3>No active team submissions.</h3><p>When players send their current squad to your league, their screenshots will appear here.</p></div>
         </section>
 
         <section class="fl-owner-panel" id="ownerPanel" hidden>
@@ -343,6 +363,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   .fl-revealed dl{display:grid;grid-template-columns:76px minmax(0,1fr);gap:6px 9px;margin:0;font-size:10.5px;overflow-wrap:anywhere}
   .fl-revealed dt{color:#769183}.fl-revealed dd{margin:0;color:#d6f0e4;overflow-wrap:anywhere}
   .fl-owner-panel{margin-top:24px;padding:21px;border:1px solid var(--fl-border);border-radius:18px;background:linear-gradient(130deg,#0f1b26,#0a141d)}
+  .fl-team-options{display:grid;gap:7px;padding:11px 12px;border:1px solid #ffffff12;border-radius:11px;background:#07121b}
+  .fl-team-expiry{color:#8298a8;font-size:10.5px;line-height:1.5}
+  .fl-team-share-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+  .fl-team-share-card{min-width:0;overflow:hidden;border:1px solid var(--fl-border);border-radius:16px;background:linear-gradient(150deg,#101e2a,#09141d);animation:fl-rise .3s both}
+  .fl-team-shot{display:block;position:relative;overflow:hidden;aspect-ratio:16/9;background:#06111a;border-bottom:1px solid #ffffff12}
+  .fl-team-shot img{display:block;width:100%;height:100%;object-fit:contain}
+  .fl-team-share-body{padding:15px}
+  .fl-team-share-top{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+  .fl-team-share-top h3{margin:0 0 5px;font:700 16px/1.2 'Space Grotesk',Inter,sans-serif}
+  .fl-team-share-meta{color:#8398a8;font-size:10.5px;line-height:1.55}
+  .fl-team-share-note{margin:12px 0 0;padding:10px;border:1px solid #ffffff10;border-radius:10px;background:#07121b;color:#b7c7d2;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+  .fl-team-share-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:13px}
+  .fl-small-btn.accept{border-color:#75e3b34a;color:#8ce7bc;background:#75e3b30b}
+  .fl-small-btn.decline{border-color:#ff9b9140;color:#ffaca3;background:#ff9b9108}
+  .fl-inline-squad{display:flex;align-items:center;gap:8px;margin:0 0 13px;padding:9px;border:1px solid #4cc9ff25;border-radius:10px;background:#4cc9ff08}
+  .fl-inline-squad img{width:55px;height:40px;object-fit:cover;border-radius:6px;background:#07121b}
+  .fl-inline-squad span{color:#9fc9db;font-size:10.5px}
+  .fl-status-pill.demo{border-color:#c2a3ff46;background:#c2a3ff0d;color:#d2bdff}
   .fl-owner-head{margin-bottom:18px}
   .fl-owner-head h2{margin-top:8px}
   .fl-owner-head p{margin:0;color:#8ba0b0;font-size:11.5px}
@@ -377,6 +415,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   @keyframes fl-spin{to{transform:rotate(360deg)}}
   @keyframes fl-shimmer{to{background-position:-220% 0}}
   @media(max-width:900px){.fl-player-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fl-filters{grid-template-columns:minmax(220px,1.5fr) repeat(2,minmax(130px,.8fr))}.fl-filters select:last-child{grid-column:auto}}
+  @media(max-width:900px){.fl-team-share-grid{grid-template-columns:1fr}}
   @media(max-width:650px){.fl-wrap{width:min(100% - 26px,1180px)}.fl-page{padding-top:28px}.fl-heading{align-items:flex-start;flex-direction:column;gap:16px;margin-bottom:23px}.fl-heading-actions{justify-content:flex-start}.fl-heading h1{font-size:42px}.fl-tabs{flex-wrap:wrap}.fl-tabs-spacer{display:none}.fl-account-chip{margin-left:auto}.fl-directory-head,.fl-owner-head{align-items:flex-start}.fl-directory-head{flex-direction:column}.fl-filters{grid-template-columns:1fr 1fr}.fl-search{grid-column:1/-1}.fl-league-grid{grid-template-columns:1fr}.fl-player-grid{grid-template-columns:1fr}.fl-form-grid{grid-template-columns:1fr}.fl-profile-actions{align-items:stretch;flex-direction:column}.fl-profile-actions .fl-btn{width:100%}.fl-setup-top{flex-direction:column}.fl-step{display:none}.fl-owner-listing{align-items:flex-start;flex-wrap:wrap}.fl-owner-listing-actions{width:100%;justify-content:flex-start}.fl-owner-create{align-items:flex-start;flex-direction:column}.fl-owner-create .fl-btn{width:100%}.fl-usage{white-space:normal}.fl-player-filters select{min-width:0}.fl-results-meta{align-items:flex-start}.fl-private-note{text-align:right;max-width:48%}}
   @media(max-width:390px){.fl-filters{grid-template-columns:1fr}.fl-search{grid-column:auto}.fl-tabs{align-items:stretch}.fl-tab{flex:1;padding:0 10px}.fl-account-chip{width:100%;padding:7px 8px 3px}.fl-card-stats{gap:5px}.fl-card-stats strong{font-size:10.5px}}
   @media(prefers-reduced-motion:reduce){.fl-page *{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
@@ -386,13 +425,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   import { accountAuth } from '../../lib/account-client.js';
 
   const $ = (selector) => document.querySelector(selector);
-  const state = { session: null, account: null, profile: null, leagues: [], ownListings: [], players: [], canFindPlayers: false, outreachRemaining: 3, activeTab: 'leagues', revealed: new Map(), logoUrl: '', editingListingId: null };
+  const state = { session: null, account: null, profile: null, leagues: [], ownListings: [], players: [], teamShares: [], canFindPlayers: false, outreachRemaining: 3, activeTab: 'leagues', revealed: new Map(), logoUrl: '', editingListingId: null };
   const formMessage = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message || ''; node.style.color = error ? '#ffaaa1' : '#87e5b8'; } };
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const fmt = (value) => Number(value || 0).toLocaleString();
   const initials = (value) => String(value || 'FC').trim().split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase() || 'FC';
   const labelFrequency = (value) => ({ daily: 'Daily', most_days: 'Most days', several_weekly: 'Several times a week', weekly: 'Weekly', occasional: 'Occasional' })[value] || 'Schedule varies';
   const labelCommitment = (value) => ({ casual: 'Casual', regular: 'Regular play', competitive: 'Competitive' })[value] || 'Regular play';
+  const activeTeamScreenshot = () => state.profile?.team_screenshot_url && Date.parse(state.profile.team_screenshot_expires_at || '') > Date.now() ? state.profile.team_screenshot_url : '';
   const toast = (message, error = false) => {
     const node = $('#toast'); node.textContent = message; node.classList.toggle('error', error); node.classList.add('show');
     window.clearTimeout(toast.timer); toast.timer = window.setTimeout(() => node.classList.remove('show'), 4200);
@@ -422,6 +462,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   function canCreateOwnerListing() { return state.profile?.status === 'league_owner' && !hasOpenOwnerListing(); }
   function setChecks(form, name, values) { const list = Array.isArray(values) ? values : []; form.querySelectorAll('input[name="' + name + '"]').forEach(input => { input.checked = list.includes(input.value); }); }
 
+  function syncTeamVisibilityOption(form) {
+    const checkbox = form.elements.showTeamToOwners;
+    const allowed = form.elements.status.value === 'looking_for_league';
+    checkbox.disabled = !allowed;
+    if (!allowed) checkbox.checked = false;
+  }
+
   function fillProfileForm(profile, suggested) {
     const form = $('#profileForm');
     const p = profile || {};
@@ -430,9 +477,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     form.elements.inGameUsername.value = p.in_game_username || s.inGameUsername || '';
     form.elements.avatarUrl.value = p.avatar_url || '';
     $('#profileAvatarPreview').innerHTML = p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="">' : 'Player';
+    const teamShotActive = Boolean(p.team_screenshot_url && Date.parse(p.team_screenshot_expires_at || '') > Date.now());
+    form.elements.teamScreenshotUrl.value = teamShotActive ? p.team_screenshot_url : '';
+    form.elements.teamScreenshotNote.value = teamShotActive ? (p.team_screenshot_note || '') : '';
+    form.elements.showTeamToOwners.checked = teamShotActive && Boolean(p.team_screenshot_show_to_owners);
+    $('#teamScreenshotPreview').innerHTML = teamShotActive ? '<img src="' + esc(p.team_screenshot_url) + '" alt="">' : 'SQUAD';
+    $('#teamScreenshotExpiry').textContent = teamShotActive
+      ? 'Temporary image expires ' + new Date(p.team_screenshot_expires_at).toLocaleString() + '.'
+      : (p.team_screenshot_url ? 'Your previous screenshot has expired. Upload a fresh one.' : 'Or keep it private and send it to one league at a time.');
     form.elements.ovr.value = p.ovr || '';
     form.elements.regionServer.value = p.region_server || s.regionServer || '';
     form.elements.status.value = p.status || 'looking_for_league';
+    syncTeamVisibilityOption(form);
     form.elements.discordHandle.value = p.discord_handle || s.discordHandle || '';
     form.elements.availability.value = p.availability || '';
     form.elements.playStyle.value = p.play_style || '';
@@ -463,20 +519,27 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const sizes = (row.tournamentSizes || []).map(value => '<span class="fl-tag cyan">' + esc(value) + '</span>').join('');
     const ownerAvatar = row.owner?.avatarUrl ? '<img src="' + esc(row.owner.avatarUrl) + '" alt="" loading="lazy" onerror="this.remove()">' : '';
     const kickoff = row.lastKickoffAt && row.kickoffActive ? '<span class="fl-status-pill"><span class="fl-kickoff-icon">↗</span> KICKOFF ACTIVE</span>' : '<span class="fl-status-pill">RECRUITING</span>';
+    const demoBadge = row.isDemo ? '<span class="fl-status-pill demo">SAMPLE</span>' : '';
     const invite = row.discordInviteUrl ? '<a class="fl-small-btn external" href="' + esc(row.discordInviteUrl) + '" target="_blank" rel="noopener noreferrer">Apply / Join ↗</a>' : '';
     const contactDiscord = row.contactDiscord ? '<button class="fl-small-btn" data-contact-discord="' + esc(row.contactDiscord) + '" type="button">Copy Discord</button>' : '';
     const activeText = row.lastActiveAt ? 'Last confirmed ' + esc(new Date(row.lastActiveAt).toLocaleDateString()) : 'Awaiting first activity check';
-    const activeLabel = row.confirmedByMe ? 'Confirmed · 24h' : 'League active';
+    const activeLabel = row.isDemo ? 'Sample only' : (row.confirmedByMe ? 'Confirmed · 24h' : 'League active');
+    const myShare = row.myTeamShare;
+    const activeShare = Boolean(myShare && Date.parse(myShare.expiresAt || '') > Date.now() && ['pending','accepted'].includes(myShare.status));
+    const shareLabel = activeShare ? (myShare.status === 'accepted' ? 'Team accepted' : 'Team sent · awaiting review') : 'Send team screenshot';
+    const sendTeamButton = state.profile?.status === 'looking_for_league' && !row.isDemo
+      ? '<button class="fl-small-btn fl-send-team" data-id="' + esc(row.id) + '" type="button" ' + (activeShare ? 'disabled' : '') + '>' + shareLabel + '</button>'
+      : '';
     return '<article class="fl-league-card" style="animation-delay:' + Math.min(index * 35, 210) + 'ms"><div class="fl-card-accent"></div><div class="fl-card-inner">' +
       '<div class="fl-card-top">' +
       '<div class="fl-club-logo">' + logo + '</div>' +
       '<div class="fl-card-ident"><h3>' + esc(row.name) + '</h3><div class="fl-card-sub"><span>' + esc(row.regionServer) + '</span><i class="fl-dot-sep"></i><span>' + fmt(row.openSpots) + ' spots open</span></div></div>' +
-      kickoff + '</div>' +
+      kickoff + demoBadge + '</div>' +
       '<p class="fl-card-desc">' + esc(row.description) + '</p>' +
       '<div class="fl-card-tags">' + sizes + languages + '</div>' +
       '<div class="fl-card-stats"><div><span>Minimum OVR</span><strong>' + fmt(row.minOvr) + '+ OVR</strong></div><div><span>Tournament rhythm</span><strong>' + esc(labelFrequency(row.tournamentFrequency)) + '</strong></div><div><span>Club culture</span><strong>' + esc(labelCommitment(row.playerCommitment)) + '</strong></div></div>' +
       '<div class="fl-card-bottom"><div class="fl-owner-line">' + ownerAvatar + '<span>Managed by ' + esc(row.owner?.displayName || 'FC Mobile player') + '</span></div><div class="fl-card-actions">' +
-      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + (row.confirmedByMe ? 'disabled' : '') + '>' + activeLabel + '</button>' + invite + contactDiscord +
+      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + ((row.confirmedByMe || row.isDemo) ? 'disabled' : '') + '>' + activeLabel + '</button>' + sendTeamButton + invite + contactDiscord +
       '</div></div><div class="fl-confirm-note">' + activeText + (row.discordRequired ? ' · Discord required' : ' · Discord optional') + '</div>' +
       '</div></article>';
   }
@@ -506,15 +569,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   function showTab(which) {
     state.activeTab = which;
+    const leagues = which === 'leagues';
     const players = which === 'players';
-    $('#tabLeagues').classList.toggle('active', !players);
-    $('#tabLeagues').setAttribute('aria-selected', String(!players));
+    const teams = which === 'teams';
+    $('#tabLeagues').classList.toggle('active', leagues);
+    $('#tabLeagues').setAttribute('aria-selected', String(leagues));
     $('#tabPlayers').classList.toggle('active', players);
     $('#tabPlayers').setAttribute('aria-selected', String(players));
-    $('#leagueView').hidden = players;
+    $('#tabTeams').classList.toggle('active', teams);
+    $('#tabTeams').setAttribute('aria-selected', String(teams));
+    $('#leagueView').hidden = !leagues;
     $('#playersView').hidden = !players;
-    $('#ownerPanel').hidden = players || state.profile?.status !== 'league_owner';
+    $('#teamsView').hidden = !teams;
+    $('#ownerPanel').hidden = !leagues || state.profile?.status !== 'league_owner';
     if (players) loadPlayers();
+    if (teams) loadTeamShares();
   }
 
   function ownerDesk() {
@@ -586,6 +655,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     $('#editProfileBtn').hidden = false;
     $('#listLeagueBtn').hidden = !canCreateOwnerListing();
     $('#tabPlayers').hidden = !state.canFindPlayers;
+    $('#tabTeams').hidden = !state.canFindPlayers;
     $('#outreachRemaining').textContent = String(state.outreachRemaining);
     filterLeagues();
     ownerDesk();
@@ -633,13 +703,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function uploadImage(file, previewNode, hiddenInput) {
+  async function uploadImage(file, previewNode, hiddenInput, lifetime = 'permanent') {
     if (!file) return '';
     const accepted = ['image/jpeg','image/png','image/webp','image/gif'];
     if (!accepted.includes(file.type) || file.size > 8 * 1024 * 1024) throw new Error('Use a JPG, PNG, WebP or GIF image smaller than 8 MB.');
     const accessToken = await token();
     if (!accessToken) throw new Error('Sign in again before uploading an image.');
-    const body = new FormData(); body.append('file', file); body.append('permanent', 'true');
+    const body = new FormData(); body.append('file', file);
+    if (lifetime === 'temporary') body.append('expirationDays', '7');
+    else body.append('permanent', 'true');
     const response = await fetch('/api/account/image-upload', { method: 'POST', headers: { authorization: 'Bearer ' + accessToken }, body, credentials: 'same-origin', cache: 'no-store' });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'Image upload failed. Please try again.');
@@ -660,6 +732,95 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       filterLeagues();
     } catch (error) {
       toast(error.message || 'Unable to confirm this league.', true);
+      button.disabled = false;
+    }
+  }
+
+  async function submitTeamToLeague(button) {
+    const listingId = button.dataset.id;
+    if (!activeTeamScreenshot()) {
+      toast('Upload a current team screenshot in My player profile first.', true);
+      openLeagueProfile();
+      return;
+    }
+    button.disabled = true;
+    try {
+      const result = await api('/api/leagues/listings/' + encodeURIComponent(listingId) + '/team-share', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      const row = state.leagues.find(item => item.id === listingId);
+      if (row) {
+        row.myTeamShare = {
+          id: result.share?.id || '',
+          status: 'pending',
+          submittedAt: result.share?.submitted_at || new Date().toISOString(),
+          expiresAt: result.share?.expires_at || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        };
+      }
+      filterLeagues();
+      toast('Team screenshot sent to ' + (result.leagueName || 'the league') + '. It expires within 7 days.');
+    } catch (error) {
+      toast(error.message || 'Could not send your team screenshot.', true);
+      button.disabled = false;
+    }
+  }
+
+  function renderTeamShares() {
+    const rows = state.teamShares || [];
+    $('#teamSubmissionCount').textContent = String(rows.filter(row => row.status === 'pending').length);
+    $('#teamShareResultsLabel').textContent = rows.length + (rows.length === 1 ? ' current submission' : ' current submissions');
+    $('#teamShareList').innerHTML = rows.map((share, index) => {
+      const p = share.player || {};
+      const statusLabel = ({ pending: 'Awaiting review', accepted: 'Accepted', declined: 'Declined' })[share.status] || share.status;
+      const statusClass = share.status === 'accepted' ? '' : (share.status === 'pending' ? ' pending' : ' rejected');
+      const shot = '<a class="fl-team-shot" href="' + esc(share.screenshotUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Open squad screenshot for ' + esc(p.displayName || 'player') + '"><img src="' + esc(share.screenshotUrl) + '" loading="lazy" alt="Temporary FC Mobile squad screenshot" referrerpolicy="no-referrer"></a>';
+      const tags = (p.tournamentSizes || []).map(size => '<span class="fl-tag cyan">' + esc(size) + '</span>').join('') +
+        (p.preferredLanguages || []).slice(0, 3).map(lang => '<span class="fl-tag">' + esc(lang) + '</span>').join('');
+      const action = share.status === 'pending'
+        ? '<button class="fl-small-btn accept" data-team-review="accepted" data-id="' + esc(share.id) + '" type="button">Accept team</button><button class="fl-small-btn decline" data-team-review="declined" data-id="' + esc(share.id) + '" type="button">Decline</button>'
+        : '';
+      return '<article class="fl-team-share-card" style="animation-delay:' + Math.min(index * 35, 210) + 'ms">' + shot +
+        '<div class="fl-team-share-body"><div class="fl-team-share-top"><div><h3>' + esc(p.displayName || 'FC Mobile player') + '</h3><div class="fl-team-share-meta">@' + esc(p.username || 'player') + ' · ' + esc(p.regionServer || 'Region not set') + '<br>' + fmt(p.ovr) + ' OVR · Sent ' + esc(new Date(share.submittedAt).toLocaleDateString()) + '</div></div><span class="fl-status-pill' + statusClass + '">' + esc(statusLabel) + '</span></div>' +
+        '<div class="fl-card-tags" style="margin-top:11px">' + tags + '</div>' +
+        '<div class="fl-team-share-meta" style="margin-top:10px">League: ' + esc(share.listingName) + ' · Screenshot expiry: ' + esc(new Date(share.expiresAt).toLocaleDateString()) + '</div>' +
+        (share.playerNote ? '<div class="fl-team-share-note">' + esc(share.playerNote) + '</div>' : '') +
+        (share.reviewNote ? '<div class="fl-team-share-note">Review note: ' + esc(share.reviewNote) + '</div>' : '') +
+        '<div class="fl-team-share-actions">' + action + '</div></div></article>';
+    }).join('');
+    $('#teamShareList').hidden = rows.length === 0;
+    $('#teamShareEmpty').hidden = rows.length > 0;
+  }
+
+  async function loadTeamShares() {
+    $('#teamShareList').innerHTML = '<div class="fl-skeleton"></div><div class="fl-skeleton"></div>';
+    $('#teamShareList').hidden = false;
+    $('#teamShareEmpty').hidden = true;
+    try {
+      const result = await api('/api/leagues/team-shares');
+      state.teamShares = result.shares || [];
+      renderTeamShares();
+    } catch (error) {
+      state.teamShares = [];
+      $('#teamShareList').innerHTML = '';
+      $('#teamShareList').hidden = true;
+      $('#teamShareEmpty').hidden = false;
+      $('#teamShareEmpty').querySelector('h3').textContent = 'Team submissions are unavailable.';
+      $('#teamShareEmpty').querySelector('p').textContent = error.message || 'Refresh and try again.';
+    }
+  }
+
+  async function reviewTeamShare(button) {
+    button.disabled = true;
+    try {
+      await api('/api/leagues/team-shares/' + encodeURIComponent(button.dataset.id) + '/review', {
+        method: 'POST',
+        body: JSON.stringify({ status: button.dataset.teamReview })
+      });
+      toast(button.dataset.teamReview === 'accepted' ? 'Team submission accepted.' : 'Team submission declined.');
+      await loadTeamShares();
+    } catch (error) {
+      toast(error.message || 'Could not update this submission.', true);
       button.disabled = false;
     }
   }
@@ -687,6 +848,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     $('#playerList').innerHTML = rows.map((row, index) => {
       const tags = (row.tournamentSizes || []).map(size => '<span class="fl-tag cyan">' + esc(size) + '</span>').join('') +
         (row.preferredLanguages || []).slice(0, 2).map(lang => '<span class="fl-tag">' + esc(lang) + '</span>').join('');
+      const squadPreview = row.teamScreenshotUrl
+        ? '<a class="fl-inline-squad" href="' + esc(row.teamScreenshotUrl) + '" target="_blank" rel="noopener noreferrer"><img src="' + esc(row.teamScreenshotUrl) + '" loading="lazy" alt="" referrerpolicy="no-referrer"><span>Open shared squad screenshot</span></a>'
+        : '';
       const revealed = state.revealed.get(row.accountId);
       const revealPanel = revealed ? '<div class="fl-revealed"><h4>Contact details</h4><dl><dt>UID</dt><dd>' + esc(revealed.fcMobileUid) + '</dd><dt>In-game name</dt><dd>' + esc(revealed.inGameUsername) + '</dd><dt>Discord</dt><dd>' + esc(revealed.discordHandle || 'Not provided') + '</dd><dt>Region</dt><dd>' + esc(revealed.regionServer) + '</dd></dl></div>' : '';
       return '<article class="fl-player-card" style="animation-delay:' + Math.min(index * 25, 150) + 'ms">' +
@@ -695,6 +859,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         '<div class="fl-player-tags">' + tags + '</div>' +
         '<p class="fl-player-note">' + esc(row.availability || 'Availability not specified') + (row.playStyle ? ' · ' + esc(row.playStyle) : '') + '</p>' +
         (row.notes ? '<p class="fl-player-note">' + esc(row.notes) + '</p>' : '') +
+        squadPreview +
+        (row.teamScreenshotNote && row.teamScreenshotUrl ? '<p class="fl-player-note">' + esc(row.teamScreenshotNote) + '</p>' : '') +
         '<button type="button" class="fl-small-btn fl-player-reveal" data-id="' + esc(row.accountId) + '" ' + (state.outreachRemaining <= 0 && !revealed ? 'disabled' : '') + '>' + (revealed ? 'Contact already unlocked' : 'Unlock contact · uses 1 daily contact') + '</button>' +
         revealPanel + '</article>';
     }).join('');
@@ -747,6 +913,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
   }
 
+  $('#profileForm').elements.status.addEventListener('change', () => syncTeamVisibilityOption($('#profileForm')));
+
   $('#profileForm').addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -757,6 +925,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       fcMobileUid: form.elements.fcMobileUid.value.trim(),
       inGameUsername: form.elements.inGameUsername.value.trim(),
       avatarUrl: form.elements.avatarUrl.value,
+      teamScreenshotUrl: form.elements.teamScreenshotUrl.value,
+      teamScreenshotNote: form.elements.teamScreenshotNote.value.trim(),
+      showTeamToOwners: form.elements.showTeamToOwners.checked,
       ovr: Number(form.elements.ovr.value),
       regionServer: form.elements.regionServer.value,
       status: form.elements.status.value,
@@ -835,6 +1006,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
   });
 
+  $('#teamScreenshotFile').addEventListener('change', async event => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    $('#saveProfileBtn').disabled = true;
+    formMessage('#profileMessage', 'Uploading temporary squad screenshot…');
+    try {
+      await uploadImage(file, $('#teamScreenshotPreview'), $('#profileForm').elements.teamScreenshotUrl, 'temporary');
+      $('#teamScreenshotExpiry').textContent = 'Temporary screenshot uploaded. It will expire after 7 days. Save your profile to apply the visibility setting.';
+      formMessage('#profileMessage', 'Squad screenshot uploaded. Save your profile to finish.');
+    } catch (error) {
+      formMessage('#profileMessage', error.message, true);
+    } finally {
+      $('#saveProfileBtn').disabled = false;
+    }
+  });
+
   $('#leagueLogoFile').addEventListener('change', async event => {
     const file = event.currentTarget.files?.[0];
     if (!file) return;
@@ -852,13 +1039,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   $('#tabLeagues').addEventListener('click', () => showTab('leagues'));
   $('#tabPlayers').addEventListener('click', () => { if (state.canFindPlayers) showTab('players'); });
+  $('#tabTeams').addEventListener('click', () => { if (state.canFindPlayers) showTab('teams'); });
   $('#editProfileBtn').addEventListener('click', openLeagueProfile);
   $('#listLeagueBtn').addEventListener('click', openListingEditor);
   $('#openListingBtn').addEventListener('click', openListingEditor);
   $('#emptyListBtn').addEventListener('click', openListingEditor);
   $('#createListingBtn').addEventListener('click', openListingEditor);
   $('#cancelListing').addEventListener('click', () => { $('#listingEditor').hidden = true; $('#workspace').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('#teamShareList').addEventListener('click', event => {
+    const button = event.target.closest('[data-team-review]');
+    if (button) reviewTeamShare(button);
+  });
+
   $('#leagueList').addEventListener('click', async event => {
+    const teamButton = event.target.closest('.fl-send-team');
+    if (teamButton) {
+      submitTeamToLeague(teamButton);
+      return;
+    }
     const button = event.target.closest('[data-contact-discord]');
     if (!button) return;
     const value = button.dataset.contactDiscord || '';
@@ -881,6 +1079,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   $('#playerSizeFilter').addEventListener('change', loadPlayers);
   $('#playerMinOvr').addEventListener('change', loadPlayers);
   $('#ownerPanel').addEventListener('click', async event => {
+    const editButton = event.target.closest('[data-edit-listing]');
+    if (editButton) {
+      const editRow = (state.ownListings || []).find(item => item.id === editButton.dataset.editListing);
+      if (editRow) openListingEditor(editRow);
+      return;
+    }
     const button = event.target.closest('#kickoffBtn');
     if (!button) return;
     const row = (state.ownListings || [])[0];
