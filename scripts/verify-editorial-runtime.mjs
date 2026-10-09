@@ -6,6 +6,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const admin = read('admin/articles/index.html');
 const lexical = read('admin/articles/lexical-editor.js');
 const blog = read('src/lib/blog-supabase.js');
+const imageDelivery = read('src/lib/blog.js');
+const headers = read('public/_headers');
 const worker = read('src/worker.mjs');
 const checks = [
   [!admin.includes("marked@"), 'admin article hydration must not reparse Supabase HTML with marked'],
@@ -23,6 +25,11 @@ const checks = [
   [!blog.includes("Authorization:'Bearer '"), 'public Supabase reads must use the publishable-key API contract'],
   [!worker.includes('\\\\') , 'Worker must not contain doubled backslash regex escapes'],
   [worker.includes("'cache-control':'no-store'"), 'editorial API responses must be uncacheable'],
+  [blog.includes('optimizeArticleImages') && blog.includes('loading="lazy"') && blog.includes('f_auto,q_auto,c_limit,w_'), 'published article images must be optimized and lazy-loaded'],
+  [imageDelivery.includes('f_auto,q_auto,c_limit,w_') && imageDelivery.includes('parsed.hasTransforms'), 'Cloudinary delivery must resize assets without stacking transformations'],
+  [headers.includes('/_astro/*') && headers.includes('immutable'), 'fingerprinted assets must receive long-lived browser caching'],
+  [headers.includes('/assets/images/*') && headers.includes('max-age=86400'), 'public images must use browser caching'],
+
 ];
 
 const failed = checks.filter(([ok]) => !ok);
