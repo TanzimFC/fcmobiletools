@@ -1,6 +1,7 @@
 // Runtime blog data layer. Published editorial content is read from Supabase at request time.
 // No GitHub commit or Astro rebuild is required when an article changes.
 import { decorate, slugify } from './blog.js';
+import { optimizeHtmlImages } from './image-delivery.js';
 
 export const SUPABASE_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
 export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr';
@@ -45,78 +46,8 @@ const safeHtml = (html) => {
     }
     return '<iframe'+attrs+'>';
   });
-  return optimizeArticleImages(value);
+  return optimizeHtmlImages(value);
 };
-
-// Optimize inline images in published articles. Cover artwork is handled separately and
-// remains eager for LCP; article-body images can load lazily as readers scroll.
-const cloudinaryImageUrl = (source, width) => {
-  const raw = String(source ?? '').replace(/&amp;/gi, '&');
-  let url;
-  try {
-    url = new URL(raw);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== 'https:' || url.hostname !== 'res.cloudinary.com' || !url.pathname.includes('/image/upload/')) {
-    return null;
-  }
-  const afterUpload = url.pathname.split('/image/upload/')[1] ?? '';
-  const firstSegment = afterUpload.split('/')[0] ?? '';
-  const alreadyTransformed = Boolean(firstSegment) &&
-    !/^v\d+$/i.test(firstSegment) &&
-    (firstSegment.includes(',') || /^(?:f_auto|q_auto|w_\d+|h_\d+|c_(?:fill|limit|scale|crop|thumb)|dpr_auto)(?:$|,)/i.test(firstSegment));
-  if (alreadyTransformed) return null;
-  url.pathname = url.pathname.replace(
-    '/image/upload/',
-    '/image/upload/f_auto,q_auto,c_limit,w_' + width + '/'
-  );
-  return url.toString();
-};
-
-const escapeHtmlAttribute = (value) => String(value ?? '')
-  .replace(/&/g, '&amp;')
-  .replace(/"/g, '&quot;');
-
-const imageAttributePatterns = {
-  src: /\s+src\s*=\s*(?:"[^"]*"|'[^']*')/i,
-  srcset: /\s+srcset\s*=\s*(?:"[^"]*"|'[^']*')/i,
-  sizes: /\s+sizes\s*=\s*(?:"[^"]*"|'[^']*')/i
-};
-
-const setImageAttribute = (attrs, name, value) => {
-  const pattern = imageAttributePatterns[name];
-  const escaped = escapeHtmlAttribute(value);
-  if (pattern?.test(attrs)) return attrs.replace(pattern, () => ' ' + name + '="' + escaped + '"');
-  return attrs + ' ' + name + '="' + escaped + '"';
-};
-
-function optimizeArticleImages(html) {
-  return String(html ?? '').replace(/<img\b([^>]*)>/gi, (full, rawAttrs) => {
-    let attrs = rawAttrs;
-    const srcMatch = attrs.match(/\s+src\s*=\s*(["'])(.*?)\1/i);
-    if (!srcMatch) return full;
-
-    const source = srcMatch[2];
-    const srcForTag = cloudinaryImageUrl(source, 1200);
-    if (srcForTag) {
-      attrs = setImageAttribute(attrs, 'src', srcForTag);
-      const widths = [480, 800, 1200, 1600];
-      const variants = widths.map((width) => {
-        const url = cloudinaryImageUrl(source, width);
-        return url ? url + ' ' + width + 'w' : null;
-      });
-      if (variants.every(Boolean)) {
-        attrs = setImageAttribute(attrs, 'srcset', variants.join(', '));
-        attrs = setImageAttribute(attrs, 'sizes', '(max-width: 760px) 100vw, 760px');
-      }
-    }
-
-    if (!/\s+loading\s*=/i.test(attrs)) attrs += ' loading="lazy"';
-    if (!/\s+decoding\s*=/i.test(attrs)) attrs += ' decoding="async"';
-    return '<img' + attrs + '>';
-  });
-}
 
 function tocFromHtml(html){
   const used=new Map();
