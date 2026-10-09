@@ -27,7 +27,7 @@ These notes are for maintainers. Keep them in the repository; do not surface the
 
 - Confirm unauthenticated requests to `/api/admin/fcmtv` return 401.
 - Confirm the public API omits drafts and malformed video IDs.
-- Confirm saving via admin validates and writes the data source, and published changes render on FCM TV.
+- Confirm saving via admin validates and writes the data source, and published changes render on the Academy page.
 - Confirm normal video playback works without JavaScript; with the IFrame API, confirm tab hide pauses playback and playback-rate changes are returned to 1x.
 - Confirm the quiz can be skipped, times out without blocking the player, and has no reward integration. Confirm all prompts render outside the iframe bounds.
 - Run `npm run build` and the repository's worker/editorial verification scripts before merging.
