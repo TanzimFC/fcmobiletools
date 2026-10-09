@@ -173,7 +173,8 @@ export async function accountApi(path, options = {}) {
   const { data } = await accountAuth.auth.getSession();
   const headers = new Headers(options.headers || {});
   headers.set('accept', 'application/json');
-  if (options.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
+  const isFormDataBody = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  if (options.body && !isFormDataBody && !headers.has('content-type')) headers.set('content-type', 'application/json');
   if (data.session?.access_token) headers.set('authorization', 'Bearer ' + data.session.access_token);
   return fetch(path, { ...options, headers, credentials: 'same-origin', cache: 'no-store' });
 }
