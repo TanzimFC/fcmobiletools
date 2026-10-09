@@ -278,7 +278,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
       outreachRemaining: 3
     });
   }
-  const [leagues, ownListings] = await Promise.all([
+  const [leagues, ownListings, recentConfirmations] = await Promise.all([
     publicLeagues(env, supabaseRest).catch(error => {
       console.error('[LEAGUE_DIRECTORY_READ]', error?.message);
       return [];
@@ -286,8 +286,15 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     supabaseRest(env,
       'league_listings?owner_account_id=eq.' + encodeURIComponent(account.id) +
       '&select=' + encodeURIComponent(LISTING_COLUMNS) + '&order=created_at.desc&limit=5'
+    ).catch(() => []),
+    supabaseRest(env,
+      'league_active_confirmations?account_id=eq.' + encodeURIComponent(account.id) +
+      '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) +
+      '&select=listing_id&limit=200'
     ).catch(() => [])
   ]);
+  const confirmedIds = new Set((recentConfirmations || []).map(row => row.listing_id));
+  const visibleLeagues = (leagues || []).map(row => ({ ...row, confirmedByMe: confirmedIds.has(row.id) }));
   const decoratedOwn = await decorateListings(env, ownListings || [], supabaseRest);
   const approvedOwner = (ownListings || []).some(row => row.status === 'approved' && row.recruiting_open);
   const usedToday = approvedOwner ? await outreachUsage(env, account.id, supabaseRest).catch(() => 0) : 0;
@@ -307,7 +314,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
       regionServer: gameProfile.region_server || '',
       discordHandle: gameProfile.discord_handle || ''
     },
-    leagues,
+    leagues: visibleLeagues,
     ownListings: decoratedOwn,
     approvedOwner,
     canFindPlayers: approvedOwner,
