@@ -10,6 +10,7 @@ await cp(path.join(root,'assets'),path.join(publicDir,'assets'),{recursive:true,
 await rm(path.join(publicDir,'trivia'),{recursive:true,force:true});
 await exec('node',['scripts/apply-admin-content.mjs'],{cwd:root,maxBuffer:EXEC_MAX_BUFFER});
 await exec('node',['scripts/prepare-legacy.mjs'],{cwd:root,maxBuffer:EXEC_MAX_BUFFER});
+await exec('node',['scripts/inject-admin-premium.mjs'],{cwd:root,maxBuffer:EXEC_MAX_BUFFER});
 const astroBin=path.join(root,'node_modules','.bin',process.platform==='win32'?'astro.cmd':'astro');
 await exec(astroBin,['build'],{cwd:root,maxBuffer:EXEC_MAX_BUFFER});
 await access(path.join(distDir,'_worker.js','index.js'));
