@@ -1211,6 +1211,19 @@ async function accountApi(request, env, url) {
     const title=String(input.title||'').trim().slice(0,160);
     const body=String(input.body||'').trim().slice(0,2000);
     const pageUrl=String(input.pageUrl||'').trim().slice(0,500);
+    let attachmentUrl='';
+    const rawAttachmentUrl=String(input.attachmentUrl||'').trim();
+    if(rawAttachmentUrl){
+      try{
+        const parsedAttachmentUrl=new URL(rawAttachmentUrl);
+        if(parsedAttachmentUrl.protocol!=='https:' || parsedAttachmentUrl.username || parsedAttachmentUrl.password || parsedAttachmentUrl.port || parsedAttachmentUrl.search || parsedAttachmentUrl.hash || !IMAGE_UPLOAD_HOST.test(parsedAttachmentUrl.hostname) || parsedAttachmentUrl.pathname.length<2){
+          return json({error:'The attached image link is invalid. Please upload the image again.'},400);
+        }
+        attachmentUrl=parsedAttachmentUrl.toString().slice(0,2048);
+      }catch{
+        return json({error:'The attached image link is invalid. Please upload the image again.'},400);
+      }
+    }
     if(title.length<5 || body.length<12) {
       return json({error:'Please provide a clear title and description (at least 12 characters).'},400);
     }
@@ -1221,7 +1234,7 @@ async function accountApi(request, env, url) {
         account_id:account.id,
         submission_type:submissionType,
         title,
-        body:pageUrl ? `[Page: ${pageUrl}]\n${body}` : body,
+        body:[pageUrl ? `[Page: ${pageUrl}]` : '',attachmentUrl ? `[Screenshot: ${attachmentUrl}]` : '',body].filter(Boolean).join('\n\n'),
         status:'submitted',
         reward_xp:0,
         reward_tokens:0
