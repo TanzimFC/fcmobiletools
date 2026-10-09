@@ -8,7 +8,7 @@ const LISTING_COLUMNS = [
   'id','owner_account_id','slug','name','description','logo_url','league_game_id',
   'region_server','preferred_languages','min_ovr','tournament_frequency',
   'tournament_sizes','discord_required','player_commitment','weekly_rewards',
-  'discord_invite_url','open_spots','recruiting_open','status','moderation_note',
+  'discord_invite_url','contact_discord','open_spots','recruiting_open','status','moderation_note',
   'last_kickoff_at','last_active_at','created_at','updated_at'
 ].join(',');
 
@@ -131,6 +131,7 @@ function validateListing(input) {
   const description = clean(input.description, 700);
   const logo = imageUrl(input.logoUrl || '');
   const invite = inviteUrl(input.discordInviteUrl || '');
+  const contactDiscord = clean(input.contactDiscord, 100);
   const frequency = clean(input.tournamentFrequency, 32);
   const sizes = safeArray(input.tournamentSizes, SIZES, 4);
   const languages = safeArray(input.preferredLanguages, LANGUAGES, 5);
@@ -165,6 +166,7 @@ function validateListing(input) {
     player_commitment: commitment,
     weekly_rewards: rewards || null,
     discord_invite_url: invite || null,
+    contact_discord: contactDiscord || null,
     open_spots: openSpots,
     recruiting_open: input.recruitingOpen !== false,
     updated_at: nowIso()
@@ -199,6 +201,7 @@ async function decorateListings(env, listings, supabaseRest) {
       playerCommitment: row.player_commitment,
       weeklyRewards: row.weekly_rewards || '',
       discordInviteUrl: row.discord_invite_url || null,
+      contactDiscord: row.contact_discord || '',
       openSpots: Number(row.open_spots || 0),
       recruitingOpen: Boolean(row.recruiting_open),
       status: row.status,
@@ -423,6 +426,7 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
       playerCommitment: input.playerCommitment ?? old.player_commitment,
       weeklyRewards: input.weeklyRewards ?? old.weekly_rewards,
       discordInviteUrl: input.discordInviteUrl ?? old.discord_invite_url,
+      contactDiscord: input.contactDiscord ?? old.contact_discord,
       openSpots: input.openSpots ?? old.open_spots,
       recruitingOpen: input.recruitingOpen ?? old.recruiting_open
     });
