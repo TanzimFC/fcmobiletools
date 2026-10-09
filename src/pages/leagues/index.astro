@@ -1036,6 +1036,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   $('#emptyListBtn').addEventListener('click', openListingEditor);
   $('#createListingBtn').addEventListener('click', openListingEditor);
   $('#cancelListing').addEventListener('click', () => { $('#listingEditor').hidden = true; $('#workspace').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('#teamShareList').addEventListener('click', event => {
+    const button = event.target.closest('[data-team-review]');
+    if (button) reviewTeamShare(button);
+  });
+
   $('#leagueList').addEventListener('click', async event => {
     const teamButton = event.target.closest('.fl-send-team');
     if (teamButton) {
