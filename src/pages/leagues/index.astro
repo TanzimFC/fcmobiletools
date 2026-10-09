@@ -546,7 +546,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const statusLabel = ({ approved: 'Live', pending: 'Awaiting review', rejected: 'Changes requested', paused: 'Paused', removed: 'Removed' })[row.status] || row.status;
     const nextKickoffAt = row.lastKickoffAt ? Date.parse(row.lastKickoffAt) + 6 * 60 * 60 * 1000 : 0;
     const kickCooldown = nextKickoffAt > Date.now();
-    const kickText = kickCooldown ? 'Next Kickoff available ' + esc(new Date(nextKickoffAt).toLocaleString()) : 'Ready for Kickoff';
+    const kickText = row.status !== 'approved'
+      ? 'Kickoff becomes available after approval'
+      : kickCooldown
+        ? 'Next Kickoff available ' + esc(new Date(nextKickoffAt).toLocaleString())
+        : 'Ready for Kickoff';
     return '<div class="fl-owner-listing">' + avatarMarkup(row.logoUrl, row.name, 'fl-club-logo') +
       '<div class="fl-owner-listing-main"><strong>' + esc(row.name) + ' <span class="fl-status-pill' + statusClass + '">' + esc(statusLabel) + '</span></strong>' +
       '<p>' + esc(row.regionServer) + ' · ' + esc(labelFrequency(row.tournamentFrequency)) + ' · ' + esc((row.tournamentSizes || []).join(', ')) + '<br>' + (row.moderationNote ? esc(row.moderationNote) : '') + '</p></div>' +
