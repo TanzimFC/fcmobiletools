@@ -425,13 +425,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   import { accountAuth } from '../../lib/account-client.js';
 
   const $ = (selector) => document.querySelector(selector);
-  const state = { session: null, account: null, profile: null, leagues: [], ownListings: [], players: [], canFindPlayers: false, outreachRemaining: 3, activeTab: 'leagues', revealed: new Map(), logoUrl: '', editingListingId: null };
+  const state = { session: null, account: null, profile: null, leagues: [], ownListings: [], players: [], teamShares: [], canFindPlayers: false, outreachRemaining: 3, activeTab: 'leagues', revealed: new Map(), logoUrl: '', editingListingId: null };
   const formMessage = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message || ''; node.style.color = error ? '#ffaaa1' : '#87e5b8'; } };
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const fmt = (value) => Number(value || 0).toLocaleString();
   const initials = (value) => String(value || 'FC').trim().split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase() || 'FC';
   const labelFrequency = (value) => ({ daily: 'Daily', most_days: 'Most days', several_weekly: 'Several times a week', weekly: 'Weekly', occasional: 'Occasional' })[value] || 'Schedule varies';
   const labelCommitment = (value) => ({ casual: 'Casual', regular: 'Regular play', competitive: 'Competitive' })[value] || 'Regular play';
+  const activeTeamScreenshot = () => state.profile?.team_screenshot_url && Date.parse(state.profile.team_screenshot_expires_at || '') > Date.now() ? state.profile.team_screenshot_url : '';
   const toast = (message, error = false) => {
     const node = $('#toast'); node.textContent = message; node.classList.toggle('error', error); node.classList.add('show');
     window.clearTimeout(toast.timer); toast.timer = window.setTimeout(() => node.classList.remove('show'), 4200);
@@ -469,6 +470,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     form.elements.inGameUsername.value = p.in_game_username || s.inGameUsername || '';
     form.elements.avatarUrl.value = p.avatar_url || '';
     $('#profileAvatarPreview').innerHTML = p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="">' : 'Player';
+    const teamShotActive = Boolean(p.team_screenshot_url && Date.parse(p.team_screenshot_expires_at || '') > Date.now());
+    form.elements.teamScreenshotUrl.value = teamShotActive ? p.team_screenshot_url : '';
+    form.elements.teamScreenshotNote.value = teamShotActive ? (p.team_screenshot_note || '') : '';
+    form.elements.showTeamToOwners.checked = teamShotActive && Boolean(p.team_screenshot_show_to_owners);
+    $('#teamScreenshotPreview').innerHTML = teamShotActive ? '<img src="' + esc(p.team_screenshot_url) + '" alt="">' : 'SQUAD';
+    $('#teamScreenshotExpiry').textContent = teamShotActive
+      ? 'Temporary image expires ' + new Date(p.team_screenshot_expires_at).toLocaleString() + '.'
+      : (p.team_screenshot_url ? 'Your previous screenshot has expired. Upload a fresh one.' : 'Or keep it private and send it to one league at a time.');
     form.elements.ovr.value = p.ovr || '';
     form.elements.regionServer.value = p.region_server || s.regionServer || '';
     form.elements.status.value = p.status || 'looking_for_league';
@@ -502,20 +511,27 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const sizes = (row.tournamentSizes || []).map(value => '<span class="fl-tag cyan">' + esc(value) + '</span>').join('');
     const ownerAvatar = row.owner?.avatarUrl ? '<img src="' + esc(row.owner.avatarUrl) + '" alt="" loading="lazy" onerror="this.remove()">' : '';
     const kickoff = row.lastKickoffAt && row.kickoffActive ? '<span class="fl-status-pill"><span class="fl-kickoff-icon">↗</span> KICKOFF ACTIVE</span>' : '<span class="fl-status-pill">RECRUITING</span>';
+    const demoBadge = row.isDemo ? '<span class="fl-status-pill demo">SAMPLE</span>' : '';
     const invite = row.discordInviteUrl ? '<a class="fl-small-btn external" href="' + esc(row.discordInviteUrl) + '" target="_blank" rel="noopener noreferrer">Apply / Join ↗</a>' : '';
     const contactDiscord = row.contactDiscord ? '<button class="fl-small-btn" data-contact-discord="' + esc(row.contactDiscord) + '" type="button">Copy Discord</button>' : '';
     const activeText = row.lastActiveAt ? 'Last confirmed ' + esc(new Date(row.lastActiveAt).toLocaleDateString()) : 'Awaiting first activity check';
     const activeLabel = row.confirmedByMe ? 'Confirmed · 24h' : 'League active';
+    const myShare = row.myTeamShare;
+    const activeShare = Boolean(myShare && Date.parse(myShare.expiresAt || '') > Date.now() && ['pending','accepted'].includes(myShare.status));
+    const shareLabel = activeShare ? (myShare.status === 'accepted' ? 'Team accepted' : 'Team sent · awaiting review') : 'Send team screenshot';
+    const sendTeamButton = state.profile?.status === 'looking_for_league'
+      ? '<button class="fl-small-btn fl-send-team" data-id="' + esc(row.id) + '" type="button" ' + (activeShare ? 'disabled' : '') + '>' + shareLabel + '</button>'
+      : '';
     return '<article class="fl-league-card" style="animation-delay:' + Math.min(index * 35, 210) + 'ms"><div class="fl-card-accent"></div><div class="fl-card-inner">' +
       '<div class="fl-card-top">' +
       '<div class="fl-club-logo">' + logo + '</div>' +
       '<div class="fl-card-ident"><h3>' + esc(row.name) + '</h3><div class="fl-card-sub"><span>' + esc(row.regionServer) + '</span><i class="fl-dot-sep"></i><span>' + fmt(row.openSpots) + ' spots open</span></div></div>' +
-      kickoff + '</div>' +
+      kickoff + demoBadge + '</div>' +
       '<p class="fl-card-desc">' + esc(row.description) + '</p>' +
       '<div class="fl-card-tags">' + sizes + languages + '</div>' +
       '<div class="fl-card-stats"><div><span>Minimum OVR</span><strong>' + fmt(row.minOvr) + '+ OVR</strong></div><div><span>Tournament rhythm</span><strong>' + esc(labelFrequency(row.tournamentFrequency)) + '</strong></div><div><span>Club culture</span><strong>' + esc(labelCommitment(row.playerCommitment)) + '</strong></div></div>' +
       '<div class="fl-card-bottom"><div class="fl-owner-line">' + ownerAvatar + '<span>Managed by ' + esc(row.owner?.displayName || 'FC Mobile player') + '</span></div><div class="fl-card-actions">' +
-      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + (row.confirmedByMe ? 'disabled' : '') + '>' + activeLabel + '</button>' + invite + contactDiscord +
+      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + (row.confirmedByMe ? 'disabled' : '') + '>' + activeLabel + '</button>' + sendTeamButton + invite + contactDiscord +
       '</div></div><div class="fl-confirm-note">' + activeText + (row.discordRequired ? ' · Discord required' : ' · Discord optional') + '</div>' +
       '</div></article>';
   }
