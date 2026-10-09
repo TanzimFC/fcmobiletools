@@ -122,7 +122,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
           </label>
         </div>
         <div id="ftvCategories" class="ftv-categories" role="group" aria-label="Filter videos">
-          <button class="ftv-filter is-active" type="button" data-category="all">All videos</button>
+          <button class="ftv-filter is-active" type="button" data-category="all">All lessons</button>
           {Array.from(new Set(publishedVideos.map((video) => video.category))).map((category) => (
             <button class="ftv-filter" type="button" data-category={category}>{category}</button>
           ))}
@@ -147,7 +147,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
         </div>
         <div id="ftvEmptyState" class="ftv-empty-state" hidden>
           <span class="ftv-empty-icon">FC</span>
-          <h3>No videos found</h3>
+          <h3>No lessons found</h3>
           <p>Try another search or choose a different topic.</p>
           <button type="button" id="ftvClearFilters">Clear filters</button>
         </div>
@@ -240,7 +240,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
   function cardMarkup(video) {
     return `<button type="button" class="ftv-video-card${video.id === selectedId ? ' is-selected' : ''}" data-play-video="${htmlEscape(video.id)}" aria-label="Play ${htmlEscape(video.title)}">
       <span class="ftv-card-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(video.youtubeId)}/hqdefault.jpg" alt="" loading="lazy" decoding="async"><span class="ftv-card-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg></span>${video.featured ? '<span class="ftv-featured-label">FEATURED</span>' : ''}</span>
-      <span class="ftv-card-copy"><span class="ftv-card-category">${htmlEscape(video.category || 'FC Mobile')}</span><strong>${htmlEscape(video.title)}</strong><span class="ftv-card-description">${htmlEscape(video.description || '')}</span><span class="ftv-card-footer"><span>Play video</span><span aria-hidden="true">↗</span></span></span>
+      <span class="ftv-card-copy"><span class="ftv-card-category">${htmlEscape(video.category || 'FC Mobile')}</span><strong>${htmlEscape(video.title)}</strong><span class="ftv-card-description">${htmlEscape(video.description || '')}</span><span class="ftv-card-footer"><span>Play lesson</span><span aria-hidden="true">↗</span></span></span>
     </button>`;
   }
 
@@ -248,7 +248,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
     const root = $('#ftvCategories');
     const categories = ['all', ...new Set(videos.map((video) => String(video.category || 'FC Mobile').trim()).filter(Boolean))];
     root.innerHTML = categories.map((category) => {
-      const label = category === 'all' ? 'All videos' : category;
+      const label = category === 'all' ? 'All lessons' : category;
       return `<button class="ftv-filter${activeCategory === category ? ' is-active' : ''}" type="button" data-category="${htmlEscape(category)}">${htmlEscape(label)}</button>`;
     }).join('');
   }
@@ -262,7 +262,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
       return matchesCategory && (!term || haystack.includes(term));
     });
     root.innerHTML = list.map(cardMarkup).join('');
-    $('#ftvResultsLabel').textContent = list.length + (list.length === 1 ? ' video' : ' videos');
+    $('#ftvResultsLabel').textContent = list.length + (list.length === 1 ? ' lesson' : ' lessons');
     $('#ftvVideoCount').textContent = String(videos.length);
     $('#ftvEmptyState').hidden = list.length > 0;
     updateSelectedDetails(selectedVideo());
@@ -520,7 +520,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
       } else {
         $('#ftvVideoGrid').innerHTML = '';
         $('#ftvSelectedTitle').textContent = 'No videos available right now';
-        $('#ftvSelectedDescription').textContent = 'Please check back later for new FC Mobile guides.';
+        $('#ftvSelectedDescription').textContent = 'Please check back later for new FC Mobile lessons.';
         $('#ftvPlayerStatus').textContent = 'Library empty';
       }
       if (data.subtitle) $('.ftv-hero-lede').textContent = data.subtitle;
