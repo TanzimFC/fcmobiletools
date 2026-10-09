@@ -126,6 +126,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <select id="regionFilter" aria-label="Filter region"><option value="">All regions</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option></select>
             <select id="frequencyFilter" aria-label="Filter tournament rhythm"><option value="">Any tournament rhythm</option><option value="daily">Daily</option><option value="most_days">Most days</option><option value="several_weekly">Several times a week</option><option value="weekly">Weekly</option><option value="occasional">Occasional</option></select>
             <select id="sizeFilter" aria-label="Filter tournament size"><option value="">Any size</option><option value="4v4">4v4</option><option value="8v8">8v8</option><option value="16v16">16v16</option><option value="32v32">32v32</option></select>
+            <select id="squadOvrFilter" aria-label="Filter by squad OVR"><option value="my" selected>My OVR</option><option value="">Any OVR</option><option value="110">110 OVR</option><option value="115">115 OVR</option><option value="120">120 OVR</option><option value="125">125 OVR</option><option value="130">130 OVR</option></select>
           </div>
           <div class="fl-results-meta"><span id="resultsLabel">Latest league listings</span><button type="button" class="fl-reset" id="clearFilters">Clear filters</button></div>
           <div id="leagueList" class="fl-league-grid">
@@ -277,7 +278,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   .fl-directory-head,.fl-owner-head{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:19px}
   .fl-directory-head h2,.fl-owner-head h2{margin:0 0 5px;font:700 clamp(24px,3.8vw,31px)/1.08 'Space Grotesk',Inter,sans-serif;letter-spacing:-.045em}
   .fl-directory-head p{max-width:620px}
-  .fl-filters{display:grid;grid-template-columns:minmax(240px,1.6fr) repeat(3,minmax(150px,.75fr));gap:9px;margin-bottom:15px}
+  .fl-filters{display:grid;grid-template-columns:minmax(220px,1.45fr) repeat(4,minmax(120px,.72fr));gap:9px;margin-bottom:15px}
+  .fl-player-filters{grid-template-columns:minmax(220px,1.5fr) repeat(3,minmax(120px,.75fr))}
   .fl-search{display:flex;align-items:center;gap:9px;min-width:0;border:1px solid #ffffff19;border-radius:11px;background:#09141e;padding-left:12px;transition:border-color .18s,box-shadow .18s}
   .fl-search svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:#7795a8;stroke-width:1.8;stroke-linecap:round}
   .fl-search input{padding-left:0;border:0;background:transparent;box-shadow:none!important}
@@ -484,10 +486,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const region = $('#regionFilter').value.toLowerCase();
     const frequency = $('#frequencyFilter').value;
     const size = $('#sizeFilter').value;
+    const squadOvr = $('#squadOvrFilter').value;
+    const maxOvr = squadOvr === 'my' ? Number(state.profile?.ovr || 0) : (squadOvr ? Number(squadOvr) : Infinity);
     const rows = state.leagues.filter(row => {
       const full = [row.name,row.description,row.regionServer,(row.preferredLanguages || []).join(' '),row.owner?.displayName].join(' ').toLowerCase();
       return (!q || full.includes(q)) && (!region || String(row.regionServer || '').toLowerCase() === region) &&
-        (!frequency || row.tournamentFrequency === frequency) && (!size || (row.tournamentSizes || []).includes(size));
+        (!frequency || row.tournamentFrequency === frequency) && (!size || (row.tournamentSizes || []).includes(size)) &&
+        row.minOvr <= maxOvr;
     });
     $('#leagueCount').textContent = fmt(state.leagues.length);
     $('#resultsLabel').textContent = rows.length + (rows.length === 1 ? ' league matches your filters' : ' leagues match your filters');
@@ -869,7 +874,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   $('#regionFilter').addEventListener('change', filterLeagues);
   $('#frequencyFilter').addEventListener('change', filterLeagues);
   $('#sizeFilter').addEventListener('change', filterLeagues);
-  $('#clearFilters').addEventListener('click', () => { $('#leagueSearch').value = ''; $('#regionFilter').value = ''; $('#frequencyFilter').value = ''; $('#sizeFilter').value = ''; filterLeagues(); });
+  $('#squadOvrFilter').addEventListener('change', filterLeagues);
+  $('#clearFilters').addEventListener('click', () => { $('#leagueSearch').value = ''; $('#regionFilter').value = ''; $('#frequencyFilter').value = ''; $('#sizeFilter').value = ''; $('#squadOvrFilter').value = 'my'; filterLeagues(); });
   $('#playerSearch').addEventListener('input', () => { window.clearTimeout(window.playerSearchTimer); window.playerSearchTimer = window.setTimeout(loadPlayers, 180); });
   $('#playerRegionFilter').addEventListener('change', loadPlayers);
   $('#playerSizeFilter').addEventListener('change', loadPlayers);
