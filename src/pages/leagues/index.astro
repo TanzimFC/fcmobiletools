@@ -625,7 +625,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const response = await fetch('/api/account/image-upload', { method: 'POST', headers: { authorization: 'Bearer ' + accessToken }, body, credentials: 'same-origin', cache: 'no-store' });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'Image upload failed. Please try again.');
-    const url = result.url || result.imageUrl || result.data?.url || result.data?.display_url || '';
+    const url = result.image?.url || result.url || result.imageUrl || result.data?.url || result.data?.display_url || '';
     if (!url) throw new Error('Image upload did not return a usable image URL.');
     if (previewNode) previewNode.innerHTML = '<img src="' + esc(url) + '" alt="">';
     if (hiddenInput) hiddenInput.value = url;
