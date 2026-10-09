@@ -1,8 +1,8 @@
 // FCM TV library. Managed from the admin workspace.
 // Keep this file JSON-compatible: the Worker validates edits before committing them.
 export const FCMTV_CONTENT = {
-  "title": "FCM TV",
-  "subtitle": "FC Mobile tutorials, captain picks and gameplay guides from TanzimFC.",
+  "title": "FC Mobile Training Academy",
+  "subtitle": "Lessons, masterclasses and practical FC Mobile knowledge from TanzimFC.",
   "videos": [
     {
       "id": "captain-tracker-best-pick",
