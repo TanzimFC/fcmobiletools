@@ -383,7 +383,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   import { accountAuth } from '../../lib/account-client.js';
 
   const $ = (selector) => document.querySelector(selector);
-  const state = { session: null, account: null, profile: null, leagues: [], ownListings: [], players: [], canFindPlayers: false, outreachRemaining: 3, activeTab: 'leagues', revealed: new Map(), logoUrl: '' };
+  const state = { session: null, account: null, profile: null, leagues: [], ownListings: [], players: [], canFindPlayers: false, outreachRemaining: 3, activeTab: 'leagues', revealed: new Map(), logoUrl: '', editingListingId: null };
   const formMessage = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message || ''; node.style.color = error ? '#ffaaa1' : '#87e5b8'; } };
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const fmt = (value) => Number(value || 0).toLocaleString();
@@ -545,6 +545,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       '<div class="fl-owner-listing-main"><strong>' + esc(row.name) + ' <span class="fl-status-pill' + statusClass + '">' + esc(statusLabel) + '</span></strong>' +
       '<p>' + esc(row.regionServer) + ' · ' + esc(labelFrequency(row.tournamentFrequency)) + ' · ' + esc((row.tournamentSizes || []).join(', ')) + '<br>' + (row.moderationNote ? esc(row.moderationNote) : '') + '</p></div>' +
       '<div class="fl-owner-listing-actions">' +
+      (row.status !== 'removed' ? '<button type="button" class="fl-small-btn fl-edit-listing" data-edit-listing="' + esc(row.id) + '">Edit details</button>' : '') +
       (canKickoff ? '<button type="button" class="fl-small-btn kickoff" id="kickoffBtn"><span class="fl-kickoff-icon">↗</span> Kickoff</button>' : '') +
       '<span class="fl-confirm-note">' + kickText + '</span>' +
       '</div></div>';
@@ -579,27 +580,38 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     showProfileSetup(state.profile, {});
   }
 
-  function openListingEditor() {
+  function openListingEditor(row = null) {
     if (state.profile?.status !== 'league_owner') {
       openLeagueProfile();
       toast('Set your status to League owner to submit a club listing.');
       return;
     }
+    state.editingListingId = row?.id || null;
     $('#workspace').hidden = true;
     $('#profileSetup').hidden = true;
     $('#listingEditor').hidden = false;
     $('#listingMessage').textContent = '';
-    $('#listingForm').reset();
-    $('#listingForm').elements.openSpots.value = '5';
-    $('#listingForm').elements.tournamentFrequency.value = 'daily';
-    $('#listingForm').elements.playerCommitment.value = 'regular';
-    $('#listingForm').elements.tournamentSizes[0].checked = true;
-    $('#listingForm').elements.preferredLanguages[0].checked = true;
-    $('#listingForm').elements.recruitingOpen.checked = true;
-    state.logoUrl = '';
-    $('#leagueLogoPreview').textContent = 'FC';
-    $('#leagueLogoPreview').innerHTML = 'FC';
-    $('#listingForm').elements.logoUrl.value = '';
+    const form = $('#listingForm');
+    form.reset();
+    form.elements.openSpots.value = String(row?.openSpots ?? 5);
+    form.elements.tournamentFrequency.value = row?.tournamentFrequency || 'daily';
+    form.elements.playerCommitment.value = row?.playerCommitment || 'regular';
+    form.elements.tournamentSizes.forEach(input => { input.checked = (row?.tournamentSizes || ['4v4']).includes(input.value); });
+    form.elements.preferredLanguages.forEach(input => { input.checked = (row?.preferredLanguages || ['English']).includes(input.value); });
+    form.elements.recruitingOpen.checked = row?.recruitingOpen !== false;
+    form.elements.name.value = row?.name || '';
+    form.elements.leagueGameId.value = row?.leagueGameId || '';
+    form.elements.description.value = row?.description || '';
+    form.elements.regionServer.value = row?.regionServer || '';
+    form.elements.minOvr.value = row?.minOvr ?? '';
+    form.elements.weeklyRewards.value = row?.weeklyRewards || '';
+    form.elements.discordInviteUrl.value = row?.discordInviteUrl || '';
+    form.elements.discordRequired.checked = Boolean(row?.discordRequired);
+    state.logoUrl = row?.logoUrl || '';
+    form.elements.logoUrl.value = state.logoUrl;
+    $('#leagueLogoPreview').innerHTML = state.logoUrl ? '<img src="' + esc(state.logoUrl) + '" alt="">' : 'FC';
+    $('#listingEditor').querySelector('.fl-editor-heading h2').textContent = row ? 'Update your league listing.' : 'Put your league on the board.';
+    $('#submitListingBtn').innerHTML = row ? 'Resubmit for approval <span aria-hidden="true">→</span>' : 'Submit for approval <span aria-hidden="true">→</span>';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -773,8 +785,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         discordRequired: form.elements.discordRequired.checked,
         recruitingOpen: form.elements.recruitingOpen.checked
       };
-      const result = await api('/api/leagues/listings', { method: 'POST', body: JSON.stringify(payload) });
-      toast('League submitted. It will appear after review.');
+      const endpoint = state.editingListingId
+        ? '/api/leagues/listings/' + encodeURIComponent(state.editingListingId) + '/update'
+        : '/api/leagues/listings';
+      const result = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+      state.editingListingId = null;
+      toast(result.message || (result.status === 'pending' ? 'Changes submitted for review.' : 'League submitted. It will appear after review.'));
       $('#listingEditor').hidden = true;
       $('#workspace').hidden = false;
       await refreshBootstrap();
