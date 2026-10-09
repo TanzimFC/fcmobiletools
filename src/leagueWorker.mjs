@@ -405,6 +405,15 @@ async function saveProfile(request, env, authContext, supabaseRest, json) {
         headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
         body: JSON.stringify([row])
       });
+    if (existing?.status === 'looking_for_league' && row.status !== 'looking_for_league') {
+      await supabaseRest(env,
+        'league_team_shares?player_account_id=eq.' + encodeURIComponent(account.id) +
+        '&status=in.(pending,accepted)&expires_at=gt.' + encodeURIComponent(nowIso()), {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'expired' })
+        }).catch(error => console.warn('[LEAGUE_TEAM_SHARE_EXPIRE]', error?.message || error));
+    }
     return json({ ok: true, profile: saved?.[0] || row });
   } catch (error) {
     console.error('[LEAGUE_PROFILE_SAVE]', error?.message);
