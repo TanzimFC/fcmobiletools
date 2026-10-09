@@ -296,7 +296,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
   const confirmedIds = new Set((recentConfirmations || []).map(row => row.listing_id));
   const visibleLeagues = (leagues || []).map(row => ({ ...row, confirmedByMe: confirmedIds.has(row.id) }));
   const decoratedOwn = await decorateListings(env, ownListings || [], supabaseRest);
-  const approvedOwner = (ownListings || []).some(row => row.status === 'approved' && row.recruiting_open);
+  const approvedOwner = profile.status === 'league_owner' && (ownListings || []).some(row => row.status === 'approved' && row.recruiting_open);
   const usedToday = approvedOwner ? await outreachUsage(env, account.id, supabaseRest).catch(() => 0) : 0;
   return json({
     account: {
@@ -477,6 +477,8 @@ async function confirmActive(request, env, authContext, match, supabaseRest, jso
 
 async function listPlayers(request, env, authContext, url, supabaseRest, json) {
   const { account } = authContext;
+  const profile = await loadLeagueProfile(env, account.id, supabaseRest);
+  if (profile?.status !== 'league_owner') return json({ error: 'Set your profile status to League owner before searching for players.' }, 403);
   const own = await supabaseRest(env,
     'league_listings?owner_account_id=eq.' + encodeURIComponent(account.id) +
     '&status=eq.approved&recruiting_open=eq.true&select=id&limit=1');
