@@ -415,6 +415,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   function setLoading(on) { $('#loadingState').hidden = !on; }
   function showGate() { $('#loginGate').hidden = false; $('#workspace').hidden = true; $('#profileSetup').hidden = true; $('#listingEditor').hidden = true; }
   function selectedValues(form, name) { return [...form.querySelectorAll('input[name="' + name + '"]:checked')].map(input => input.value); }
+  function hasOpenOwnerListing() { return (state.ownListings || []).some(row => ['pending','approved','paused'].includes(row.status)); }
+  function canCreateOwnerListing() { return state.profile?.status === 'league_owner' && !hasOpenOwnerListing(); }
   function setChecks(form, name, values) { const list = Array.isArray(values) ? values : []; form.querySelectorAll('input[name="' + name + '"]').forEach(input => { input.checked = list.includes(input.value); }); }
 
   function fillProfileForm(profile, suggested) {
@@ -490,8 +492,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     $('#leagueList').innerHTML = rows.map(leagueCard).join('');
     $('#leagueEmpty').hidden = rows.length > 0;
     $('#leagueList').hidden = rows.length === 0;
-    $('#openListingBtn').hidden = state.profile?.status !== 'league_owner';
-    $('#emptyListBtn').hidden = state.profile?.status !== 'league_owner';
+    $('#openListingBtn').hidden = !canCreateOwnerListing();
+    $('#emptyListBtn').hidden = !canCreateOwnerListing();
     $('#leagueList').querySelectorAll('.fl-active-confirm').forEach(button => button.addEventListener('click', () => confirmLeague(button)));
   }
 
@@ -514,7 +516,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     $('#ownerCreate').hidden = true;
     $('#ownerPending').hidden = true;
     $('#ownerListing').innerHTML = '';
-    $('#listLeagueBtn').hidden = state.profile?.status !== 'league_owner';
+    $('#listLeagueBtn').hidden = !canCreateOwnerListing();
     if (state.profile?.status !== 'league_owner') return;
     if (!list.length) { $('#ownerCreate').hidden = false; return; }
     const row = list[0];
@@ -523,29 +525,34 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       $('#ownerListing').innerHTML = ownerListingCard(row, false);
       return;
     }
-    $('#ownerListing').innerHTML = ownerListingCard(row, row.status === 'approved');
+    $('#ownerListing').innerHTML = ownerListingCard(row, row.status === 'approved' && row.recruitingOpen);
     if (row.status === 'rejected') {
       $('#ownerCreate').hidden = false;
       $('#ownerCreate').querySelector('strong').textContent = 'Your listing needs changes.';
       $('#ownerCreate').querySelector('p').textContent = row.moderationNote || 'Review the listing and submit it again.';
     }
-    if (row.status === 'paused' || row.status === 'removed') {
+    if (row.status === 'paused') {
+      $('#ownerCreate').hidden = true;
+    }
+    if (row.status === 'removed') {
       $('#ownerCreate').hidden = false;
-      $('#ownerCreate').querySelector('strong').textContent = 'Your listing is not live.';
-      $('#ownerCreate').querySelector('p').textContent = row.moderationNote || 'You can contact the review team if you need help.';
+      $('#ownerCreate').querySelector('strong').textContent = 'Your listing was removed.';
+      $('#ownerCreate').querySelector('p').textContent = row.moderationNote || 'You can submit a new listing when your club is ready.';
     }
   }
 
   function ownerListingCard(row, canKickoff) {
     const statusClass = row.status === 'approved' ? '' : ' ' + esc(row.status);
     const statusLabel = ({ approved: 'Live', pending: 'Awaiting review', rejected: 'Changes requested', paused: 'Paused', removed: 'Removed' })[row.status] || row.status;
-    const kickText = row.lastKickoffAt ? 'Next Kickoff available ' + esc(new Date(Date.parse(row.lastKickoffAt) + 6 * 60 * 60 * 1000).toLocaleString()) : 'Ready for its first Kickoff';
+    const nextKickoffAt = row.lastKickoffAt ? Date.parse(row.lastKickoffAt) + 6 * 60 * 60 * 1000 : 0;
+    const kickCooldown = nextKickoffAt > Date.now();
+    const kickText = kickCooldown ? 'Next Kickoff available ' + esc(new Date(nextKickoffAt).toLocaleString()) : 'Ready for Kickoff';
     return '<div class="fl-owner-listing">' + avatarMarkup(row.logoUrl, row.name, 'fl-club-logo') +
       '<div class="fl-owner-listing-main"><strong>' + esc(row.name) + ' <span class="fl-status-pill' + statusClass + '">' + esc(statusLabel) + '</span></strong>' +
       '<p>' + esc(row.regionServer) + ' · ' + esc(labelFrequency(row.tournamentFrequency)) + ' · ' + esc((row.tournamentSizes || []).join(', ')) + '<br>' + (row.moderationNote ? esc(row.moderationNote) : '') + '</p></div>' +
       '<div class="fl-owner-listing-actions">' +
       (row.status !== 'removed' ? '<button type="button" class="fl-small-btn fl-edit-listing" data-edit-listing="' + esc(row.id) + '">Edit details</button>' : '') +
-      (canKickoff ? '<button type="button" class="fl-small-btn kickoff" id="kickoffBtn"><span class="fl-kickoff-icon">↗</span> Kickoff</button>' : '') +
+      (canKickoff ? '<button type="button" class="fl-small-btn kickoff" id="kickoffBtn" ' + (kickCooldown ? 'disabled' : '') + '><span class="fl-kickoff-icon">↗</span> ' + (kickCooldown ? 'Kickoff cooling down' : 'Kickoff') + '</button>' : '') +
       '<span class="fl-confirm-note">' + kickText + '</span>' +
       '</div></div>';
   }
@@ -566,7 +573,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     $('#profileSetup').hidden = true;
     $('#workspace').hidden = false;
     $('#editProfileBtn').hidden = false;
-    $('#listLeagueBtn').hidden = data.profile.status !== 'league_owner';
+    $('#listLeagueBtn').hidden = !canCreateOwnerListing();
     $('#tabPlayers').hidden = !state.canFindPlayers;
     $('#outreachRemaining').textContent = String(state.outreachRemaining);
     filterLeagues();
