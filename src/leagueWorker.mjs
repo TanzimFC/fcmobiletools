@@ -1,7 +1,8 @@
 const PROFILE_COLUMNS = [
   'account_id','status','fc_mobile_uid','in_game_username','ovr','region_server',
   'preferred_languages','discord_handle','tournament_sizes','availability',
-  'play_style','notes','avatar_url','updated_at'
+  'play_style','notes','avatar_url','team_screenshot_url','team_screenshot_note',
+  'team_screenshot_show_to_owners','team_screenshot_expires_at','updated_at'
 ].join(',');
 
 const LISTING_COLUMNS = [
@@ -9,7 +10,7 @@ const LISTING_COLUMNS = [
   'region_server','preferred_languages','min_ovr','tournament_frequency',
   'tournament_sizes','discord_required','player_commitment','weekly_rewards',
   'discord_invite_url','contact_discord','open_spots','recruiting_open','status','moderation_note',
-  'last_kickoff_at','last_active_at','created_at','updated_at'
+  'last_kickoff_at','last_active_at','is_demo','created_at','updated_at'
 ].join(',');
 
 const ACTIVE_ACCOUNT_BLOCKS = new Set(['closed','fraud_removed','frozen','restricted']);
@@ -28,6 +29,13 @@ const safeArray = (value, allowed, max = 6) =>
   [...new Set((Array.isArray(value) ? value : []).map(x => clean(x, 40)).filter(x => allowed.has(x)))].slice(0, max);
 const utcStart = () => new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z').toISOString();
 const nowIso = () => new Date().toISOString();
+const TEAM_SCREENSHOT_DAYS = 7;
+const TEAM_SCREENSHOT_MS = TEAM_SCREENSHOT_DAYS * 24 * 60 * 60 * 1000;
+const screenshotIsActive = profile => Boolean(
+  profile?.team_screenshot_url &&
+  profile?.team_screenshot_expires_at &&
+  Date.parse(profile.team_screenshot_expires_at) > Date.now()
+);
 
 function imageUrl(value) {
   const raw = clean(value, 2048);
@@ -103,12 +111,17 @@ function validateProfile(input) {
   const notes = clean(input.notes, 500);
   const discordHandle = clean(input.discordHandle, 100);
   const avatar = imageUrl(input.avatarUrl || '');
+  const teamScreenshot = imageUrl(input.teamScreenshotUrl || '');
+  const teamScreenshotNote = clean(input.teamScreenshotNote, 300);
+  const showTeamToOwners = Boolean(input.showTeamToOwners);
   if (!PROFILE_STATUSES.has(status)) throw new Error('Choose a profile status.');
   if (uid.length < 3) throw new Error('Enter your FC Mobile UID.');
   if (inGameUsername.length < 2) throw new Error('Enter your in-game username.');
   if (ovr === null) throw new Error('Enter a valid OVR between 50 and 200.');
   if (region.length < 2) throw new Error('Choose your region or server.');
   if (input.avatarUrl && avatar === undefined) throw new Error('Upload your profile image again.');
+  if (input.teamScreenshotUrl && teamScreenshot === undefined) throw new Error('Upload your team screenshot again.');
+  if (showTeamToOwners && !teamScreenshot) throw new Error('Upload a team screenshot before showing it to league owners.');
   return {
     status,
     fc_mobile_uid: uid,
@@ -122,6 +135,9 @@ function validateProfile(input) {
     play_style: playStyle || null,
     notes: notes || null,
     avatar_url: avatar || null,
+    team_screenshot_url: teamScreenshot || null,
+    team_screenshot_note: teamScreenshotNote || null,
+    team_screenshot_show_to_owners: showTeamToOwners && Boolean(teamScreenshot),
     updated_at: nowIso()
   };
 }
@@ -208,6 +224,7 @@ async function decorateListings(env, listings, supabaseRest) {
       moderationNote: row.moderation_note || '',
       lastKickoffAt: row.last_kickoff_at || null,
       kickoffActive: kickoffAt > now - 6 * 60 * 60 * 1000,
+      isDemo: Boolean(row.is_demo),
       lastActiveAt: row.last_active_at || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -332,8 +349,31 @@ async function saveProfile(request, env, authContext, supabaseRest, json) {
   const { account } = authContext;
   const input = await request.json().catch(() => ({}));
   let row;
+  let existing;
   try {
-    row = validateProfile(input);
+    existing = await loadLeagueProfile(env, account.id, supabaseRest);
+    const normalizedInput = {
+      ...input,
+      teamScreenshotUrl: Object.prototype.hasOwnProperty.call(input, 'teamScreenshotUrl')
+        ? input.teamScreenshotUrl : (existing?.team_screenshot_url || ''),
+      teamScreenshotNote: Object.prototype.hasOwnProperty.call(input, 'teamScreenshotNote')
+        ? input.teamScreenshotNote : (existing?.team_screenshot_note || ''),
+      showTeamToOwners: Object.prototype.hasOwnProperty.call(input, 'showTeamToOwners')
+        ? input.showTeamToOwners : Boolean(existing?.team_screenshot_show_to_owners)
+    };
+    row = validateProfile(normalizedInput);
+    if (!row.team_screenshot_url) {
+      row.team_screenshot_expires_at = null;
+      row.team_screenshot_show_to_owners = false;
+    } else if (row.team_screenshot_url !== existing?.team_screenshot_url) {
+      row.team_screenshot_expires_at = new Date(Date.now() + TEAM_SCREENSHOT_MS).toISOString();
+    } else {
+      row.team_screenshot_expires_at = existing?.team_screenshot_expires_at || null;
+    }
+    if (row.team_screenshot_show_to_owners &&
+        (!row.team_screenshot_expires_at || Date.parse(row.team_screenshot_expires_at) <= Date.now())) {
+      return json({ error: 'Your team screenshot has expired. Upload a fresh one before showing it to owners.' }, 400);
+    }
   } catch (error) {
     return json({ error: error?.message || 'Check your league profile.' }, 400);
   }
@@ -511,6 +551,9 @@ async function listPlayers(request, env, authContext, url, supabaseRest, json) {
       availability: row.availability || '',
       playStyle: row.play_style || '',
       notes: row.notes || '',
+      teamScreenshotUrl: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? row.team_screenshot_url : null,
+      teamScreenshotNote: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? (row.team_screenshot_note || '') : '',
+      teamScreenshotExpiresAt: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? row.team_screenshot_expires_at : null,
       updatedAt: row.updated_at
     };
   });
