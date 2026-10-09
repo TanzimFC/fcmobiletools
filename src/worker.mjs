@@ -1801,6 +1801,113 @@ function validateFootball(content) {
   if(!content.videoEmbedUrl || !content.videoWatchUrl) { content.videoEmbedUrl=content.analysis.videoEmbedUrl; content.videoWatchUrl=content.analysis.videoWatchUrl; }
 }
 
+function parseFcmTv(text) {
+  const match=text.match(/export const FCMTV_CONTENT = ([\s\S]+);\s*$/);
+  if(!match) throw new Error('FCM TV data file has an unexpected format.');
+  const content=JSON.parse(match[1]);
+  if(!content || typeof content!=='object' || !Array.isArray(content.videos)) throw new Error('FCM TV data is incomplete.');
+  return content;
+}
+
+function fcmTvText(content) {
+  return '// FCM TV library. Managed from the admin workspace.\n// Keep this file JSON-compatible because the Worker validates edits before committing them.\nexport const FCMTV_CONTENT = '+JSON.stringify(content,null,2)+';\n';
+}
+
+function normalizeFcmTvYoutubeId(value) {
+  const raw=String(value||'').trim();
+  if(/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
+  try {
+    const url=new URL(raw);
+    const host=url.hostname.toLowerCase();
+    if(host==='youtu.be') {
+      const id=url.pathname.split('/').filter(Boolean)[0]||'';
+      return /^[A-Za-z0-9_-]{11}$/.test(id)?id:'';
+    }
+    if(['youtube.com','www.youtube.com','m.youtube.com','youtube-nocookie.com','www.youtube-nocookie.com'].includes(host)) {
+      let id='';
+      if(url.pathname==='/watch') id=url.searchParams.get('v')||'';
+      else {
+        const parts=url.pathname.split('/').filter(Boolean);
+        if(['embed','shorts','live'].includes(parts[0])) id=parts[1]||'';
+      }
+      return /^[A-Za-z0-9_-]{11}$/.test(id)?id:'';
+    }
+  } catch {}
+  return '';
+}
+
+function fcmTvSlug(value) {
+  return String(value||'video').normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,72)||'video';
+}
+
+function validateFcmTv(content) {
+  if(!content || typeof content!=='object' || !Array.isArray(content.videos)) throw new Error('FCM TV library is incomplete.');
+  if(content.videos.length>100) throw new Error('FCM TV can contain up to 100 videos.');
+  content.title=String(content.title||'FCM TV').trim().slice(0,80);
+  content.subtitle=String(content.subtitle||'FC Mobile tutorials, captain picks and gameplay guides from TanzimFC.').trim().slice(0,220);
+  if(!content.title) throw new Error('A library title is required.');
+  const ids=new Set();
+  let featuredSet=false;
+  content.videos=content.videos.map((raw,index)=>{
+    if(!raw || typeof raw!=='object') throw new Error('Video '+(index+1)+' is invalid.');
+    const video={...raw};
+    video.title=String(video.title||'').trim();
+    video.description=String(video.description||'').trim().slice(0,600);
+    if(!video.title || video.title.length>160) throw new Error('Video '+(index+1)+' needs a title of 1–160 characters.');
+    video.youtubeId=normalizeFcmTvYoutubeId(video.youtubeId);
+    if(!video.youtubeId) throw new Error('Video '+(index+1)+' needs a valid YouTube video ID or URL.');
+    video.category=String(video.category||'Tutorials').trim().slice(0,40)||'Tutorials';
+    let id=String(video.id||'').trim().toLowerCase();
+    if(!/^[a-z0-9][a-z0-9-]{1,79}$/.test(id)) id=fcmTvSlug(video.title);
+    const base=id;
+    let suffix=2;
+    while(ids.has(id)) { id=base.slice(0,68)+'-'+suffix; suffix+=1; }
+    ids.add(id);
+    video.id=id;
+    video.published=Boolean(video.published);
+    video.featured=Boolean(video.featured)&&video.published&&!featuredSet;
+    if(video.featured) featuredSet=true;
+    video.sortOrder=Number.isFinite(Number(video.sortOrder))?Math.max(0,Math.min(100000,Number(video.sortOrder))):(index+1)*10;
+    const quiz=video.quiz&&typeof video.quiz==='object'?video.quiz:{};
+    const question=String(quiz.question||'').trim().slice(0,200);
+    if(question) {
+      const choices=Array.isArray(quiz.choices)?quiz.choices.map(choice=>String(choice||'').trim().slice(0,120)): [];
+      const answerIndex=Number(quiz.answerIndex);
+      if(choices.length<2||choices.length>4||choices.some(choice=>!choice)) throw new Error('The optional quiz for "'+video.title+'" needs 2–4 complete answer choices.');
+      if(!Number.isInteger(answerIndex)||answerIndex<0||answerIndex>=choices.length) throw new Error('Choose the correct answer for "'+video.title+'".');
+      video.quiz={question,choices,answerIndex};
+    } else {
+      video.quiz={question:'',choices:[],answerIndex:0};
+    }
+    return video;
+  });
+  return content;
+}
+
+async function publicFcmTvApi(request,env,ctx,url) {
+  if(request.method!=='GET') return json({error:'Method not allowed.'},405,{allow:'GET'});
+  const cacheKey=new Request(new URL('/api/fcmtv',url.origin),{method:'GET'});
+  try {
+    const cached=await caches.default.match(cacheKey);
+    if(cached) return cached;
+  } catch {}
+  try {
+    const content=parseFcmTv((await repoFile(env,'src/data/fcmtv.js')).text);
+    const videos=content.videos
+      .filter(video=>video.published===true && /^[A-Za-z0-9_-]{11}$/.test(String(video.youtubeId||'')))
+      .sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0))
+      .map(video=>({
+        id:video.id,title:video.title,description:video.description,youtubeId:video.youtubeId,
+        category:video.category,featured:Boolean(video.featured),sortOrder:Number(video.sortOrder||0),quiz:video.quiz||null
+      }));
+    const response=json({title:content.title||'FCM TV',subtitle:content.subtitle||'',videos},200,{'cache-control':'public, max-age=60'});
+    try { ctx?.waitUntil?.(caches.default.put(cacheKey,response.clone()).catch(()=>{})); } catch {}
+    return response;
+  } catch(error) {
+    return json({error:error?.message||'Unable to load FCM TV.'},500,{'cache-control':'no-store'});
+  }
+}
+
 function parseRankUp(text) {
   const m=text.match(/export const RANKS = (\[[\s\S]*?\]);\s*export const RANK_COSTS = (\[[\s\S]*?\]);/);
   if(!m) throw new Error('Rank Up data file has an unexpected format.');
@@ -2249,6 +2356,17 @@ async function api(request,env,path) {
       const commitSha=await writeRepoFile(env,'src/data/fcMobile27.js',fcMobile27Text(content),file.sha,'admin: update FC Mobile 27 APK release');
       return json({ok:true,commitSha,content});
     }
+    if(path === '/fcmtv' && request.method === 'GET') {
+      return json({content:validateFcmTv(parseFcmTv((await repoFile(env,'src/data/fcmtv.js')).text))});
+    }
+    if(path === '/fcmtv' && request.method === 'POST') {
+      const input=await request.json().catch(()=>({}));
+      const updated=validateFcmTv(input.content);
+      const file=await repoFile(env,'src/data/fcmtv.js');
+      const commitSha=await writeRepoFile(env,'src/data/fcmtv.js',fcmTvText(updated),file.sha,'admin: update FCM TV library');
+      try { await caches.default.delete(new Request(new URL('/api/fcmtv',new URL(request.url).origin))); } catch {}
+      return json({ok:true,commitSha,content:updated});
+    }
     if(path === '/football' && request.method === 'GET') return json({content:parseFootball((await repoFile(env,'src/data/footballCentre.js')).text)});
     if(path === '/football' && request.method === 'POST') {
       const {content}=await request.json();
@@ -2493,6 +2611,7 @@ export function createExports(manifest) {
   const publicLeaderboardResponse=await publicLeaderboardApi(request,env,url);
   if(publicLeaderboardResponse) return publicLeaderboardResponse;
   if(url.pathname==='/api/captain-votes') return captainVotesApi(request,env,url);
+  if(url.pathname === '/api/fcmtv') return publicFcmTvApi(request,env,ctx,url);
   if(url.pathname.startsWith('/api/account/')) return accountApi(request,env,url);
 
   if(

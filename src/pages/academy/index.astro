@@ -1,0 +1,750 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { FCMTV_CONTENT } from '../../data/fcmtv.js';
+
+const publishedVideos = FCMTV_CONTENT.videos
+  .filter((video) => video.published)
+  .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+const featuredVideo = publishedVideos.find((video) => video.featured) ?? publishedVideos[0];
+const initialVideoId = featuredVideo?.youtubeId || 'eQYKSr71LsM';
+const thumbnail = (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c');
+---
+<BaseLayout
+  title="FC Mobile Training Academy | FC Mobile Lessons & Masterclasses"
+  description="Learn FC Mobile with gameplay lessons, captain-pick masterclasses and practical guides from TanzimFC."
+  section="FC Mobile Academy"
+>
+  <main class="fcmtv-page">
+    <div class="fcmtv-ambient" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="fcmtv-wrap">
+      <section class="ftv-hero">
+        <div class="ftv-hero-copy">
+          <div class="ftv-kicker"><span class="ftv-live-dot"></span> FC MOBILE TRAINING ACADEMY</div>
+          <h1>FC Mobile <span>Academy</span></h1>
+          <p class="ftv-hero-lede">Lessons, masterclasses and practical FC Mobile knowledge from TanzimFC.</p>
+          <div class="ftv-hero-tags">
+            <span><b>01</b> Lessons</span>
+            <span><b>02</b> Masterclasses</span>
+            <span><b>03</b> Knowledge checks</span>
+          </div>
+          <a class="ftv-channel-link" href="https://www.youtube.com/@tanzimfc" target="_blank" rel="noopener noreferrer">
+            More lessons from TanzimFC <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+        <div class="ftv-hero-visual" aria-hidden="true">
+          <div class="ftv-orbit ftv-orbit-one"></div>
+          <div class="ftv-orbit ftv-orbit-two"></div>
+          <div class="ftv-pitch-lines"></div>
+          <div class="ftv-screen-art">
+            <div class="ftv-screen-top"><span></span><span></span><span></span><small>FCM / ACADEMY</small></div>
+            <div class="ftv-screen-play"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></div>
+            <div class="ftv-screen-foot"><span>GAMEPLAY</span><b>ON AIR</b></div>
+          </div>
+          <div class="ftv-float-chip ftv-float-chip-top"><span>FC</span><b>GAME KNOWLEDGE</b></div>
+          <div class="ftv-float-chip ftv-float-chip-bottom"><i></i><span>New guides</span></div>
+        </div>
+      </section>
+
+      <section class="ftv-watch-layout" aria-label="Featured lesson">
+        <article class="ftv-player-card">
+          <div class="ftv-player-heading">
+            <div class="ftv-player-eyebrow"><span class="ftv-equalizer"><i></i><i></i><i></i><i></i></span> NOW PLAYING</div>
+            <span id="ftvPlayerStatus" class="ftv-player-status">Ready to play</span>
+          </div>
+          <div class="ftv-player-stage" id="ftvPlayerStage">
+            <iframe
+              id="ytPlayer"
+              data-video-id={initialVideoId}
+              src={`https://www.youtube.com/embed/${initialVideoId}?enablejsapi=1&origin=${Astro.url.origin}&controls=1&rel=0&playsinline=1`}
+              title={featuredVideo?.title || 'FC Mobile video on FC Mobile Academy'}
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <div class="ftv-player-info">
+            <div class="ftv-selected-meta"><span id="ftvSelectedCategory">{featuredVideo?.category || 'FC Mobile'}</span><span class="ftv-meta-separator">/</span><span>ACADEMY</span></div>
+            <h2 id="ftvSelectedTitle">{featuredVideo?.title || 'FC Mobile guides'}</h2>
+            <p id="ftvSelectedDescription">{featuredVideo?.description || 'Explore the latest FC Mobile guides and gameplay.'}</p>
+            <div class="ftv-player-actions">
+              <a id="ftvOpenYoutube" href={`https://www.youtube.com/watch?v=${initialVideoId}`} target="_blank" rel="noopener noreferrer">Open on YouTube <span aria-hidden="true">↗</span></a>
+              <span class="ftv-player-hint">Choose a lesson to play next</span>
+            </div>
+          </div>
+          <p id="ftvPlayerNotice" class="ftv-player-notice" role="status" hidden></p>
+        <section id="ftvFocusPrompt" class="ftv-focus-prompt" hidden role="status" aria-live="polite">
+          <span class="ftv-focus-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"></path><path d="M12 9v4M12 16.5h.01"></path></svg></span>
+          <div class="ftv-focus-copy">
+            <span class="ftv-focus-kicker" id="ftvFocusKicker">SESSION NOTICE</span>
+            <h3 id="ftvFocusTitle">Lesson Paused</h3>
+            <p id="ftvFocusMessage">Please keep focus on the active training screen. Press Play when you return.</p>
+          </div>
+          <button type="button" id="ftvFocusDismiss" aria-label="Dismiss lesson notice">Got it</button>
+        </section>
+        <section class="ftv-quiz-panel" id="ftvQuizModal" hidden aria-hidden="true" aria-labelledby="ftvQuizTitle">
+          <div class="ftv-quiz-dialog">
+            <button type="button" class="ftv-quiz-close" data-quiz-close aria-label="Close knowledge check">×</button>
+            <div class="ftv-quiz-kicker"><span>ACADEMY</span><span class="ftv-quiz-clock">Available for <b id="ftvQuizTimer">15</b>s</span></div>
+            <div class="ftv-quiz-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z"></path><path d="m8 12 2.5 2.5L16.5 9"></path></svg></div>
+            <h2 id="ftvQuizTitle">Knowledge check</h2>
+            <p id="ftvQuizQuestion" class="ftv-quiz-question"></p>
+            <div id="ftvQuizOptions" class="ftv-quiz-options"></div>
+            <p id="ftvQuizFeedback" class="ftv-quiz-feedback" aria-live="polite"></p>
+            <button type="button" class="ftv-quiz-skip" data-quiz-close>Maybe later</button>
+          </div>
+        </section>
+        </article>
+
+        <aside class="ftv-side-panel">
+          <div class="ftv-side-art"><div class="ftv-side-ring"></div><span class="ftv-side-mark">FC<span>TV</span></span></div>
+          <span class="ftv-side-label">YOUR TRAINING LIBRARY</span>
+          <h2>Build your game knowledge.</h2>
+          <p>Catch a captain breakdown, learn a better routine or get the context behind the latest in-game updates.</p>
+          <div class="ftv-side-divider"></div>
+          <div class="ftv-side-stat"><span>Lessons in the library</span><strong id="ftvVideoCount">{publishedVideos.length}</strong></div>
+          <a class="ftv-side-cta" href="#ftv-library">Browse lessons <span aria-hidden="true">↓</span></a>
+        </aside>
+      </section>
+
+      <section class="ftv-library" id="ftv-library">
+        <div class="ftv-library-heading">
+          <div>
+            <div class="ftv-section-kicker"><span></span> THE LESSON LIBRARY</div>
+            <h2>Choose your next lesson.</h2>
+            <p>Find a guide, masterclass or game update.</p>
+          </div>
+          <label class="ftv-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+            <input id="ftvSearch" type="search" placeholder="Search lessons..." autocomplete="off" aria-label="Search Academy lessons" />
+            <kbd>/</kbd>
+          </label>
+        </div>
+        <div id="ftvCategories" class="ftv-categories" role="group" aria-label="Filter lessons">
+          <button class="ftv-filter is-active" type="button" data-category="all">All lessons</button>
+          {Array.from(new Set(publishedVideos.map((video) => video.category))).map((category) => (
+            <button class="ftv-filter" type="button" data-category={category}>{category}</button>
+          ))}
+        </div>
+        <div class="ftv-results-row"><span id="ftvResultsLabel">{publishedVideos.length} {publishedVideos.length === 1 ? 'lesson' : 'lessons'}</span><span>Lessons curated by TanzimFC</span></div>
+        <div class="ftv-video-grid" id="ftvVideoGrid">
+          {publishedVideos.map((video) => (
+            <button type="button" class="ftv-video-card" data-play-video={video.id} aria-label={`Play ${video.title}`}>
+              <span class="ftv-card-thumb">
+                <img src={thumbnail(video.youtubeId)} alt="" loading="lazy" decoding="async" />
+                <span class="ftv-card-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg></span>
+                {video.featured ? <span class="ftv-featured-label">FEATURED</span> : null}
+              </span>
+              <span class="ftv-card-copy">
+                <span class="ftv-card-category">{video.category}</span>
+                <strong>{video.title}</strong>
+                <span class="ftv-card-description">{video.description}</span>
+                <span class="ftv-card-footer"><span>Play lesson</span><span aria-hidden="true">↗</span></span>
+              </span>
+            </button>
+          ))}
+        </div>
+        <div id="ftvEmptyState" class="ftv-empty-state" hidden>
+          <span class="ftv-empty-icon">FC</span>
+          <h3>No lessons found</h3>
+          <p>Try another search or choose a different topic.</p>
+          <button type="button" id="ftvClearFilters">Clear filters</button>
+        </div>
+      </section>
+      <div class="ftv-bottom-note"><span class="ftv-bottom-icon">▶</span><p>Lessons play through the official YouTube player. Playback availability may vary by video or device.</p></div>
+    </div>
+
+    <script type="application/json" id="fcmtvData" set:html={safeInitialJson}></script>
+  </main>
+</BaseLayout>
+
+<script>
+  const jsonSeed = document.getElementById('fcmtvData');
+  let videos = [];
+  try { videos = JSON.parse(jsonSeed?.textContent || '[]'); } catch { videos = []; }
+  let selectedId = videos.find((video) => video.featured)?.id || videos[0]?.id || '';
+  let player = null;
+  let playerReady = false;
+  let currentYoutubeId = document.getElementById('ytPlayer')?.dataset.videoId || '';
+  let pendingYoutubeId = '';
+  let pendingPlay = false;
+  let activeCategory = 'all';
+  let quizInterval = 0;
+  let quizSeconds = 15;
+  let tabSwitchCount = 0;
+  let lessonStarted = false;
+  let wasPlayingBeforeHide = false;
+  let apiInitializationAttempted = false;
+  let rateGuardTimer = 0;
+
+  const $ = (selector) => document.querySelector(selector);
+  const htmlEscape = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
+  const selectedVideo = () => videos.find((video) => video.id === selectedId) || videos[0] || null;
+  const youtubeIdFrom = (value) => {
+    const raw = String(value || '').trim();
+    if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
+    try {
+      const url = new URL(raw);
+      if (url.hostname === 'youtu.be') return url.pathname.split('/').filter(Boolean)[0] || '';
+      if (/(^|\.)youtube(?:-nocookie)?\.com$/i.test(url.hostname)) {
+        if (url.pathname === '/watch') return url.searchParams.get('v') || '';
+        const pieces = url.pathname.split('/').filter(Boolean);
+        if (['embed', 'shorts', 'live'].includes(pieces[0])) return pieces[1] || '';
+      }
+    } catch {}
+    return '';
+  };
+  const watchUrl = (video) => 'https://www.youtube.com/watch?v=' + encodeURIComponent(video.youtubeId);
+  const embedUrl = (id) => 'https://www.youtube.com/embed/' + encodeURIComponent(id) + '?enablejsapi=1&origin=' + encodeURIComponent(location.origin) + '&controls=1&rel=0&playsinline=1';
+
+  function showNotice(message) {
+    const notice = $('#ftvPlayerNotice');
+    if (!notice) return;
+    notice.textContent = message;
+    notice.hidden = false;
+    notice.classList.remove('ftv-notice-in');
+    void notice.offsetWidth;
+    notice.classList.add('ftv-notice-in');
+  }
+
+  function showFocusPrompt(title, message, level = 'warning') {
+    const prompt = $('#ftvFocusPrompt');
+    if (!prompt) return;
+    $('#ftvFocusTitle').textContent = title;
+    $('#ftvFocusMessage').textContent = message;
+    $('#ftvFocusKicker').textContent = level === 'reset' ? 'SESSION RESTARTED' : 'SESSION NOTICE';
+    prompt.dataset.level = level;
+    prompt.hidden = false;
+    prompt.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest'});
+  }
+
+  function closeFocusPrompt() {
+    const prompt = $('#ftvFocusPrompt');
+    if (prompt) prompt.hidden = true;
+  }
+
+  function stopRateGuard() {
+    if (rateGuardTimer) window.clearInterval(rateGuardTimer);
+    rateGuardTimer = 0;
+  }
+
+  function startRateGuard() {
+    stopRateGuard();
+    rateGuardTimer = window.setInterval(() => {
+      if (!playerReady || !player || document.hidden) return;
+      try {
+        if (player.getPlayerState() !== window.YT.PlayerState.PLAYING) return;
+        if (Number(player.getPlaybackRate()) !== 1.0) {
+          player.setPlaybackRate(1.0);
+          showNotice('Playback speed has been returned to normal (1×).');
+        }
+      } catch {}
+    }, 750);
+  }
+
+  function updateSelectedDetails(video) {
+    if (!video) return;
+    $('#ftvSelectedCategory').textContent = video.category || 'FC Mobile';
+    $('#ftvSelectedTitle').textContent = video.title;
+    $('#ftvSelectedDescription').textContent = video.description || '';
+    $('#ftvOpenYoutube').href = watchUrl(video);
+    const frame = $('#ytPlayer');
+    if (frame) frame.title = video.title;
+    document.querySelectorAll('[data-play-video]').forEach((button) => {
+      button.classList.toggle('is-selected', button.dataset.playVideo === video.id);
+    });
+  }
+
+  function cardMarkup(video) {
+    return `<button type="button" class="ftv-video-card${video.id === selectedId ? ' is-selected' : ''}" data-play-video="${htmlEscape(video.id)}" aria-label="Play ${htmlEscape(video.title)}">
+      <span class="ftv-card-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(video.youtubeId)}/hqdefault.jpg" alt="" loading="lazy" decoding="async"><span class="ftv-card-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg></span>${video.featured ? '<span class="ftv-featured-label">FEATURED</span>' : ''}</span>
+      <span class="ftv-card-copy"><span class="ftv-card-category">${htmlEscape(video.category || 'FC Mobile')}</span><strong>${htmlEscape(video.title)}</strong><span class="ftv-card-description">${htmlEscape(video.description || '')}</span><span class="ftv-card-footer"><span>Play lesson</span><span aria-hidden="true">↗</span></span></span>
+    </button>`;
+  }
+
+  function renderCategories() {
+    const root = $('#ftvCategories');
+    const categories = ['all', ...new Set(videos.map((video) => String(video.category || 'FC Mobile').trim()).filter(Boolean))];
+    root.innerHTML = categories.map((category) => {
+      const label = category === 'all' ? 'All lessons' : category;
+      return `<button class="ftv-filter${activeCategory === category ? ' is-active' : ''}" type="button" data-category="${htmlEscape(category)}">${htmlEscape(label)}</button>`;
+    }).join('');
+  }
+
+  function renderVideoGrid() {
+    const root = $('#ftvVideoGrid');
+    const term = String($('#ftvSearch')?.value || '').trim().toLowerCase();
+    const list = videos.filter((video) => {
+      const matchesCategory = activeCategory === 'all' || video.category === activeCategory;
+      const haystack = [video.title, video.description, video.category].join(' ').toLowerCase();
+      return matchesCategory && (!term || haystack.includes(term));
+    });
+    root.innerHTML = list.map(cardMarkup).join('');
+    $('#ftvResultsLabel').textContent = list.length + (list.length === 1 ? ' lesson' : ' lessons');
+    $('#ftvVideoCount').textContent = String(videos.length);
+    $('#ftvEmptyState').hidden = list.length > 0;
+    updateSelectedDetails(selectedVideo());
+  }
+
+  function closeQuiz() {
+    const modal = $('#ftvQuizModal');
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    if (quizInterval) window.clearInterval(quizInterval);
+    quizInterval = 0;
+  }
+
+  function showQuiz(video) {
+    closeQuiz();
+    const quiz = video?.quiz;
+    if (!quiz?.question || !Array.isArray(quiz.choices) || quiz.choices.length < 2) return;
+    quizSeconds = 15;
+    $('#ftvQuizTimer').textContent = String(quizSeconds);
+    $('#ftvQuizQuestion').textContent = quiz.question;
+    $('#ftvQuizFeedback').textContent = '';
+    $('#ftvQuizOptions').innerHTML = quiz.choices.map((choice, index) =>
+      `<button type="button" class="ftv-quiz-option" data-quiz-answer="${index}">${htmlEscape(choice)}</button>`
+    ).join('');
+    const modal = $('#ftvQuizModal');
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    quizInterval = window.setInterval(() => {
+      quizSeconds -= 1;
+      $('#ftvQuizTimer').textContent = String(Math.max(0, quizSeconds));
+      if (quizSeconds <= 0) closeQuiz();
+    }, 1000);
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target.closest('#ftvFocusDismiss')) {
+      closeFocusPrompt();
+      return;
+    }
+    const playButton = target.closest('[data-play-video]');
+    if (playButton) {
+      const video = videos.find((item) => item.id === playButton.dataset.playVideo);
+      if (video) playVideo(video);
+      return;
+    }
+    const categoryButton = target.closest('[data-category]');
+    if (categoryButton && categoryButton.closest('#ftvCategories')) {
+      activeCategory = categoryButton.dataset.category || 'all';
+      renderCategories();
+      renderVideoGrid();
+      return;
+    }
+    if (target.closest('[data-quiz-close]')) {
+      closeQuiz();
+      return;
+    }
+    const answerButton = target.closest('[data-quiz-answer]');
+    if (answerButton) {
+      const video = selectedVideo();
+      const correct = Number(answerButton.dataset.quizAnswer) === Number(video?.quiz?.answerIndex);
+      $('#ftvQuizOptions').querySelectorAll('button').forEach((button) => {
+        button.disabled = true;
+        const answer = Number(button.dataset.quizAnswer);
+        if (answer === Number(video?.quiz?.answerIndex)) button.classList.add('is-correct');
+        else if (button === answerButton && !correct) button.classList.add('is-wrong');
+      });
+      $('#ftvQuizFeedback').textContent = correct ? 'That’s right. Nice work.' : 'Not quite. The highlighted answer is correct.';
+      return;
+    }
+    if (target.closest('#ftvClearFilters')) {
+      activeCategory = 'all';
+      $('#ftvSearch').value = '';
+      renderCategories();
+      renderVideoGrid();
+    }
+  });
+
+  function playVideo(video) {
+    if (!video?.youtubeId) return;
+    closeQuiz();
+    const stage = $('#ftvPlayerStage');
+    if (stage) {
+      const smoothScroll = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      stage.scrollIntoView({behavior: smoothScroll ? 'smooth' : 'auto', block: 'center'});
+    }
+    const changed = selectedId !== video.id;
+    if (changed) { tabSwitchCount = 0; lessonStarted = false; }
+    closeFocusPrompt();
+    selectedId = video.id;
+    updateSelectedDetails(video);
+    $('#ftvPlayerStatus').textContent = 'Ready to play';
+    if (playerReady && player) {
+      if (changed || currentYoutubeId !== video.youtubeId) {
+        currentYoutubeId = video.youtubeId;
+        player.loadVideoById({ videoId: video.youtubeId });
+      } else {
+        player.playVideo();
+      }
+    } else {
+      pendingYoutubeId = video.youtubeId;
+      pendingPlay = true;
+      const frame = $('#ytPlayer');
+      if (frame) frame.src = embedUrl(video.youtubeId);
+    }
+  }
+
+  function initYouTubePlayer() {
+    if (apiInitializationAttempted || !window.YT?.Player) return;
+    apiInitializationAttempted = true;
+    const startVideo = selectedVideo();
+    const frame = $('#ytPlayer');
+    if (!frame || !startVideo) return;
+    currentYoutubeId = startVideo.youtubeId;
+    player = new window.YT.Player('ytPlayer', {
+      videoId: startVideo.youtubeId,
+      playerVars: {
+        autoplay: 0,
+        controls: 1,
+        rel: 0,
+        playsinline: 1,
+        enablejsapi: 1,
+        origin: location.origin
+      },
+      events: {
+        onReady: (event) => {
+          player = event.target;
+          playerReady = true;
+          try { player.setPlaybackRate(1); } catch {}
+          const pending = pendingYoutubeId;
+          const shouldPlay = pendingPlay && !document.hidden;
+          pendingYoutubeId = '';
+          pendingPlay = false;
+          if (pending && pending !== currentYoutubeId) {
+            currentYoutubeId = pending;
+            if (shouldPlay) player.loadVideoById({ videoId: pending });
+            else player.cueVideoById({ videoId: pending });
+          } else {
+            $('#ftvPlayerStatus').textContent = 'Ready to play';
+            if (shouldPlay) player.playVideo();
+          }
+        },
+        onStateChange: (event) => {
+          const state = window.YT.PlayerState;
+          if (event.data === state.PLAYING) {
+            lessonStarted = true;
+            closeFocusPrompt();
+            startRateGuard();
+            $('#ftvPlayerStatus').textContent = 'Now playing';
+          } else if (event.data === state.PAUSED) {
+            stopRateGuard();
+            $('#ftvPlayerStatus').textContent = 'Paused';
+          } else if (event.data === state.ENDED) {
+            lessonStarted = false;
+            stopRateGuard();
+            $('#ftvPlayerStatus').textContent = 'Finished';
+            showQuiz(selectedVideo());
+          } else if (event.data === state.BUFFERING) {
+            stopRateGuard();
+            $('#ftvPlayerStatus').textContent = 'Loading video';
+          } else if (event.data === state.CUED) {
+            stopRateGuard();
+            $('#ftvPlayerStatus').textContent = 'Ready to play';
+          }
+        },
+        onPlaybackRateChange: (event) => {
+          if (Number(event.data) !== 1) {
+            try { player.setPlaybackRate(1.0); } catch {}
+            showNotice('Playback speed has been returned to normal (1×).');
+          }
+        },
+        onError: () => {
+          $('#ftvPlayerStatus').textContent = 'Unavailable';
+          showNotice('This video is unavailable here. Try opening it directly on YouTube.');
+        }
+      }
+    });
+  }
+
+  function loadYouTubeApi() {
+    if (window.YT?.Player) {
+      initYouTubePlayer();
+      return;
+    }
+    const previousReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof previousReady === 'function') previousReady();
+      initYouTubePlayer();
+    };
+    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.async = true;
+      script.onerror = () => { $('#ftvPlayerStatus').textContent = 'Ready in YouTube player'; };
+      document.head.appendChild(script);
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (!playerReady || !player || !lessonStarted) return;
+      const playerState = player.getPlayerState();
+      const states = window.YT?.PlayerState;
+      if (playerState !== states?.PLAYING && playerState !== states?.PAUSED) return;
+      wasPlayingBeforeHide = playerState === states.PLAYING;
+      tabSwitchCount += 1;
+      if (tabSwitchCount === 1) {
+        if (wasPlayingBeforeHide) player.pauseVideo();
+        showFocusPrompt('Lesson Paused', 'Please keep focus on the active training screen. The lesson is paused; press Play when you return.', 'warning');
+      } else {
+        try { player.seekTo(0, true); } catch {}
+        player.stopVideo();
+        lessonStarted = false;
+        $('#ftvPlayerStatus').textContent = 'Reset to 0:00';
+        showFocusPrompt('Lesson Reset', 'The lesson has been stopped and reset to 0:00. Press Play to start again.', 'reset');
+      }
+    } else {
+      if (wasPlayingBeforeHide) {
+        wasPlayingBeforeHide = false;
+        $('#ftvPlayerStatus').textContent = tabSwitchCount >= 2 ? 'Reset to 0:00' : 'Paused';
+      }
+      const prompt = $('#ftvFocusPrompt');
+      if (prompt && !prompt.hidden) {
+        prompt.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'nearest'
+        });
+      }
+    }
+  });
+
+  if ('IntersectionObserver' in window) {
+    const playerObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.intersectionRatio < 0.25 && playerReady && player?.getPlayerState() === window.YT?.PlayerState?.PLAYING) {
+          player.pauseVideo();
+          showNotice('Playback paused while the player is off screen.');
+        }
+      }
+    }, { threshold: [0, 0.25, 0.75, 1] });
+    const playerStage = $('#ftvPlayerStage');
+    if (playerStage) playerObserver.observe(playerStage);
+  }
+
+  $('#ftvSearch')?.addEventListener('input', renderVideoGrid);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+      event.preventDefault();
+      $('#ftvSearch')?.focus();
+    }
+    if (event.key === 'Escape') closeQuiz();
+  });
+
+  async function refreshLibrary() {
+    try {
+      const response = await fetch('/api/fcmtv', { headers: { accept: 'application/json' }, cache: 'no-store' });
+      if (!response.ok) throw new Error('Unable to refresh the library.');
+      const data = await response.json();
+      if (!Array.isArray(data.videos)) throw new Error('The library is unavailable.');
+      videos = data.videos;
+      const selected = videos.find((video) => video.id === selectedId) || videos.find((video) => video.featured) || videos[0] || null;
+      if (selected) {
+        const videoChanged = selected.youtubeId !== currentYoutubeId;
+        selectedId = selected.id;
+        updateSelectedDetails(selected);
+        if (videoChanged && playerReady && player) {
+          currentYoutubeId = selected.youtubeId;
+          player.cueVideoById(selected.youtubeId);
+        } else if (videoChanged && !playerReady) {
+          pendingYoutubeId = selected.youtubeId;
+          pendingPlay = false;
+          const frame = $('#ytPlayer');
+          if (frame) frame.src = embedUrl(selected.youtubeId);
+        }
+      } else {
+        $('#ftvVideoGrid').innerHTML = '';
+        $('#ftvSelectedTitle').textContent = 'No lessons available right now';
+        $('#ftvSelectedDescription').textContent = 'Please check back later for new FC Mobile lessons.';
+        $('#ftvPlayerStatus').textContent = 'Library empty';
+      }
+      if (data.subtitle) $('.ftv-hero-lede').textContent = data.subtitle;
+      renderCategories();
+      renderVideoGrid();
+    } catch {
+      renderCategories();
+      renderVideoGrid();
+    }
+  }
+
+  renderCategories();
+  renderVideoGrid();
+  loadYouTubeApi();
+  refreshLibrary();
+</script>
+
+<style is:global>
+  .fcmtv-page{position:relative;isolation:isolate;min-height:100vh;overflow:hidden;background:#071018;color:#f5f8fb;padding:clamp(22px,4vw,54px) 0 80px}
+  .fcmtv-ambient{position:absolute;z-index:-1;inset:0;pointer-events:none;overflow:hidden}
+  .fcmtv-ambient i{position:absolute;width:480px;height:480px;border-radius:50%;filter:blur(100px);opacity:.18;animation:ftvDrift 20s ease-in-out infinite}
+  .fcmtv-ambient i:nth-child(1){top:-200px;left:-160px;background:#21baff}
+  .fcmtv-ambient i:nth-child(2){top:640px;right:-250px;background:#336cff;animation-delay:-7s}
+  .fcmtv-ambient i:nth-child(3){top:1200px;left:25%;background:#17bd9f;animation-delay:-12s;opacity:.09}
+  @keyframes ftvDrift{50%{transform:translate(38px,28px) scale(1.12)}}
+  .fcmtv-wrap{width:min(1240px,calc(100% - 42px));margin:0 auto}
+  .ftv-hero{position:relative;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);align-items:center;gap:32px;min-height:300px;padding:clamp(28px,4vw,52px);overflow:hidden;border:1px solid rgba(105,210,255,.17);border-radius:28px;background:radial-gradient(600px 360px at 0 0,rgba(35,166,227,.14),transparent 72%),linear-gradient(120deg,rgba(13,28,41,.98),rgba(8,18,27,.94));box-shadow:0 35px 100px -55px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.035)}
+  .ftv-hero:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 42%,rgba(76,201,255,.04) 60%,transparent 80%);transform:translateX(-60%);animation:ftvShimmer 11s ease-in-out infinite}
+  @keyframes ftvShimmer{0%,35%{transform:translateX(-65%)}70%,100%{transform:translateX(65%)}}
+  .ftv-hero-copy{position:relative;z-index:2}
+  .ftv-kicker,.ftv-section-kicker{display:flex;align-items:center;gap:10px;color:#83dbff;font:800 10.5px/1.4 'Inter',system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase}
+  .ftv-live-dot{width:7px;height:7px;flex:0 0 auto;border-radius:50%;background:#4cc9ff;box-shadow:0 0 0 5px rgba(76,201,255,.1),0 0 18px rgba(76,201,255,.5)}
+  .ftv-hero h1{margin:18px 0 10px;font:800 clamp(48px,6.6vw,82px)/.94 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.075em;color:#f4f9fd}
+  .ftv-hero h1 span{background:linear-gradient(110deg,#c8f1ff 0%,#4cc9ff 45%,#72e3d0 100%);background-clip:text;-webkit-background-clip:text;color:transparent}
+  .ftv-hero-lede{max-width:530px;margin:0;color:#9fb3c1;font-size:clamp(14px,1.5vw,16px);line-height:1.75}
+  .ftv-hero-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+  .ftv-hero-tags span{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid rgba(255,255,255,.075);border-radius:10px;background:rgba(255,255,255,.025);color:#9cb3c2;font-size:11px;font-weight:700}
+  .ftv-hero-tags b{color:#59cfff;font:800 10px 'Space Grotesk',sans-serif}
+  .ftv-channel-link{display:inline-flex;align-items:center;gap:8px;margin-top:25px;color:#deeff7;font-size:12.5px;font-weight:800;text-decoration:none;transition:color .2s,transform .2s}
+  .ftv-channel-link span{color:#4cc9ff;font-size:16px}
+  .ftv-channel-link:hover{color:#72d8ff;transform:translateX(2px)}
+  .ftv-hero-visual{position:relative;min-height:250px;display:grid;place-items:center}
+  .ftv-pitch-lines{position:absolute;width:270px;height:220px;border:1px solid rgba(76,201,255,.19);border-radius:15px;transform:perspective(700px) rotateX(58deg) rotateZ(-14deg);box-shadow:0 0 60px rgba(76,201,255,.08),inset 0 0 40px rgba(76,201,255,.03)}
+  .ftv-pitch-lines:before{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(76,201,255,.2)}
+  .ftv-pitch-lines:after{content:"";position:absolute;left:calc(50% - 38px);top:calc(50% - 38px);width:76px;height:76px;border:1px solid rgba(76,201,255,.22);border-radius:50%}
+  .ftv-orbit{position:absolute;width:260px;height:260px;border:1px solid rgba(76,201,255,.11);border-radius:50%;animation:ftvSpin 26s linear infinite}
+  .ftv-orbit:after{content:"";position:absolute;top:24px;left:38px;width:7px;height:7px;border-radius:50%;background:#73dcff;box-shadow:0 0 16px #4cc9ff}
+  .ftv-orbit-two{width:310px;height:210px;transform:rotate(-30deg);animation-duration:32s;animation-direction:reverse;border-color:rgba(120,149,255,.12)}
+  .ftv-orbit-two:after{top:auto;bottom:16px;left:68%;background:#8d9cff;box-shadow:0 0 16px #7184ff}
+  @keyframes ftvSpin{to{transform:rotate(360deg)}}
+  .ftv-screen-art{position:relative;z-index:1;width:min(250px,72%);height:170px;padding:11px;border:1px solid rgba(161,229,255,.3);border-radius:19px;background:linear-gradient(145deg,rgba(17,45,62,.94),rgba(5,16,24,.97));box-shadow:0 25px 60px rgba(0,0,0,.45),0 0 70px rgba(76,201,255,.12),inset 0 1px rgba(255,255,255,.1);transform:rotate(5deg);animation:ftvScreenFloat 7s ease-in-out infinite}
+  @keyframes ftvScreenFloat{50%{transform:translateY(-7px) rotate(2deg)}}
+  .ftv-screen-top{display:flex;align-items:center;gap:4px;color:#6797aa}
+  .ftv-screen-top>span{width:5px;height:5px;border-radius:50%;background:#4cc9ff}
+  .ftv-screen-top>span:nth-child(2){opacity:.5}.ftv-screen-top>span:nth-child(3){opacity:.3}
+  .ftv-screen-top small{margin-left:auto;font:800 8px 'Space Grotesk',sans-serif;letter-spacing:.14em}
+  .ftv-screen-play{position:absolute;top:50%;left:50%;width:57px;height:57px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.45);border-radius:50%;background:linear-gradient(145deg,#a9edff,#4cc9ff);box-shadow:0 9px 36px rgba(76,201,255,.45);transform:translate(-50%,-50%);color:#04151f}
+  .ftv-screen-play svg{width:23px;height:23px;fill:currentColor;margin-left:3px}
+  .ftv-screen-foot{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:space-between;align-items:center;color:#74a7bd;font:800 8px 'Space Grotesk',sans-serif;letter-spacing:.15em}
+  .ftv-screen-foot b{padding:4px 6px;border:1px solid rgba(78,224,160,.24);border-radius:5px;color:#64e3ac;background:rgba(78,224,160,.05);font-size:7px}
+  .ftv-float-chip{position:absolute;z-index:2;display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid rgba(123,212,245,.18);border-radius:10px;background:rgba(7,20,30,.88);box-shadow:0 12px 32px rgba(0,0,0,.3);backdrop-filter:blur(12px);color:#9bb9c8;font:800 8px 'Inter',sans-serif;letter-spacing:.08em}
+  .ftv-float-chip-top{top:16px;right:0}
+  .ftv-float-chip-top>span{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;background:#4cc9ff;color:#05131c;font:900 10px 'Space Grotesk',sans-serif}
+  .ftv-float-chip-bottom{bottom:20px;left:0;font-size:10px;letter-spacing:0;text-transform:none}
+  .ftv-float-chip-bottom i{width:7px;height:7px;border-radius:50%;background:#47d16c;box-shadow:0 0 0 4px rgba(71,209,108,.11)}
+  .ftv-watch-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px;margin-top:18px;align-items:stretch}
+  .ftv-player-card,.ftv-side-panel{min-width:0;border:1px solid rgba(255,255,255,.075);border-radius:22px;background:linear-gradient(145deg,rgba(15,29,42,.97),rgba(8,18,27,.98));box-shadow:0 28px 70px -48px #000}
+  .ftv-player-card{overflow:hidden}
+  .ftv-player-heading{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:18px 21px;border-bottom:1px solid rgba(255,255,255,.055)}
+  .ftv-player-eyebrow{display:flex;align-items:center;gap:10px;color:#bfd3de;font:800 10px 'Inter',sans-serif;letter-spacing:.15em}
+  .ftv-equalizer{display:flex;align-items:center;gap:2px;height:14px}
+  .ftv-equalizer i{display:block;width:3px;height:6px;border-radius:2px;background:#4cc9ff;animation:ftvEqualize .8s ease-in-out infinite alternate}
+  .ftv-equalizer i:nth-child(2){height:11px;animation-delay:-.3s}.ftv-equalizer i:nth-child(3){height:8px;animation-delay:-.5s}.ftv-equalizer i:nth-child(4){height:12px;animation-delay:-.15s}
+  @keyframes ftvEqualize{to{transform:scaleY(.45);opacity:.5}}
+  .ftv-player-status{padding:6px 8px;border:1px solid rgba(76,201,255,.12);border-radius:7px;background:rgba(76,201,255,.045);color:#82dfff;font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+  .ftv-player-stage{position:relative;overflow:hidden;aspect-ratio:16/9;background:#02080d}
+  .ftv-player-stage:before{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid rgba(255,255,255,.03);z-index:1}
+  .ftv-player-stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .ftv-player-info{padding:20px 22px 21px}
+  .ftv-selected-meta{display:flex;align-items:center;gap:9px;color:#64d4ff;font:800 9.5px 'Space Grotesk',sans-serif;letter-spacing:.12em;text-transform:uppercase}
+  .ftv-meta-separator{color:#49616e}
+  .ftv-player-info h2{margin:8px 0 7px;font:700 clamp(20px,2vw,26px)/1.16 'Space Grotesk',sans-serif;letter-spacing:-.035em}
+  .ftv-player-info p{max-width:790px;margin:0;color:#95aab8;font-size:13px;line-height:1.75}
+  .ftv-player-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}
+  .ftv-player-actions>a{display:inline-flex;align-items:center;gap:9px;padding:10px 13px;border:1px solid rgba(76,201,255,.22);border-radius:10px;background:rgba(76,201,255,.06);color:#d5effa;font-size:11px;font-weight:800;text-decoration:none;transition:.18s}
+  .ftv-player-actions>a:hover{border-color:rgba(76,201,255,.48);background:rgba(76,201,255,.11);transform:translateY(-1px)}
+  .ftv-player-actions>a span{color:#4cc9ff}
+  .ftv-player-hint{color:#5f7987;font-size:11px}
+  .ftv-player-notice{margin:0;padding:12px 21px;border-top:1px solid rgba(76,201,255,.12);background:rgba(76,201,255,.055);color:#a9e7ff;font-size:12px;line-height:1.5}
+  .ftv-notice-in{animation:ftvNoticeIn .2s ease both}
+  @keyframes ftvNoticeIn{from{opacity:0;transform:translateY(5px)}}
+  .ftv-side-panel{position:relative;display:flex;flex-direction:column;padding:20px;overflow:hidden;background:radial-gradient(260px 200px at 100% 0,rgba(64,137,255,.11),transparent 74%),linear-gradient(150deg,#101f2d,#09151e)}
+  .ftv-side-art{position:relative;display:grid;place-items:center;height:120px;margin:0 -3px 18px;overflow:hidden;border:1px solid rgba(76,201,255,.1);border-radius:15px;background:linear-gradient(125deg,rgba(76,201,255,.06),rgba(99,123,255,.04)),repeating-linear-gradient(130deg,transparent 0 15px,rgba(76,201,255,.025) 16px 17px)}
+  .ftv-side-ring{position:absolute;width:100px;height:100px;border:1px solid rgba(76,201,255,.25);border-radius:50%;box-shadow:0 0 50px rgba(76,201,255,.1),inset 0 0 30px rgba(76,201,255,.06)}
+  .ftv-side-ring:before,.ftv-side-ring:after{content:"";position:absolute;inset:14px;border:1px solid rgba(76,201,255,.16);border-radius:50%}
+  .ftv-side-ring:after{inset:-14px;border-color:rgba(76,201,255,.09)}
+  .ftv-side-mark{position:relative;color:#edfaff;font:900 25px 'Space Grotesk',sans-serif;letter-spacing:-.07em;text-shadow:0 0 30px rgba(76,201,255,.5)}
+  .ftv-side-mark span{color:#4cc9ff}
+  .ftv-side-label{color:#5b9db8;font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.14em}
+  .ftv-side-panel h2{margin:10px 0 8px;font:700 23px/1.08 'Space Grotesk',sans-serif;letter-spacing:-.045em}
+  .ftv-side-panel>p{margin:0;color:#8da4b2;font-size:12.5px;line-height:1.8}
+  .ftv-side-divider{height:1px;margin:22px 0 15px;background:rgba(255,255,255,.07)}
+  .ftv-side-stat{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#7792a1;font-size:11.5px}
+  .ftv-side-stat strong{color:#d6edf8;font:800 13px 'Space Grotesk',sans-serif}
+  .ftv-side-cta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding:12px 13px;border:1px solid rgba(76,201,255,.22);border-radius:10px;background:rgba(76,201,255,.06);color:#bcecff;font-size:11.5px;font-weight:800;text-decoration:none;transition:.2s}
+  .ftv-side-cta:hover{background:rgba(76,201,255,.12);border-color:rgba(76,201,255,.42)}
+  .ftv-library{margin-top:46px;scroll-margin-top:30px}
+  .ftv-library-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:22px}
+  .ftv-section-kicker{font-size:9.5px;color:#5c98b1}
+  .ftv-section-kicker>span{width:18px;height:2px;background:#4cc9ff;border-radius:3px}
+  .ftv-library-heading h2{margin:9px 0 6px;font:700 clamp(26px,3.6vw,38px)/1.1 'Space Grotesk',sans-serif;letter-spacing:-.055em}
+  .ftv-library-heading p{margin:0;color:#839ba9;font-size:13px}
+  .ftv-search{display:flex;align-items:center;gap:10px;width:min(320px,100%);padding:0 12px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(10,22,32,.85);color:#6a8797;transition:.2s}
+  .ftv-search:focus-within{border-color:rgba(76,201,255,.45);box-shadow:0 0 0 4px rgba(76,201,255,.07)}
+  .ftv-search svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+  .ftv-search input{width:100%;min-width:0;height:43px;border:0;outline:0;background:transparent;color:#ebf7fc;font:500 12px 'Inter',sans-serif}
+  .ftv-search input::placeholder{color:#526c7b}
+  .ftv-search kbd{padding:3px 6px;border:1px solid #273d49;border-radius:5px;background:#0d1b25;color:#658493;font:800 10px 'Space Grotesk',sans-serif}
+  .ftv-categories{display:flex;flex-wrap:wrap;gap:7px;margin-top:23px}
+  .ftv-filter{padding:9px 12px;border:1px solid rgba(255,255,255,.07);border-radius:9px;background:rgba(255,255,255,.02);color:#8ba2b0;font:700 11px 'Inter',sans-serif;cursor:pointer;transition:.18s}
+  .ftv-filter:hover{border-color:rgba(76,201,255,.22);color:#dcf3fc}
+  .ftv-filter.is-active{border-color:rgba(76,201,255,.38);background:linear-gradient(140deg,rgba(76,201,255,.15),rgba(76,201,255,.055));color:#bdecff;box-shadow:inset 0 1px rgba(255,255,255,.03)}
+  .ftv-results-row{display:flex;justify-content:space-between;gap:12px;margin:20px 0 12px;color:#5e7987;font:800 9.5px 'Space Grotesk',sans-serif;letter-spacing:.1em;text-transform:uppercase}
+  .ftv-video-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .ftv-video-card{min-width:0;padding:0;overflow:hidden;border:1px solid rgba(255,255,255,.075);border-radius:16px;background:linear-gradient(160deg,#101f2b,#0a151e);text-align:left;color:#edf8fc;cursor:pointer;box-shadow:0 18px 45px -36px rgba(0,0,0,.9);transition:transform .22s,border-color .22s,box-shadow .22s}
+  .ftv-video-card:hover{transform:translateY(-4px);border-color:rgba(76,201,255,.32);box-shadow:0 22px 45px -28px rgba(76,201,255,.12),0 22px 45px -32px #000}
+  .ftv-video-card:focus-visible,.ftv-filter:focus-visible,.ftv-quiz-option:focus-visible{outline:2px solid #4cc9ff;outline-offset:3px}
+  .ftv-video-card.is-selected{border-color:rgba(76,201,255,.5);box-shadow:0 0 0 1px rgba(76,201,255,.08),0 20px 48px -30px rgba(76,201,255,.18)}
+  .ftv-card-thumb{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;background:#07111a}
+  .ftv-card-thumb:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(1,7,12,.55),transparent 55%);pointer-events:none}
+  .ftv-card-thumb img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .5s cubic-bezier(.22,1,.36,1),filter .3s}
+  .ftv-video-card:hover .ftv-card-thumb img{transform:scale(1.045);filter:saturate(1.08)}
+  .ftv-card-play{position:absolute;z-index:1;left:50%;top:50%;display:grid;place-items:center;width:43px;height:43px;border:1px solid rgba(255,255,255,.42);border-radius:50%;background:rgba(76,201,255,.95);color:#04141d;box-shadow:0 8px 25px rgba(76,201,255,.24);transform:translate(-50%,-50%);transition:transform .2s}
+  .ftv-card-play svg{width:18px;height:18px;fill:currentColor;margin-left:2px}
+  .ftv-video-card:hover .ftv-card-play{transform:translate(-50%,-50%) scale(1.08)}
+  .ftv-featured-label{position:absolute;z-index:2;left:11px;top:11px;padding:5px 7px;border:1px solid rgba(76,201,255,.25);border-radius:6px;background:rgba(4,16,24,.84);color:#87dfff;font:800 8px 'Space Grotesk',sans-serif;letter-spacing:.12em;backdrop-filter:blur(7px)}
+  .ftv-card-copy{display:flex;flex-direction:column;align-items:flex-start;padding:15px 15px 13px}
+  .ftv-card-category{color:#58cfff;font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.12em;text-transform:uppercase}
+  .ftv-card-copy>strong{display:-webkit-box;min-height:43px;margin-top:8px;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;font:700 15px/1.4 'Space Grotesk',sans-serif;letter-spacing:-.02em}
+  .ftv-card-description{display:-webkit-box;min-height:56px;margin-top:7px;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:3;color:#8198a6;font-size:11.5px;line-height:1.65}
+  .ftv-card-footer{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,.055);color:#a9cfdf;font-size:10.5px;font-weight:800}
+  .ftv-card-footer>span:last-child{color:#53caff;font-size:14px}
+  .ftv-empty-state{padding:45px 20px;border:1px dashed rgba(76,201,255,.18);border-radius:16px;background:rgba(8,20,29,.7);text-align:center}
+  .ftv-empty-state[hidden]{display:none}
+  .ftv-empty-icon{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 12px;border:1px solid rgba(76,201,255,.18);border-radius:13px;background:rgba(76,201,255,.06);color:#4cc9ff;font:900 11px 'Space Grotesk',sans-serif}
+  .ftv-empty-state h3{margin:0;font:700 18px 'Space Grotesk',sans-serif}
+  .ftv-empty-state p{margin:7px 0 14px;color:#8499a7;font-size:12px}
+  .ftv-empty-state button{padding:8px 12px;border:1px solid #2b4a5c;border-radius:8px;background:#10202b;color:#aee9ff;font:800 11px 'Inter',sans-serif;cursor:pointer}
+  .ftv-bottom-note{display:flex;align-items:center;gap:12px;margin-top:27px;padding:13px 15px;border:1px solid rgba(255,255,255,.055);border-radius:12px;background:rgba(255,255,255,.015)}
+  .ftv-bottom-icon{display:grid;place-items:center;width:28px;height:28px;flex:0 0 auto;border-radius:8px;background:rgba(76,201,255,.08);color:#54cfff;font-size:10px}
+  .ftv-bottom-note p{margin:0;color:#6f8997;font-size:11px;line-height:1.6}
+  .ftv-focus-prompt[hidden],.ftv-quiz-panel[hidden]{display:none}
+  .ftv-focus-prompt{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:13px;padding:15px 18px;border-top:1px solid rgba(255,189,89,.18);background:linear-gradient(110deg,rgba(255,189,89,.09),rgba(13,27,38,.98));animation:ftvNoticeIn .24s ease both}
+  .ftv-focus-prompt[data-level="reset"]{border-top-color:rgba(255,130,124,.22);background:linear-gradient(110deg,rgba(255,130,124,.09),rgba(13,27,38,.98))}
+  .ftv-focus-icon{display:grid;place-items:center;width:39px;height:39px;border:1px solid rgba(255,189,89,.25);border-radius:12px;background:rgba(255,189,89,.07);color:#ffce7f}
+  .ftv-focus-prompt[data-level="reset"] .ftv-focus-icon{border-color:rgba(255,130,124,.25);background:rgba(255,130,124,.06);color:#ff9c94}
+  .ftv-focus-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .ftv-focus-copy{min-width:0}.ftv-focus-kicker{display:block;color:#c5a56a;font:800 8px 'Space Grotesk',sans-serif;letter-spacing:.14em}
+  .ftv-focus-prompt[data-level="reset"] .ftv-focus-kicker{color:#d78c88}
+  .ftv-focus-copy h3{margin:4px 0 2px;color:#f6f8f9;font:700 16px 'Space Grotesk',sans-serif;letter-spacing:-.025em}
+  .ftv-focus-copy p{margin:0;color:#a3b4be;font-size:11.5px;line-height:1.65}
+  .ftv-focus-prompt>button{padding:8px 11px;border:1px solid rgba(255,255,255,.1);border-radius:9px;background:rgba(4,12,18,.65);color:#c9dbe4;font:800 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap}
+  .ftv-focus-prompt>button:hover{border-color:rgba(76,201,255,.28);color:#fff}
+  .ftv-quiz-panel{position:relative;padding:19px 22px 18px;border-top:1px solid rgba(76,201,255,.13);background:radial-gradient(380px 230px at 0 0,rgba(76,201,255,.07),transparent 70%),linear-gradient(120deg,#0b1923,#09141d);animation:ftvNoticeIn .24s ease both}
+  .ftv-quiz-dialog{position:relative;width:100%;padding:4px 42px 0 0;border:0;border-radius:0;background:transparent;box-shadow:none;animation:none}
+  .ftv-quiz-close{position:absolute;right:0;top:0;width:31px;height:31px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:#0b1821;color:#a4b8c4;font-size:20px;cursor:pointer}
+  .ftv-quiz-kicker{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#65d3ff;font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase}
+  .ftv-quiz-clock{color:#7893a2;font-weight:700;letter-spacing:0;text-transform:none}.ftv-quiz-clock b{color:#c1ecff}
+  .ftv-quiz-symbol{display:grid;place-items:center;width:38px;height:38px;margin-top:15px;border:1px solid rgba(76,201,255,.2);border-radius:11px;background:rgba(76,201,255,.07);color:#61d1ff}
+  .ftv-quiz-symbol svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .ftv-quiz-dialog h2{margin:11px 0 5px;font:700 21px 'Space Grotesk',sans-serif;letter-spacing:-.04em}
+  .ftv-quiz-question{margin:0 0 13px;color:#9ab0be;font-size:12.5px;line-height:1.7}
+  .ftv-quiz-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .ftv-quiz-option{display:flex;align-items:center;gap:8px;padding:10px 11px;border:1px solid #223946;border-radius:10px;background:#0a1720;color:#d0e3ec;text-align:left;font:600 11px/1.5 'Inter',sans-serif;cursor:pointer;transition:.18s}
+  .ftv-quiz-option:hover:not(:disabled){border-color:rgba(76,201,255,.38);background:#0d202c}
+  .ftv-quiz-option.is-correct{border-color:rgba(71,209,108,.5);background:rgba(71,209,108,.07);color:#a0f2bc}
+  .ftv-quiz-option.is-wrong{border-color:rgba(255,130,124,.5);background:rgba(255,130,124,.07);color:#ffc0ba}
+  .ftv-quiz-option:disabled{cursor:default}
+  .ftv-quiz-feedback{min-height:18px;margin:9px 0 0;color:#83dfff;font-size:11px;line-height:1.5}
+  .ftv-quiz-skip{margin-top:2px;padding:5px 0;border:0;background:none;color:#73909f;font:700 11px 'Inter',sans-serif;cursor:pointer}
+  .ftv-quiz-skip:hover{color:#d0eff9}
+  @media(max-width:1050px){.ftv-watch-layout{grid-template-columns:minmax(0,1fr) 270px}.ftv-hero{gap:14px}.ftv-video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:800px){.ftv-hero{grid-template-columns:1fr;padding:29px 25px}.ftv-hero-visual{min-height:230px;margin-top:-10px}.ftv-hero-copy{max-width:650px}.ftv-watch-layout{grid-template-columns:1fr}.ftv-side-panel{display:grid;grid-template-columns:100px minmax(0,1fr);column-gap:17px;align-items:start;padding:16px}.ftv-side-art{grid-row:1 / span 3;height:100px;margin:0}.ftv-side-label{align-self:end}.ftv-side-panel h2{margin:5px 0 6px;font-size:20px}.ftv-side-panel>p{grid-column:2}.ftv-side-divider{grid-column:1 / -1;margin:15px 0 12px}.ftv-side-stat{grid-column:1 / -1;margin-bottom:12px}.ftv-side-cta{grid-column:1 / -1;margin-top:0}.ftv-library-heading{align-items:flex-start;flex-direction:column}.ftv-search{width:100%;max-width:none}}
+  @media(max-width:560px){.ftv-focus-prompt{grid-template-columns:32px minmax(0,1fr);gap:9px;padding:12px}.ftv-focus-icon{width:31px;height:31px}.ftv-focus-prompt>button{grid-column:2;justify-self:start}.ftv-quiz-panel{padding:16px 13px}.ftv-quiz-dialog{padding-right:35px}.ftv-quiz-options{grid-template-columns:1fr}.fcmtv-page{padding-top:18px}.fcmtv-wrap{width:calc(100% - 24px)}.ftv-hero{border-radius:20px;padding:24px 19px}.ftv-hero h1{font-size:51px}.ftv-hero-tags{gap:6px;margin-top:18px}.ftv-hero-tags span{padding:7px 8px;font-size:9px}.ftv-hero-visual{min-height:205px}.ftv-screen-art{height:148px}.ftv-orbit{width:220px;height:220px}.ftv-orbit-two{width:250px;height:180px}.ftv-float-chip-top{right:-5px;top:5px}.ftv-float-chip-bottom{bottom:8px;left:-5px}.ftv-player-heading{padding:14px 13px}.ftv-player-eyebrow{font-size:9px;gap:7px}.ftv-player-status{font-size:8px}.ftv-player-info{padding:16px 14px}.ftv-player-info h2{font-size:20px}.ftv-player-actions{align-items:flex-start;flex-direction:column}.ftv-side-panel{grid-template-columns:74px minmax(0,1fr);padding:13px}.ftv-side-art{height:76px}.ftv-side-ring{width:58px;height:58px}.ftv-side-mark{font-size:20px}.ftv-side-panel h2{font-size:18px}.ftv-side-panel>p{font-size:11.5px}.ftv-library{margin-top:35px}.ftv-library-heading h2{font-size:28px}.ftv-categories{margin-top:17px;gap:6px}.ftv-filter{padding:8px 9px;font-size:10px}.ftv-results-row{font-size:8.5px}.ftv-video-grid{grid-template-columns:1fr;gap:11px}.ftv-video-card{display:grid;grid-template-columns:minmax(120px,39%) minmax(0,1fr);align-items:stretch}.ftv-card-thumb{height:100%;min-height:155px;aspect-ratio:auto}.ftv-card-copy{padding:12px 11px}.ftv-card-copy>strong{min-height:0;font-size:13px;line-height:1.35}.ftv-card-description{min-height:0;font-size:10.5px;-webkit-line-clamp:3}.ftv-card-footer{margin-top:auto;padding-top:9px;font-size:9px}.ftv-card-play{width:34px;height:34px}.ftv-featured-label{left:6px;top:6px;padding:4px 5px;font-size:6.5px}.ftv-quiz-dialog{padding:22px 17px}.ftv-bottom-note{align-items:flex-start}.ftv-bottom-note p{font-size:10.5px}}
+  @media(prefers-reduced-motion:reduce){.fcmtv-page *{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+</style>
