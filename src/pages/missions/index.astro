@@ -420,7 +420,10 @@ import AccountNav from '../../components/AccountNav.astro';
         const sameUtc=today===String(streakState.lastCheckInUtcDate||'');
         const cooldownLeft=Math.max(0,CHECK_IN_COOLDOWN_MS-(Date.now()-last.getTime()));
         const shouldDisable=sameUtc||cooldownLeft>0;
-        if(btn.disabled!==shouldDisable) renderStreak(streakState);
+        const needsTodayLabel=sameUtc && btn.textContent!=='Checked in today ✓';
+        const needsCooldownLabel=!sameUtc && cooldownLeft>0 && !btn.textContent.startsWith('Next check-in in ');
+        const needsReadyLabel=!sameUtc && cooldownLeft<=0 && btn.textContent==='Checked in today ✓';
+        if(btn.disabled!==shouldDisable || needsTodayLabel || needsCooldownLabel || needsReadyLabel) renderStreak(streakState);
       }
     },1000);
   }
