@@ -866,6 +866,17 @@ export async function leagueWorkerRoute({ request, env, url, authenticated, acco
     if (request.method === 'POST' && url.pathname === '/api/leagues/listings') {
       return await createListing(request, env, context, supabaseRest, json);
     }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/team-shares') {
+      return await getTeamShares(request, env, context, supabaseRest, json);
+    }
+    const teamShareMatch = url.pathname.match(/^\/api\/leagues\/listings\/([0-9a-f-]+)\/team-share$/i);
+    if (request.method === 'POST' && teamShareMatch) {
+      return await submitTeamShare(request, env, context, teamShareMatch, supabaseRest, json);
+    }
+    const reviewTeamShareMatch = url.pathname.match(/^\/api\/leagues\/team-shares\/([0-9a-f-]+)\/review$/i);
+    if (request.method === 'POST' && reviewTeamShareMatch) {
+      return await reviewTeamShare(request, env, context, reviewTeamShareMatch, supabaseRest, json);
+    }
     const updateMatch = url.pathname.match(/^\/api\/leagues\/listings\/([0-9a-f-]+)\/update$/i);
     if (request.method === 'POST' && updateMatch) {
       return await updateListing(request, env, context, updateMatch, supabaseRest, json);
