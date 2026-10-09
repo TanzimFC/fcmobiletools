@@ -1,6 +1,7 @@
 // Shared data layer for the blog. Every blog page reads posts through here so
 // sections, slugs, covers, dates and reading time are computed exactly once.
 import { getCollection } from 'astro:content';
+import { cloudinaryImageUrl, cloudinarySrcset } from './image-delivery.js';
 
 export const slugify = (value) =>
   String(value ?? '').toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
@@ -55,32 +56,9 @@ export function resolveTools(list = []) {
 
 /* ---------------------------------------------------------------- helpers */
 // Cloudinary delivery transform. Non-Cloudinary URLs pass through untouched.
-const cloudinaryUpload = (url) => {
-  const value = String(url ?? '');
-  if (!value.includes('res.cloudinary.com') || !value.includes('/image/upload/')) return null;
-  const afterUpload = value.split('/image/upload/')[1] ?? '';
-  const firstSegment = afterUpload.split('/')[0] ?? '';
-  // Preserve authored Cloudinary transformations instead of stacking new ones on top.
-  const hasTransforms = Boolean(firstSegment) &&
-    !/^v\d+$/i.test(firstSegment) &&
-    (firstSegment.includes(',') || /^(?:f_auto|q_auto|w_\d+|h_\d+|c_(?:fill|limit|scale|crop|thumb)|dpr_auto)(?:$|,)/i.test(firstSegment));
-  return { value, hasTransforms };
-};
-
-export const img = (url, width, extra = '') => {
-  const parsed = cloudinaryUpload(url);
-  if (!parsed || parsed.hasTransforms) return String(url ?? '');
-  return parsed.value.replace(
-    '/image/upload/',
-    `/image/upload/f_auto,q_auto,c_limit,w_${width}${extra ? ',' + extra : ''}/`
-  );
-};
-export const srcset = (url, widths) => {
-  const parsed = cloudinaryUpload(url);
-  return parsed && !parsed.hasTransforms
-    ? widths.map((w) => `${img(url, w)} ${w}w`).join(', ')
-    : undefined;
-};
+export const img = (url, width, extra = '') =>
+  cloudinaryImageUrl(url, width, extra) ?? String(url ?? '');
+export const srcset = (url, widths) => cloudinarySrcset(url, widths);
 
 const DATE_FMT = { short: { month: 'short', day: 'numeric' }, medium: { month: 'short', day: 'numeric', year: 'numeric' }, long: { month: 'long', day: 'numeric', year: 'numeric' } };
 export const fmtDate = (d, kind = 'medium') => (d ? d.toLocaleDateString('en-US', { ...DATE_FMT[kind], timeZone: 'UTC' }) : '');
