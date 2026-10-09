@@ -41,6 +41,18 @@ const isExcluded = SITE_ADS.excludedPathPrefixes.some((prefix) =>
           document.body.appendChild(script);
         }, config.push.delayMs);
       }
+
+      if (config.videoSlider?.enabled && config.videoSlider.src) {
+        if (document.documentElement.dataset.siteVideoSliderLoaded !== '1') {
+          document.documentElement.dataset.siteVideoSliderLoaded = '1';
+          const script = document.createElement('script');
+          script.settings = {};
+          script.src = config.videoSlider.src;
+          script.async = true;
+          script.referrerPolicy = 'no-referrer-when-downgrade';
+          root.appendChild(script);
+        }
+      }
     })();
   </script>
 )}
