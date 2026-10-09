@@ -421,9 +421,9 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
       if (tabSwitchCount === 1) {
         showNotice('Playback paused while you are away. Press Play when you return.');
       } else {
+        try { player.seekTo(0, true); } catch {}
         player.stopVideo();
-        window.setTimeout(() => { try { player?.seekTo(0, true); } catch {} }, 120);
-        showNotice('Playback was restarted. Press Play when you are ready.');
+        showNotice('Playback was reset. Press Play when you are ready to start again.');
       }
     } else if (wasPlayingBeforeHide) {
       wasPlayingBeforeHide = false;
@@ -462,19 +462,22 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
       videos = data.videos;
       const selected = videos.find((video) => video.id === selectedId) || videos.find((video) => video.featured) || videos[0] || null;
       if (selected) {
-        const wasMissing = !videos.some((video) => video.id === selectedId);
+        const videoChanged = selected.youtubeId !== currentYoutubeId;
         selectedId = selected.id;
         updateSelectedDetails(selected);
-        if (wasMissing && playerReady && selected.youtubeId !== currentYoutubeId) {
+        if (videoChanged && playerReady && player) {
           currentYoutubeId = selected.youtubeId;
           player.cueVideoById(selected.youtubeId);
-        } else if (wasMissing && !playerReady) {
+        } else if (videoChanged && !playerReady) {
           pendingYoutubeId = selected.youtubeId;
           const frame = $('#ytPlayer');
           if (frame) frame.src = embedUrl(selected.youtubeId);
         }
       } else {
         $('#ftvVideoGrid').innerHTML = '';
+        $('#ftvSelectedTitle').textContent = 'No videos available right now';
+        $('#ftvSelectedDescription').textContent = 'Please check back later for new FC Mobile guides.';
+        $('#ftvPlayerStatus').textContent = 'Library empty';
       }
       if (data.subtitle) $('.ftv-hero-lede').textContent = data.subtitle;
       renderCategories();
@@ -496,7 +499,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
   refreshLibrary();
 </script>
 
-<style>
+<style is:global>
   .fcmtv-page{position:relative;isolation:isolate;min-height:100vh;overflow:hidden;background:#071018;color:#f5f8fb;padding:clamp(22px,4vw,54px) 0 80px}
   .fcmtv-ambient{position:absolute;z-index:-1;inset:0;pointer-events:none;overflow:hidden}
   .fcmtv-ambient i{position:absolute;width:480px;height:480px;border-radius:50%;filter:blur(100px);opacity:.18;animation:ftvDrift 20s ease-in-out infinite}
