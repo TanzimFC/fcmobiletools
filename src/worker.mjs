@@ -2532,6 +2532,180 @@ async function redeemPage(request, env, ctx, url) {
     .transform(new Response(asset.body, { status: asset.status, headers }));
 }
 
+
+const IMAGE_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
+const IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS = 30;
+const IMAGE_UPLOAD_HOST = /^i\.ibb\.co(?:\.com)?$/i;
+
+async function detectUploadedImageType(file) {
+  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
+      bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a) return 'image/png';
+  if (bytes.length >= 6) {
+    const signature = String.fromCharCode(...bytes.slice(0, 6));
+    if (signature === 'GIF87a' || signature === 'GIF89a') return 'image/gif';
+  }
+  if (bytes.length >= 12 &&
+      String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' &&
+      String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP') return 'image/webp';
+  return null;
+}
+
+async function reserveImageUploadQuota(origin, accountId) {
+  const now = Date.now();
+  const cache = caches.default;
+  const windows = [
+    { key: 'burst', duration: 10 * 60 * 1000, limit: 10 },
+    { key: 'daily', duration: 24 * 60 * 60 * 1000, limit: 50 }
+  ];
+
+  for (const window of windows) {
+    const bucket = Math.floor(now / window.duration);
+    const keyUrl = new URL('/_internal/image-upload-rate/' +
+      encodeURIComponent(accountId) + '/' + window.key + '/' + bucket, origin);
+    const key = new Request(keyUrl.toString());
+    const previous = await cache.match(key);
+    const count = previous ? Number((await previous.json().catch(() => ({}))).count || 0) : 0;
+    if (count >= window.limit) return false;
+    await cache.put(key, new Response(JSON.stringify({ count: count + 1 }), {
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'cache-control': 'public, max-age=' + (Math.ceil(window.duration / 1000) + 60)
+      }
+    }));
+  }
+  return true;
+}
+
+async function imageUploadApi(request, env, url) {
+  if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, { allow: 'POST' });
+
+  const originHeader = request.headers.get('origin');
+  if (originHeader) {
+    try {
+      if (new URL(originHeader).origin !== url.origin) return json({ error: 'Request not allowed.' }, 403);
+    } catch {
+      return json({ error: 'Request not allowed.' }, 403);
+    }
+  }
+
+  const context = await accountContext(request, env);
+  if (!context) return json({ error: 'Sign in to upload an image.' }, 401);
+  const { account, user } = context;
+  if (!user.email_confirmed_at) return json({ error: 'Verify your email before uploading images.' }, 403);
+  if (['closed', 'fraud_removed', 'frozen', 'restricted'].includes(account.state)) {
+    return json({ error: 'This account cannot upload images right now.' }, 403);
+  }
+  if (!String(env.IMAGEBB_API_KEY || '').trim()) {
+    console.error('[IMAGE_UPLOAD] Upload service is not configured.');
+    return json({ error: 'Image uploads are temporarily unavailable. Please try again later.' }, 503);
+  }
+
+  const contentType = request.headers.get('content-type') || '';
+  if (!contentType.toLowerCase().includes('multipart/form-data')) {
+    return json({ error: 'Choose an image file to upload.' }, 415);
+  }
+
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > IMAGE_UPLOAD_MAX_BYTES + 128 * 1024) {
+    return json({ error: 'Choose an image smaller than 8 MB.' }, 413);
+  }
+
+  let fields;
+  try {
+    fields = await request.formData();
+  } catch {
+    return json({ error: 'The upload could not be read. Please choose the image again.' }, 400);
+  }
+
+  const file = fields.get('file');
+  if (!file || typeof file.arrayBuffer !== 'function' || typeof file.size !== 'number' || file.size <= 0) {
+    return json({ error: 'Choose an image file to upload.' }, 400);
+  }
+  if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
+    return json({ error: 'Choose an image smaller than 8 MB.' }, 413);
+  }
+
+  let detectedType;
+  try { detectedType = await detectUploadedImageType(file); } catch {}
+  if (!detectedType) {
+    return json({ error: 'Use a JPG, PNG, WebP, or GIF image.' }, 415);
+  }
+  const declaredType = String(file.type || '').toLowerCase();
+  if (declaredType && declaredType !== detectedType &&
+      !(detectedType === 'image/jpeg' && declaredType === 'image/jpg')) {
+    return json({ error: 'The selected file does not appear to be a valid image.' }, 415);
+  }
+
+  let expirationDays = Number.parseInt(String(fields.get('expirationDays') || ''), 10);
+  if (!Number.isInteger(expirationDays)) expirationDays = IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS;
+  expirationDays = Math.max(1, Math.min(180, expirationDays));
+  const expirationSeconds = expirationDays * 24 * 60 * 60;
+
+  try {
+    if (!(await reserveImageUploadQuota(url.origin, account.id))) {
+      return json({ error: 'You have reached the upload limit. Please try again later.' }, 429);
+    }
+  } catch (error) {
+    console.error('[IMAGE_UPLOAD] Rate limit check failed.');
+    return json({ error: 'Uploads are temporarily unavailable. Please try again later.' }, 503);
+  }
+
+  const safeName = String(file.name || 'image')
+    .replace(/[^\w.-]+/g, '-')
+    .replace(/^\.+/, '')
+    .slice(0, 80) || 'image';
+  const outgoing = new FormData();
+  outgoing.append('image', new File([file], safeName, { type: detectedType }), safeName);
+  outgoing.append('expiration', String(expirationSeconds));
+
+  let upstream;
+  let result;
+  try {
+    const endpoint = new URL('https://api.imgbb.com/1/upload');
+    endpoint.searchParams.set('key', String(env.IMAGEBB_API_KEY).trim());
+    upstream = await fetch(endpoint.toString(), { method: 'POST', body: outgoing });
+    result = await upstream.json().catch(() => null);
+  } catch {
+    console.error('[IMAGE_UPLOAD] Upload request failed.');
+    return json({ error: 'The image could not be uploaded. Please try again.' }, 503);
+  }
+
+  const image = result?.data;
+  if (!upstream.ok || result?.success !== true || !image?.url) {
+    console.warn('[IMAGE_UPLOAD] Upload service returned status ' + upstream.status + '.');
+    return json({ error: 'The image could not be uploaded. Please try again.' }, 503);
+  }
+
+  let directUrl;
+  try {
+    directUrl = new URL(String(image.url));
+    if (directUrl.protocol !== 'https:' || !IMAGE_UPLOAD_HOST.test(directUrl.hostname)) throw new Error('Invalid image host.');
+  } catch {
+    console.warn('[IMAGE_UPLOAD] Upload response did not contain a valid image URL.');
+    return json({ error: 'The image could not be uploaded. Please try again.' }, 503);
+  }
+
+  const appliedExpiration = Number(image.expiration);
+  if (!Number.isFinite(appliedExpiration) || appliedExpiration < 60) {
+    console.warn('[IMAGE_UPLOAD] Automatic image expiry was not confirmed.');
+    return json({ error: 'The image could not be uploaded with temporary storage. Please try again.' }, 503);
+  }
+
+  return json({
+    ok: true,
+    image: {
+      url: directUrl.toString(),
+      width: Math.max(0, Number(image.width) || 0),
+      height: Math.max(0, Number(image.height) || 0),
+      size: Math.max(0, Number(image.size) || file.size),
+      expirationDays: Math.max(1, Math.ceil(appliedExpiration / (24 * 60 * 60))),
+      expiresAt: new Date(Date.now() + appliedExpiration * 1000).toISOString()
+    }
+  });
+}
+
 export function createExports(manifest) {
   const app = new App(manifest);
   return {
@@ -2586,6 +2760,8 @@ export function createExports(manifest) {
 
   const tournamentRoute=await tournamentWorkerRoute(request,env,url);
   if(tournamentRoute) return tournamentRoute;
+
+  if(url.pathname === '/api/account/image-upload') return imageUploadApi(request,env,url);
 
   const legacyRedirects = {
     '/about': '/legal/about/',
