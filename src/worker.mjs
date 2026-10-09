@@ -2671,13 +2671,13 @@ async function imageUploadApi(request, env, url) {
     .slice(0, 80) || 'image';
   const outgoing = new FormData();
   outgoing.append('image', new File([file], safeName, { type: detectedType }), safeName);
-  outgoing.append('expiration', String(expirationSeconds));
 
   let upstream;
   let result;
   try {
     const endpoint = new URL('https://api.imgbb.com/1/upload');
     endpoint.searchParams.set('key', String(env.IMAGEBB_API_KEY).trim());
+    endpoint.searchParams.set('expiration', String(expirationSeconds));
     upstream = await fetch(endpoint.toString(), { method: 'POST', body: outgoing });
     result = await upstream.json().catch(() => null);
   } catch {
