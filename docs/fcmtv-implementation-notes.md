@@ -10,7 +10,8 @@ These notes are for maintainers. Keep them in the repository; do not surface the
 - The optional one-question knowledge check is an independent content interaction. It must remain skippable and must never gate playback or pay a reward.
 - Do not add a watch-time endpoint or a public `/api/claim-xp` route. Client-supplied time, player state, tab focus, or quiz answers are not proof suitable for granting currency.
 - Do not hide, overlay, modify, or replace YouTube controls or ads. Use the official IFrame API and allow users to open the video on YouTube.
-- Pause on hidden tabs and when the player is out of view. Keep playback at 1x in the embedded player. Never autoplay on page load.
+- Pause on hidden tabs and when the player is out of view. On the first hidden-tab interruption, pause and show a brief notice; on a later interruption during playback, stop and reset to the beginning. Ignore duplicate focus/visibility events once playback has already been paused. Keep playback at 1x in the embedded player. Never autoplay on page load.
+- Show the optional, skippable 15-second knowledge question only after the video ends. It is a content interaction, not proof used to grant XP, tokens, access, or compensation.
 
 ## Admin/data flow
 
