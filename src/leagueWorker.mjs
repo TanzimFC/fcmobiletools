@@ -568,7 +568,6 @@ async function listPlayers(request, env, authContext, url, supabaseRest, json) {
       tournamentSizes: row.tournament_sizes || [],
       availability: row.availability || '',
       playStyle: row.play_style || '',
-      notes: row.notes || '',
       teamScreenshotUrl: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? row.team_screenshot_url : null,
       teamScreenshotNote: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? (row.team_screenshot_note || '') : '',
       teamScreenshotExpiresAt: row.team_screenshot_show_to_owners && screenshotIsActive(row) ? row.team_screenshot_expires_at : null,
@@ -606,16 +605,27 @@ async function submitTeamShare(request, env, authContext, match, supabaseRest, j
   if (!listing || listing.is_demo) return json({ error: 'This sample listing is for preview only and is not accepting real team submissions.' }, 404);
   if (listing.owner_account_id === account.id) return json({ error: 'You cannot send a team to your own league.' }, 400);
 
-  const pendingRows = await supabaseRest(env,
+  const activeRows = await supabaseRest(env,
     'league_team_shares?listing_id=eq.' + encodeURIComponent(listing.id) +
     '&player_account_id=eq.' + encodeURIComponent(account.id) +
-    '&status=eq.pending&select=id,expires_at&limit=1');
-  const pending = pendingRows?.[0];
-  if (pending && Date.parse(pending.expires_at) > Date.now()) {
-    return json({ error: 'You already sent a team to this league. Your submission is still active.', status: 'pending' }, 409);
+    '&status=in.(pending,accepted)&expires_at=gt.' + encodeURIComponent(nowIso()) +
+    '&select=id,status,expires_at&limit=1');
+  const activeShare = activeRows?.[0];
+  if (activeShare) {
+    return json({
+      error: activeShare.status === 'accepted'
+        ? 'This league has already accepted your team. The share remains active for a few days.'
+        : 'You already sent a team to this league. Your submission is still active.',
+      status: activeShare.status
+    }, 409);
   }
-  if (pending) {
-    await supabaseRest(env, 'league_team_shares?id=eq.' + encodeURIComponent(pending.id), {
+  const expiredPending = await supabaseRest(env,
+    'league_team_shares?listing_id=eq.' + encodeURIComponent(listing.id) +
+    '&player_account_id=eq.' + encodeURIComponent(account.id) +
+    '&status=eq.pending&expires_at=lte.' + encodeURIComponent(nowIso()) +
+    '&select=id&limit=1');
+  if (expiredPending?.[0]) {
+    await supabaseRest(env, 'league_team_shares?id=eq.' + encodeURIComponent(expiredPending[0].id), {
       method: 'PATCH',
       headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ status: 'expired' })
