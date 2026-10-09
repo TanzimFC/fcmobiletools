@@ -175,6 +175,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
   let tabSwitchCount = 0;
   let wasPlayingBeforeHide = false;
   let apiInitializationAttempted = false;
+  let rateGuardTimer = 0;
 
   const $ = (selector) => document.querySelector(selector);
   const htmlEscape = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -222,6 +223,25 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
   function closeFocusPrompt() {
     const prompt = $('#ftvFocusPrompt');
     if (prompt) prompt.hidden = true;
+  }
+
+  function stopRateGuard() {
+    if (rateGuardTimer) window.clearInterval(rateGuardTimer);
+    rateGuardTimer = 0;
+  }
+
+  function startRateGuard() {
+    stopRateGuard();
+    rateGuardTimer = window.setInterval(() => {
+      if (!playerReady || !player || document.hidden) return;
+      try {
+        if (player.getPlayerState() !== window.YT.PlayerState.PLAYING) return;
+        if (Number(player.getPlaybackRate()) !== 1.0) {
+          player.setPlaybackRate(1.0);
+          showNotice('Playback speed has been returned to normal (1×).');
+        }
+      } catch {}
+    }, 750);
   }
 
   function updateSelectedDetails(video) {
@@ -409,15 +429,20 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
           const state = window.YT.PlayerState;
           if (event.data === state.PLAYING) {
             closeFocusPrompt();
+            startRateGuard();
             $('#ftvPlayerStatus').textContent = 'Now playing';
           } else if (event.data === state.PAUSED) {
+            stopRateGuard();
             $('#ftvPlayerStatus').textContent = 'Paused';
           } else if (event.data === state.ENDED) {
+            stopRateGuard();
             $('#ftvPlayerStatus').textContent = 'Finished';
             showQuiz(selectedVideo());
           } else if (event.data === state.BUFFERING) {
+            stopRateGuard();
             $('#ftvPlayerStatus').textContent = 'Loading video';
           } else if (event.data === state.CUED) {
+            stopRateGuard();
             $('#ftvPlayerStatus').textContent = 'Ready to play';
           }
         },
