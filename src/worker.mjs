@@ -2256,7 +2256,10 @@ async function api(request,env,path) {
   if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
     if(path === '/me') {
-      const account=await getAdminAccount(env);
+      // Session authentication has already succeeded above. Keep identity discovery
+      // available even if the optional admin-profile lookup is temporarily unavailable.
+      let account=null;
+      try { account=await getAdminAccount(env); } catch {}
       return json({username:account?.username||env.ADMIN_USERNAME,displayName:account?.display_name||account?.username||env.ADMIN_USERNAME,role:'admin',updatedAt:account?.updated_at||null});
     }
     if(path === '/ad-settings' && request.method === 'GET') {
