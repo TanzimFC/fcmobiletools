@@ -71,6 +71,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <select name="playStyle"><option value="">Choose a play style</option><option>Competitive</option><option>Active and relaxed</option><option>Casual</option><option>Quest focused</option><option>Building a new team</option></select>
             </label>
           </div>
+          <div class="fl-upload-row">
+            <label class="fl-upload" for="profileAvatarFile"><span class="fl-upload-icon">↑</span><span><strong>Player avatar</strong><small>Optional JPG, PNG, WebP or GIF · under 8 MB</small></span><input id="profileAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+            <div id="profileAvatarPreview" class="fl-logo-preview">Player</div>
+            <input type="hidden" name="avatarUrl">
+          </div>
           <fieldset class="fl-choice-group">
             <legend>Preferred languages</legend>
             <div class="fl-choice-row">
@@ -418,6 +423,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const s = suggested || {};
     form.elements.fcMobileUid.value = p.fc_mobile_uid || s.fcMobileUid || '';
     form.elements.inGameUsername.value = p.in_game_username || s.inGameUsername || '';
+    form.elements.avatarUrl.value = p.avatar_url || '';
+    $('#profileAvatarPreview').innerHTML = p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="">' : 'Player';
     form.elements.ovr.value = p.ovr || '';
     form.elements.regionServer.value = p.region_server || s.regionServer || '';
     form.elements.status.value = p.status || 'looking_for_league';
@@ -453,6 +460,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const kickoff = row.lastKickoffAt && row.kickoffActive ? '<span class="fl-status-pill"><span class="fl-kickoff-icon">↗</span> KICKOFF ACTIVE</span>' : '<span class="fl-status-pill">RECRUITING</span>';
     const invite = row.discordInviteUrl ? '<a class="fl-small-btn external" href="' + esc(row.discordInviteUrl) + '" target="_blank" rel="noopener noreferrer">Apply / Join ↗</a>' : '';
     const activeText = row.lastActiveAt ? 'Last confirmed ' + esc(new Date(row.lastActiveAt).toLocaleDateString()) : 'Awaiting first activity check';
+    const activeLabel = row.confirmedByMe ? 'Confirmed · 24h' : 'League active';
     return '<article class="fl-league-card" style="animation-delay:' + Math.min(index * 35, 210) + 'ms"><div class="fl-card-accent"></div><div class="fl-card-inner">' +
       '<div class="fl-card-top">' +
       '<div class="fl-club-logo">' + logo + '</div>' +
@@ -462,7 +470,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       '<div class="fl-card-tags">' + sizes + languages + '</div>' +
       '<div class="fl-card-stats"><div><span>Minimum OVR</span><strong>' + fmt(row.minOvr) + '+ OVR</strong></div><div><span>Tournament rhythm</span><strong>' + esc(labelFrequency(row.tournamentFrequency)) + '</strong></div><div><span>Club culture</span><strong>' + esc(labelCommitment(row.playerCommitment)) + '</strong></div></div>' +
       '<div class="fl-card-bottom"><div class="fl-owner-line">' + ownerAvatar + '<span>Managed by ' + esc(row.owner?.displayName || 'FC Mobile player') + '</span></div><div class="fl-card-actions">' +
-      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button">League active</button>' + invite +
+      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + (row.confirmedByMe ? 'disabled' : '') + '>' + activeLabel + '</button>' + invite +
       '</div></div><div class="fl-confirm-note">' + activeText + (row.discordRequired ? ' · Discord required' : ' · Discord optional') + '</div>' +
       '</div></article>';
   }
@@ -618,7 +626,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       const result = await api('/api/leagues/listings/' + encodeURIComponent(button.dataset.id) + '/active', { method: 'POST', body: '{}' });
       toast('Thanks. You confirmed this league is active.');
       const row = state.leagues.find(item => item.id === button.dataset.id);
-      if (row) row.lastActiveAt = result.confirmedAt || new Date().toISOString();
+      if (row) { row.lastActiveAt = result.confirmedAt || new Date().toISOString(); row.confirmedByMe = true; }
       filterLeagues();
     } catch (error) {
       toast(error.message || 'Unable to confirm this league.', true);
@@ -718,6 +726,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const payload = {
       fcMobileUid: form.elements.fcMobileUid.value.trim(),
       inGameUsername: form.elements.inGameUsername.value.trim(),
+      avatarUrl: form.elements.avatarUrl.value,
       ovr: Number(form.elements.ovr.value),
       regionServer: form.elements.regionServer.value,
       status: form.elements.status.value,
@@ -776,6 +785,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
   });
 
+  $('#profileAvatarFile').addEventListener('change', async event => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    $('#saveProfileBtn').disabled = true;
+    formMessage('#profileMessage', 'Uploading player avatar…');
+    try {
+      await uploadImage(file, $('#profileAvatarPreview'), $('#profileForm').elements.avatarUrl);
+      formMessage('#profileMessage', 'Avatar uploaded.');
+    } catch (error) {
+      formMessage('#profileMessage', error.message, true);
+    } finally {
+      $('#saveProfileBtn').disabled = false;
+    }
+  });
+
   $('#leagueLogoFile').addEventListener('change', async event => {
     const file = event.currentTarget.files?.[0];
     if (!file) return;
@@ -808,10 +832,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   $('#playerRegionFilter').addEventListener('change', loadPlayers);
   $('#playerSizeFilter').addEventListener('change', loadPlayers);
   $('#playerMinOvr').addEventListener('change', loadPlayers);
-  $('#kickoffBtn')?.addEventListener('click', async () => {
+  $('#ownerPanel').addEventListener('click', async event => {
+    const button = event.target.closest('#kickoffBtn');
+    if (!button) return;
     const row = (state.ownListings || [])[0];
     if (!row) return;
-    const button = $('#kickoffBtn'); button.disabled = true;
+    button.disabled = true;
     try {
       const result = await api('/api/leagues/listings/' + encodeURIComponent(row.id) + '/kickoff', { method: 'POST', body: '{}' });
       toast('Kickoff complete. Your league is back in the spotlight.');
