@@ -6,6 +6,10 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const admin = read('admin/articles/index.html');
 const lexical = read('admin/articles/lexical-editor.js');
 const blog = read('src/lib/blog-supabase.js');
+const imageDelivery = read('src/lib/blog.js');
+const imageHelpers = read('src/lib/image-delivery.js');
+const astroConfig = read('astro.config.mjs');
+const headers = read('public/_headers');
 const worker = read('src/worker.mjs');
 const checks = [
   [!admin.includes("marked@"), 'admin article hydration must not reparse Supabase HTML with marked'],
@@ -23,6 +27,12 @@ const checks = [
   [!blog.includes("Authorization:'Bearer '"), 'public Supabase reads must use the publishable-key API contract'],
   [!worker.includes('\\\\') , 'Worker must not contain doubled backslash regex escapes'],
   [worker.includes("'cache-control':'no-store'"), 'editorial API responses must be uncacheable'],
+  [blog.includes('optimizeHtmlImages(value)') && imageHelpers.includes('loading="lazy"') && imageHelpers.includes('f_auto,q_auto,c_limit,w_'), 'published article images must be optimized and lazy-loaded'],
+  [imageDelivery.includes('cloudinaryImageUrl') && imageDelivery.includes('cloudinarySrcset'), 'Cloudinary delivery must use shared image helpers'],
+  [astroConfig.includes('rehypePlugins: [optimizeMarkdownImages]'), 'Markdown article images must use the image optimization plugin'],
+  [headers.includes('/_astro/*') && headers.includes('immutable'), 'fingerprinted assets must receive long-lived browser caching'],
+  [headers.includes('/assets/images/*') && headers.includes('max-age=86400'), 'public images must use browser caching'],
+
 ];
 
 const failed = checks.filter(([ok]) => !ok);

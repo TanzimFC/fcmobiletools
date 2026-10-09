@@ -1,6 +1,7 @@
 // Runtime blog data layer. Published editorial content is read from Supabase at request time.
 // No GitHub commit or Astro rebuild is required when an article changes.
 import { decorate, slugify } from './blog.js';
+import { optimizeHtmlImages } from './image-delivery.js';
 
 export const SUPABASE_URL = 'https://moczgrwxtfexdbjthxpd.supabase.co';
 export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_twe_ZNKiHXUB4b_J_RjGEA_rPKZrqbr';
@@ -45,7 +46,7 @@ const safeHtml = (html) => {
     }
     return '<iframe'+attrs+'>';
   });
-  return value;
+  return optimizeHtmlImages(value);
 };
 
 function tocFromHtml(html){

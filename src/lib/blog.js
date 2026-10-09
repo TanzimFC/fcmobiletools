@@ -1,6 +1,7 @@
 // Shared data layer for the blog. Every blog page reads posts through here so
 // sections, slugs, covers, dates and reading time are computed exactly once.
 import { getCollection } from 'astro:content';
+import { cloudinaryImageUrl, cloudinarySrcset } from './image-delivery.js';
 
 export const slugify = (value) =>
   String(value ?? '').toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
@@ -55,14 +56,9 @@ export function resolveTools(list = []) {
 
 /* ---------------------------------------------------------------- helpers */
 // Cloudinary delivery transform. Non-Cloudinary URLs pass through untouched.
-export const img = (url, width, extra = '') => {
-  const v = String(url ?? '');
-  return v.includes('res.cloudinary.com') && v.includes('/image/upload/')
-    ? v.replace('/image/upload/', `/image/upload/f_auto,q_auto,dpr_auto,w_${width}${extra ? ',' + extra : ''}/`)
-    : v;
-};
-export const srcset = (url, widths) =>
-  String(url ?? '').includes('res.cloudinary.com') ? widths.map((w) => `${img(url, w)} ${w}w`).join(', ') : undefined;
+export const img = (url, width, extra = '') =>
+  cloudinaryImageUrl(url, width, extra) ?? String(url ?? '');
+export const srcset = (url, widths) => cloudinarySrcset(url, widths);
 
 const DATE_FMT = { short: { month: 'short', day: 'numeric' }, medium: { month: 'short', day: 'numeric', year: 'numeric' }, long: { month: 'long', day: 'numeric', year: 'numeric' } };
 export const fmtDate = (d, kind = 'medium') => (d ? d.toLocaleDateString('en-US', { ...DATE_FMT[kind], timeZone: 'UTC' }) : '');

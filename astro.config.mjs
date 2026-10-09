@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import remarkGfm from 'remark-gfm';
 import cloudflare from '@astrojs/cloudflare';
+import { optimizeMarkdownImages } from './src/lib/image-delivery.js';
 
 const nationRedirects = Object.fromEntries(
   ['japan', 'netherlands', 'mexico', 'france', 'brazil'].flatMap((country) => [
@@ -62,7 +63,7 @@ export default defineConfig({
       ].includes(pathname);
     }
   })],
-  markdown: { remarkPlugins: [remarkGfm] },
+  markdown: { remarkPlugins: [remarkGfm], rehypePlugins: [optimizeMarkdownImages] },
   redirects: {
     '/trivia': '/a-nations-story/',
     '/fcmtv': '/academy/',
