@@ -1,6 +1,7 @@
 import { App } from 'astro/app';
 import { handle } from '@astrojs/cloudflare/handler';
 import { tournamentWorkerRoute } from './tournamentWorker.mjs';
+import { leagueWorkerRoute } from './leagueWorker.mjs';
 import { argon2id, argon2Verify } from 'hash-wasm';
 import {
   RedeemError, listAdminCodes, publicPayload, saveCode as saveRedeemRecord,
@@ -2412,7 +2413,9 @@ async function adminDashboard(request, env, url) {
   const asset = await env.ASSETS.fetch(new Request(new URL('/admin/dashboard.html',url),{method:'GET',headers:request.headers}));
   if(!asset.ok) return asset;
   const html = await asset.text();
-  const patched = html.replace('</head>', `<style id="fc-admin-cyan-theme">${ADMIN_DASHBOARD_CSS}</style></head>`);
+  const leagueLink = '<a class="nav-external" href="/admin/leagues.html"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-6 9 6v11H3z"/><path d="M8 20v-7h8v7"/></svg></span><span>League Review</span></a>';
+  const withLeagueLink = html.includes('href="/admin/leagues.html"') ? html : html.replace('<a class="nav-external" href="/admin/surveys/">', leagueLink + '<a class="nav-external" href="/admin/surveys/">');
+  const patched = withLeagueLink.replace('</head>', `<style id="fc-admin-cyan-theme">${ADMIN_DASHBOARD_CSS}</style></head>`);
   const headers = new Headers(asset.headers);
   headers.set('content-type','text/html; charset=utf-8');
   headers.set('cache-control','no-store');
@@ -2776,6 +2779,9 @@ export function createExports(manifest) {
 
   const tournamentRoute=await tournamentWorkerRoute(request,env,url);
   if(tournamentRoute) return tournamentRoute;
+
+  const leagueRoute=await leagueWorkerRoute({request,env,url,authenticated,accountContext,supabaseRest,json});
+  if(leagueRoute) return leagueRoute;
 
   if(url.pathname === '/api/account/image-upload') return imageUploadApi(request,env,url);
 
