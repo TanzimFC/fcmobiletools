@@ -230,6 +230,14 @@ begin
   perform pg_advisory_xact_lock(hashtext(p_owner_account_id::text));
 
   if not exists (
+    select 1 from public.league_profiles
+    where account_id = p_owner_account_id
+      and status = 'league_owner'
+  ) then
+    return jsonb_build_object('ok', false, 'code', 'not_owner', 'message', 'Set your profile status to League owner before contacting players.');
+  end if;
+
+  if not exists (
     select 1 from public.league_listings
     where owner_account_id = p_owner_account_id
       and status = 'approved'
