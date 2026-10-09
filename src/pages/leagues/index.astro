@@ -1037,6 +1037,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   $('#createListingBtn').addEventListener('click', openListingEditor);
   $('#cancelListing').addEventListener('click', () => { $('#listingEditor').hidden = true; $('#workspace').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); });
   $('#leagueList').addEventListener('click', async event => {
+    const teamButton = event.target.closest('.fl-send-team');
+    if (teamButton) {
+      submitTeamToLeague(teamButton);
+      return;
+    }
     const button = event.target.closest('[data-contact-discord]');
     if (!button) return;
     const value = button.dataset.contactDiscord || '';
