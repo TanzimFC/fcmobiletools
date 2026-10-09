@@ -2646,7 +2646,7 @@ async function imageUploadApi(request, env, url) {
     return json({ error: 'Use a JPG, PNG, WebP, or GIF image.' }, 415);
   }
   const declaredType = String(file.type || '').toLowerCase();
-  if (declaredType && declaredType !== detectedType &&
+  if (declaredType && declaredType !== 'application/octet-stream' && declaredType !== detectedType &&
       !(detectedType === 'image/jpeg' && declaredType === 'image/jpg')) {
     return json({ error: 'The selected file does not appear to be a valid image.' }, 415);
   }
