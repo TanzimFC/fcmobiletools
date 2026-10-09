@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AccountNav from '../../components/AccountNav.astro';
+import ImageUpload from '../../components/ImageUpload.astro';
 ---
 <BaseLayout
   title="My Profile | FCMobiletools Account"
@@ -27,6 +28,9 @@ import AccountNav from '../../components/AccountNav.astro';
       </div>
     </div>
   </main>
+  <template id="communityImageUploadTemplate">
+    <ImageUpload label="Attach a screenshot (optional)" hint="A screenshot can help the review team verify your report." name="attachmentUrl" expirationDays={30} />
+  </template>
 </BaseLayout>
 
 <script>
@@ -41,6 +45,8 @@ import AccountNav from '../../components/AccountNav.astro';
     computeLevelProgress,
     escapeHtml as esc
   } from '../../lib/account-client.js';
+
+  import { bindImageUploads } from '../../lib/image-upload-client.js';
 
   const root = document.getElementById('profileRoot');
   const fmt = (v) => Number(v || 0).toLocaleString();
@@ -508,6 +514,7 @@ import AccountNav from '../../components/AccountNav.astro';
                 <span>Details &amp; verification notes</span>
                 <textarea name="body" required minlength="12" maxlength="2000" placeholder="Explain what needs updating and include the accurate values or source..."></textarea>
               </label>
+              <div id="contribImageUploadMount"></div>
               <div class="contrib-foot">
                 <button type="submit" class="btn-primary">Submit for Review →</button>
                 <p class="contrib-msg" id="contribMsg" role="status"></p>
@@ -571,6 +578,13 @@ import AccountNav from '../../components/AccountNav.astro';
         </aside>
       </section>
     `;
+
+    const imageUploadMount = document.getElementById('contribImageUploadMount');
+    const imageUploadTemplate = document.getElementById('communityImageUploadTemplate');
+    if (imageUploadMount && imageUploadTemplate) {
+      imageUploadMount.replaceChildren(imageUploadTemplate.content.cloneNode(true));
+      bindImageUploads(imageUploadMount);
+    }
 
     const profileQuestForm = document.getElementById('profileQuestForm');
     profileQuestForm?.addEventListener('submit', async (event) => {
@@ -757,7 +771,8 @@ import AccountNav from '../../components/AccountNav.astro';
             submissionType: fd.get('submissionType'),
             pageUrl: fd.get('pageUrl'),
             title: fd.get('title'),
-            body: fd.get('body')
+            body: fd.get('body'),
+            attachmentUrl: fd.get('attachmentUrl')
           })
         });
         const out = await res.json().catch(() => ({}));
