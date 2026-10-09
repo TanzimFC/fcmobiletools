@@ -1665,7 +1665,7 @@ function validateSiteAds(content) {
 
   let videoSliderUrl;
   try { videoSliderUrl=new URL(content.videoSlider.src); } catch {}
-  if(!/^\\d{4,12}$/.test(content.videoSlider.zone) || !videoSliderUrl || videoSliderUrl.protocol!=='https:' || videoSliderUrl.hostname!=='conventionalresponse.com') {
+  if(!/^\d{4,12}$/.test(content.videoSlider.zone) || !videoSliderUrl || videoSliderUrl.protocol!=='https:' || videoSliderUrl.hostname!=='conventionalresponse.com') {
     throw new Error('HilltopAds Video Slider settings are invalid.');
   }
 
@@ -2150,7 +2150,8 @@ async function api(request,env,path) {
         enabled:input.enabled===undefined?current.enabled:Boolean(input.enabled),
         provider:current.provider,
         popunder:{...current.popunder,...(input.popunder||{})},
-        push:{...current.push,...(input.push||{})}
+        push:{...current.push,...(input.push||{})},
+        videoSlider:{...current.videoSlider,...(input.videoSlider||{})}
       });
       const file=await repoFile(env,'src/config/siteAds.js');
       const commitSha=await writeRepoFile(env,'src/config/siteAds.js',siteAdsText(next),file.sha,'admin: update site ad settings');
