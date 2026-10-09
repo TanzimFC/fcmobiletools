@@ -39,6 +39,7 @@ export const TOOLS = {
   '/investment-calculator': { title: 'Investment Calculator',   label: 'Calculator', description: 'Calculate after-tax market profit, ROI and break-even sell prices.' },
   '/football-centre':       { title: 'Football Centre',         label: 'Live tool',  description: 'Track matches, points, rewards and event resources in one place.' },
   '/gauntlet-planner':      { title: 'Gauntlet Mode Planner',   label: 'Planner',    description: 'Plan match-by-match rotations and track player availability.' },
+  '/shards-counter':        { title: 'Shards Counter',           label: 'Tracker',    description: 'Track your Star Shards balance and progress toward a chosen target.' },
   '/a-nations-story':       { title: "A Nation's Story",        label: 'Event tool', description: 'Find event answers without digging through the full quest flow.' },
   '/tournaments':           { title: 'Tournaments',             label: 'Brackets',   description: 'Official FC Mobile tournament brackets, match results and progress.' }
 };
