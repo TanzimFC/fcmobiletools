@@ -1155,11 +1155,10 @@ async function load(s){nav(s);app.setAttribute('aria-busy','true');app.innerHTML
       const admin=await adminResponse.json();
       if(admin?.role==='admin'){
         workspaceRole='admin'; workspaceUser=admin;
-        const boot=await api('/creators/bootstrap-self',{method:'POST'}).catch(()=>null);
-        if(boot?.created){openModal('<div class="dialoghead"><div><h3>Creator account created</h3><div class="muted">Save this temporary password now. It is not stored in plain text.</div></div></div><div class="dialogbody"><div class="notice"><b>Username</b><br>tanzimfc<br><br><b>Temporary password</b><br><code style="font-size:15px;color:#dff8ff;user-select:all">'+esc(boot.temporaryPassword)+'</code></div><p class="muted" style="margin-top:12px">Creator login: /creator/login — change the password from Account after signing in.</p></div><div class="dialogfoot"><button class="btn primary" data-close>Done</button></div>');}
         document.querySelectorAll('[data-section]').forEach(b=>b.onclick=()=>load(b.dataset.section));
         $('#logout').onclick=async()=>{try{await api('/logout',{method:'POST'})}finally{location.replace('/admin/')}};$('#logoutTop').onclick=$('#logout').onclick;
         await load(new URLSearchParams(location.search).get('section')||'overview');
+        api('/creators/bootstrap-self',{method:'POST'}).then((boot)=>{if(boot?.created && workspaceRole==='admin') openModal('<div class="dialoghead"><div><h3>Creator account created</h3><div class="muted">Save this temporary password now. It is not stored in plain text.</div></div></div><div class="dialogbody"><div class="notice"><b>Username</b><br>tanzimfc<br><br><b>Temporary password</b><br><code style="font-size:15px;color:#dff8ff;user-select:all">'+esc(boot.temporaryPassword)+'</code></div><p class="muted" style="margin-top:12px">Creator login: /creator/login — change the password from Account after signing in.</p></div><div class="dialogfoot"><button class="btn primary" data-close>Done</button></div>');}).catch(()=>{});
         return;
       }
     }
