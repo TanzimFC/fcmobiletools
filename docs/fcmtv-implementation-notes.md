@@ -1,6 +1,6 @@
 # FC Mobile Training Academy implementation notes
 
-These notes are for maintainers. Keep them in the repository; do not surface them on the public FCM TV page.
+These notes are for maintainers. Keep them in the repository; do not surface implementation details on the public Academy page.
 
 ## Product boundary
 
