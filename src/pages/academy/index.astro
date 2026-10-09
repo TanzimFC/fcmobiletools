@@ -46,7 +46,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
         </div>
       </section>
 
-      <section class="ftv-watch-layout" aria-label="Featured video">
+      <section class="ftv-watch-layout" aria-label="Featured lesson">
         <article class="ftv-player-card">
           <div class="ftv-player-heading">
             <div class="ftv-player-eyebrow"><span class="ftv-equalizer"><i></i><i></i><i></i><i></i></span> NOW PLAYING</div>
@@ -117,17 +117,17 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
           </div>
           <label class="ftv-search">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
-            <input id="ftvSearch" type="search" placeholder="Search videos..." autocomplete="off" aria-label="Search FC Mobile Academy videos" />
+            <input id="ftvSearch" type="search" placeholder="Search lessons..." autocomplete="off" aria-label="Search Academy lessons" />
             <kbd>/</kbd>
           </label>
         </div>
-        <div id="ftvCategories" class="ftv-categories" role="group" aria-label="Filter videos">
+        <div id="ftvCategories" class="ftv-categories" role="group" aria-label="Filter lessons">
           <button class="ftv-filter is-active" type="button" data-category="all">All lessons</button>
           {Array.from(new Set(publishedVideos.map((video) => video.category))).map((category) => (
             <button class="ftv-filter" type="button" data-category={category}>{category}</button>
           ))}
         </div>
-        <div class="ftv-results-row"><span id="ftvResultsLabel">{publishedVideos.length} videos</span><span>Lessons curated by TanzimFC</span></div>
+        <div class="ftv-results-row"><span id="ftvResultsLabel">{publishedVideos.length} {publishedVideos.length === 1 ? 'lesson' : 'lessons'}</span><span>Lessons curated by TanzimFC</span></div>
         <div class="ftv-video-grid" id="ftvVideoGrid">
           {publishedVideos.map((video) => (
             <button type="button" class="ftv-video-card" data-play-video={video.id} aria-label={`Play ${video.title}`}>
@@ -551,7 +551,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
         }
       } else {
         $('#ftvVideoGrid').innerHTML = '';
-        $('#ftvSelectedTitle').textContent = 'No videos available right now';
+        $('#ftvSelectedTitle').textContent = 'No lessons available right now';
         $('#ftvSelectedDescription').textContent = 'Please check back later for new FC Mobile lessons.';
         $('#ftvPlayerStatus').textContent = 'Library empty';
       }
