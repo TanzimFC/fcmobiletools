@@ -173,6 +173,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
   let quizInterval = 0;
   let quizSeconds = 15;
   let tabSwitchCount = 0;
+  let lessonStarted = false;
   let wasPlayingBeforeHide = false;
   let apiInitializationAttempted = false;
   let rateGuardTimer = 0;
@@ -370,7 +371,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
       stage.scrollIntoView({behavior: smoothScroll ? 'smooth' : 'auto', block: 'center'});
     }
     const changed = selectedId !== video.id;
-    if (changed) tabSwitchCount = 0;
+    if (changed) { tabSwitchCount = 0; lessonStarted = false; }
     closeFocusPrompt();
     selectedId = video.id;
     updateSelectedDetails(video);
@@ -428,6 +429,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
         onStateChange: (event) => {
           const state = window.YT.PlayerState;
           if (event.data === state.PLAYING) {
+            lessonStarted = true;
             closeFocusPrompt();
             startRateGuard();
             $('#ftvPlayerStatus').textContent = 'Now playing';
@@ -435,6 +437,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
             stopRateGuard();
             $('#ftvPlayerStatus').textContent = 'Paused';
           } else if (event.data === state.ENDED) {
+            lessonStarted = false;
             stopRateGuard();
             $('#ftvPlayerStatus').textContent = 'Finished';
             showQuiz(selectedVideo());
@@ -481,21 +484,27 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      if (!playerReady || !player || player.getPlayerState() !== window.YT?.PlayerState?.PLAYING) return;
-      wasPlayingBeforeHide = true;
+      if (!playerReady || !player || !lessonStarted) return;
+      const playerState = player.getPlayerState();
+      const states = window.YT?.PlayerState;
+      if (playerState !== states?.PLAYING && playerState !== states?.PAUSED) return;
+      wasPlayingBeforeHide = playerState === states.PLAYING;
       tabSwitchCount += 1;
-      player.pauseVideo();
       if (tabSwitchCount === 1) {
+        if (wasPlayingBeforeHide) player.pauseVideo();
         showFocusPrompt('Lesson Paused', 'Please keep focus on the active training screen. The lesson is paused; press Play when you return.', 'warning');
       } else {
         try { player.seekTo(0, true); } catch {}
         player.stopVideo();
+        lessonStarted = false;
         $('#ftvPlayerStatus').textContent = 'Reset to 0:00';
         showFocusPrompt('Lesson Reset', 'The lesson has been stopped and reset to 0:00. Press Play to start again.', 'reset');
       }
-    } else if (wasPlayingBeforeHide) {
-      wasPlayingBeforeHide = false;
-      $('#ftvPlayerStatus').textContent = tabSwitchCount >= 2 ? 'Reset to 0:00' : 'Paused';
+    } else {
+      if (wasPlayingBeforeHide) {
+        wasPlayingBeforeHide = false;
+        $('#ftvPlayerStatus').textContent = tabSwitchCount >= 2 ? 'Reset to 0:00' : 'Paused';
+      }
       const prompt = $('#ftvFocusPrompt');
       if (prompt && !prompt.hidden) {
         prompt.scrollIntoView({
