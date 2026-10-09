@@ -1638,12 +1638,14 @@ function parseSiteAds(text) {
   try { return JSON.parse(match[1]); } catch { throw new Error('Ad configuration is not valid JSON.'); }
 }
 
-function validateSiteAds(content) {  if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
+function validateSiteAds(content) {
+  if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
   content.enabled=Boolean(content.enabled);
   content.provider=String(content.provider||'Monetag').trim()||'Monetag';
 
   if(!content.popunder || typeof content.popunder!=='object') throw new Error('Popunder configuration is missing.');
   if(!content.push || typeof content.push!=='object') throw new Error('Push configuration is missing.');
+  if(!content.videoSlider || typeof content.videoSlider!=='object') throw new Error('HilltopAds Video Slider configuration is missing.');
 
   content.popunder.enabled=Boolean(content.popunder.enabled);
   content.popunder.zone=String(content.popunder.zone||'').trim();
@@ -1652,19 +1654,27 @@ function validateSiteAds(content) {  if(!content || typeof content!=='object') t
   content.push.zone=String(content.push.zone||'').trim();
   content.push.src=String(content.push.src||'').trim();
   content.push.delayMs=Number(content.push.delayMs);
+  content.videoSlider.enabled=Boolean(content.videoSlider.enabled);
+  content.videoSlider.zone=String(content.videoSlider.zone||'').trim();
+  content.videoSlider.src=String(content.videoSlider.src||'').trim();
 
   const validHttps=(value)=>{try{return new URL(value).protocol==='https:';}catch{return false;}};
   if(!content.popunder.zone || !validHttps(content.popunder.src)) throw new Error('Popunder network settings are invalid.');
   if(!content.push.zone || !validHttps(content.push.src)) throw new Error('Push network settings are invalid.');
   if(!Number.isInteger(content.push.delayMs) || content.push.delayMs<5000 || content.push.delayMs>300000) throw new Error('Push delay must be between 5 and 300 seconds.');
 
-  // Never allow the admin UI to remove the private exclusions.
-  content.excludedPathPrefixes=['/admin','/api','/creator/login'];
+  let videoSliderUrl;
+  try { videoSliderUrl=new URL(content.videoSlider.src); } catch {}
+  if(!/^\\d{4,12}$/.test(content.videoSlider.zone) || !videoSliderUrl || videoSliderUrl.protocol!=='https:' || videoSliderUrl.hostname!=='conventionalresponse.com') {
+    throw new Error('HilltopAds Video Slider settings are invalid.');
+  }
+
+  // Keep the private and intentionally excluded routes out of the public ad layer.
+  content.excludedPathPrefixes=['/admin','/api','/creator/login','/fc-mobile-27'];
   return content;
 }
-
 function siteAdsText(content) {
-  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// /admin, /api, and /creator/login remain excluded from ads server-side.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
+  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// /admin, /api, /creator/login, and /fc-mobile-27 remain excluded from ads server-side.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
 }
 
 
