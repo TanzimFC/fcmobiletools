@@ -1,8 +1,8 @@
 // Central ad configuration managed by the FC Mobile Tools admin panel.
-// /admin, /api, and /creator/login remain excluded from ads server-side.
+// Public ad formats are controlled from /admin. Keep private and excluded routes out of the ad layer.
 export const SITE_ADS = {
-  "enabled": false,
-  "provider": "Monetag",
+  "enabled": true,
+  "provider": "Monetag + HilltopAds",
   "popunder": {
     "enabled": false,
     "zone": "11875908",
@@ -13,6 +13,11 @@ export const SITE_ADS = {
     "zone": "11875910",
     "src": "https://5gvci.com/act/files/tag.min.js",
     "delayMs": 10000
+  },
+  "videoSlider": {
+    "enabled": true,
+    "zone": "7503133",
+    "src": "https://conventionalresponse.com/b.XvV/sQddGflB0WYKWacr/SeEmA9tuCZwUllWkyP/T/cl1ZM/D/MdxUM-zeMntFN/zYU/w/M/zoEIzINewF"
   },
   "excludedPathPrefixes": [
     "/admin",
