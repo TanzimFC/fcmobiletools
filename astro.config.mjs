@@ -66,7 +66,6 @@ export default defineConfig({
   redirects: {
     '/trivia': '/a-nations-story/',
     '/fcmtv': '/academy/',
-    '/fcmtv/': '/academy/',
     ...nationRedirects
   },
   experimental: {
