@@ -1,7 +1,7 @@
 // Central ad configuration managed by the FC Mobile Tools admin panel.
 // Public ad formats are controlled from /admin. Keep private and excluded routes out of the ad layer.
 export const SITE_ADS = {
-  "enabled": true,
+  "enabled": false,
   "provider": "Monetag + HilltopAds",
   "popunder": {
     "enabled": false,
@@ -15,7 +15,7 @@ export const SITE_ADS = {
     "delayMs": 10000
   },
   "videoSlider": {
-    "enabled": true,
+    "enabled": false,
     "zone": "7503133",
     "src": "https://conventionalresponse.com/b.XvV/sQddGflB0WYKWacr/SeEmA9tuCZwUllWkyP/T/cl1ZM/D/MdxUM-zeMntFN/zYU/w/M/zoEIzINewF"
   },
