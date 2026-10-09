@@ -160,6 +160,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
   let playerReady = false;
   let currentYoutubeId = document.getElementById('ytPlayer')?.dataset.videoId || '';
   let pendingYoutubeId = '';
+  let pendingPlay = false;
   let activeCategory = 'all';
   let quizInterval = 0;
   let quizSeconds = 15;
@@ -328,6 +329,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
       }
     } else {
       pendingYoutubeId = video.youtubeId;
+      pendingPlay = true;
       const frame = $('#ytPlayer');
       if (frame) frame.src = embedUrl(video.youtubeId);
     }
@@ -356,12 +358,16 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
           playerReady = true;
           try { player.setPlaybackRate(1); } catch {}
           const pending = pendingYoutubeId;
+          const shouldPlay = pendingPlay;
           pendingYoutubeId = '';
+          pendingPlay = false;
           if (pending && pending !== currentYoutubeId) {
             currentYoutubeId = pending;
-            player.loadVideoById({ videoId: pending });
+            if (shouldPlay) player.loadVideoById({ videoId: pending });
+            else player.cueVideoById({ videoId: pending });
           } else {
             $('#ftvPlayerStatus').textContent = 'Ready to play';
+            if (shouldPlay) player.playVideo();
           }
         },
         onStateChange: (event) => {
@@ -470,6 +476,7 @@ const safeInitialJson = JSON.stringify(publishedVideos).replace(/</g, '\\u003c')
           player.cueVideoById(selected.youtubeId);
         } else if (videoChanged && !playerReady) {
           pendingYoutubeId = selected.youtubeId;
+          pendingPlay = false;
           const frame = $('#ytPlayer');
           if (frame) frame.src = embedUrl(selected.youtubeId);
         }
