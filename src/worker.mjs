@@ -1,6 +1,7 @@
 import { App } from 'astro/app';
 import { handle } from '@astrojs/cloudflare/handler';
 import { tournamentWorkerRoute } from './tournamentWorker.mjs';
+import { leagueWorkerRoute } from './leagueWorker.mjs';
 import { argon2id, argon2Verify } from 'hash-wasm';
 import {
   RedeemError, listAdminCodes, publicPayload, saveCode as saveRedeemRecord,
@@ -2412,7 +2413,9 @@ async function adminDashboard(request, env, url) {
   const asset = await env.ASSETS.fetch(new Request(new URL('/admin/dashboard.html',url),{method:'GET',headers:request.headers}));
   if(!asset.ok) return asset;
   const html = await asset.text();
-  const patched = html.replace('</head>', `<style id="fc-admin-cyan-theme">${ADMIN_DASHBOARD_CSS}</style></head>`);
+  const leagueLink = '<a class="nav-external" href="/admin/leagues.html"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-6 9 6v11H3z"/><path d="M8 20v-7h8v7"/></svg></span><span>League Review</span></a>';
+  const withLeagueLink = html.includes('href="/admin/leagues.html"') ? html : html.replace('<a class="nav-external" href="/admin/surveys/">', leagueLink + '<a class="nav-external" href="/admin/surveys/">');
+  const patched = withLeagueLink.replace('</head>', `<style id="fc-admin-cyan-theme">${ADMIN_DASHBOARD_CSS}</style></head>`);
   const headers = new Headers(asset.headers);
   headers.set('content-type','text/html; charset=utf-8');
   headers.set('cache-control','no-store');
@@ -2654,6 +2657,9 @@ async function imageUploadApi(request, env, url) {
     return json({ error: 'The selected file does not appear to be a valid image.' }, 415);
   }
 
+  // League crests and player avatars need to stay available for the life of a listing.
+  // Other upload callers keep the existing temporary-expiry default.
+  const permanent = fields.get('permanent') === 'true';
   let expirationDays = Number.parseInt(String(fields.get('expirationDays') || ''), 10);
   if (!Number.isInteger(expirationDays)) expirationDays = IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS;
   expirationDays = Math.max(1, Math.min(180, expirationDays));
@@ -2680,7 +2686,7 @@ async function imageUploadApi(request, env, url) {
   try {
     const endpoint = new URL('https://api.imgbb.com/1/upload');
     endpoint.searchParams.set('key', String(env.IMAGEBB_API_KEY).trim());
-    endpoint.searchParams.set('expiration', String(expirationSeconds));
+    if (!permanent) endpoint.searchParams.set('expiration', String(expirationSeconds));
     upstream = await fetch(endpoint.toString(), { method: 'POST', body: outgoing });
     result = await upstream.json().catch(() => null);
   } catch {
@@ -2704,7 +2710,7 @@ async function imageUploadApi(request, env, url) {
   }
 
   const appliedExpiration = Number(image.expiration);
-  if (!Number.isFinite(appliedExpiration) || appliedExpiration < 60) {
+  if (!permanent && (!Number.isFinite(appliedExpiration) || appliedExpiration < 60)) {
     console.warn('[IMAGE_UPLOAD] Automatic image expiry was not confirmed.');
     return json({ error: 'The image could not be uploaded with temporary storage. Please try again.' }, 503);
   }
@@ -2716,8 +2722,9 @@ async function imageUploadApi(request, env, url) {
       width: Math.max(0, Number(image.width) || 0),
       height: Math.max(0, Number(image.height) || 0),
       size: Math.max(0, Number(image.size) || file.size),
-      expirationDays: Math.max(1, Math.ceil(appliedExpiration / (24 * 60 * 60))),
-      expiresAt: new Date(Date.now() + appliedExpiration * 1000).toISOString()
+      permanent,
+      expirationDays: permanent ? null : Math.max(1, Math.ceil(appliedExpiration / (24 * 60 * 60))),
+      expiresAt: permanent ? null : new Date(Date.now() + appliedExpiration * 1000).toISOString()
     }
   });
 }
@@ -2776,6 +2783,9 @@ export function createExports(manifest) {
 
   const tournamentRoute=await tournamentWorkerRoute(request,env,url);
   if(tournamentRoute) return tournamentRoute;
+
+  const leagueRoute=await leagueWorkerRoute({request,env,url,authenticated,accountContext,supabaseRest,json});
+  if(leagueRoute) return leagueRoute;
 
   if(url.pathname === '/api/account/image-upload') return imageUploadApi(request,env,url);
 

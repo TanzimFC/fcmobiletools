@@ -1,0 +1,907 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Find a League | FCMobiletools"
+  description="Find an FC Mobile league that fits your squad and play style, or recruit players for your league."
+  robots="noindex,nofollow"
+  googlebot="noindex,nofollow"
+>
+  <main class="fl-page">
+    <div class="fl-wrap">
+      <header class="fl-heading">
+        <div class="fl-title-block">
+          <div class="fl-eyebrow"><span></span> FC MOBILE COMMUNITY</div>
+          <h1>Find a <em>League.</em></h1>
+          <p>The right squad. The right rhythm. Start with a club that plays your way.</p>
+        </div>
+        <div class="fl-heading-actions">
+          <button class="fl-btn fl-btn-quiet" id="editProfileBtn" type="button" hidden>My player profile</button>
+          <button class="fl-btn fl-btn-primary" id="listLeagueBtn" type="button" hidden>+ List your league</button>
+        </div>
+      </header>
+
+      <section class="fl-gate" id="loginGate" hidden>
+        <div class="fl-gate-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M24 4 41 11v12c0 10-6.8 17-17 21C13.8 40 7 33 7 23V11L24 4Z"/><path d="m16 24 5 5 11-12"/></svg>
+        </div>
+        <h2>Your next club is one sign-in away.</h2>
+        <p>Sign in to browse leagues, keep your player profile ready and contact league owners.</p>
+        <a class="fl-btn fl-btn-primary" href="/account/?next=%2Fleagues%2F">Sign in or create account <span aria-hidden="true">↗</span></a>
+      </section>
+
+      <section class="fl-gate" id="loadingState" aria-live="polite">
+        <div class="fl-spinner" aria-hidden="true"></div>
+        <p>Getting the league board ready…</p>
+      </section>
+
+      <section class="fl-profile-setup" id="profileSetup" hidden>
+        <div class="fl-setup-top">
+          <div>
+            <span class="fl-eyebrow"><span></span> PLAYER CARD</span>
+            <h2 id="profileSetupTitle">Set up your league profile.</h2>
+            <p>This profile is only for Find a League. It won't change your normal account profile or player database.</p>
+          </div>
+          <span class="fl-step">01 <i>/</i> PROFILE</span>
+        </div>
+        <form id="profileForm" class="fl-form">
+          <div class="fl-form-grid">
+            <label class="fl-field"><span>FC Mobile UID <b>*</b></span><input name="fcMobileUid" required minlength="3" maxlength="64" autocomplete="off" placeholder="Your in-game UID"></label>
+            <label class="fl-field"><span>In-game username <b>*</b></span><input name="inGameUsername" required minlength="2" maxlength="40" placeholder="Your FC Mobile name"></label>
+            <label class="fl-field"><span>Current OVR <b>*</b></span><input name="ovr" type="number" inputmode="numeric" min="50" max="200" required placeholder="e.g. 123"></label>
+            <label class="fl-field"><span>Region / server <b>*</b></span>
+              <select name="regionServer" required>
+                <option value="">Choose region</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option>
+              </select>
+            </label>
+            <label class="fl-field"><span>What describes you? <b>*</b></span>
+              <select name="status" required>
+                <option value="looking_for_league">Looking for a league</option>
+                <option value="in_a_league">Already in a league</option>
+                <option value="league_owner">League owner</option>
+                <option value="not_looking">Just browsing for now</option>
+              </select>
+            </label>
+            <label class="fl-field"><span>Discord handle <small>Optional</small></span><input name="discordHandle" maxlength="100" placeholder="name or @name"></label>
+            <label class="fl-field"><span>Availability</span>
+              <select name="availability"><option value="">Choose your usual availability</option><option>Daily</option><option>Most days</option><option>Weekends</option><option>Evenings</option><option>Flexible</option><option>Casual / whenever</option></select>
+            </label>
+            <label class="fl-field"><span>Play style</span>
+              <select name="playStyle"><option value="">Choose a play style</option><option>Competitive</option><option>Active and relaxed</option><option>Casual</option><option>Quest focused</option><option>Building a new team</option></select>
+            </label>
+          </div>
+          <div class="fl-upload-row">
+            <label class="fl-upload" for="profileAvatarFile"><span class="fl-upload-icon">↑</span><span><strong>Player avatar</strong><small>Optional JPG, PNG, WebP or GIF · under 8 MB</small></span><input id="profileAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+            <div id="profileAvatarPreview" class="fl-logo-preview">Player</div>
+            <input type="hidden" name="avatarUrl">
+          </div>
+          <fieldset class="fl-choice-group">
+            <legend>Preferred languages</legend>
+            <div class="fl-choice-row">
+              <label><input type="checkbox" name="preferredLanguages" value="English" checked><span>English</span></label>
+              <label><input type="checkbox" name="preferredLanguages" value="Bengali"><span>Bengali</span></label>
+              <label><input type="checkbox" name="preferredLanguages" value="Indonesian"><span>Indonesian</span></label>
+              <label><input type="checkbox" name="preferredLanguages" value="Arabic"><span>Arabic</span></label>
+              <label><input type="checkbox" name="preferredLanguages" value="Spanish"><span>Spanish</span></label>
+              <label><input type="checkbox" name="preferredLanguages" value="Other"><span>Other</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="fl-choice-group">
+            <legend>Tournament sizes you'd play</legend>
+            <div class="fl-choice-row">
+              <label><input type="checkbox" name="tournamentSizes" value="4v4"><span>4v4</span></label>
+              <label><input type="checkbox" name="tournamentSizes" value="8v8"><span>8v8</span></label>
+              <label><input type="checkbox" name="tournamentSizes" value="16v16"><span>16v16</span></label>
+              <label><input type="checkbox" name="tournamentSizes" value="32v32"><span>32v32</span></label>
+            </div>
+          </fieldset>
+          <label class="fl-field"><span>Anything league owners should know? <small>Optional</small></span><textarea name="notes" rows="3" maxlength="500" placeholder="Preferred tournament rhythm, what you're looking for, or other details."></textarea></label>
+          <div class="fl-profile-actions">
+            <p>Contact details are shown only to approved league owners when you choose “Looking for a league”.</p>
+            <button class="fl-btn fl-btn-primary" type="submit" id="saveProfileBtn">Save player profile <span aria-hidden="true">→</span></button>
+          </div>
+          <div class="fl-form-message" id="profileMessage" role="status"></div>
+        </form>
+      </section>
+
+      <div class="fl-workspace" id="workspace" hidden>
+        <div class="fl-tabs" role="tablist" aria-label="League directory">
+          <button class="fl-tab active" id="tabLeagues" type="button" role="tab" aria-selected="true">Find a League <span id="leagueCount">0</span></button>
+          <button class="fl-tab" id="tabPlayers" type="button" role="tab" aria-selected="false" hidden>Find Players</button>
+          <span class="fl-tabs-spacer"></span>
+          <span class="fl-account-chip"><i></i><span id="signedInAs">Signed in</span></span>
+        </div>
+
+        <section class="fl-view" id="leagueView">
+          <div class="fl-directory-head">
+            <div>
+              <h2>Find your fit.</h2>
+              <p>Browse current recruitment posts. Kickoff gives a club a temporary lift, not a permanent top spot.</p>
+            </div>
+            <button class="fl-btn fl-btn-outline" id="openListingBtn" type="button" hidden>List your league</button>
+          </div>
+          <div class="fl-filters">
+            <label class="fl-search"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="leagueSearch" type="search" placeholder="Search league name, language or region" aria-label="Search leagues"></label>
+            <select id="regionFilter" aria-label="Filter region"><option value="">All regions</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option></select>
+            <select id="frequencyFilter" aria-label="Filter tournament rhythm"><option value="">Any tournament rhythm</option><option value="daily">Daily</option><option value="most_days">Most days</option><option value="several_weekly">Several times a week</option><option value="weekly">Weekly</option><option value="occasional">Occasional</option></select>
+            <select id="sizeFilter" aria-label="Filter tournament size"><option value="">Any size</option><option value="4v4">4v4</option><option value="8v8">8v8</option><option value="16v16">16v16</option><option value="32v32">32v32</option></select>
+            <select id="squadOvrFilter" aria-label="Filter by squad OVR"><option value="my" selected>My OVR</option><option value="">Any OVR</option><option value="110">110 OVR</option><option value="115">115 OVR</option><option value="120">120 OVR</option><option value="125">125 OVR</option><option value="130">130 OVR</option></select>
+          </div>
+          <div class="fl-results-meta"><span id="resultsLabel">Latest league listings</span><button type="button" class="fl-reset" id="clearFilters">Clear filters</button></div>
+          <div id="leagueList" class="fl-league-grid">
+            <div class="fl-skeleton"></div><div class="fl-skeleton"></div><div class="fl-skeleton"></div>
+          </div>
+          <div class="fl-empty" id="leagueEmpty" hidden>
+            <span class="fl-empty-icon" aria-hidden="true">⌕</span><h3>No matching leagues yet.</h3><p>Try a wider filter, or help the directory grow by listing your club.</p>
+            <button class="fl-btn fl-btn-outline" id="emptyListBtn" type="button" hidden>List your league</button>
+          </div>
+        </section>
+
+        <section class="fl-view" id="playersView" hidden>
+          <div class="fl-directory-head">
+            <div><h2>Recruit your next player.</h2><p>Player search is available to approved league owners. Contact details unlock one at a time.</p></div>
+            <div class="fl-usage"><strong id="outreachRemaining">3</strong><span>player contacts left today <small>Resets at 00:00 UTC</small></span></div>
+          </div>
+          <div class="fl-filters fl-player-filters">
+            <label class="fl-search"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="playerSearch" type="search" placeholder="Search player or region" aria-label="Search players"></label>
+            <select id="playerRegionFilter" aria-label="Filter player region"><option value="">All regions</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option></select>
+            <select id="playerSizeFilter" aria-label="Preferred tournament size"><option value="">Any size</option><option value="4v4">4v4</option><option value="8v8">8v8</option><option value="16v16">16v16</option><option value="32v32">32v32</option></select>
+            <select id="playerMinOvr" aria-label="Minimum player OVR"><option value="50">Any OVR</option><option value="100">100+ OVR</option><option value="110">110+ OVR</option><option value="120">120+ OVR</option><option value="125">125+ OVR</option></select>
+          </div>
+          <div class="fl-results-meta"><span id="playerResultsLabel">Players looking for a league</span><span class="fl-private-note">UID and Discord stay hidden until you unlock a contact.</span></div>
+          <div id="playerList" class="fl-player-grid"></div>
+          <div class="fl-empty" id="playerEmpty" hidden><span class="fl-empty-icon" aria-hidden="true">⌕</span><h3>No players match those filters.</h3><p>Try a wider region or tournament-size filter.</p></div>
+        </section>
+
+        <section class="fl-owner-panel" id="ownerPanel" hidden>
+          <div class="fl-owner-head"><div><span class="fl-eyebrow"><span></span> OWNER DESK</span><h2>Your league</h2><p>Keep your listing current. Kickoff is available every six hours.</p></div><span class="fl-owner-mark" aria-hidden="true">FC</span></div>
+          <div id="ownerListing"></div>
+          <div class="fl-owner-create" id="ownerCreate" hidden>
+            <div><strong>Bring your club to the board.</strong><p>Every new league listing is reviewed before it appears in search.</p></div>
+            <button class="fl-btn fl-btn-primary" id="createListingBtn" type="button">Create league listing <span aria-hidden="true">→</span></button>
+          </div>
+          <div class="fl-owner-create" id="ownerPending" hidden>
+            <div><strong>Your listing is with the review team.</strong><p>You can keep browsing while we review your league details.</p></div>
+            <span class="fl-status-pill">Awaiting review</span>
+          </div>
+        </section>
+      </div>
+
+      <section class="fl-listing-editor" id="listingEditor" hidden>
+        <div class="fl-editor-heading"><button class="fl-back" type="button" id="cancelListing">← Back to leagues</button><span class="fl-eyebrow"><span></span> CLUB APPLICATION</span><h2>Put your league on the board.</h2><p>Clear, accurate details attract the players who actually fit your club. Your listing goes live after approval.</p></div>
+        <form id="listingForm" class="fl-form">
+          <div class="fl-form-grid">
+            <label class="fl-field"><span>League name <b>*</b></span><input name="name" required minlength="3" maxlength="70" placeholder="Your club's name"></label>
+            <label class="fl-field"><span>League UID / in-game ID</span><input name="leagueGameId" maxlength="64" placeholder="Optional"></label>
+            <label class="fl-field"><span>Region / server <b>*</b></span><select name="regionServer" required><option value="">Choose region</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option></select></label>
+            <label class="fl-field"><span>Minimum OVR <b>*</b></span><input name="minOvr" type="number" min="50" max="200" required placeholder="e.g. 115"></label>
+            <label class="fl-field"><span>Tournament rhythm <b>*</b></span><select name="tournamentFrequency" required><option value="daily">Daily</option><option value="most_days">Most days</option><option value="several_weekly">Several times a week</option><option value="weekly">Weekly</option><option value="occasional">Occasional</option></select></label>
+            <label class="fl-field"><span>Player commitment <b>*</b></span><select name="playerCommitment" required><option value="casual">Casual, no pressure</option><option value="regular" selected>Regular play</option><option value="competitive">Competitive</option></select></label>
+            <label class="fl-field"><span>Open spots <b>*</b></span><input name="openSpots" type="number" min="0" max="50" required value="5"></label>
+            <label class="fl-field"><span>Discord invite link <small>Optional</small></span><input name="discordInviteUrl" type="url" placeholder="https://discord.gg/..." maxlength="500"></label>
+            <label class="fl-field"><span>Public Discord contact <small>Optional</small></span><input name="contactDiscord" maxlength="100" placeholder="@clubadmin or Discord handle"></label>
+          </div>
+          <label class="fl-field"><span>Describe your league <b>*</b></span><textarea name="description" required minlength="20" maxlength="700" rows="4" placeholder="Tell players how your club plays, what you expect and what makes it a good fit."></textarea></label>
+          <div class="fl-upload-row">
+            <label class="fl-upload" for="leagueLogoFile"><span class="fl-upload-icon">↑</span><span><strong>League crest</strong><small>Optional JPG, PNG, WebP or GIF · under 8 MB</small></span><input id="leagueLogoFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+            <div id="leagueLogoPreview" class="fl-logo-preview">FC</div>
+            <input type="hidden" name="logoUrl">
+          </div>
+          <fieldset class="fl-choice-group"><legend>Tournament sizes <b>*</b></legend><div class="fl-choice-row">
+            <label><input type="checkbox" name="tournamentSizes" value="4v4" checked><span>4v4</span></label><label><input type="checkbox" name="tournamentSizes" value="8v8"><span>8v8</span></label><label><input type="checkbox" name="tournamentSizes" value="16v16"><span>16v16</span></label><label><input type="checkbox" name="tournamentSizes" value="32v32"><span>32v32</span></label>
+          </div></fieldset>
+          <fieldset class="fl-choice-group"><legend>Languages used by your league</legend><div class="fl-choice-row">
+            <label><input type="checkbox" name="preferredLanguages" value="English" checked><span>English</span></label><label><input type="checkbox" name="preferredLanguages" value="Bengali"><span>Bengali</span></label><label><input type="checkbox" name="preferredLanguages" value="Indonesian"><span>Indonesian</span></label><label><input type="checkbox" name="preferredLanguages" value="Arabic"><span>Arabic</span></label><label><input type="checkbox" name="preferredLanguages" value="Spanish"><span>Spanish</span></label><label><input type="checkbox" name="preferredLanguages" value="Other"><span>Other</span></label>
+          </div></fieldset>
+          <label class="fl-field"><span>Weekly rewards or perks <small>Optional · describe only what your league actually offers</small></span><textarea name="weeklyRewards" rows="2" maxlength="300" placeholder="Optional rewards, recognition or member perks."></textarea></label>
+          <div class="fl-form-bottom">
+            <label class="fl-check-line"><input type="checkbox" name="discordRequired"><span>Discord is required to join</span></label>
+            <label class="fl-check-line"><input type="checkbox" name="recruitingOpen" checked><span>Open for new members</span></label>
+          </div>
+          <div class="fl-profile-actions"><p>Don't add player UID lists or private member details to the public description.</p><button class="fl-btn fl-btn-primary" type="submit" id="submitListingBtn">Submit for approval <span aria-hidden="true">→</span></button></div>
+          <div class="fl-form-message" id="listingMessage" role="status"></div>
+        </form>
+      </section>
+
+      <div class="fl-toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .fl-page{--fl-bg:#071018;--fl-panel:#0e1924;--fl-panel2:#121f2c;--fl-border:rgba(191,223,241,.12);--fl-border-hi:rgba(76,201,255,.35);--fl-text:#f5f8fb;--fl-muted:#9aabba;--fl-cyan:#4cc9ff;--fl-mint:#7ce7bd;--fl-red:#ff9b91;color:var(--fl-text);padding:clamp(30px,5vw,60px) 0 84px}
+  .fl-wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}
+  .fl-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px;animation:fl-rise .55s cubic-bezier(.2,.7,.2,1) both}
+  .fl-title-block{max-width:680px}
+  .fl-eyebrow{display:inline-flex;align-items:center;gap:9px;color:#86dcff;font-size:10.5px;font-weight:800;letter-spacing:.17em;text-transform:uppercase}
+  .fl-eyebrow>span{width:6px;height:6px;border-radius:50%;background:var(--fl-cyan);box-shadow:0 0 0 4px #4cc9ff19,0 0 12px #4cc9ff7d}
+  .fl-heading h1{margin:12px 0 9px;font:700 clamp(38px,6vw,62px)/.98 'Space Grotesk',Inter,system-ui,sans-serif;letter-spacing:-.065em;color:var(--fl-text)}
+  .fl-heading h1 em{font-style:normal;background:linear-gradient(100deg,#91e6ff 0%,#4cc9ff 55%,#9caaff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .fl-heading p,.fl-directory-head p,.fl-setup-top p,.fl-editor-heading p{margin:0;color:var(--fl-muted);font-size:14px;line-height:1.7}
+  .fl-heading-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+  .fl-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:43px;padding:0 16px;border:1px solid var(--fl-border);border-radius:12px;text-decoration:none;cursor:pointer;font:700 12.5px/1.2 Inter,system-ui,sans-serif;white-space:nowrap;transition:transform .2s,border-color .2s,background .2s,box-shadow .2s;color:var(--fl-text);background:#0b1620}
+  .fl-btn:hover{transform:translateY(-2px);border-color:#4cc9ff67}
+  .fl-btn:active{transform:translateY(0) scale(.985)}
+  .fl-btn:focus-visible,.fl-tab:focus-visible,.fl-reset:focus-visible{outline:2px solid var(--fl-cyan);outline-offset:3px}
+  .fl-btn-primary{color:#04131c;border-color:#79dfff;background:linear-gradient(140deg,#9ae9ff,#4cc9ff 72%);box-shadow:0 9px 24px -12px #4cc9ff9c,inset 0 1px 0 #ffffff9c}
+  .fl-btn-primary:hover{background:linear-gradient(140deg,#c3f3ff,#65d7ff);box-shadow:0 13px 32px -12px #4cc9ffb3}
+  .fl-btn-quiet{background:transparent;color:#b4c5d1}
+  .fl-btn-outline{background:#10202c;border-color:#274050}
+  .fl-gate{width:min(590px,100%);margin:46px auto 10px;padding:clamp(28px,5vw,48px);text-align:center;border:1px solid transparent;border-radius:25px;background:linear-gradient(150deg,rgba(16,31,44,.96),rgba(8,17,26,.97)) padding-box,linear-gradient(145deg,#4cc9ff6b,#ffffff0b 52%,#8b94ff45) border-box;box-shadow:0 32px 100px -55px #000;animation:fl-rise .5s both}
+  .fl-gate-mark{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 18px;border-radius:18px;background:#4cc9ff10;border:1px solid #4cc9ff3a;color:#83ddff}
+  .fl-gate-mark svg{width:32px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .fl-gate h2{margin:0 0 10px;font:700 clamp(24px,4vw,32px)/1.13 'Space Grotesk',Inter,sans-serif;letter-spacing:-.045em}
+  .fl-gate p{max-width:440px;margin:0 auto 22px;color:var(--fl-muted);font-size:14px;line-height:1.7}
+  .fl-gate .fl-btn{min-height:48px}
+  #loadingState{padding:36px 20px;background:transparent;border:0;box-shadow:none}
+  #loadingState p{margin:10px 0 0}
+  .fl-spinner{width:28px;height:28px;margin:auto;border:2px solid #4cc9ff24;border-top-color:var(--fl-cyan);border-radius:50%;animation:fl-spin .8s linear infinite}
+  .fl-profile-setup,.fl-listing-editor{padding:clamp(22px,4vw,36px);border:1px solid transparent;border-radius:23px;background:linear-gradient(155deg,rgba(16,29,42,.98),rgba(8,17,26,.98)) padding-box,linear-gradient(145deg,#4cc9ff57,#ffffff0b 58%,#91a2ff32) border-box;box-shadow:0 28px 90px -65px #000;animation:fl-rise .4s both}
+  .fl-setup-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:25px}
+  .fl-setup-top h2,.fl-editor-heading h2{margin:10px 0 8px;font:700 clamp(24px,4vw,34px)/1.08 'Space Grotesk',Inter,sans-serif;letter-spacing:-.05em}
+  .fl-setup-top p,.fl-editor-heading p{max-width:670px}
+  .fl-step{padding:9px 11px;border:1px solid var(--fl-border);border-radius:10px;color:#8aa3b4;font:800 10px/1 Inter,sans-serif;letter-spacing:.12em;white-space:nowrap}
+  .fl-step i{font-style:normal;color:#415a6a;padding:0 3px}
+  .fl-form{display:grid;gap:20px}
+  .fl-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+  .fl-field{display:grid;gap:8px;min-width:0;color:#d5e2eb;font-size:12px;font-weight:700}
+  .fl-field>span{display:flex;gap:5px;align-items:center}
+  .fl-field b,.fl-choice-group legend b{color:#83deff}
+  .fl-field small{font-weight:500;color:#8197a7}
+  .fl-field input,.fl-field select,.fl-field textarea,.fl-filters select,.fl-search input{width:100%;min-width:0;border:1px solid #ffffff19;border-radius:11px;padding:12px 13px;background:#07121b;color:var(--fl-text);outline:0;font:500 13px/1.4 Inter,system-ui,sans-serif;transition:border-color .18s,box-shadow .18s,background .18s}
+  .fl-field input::placeholder,.fl-field textarea::placeholder,.fl-search input::placeholder{color:#5e7688}
+  .fl-field input:focus,.fl-field select:focus,.fl-field textarea:focus,.fl-filters select:focus,.fl-search:focus-within{border-color:#4cc9ff8c;box-shadow:0 0 0 3px #4cc9ff17}
+  .fl-field textarea{resize:vertical;min-height:88px}
+  .fl-field select option,.fl-filters select option{background:#0b1620;color:#f5f8fb}
+  .fl-choice-group{margin:0;padding:0;border:0;min-width:0}
+  .fl-choice-group legend{margin-bottom:10px;color:#d5e2eb;font-size:12px;font-weight:800}
+  .fl-choice-row{display:flex;gap:8px;flex-wrap:wrap}
+  .fl-choice-row label{position:relative;cursor:pointer}
+  .fl-choice-row input{position:absolute;opacity:0;pointer-events:none}
+  .fl-choice-row span{display:inline-flex;align-items:center;min-height:35px;padding:0 12px;border:1px solid #ffffff17;border-radius:10px;background:#07121b;color:#9eb1c0;font-size:12px;font-weight:650;transition:.18s}
+  .fl-choice-row input:checked+span{border-color:#4cc9ff71;background:#4cc9ff12;color:#a4e7ff;box-shadow:inset 0 0 0 1px #4cc9ff10}
+  .fl-choice-row input:focus-visible+span{outline:2px solid var(--fl-cyan);outline-offset:2px}
+  .fl-profile-actions{display:flex;justify-content:space-between;align-items:center;gap:18px;padding-top:17px;border-top:1px solid var(--fl-border)}
+  .fl-profile-actions p{max-width:570px;margin:0;color:#8298a9;font-size:11.5px;line-height:1.65}
+  .fl-form-message{min-height:0;color:var(--fl-red);font-size:12.5px}
+  .fl-form-message:empty{display:none}
+  .fl-workspace{animation:fl-rise .38s both}
+  .fl-tabs{display:flex;align-items:center;gap:5px;padding:5px;border:1px solid var(--fl-border);border-radius:15px;background:#09141e;margin-bottom:25px}
+  .fl-tab{display:inline-flex;align-items:center;gap:10px;min-height:39px;padding:0 15px;border:1px solid transparent;border-radius:10px;background:transparent;color:#8ea3b2;font:700 12px Inter,system-ui,sans-serif;cursor:pointer;transition:.2s}
+  .fl-tab:hover{color:#dbe8f0;background:#ffffff05}
+  .fl-tab.active{background:linear-gradient(110deg,#4cc9ff15,#8d9fff0b);border-color:#4cc9ff28;color:#eaf8ff;box-shadow:inset 0 0 0 1px #ffffff03}
+  .fl-tab span{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:6px;background:#ffffff0a;color:#8db0c4;font-size:10px}
+  .fl-tabs-spacer{flex:1}
+  .fl-account-chip{display:inline-flex;align-items:center;gap:8px;padding:0 11px;color:#7f96a7;font-size:11px;white-space:nowrap}
+  .fl-account-chip i{width:6px;height:6px;border-radius:50%;background:#70e5b3;box-shadow:0 0 0 4px #70e5b314}
+  .fl-directory-head,.fl-owner-head{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:19px}
+  .fl-directory-head h2,.fl-owner-head h2{margin:0 0 5px;font:700 clamp(24px,3.8vw,31px)/1.08 'Space Grotesk',Inter,sans-serif;letter-spacing:-.045em}
+  .fl-directory-head p{max-width:620px}
+  .fl-filters{display:grid;grid-template-columns:minmax(220px,1.45fr) repeat(4,minmax(120px,.72fr));gap:9px;margin-bottom:15px}
+  .fl-player-filters{grid-template-columns:minmax(220px,1.5fr) repeat(3,minmax(120px,.75fr))}
+  .fl-search{display:flex;align-items:center;gap:9px;min-width:0;border:1px solid #ffffff19;border-radius:11px;background:#09141e;padding-left:12px;transition:border-color .18s,box-shadow .18s}
+  .fl-search svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:#7795a8;stroke-width:1.8;stroke-linecap:round}
+  .fl-search input{padding-left:0;border:0;background:transparent;box-shadow:none!important}
+  .fl-filters select{padding:11px 10px;font-size:11.5px}
+  .fl-results-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 1px 12px;color:#7790a1;font-size:11.5px}
+  .fl-reset{padding:4px 0;border:0;background:transparent;color:#75d8ff;font:700 11px Inter,sans-serif;cursor:pointer}
+  .fl-reset:hover{text-decoration:underline}
+  .fl-league-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+  .fl-league-card,.fl-player-card{position:relative;min-width:0;overflow:hidden;border:1px solid var(--fl-border);border-radius:17px;background:linear-gradient(150deg,rgba(16,30,43,.9),rgba(9,18,27,.97));box-shadow:0 14px 30px -27px #000;transition:transform .22s,border-color .22s,box-shadow .22s;animation:fl-rise .32s both}
+  .fl-league-card:hover,.fl-player-card:hover{transform:translateY(-3px);border-color:#4cc9ff45;box-shadow:0 22px 45px -32px #000,0 0 25px -20px #4cc9ff7c}
+  .fl-card-accent{height:2px;background:linear-gradient(90deg,transparent,#4cc9ff76,#a4b2ff3d,transparent);opacity:.7}
+  .fl-card-inner{padding:17px}
+  .fl-card-top{display:flex;align-items:flex-start;gap:12px}
+  .fl-club-logo,.fl-player-avatar{display:grid;place-items:center;flex:0 0 54px;width:54px;height:54px;border-radius:14px;border:1px solid #4cc9ff2c;background:radial-gradient(circle at 20% 10%,#4cc9ff21,transparent 65%),#0a1721;color:#8de1ff;font:800 14px 'Space Grotesk',Inter,sans-serif;overflow:hidden}
+  .fl-club-logo img,.fl-player-avatar img{display:block;width:100%;height:100%;object-fit:cover}
+  .fl-card-ident{flex:1;min-width:0}
+  .fl-card-ident h3{margin:1px 0 5px;overflow-wrap:anywhere;font:700 17px/1.18 'Space Grotesk',Inter,sans-serif;letter-spacing:-.03em}
+  .fl-card-sub{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:#8299a9;font-size:10.5px}
+  .fl-dot-sep{width:3px;height:3px;border-radius:50%;background:#50697b}
+  .fl-status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #70e5b32a;border-radius:7px;background:#70e5b30d;color:#83e5ba;font-size:9.5px;font-weight:800;white-space:nowrap}
+  .fl-status-pill.pending{border-color:#ffcd7530;background:#ffcd750b;color:#f3cd84}
+  .fl-status-pill.paused,.fl-status-pill.rejected,.fl-status-pill.removed{border-color:#ff9b9129;background:#ff9b910b;color:#ffaaa1}
+  .fl-card-desc{margin:14px 0;color:#afbfcb;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
+  .fl-card-tags{display:flex;gap:6px;flex-wrap:wrap}
+  .fl-tag{display:inline-flex;align-items:center;gap:5px;min-height:25px;padding:0 8px;border:1px solid #ffffff0d;border-radius:7px;background:#ffffff04;color:#a9bdcc;font-size:10px;font-weight:650}
+  .fl-tag.cyan{border-color:#4cc9ff20;background:#4cc9ff08;color:#a2e5ff}
+  .fl-card-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:15px 0 0;padding:12px 0;border-top:1px solid #ffffff0d;border-bottom:1px solid #ffffff0d}
+  .fl-card-stats span{display:block;color:#718a9d;font-size:9.5px;line-height:1.3;margin-bottom:5px}
+  .fl-card-stats strong{display:block;color:#e3edf4;font-size:11.5px;line-height:1.35;overflow-wrap:anywhere}
+  .fl-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px}
+  .fl-owner-line{display:flex;align-items:center;gap:7px;min-width:0;color:#72899a;font-size:10.5px}
+  .fl-owner-line img{width:21px;height:21px;border-radius:50%;object-fit:cover;background:#152838}
+  .fl-owner-line span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fl-card-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .fl-small-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:0 10px;border:1px solid #314757;border-radius:9px;background:#122432;color:#cde7f4;text-decoration:none;font:700 10.5px Inter,sans-serif;cursor:pointer;transition:.18s}
+  .fl-small-btn:hover{border-color:#4cc9ff7c;background:#153044}
+  .fl-small-btn.kickoff{border-color:#4cc9ff66;background:linear-gradient(130deg,#4cc9ff20,#8d9fff0a);color:#a9e7ff}
+  .fl-small-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .fl-small-btn.external{border-color:#4cc9ff2d}
+  .fl-kickoff-icon{font-size:13px}
+  .fl-confirm-note{color:#8a9faf;font-size:10.5px;line-height:1.5}
+  .fl-usage{display:flex;align-items:center;gap:11px;padding:11px 14px;border:1px solid #4cc9ff28;border-radius:13px;background:#4cc9ff08;white-space:nowrap}
+  .fl-usage strong{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#4cc9ff15;color:#9ce6ff;font:700 19px 'Space Grotesk',Inter,sans-serif}
+  .fl-usage span{color:#b9c8d3;font-size:10.5px;line-height:1.45}
+  .fl-usage small{display:block;color:#7e95a6;font-size:9.5px;margin-top:3px}
+  .fl-private-note{color:#698396;font-size:10.5px}
+  .fl-player-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .fl-player-card{padding:15px}
+  .fl-player-head{display:flex;align-items:center;gap:10px}
+  .fl-player-avatar{width:44px;height:44px;flex-basis:44px;border-radius:13px;font-size:12px}
+  .fl-player-id{min-width:0;flex:1}
+  .fl-player-id h3{margin:0 0 3px;font:700 14px/1.2 'Space Grotesk',Inter,sans-serif;overflow-wrap:anywhere}
+  .fl-player-id p{margin:0;color:#7f96a7;font-size:10.5px}
+  .fl-player-ovr{padding:6px 8px;border:1px solid #4cc9ff29;border-radius:9px;background:#4cc9ff0b;color:#9ce4ff;font:800 13px 'Space Grotesk',Inter,sans-serif;white-space:nowrap}
+  .fl-player-tags{display:flex;flex-wrap:wrap;gap:5px;margin:13px 0}
+  .fl-player-tags .fl-tag{font-size:9.5px}
+  .fl-player-note{margin:0 0 14px;color:#97abba;font-size:11px;line-height:1.6}
+  .fl-player-reveal{width:100%;justify-content:center}
+  .fl-revealed{margin-top:12px;padding:12px;border:1px solid #70e5b329;border-radius:12px;background:#70e5b308;animation:fl-rise .25s both}
+  .fl-revealed h4{margin:0 0 8px;color:#86e4bc;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .fl-revealed dl{display:grid;grid-template-columns:76px minmax(0,1fr);gap:6px 9px;margin:0;font-size:10.5px;overflow-wrap:anywhere}
+  .fl-revealed dt{color:#769183}.fl-revealed dd{margin:0;color:#d6f0e4;overflow-wrap:anywhere}
+  .fl-owner-panel{margin-top:24px;padding:21px;border:1px solid var(--fl-border);border-radius:18px;background:linear-gradient(130deg,#0f1b26,#0a141d)}
+  .fl-owner-head{margin-bottom:18px}
+  .fl-owner-head h2{margin-top:8px}
+  .fl-owner-head p{margin:0;color:#8ba0b0;font-size:11.5px}
+  .fl-owner-mark{display:grid;place-items:center;width:45px;height:45px;border:1px solid #4cc9ff27;border-radius:13px;background:#4cc9ff0b;color:#8edfff;font:800 12px 'Space Grotesk',Inter,sans-serif}
+  .fl-owner-listing{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #ffffff12;border-radius:13px;background:#07121b}
+  .fl-owner-listing-main{flex:1;min-width:0}.fl-owner-listing-main strong{display:block;font:700 13.5px 'Space Grotesk',Inter,sans-serif}.fl-owner-listing-main p{margin:5px 0 0;color:#8197a8;font-size:11px;line-height:1.5}
+  .fl-owner-listing-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+  .fl-owner-create{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:11px;padding:15px;border:1px dashed #4cc9ff3a;border-radius:13px;background:#4cc9ff05}
+  .fl-owner-create strong{font-size:12.5px}.fl-owner-create p{margin:5px 0 0;color:#8298a8;font-size:11px}
+  .fl-listing-editor{margin-top:18px}
+  .fl-editor-heading{margin-bottom:22px}
+  .fl-editor-heading .fl-back{display:block;margin-bottom:18px;padding:0;border:0;background:transparent;color:#7edbff;font:700 11px Inter,sans-serif;cursor:pointer}
+  .fl-upload-row{display:flex;align-items:center;gap:13px}
+  .fl-upload{display:flex;align-items:center;gap:12px;flex:1;min-height:69px;padding:12px;border:1px dashed #4cc9ff3f;border-radius:13px;background:#07121b;cursor:pointer}
+  .fl-upload-icon{display:grid;place-items:center;width:36px;height:36px;border:1px solid #4cc9ff31;border-radius:10px;color:#93e1ff;font-size:19px}
+  .fl-upload strong{display:block;color:#dce9f1;font-size:11.5px}.fl-upload small{display:block;margin-top:4px;color:#7d94a5;font-size:10px}
+  .fl-upload input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .fl-logo-preview{display:grid;place-items:center;width:58px;height:58px;flex:0 0 58px;overflow:hidden;border:1px solid #4cc9ff37;border-radius:14px;background:#0a1924;color:#8ce0ff;font:800 12px 'Space Grotesk',Inter,sans-serif}
+  .fl-logo-preview img{width:100%;height:100%;object-fit:cover}
+  .fl-form-bottom{display:flex;gap:18px;flex-wrap:wrap}
+  .fl-check-line{display:flex;align-items:center;gap:8px;color:#adbecb;font-size:11.5px;cursor:pointer}
+  .fl-check-line input{accent-color:#4cc9ff;width:15px;height:15px}
+  .fl-empty{margin-top:14px;padding:35px 20px;text-align:center;border:1px dashed #ffffff1c;border-radius:16px;background:#09141d}
+  .fl-empty-icon{display:grid;place-items:center;width:38px;height:38px;margin:0 auto 13px;border-radius:12px;border:1px solid #4cc9ff27;background:#4cc9ff09;color:#86dfff;font-size:24px}
+  .fl-empty h3{margin:0 0 7px;font:700 17px 'Space Grotesk',Inter,sans-serif}.fl-empty p{max-width:390px;margin:0 auto 14px;color:#7e95a5;font-size:11.5px;line-height:1.6}
+  .fl-skeleton{height:255px;border-radius:17px;border:1px solid #ffffff0a;background:linear-gradient(100deg,#0b1720 20%,#122331 45%,#0b1720 70%);background-size:220% 100%;animation:fl-shimmer 1.7s linear infinite}
+  .fl-toast{position:fixed;z-index:7000;right:22px;bottom:22px;max-width:min(420px,calc(100% - 40px));padding:13px 16px;border:1px solid #4cc9ff45;border-radius:12px;background:#10202c;color:#eaf7ff;font-size:12px;line-height:1.5;box-shadow:0 20px 60px #0008;opacity:0;transform:translateY(9px);pointer-events:none;transition:opacity .22s,transform .22s}
+  .fl-toast.show{opacity:1;transform:translateY(0)}
+  .fl-toast.error{border-color:#ff9b9160;color:#ffd2cc}
+  [hidden]{display:none!important}
+  @keyframes fl-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fl-spin{to{transform:rotate(360deg)}}
+  @keyframes fl-shimmer{to{background-position:-220% 0}}
+  @media(max-width:900px){.fl-player-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fl-filters{grid-template-columns:minmax(220px,1.5fr) repeat(2,minmax(130px,.8fr))}.fl-filters select:last-child{grid-column:auto}}
+  @media(max-width:650px){.fl-wrap{width:min(100% - 26px,1180px)}.fl-page{padding-top:28px}.fl-heading{align-items:flex-start;flex-direction:column;gap:16px;margin-bottom:23px}.fl-heading-actions{justify-content:flex-start}.fl-heading h1{font-size:42px}.fl-tabs{flex-wrap:wrap}.fl-tabs-spacer{display:none}.fl-account-chip{margin-left:auto}.fl-directory-head,.fl-owner-head{align-items:flex-start}.fl-directory-head{flex-direction:column}.fl-filters{grid-template-columns:1fr 1fr}.fl-search{grid-column:1/-1}.fl-league-grid{grid-template-columns:1fr}.fl-player-grid{grid-template-columns:1fr}.fl-form-grid{grid-template-columns:1fr}.fl-profile-actions{align-items:stretch;flex-direction:column}.fl-profile-actions .fl-btn{width:100%}.fl-setup-top{flex-direction:column}.fl-step{display:none}.fl-owner-listing{align-items:flex-start;flex-wrap:wrap}.fl-owner-listing-actions{width:100%;justify-content:flex-start}.fl-owner-create{align-items:flex-start;flex-direction:column}.fl-owner-create .fl-btn{width:100%}.fl-usage{white-space:normal}.fl-player-filters select{min-width:0}.fl-results-meta{align-items:flex-start}.fl-private-note{text-align:right;max-width:48%}}
+  @media(max-width:390px){.fl-filters{grid-template-columns:1fr}.fl-search{grid-column:auto}.fl-tabs{align-items:stretch}.fl-tab{flex:1;padding:0 10px}.fl-account-chip{width:100%;padding:7px 8px 3px}.fl-card-stats{gap:5px}.fl-card-stats strong{font-size:10.5px}}
+  @media(prefers-reduced-motion:reduce){.fl-page *{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+</style>
+
+<script>
+  import { accountAuth } from '../../lib/account-client.js';
+
+  const $ = (selector) => document.querySelector(selector);
+  const state = { session: null, account: null, profile: null, leagues: [], ownListings: [], players: [], canFindPlayers: false, outreachRemaining: 3, activeTab: 'leagues', revealed: new Map(), logoUrl: '', editingListingId: null };
+  const formMessage = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message || ''; node.style.color = error ? '#ffaaa1' : '#87e5b8'; } };
+  const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+  const fmt = (value) => Number(value || 0).toLocaleString();
+  const initials = (value) => String(value || 'FC').trim().split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase() || 'FC';
+  const labelFrequency = (value) => ({ daily: 'Daily', most_days: 'Most days', several_weekly: 'Several times a week', weekly: 'Weekly', occasional: 'Occasional' })[value] || 'Schedule varies';
+  const labelCommitment = (value) => ({ casual: 'Casual', regular: 'Regular play', competitive: 'Competitive' })[value] || 'Regular play';
+  const toast = (message, error = false) => {
+    const node = $('#toast'); node.textContent = message; node.classList.toggle('error', error); node.classList.add('show');
+    window.clearTimeout(toast.timer); toast.timer = window.setTimeout(() => node.classList.remove('show'), 4200);
+  };
+
+  async function token() {
+    const result = await accountAuth.auth.getSession();
+    state.session = result.data?.session || null;
+    return state.session?.access_token || '';
+  }
+
+  async function api(path, options = {}) {
+    const accessToken = await token();
+    const headers = new Headers(options.headers || {});
+    if (accessToken) headers.set('authorization', 'Bearer ' + accessToken);
+    if (options.body && !(options.body instanceof FormData) && !headers.has('content-type')) headers.set('content-type', 'application/json');
+    const response = await fetch(path, { ...options, headers, credentials: 'same-origin', cache: 'no-store' });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || 'Something went wrong. Please try again.');
+    return body;
+  }
+
+  function setLoading(on) { $('#loadingState').hidden = !on; }
+  function showGate() { $('#loginGate').hidden = false; $('#workspace').hidden = true; $('#profileSetup').hidden = true; $('#listingEditor').hidden = true; }
+  function selectedValues(form, name) { return [...form.querySelectorAll('input[name="' + name + '"]:checked')].map(input => input.value); }
+  function hasOpenOwnerListing() { return (state.ownListings || []).some(row => ['pending','approved','paused'].includes(row.status)); }
+  function canCreateOwnerListing() { return state.profile?.status === 'league_owner' && !hasOpenOwnerListing(); }
+  function setChecks(form, name, values) { const list = Array.isArray(values) ? values : []; form.querySelectorAll('input[name="' + name + '"]').forEach(input => { input.checked = list.includes(input.value); }); }
+
+  function fillProfileForm(profile, suggested) {
+    const form = $('#profileForm');
+    const p = profile || {};
+    const s = suggested || {};
+    form.elements.fcMobileUid.value = p.fc_mobile_uid || s.fcMobileUid || '';
+    form.elements.inGameUsername.value = p.in_game_username || s.inGameUsername || '';
+    form.elements.avatarUrl.value = p.avatar_url || '';
+    $('#profileAvatarPreview').innerHTML = p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="">' : 'Player';
+    form.elements.ovr.value = p.ovr || '';
+    form.elements.regionServer.value = p.region_server || s.regionServer || '';
+    form.elements.status.value = p.status || 'looking_for_league';
+    form.elements.discordHandle.value = p.discord_handle || s.discordHandle || '';
+    form.elements.availability.value = p.availability || '';
+    form.elements.playStyle.value = p.play_style || '';
+    form.elements.notes.value = p.notes || '';
+    setChecks(form, 'preferredLanguages', p.preferred_languages || ['English']);
+    setChecks(form, 'tournamentSizes', p.tournament_sizes || []);
+    $('#profileSetupTitle').textContent = profile ? 'Update your league profile.' : 'Set up your league profile.';
+  }
+
+  function showProfileSetup(profile, suggested) {
+    $('#workspace').hidden = true;
+    $('#listingEditor').hidden = true;
+    $('#profileSetup').hidden = false;
+    $('#editProfileBtn').hidden = true;
+    $('#listLeagueBtn').hidden = true;
+    fillProfileForm(profile, suggested);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function avatarMarkup(url, name, className) {
+    const fallback = '<span>' + esc(initials(name)) + '</span>';
+    return '<div class="' + className + '">' + (url ? '<img src="' + esc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : fallback) + '</div>';
+  }
+
+  function leagueCard(row, index) {
+    const logo = row.logoUrl ? '<img src="' + esc(row.logoUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : esc(initials(row.name));
+    const languages = (row.preferredLanguages || []).slice(0, 3).map(value => '<span class="fl-tag">' + esc(value) + '</span>').join('');
+    const sizes = (row.tournamentSizes || []).map(value => '<span class="fl-tag cyan">' + esc(value) + '</span>').join('');
+    const ownerAvatar = row.owner?.avatarUrl ? '<img src="' + esc(row.owner.avatarUrl) + '" alt="" loading="lazy" onerror="this.remove()">' : '';
+    const kickoff = row.lastKickoffAt && row.kickoffActive ? '<span class="fl-status-pill"><span class="fl-kickoff-icon">↗</span> KICKOFF ACTIVE</span>' : '<span class="fl-status-pill">RECRUITING</span>';
+    const invite = row.discordInviteUrl ? '<a class="fl-small-btn external" href="' + esc(row.discordInviteUrl) + '" target="_blank" rel="noopener noreferrer">Apply / Join ↗</a>' : '';
+    const contactDiscord = row.contactDiscord ? '<button class="fl-small-btn" data-contact-discord="' + esc(row.contactDiscord) + '" type="button">Copy Discord</button>' : '';
+    const activeText = row.lastActiveAt ? 'Last confirmed ' + esc(new Date(row.lastActiveAt).toLocaleDateString()) : 'Awaiting first activity check';
+    const activeLabel = row.confirmedByMe ? 'Confirmed · 24h' : 'League active';
+    return '<article class="fl-league-card" style="animation-delay:' + Math.min(index * 35, 210) + 'ms"><div class="fl-card-accent"></div><div class="fl-card-inner">' +
+      '<div class="fl-card-top">' +
+      '<div class="fl-club-logo">' + logo + '</div>' +
+      '<div class="fl-card-ident"><h3>' + esc(row.name) + '</h3><div class="fl-card-sub"><span>' + esc(row.regionServer) + '</span><i class="fl-dot-sep"></i><span>' + fmt(row.openSpots) + ' spots open</span></div></div>' +
+      kickoff + '</div>' +
+      '<p class="fl-card-desc">' + esc(row.description) + '</p>' +
+      '<div class="fl-card-tags">' + sizes + languages + '</div>' +
+      '<div class="fl-card-stats"><div><span>Minimum OVR</span><strong>' + fmt(row.minOvr) + '+ OVR</strong></div><div><span>Tournament rhythm</span><strong>' + esc(labelFrequency(row.tournamentFrequency)) + '</strong></div><div><span>Club culture</span><strong>' + esc(labelCommitment(row.playerCommitment)) + '</strong></div></div>' +
+      '<div class="fl-card-bottom"><div class="fl-owner-line">' + ownerAvatar + '<span>Managed by ' + esc(row.owner?.displayName || 'FC Mobile player') + '</span></div><div class="fl-card-actions">' +
+      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + (row.confirmedByMe ? 'disabled' : '') + '>' + activeLabel + '</button>' + invite + contactDiscord +
+      '</div></div><div class="fl-confirm-note">' + activeText + (row.discordRequired ? ' · Discord required' : ' · Discord optional') + '</div>' +
+      '</div></article>';
+  }
+
+  function filterLeagues() {
+    const q = $('#leagueSearch').value.trim().toLowerCase();
+    const region = $('#regionFilter').value.toLowerCase();
+    const frequency = $('#frequencyFilter').value;
+    const size = $('#sizeFilter').value;
+    const squadOvr = $('#squadOvrFilter').value;
+    const maxOvr = squadOvr === 'my' ? Number(state.profile?.ovr || 0) : (squadOvr ? Number(squadOvr) : Infinity);
+    const rows = state.leagues.filter(row => {
+      const full = [row.name,row.description,row.regionServer,(row.preferredLanguages || []).join(' '),row.owner?.displayName].join(' ').toLowerCase();
+      return (!q || full.includes(q)) && (!region || String(row.regionServer || '').toLowerCase() === region) &&
+        (!frequency || row.tournamentFrequency === frequency) && (!size || (row.tournamentSizes || []).includes(size)) &&
+        row.minOvr <= maxOvr;
+    });
+    $('#leagueCount').textContent = fmt(state.leagues.length);
+    $('#resultsLabel').textContent = rows.length + (rows.length === 1 ? ' league matches your filters' : ' leagues match your filters');
+    $('#leagueList').innerHTML = rows.map(leagueCard).join('');
+    $('#leagueEmpty').hidden = rows.length > 0;
+    $('#leagueList').hidden = rows.length === 0;
+    $('#openListingBtn').hidden = !canCreateOwnerListing();
+    $('#emptyListBtn').hidden = !canCreateOwnerListing();
+    $('#leagueList').querySelectorAll('.fl-active-confirm').forEach(button => button.addEventListener('click', () => confirmLeague(button)));
+  }
+
+  function showTab(which) {
+    state.activeTab = which;
+    const players = which === 'players';
+    $('#tabLeagues').classList.toggle('active', !players);
+    $('#tabLeagues').setAttribute('aria-selected', String(!players));
+    $('#tabPlayers').classList.toggle('active', players);
+    $('#tabPlayers').setAttribute('aria-selected', String(players));
+    $('#leagueView').hidden = players;
+    $('#playersView').hidden = !players;
+    $('#ownerPanel').hidden = players || state.profile?.status !== 'league_owner';
+    if (players) loadPlayers();
+  }
+
+  function ownerDesk() {
+    const list = state.ownListings || [];
+    $('#ownerPanel').hidden = state.profile?.status !== 'league_owner';
+    $('#ownerCreate').hidden = true;
+    $('#ownerPending').hidden = true;
+    $('#ownerListing').innerHTML = '';
+    $('#listLeagueBtn').hidden = !canCreateOwnerListing();
+    if (state.profile?.status !== 'league_owner') return;
+    if (!list.length) { $('#ownerCreate').hidden = false; return; }
+    const row = list[0];
+    if (row.status === 'pending') {
+      $('#ownerPending').hidden = false;
+      $('#ownerListing').innerHTML = ownerListingCard(row, false);
+      return;
+    }
+    $('#ownerListing').innerHTML = ownerListingCard(row, row.status === 'approved' && row.recruitingOpen);
+    if (row.status === 'rejected') {
+      $('#ownerCreate').hidden = false;
+      $('#ownerCreate').querySelector('strong').textContent = 'Your listing needs changes.';
+      $('#ownerCreate').querySelector('p').textContent = row.moderationNote || 'Review the listing and submit it again.';
+    }
+    if (row.status === 'paused') {
+      $('#ownerCreate').hidden = true;
+    }
+    if (row.status === 'removed') {
+      $('#ownerCreate').hidden = false;
+      $('#ownerCreate').querySelector('strong').textContent = 'Your listing was removed.';
+      $('#ownerCreate').querySelector('p').textContent = row.moderationNote || 'You can submit a new listing when your club is ready.';
+    }
+  }
+
+  function ownerListingCard(row, canKickoff) {
+    const statusClass = row.status === 'approved' ? '' : ' ' + esc(row.status);
+    const statusLabel = ({ approved: 'Live', pending: 'Awaiting review', rejected: 'Changes requested', paused: 'Paused', removed: 'Removed' })[row.status] || row.status;
+    const nextKickoffAt = row.lastKickoffAt ? Date.parse(row.lastKickoffAt) + 6 * 60 * 60 * 1000 : 0;
+    const kickCooldown = nextKickoffAt > Date.now();
+    const kickText = row.status !== 'approved'
+      ? 'Kickoff becomes available after approval'
+      : kickCooldown
+        ? 'Next Kickoff available ' + esc(new Date(nextKickoffAt).toLocaleString())
+        : 'Ready for Kickoff';
+    return '<div class="fl-owner-listing">' + avatarMarkup(row.logoUrl, row.name, 'fl-club-logo') +
+      '<div class="fl-owner-listing-main"><strong>' + esc(row.name) + ' <span class="fl-status-pill' + statusClass + '">' + esc(statusLabel) + '</span></strong>' +
+      '<p>' + esc(row.regionServer) + ' · ' + esc(labelFrequency(row.tournamentFrequency)) + ' · ' + esc((row.tournamentSizes || []).join(', ')) + '<br>' + (row.moderationNote ? esc(row.moderationNote) : '') + '</p></div>' +
+      '<div class="fl-owner-listing-actions">' +
+      (row.status !== 'removed' ? '<button type="button" class="fl-small-btn fl-edit-listing" data-edit-listing="' + esc(row.id) + '">Edit details</button>' : '') +
+      (canKickoff ? '<button type="button" class="fl-small-btn kickoff" id="kickoffBtn" ' + (kickCooldown ? 'disabled' : '') + '><span class="fl-kickoff-icon">↗</span> ' + (kickCooldown ? 'Kickoff cooling down' : 'Kickoff') + '</button>' : '') +
+      '<span class="fl-confirm-note">' + kickText + '</span>' +
+      '</div></div>';
+  }
+
+  async function refreshBootstrap() {
+    const data = await api('/api/leagues/bootstrap');
+    state.account = data.account;
+    state.profile = data.profile;
+    state.leagues = data.leagues || [];
+    state.ownListings = data.ownListings || [];
+    state.canFindPlayers = Boolean(data.canFindPlayers);
+    state.outreachRemaining = Number(data.outreachRemaining ?? Math.max(0, 3 - Number(data.outreachUsedToday || 0)));
+    $('#signedInAs').textContent = data.account?.displayName || data.account?.username || 'Signed in';
+    if (!data.profile) {
+      showProfileSetup(null, data.suggestedProfile);
+      return;
+    }
+    $('#profileSetup').hidden = true;
+    $('#workspace').hidden = false;
+    $('#editProfileBtn').hidden = false;
+    $('#listLeagueBtn').hidden = !canCreateOwnerListing();
+    $('#tabPlayers').hidden = !state.canFindPlayers;
+    $('#outreachRemaining').textContent = String(state.outreachRemaining);
+    filterLeagues();
+    ownerDesk();
+    if (state.canFindPlayers && state.profile.status === 'league_owner') $('#tabPlayers').hidden = false;
+  }
+
+  async function openLeagueProfile() {
+    fillProfileForm(state.profile, {});
+    showProfileSetup(state.profile, {});
+  }
+
+  function openListingEditor(row = null) {
+    if (state.profile?.status !== 'league_owner') {
+      openLeagueProfile();
+      toast('Set your status to League owner to submit a club listing.');
+      return;
+    }
+    state.editingListingId = row?.id || null;
+    $('#workspace').hidden = true;
+    $('#profileSetup').hidden = true;
+    $('#listingEditor').hidden = false;
+    $('#listingMessage').textContent = '';
+    const form = $('#listingForm');
+    form.reset();
+    form.elements.openSpots.value = String(row?.openSpots ?? 5);
+    form.elements.tournamentFrequency.value = row?.tournamentFrequency || 'daily';
+    form.elements.playerCommitment.value = row?.playerCommitment || 'regular';
+    form.elements.tournamentSizes.forEach(input => { input.checked = (row?.tournamentSizes || ['4v4']).includes(input.value); });
+    form.elements.preferredLanguages.forEach(input => { input.checked = (row?.preferredLanguages || ['English']).includes(input.value); });
+    form.elements.recruitingOpen.checked = row?.recruitingOpen !== false;
+    form.elements.name.value = row?.name || '';
+    form.elements.leagueGameId.value = row?.leagueGameId || '';
+    form.elements.description.value = row?.description || '';
+    form.elements.regionServer.value = row?.regionServer || '';
+    form.elements.minOvr.value = row?.minOvr ?? '';
+    form.elements.weeklyRewards.value = row?.weeklyRewards || '';
+    form.elements.discordInviteUrl.value = row?.discordInviteUrl || '';
+    form.elements.contactDiscord.value = row?.contactDiscord || '';
+    form.elements.discordRequired.checked = Boolean(row?.discordRequired);
+    state.logoUrl = row?.logoUrl || '';
+    form.elements.logoUrl.value = state.logoUrl;
+    $('#leagueLogoPreview').innerHTML = state.logoUrl ? '<img src="' + esc(state.logoUrl) + '" alt="">' : 'FC';
+    $('#listingEditor').querySelector('.fl-editor-heading h2').textContent = row ? 'Update your league listing.' : 'Put your league on the board.';
+    $('#submitListingBtn').innerHTML = row ? 'Resubmit for approval <span aria-hidden="true">→</span>' : 'Submit for approval <span aria-hidden="true">→</span>';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function uploadImage(file, previewNode, hiddenInput) {
+    if (!file) return '';
+    const accepted = ['image/jpeg','image/png','image/webp','image/gif'];
+    if (!accepted.includes(file.type) || file.size > 8 * 1024 * 1024) throw new Error('Use a JPG, PNG, WebP or GIF image smaller than 8 MB.');
+    const accessToken = await token();
+    if (!accessToken) throw new Error('Sign in again before uploading an image.');
+    const body = new FormData(); body.append('file', file); body.append('permanent', 'true');
+    const response = await fetch('/api/account/image-upload', { method: 'POST', headers: { authorization: 'Bearer ' + accessToken }, body, credentials: 'same-origin', cache: 'no-store' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Image upload failed. Please try again.');
+    const url = result.image?.url || result.url || result.imageUrl || result.data?.url || result.data?.display_url || '';
+    if (!url) throw new Error('Image upload did not return a usable image URL.');
+    if (previewNode) previewNode.innerHTML = '<img src="' + esc(url) + '" alt="">';
+    if (hiddenInput) hiddenInput.value = url;
+    return url;
+  }
+
+  async function confirmLeague(button) {
+    button.disabled = true;
+    try {
+      const result = await api('/api/leagues/listings/' + encodeURIComponent(button.dataset.id) + '/active', { method: 'POST', body: '{}' });
+      toast('Thanks. You confirmed this league is active.');
+      const row = state.leagues.find(item => item.id === button.dataset.id);
+      if (row) { row.lastActiveAt = result.confirmedAt || new Date().toISOString(); row.confirmedByMe = true; }
+      filterLeagues();
+    } catch (error) {
+      toast(error.message || 'Unable to confirm this league.', true);
+      button.disabled = false;
+    }
+  }
+
+  async function loadPlayers() {
+    $('#playerList').innerHTML = '<div class="fl-skeleton"></div><div class="fl-skeleton"></div><div class="fl-skeleton"></div>';
+    try {
+      const params = new URLSearchParams();
+      if ($('#playerSearch').value.trim()) params.set('q', $('#playerSearch').value.trim());
+      if ($('#playerRegionFilter').value) params.set('region', $('#playerRegionFilter').value);
+      if ($('#playerSizeFilter').value) params.set('size', $('#playerSizeFilter').value);
+      params.set('minOvr', $('#playerMinOvr').value || '50');
+      const data = await api('/api/leagues/players?' + params.toString());
+      state.players = data.players || [];
+      $('#outreachRemaining').textContent = String(state.outreachRemaining);
+      renderPlayers();
+    } catch (error) {
+      $('#playerList').innerHTML = '<div class="fl-empty"><h3>Player search is unavailable.</h3><p>' + esc(error.message) + '</p></div>';
+    }
+  }
+
+  function renderPlayers() {
+    const rows = state.players;
+    $('#playerResultsLabel').textContent = rows.length + (rows.length === 1 ? ' player found' : ' players found');
+    $('#playerList').innerHTML = rows.map((row, index) => {
+      const tags = (row.tournamentSizes || []).map(size => '<span class="fl-tag cyan">' + esc(size) + '</span>').join('') +
+        (row.preferredLanguages || []).slice(0, 2).map(lang => '<span class="fl-tag">' + esc(lang) + '</span>').join('');
+      const revealed = state.revealed.get(row.accountId);
+      const revealPanel = revealed ? '<div class="fl-revealed"><h4>Contact details</h4><dl><dt>UID</dt><dd>' + esc(revealed.fcMobileUid) + '</dd><dt>In-game name</dt><dd>' + esc(revealed.inGameUsername) + '</dd><dt>Discord</dt><dd>' + esc(revealed.discordHandle || 'Not provided') + '</dd><dt>Region</dt><dd>' + esc(revealed.regionServer) + '</dd></dl></div>' : '';
+      return '<article class="fl-player-card" style="animation-delay:' + Math.min(index * 25, 150) + 'ms">' +
+        '<div class="fl-player-head">' + avatarMarkup(row.avatarUrl, row.displayName, 'fl-player-avatar') +
+        '<div class="fl-player-id"><h3>' + esc(row.displayName) + '</h3><p>@' + esc(row.username) + ' · ' + esc(row.regionServer) + '</p></div><div class="fl-player-ovr">' + fmt(row.ovr) + '</div></div>' +
+        '<div class="fl-player-tags">' + tags + '</div>' +
+        '<p class="fl-player-note">' + esc(row.availability || 'Availability not specified') + (row.playStyle ? ' · ' + esc(row.playStyle) : '') + '</p>' +
+        (row.notes ? '<p class="fl-player-note">' + esc(row.notes) + '</p>' : '') +
+        '<button type="button" class="fl-small-btn fl-player-reveal" data-id="' + esc(row.accountId) + '" ' + (state.outreachRemaining <= 0 && !revealed ? 'disabled' : '') + '>' + (revealed ? 'Contact already unlocked' : 'Unlock contact · uses 1 daily contact') + '</button>' +
+        revealPanel + '</article>';
+    }).join('');
+    $('#playerEmpty').hidden = rows.length > 0;
+    $('#playerList').hidden = rows.length === 0;
+    $('#playerList').querySelectorAll('.fl-player-reveal').forEach(button => button.addEventListener('click', () => revealPlayer(button)));
+  }
+
+  async function revealPlayer(button) {
+    const playerId = button.dataset.id;
+    button.disabled = true;
+    try {
+      const result = await api('/api/leagues/players/' + encodeURIComponent(playerId) + '/reveal', { method: 'POST', body: '{}' });
+      state.revealed.set(playerId, result.player);
+      state.outreachRemaining = Number(result.remainingToday || 0);
+      $('#outreachRemaining').textContent = String(state.outreachRemaining);
+      renderPlayers();
+      toast(result.alreadyRevealed ? 'Contact details restored.' : 'Contact details unlocked. Reach out respectfully.');
+    } catch (error) {
+      toast(error.message || 'Contact details could not be unlocked.', true);
+      button.disabled = false;
+      if (/daily limit/i.test(error.message)) { state.outreachRemaining = 0; $('#outreachRemaining').textContent = '0'; renderPlayers(); }
+    }
+  }
+
+  async function initialize() {
+    setLoading(true);
+    try {
+      const accessToken = await token();
+      if (!accessToken) {
+        setLoading(false);
+        showGate();
+        return;
+      }
+      const data = await api('/api/leagues/bootstrap');
+      state.account = data.account;
+      state.profile = data.profile;
+      if (!data.profile) {
+        $('#loadingState').hidden = true;
+        state.leagues = [];
+        showProfileSetup(null, data.suggestedProfile);
+        return;
+      }
+      await refreshBootstrap();
+    } catch (error) {
+      showGate();
+      $('#loginGate').querySelector('p').textContent = error.message || 'Sign in to browse the league board.';
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  $('#profileForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = $('#saveProfileBtn');
+    button.disabled = true; button.textContent = 'Saving profile…';
+    formMessage('#profileMessage', '');
+    const payload = {
+      fcMobileUid: form.elements.fcMobileUid.value.trim(),
+      inGameUsername: form.elements.inGameUsername.value.trim(),
+      avatarUrl: form.elements.avatarUrl.value,
+      ovr: Number(form.elements.ovr.value),
+      regionServer: form.elements.regionServer.value,
+      status: form.elements.status.value,
+      discordHandle: form.elements.discordHandle.value.trim(),
+      availability: form.elements.availability.value,
+      playStyle: form.elements.playStyle.value,
+      notes: form.elements.notes.value.trim(),
+      preferredLanguages: selectedValues(form, 'preferredLanguages'),
+      tournamentSizes: selectedValues(form, 'tournamentSizes')
+    };
+    try {
+      const result = await api('/api/leagues/profile', { method: 'POST', body: JSON.stringify(payload) });
+      state.profile = result.profile;
+      toast('Player profile saved.');
+      await refreshBootstrap();
+    } catch (error) {
+      formMessage('#profileMessage', error.message || 'Unable to save your profile.', true);
+    } finally {
+      button.disabled = false; button.innerHTML = 'Save player profile <span aria-hidden="true">→</span>';
+    }
+  });
+
+  $('#listingForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = $('#submitListingBtn');
+    button.disabled = true; button.textContent = 'Submitting…';
+    formMessage('#listingMessage', '');
+    try {
+      const payload = {
+        name: form.elements.name.value.trim(),
+        leagueGameId: form.elements.leagueGameId.value.trim(),
+        description: form.elements.description.value.trim(),
+        logoUrl: form.elements.logoUrl.value,
+        regionServer: form.elements.regionServer.value,
+        minOvr: Number(form.elements.minOvr.value),
+        tournamentFrequency: form.elements.tournamentFrequency.value,
+        tournamentSizes: selectedValues(form, 'tournamentSizes'),
+        preferredLanguages: selectedValues(form, 'preferredLanguages'),
+        playerCommitment: form.elements.playerCommitment.value,
+        weeklyRewards: form.elements.weeklyRewards.value.trim(),
+        discordInviteUrl: form.elements.discordInviteUrl.value.trim(),
+        contactDiscord: form.elements.contactDiscord.value.trim(),
+        openSpots: Number(form.elements.openSpots.value),
+        discordRequired: form.elements.discordRequired.checked,
+        recruitingOpen: form.elements.recruitingOpen.checked
+      };
+      const endpoint = state.editingListingId
+        ? '/api/leagues/listings/' + encodeURIComponent(state.editingListingId) + '/update'
+        : '/api/leagues/listings';
+      const result = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+      state.editingListingId = null;
+      toast(result.message || (result.status === 'pending' ? 'Changes submitted for review.' : 'League submitted. It will appear after review.'));
+      $('#listingEditor').hidden = true;
+      $('#workspace').hidden = false;
+      await refreshBootstrap();
+    } catch (error) {
+      formMessage('#listingMessage', error.message || 'Unable to submit your league.', true);
+    } finally {
+      button.disabled = false; button.innerHTML = 'Submit for approval <span aria-hidden="true">→</span>';
+    }
+  });
+
+  $('#profileAvatarFile').addEventListener('change', async event => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    $('#saveProfileBtn').disabled = true;
+    formMessage('#profileMessage', 'Uploading player avatar…');
+    try {
+      await uploadImage(file, $('#profileAvatarPreview'), $('#profileForm').elements.avatarUrl);
+      formMessage('#profileMessage', 'Avatar uploaded.');
+    } catch (error) {
+      formMessage('#profileMessage', error.message, true);
+    } finally {
+      $('#saveProfileBtn').disabled = false;
+    }
+  });
+
+  $('#leagueLogoFile').addEventListener('change', async event => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    $('#submitListingBtn').disabled = true;
+    formMessage('#listingMessage', 'Uploading crest…');
+    try {
+      state.logoUrl = await uploadImage(file, $('#leagueLogoPreview'), $('#listingForm').elements.logoUrl);
+      formMessage('#listingMessage', 'Crest uploaded.');
+    } catch (error) {
+      formMessage('#listingMessage', error.message, true);
+    } finally {
+      $('#submitListingBtn').disabled = false;
+    }
+  });
+
+  $('#tabLeagues').addEventListener('click', () => showTab('leagues'));
+  $('#tabPlayers').addEventListener('click', () => { if (state.canFindPlayers) showTab('players'); });
+  $('#editProfileBtn').addEventListener('click', openLeagueProfile);
+  $('#listLeagueBtn').addEventListener('click', openListingEditor);
+  $('#openListingBtn').addEventListener('click', openListingEditor);
+  $('#emptyListBtn').addEventListener('click', openListingEditor);
+  $('#createListingBtn').addEventListener('click', openListingEditor);
+  $('#cancelListing').addEventListener('click', () => { $('#listingEditor').hidden = true; $('#workspace').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('#leagueList').addEventListener('click', async event => {
+    const button = event.target.closest('[data-contact-discord]');
+    if (!button) return;
+    const value = button.dataset.contactDiscord || '';
+    try {
+      await navigator.clipboard.writeText(value);
+      toast('Discord contact copied.');
+    } catch {
+      toast('Copy failed. Discord handle: ' + value, true);
+    }
+  });
+
+  $('#leagueSearch').addEventListener('input', filterLeagues);
+  $('#regionFilter').addEventListener('change', filterLeagues);
+  $('#frequencyFilter').addEventListener('change', filterLeagues);
+  $('#sizeFilter').addEventListener('change', filterLeagues);
+  $('#squadOvrFilter').addEventListener('change', filterLeagues);
+  $('#clearFilters').addEventListener('click', () => { $('#leagueSearch').value = ''; $('#regionFilter').value = ''; $('#frequencyFilter').value = ''; $('#sizeFilter').value = ''; $('#squadOvrFilter').value = 'my'; filterLeagues(); });
+  $('#playerSearch').addEventListener('input', () => { window.clearTimeout(window.playerSearchTimer); window.playerSearchTimer = window.setTimeout(loadPlayers, 180); });
+  $('#playerRegionFilter').addEventListener('change', loadPlayers);
+  $('#playerSizeFilter').addEventListener('change', loadPlayers);
+  $('#playerMinOvr').addEventListener('change', loadPlayers);
+  $('#ownerPanel').addEventListener('click', async event => {
+    const button = event.target.closest('#kickoffBtn');
+    if (!button) return;
+    const row = (state.ownListings || [])[0];
+    if (!row) return;
+    button.disabled = true;
+    try {
+      const result = await api('/api/leagues/listings/' + encodeURIComponent(row.id) + '/kickoff', { method: 'POST', body: '{}' });
+      toast('Kickoff complete. Your league is back in the spotlight.');
+      row.lastKickoffAt = result.lastKickoffAt || new Date().toISOString();
+      ownerDesk();
+    } catch (error) {
+      toast(error.message || 'Kickoff is not available yet.', true);
+      button.disabled = false;
+      refreshBootstrap().catch(() => {});
+    }
+  });
+
+  accountAuth.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') showGate();
+    if (event === 'SIGNED_IN' && session?.access_token && !state.profile) initialize();
+  });
+
+  initialize();
+</script>

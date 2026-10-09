@@ -424,9 +424,11 @@ import '../../styles/premium-auth.css';
     showMessage(messageEl, '');
     if (button) button.disabled = true;
     try {
+      const callback = new URL('https://fcmobiletools.online/account/');
+      if (nextPath === '/leagues/') callback.searchParams.set('next', nextPath);
       const result = await accountAuth.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: 'https://fcmobiletools.online/account/' }
+        options: { redirectTo: callback.toString() }
       });
       if (result.error) throw result.error;
     } catch (error) {
@@ -542,7 +544,7 @@ import '../../styles/premium-auth.css';
       if (!gameResult.ok) throw new Error(gameBody.error || 'Could not save your FC Mobile profile.');
 
       onboardingForm.reset();
-      location.replace('/profile/');
+      location.replace(nextPath);
     } catch (error) {
       showMessage(onboardingMessage, friendlyAuthError(error, 'Could not finish your account setup. Please try again.'), true);
     } finally {
@@ -551,6 +553,7 @@ import '../../styles/premium-auth.css';
   });
 
   const params = new URLSearchParams(location.search);
+  const nextPath = params.get('next') === '/leagues/' ? '/leagues/' : '/profile/';
   if (params.get('mode') === 'signup' || location.hash === '#signup') showTab('signup');
 
   accountAuth.auth.getSession().then(async (result) => {
@@ -572,7 +575,7 @@ import '../../styles/premium-auth.css';
 
       // Account creation/sign-in ends here. FC Mobile profile completion is a
       // dashboard Quest, not a gate in front of the account.
-      location.replace('/profile/');
+      location.replace(nextPath);
     } catch (error) {
       showMessage(loginMessage, friendlyAuthError(error, 'Could not load your account. Please refresh and try again.'), true);
     }
