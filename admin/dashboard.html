@@ -1088,8 +1088,8 @@ function renderFcmTvEditor() {
     '</style>' +
     '<div class="fctv-admin-hero"><div><div class="fctv-section-kicker">CREATOR LIBRARY</div><h2>Training Academy</h2><p>Manage the lessons and topics shown on the public Training Academy page.</p></div><button class="btn primary" id="fctvAdd" type="button">＋ Add video</button></div>' +
     '<div class="fctv-admin-grid"><section class="fctv-admin-panel"><div class="fctv-admin-count"><div><strong>' + videos.length + '</strong><br><span>library items</span></div><span>' + videos.filter(v => v.published).length + ' published · ' + videos.filter(v => !v.published).length + ' drafts</span></div><div id="fctvVideoEditors" class="fctv-item-list">' + (videos.map(fctvCard).join('') || '<div class="fctv-empty">No videos yet. Add a video to start the library.</div>') + '</div></section>' +
-    '<aside class="fctv-admin-panel"><div class="fctv-section-kicker">PAGE SETTINGS</div><h3>Public heading</h3><p>Keep the description direct and focused on the content.</p><div class="fctv-admin-settings" style="margin-top:15px"><label class="field"><span>Page title</span><input class="input" id="fctvLibraryTitle" maxlength="80" value="' + esc(fcmtvState.title || 'FCM TV') + '"></label><label class="field"><span>Description</span><textarea class="input" id="fctvLibrarySubtitle" rows="4" maxlength="220">' + esc(fcmtvState.subtitle || 'Lessons, masterclasses and practical FC Mobile knowledge from TanzimFC.') + '</textarea></label><div class="notice">Changes are saved to the video library and then appear on FCM TV after the page refreshes.</div></div></aside></div>' +
-    '<div class="fctv-savebar"><span class="muted" id="fctvSaveNote">Unpublished videos stay out of the public library.</span><button class="btn primary" id="fctvSave" type="button">Save FCM TV library</button></div>';
+    '<aside class="fctv-admin-panel"><div class="fctv-section-kicker">PAGE SETTINGS</div><h3>Public heading</h3><p>Keep the description direct and focused on the content.</p><div class="fctv-admin-settings" style="margin-top:15px"><label class="field"><span>Page title</span><input class="input" id="fctvLibraryTitle" maxlength="80" value="' + esc(fcmtvState.title || 'FC Mobile Training Academy') + '"></label><label class="field"><span>Description</span><textarea class="input" id="fctvLibrarySubtitle" rows="4" maxlength="220">' + esc(fcmtvState.subtitle || 'Lessons, masterclasses and practical FC Mobile knowledge from TanzimFC.') + '</textarea></label><div class="notice">Changes are saved to the video library and then appear on the public Academy page after the page refreshes.</div></div></aside></div>' +
+    '<div class="fctv-savebar"><span class="muted" id="fctvSaveNote">Unpublished videos stay out of the public library.</span><button class="btn primary" id="fctvSave" type="button">Save Academy library</button></div>';
   $('#fctvAdd').onclick = () => {
     if (fcmtvState.videos.length >= 100) { state('The library is limited to 100 videos.', false); return; }
     fcmtvState.videos.push({id:'',title:'',description:'',youtubeId:'',category:'Tutorials',featured:false,published:false,sortOrder:(fcmtvState.videos.length+1)*10,quiz:{question:'',choices:['','',''],answerIndex:0}});
@@ -1135,7 +1135,7 @@ function renderFcmTvEditor() {
       state('Training Academy library saved');
       renderFcmTvEditor();
     } catch (error) {
-      state(error?.message || 'Unable to save FCM TV.', false);
+      state(error?.message || 'Unable to save the Academy library.', false);
       $('#fctvSaveNote').textContent = error?.message || 'Unable to save FCM TV.';
     } finally {
       busy($('#fctvSave'), false);
@@ -1144,7 +1144,7 @@ function renderFcmTvEditor() {
 }
 async function fcmtvTab() {
   const out = await api('/fcmtv');
-  fcmtvState = out.content || {title:'FCM TV',subtitle:'FC Mobile tutorials, captain picks and gameplay guides from TanzimFC.',videos:[]};
+  fcmtvState = out.content || {title:'FC Mobile Training Academy',subtitle:'Lessons, masterclasses and practical FC Mobile knowledge from TanzimFC.',videos:[]};
   renderFcmTvEditor();
 }
 
