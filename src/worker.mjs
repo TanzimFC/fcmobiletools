@@ -2986,13 +2986,28 @@ export function createExports(manifest) {
         );
         html = html.replace(
           /<button\b(?=[^>]*\bdata-vote-player="([^"]+)")[^>]*>[\s\S]*?<\/button>/g,
-          (button, playerId) => button.replace(
-            /(<span\b[^>]*\bdata-vote-count\b[^>]*>)[\s\S]*?(<\/span>)/,
-            (_, opening, closing) => {
-              const count = countFor(playerId);
-              return opening + count + (count === 1 ? ' user picked him' : ' users picked him') + closing;
-            }
-          )
+          (button, playerId) => {
+            const count = countFor(playerId);
+            const share = Number(voteStats.total) > 0 ? (count / Number(voteStats.total)) * 100 : 0;
+            const roundedShare = Math.round(share);
+            let rendered = button.replace(
+              /(<span\b[^>]*\bdata-vote-count\b[^>]*>)[\s\S]*?(<\/span>)/,
+              (_, opening, closing) => opening + count + (count === 1 ? ' user picked him' : ' users picked him') + closing
+            );
+            rendered = rendered.replace(
+              /(<em\b[^>]*\bdata-vote-share\b[^>]*>)[\s\S]*?(<\/em>)/,
+              (_, opening, closing) => opening + (Number(voteStats.total) > 0 ? roundedShare + '%' : '—%') + closing
+            );
+            rendered = rendered.replace(
+              /<b\b(?=[^>]*\bdata-vote-fill\b)[^>]*>/,
+              '<b data-vote-fill style="width:' + share + '%">'
+            );
+            rendered = rendered.replace(
+              /(<i\b[^>]*\bclass="[^"]*\bct-vote-track\b[^"]*"[^>]*\baria-valuenow=")[^"]*"/,
+              (_, opening) => opening + roundedShare + '"'
+            );
+            return rendered;
+          }
         );
         html = html.replace(
           /<article\b(?=[^>]*\bdata-player="([^"]+)")[^>]*>[\s\S]*?<\/article>/g,
