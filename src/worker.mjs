@@ -420,28 +420,31 @@ const CAPTAIN_VOTE_CONFIG = Object.freeze({
 
 const CAPTAIN_CROSS_PLATFORM_ESTIMATE = 757;
 
-// Allocate a display-only cross-platform estimate from the saved pick split.
-// The one-vote smoothing weight keeps zero-count captains represented, and
-// largest-remainder apportionment always produces exactly 757 deterministic points.
-// These estimated points are never written to captain_tracker_votes.
-function allocateCaptainCrossPlatformEstimate(counts) {
-  const playerIds = [...CAPTAIN_VOTE_CONFIG.playerIds];
-  const weights = playerIds.map((playerId) => ({
-    playerId,
-    weight: Math.max(0, Math.floor(Number(counts[playerId] || 0))) + 1
-  }));
-  const weightTotal = weights.reduce((sum, item) => sum + item.weight, 0);
-  const shares = weights.map((item, index) => {
-    const exact = CAPTAIN_CROSS_PLATFORM_ESTIMATE * item.weight / weightTotal;
-    const whole = Math.floor(exact);
-    return { playerId: item.playerId, index, count: whole, remainder: exact - whole };
-  });
-  const remaining = CAPTAIN_CROSS_PLATFORM_ESTIMATE - shares.reduce((sum, item) => sum + item.count, 0);
-  const remainderOrder = [...shares].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
-  for (let index = 0; index < remaining; index += 1) {
-    remainderOrder[index].count += 1;
+// Fixed cross-platform estimate based on the supplied split:
+// Bruno 63%, Van Dijk 23%, Reece James 2%, and 4% each for the other three.
+// Largest-remainder allocation preserves the exact 757-point total.
+// These estimated points are display-only and never enter the vote table.
+const CAPTAIN_CROSS_PLATFORM_ESTIMATED_COUNTS = Object.freeze({
+  'reece-james': 15,
+  'bruno-fernandes': 477,
+  'virgil-van-dijk': 174,
+  'lewis-dunk': 31,
+  'john-mcginn': 30,
+  'ethan-ampadu': 30
+});
+
+function allocateCaptainCrossPlatformEstimate() {
+  const estimates = Object.fromEntries(
+    [...CAPTAIN_VOTE_CONFIG.playerIds].map((playerId) => [
+      playerId,
+      Math.max(0, Math.floor(Number(CAPTAIN_CROSS_PLATFORM_ESTIMATED_COUNTS[playerId] || 0)))
+    ])
+  );
+  const total = Object.values(estimates).reduce((sum, count) => sum + count, 0);
+  if (total !== CAPTAIN_CROSS_PLATFORM_ESTIMATE) {
+    throw new Error('Cross-platform captain estimate does not match the configured total.');
   }
-  return Object.fromEntries(shares.map((item) => [item.playerId, item.count]));
+  return estimates;
 }
 
 async function captainVotesApi(request, env, url) {
@@ -582,7 +585,7 @@ async function captainVotesApi(request, env, url) {
     }
 
     const verifiedTotal = Object.values(counts).reduce((sum, count) => sum + count, 0);
-    const estimatedCounts = allocateCaptainCrossPlatformEstimate(counts);
+    const estimatedCounts = allocateCaptainCrossPlatformEstimate();
     const combinedCounts = Object.fromEntries(
       [...CAPTAIN_VOTE_CONFIG.playerIds].map((playerId) => [
         playerId,
