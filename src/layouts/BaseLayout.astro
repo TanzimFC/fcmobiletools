@@ -403,6 +403,26 @@ const pageSchema = {
       });
     })();
   </script>
+  <script is:inline>
+    (() => {
+      // Preserve the page being used whenever any part of the site sends a
+      // visitor to Account. This also covers links rendered dynamically later.
+      const isAccountPath = (pathname) => /^\\/account(?:\\/|$)/.test(pathname);
+      document.addEventListener('click', (event) => {
+        const link = event.target?.closest?.('a[href]');
+        if (!link || event.defaultPrevented || isAccountPath(location.pathname)) return;
+
+        try {
+          const destination = new URL(link.getAttribute('href'), location.href);
+          if (destination.origin !== location.origin || !isAccountPath(destination.pathname)) return;
+          if (destination.searchParams.has('next')) return;
+
+          destination.searchParams.set('next', location.pathname + location.search + location.hash);
+          link.href = destination.pathname + destination.search + destination.hash;
+        } catch {}
+      }, true);
+    })();
+  </script>
   <style is="global">
     /* ---- Site loader: a football pitch that splits along the halfway line ---- */
     .site-loader{
