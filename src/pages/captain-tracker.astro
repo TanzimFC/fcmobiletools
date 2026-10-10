@@ -696,18 +696,39 @@ const barPoints = (values, width = 220, height = 64) => {
       applyVoteLockState();
     };
 
-    const loadVotes = async () => {
+    const hasVoteStats = (payload) => Boolean(
+      payload &&
+      typeof payload === 'object' &&
+      Number.isFinite(Number(payload.total)) &&
+      payload.counts &&
+      typeof payload.counts === 'object' &&
+      !Array.isArray(payload.counts)
+    );
+
+    let voteLoadInProgress = false;
+    const loadVotes = async ({ quiet = false } = {}) => {
+      if (voteLoadInProgress) return;
+      voteLoadInProgress = true;
       try {
         const response = await accountApi('/api/captain-votes?tracker=premier-league-matchday-7');
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || 'Could not load captain picks.');
+        if (!hasVoteStats(payload)) {
+          throw new Error('The community vote response was incomplete. Please refresh the page.');
+        }
         updateVoteUI(payload);
-      } catch {
-        setVoteStatus('Captain picks are temporarily unavailable.', 'error');
+      } catch (error) {
+        if (!quiet) {
+          setVoteStatus(error?.message || 'Captain picks are temporarily unavailable.', 'error');
+        }
+      } finally {
+        voteLoadInProgress = false;
       }
     };
 
+    let voteSaveInProgress = false;
     const saveVote = async (playerId, trigger) => {
+      if (voteSaveInProgress || voteLocked) return;
       try {
         const session = await accountAuth.auth.getSession();
         if (!session.data?.session) {
@@ -718,10 +739,11 @@ const barPoints = (values, width = 220, height = 64) => {
           return;
         }
 
-        if (trigger) {
-          trigger.disabled = true;
-          trigger.classList.add('is-saving');
-        }
+        voteSaveInProgress = true;
+        voteRoot?.querySelectorAll('[data-vote-player]').forEach((node) => {
+          node.disabled = true;
+        });
+        if (trigger) trigger.classList.add('is-saving');
         setVoteStatus('Saving your pick…', 'saving');
 
         const response = await accountApi('/api/captain-votes?tracker=premier-league-matchday-7', {
@@ -745,15 +767,17 @@ const barPoints = (values, width = 220, height = 64) => {
           return;
         }
         if (!response.ok) throw new Error(payload.error || 'Could not save your captain pick.');
+        if (!hasVoteStats(payload)) {
+          throw new Error('Your pick could not be confirmed. Please refresh and check your selection.');
+        }
 
         updateVoteUI(payload);
       } catch (error) {
         setVoteStatus(error?.message || 'Could not save your captain pick.', 'error');
       } finally {
-        if (trigger) {
-          trigger.disabled = voteLocked;
-          trigger.classList.remove('is-saving');
-        }
+        voteSaveInProgress = false;
+        if (trigger) trigger.classList.remove('is-saving');
+        applyVoteLockState();
       }
     };
 
@@ -767,6 +791,14 @@ const barPoints = (values, width = 220, height = 64) => {
     accountAuth.auth.onAuthStateChange(() => {
       loadVotes();
     });
+
+    // Keep the public tally fresh for visitors who already have the page open.
+    const refreshVisibleVotes = () => {
+      if (!document.hidden) loadVotes({ quiet: true });
+    };
+    window.setInterval(refreshVisibleVotes, 15000);
+    window.addEventListener('focus', refreshVisibleVotes);
+    document.addEventListener('visibilitychange', refreshVisibleVotes);
 
     loadVotes();
   </script>
