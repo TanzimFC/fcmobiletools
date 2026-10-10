@@ -615,6 +615,7 @@ import '../../styles/premium-auth.css';
     try {
       const target = new URL(raw, location.origin);
       if (target.origin !== location.origin) return '';
+      if (!target.pathname.startsWith('/') || target.pathname.startsWith('//') || target.pathname.includes('\\')) return '';
       // Never redirect back into the auth page, which would create a loop.
       if (target.pathname === '/account' || target.pathname.startsWith('/account/')) return '';
       return target.pathname + target.search + target.hash;
