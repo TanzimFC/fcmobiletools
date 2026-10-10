@@ -495,15 +495,65 @@ async function captainVotesApi(request, env, url) {
       }
     );
 
-    const result = Array.isArray(stats) ? (stats[0] || {}) : (stats || {});
-    const counts = result?.counts && typeof result.counts === 'object' ? result.counts : {};
-    const total = Number.isFinite(Number(result?.total)) ? Number(result.total) : 0;
+    // PostgREST can serialize scalar JSON results differently from table results.
+    // Unwrap the common envelopes before interpreting the vote totals.
+    let result = Array.isArray(stats) ? (stats[0] || {}) : (stats || {});
+    for (let depth = 0; depth < 3 && result && typeof result === 'object'; depth += 1) {
+      if (Object.prototype.hasOwnProperty.call(result, 'counts') &&
+          Object.prototype.hasOwnProperty.call(result, 'total')) break;
+      const nested = result.get_captain_tracker_vote_stats ?? result.data ?? result.result;
+      if (!nested || typeof nested !== 'object') break;
+      result = Array.isArray(nested) ? (nested[0] || {}) : nested;
+    }
 
+    const hasStats = result &&
+      typeof result === 'object' &&
+      Object.prototype.hasOwnProperty.call(result, 'total') &&
+      result.counts &&
+      typeof result.counts === 'object';
+
+    const counts = Object.fromEntries(
+      [...CAPTAIN_VOTE_CONFIG.playerIds].map((playerId) => [playerId, 0])
+    );
+    let selected = null;
+
+    if (hasStats) {
+      for (const playerId of CAPTAIN_VOTE_CONFIG.playerIds) {
+        const count = Number(result.counts[playerId] || 0);
+        counts[playerId] = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+      }
+      selected = CAPTAIN_VOTE_CONFIG.playerIds.has(result.selected) ? result.selected : null;
+    } else {
+      // Defensive fallback: read the persisted rows directly if the RPC response
+      // arrives in an unexpected shape. This keeps the UI from silently showing
+      // six zeroes when the database already contains votes.
+      const pageSize = 1000;
+      const maxRows = 50000;
+      for (let offset = 0; offset < maxRows; offset += pageSize) {
+        const rows = await supabaseRest(
+          env,
+          'captain_tracker_votes?tracker_key=eq.' + encodeURIComponent(trackerKey) +
+            '&select=player_id,account_id&order=id.asc&limit=' + pageSize + '&offset=' + offset
+        );
+        if (!Array.isArray(rows)) throw new Error('Captain vote rows returned an invalid response.');
+        for (const row of rows) {
+          if (!CAPTAIN_VOTE_CONFIG.playerIds.has(row?.player_id)) continue;
+          counts[row.player_id] += 1;
+          if (context?.account.id && row.account_id === context.account.id) selected = row.player_id;
+        }
+        if (rows.length < pageSize) break;
+        if (offset + pageSize >= maxRows) {
+          throw new Error('Captain vote result exceeded the safety limit.');
+        }
+      }
+    }
+
+    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
     return json({
       trackerKey,
       total,
       counts,
-      selected: result?.selected || null,
+      selected,
       locked,
       lockAtUtc: CAPTAIN_VOTE_CONFIG.lockAtUtc
     });
