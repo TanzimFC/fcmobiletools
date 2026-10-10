@@ -418,6 +418,32 @@ const CAPTAIN_VOTE_CONFIG = Object.freeze({
   ])
 });
 
+const CAPTAIN_CROSS_PLATFORM_ESTIMATE = 757;
+
+// Allocate a display-only cross-platform estimate from the saved pick split.
+// The one-vote smoothing weight keeps zero-count captains represented, and
+// largest-remainder apportionment always produces exactly 757 deterministic points.
+// These estimated points are never written to captain_tracker_votes.
+function allocateCaptainCrossPlatformEstimate(counts) {
+  const playerIds = [...CAPTAIN_VOTE_CONFIG.playerIds];
+  const weights = playerIds.map((playerId) => ({
+    playerId,
+    weight: Math.max(0, Math.floor(Number(counts[playerId] || 0))) + 1
+  }));
+  const weightTotal = weights.reduce((sum, item) => sum + item.weight, 0);
+  const shares = weights.map((item, index) => {
+    const exact = CAPTAIN_CROSS_PLATFORM_ESTIMATE * item.weight / weightTotal;
+    const whole = Math.floor(exact);
+    return { playerId: item.playerId, index, count: whole, remainder: exact - whole };
+  });
+  const remaining = CAPTAIN_CROSS_PLATFORM_ESTIMATE - shares.reduce((sum, item) => sum + item.count, 0);
+  const remainderOrder = [...shares].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  for (let index = 0; index < remaining; index += 1) {
+    remainderOrder[index].count += 1;
+  }
+  return Object.fromEntries(shares.map((item) => [item.playerId, item.count]));
+}
+
 async function captainVotesApi(request, env, url) {
   if (!['GET', 'POST'].includes(request.method)) {
     return json({ error: 'Method not allowed.' }, 405);
@@ -555,14 +581,25 @@ async function captainVotesApi(request, env, url) {
       }
     }
 
-    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    const verifiedTotal = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    const estimatedCounts = allocateCaptainCrossPlatformEstimate(counts);
+    const combinedCounts = Object.fromEntries(
+      [...CAPTAIN_VOTE_CONFIG.playerIds].map((playerId) => [
+        playerId,
+        counts[playerId] + estimatedCounts[playerId]
+      ])
+    );
     return json({
       trackerKey,
-      total,
-      counts,
+      total: verifiedTotal + CAPTAIN_CROSS_PLATFORM_ESTIMATE,
+      counts: combinedCounts,
       selected,
       locked,
-      lockAtUtc: CAPTAIN_VOTE_CONFIG.lockAtUtc
+      lockAtUtc: CAPTAIN_VOTE_CONFIG.lockAtUtc,
+      verifiedTotal,
+      verifiedCounts: counts,
+      estimatedTotal: CAPTAIN_CROSS_PLATFORM_ESTIMATE,
+      estimatedCounts
     });
   } catch (error) {
     console.error('[CAPTAIN_VOTES]', error?.message);
@@ -2992,7 +3029,7 @@ export function createExports(manifest) {
             const roundedShare = Math.round(share);
             let rendered = button.replace(
               /(<span\b[^>]*\bdata-vote-count\b[^>]*>)[\s\S]*?(<\/span>)/,
-              (_, opening, closing) => opening + count + (count === 1 ? ' user picked him' : ' users picked him') + closing
+              (_, opening, closing) => opening + count + ' support points' + closing
             );
             rendered = rendered.replace(
               /(<em\b[^>]*\bdata-vote-share\b[^>]*>)[\s\S]*?(<\/em>)/,
