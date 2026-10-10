@@ -2,397 +2,117 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow,noarchive">
-<meta name="theme-color" content="#071018">
-<title>League Control · FCMobiletools Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Leagues Admin — FC Mobile Tools</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leagues/leagues.css">
 <style>
-:root{color-scheme:dark;--ad-bg:#071018;--ad-s1:#0b1620;--ad-s2:#0f1c28;--ad-line:rgba(255,255,255,.08);--ad-line2:rgba(255,255,255,.15);--ad-text:#f5f8fb;--ad-muted:#93a7b7;--ad-dim:#667f92;--ad-cyan:#4cc9ff;--ad-mint:#6ee7b7;--ad-gold:#f6c453;--ad-amber:#f1c779;--ad-red:#ff8f86;--ad-violet:#9a8cff}
-*{box-sizing:border-box}
-html body{margin:0;background:radial-gradient(800px 420px at 4% -8%,#4cc9ff14,transparent 65%),radial-gradient(780px 460px at 100% 0,#9a8cff0f,transparent 60%),#071018;color:var(--ad-text);min-height:100vh;font-family:Inter,system-ui,sans-serif}
-a{color:inherit}
-[hidden]{display:none!important}
-.ad-wrap{width:min(1320px,calc(100% - 32px));margin:0 auto;padding:24px 0 60px}
-.ad-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px}
-.ad-brand{display:flex;align-items:center;gap:14px}
-.ad-brand img{width:46px;height:38px;object-fit:contain}
-.ad-crumb{color:#83dfff;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
-.ad-brand h1{margin:4px 0 0;font:700 clamp(22px,3.6vw,30px)/1.05 'Space Grotesk',Inter,sans-serif;letter-spacing:-.045em}
-.ad-head-actions{display:flex;gap:8px}
-.ad-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:0 14px;border:1px solid var(--ad-line2);border-radius:10px;background:#0f1c28;color:#d3e1ea;text-decoration:none;font:700 12px Inter,sans-serif;cursor:pointer;transition:transform .16s,border-color .16s,background .16s;white-space:nowrap}
-.ad-btn:hover{border-color:#4cc9ff66;transform:translateY(-1px)}
-.ad-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.ad-btn:focus-visible,.ad-row:focus-visible,.ad-tab:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--ad-cyan);outline-offset:2px}
-.ad-btn.good{background:linear-gradient(135deg,#aef3d5,#5bd7a8);border-color:#8fe7c4;color:#06241a}
-.ad-btn.gold{background:linear-gradient(135deg,#ffe9a6,#f6c453);border-color:#f6d783;color:#241a02}
-.ad-btn.warn{background:#241c0e;border-color:#6b5524;color:#f6dca0}
-.ad-btn.bad{background:#231519;border-color:#5b3438;color:#ffc0b7}
-.ad-btn.sm{min-height:32px;padding:0 11px;font-size:11.5px;border-radius:9px}
-.ad-banner{margin-bottom:16px;padding:13px 16px;border:1px solid #f1c77940;border-radius:14px;background:#f1c7790c;color:#f0d8a2;font-size:12.5px;line-height:1.6}
-.ad-banner code{padding:1px 6px;border-radius:5px;background:#ffffff12;font-size:11.5px}
-.ad-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:18px}
-.ad-kpi{padding:14px 16px;border:1px solid var(--ad-line);border-radius:16px;background:linear-gradient(160deg,#101f2b,#0a141d)}
-.ad-kpi span{display:block;color:var(--ad-dim);font-size:10.5px;font-weight:600}
-.ad-kpi strong{display:block;margin-top:6px;font:700 26px/1 'Space Grotesk',sans-serif;letter-spacing:-.03em}
-.ad-kpi.hot strong{color:var(--ad-amber)}.ad-kpi.alert strong{color:var(--ad-red)}.ad-kpi.live strong{color:var(--ad-mint)}
-.ad-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-.ad-tabs{display:flex;gap:5px;flex-wrap:wrap;flex:1}
-.ad-tab{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 13px;border:1px solid transparent;border-radius:10px;background:transparent;color:#8ca2b3;font:700 12px Inter,sans-serif;cursor:pointer}
-.ad-tab:hover{background:#ffffff06;color:#dcecf6}
-.ad-tab.active{background:#4cc9ff13;border-color:#4cc9ff38;color:#a9e8ff}
-.ad-tab em{font-style:normal;min-width:19px;height:19px;padding:0 6px;display:inline-grid;place-items:center;border-radius:6px;background:#ffffff0d;color:#a7c0cf;font-size:10.5px}
-.ad-tab em.alert{background:#ff8f8626;color:#ffb5ac}
-.ad-search,.ad-select{height:38px;border:1px solid var(--ad-line2);border-radius:10px;background:#0b1620;color:#e1edf4;font:600 12px Inter,sans-serif;padding:0 12px}
-.ad-search{width:230px}
-.ad-note{min-height:0;margin:0 0 10px;color:#91a9b9;font-size:12px}
-.ad-note.err{color:#ffaaa3}
-.ad-split{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:16px;align-items:start}
-.ad-list{display:grid;gap:8px;max-height:calc(100vh - 250px);overflow-y:auto;padding-right:4px}
-.ad-row{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--ad-line);border-radius:14px;background:linear-gradient(155deg,#0f1c28,#0a141d);cursor:pointer;text-align:left;color:inherit;width:100%;font:inherit;transition:border-color .15s,background .15s}
-.ad-row:hover{border-color:#4cc9ff44}
-.ad-row.sel{border-color:#4cc9ff88;background:linear-gradient(155deg,#12263a,#0b1823);box-shadow:0 0 0 1px #4cc9ff22}
-.ad-crest{position:relative;display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;overflow:hidden;border:1px solid #4cc9ff33;border-radius:12px;background:#091620;color:#8bdefd;font:800 12px 'Space Grotesk',sans-serif}
-.ad-crest img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.ad-row-main{flex:1;min-width:0}
-.ad-row-main b{display:flex;align-items:center;gap:6px;font:700 13.5px 'Space Grotesk',sans-serif;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ad-row-main small{display:block;margin-top:4px;color:var(--ad-dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ad-row-side{display:grid;gap:5px;justify-items:end}
-.ad-pill{display:inline-flex;align-items:center;height:21px;padding:0 8px;border:1px solid #f1c77938;border-radius:7px;background:#f1c7790d;color:#e7cb8f;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
-.ad-pill.approved{border-color:#75e3b33a;background:#75e3b30d;color:#89e9bf}
-.ad-pill.rejected,.ad-pill.removed{border-color:#ff9c9237;background:#ff9c920d;color:#ffada4}
-.ad-pill.paused{border-color:#9a8cff3a;background:#9a8cff0d;color:#c3baff}
-.ad-pill.gold{border-color:#f6c45344;background:#f6c4531a;color:#ffe29a}
-.ad-pill.cyan{border-color:#4cc9ff3a;background:#4cc9ff10;color:#a6e8ff}
-.ad-pill.red{border-color:#ff8f8640;background:#ff8f860f;color:#ffb5ac}
-.ad-dot{width:8px;height:8px;border-radius:50%;background:var(--ad-red);box-shadow:0 0 0 3px #ff8f8622;flex:0 0 8px}
-.ad-detail{position:sticky;top:14px;border:1px solid var(--ad-line);border-radius:20px;background:linear-gradient(155deg,#101d29,#0a141d);max-height:calc(100vh - 28px);overflow-y:auto}
-.ad-d-top{padding:22px;border-bottom:1px solid var(--ad-line);background:radial-gradient(360px 160px at 0 0,#4cc9ff17,transparent 70%)}
-.ad-d-id{display:flex;gap:14px;align-items:center}
-.ad-d-id .ad-crest{flex-basis:62px;width:62px;height:62px;border-radius:17px;font-size:15px}
-.ad-d-id h2{margin:0;font:700 22px/1.15 'Space Grotesk',sans-serif;letter-spacing:-.04em;overflow-wrap:anywhere}
-.ad-d-id p{margin:5px 0 0;color:var(--ad-muted);font-size:12px}
-.ad-d-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
-.ad-sec{padding:18px 22px;border-bottom:1px solid var(--ad-line)}
-.ad-sec:last-child{border-bottom:0}
-.ad-sec h3{margin:0 0 12px;color:var(--ad-dim);font:800 10.5px Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase}
-.ad-desc{margin:0;color:#c7d6e1;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
-.ad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.ad-grid div{padding:11px 12px;border:1px solid var(--ad-line);border-radius:12px;background:#08121a}
-.ad-grid span{display:block;color:var(--ad-dim);font-size:10px;margin-bottom:5px}
-.ad-grid strong{display:block;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
-.ad-grid a{color:#8fe0ff}
-.ad-flags{display:grid;gap:12px}
-.ad-flag{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--ad-line);border-radius:13px;background:#08121a}
-.ad-flag b{display:block;font-size:12.5px}.ad-flag small{display:block;margin-top:3px;color:var(--ad-dim);font-size:11px}
-.ad-flag-ctrl{display:flex;gap:7px;align-items:center}
-.ad-field{display:grid;gap:7px;margin-top:6px}
-.ad-field label{color:#9fb3c2;font-size:11px;font-weight:700}
-.ad-field textarea{width:100%;min-height:62px;resize:vertical;padding:10px 12px;border:1px solid var(--ad-line2);border-radius:11px;background:#07111a;color:#e7f0f6;font:12px/1.55 Inter,sans-serif}
-.ad-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
-.ad-report{padding:12px 14px;border:1px solid #ff8f8630;border-radius:13px;background:#ff8f860a}
-.ad-report+.ad-report{margin-top:9px}
-.ad-report b{font-size:12.5px}.ad-report p{margin:6px 0 0;color:#e0c9c5;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
-.ad-report small{display:block;margin-top:6px;color:var(--ad-dim);font-size:11px}
-.ad-report .ad-actions{margin-top:10px;justify-content:flex-start}
-.ad-log{list-style:none;margin:0;padding:0;display:grid;gap:0}
-.ad-log li{position:relative;padding:0 0 14px 20px;font-size:12px;color:#c0d0db;line-height:1.5}
-.ad-log li::before{content:"";position:absolute;left:3px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--ad-cyan)}
-.ad-log li::after{content:"";position:absolute;left:6px;top:15px;bottom:0;width:1px;background:var(--ad-line2)}
-.ad-log li:last-child::after{display:none}
-.ad-log b{color:#fff;text-transform:capitalize}.ad-log small{display:block;color:var(--ad-dim);font-size:10.5px;margin-top:1px}
-.ad-empty{padding:46px 20px;text-align:center;border:1px dashed #ffffff1c;border-radius:16px;color:var(--ad-muted);background:#09141d}
-.ad-empty h3{margin:0 0 7px;font:700 17px 'Space Grotesk',sans-serif;color:#e8f3f9}.ad-empty p{margin:0;font-size:12px}
-.ad-skel{height:68px;border-radius:14px;border:1px solid var(--ad-line);background:linear-gradient(100deg,#0b1720 20%,#142532 45%,#0b1720 70%);background-size:220% 100%;animation:ad-sh 1.4s linear infinite}
-@keyframes ad-sh{to{background-position:-220% 0}}
-.ad-reports{display:grid;gap:10px}
-.ad-rcard{display:flex;gap:14px;padding:16px;border:1px solid var(--ad-line);border-radius:16px;background:linear-gradient(155deg,#101d29,#0a141d)}
-.ad-rcard.open{border-color:#ff8f8638}
-.ad-rbody{flex:1;min-width:0}.ad-rbody h4{margin:0 0 4px;font:700 14px 'Space Grotesk',sans-serif}
-.ad-rbody p{margin:7px 0 0;color:#cdd9e2;font-size:12.5px;line-height:1.6;overflow-wrap:anywhere}.ad-rbody small{display:block;margin-top:6px;color:var(--ad-dim);font-size:11px}
-.ad-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(3,8,13,.74);backdrop-filter:blur(5px)}
-.ad-modal-card{width:min(420px,100%);padding:22px;border:1px solid var(--ad-line2);border-radius:18px;background:linear-gradient(160deg,#112030,#09131c)}
-.ad-modal-card h3{margin:0 0 8px;font:700 18px 'Space Grotesk',sans-serif}.ad-modal-card p{margin:0 0 16px;color:var(--ad-muted);font-size:12.5px;line-height:1.6}
-.ad-toast{position:fixed;z-index:120;left:50%;bottom:22px;max-width:min(440px,calc(100% - 28px));padding:12px 17px;border:1px solid #4cc9ff4a;border-radius:13px;background:#10212e;color:#eaf7ff;font-size:12.5px;box-shadow:0 24px 70px #000a;opacity:0;transform:translate(-50%,10px);pointer-events:none;transition:.2s}
-.ad-toast.show{opacity:1;transform:translate(-50%,0)}.ad-toast.err{border-color:#ff8f8670;color:#ffd5d0}
-.ad-back{display:none;margin:0 0 12px}
-@media(max-width:1100px){.ad-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:900px){
-  .ad-split{grid-template-columns:1fr}.ad-list{max-height:none}
-  .ad-detail{position:static;max-height:none}
-  .ad-split.has-sel .ad-list{display:none}.ad-split:not(.has-sel) .ad-detail{display:none}
-  .ad-back{display:inline-flex}.ad-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .ad-search{width:100%}.ad-head{align-items:flex-start}
-}
-@media(max-width:520px){.ad-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ad-flag{flex-direction:column;align-items:stretch}.ad-actions .ad-btn{flex:1}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.stat-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.acard{padding:20px;margin-bottom:14px;display:grid;gap:14px;animation:rise .4s var(--ease) both}
+.acard .r1{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;font-size:13px}
+.kv small{display:block;color:var(--mute);font-weight:600;font-size:11.5px}
+.kv b{word-break:break-all}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:720px){.stat-strip{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
-<body>
-<main class="ad-wrap">
-  <header class="ad-head">
-    <div class="ad-brand"><a href="/admin/" aria-label="Back to admin"><img src="/assets/images/logo.png" alt="FCMobiletools"></a><div><div class="ad-crumb">Community workspace</div><h1>League Control</h1></div></div>
-    <div class="ad-head-actions"><a class="ad-btn" href="/admin/">← Admin workspace</a><button class="ad-btn" id="refreshBtn" type="button">↻ Refresh</button></div>
-  </header>
+<body class="fl">
+<div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
+<header class="top"><div class="top-in"><a class="logo" href="/"><span class="mark">FC</span><span>Leagues Admin</span></a>
+<nav class="tabs" style="margin-left:12px"><a href="/leagues/" class="">View site</a></nav><div class="top-r" id="who"></div></div></header>
+<main class="app" id="app"></main>
+<div id="toasts"></div>
+<script src="/leagues/config.js"></script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+const C = window.FL_CONFIG || {};
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const app = $('#app');
+const sb = createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { auth: { persistSession: true, detectSessionInUrl: true } });
+const hue = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+const ago = (t) => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); if (s < 3600) return Math.max(1, Math.floor(s / 60)) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; return Math.floor(s / 86400) + 'd ago'; };
+function toast(m, t = 'ok') { const e = document.createElement('div'); e.className = 'toast ' + t; e.textContent = m; $('#toasts').append(e); setTimeout(() => e.remove(), 3500); }
+const mono = (n, u) => u ? `<img class="av lg" src="${esc(u)}" alt="">` : `<span class="av lg mono" style="--h:${hue(n)}">${esc(String(n || '?').slice(0, 2).toUpperCase())}</span>`;
+let tab = 'pending', q = '';
+const TABS = { pending: 'Pending', approved: 'Live', rejected: 'Rejected', suspended: 'Suspended' };
 
-  <div class="ad-banner" id="premiumBanner" hidden><strong>Premium features are not active yet.</strong> Run the SQL migration <code>20261010120000_league_premium.sql</code> in Supabase to enable Verified badges, Featured placement, reports and the activity log. Reviewing listings still works meanwhile.</div>
-
-  <section class="ad-kpis" id="kpis">
-    <div class="ad-kpi hot"><span>Awaiting review</span><strong id="kPending">–</strong></div>
-    <div class="ad-kpi live"><span>Live leagues</span><strong id="kLive">–</strong></div>
-    <div class="ad-kpi alert"><span>Open reports</span><strong id="kReports">–</strong></div>
-    <div class="ad-kpi"><span>Featured now</span><strong id="kFeatured">–</strong></div>
-    <div class="ad-kpi"><span>Join clicks · 7d</span><strong id="kJoins">–</strong></div>
-    <div class="ad-kpi"><span>Players looking</span><strong id="kPlayers">–</strong></div>
-  </section>
-
-  <div class="ad-bar">
-    <div class="ad-tabs" role="tablist" aria-label="League views" id="tabs">
-      <button class="ad-tab active" data-view="pending" type="button">Review queue <em id="cPending">0</em></button>
-      <button class="ad-tab" data-view="approved" type="button">Live</button>
-      <button class="ad-tab" data-view="rejected" type="button">Changes requested</button>
-      <button class="ad-tab" data-view="paused" type="button">Paused</button>
-      <button class="ad-tab" data-view="removed" type="button">Removed</button>
-      <button class="ad-tab" data-view="all" type="button">All</button>
-      <button class="ad-tab" data-view="reports" type="button">Reports <em id="cReports">0</em></button>
-    </div>
-    <input class="ad-search" id="search" type="search" placeholder="Search league, owner, UID…" aria-label="Search listings">
-    <select class="ad-select" id="sort" aria-label="Sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">League name</option><option value="reports">Most reports</option></select>
-    <select class="ad-select" id="reportFilter" aria-label="Report status" hidden><option value="open">Open reports</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option><option value="all">All reports</option></select>
-  </div>
-  <div class="ad-note" id="note" role="status" aria-live="polite"></div>
-
-  <section id="listingsView">
-    <div class="ad-split" id="split">
-      <div class="ad-list" id="list"><div class="ad-skel"></div><div class="ad-skel"></div><div class="ad-skel"></div></div>
-      <div class="ad-detail" id="detail"><div class="ad-empty" style="border:0"><h3>Select a league</h3><p>Pick a listing on the left to review it.</p></div></div>
-    </div>
-  </section>
-  <section id="reportsView" hidden><div class="ad-reports" id="reportList"></div></section>
-</main>
-
-<div class="ad-modal" id="modal" hidden><div class="ad-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h3 id="modalTitle"></h3><p id="modalText"></p><div class="ad-actions" style="margin-top:0"><button class="ad-btn" id="modalCancel" type="button">Cancel</button><button class="ad-btn bad" id="modalOk" type="button">Confirm</button></div></div></div>
-<div class="ad-toast" id="toast" role="status" aria-live="polite"></div>
-
-<script>
-(function(){
-  'use strict';
-  var $=function(s,r){return (r||document).querySelector(s);};
-  var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
-  var esc=function(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
-  var fmt=function(v){return Number(v||0).toLocaleString();};
-  var FREQ={daily:'Daily',most_days:'Most days',several_weekly:'Several times a week',weekly:'Weekly',occasional:'Occasional'};
-  var COMMIT={casual:'Casual',regular:'Regular play',competitive:'Competitive'};
-  var STATUS_LABEL={pending:'Pending',approved:'Live',rejected:'Changes requested',paused:'Paused',removed:'Removed'};
-  var REASON={fake_or_misleading:'Fake or misleading',inactive:'Looks inactive',inappropriate:'Inappropriate',spam:'Spam / ads',other:'Other'};
-  var state={view:'pending',listings:[],reports:[],selected:null,premium:true,stats:null,busy:false,log:[],logFor:null};
-
-  function toast(m,err){var n=$('#toast');n.textContent=m;n.classList.toggle('err',!!err);n.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){n.classList.remove('show');},3800);}
-  function note(m,err){var n=$('#note');n.textContent=m||'';n.classList.toggle('err',!!err);}
-  function api(path,options){
-    options=options||{};
-    var headers=Object.assign({'content-type':'application/json'},options.headers||{});
-    return fetch(path,Object.assign({credentials:'same-origin',cache:'no-store'},options,{headers:headers})).then(function(r){
-      return r.json().catch(function(){return {};}).then(function(d){if(!r.ok){var e=new Error(d.error||'Request failed.');e.status=r.status;throw e;}return d;});
-    });
-  }
-  function initials(n){return String(n||'FC').trim().split(/\s+/).slice(0,2).map(function(s){return s[0]||'';}).join('').toUpperCase()||'FC';}
-  function crest(url,name){return '<div class="ad-crest"><span>'+esc(initials(name))+'</span>'+(url?'<img src="'+esc(url)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'')+'</div>';}
-  function ago(iso){var t=Date.parse(iso||'');if(!t)return '';var s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<90)return 'just now';if(s<3600)return Math.round(s/60)+' min ago';if(s<86400)return Math.round(s/3600)+' h ago';var d=Math.round(s/86400);return d<30?d+' d ago':new Date(t).toLocaleDateString();}
-  function when(iso){var t=Date.parse(iso||'');return t?new Date(t).toLocaleString():'';}
-  function confirmBox(title,text,okLabel){
-    return new Promise(function(resolve){
-      $('#modalTitle').textContent=title;$('#modalText').textContent=text;$('#modalOk').textContent=okLabel||'Confirm';$('#modal').hidden=false;$('#modalOk').focus();
-      function done(v){$('#modal').hidden=true;$('#modalOk').onclick=null;$('#modalCancel').onclick=null;resolve(v);}
-      $('#modalOk').onclick=function(){done(true);};$('#modalCancel').onclick=function(){done(false);};
-    });
-  }
-
-  /* ───── data ───── */
-  function loadStats(){
-    return api('/api/admin/leagues/stats').then(function(d){
-      var s=d.stats||{};state.stats=s;if(d.premiumReady===false)state.premium=false;
-      $('#kPending').textContent=fmt(s.pending);$('#kLive').textContent=fmt(s.approved);$('#kReports').textContent=fmt(s.openReports);
-      $('#kFeatured').textContent=fmt(s.featuredLive);$('#kJoins').textContent=fmt(s.joinClicks7d);$('#kPlayers').textContent=fmt(s.playersLooking);
-      $('#cPending').textContent=fmt(s.pending);var r=$('#cReports');r.textContent=fmt(s.openReports);r.classList.toggle('alert',Number(s.openReports)>0);
-    }).catch(function(){/* non-fatal */});
-  }
-  function loadListings(){
-    var status=state.view==='reports'?'all':state.view;
-    $('#list').innerHTML='<div class="ad-skel"></div><div class="ad-skel"></div><div class="ad-skel"></div>';
-    note('Loading listings…');
-    return api('/api/admin/leagues?status='+encodeURIComponent(status)).then(function(d){
-      state.listings=d.listings||[];state.premium=d.premiumReady!==false;$('#premiumBanner').hidden=state.premium;
-      if(state.selected&&!state.listings.some(function(l){return l.id===state.selected;}))state.selected=null;
-      note('');renderList();renderDetail();
-    }).catch(function(e){
-      $('#list').innerHTML='<div class="ad-empty"><h3>Could not load listings.</h3><p>'+esc(e.message)+'</p></div>';note(e.message,true);
-    });
-  }
-  function loadReports(){
-    var st=$('#reportFilter').value||'open';
-    return api('/api/admin/leagues/reports?status='+encodeURIComponent(st)).then(function(d){state.reports=d.reports||[];renderReports();}).catch(function(e){
-      $('#reportList').innerHTML='<div class="ad-empty"><h3>Could not load reports.</h3><p>'+esc(e.message)+(state.premium?'':' Run the premium SQL migration to enable reports.')+'</p></div>';
-    });
-  }
-  function loadOpenReportsForDetail(){
-    return api('/api/admin/leagues/reports?status=open').then(function(d){state.reports=d.reports||[];renderDetail();}).catch(function(){});
-  }
-  function loadLog(id){
-    state.logFor=id;state.log=[];
-    return api('/api/admin/leagues/'+encodeURIComponent(id)+'/log').then(function(d){if(state.logFor===id){state.log=d.log||[];renderLog();}}).catch(function(){});
-  }
-  function refreshAll(){
-    var jobs=[loadStats()];
-    if(state.view==='reports')jobs.push(loadReports());else{jobs.push(loadListings());jobs.push(loadOpenReportsForDetail());}
-    return Promise.all(jobs);
-  }
-
-  /* ───── list ───── */
-  function visible(){
-    var q=($('#search').value||'').trim().toLowerCase(),rows=state.listings.slice();
-    if(q)rows=rows.filter(function(r){var o=r.ownerGameProfile||{};return [r.name,r.regionServer,r.owner&&r.owner.username,r.owner&&r.owner.displayName,o.fcMobileUid,o.inGameUsername,r.leagueGameId].join(' ').toLowerCase().indexOf(q)>-1;});
-    var s=$('#sort').value;
-    if(s==='oldest')rows.sort(function(a,b){return Date.parse(a.createdAt)-Date.parse(b.createdAt);});
-    else if(s==='name')rows.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
-    else if(s==='reports')rows.sort(function(a,b){return (b.openReports||0)-(a.openReports||0)||Date.parse(b.createdAt)-Date.parse(a.createdAt);});
-    else rows.sort(function(a,b){return Date.parse(b.createdAt)-Date.parse(a.createdAt);});
-    return rows;
-  }
-  function renderList(){
-    var rows=visible();
-    $('#split').classList.toggle('has-sel',!!state.selected);
-    if(!rows.length){$('#list').innerHTML='<div class="ad-empty"><h3>Nothing here.</h3><p>No listings match this view'+($('#search').value?' and search':'')+'.</p></div>';return;}
-    $('#list').innerHTML=rows.map(function(r){
-      var pills='<span class="ad-pill '+esc(r.status)+'">'+esc(STATUS_LABEL[r.status]||r.status)+'</span>';
-      if(r.featured)pills+='<span class="ad-pill gold">★</span>';
-      return '<button type="button" class="ad-row'+(r.id===state.selected?' sel':'')+'" data-id="'+esc(r.id)+'">'+crest(r.logoUrl,r.name)+
-        '<span class="ad-row-main"><b>'+(r.openReports?'<i class="ad-dot" title="'+r.openReports+' open report(s)"></i>':'')+esc(r.name)+(r.verified?' <span class="ad-pill cyan">✓</span>':'')+'</b><small>'+esc(r.regionServer)+' · '+esc((r.owner&&r.owner.displayName)||'Unknown')+' · '+esc(ago(r.createdAt))+'</small></span>'+
-        '<span class="ad-row-side">'+pills+'</span></button>';
-    }).join('');
-  }
-
-  /* ───── detail ───── */
-  function selected(){return state.listings.filter(function(l){return l.id===state.selected;})[0]||null;}
-  function renderDetail(){
-    var r=selected();
-    if(!r){$('#detail').innerHTML='<div class="ad-empty" style="border:0"><h3>Select a league</h3><p>Pick a listing on the left to review it.</p></div>';return;}
-    var o=r.ownerGameProfile||{};
-    var reports=state.reports.filter(function(x){return x.listingId===r.id&&x.status==='open';});
-    var featuredInfo=r.featured?'Featured until '+when(r.featuredUntil):'Not featured';
-    var pills='<span class="ad-pill '+esc(r.status)+'">'+esc(STATUS_LABEL[r.status]||r.status)+'</span>'+(r.verified?'<span class="ad-pill cyan">Verified</span>':'')+(r.featured?'<span class="ad-pill gold">Featured</span>':'')+(r.openReports?'<span class="ad-pill red">'+r.openReports+' open report'+(r.openReports===1?'':'s')+'</span>':'');
-    var flags=state.premium?
-      '<div class="ad-sec"><h3>Visibility</h3><div class="ad-flags">'+
-        '<div class="ad-flag"><div><b>Verified badge</b><small>Shows a verified check on the card and details.</small></div><div class="ad-flag-ctrl"><button class="ad-btn sm '+(r.verified?'warn':'good')+'" data-act="verify" data-val="'+(!r.verified)+'" type="button">'+(r.verified?'Remove badge':'Verify league')+'</button></div></div>'+
-        '<div class="ad-flag"><div><b>Featured placement</b><small>'+esc(featuredInfo)+'. Live listings only; expires automatically.</small></div><div class="ad-flag-ctrl">'+
-          (r.featured?'<button class="ad-btn sm warn" data-act="unfeature" type="button">Unfeature</button>':'<select class="ad-select" id="featDays" aria-label="Featured days"><option value="3">3 days</option><option value="7" selected>7 days</option><option value="14">14 days</option><option value="30">30 days</option></select><button class="ad-btn sm gold" data-act="feature" type="button"'+(r.status!=='approved'?' disabled title="Only live listings can be featured"':'')+'>Feature</button>')+
-        '</div></div>'+
-        '<div class="ad-field"><label for="adminNote">Private admin note <span style="font-weight:400;color:#667f92">· never shown to players or the owner</span></label><textarea id="adminNote" maxlength="1000" placeholder="Internal context, history, trust notes…">'+esc(r.adminNote||'')+'</textarea><div class="ad-actions" style="margin-top:0"><button class="ad-btn sm" data-act="savenote" type="button">Save note</button></div></div>'+
-      '</div></div>':'';
-    var repHtml=reports.length?'<div class="ad-sec"><h3>Open reports ('+reports.length+')</h3>'+reports.map(function(x){return '<div class="ad-report"><b>'+esc(REASON[x.reason]||x.reason)+'</b><p>'+(x.details?esc(x.details):'<i>No details provided.</i>')+'</p><small>Reported by '+esc(x.reporter)+' · '+esc(ago(x.createdAt))+'</small><div class="ad-actions"><button class="ad-btn sm good" data-act="rep" data-id="'+esc(x.id)+'" data-val="resolved" type="button">Resolve</button><button class="ad-btn sm" data-act="rep" data-id="'+esc(x.id)+'" data-val="dismissed" type="button">Dismiss</button></div></div>';}).join('')+'</div>':'';
-    var d='<div class="ad-top-wrap"><div class="ad-d-top"><button class="ad-btn sm ad-back" data-act="back" type="button">← All listings</button><div class="ad-d-id">'+crest(r.logoUrl,r.name)+'<div><h2>'+esc(r.name)+'</h2><p>'+esc(r.regionServer)+' · '+fmt(r.openSpots)+' open spots · submitted '+esc(ago(r.createdAt))+'</p></div></div><div class="ad-d-pills">'+pills+'</div></div></div>'+
-      (r.tagline?'<div class="ad-sec"><h3>Tagline</h3><p class="ad-desc">'+esc(r.tagline)+'</p></div>':'')+
-      '<div class="ad-sec"><h3>Description</h3><p class="ad-desc">'+esc(r.description)+'</p></div>'+
-      '<div class="ad-sec"><h3>Listing details</h3><div class="ad-grid">'+
-        g('Minimum OVR',fmt(r.minOvr)+'+')+g('Rhythm',FREQ[r.tournamentFrequency]||r.tournamentFrequency||'–')+g('Culture',COMMIT[r.playerCommitment]||r.playerCommitment||'–')+
-        g('Tournament sizes',(r.tournamentSizes||[]).join(', ')||'–')+g('Languages',(r.preferredLanguages||[]).join(', ')||'English')+g('Discord',r.discordRequired?'Required':'Optional')+
-        g('Active hours',r.activeHours||'–')+g('Recruiting',r.recruitingOpen?'Open':'Closed')+g('League ID',r.leagueGameId||'–')+
-        (r.weeklyRewards?'<div style="grid-column:1/-1"><span>Rewards / perks</span><strong>'+esc(r.weeklyRewards)+'</strong></div>':'')+
-        '<div><span>Discord invite</span><strong>'+(r.discordInviteUrl?'<a href="'+esc(r.discordInviteUrl)+'" target="_blank" rel="noopener noreferrer">Open invite ↗</a>':'Not supplied')+'</strong></div>'+
-        g('Public contact',r.contactDiscord||'–')+g('Last activity',r.lastActiveAt?ago(r.lastActiveAt):'–')+
-        g('Confirmations · 7d',fmt(r.confirmations7d))+g('Saves',fmt(r.saves))+g('Reviewed',r.reviewedAt?ago(r.reviewedAt)+(r.reviewedBy?' by '+r.reviewedBy:''):'Never')+
-      '</div></div>'+
-      '<div class="ad-sec"><h3>Owner · internal only</h3><div class="ad-grid">'+
-        g('Account',((r.owner&&r.owner.displayName)||'Unknown')+' (@'+((r.owner&&r.owner.username)||'unknown')+')')+g('In-game name',o.inGameUsername||'Not provided')+g('FC Mobile UID',o.fcMobileUid||'Not provided')+
-        g('OVR / Region',fmt(o.ovr)+' · '+(o.regionServer||r.regionServer||'–'))+g('Discord handle',o.discordHandle||'Not provided')+g('Min OVR vs owner',o.ovr&&r.minOvr>o.ovr?'⚠ Requires more than owner has':'OK')+
-      '</div></div>'+
-      repHtml+flags+
-      '<div class="ad-sec"><h3>Review decision</h3><div class="ad-field"><label for="reviewNote">Review note <span style="font-weight:400;color:#667f92">· optional for approval, required for other actions. The owner sees this note.</span></label><textarea id="reviewNote" maxlength="500" placeholder="Reason for the decision or the changes requested">'+esc(r.moderationNote||'')+'</textarea></div>'+
-        '<div class="ad-actions">'+
-          (r.status!=='approved'?'<button class="ad-btn good" data-act="review" data-val="approved" type="button">Approve listing</button>':'')+
-          (r.status!=='rejected'?'<button class="ad-btn" data-act="review" data-val="rejected" type="button">Request changes</button>':'')+
-          (r.status!=='paused'?'<button class="ad-btn warn" data-act="review" data-val="paused" type="button">Pause</button>':'')+
-          (r.status!=='removed'?'<button class="ad-btn bad" data-act="review" data-val="removed" type="button">Remove</button>':'')+
-        '</div></div>'+
-      (state.premium?'<div class="ad-sec"><h3>Activity log</h3><ul class="ad-log" id="logList"><li><small>Loading…</small></li></ul></div>':'');
-    var scroll=$('#detail').scrollTop;
-    $('#detail').innerHTML=d;$('#detail').scrollTop=scroll;
-    if(state.premium){if(state.logFor!==r.id)loadLog(r.id);else renderLog();}
-  }
-  function g(k,v){return '<div><span>'+esc(k)+'</span><strong>'+esc(v)+'</strong></div>';}
-  function renderLog(){
-    var ul=$('#logList');if(!ul)return;
-    ul.innerHTML=state.log.length?state.log.map(function(e){return '<li><b>'+esc(String(e.action).replace(/_/g,' '))+'</b>'+(e.note?' · '+esc(e.note):'')+'<small>'+esc(e.actor||'admin')+' · '+esc(when(e.createdAt))+'</small></li>';}).join(''):'<li><small>No activity recorded yet.</small></li>';
-  }
-
-  /* ───── reports view ───── */
-  function renderReports(){
-    var rows=state.reports;
-    if(!rows.length){$('#reportList').innerHTML='<div class="ad-empty"><h3>No reports here.</h3><p>Nothing to review in this view.</p></div>';return;}
-    $('#reportList').innerHTML=rows.map(function(x){
-      var open=x.status==='open';
-      return '<article class="ad-rcard'+(open?' open':'')+'">'+crest(x.logoUrl,x.listingName)+'<div class="ad-rbody"><h4>'+esc(x.listingName)+' <span class="ad-pill '+esc(x.listingStatus)+'">'+esc(STATUS_LABEL[x.listingStatus]||x.listingStatus||'')+'</span> <span class="ad-pill red">'+esc(REASON[x.reason]||x.reason)+'</span></h4>'+
-        '<p>'+(x.details?esc(x.details):'<i>No details provided.</i>')+'</p><small>Reported by '+esc(x.reporter)+' · '+esc(when(x.createdAt))+(open?'':' · '+esc(x.status)+(x.resolvedBy?' by '+esc(x.resolvedBy):''))+'</small>'+
-        '<div class="ad-actions" style="justify-content:flex-start"><button class="ad-btn sm" data-act="openlisting" data-id="'+esc(x.listingId)+'" type="button">Open listing</button>'+
-        (open?'<button class="ad-btn sm good" data-act="rep" data-id="'+esc(x.id)+'" data-val="resolved" type="button">Resolve</button><button class="ad-btn sm" data-act="rep" data-id="'+esc(x.id)+'" data-val="dismissed" type="button">Dismiss</button>':'')+'</div></div></article>';
-    }).join('');
-  }
-
-  /* ───── actions ───── */
-  function act(btn){
-    var a=btn.dataset.act,r=selected();
-    if(a==='back'){state.selected=null;renderList();renderDetail();return;}
-    if(a==='openlisting'){state.view='all';setTabs();showView();loadListings().then(function(){state.selected=btn.dataset.id;renderList();renderDetail();});return;}
-    if(a==='rep'){return withBusy(btn,function(){return api('/api/admin/leagues/reports/'+encodeURIComponent(btn.dataset.id)+'/resolve',{method:'POST',body:JSON.stringify({status:btn.dataset.val})}).then(function(){toast(btn.dataset.val==='resolved'?'Report resolved.':'Report dismissed.');return refreshAll();});});}
-    if(!r)return;
-    if(a==='review'){
-      var decision=btn.dataset.val,note=($('#reviewNote').value||'').trim();
-      if(decision!=='approved'&&!note){toast('Add a short review note first. The owner will see it.',true);$('#reviewNote').focus();return;}
-      var run=function(){return withBusy(btn,function(){return api('/api/admin/leagues/'+encodeURIComponent(r.id)+'/review',{method:'POST',body:JSON.stringify({status:decision,note:note})}).then(function(){toast('Listing '+({approved:'approved',rejected:'sent back with changes requested',paused:'paused',removed:'removed'}[decision])+'.');state.logFor=null;return refreshAll();});});};
-      if(decision==='removed'||decision==='paused'){confirmBox(decision==='removed'?'Remove this league?':'Pause this league?',decision==='removed'?'It leaves the directory immediately and any Featured placement is cleared.':'It leaves the directory until you approve it again.',decision==='removed'?'Remove league':'Pause league').then(function(ok){if(ok)run();});}else run();
-      return;
-    }
-    if(a==='verify')return withBusy(btn,function(){return flags(r.id,{verified:btn.dataset.val==='true'},btn.dataset.val==='true'?'League verified.':'Verified badge removed.');});
-    if(a==='feature')return withBusy(btn,function(){return flags(r.id,{featured:true,featuredDays:Number(($('#featDays')||{}).value||7)},'League featured.');});
-    if(a==='unfeature')return withBusy(btn,function(){return flags(r.id,{featured:false},'Featured placement removed.');});
-    if(a==='savenote')return withBusy(btn,function(){return flags(r.id,{adminNote:$('#adminNote').value},'Admin note saved.');});
-  }
-  function flags(id,body,okMsg){
-    return api('/api/admin/leagues/'+encodeURIComponent(id)+'/flags',{method:'POST',body:JSON.stringify(body)}).then(function(){toast(okMsg);state.logFor=null;return refreshAll();});
-  }
-  function withBusy(btn,fn){
-    if(state.busy)return;state.busy=true;btn.disabled=true;
-    return Promise.resolve().then(fn).catch(function(e){toast(e.message||'Action failed.',true);}).then(function(){state.busy=false;btn.disabled=false;});
-  }
-
-  /* ───── view switching ───── */
-  function setTabs(){$$('.ad-tab').forEach(function(b){b.classList.toggle('active',b.dataset.view===state.view);});}
-  function showView(){
-    var rep=state.view==='reports';
-    $('#listingsView').hidden=rep;$('#reportsView').hidden=!rep;$('#reportFilter').hidden=!rep;$('#sort').hidden=rep;$('#search').hidden=rep;
-  }
-  function switchView(v){state.view=v;state.selected=null;setTabs();showView();note('');if(v==='reports')loadReports();else loadListings();}
-
-  $('#tabs').addEventListener('click',function(e){var b=e.target.closest('[data-view]');if(b)switchView(b.dataset.view);});
-  $('#list').addEventListener('click',function(e){var row=e.target.closest('[data-id]');if(!row)return;state.selected=row.dataset.id;state.logFor=null;renderList();renderDetail();if(window.innerWidth<=900)window.scrollTo({top:0});});
-  document.addEventListener('click',function(e){var b=e.target.closest('[data-act]');if(b)act(b);});
-  $('#refreshBtn').addEventListener('click',function(){refreshAll().then(function(){toast('Refreshed.');});});
-  $('#search').addEventListener('input',renderList);$('#sort').addEventListener('change',renderList);
-  $('#reportFilter').addEventListener('change',loadReports);
-  document.addEventListener('keydown',function(e){
-    if(!$('#modal').hidden&&e.key==='Escape'){$('#modalCancel').click();return;}
-    var tag=(e.target.tagName||'').toLowerCase();if(tag==='input'||tag==='textarea'||tag==='select'||state.view==='reports')return;
-    if(e.key==='j'||e.key==='k'){
-      var rows=visible();if(!rows.length)return;var i=rows.map(function(r){return r.id;}).indexOf(state.selected);
-      i=e.key==='j'?Math.min(rows.length-1,i+1):Math.max(0,i<0?0:i-1);state.selected=rows[i].id;state.logFor=null;renderList();renderDetail();
-      var el=$('.ad-row.sel');if(el)el.scrollIntoView({block:'nearest'});
-    }
-  });
-
-  showView();loadStats();loadListings().then(loadOpenReportsForDetail);
-})();
+sb.auth.onAuthStateChange((ev, s) => { if (ev === 'INITIAL_SESSION' || ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') setTimeout(init, 0); });
+let booting = false;
+async function init() {
+  if (booting) return; booting = true;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return login();
+    const { data: isAdmin, error } = await sb.rpc('fl_is_admin');
+    if (error) throw error;
+    $('#who').innerHTML = `<span class="hint">${esc(session.user.email || '')}</span><button class="btn ghost sm" id="so">Sign out</button>`;
+    $('#so').onclick = () => sb.auth.signOut();
+    if (!isAdmin) return app.innerHTML = `<div class="empty"><h3>Not authorized</h3>This account isn't an admin. Add it to <code>fl_admins</code> in Supabase.</div>`;
+    await shell();
+  } catch (e) { app.innerHTML = `<div class="empty"><h3>Error</h3>${esc(e.message)}</div>`; }
+  finally { booting = false; }
+}
+function login() {
+  $('#who').innerHTML = '';
+  app.innerHTML = `<div class="sheet" style="margin:60px auto;position:relative"><h2>Admin sign in</h2>
+  <form id="em" class="stack"><input type="email" name="email" placeholder="admin email" required><button class="btn primary">Email me a code</button></form>
+  <form id="cd" class="stack" hidden><input type="text" name="code" placeholder="Code" inputmode="numeric" required><button class="btn primary">Verify</button></form></div>`;
+  let email = '';
+  $('#em').onsubmit = async (e) => { e.preventDefault(); email = e.target.email.value.trim(); const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.href } }); if (error) return toast(error.message, 'err'); e.target.hidden = true; $('#cd').hidden = false; toast('Code sent'); };
+  $('#cd').onsubmit = async (e) => { e.preventDefault(); const { error } = await sb.auth.verifyOtp({ email, token: e.target.code.value.trim(), type: 'email' }); if (error) toast(error.message, 'err'); };
+}
+const count = async (t, f) => { let r = sb.from(t).select('*', { count: 'exact', head: true }); if (f) r = f(r); const { count: c } = await r; return c || 0; };
+async function shell() {
+  app.innerHTML = `<section class="wrap"><div class="head"><div><h1>Leagues <em>control</em></h1><p class="mute">Approve owners, keep the directory clean.</p></div></div>
+  <div class="stat-strip" id="st"></div>
+  <div class="filters glass" style="position:static;grid-template-columns:1fr auto"><label class="search"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="q" placeholder="Search league name, tag or Discord"></label><button class="btn ghost" id="rf">Refresh</button></div>
+  <div class="toggles" id="tabs"></div><div id="list"></div></section>`;
+  let t; $('#q').oninput = (e) => { clearTimeout(t); t = setTimeout(() => { q = e.target.value.trim().toLowerCase(); list(); }, 200); };
+  $('#rf').onclick = () => { stats(); list(); };
+  await Promise.all([stats(), list()]);
+}
+async function stats() {
+  const day = new Date(Date.now() - 864e5).toISOString();
+  const [pl, pe, live, mem, ko] = await Promise.all([
+    count('fl_profiles'), count('fl_leagues', (r) => r.eq('status', 'pending')), count('fl_leagues', (r) => r.eq('status', 'approved')),
+    count('fl_members'), count('fl_kickoffs', (r) => r.gte('at', day))]);
+  $('#st').innerHTML = [['Players', pl], ['Pending', pe], ['Live leagues', live], ['Site members', mem], ['Kickoffs 24h', ko]]
+    .map(([k, v]) => `<div class="stat"><small>${k}</small><b>${v}</b></div>`).join('');
+  const tabs = $('#tabs'); tabs.innerHTML = Object.entries(TABS).map(([k, v]) => `<button class="tgl" data-t="${k}" aria-pressed="${tab === k}">${v}${k === 'pending' && pe ? ` · ${pe}` : ''}</button>`).join('');
+  $$('.tgl', tabs).forEach((b) => b.onclick = () => { tab = b.dataset.t; $$('.tgl', tabs).forEach((x) => x.setAttribute('aria-pressed', x === b)); list(); });
+}
+async function list() {
+  const box = $('#list'); box.innerHTML = '<p class="mute">Loading…</p>';
+  const { data, error } = await sb.from('fl_leagues').select('*').eq('status', tab).order('created_at', { ascending: tab === 'pending' }).limit(200);
+  if (error) { box.innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+  const ids = [...new Set(data.map((l) => l.owner_id))]; const owners = {};
+  if (ids.length) { const r = await sb.from('fl_profiles').select('user_id,ign,uid,discord,ovr,avatar_url').in('user_id', ids); (r.data || []).forEach((p) => (owners[p.user_id] = p)); }
+  const rows = data.filter((l) => !q || [l.name, l.tag, l.discord_url, owners[l.owner_id]?.ign, owners[l.owner_id]?.discord].some((v) => String(v || '').toLowerCase().includes(q)));
+  if (!rows.length) { box.innerHTML = `<div class="empty"><h3>Nothing here</h3>No ${TABS[tab].toLowerCase()} leagues${q ? ' match your search' : ''}.</div>`; return; }
+  box.innerHTML = rows.map((l) => { const o = owners[l.owner_id] || {};
+    return `<article class="glass acard"><div class="r1">${mono(l.name, l.logo_url)}<div class="grow"><b style="font-size:17px">${esc(l.name)}</b> ${l.tag ? `<span class="tag">${esc(l.tag)}</span>` : ''}<div class="hint">${esc(l.region)} · ${esc(l.language)} · submitted ${ago(l.created_at)} · ${l.kickoff_count} kickoffs</div></div><span class="pill ${l.status === 'approved' ? 'ok' : l.status === 'pending' ? 'warn' : 'bad'}">${l.status}</span></div>
+    <div class="kv"><div><small>Owner</small><b>${esc(o.ign || '—')} · ${o.ovr || '?'} OVR</b></div><div><small>Owner UID</small><b>${esc(o.uid || '—')}</b></div><div><small>Owner Discord</small><b>${esc(o.discord || '—')}</b></div>
+    <div><small>League Discord</small><b><a href="${esc(l.discord_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--acc2)">${esc(l.discord_url)}</a></b></div>
+    <div><small>Capacity / Min OVR</small><b>${l.members_in_game}/${l.capacity} · ${l.min_ovr || 'any'}</b></div><div><small>Tournaments</small><b>${l.tourneys_per_week}/wk · ${l.tourney_min_size}v${l.tourney_min_size}–${l.tourney_max_size}v${l.tourney_max_size}</b></div></div>
+    ${l.description ? `<p style="font-size:14px;color:#c9d2e0">${esc(l.description)}</p>` : ''}${l.reject_reason ? `<p class="hint">Reason: ${esc(l.reject_reason)}</p>` : ''}
+    ${l.banner_url ? `<img src="${esc(l.banner_url)}" alt="" style="width:100%;max-height:140px;object-fit:cover;border-radius:12px">` : ''}
+    <div class="acts">${l.status !== 'approved' ? `<button class="btn primary sm" data-a="approved" data-id="${l.id}">Approve</button>` : ''}${l.status === 'pending' || l.status === 'approved' ? `<button class="btn sm" data-a="rejected" data-id="${l.id}">Reject</button>` : ''}${l.status === 'approved' ? `<button class="btn sm" data-a="suspended" data-id="${l.id}">Suspend</button>` : ''}<button class="btn danger sm" data-a="delete" data-id="${l.id}">Delete</button></div></article>`; }).join('');
+  $$('[data-a]', box).forEach((b) => b.onclick = () => act(b));
+}
+async function act(b) {
+  const a = b.dataset.a, id = b.dataset.id; let reason = null;
+  if (a === 'rejected' || a === 'suspended') { reason = prompt(`Reason shown to the owner (${a}):`, ''); if (reason === null) return; }
+  if (a === 'delete' && !confirm('Delete this league permanently?')) return;
+  b.disabled = true;
+  const { error } = a === 'delete' ? await sb.from('fl_leagues').delete().eq('id', id) : await sb.rpc('fl_admin_review', { p_league: id, p_status: a, p_reason: reason });
+  if (error) { toast(error.message, 'err'); b.disabled = false; return; }
+  toast(a === 'approved' ? 'League approved — it is live' : 'Done'); await Promise.all([stats(), list()]);
+}
 </script>
 </body>
 </html>
