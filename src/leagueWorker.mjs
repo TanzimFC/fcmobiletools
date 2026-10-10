@@ -347,6 +347,23 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     ).catch(() => ({ rows: [], premium: true })),
     rpc(env, supabaseRest, 'server_league_directory_signals', { p_account_id: account.id }).catch(() => null)
   ]);
+  // Crew + matchday signals. Optional: null until 20261010150000_league_crew_and_matchdays.sql is applied.
+  const crewPack = await rpc(env, supabaseRest, 'server_league_crew_signals', { p_account_id: account.id }).catch(() => null);
+  const crewMap = new Map((crewPack?.signals || []).map(s => [s.listingId, s]));
+  const myRequestIds = new Set(crewPack?.myRequests || []);
+  const myCrew = crewPack?.myCrew || null;
+  const withCrew = (row) => {
+    const c = crewMap.get(row.id) || {};
+    return {
+      ...row,
+      crewCount: Number(c.crewCount || 0),
+      matchdays7d: Number(c.matchdays7d || 0),
+      matchdays14: c.matchdays14 || [],
+      lastKickoffBy: c.lastKickoffBy || '',
+      myCrewStatus: myCrew && myCrew.listingId === row.id && myCrew.status === 'approved' ? 'approved'
+        : myRequestIds.has(row.id) ? 'pending' : ''
+    };
+  };
 
   const premiumReady = Boolean(directory.premium && signalPack);
   const signalMap = new Map((signalPack?.signals || []).map(s => [s.listingId, s]));
@@ -355,11 +372,21 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
 
   const owners = await ownerMapFor(env, supabaseRest, [...directory.rows, ...own.rows]);
   const leagues = decorateListings(directory.rows, owners, { signals: signalMap, viewerId: account.id }).map(row => ({
-    ...row,
+    ...withCrew(row),
     saved: savedIds.has(row.id),
     confirmedByMe: confirmedIds.has(row.id)
   }));
-  const ownListings = decorateListings(own.rows, owners, { includeNote: true, viewerId: account.id });
+  let ownListings = decorateListings(own.rows, owners, { includeNote: true, viewerId: account.id }).map(withCrew);
+  let ownerCrew = [];
+  if (crewPack && ownListings[0]?.status === 'approved') {
+    const oc = await rpc(env, supabaseRest, 'server_league_owner_crew', {
+      p_listing_id: ownListings[0].id, p_owner_account_id: account.id
+    }).catch(() => null);
+    if (oc?.ok) {
+      ownerCrew = oc.crew || [];
+      ownListings = ownListings.map((row, i) => i === 0 ? { ...row, matchdays14: oc.matchdays14 || [], matchdays7d: Number(oc.matchdays7d || 0), crewCount: ownerCrew.filter(m => m.status === 'approved').length } : row);
+    }
+  }
 
   const approvedOwner = profile.status === 'league_owner' &&
     own.rows.some(row => row.status === 'approved' && row.recruiting_open);
@@ -378,6 +405,9 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     leagues,
     ownListings,
     ownerInsights: insights?.ok ? insights : null,
+    crewReady: Boolean(crewPack),
+    myCrew,
+    ownerCrew,
     approvedOwner,
     canFindPlayers: approvedOwner,
     outreachUsedToday: usedToday,
@@ -571,17 +601,72 @@ function rpcFailure(result, json, fallback) {
   const status = result?.code === 'cooldown' || result?.code === 'rate_limited' || result?.code === 'limit' ? 429
     : result?.code === 'not_found' ? 404
     : result?.code === 'duplicate' ? 409
-    : result?.code === 'invalid_reason' ? 400 : 403;
+    : result?.code === 'invalid_reason' || result?.code === 'invalid' ? 400 : 403;
   return json({ error: result?.message || fallback, ...result }, status);
 }
 
 async function kickoff(request, env, authContext, match, supabaseRest, json) {
   const blocked = requireVerified(authContext, json);
   if (blocked) return blocked;
-  const result = await rpc(env, supabaseRest, 'server_league_kickoff', {
-    p_listing_id: match[1], p_owner_account_id: authContext.account.id
-  });
+  let result;
+  try {
+    result = await rpc(env, supabaseRest, 'server_league_kickoff_v2', {
+      p_listing_id: match[1], p_account_id: authContext.account.id
+    });
+  } catch (error) {
+    if (!isMissingSchema(error)) throw error;
+    // crew migration not applied yet: keep the original owner-only Kickoff
+    result = await rpc(env, supabaseRest, 'server_league_kickoff', {
+      p_listing_id: match[1], p_owner_account_id: authContext.account.id
+    });
+  }
   if (!result?.ok) return rpcFailure(result, json, 'Kickoff is not available yet.');
+  return json(result);
+}
+
+// ───────────────────────── crew + matchday log ─────────────────────────
+
+async function crewRequest(request, env, authContext, match, supabaseRest, json) {
+  const blocked = requireVerified(authContext, json);
+  if (blocked) return blocked;
+  const result = await rpc(env, supabaseRest, 'server_league_crew_request', {
+    p_listing_id: match[1], p_account_id: authContext.account.id
+  });
+  if (!result?.ok) return rpcFailure(result, json, 'Your crew request could not be sent.');
+  return json(result);
+}
+
+async function crewLeave(request, env, authContext, match, supabaseRest, json) {
+  const result = await rpc(env, supabaseRest, 'server_league_crew_leave', {
+    p_listing_id: match[1], p_account_id: authContext.account.id
+  });
+  if (!result?.ok) return rpcFailure(result, json, 'You are not in this crew.');
+  return json(result);
+}
+
+async function crewDecide(request, env, authContext, match, supabaseRest, json) {
+  const body = await request.json().catch(() => ({}));
+  const accountId = clean(body.accountId, 64).toLowerCase();
+  const action = clean(body.action, 16);
+  if (!new RegExp('^' + UUID_RE + '$', 'i').test(accountId)) return json({ error: 'Choose a crew member.' }, 400);
+  if (!['approve', 'decline', 'remove'].includes(action)) return json({ error: 'Unknown crew action.' }, 400);
+  const result = await rpc(env, supabaseRest, 'server_league_crew_decide', {
+    p_listing_id: match[1], p_owner_account_id: authContext.account.id, p_account_id: accountId, p_action: action
+  });
+  if (!result?.ok) return rpcFailure(result, json, 'That crew change could not be saved.');
+  return json(result);
+}
+
+async function logMatchday(request, env, authContext, match, supabaseRest, json) {
+  const blocked = requireVerified(authContext, json);
+  if (blocked) return blocked;
+  const body = await request.json().catch(() => ({}));
+  const size = clean(body.size, 10);
+  if (!SIZES.has(size)) return json({ error: 'Choose a tournament size.' }, 400);
+  const result = await rpc(env, supabaseRest, 'server_league_log_matchday', {
+    p_listing_id: match[1], p_owner_account_id: authContext.account.id, p_size: size
+  });
+  if (!result?.ok) return rpcFailure(result, json, 'Tournament could not be logged.');
   return json(result);
 }
 
@@ -920,7 +1005,8 @@ export async function leagueWorkerRoute({ request, env, url, authenticated, acco
     }
     const routes = [
       ['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff],
-      ['active', confirmActive], ['save', toggleSave], ['join', trackJoin], ['report', reportListing]
+      ['active', confirmActive], ['save', toggleSave], ['join', trackJoin], ['report', reportListing],
+      ['crew', crewRequest], ['crew-leave', crewLeave], ['crew-decide', crewDecide], ['matchday', logMatchday]
     ];
     for (const [name, handler] of routes) {
       const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
