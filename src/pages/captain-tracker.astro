@@ -143,7 +143,7 @@ const barPoints = (values, width = 220, height = 64) => {
         <div>
           <span class="ct-section-kicker">COMMUNITY SUPPORT</span>
           <h2>Who are you backing?</h2>
-          <p>Pick one of the six captains. You can change your choice until the first fixture begins. Combined support includes 757 modeled cross-platform points; verified votes are tracked separately.</p>
+          <p>Pick one of the six captains. You can change your choice until the first fixture begins.</p>
         </div>
         <div class="ct-vote-total">
           <strong data-vote-total>—</strong>
@@ -685,6 +685,8 @@ const barPoints = (values, width = 220, height = 64) => {
         const count = Number.isFinite(rawCount) ? Math.max(0, Math.floor(rawCount)) : 0;
         const share = total > 0 ? (count / total) * 100 : 0;
         const roundedShare = Math.round(share);
+        // Preserve small positive percentages instead of rounding them down to 0%.
+        const formattedShare = share > 0 && share < 1 ? share.toFixed(1) : String(roundedShare);
         const isTile = node.classList.contains('ct-vote-tile');
         const isSelected = selected === playerId;
 
@@ -694,7 +696,7 @@ const barPoints = (values, width = 220, height = 64) => {
         if (isTile) {
           animateCount(node.querySelector('[data-vote-count]'), count);
           const shareLabel = node.querySelector('[data-vote-share]');
-          if (shareLabel) shareLabel.textContent = total > 0 ? roundedShare + '%' : '—%';
+          if (shareLabel) shareLabel.textContent = total > 0 ? formattedShare + '%' : '—%';
 
           const fill = node.querySelector('[data-vote-fill]');
           if (fill) {
@@ -704,7 +706,7 @@ const barPoints = (values, width = 220, height = 64) => {
           const track = node.querySelector('.ct-vote-track');
           if (track) {
             track.setAttribute('aria-valuenow', String(roundedShare));
-            track.setAttribute('aria-valuetext', count + ' of ' + total + ' combined support points (' + roundedShare + '%)');
+            track.setAttribute('aria-valuetext', count + ' of ' + total + ' combined support points (' + formattedShare + '%)');
           }
           const selectedLabel = node.querySelector('[data-vote-selected]');
           if (selectedLabel) selectedLabel.hidden = !isSelected;
