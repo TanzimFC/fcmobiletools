@@ -2947,7 +2947,77 @@ export function createExports(manifest) {
     return new Response('Not found',{status:404});
   }
   // Let Astro handle the remaining static and on-demand routes.
-  return handle(manifest, app, request, env, ctx);
+  const astroResponse = await handle(manifest, app, request, env, ctx);
+
+  // Captain Tracker is built as a static page, so its initial HTML otherwise
+  // contains placeholder counts until client-side JavaScript runs. Render the
+  // current public tally into the HTML response as well, so visitors and
+  // crawlers see the real persisted community picks immediately.
+  if (
+    request.method === 'GET' &&
+    (url.pathname === '/captain-tracker' || url.pathname === '/captain-tracker/') &&
+    astroResponse.ok &&
+    (astroResponse.headers.get('content-type') || '').includes('text/html')
+  ) {
+    try {
+      const voteUrl = new URL('/api/captain-votes', url);
+      voteUrl.searchParams.set('tracker', CAPTAIN_VOTE_CONFIG.trackerKey);
+      const voteResponse = await captainVotesApi(
+        new Request(voteUrl.toString(), { method: 'GET', headers: { accept: 'application/json' } }),
+        env,
+        voteUrl
+      );
+      const voteStats = await voteResponse.json();
+      if (
+        voteResponse.ok &&
+        voteStats &&
+        Number.isFinite(Number(voteStats.total)) &&
+        voteStats.counts &&
+        typeof voteStats.counts === 'object'
+      ) {
+        const countFor = (playerId) => {
+          const count = Number(voteStats.counts[playerId] || 0);
+          return Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+        };
+        let html = await astroResponse.text();
+        html = html.replace(
+          /(<strong\\b[^>]*\\bdata-vote-total\\b[^>]*>)[\\s\\S]*?(<\\/strong>)/,
+          (_, opening, closing) => opening + Math.max(0, Math.floor(Number(voteStats.total) || 0)) + closing
+        );
+        html = html.replace(
+          /<button\\b(?=[^>]*\\bdata-vote-player="([^"]+)")[^>]*>[\\s\\S]*?<\\/button>/g,
+          (button, playerId) => button.replace(
+            /(<span\\b[^>]*\\bdata-vote-count\\b[^>]*>)[\\s\\S]*?(<\\/span>)/,
+            (_, opening, closing) => {
+              const count = countFor(playerId);
+              return opening + count + (count === 1 ? ' user picked him' : ' users picked him') + closing;
+            }
+          )
+        );
+        html = html.replace(
+          /<article\\b(?=[^>]*\\bdata-player="([^"]+)")[^>]*>[\\s\\S]*?<\\/article>/g,
+          (card, playerId) => card.replace(
+            /(<b\\b[^>]*\\bdata-pick-count\\b[^>]*>)[\\s\\S]*?(<\\/b>)/,
+            (_, opening, closing) => opening + countFor(playerId) + closing
+          )
+        );
+
+        const headers = new Headers(astroResponse.headers);
+        headers.delete('content-length');
+        headers.set('cache-control', 'no-store, max-age=0, must-revalidate');
+        headers.set('x-fcmobiletools-vote-source', 'live-supabase');
+        return new Response(html, {
+          status: astroResponse.status,
+          statusText: astroResponse.statusText,
+          headers
+        });
+      }
+    } catch (error) {
+      console.error('[CAPTAIN_VOTE_HTML_RENDER]', error?.message || 'Unable to render vote counts.');
+    }
+  }
+
+  return astroResponse;
       }
     }
   };
