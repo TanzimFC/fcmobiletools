@@ -407,7 +407,7 @@ const pageSchema = {
     (() => {
       // Preserve the page being used whenever any part of the site sends a
       // visitor to Account. This also covers links rendered dynamically later.
-      const isAccountPath = (pathname) => /^\\/account(?:\\/|$)/.test(pathname);
+      const isAccountPath = (pathname) => pathname === '/account' || pathname.startsWith('/account/');
       document.addEventListener('click', (event) => {
         const link = event.target?.closest?.('a[href]');
         if (!link || event.defaultPrevented || isAccountPath(location.pathname)) return;
