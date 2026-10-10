@@ -2981,13 +2981,13 @@ export function createExports(manifest) {
         };
         let html = await astroResponse.text();
         html = html.replace(
-          /(<strong\\b[^>]*\\bdata-vote-total\\b[^>]*>)[\\s\\S]*?(<\\/strong>)/,
+          /(<strong\b[^>]*\bdata-vote-total\b[^>]*>)[\s\S]*?(<\/strong>)/,
           (_, opening, closing) => opening + Math.max(0, Math.floor(Number(voteStats.total) || 0)) + closing
         );
         html = html.replace(
-          /<button\\b(?=[^>]*\\bdata-vote-player="([^"]+)")[^>]*>[\\s\\S]*?<\\/button>/g,
+          /<button\b(?=[^>]*\bdata-vote-player="([^"]+)")[^>]*>[\s\S]*?<\/button>/g,
           (button, playerId) => button.replace(
-            /(<span\\b[^>]*\\bdata-vote-count\\b[^>]*>)[\\s\\S]*?(<\\/span>)/,
+            /(<span\b[^>]*\bdata-vote-count\b[^>]*>)[\s\S]*?(<\/span>)/,
             (_, opening, closing) => {
               const count = countFor(playerId);
               return opening + count + (count === 1 ? ' user picked him' : ' users picked him') + closing;
@@ -2995,9 +2995,9 @@ export function createExports(manifest) {
           )
         );
         html = html.replace(
-          /<article\\b(?=[^>]*\\bdata-player="([^"]+)")[^>]*>[\\s\\S]*?<\\/article>/g,
+          /<article\b(?=[^>]*\bdata-player="([^"]+)")[^>]*>[\s\S]*?<\/article>/g,
           (card, playerId) => card.replace(
-            /(<b\\b[^>]*\\bdata-pick-count\\b[^>]*>)[\\s\\S]*?(<\\/b>)/,
+            /(<b\b[^>]*\bdata-pick-count\b[^>]*>)[\s\S]*?(<\/b>)/,
             (_, opening, closing) => opening + countFor(playerId) + closing
           )
         );
