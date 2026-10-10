@@ -517,16 +517,23 @@ async function captainVotesApi(request, env, url) {
     );
     let selected = null;
 
-    if (hasStats) {
+    const rpcVoteTotal = hasStats
+      ? [...CAPTAIN_VOTE_CONFIG.playerIds].reduce((sum, playerId) => {
+          const count = Number(result.counts[playerId] || 0);
+          return sum + (Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0);
+        }, 0)
+      : 0;
+
+    if (hasStats && rpcVoteTotal > 0) {
       for (const playerId of CAPTAIN_VOTE_CONFIG.playerIds) {
         const count = Number(result.counts[playerId] || 0);
         counts[playerId] = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
       }
       selected = CAPTAIN_VOTE_CONFIG.playerIds.has(result.selected) ? result.selected : null;
     } else {
-      // Defensive fallback: read the persisted rows directly if the RPC response
-      // arrives in an unexpected shape. This keeps the UI from silently showing
-      // six zeroes when the database already contains votes.
+      // Defensive fallback: read persisted rows when the RPC response is
+      // malformed or reports an empty tally. This avoids silently showing six
+      // zeroes when votes already exist in the source table.
       const pageSize = 1000;
       const maxRows = 50000;
       for (let offset = 0; offset < maxRows; offset += pageSize) {
