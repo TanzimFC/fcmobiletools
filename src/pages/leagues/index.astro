@@ -677,6 +677,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   @media(max-width:760px){.lg-root .lg-wrap{width:min(100% - 24px,1180px)}.lg-root .lg-hero{gap:17px}.lg-root .lg-filters{background:rgba(10,16,20,.92);backdrop-filter:blur(16px)}}
   @media(prefers-reduced-motion:reduce){.lg-root::before{background-image:none}.lg-root .lg-card::after{transition:none}}
 
+  /* crew + matchday log */
+  .lg-md{margin-left:10px;color:#fbbf24;font-weight:700;white-space:nowrap}
+  .lg-days{display:flex;gap:5px;flex-wrap:wrap;margin-top:14px}
+  .lg-days i{width:18px;height:26px;border-radius:6px;background:#122130;border:1px solid var(--line)}
+  .lg-days i.on{background:linear-gradient(180deg,var(--mint),#2fa77c);border-color:transparent;box-shadow:0 6px 16px -6px #6ee7b799}
+  .lg-md-head b{display:block;font-size:13px}.lg-md-head small{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;line-height:1.5}
+  .lg-crew-act{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+  .lg-crew-list{margin-top:16px}.lg-crew-list h5{margin-bottom:8px;color:var(--dim);font:800 10.5px Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+  .lg-crew-row{display:flex;align-items:center;gap:12px;padding:10px 0}.lg-crew-row+.lg-crew-row{border-top:1px solid var(--line)}
+  .lg-crew-id{flex:1;min-width:0}.lg-crew-id b{display:block;font-size:12.5px}.lg-crew-id small{display:block;color:var(--dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lg-crew-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .lg-select{min-height:34px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#08121a;color:inherit;font-size:12px}
   </style>
 
 <script>
@@ -746,6 +758,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     view: 'loading', tab: 'leagues', account: null, profile: null, premiumReady: true,
     leagues: [], ownListings: [], insights: null, players: [], revealed: new Map(),
     canFindPlayers: false, remaining: 3, editingId: null, detailId: null, reportId: null,
+    crewReady: false, myCrew: null, ownerCrew: [],
     filters: { q: '', region: '', freq: '', size: '', lang: '', commit: '', qualify: true, verified: false },
     sort: 'match', busy: new Set(), lastFocus: null
   };
@@ -854,6 +867,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     return '<div class="lg-ring ' + m.tone + '" style="--p:' + m.score + '" title="' + esc(m.label) + '"><b>' + m.score + '</b>' + (small ? '<small>match</small>' : '') + '</div>';
   }
   function signalLine(r) {
+    return signalBase(r) + (r.matchdays7d > 0 ? '<span class="lg-md">🏆 ' + r.matchdays7d + ' tournament' + (r.matchdays7d === 1 ? '' : 's') + ' this week</span>' : '');
+  }
+  function signalBase(r) {
     if (r.confirmations7d > 0) return '<i class="hot"></i><span>' + r.confirmations7d + ' player' + (r.confirmations7d === 1 ? '' : 's') + ' confirmed active this week</span>';
     if (r.lastActiveAt) return '<i></i><span>Last confirmed ' + esc(timeAgo(r.lastActiveAt)) + '</span>';
     return '<i></i><span>Listed ' + esc(timeAgo(r.createdAt) || 'recently') + '</span>';
@@ -915,7 +931,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     if (!p) { me.innerHTML = ''; return; }
     me.innerHTML = crest(p.avatar_url || state.account?.avatarUrl, state.account?.displayName || p.in_game_username, 'lg-avatar') +
       '<div class="lg-me-txt"><b>' + esc(p.in_game_username) + '</b><small>OVR ' + fmt(p.ovr) + ' · ' + esc(STATUS[p.status] || '') + '</small></div>' +
-      '<button class="lg-btn lg-btn-outline lg-btn-sm" id="lgEditProfile" type="button">Edit</button>';
+      crewHeroKick() + '<button class="lg-btn lg-btn-outline lg-btn-sm" id="lgEditProfile" type="button">Edit</button>';
     me.hidden = state.view !== 'workspace';
   }
   function tabList() {
@@ -1010,6 +1026,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       (r.weeklyRewards ? '<div class="lg-d-sec"><h4>Rewards &amp; perks</h4><p class="lg-d-desc">' + esc(r.weeklyRewards) + '</p></div>' : '') +
       '<div class="lg-d-sec"><h4>Activity</h4>' + trust +
       (!own ? '<div class="lg-actions"><button class="lg-btn lg-btn-outline lg-btn-sm" data-confirm="' + esc(r.id) + '" type="button"' + (r.confirmedByMe ? ' disabled' : '') + '>' + (r.confirmedByMe ? 'Confirmed · try again in 24h' : 'Confirm this league is active') + '</button></div>' : '') + '</div>' +
+      crewSection(r) +
       '<div class="lg-d-sec"><h4>Managed by</h4><div class="lg-owner-row">' + crest(r.owner?.avatarUrl, r.owner?.displayName, 'lg-avatar') + '<span>' + esc(r.owner?.displayName || 'FC Mobile player') + '</span></div>' +
       (!own ? '<div class="lg-d-links"><button class="lg-link" data-report="' + esc(r.id) + '" type="button">Report this league</button></div>' : '') + '</div>' + bar;
   }
@@ -1117,7 +1134,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       '<div class="lg-box"><h3>Listing status</h3>' + ownerSteps(own) + callout + insights +
       '<div class="lg-actions">' + (own.status !== 'removed' ? '<button class="lg-btn lg-btn-outline" data-edit-listing type="button">Edit details</button>' : '') +
       (own.status === 'rejected' || own.status === 'paused' ? '<button class="lg-btn lg-btn-primary" data-edit-listing type="button">Edit &amp; resubmit</button>' : '') + '</div>' +
-      (live ? '<p class="lg-box-sub" style="margin-top:12px">Editing your details sends the listing back for review. Spots and recruiting status do not.</p>' : '') + '</div>' + controls +
+      (live ? '<p class="lg-box-sub" style="margin-top:12px">Editing your details sends the listing back for review. Spots and recruiting status do not.</p>' : '') + '</div>' + controls + ownerExtras(own, live) +
       '</div><div><div class="lg-preview-label">How players see you</div>' + leagueCard({ ...own, isMine: true, saved: false, _m: null }, { preview: true }) + '</div></div>';
   }
   async function quickUpdate(patch, button) {
@@ -1141,6 +1158,74 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       const pub = findLeague(own.id); if (pub) { pub.lastKickoffAt = own.lastKickoffAt; pub.kickoffActive = true; }
       toast('Kickoff complete. Your league is back in the spotlight.'); refreshLeagueSurfaces(); renderOwner();
     } catch (error) { toast(error.message, true); load({ silent: true }); }
+  }
+
+  // ───────────── crew + matchday log ─────────────
+  const todayUtc = () => new Date().toISOString().slice(0, 10);
+  function matchdayStrip(days) {
+    const set = new Set(days || []); let out = '';
+    for (let i = 13; i >= 0; i--) { const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10); out += '<i class="' + (set.has(d) ? 'on' : '') + '" title="' + d + '"></i>'; }
+    return '<div class="lg-days" role="img" aria-label="Tournaments logged in the last 14 days">' + out + '</div>';
+  }
+  function kickCooling(r) { const next = r.lastKickoffAt ? ts(r.lastKickoffAt) + KICKOFF_MS : 0; return next > Date.now() ? next : 0; }
+  function kickLabel(r) { const next = kickCooling(r); return next ? 'Kickoff in <span class="lg-cd" data-until="' + next + '">' + clock(next - Date.now()) + '</span>' : '↗ Kickoff this league'; }
+  function crewHeroKick() {
+    if (!state.crewReady || state.myCrew?.status !== 'approved') return '';
+    const r = findLeague(state.myCrew.listingId); if (!r || r.isMine) return '';
+    return '<button class="lg-btn lg-btn-primary lg-btn-sm" type="button" data-crew-kick="' + esc(r.id) + '"' + (kickCooling(r) ? ' disabled' : '') + ' title="' + esc(r.name) + '">' + kickLabel(r) + '</button>';
+  }
+  function crewSection(r) {
+    if (!state.crewReady) return '';
+    const n = r.matchdays7d || 0;
+    const tour = '<div class="lg-md-head"><b>' + (n ? n + ' tournament' + (n === 1 ? '' : 's') + ' logged this week' : 'No tournaments logged this week') + '</b><small>Logged by the owner. League tournaments count for every member, even if they do not play.</small></div>' + matchdayStrip(r.matchdays14);
+    const meta = [r.crewCount ? r.crewCount + ' crew member' + (r.crewCount === 1 ? '' : 's') : '', r.lastKickoffBy ? 'last Kickoff by ' + esc(r.lastKickoffBy) : ''].filter(Boolean).join(' · ');
+    let act = '';
+    if (!r.isMine) {
+      if (r.myCrewStatus === 'approved') act = '<div class="lg-crew-act"><button class="lg-btn lg-btn-primary" type="button" data-crew-kick="' + esc(r.id) + '"' + (kickCooling(r) ? ' disabled' : '') + '>' + kickLabel(r) + '</button><button class="lg-link" type="button" data-crew-leave>Leave crew</button></div><p class="lg-note">You are in this crew. Any member can Kickoff every 6 hours, so whoever is first lifts the league for everyone.</p>';
+      else if (r.myCrewStatus === 'pending') act = '<div class="lg-crew-act"><span class="lg-note" style="flex:1">Crew request sent. The owner will review it.</span><button class="lg-link" type="button" data-crew-leave>Cancel</button></div>';
+      else if (state.myCrew?.status === 'approved') act = '<p class="lg-note">You are already in another league crew.</p>';
+      else act = '<div class="lg-crew-act"><button class="lg-btn lg-btn-outline" type="button" data-crew-join>I play in this league · join the crew</button></div><p class="lg-note">The owner approves you. Crew members can Kickoff the league.</p>';
+    }
+    return '<div class="lg-d-sec"><h4>Tournaments &amp; crew</h4>' + tour + (meta ? '<p class="lg-note" style="margin-top:10px">' + meta + '</p>' : '') + act + '</div>';
+  }
+  function ownerExtras(own, live) {
+    if (!live || !state.crewReady) return '';
+    const pending = state.ownerCrew.filter(m => m.status === 'pending'), members = state.ownerCrew.filter(m => m.status === 'approved');
+    const row = (m, btns) => '<div class="lg-crew-row">' + crest(m.avatarUrl, m.displayName, 'lg-avatar') + '<div class="lg-crew-id"><b>' + esc(m.inGameUsername || m.displayName) + '</b><small>' + (m.ovr ? 'OVR ' + fmt(m.ovr) + ' · ' : '') + (m.discordHandle ? 'Discord ' + esc(m.discordHandle) : '@' + esc(m.username || '')) + '</small></div><div class="lg-crew-btns">' + btns + '</div></div>';
+    const btn = (action, acct, label, cls) => '<button class="lg-btn ' + cls + ' lg-btn-sm" type="button" data-crew-decide="' + action + '" data-account="' + esc(acct) + '">' + label + '</button>';
+    const crewBox = '<div class="lg-box"><h3>Kickoff crew</h3><p class="lg-box-sub">Approve the real members of your league. Every crew member can Kickoff, so your league keeps climbing while you are offline.</p>' +
+      (pending.length ? '<div class="lg-crew-list"><h5>Requests · ' + pending.length + '</h5>' + pending.map(m => row(m, btn('approve', m.accountId, 'Approve', 'lg-btn-primary') + btn('decline', m.accountId, 'Decline', 'lg-btn-outline'))).join('') + '</div>' : '') +
+      '<div class="lg-crew-list"><h5>Crew · ' + members.length + '</h5>' + (members.length ? members.map(m => row(m, btn('remove', m.accountId, 'Remove', 'lg-btn-outline'))).join('') : '<p class="lg-note">No crew yet. Members request to join from your league page.</p>') + '</div></div>';
+    const done = (own.matchdays14 || []).includes(todayUtc());
+    const sizes = (own.tournamentSizes && own.tournamentSizes.length ? own.tournamentSizes : SIZES);
+    const mdBox = '<div class="lg-box"><h3>Matchday log</h3><p class="lg-box-sub">Log the tournament you ran today. Players hunting the 100-tournament quest can see which leagues really run them.</p>' +
+      '<div class="lg-ctrl"><div><b>' + (own.matchdays7d || 0) + ' logged this week</b><small>' + (done ? 'Today is logged. You can still correct the size.' : 'One entry per day (UTC).') + '</small></div>' +
+      '<div class="lg-crew-btns"><select id="lgMatchdaySize" class="lg-select" aria-label="Tournament size">' + sizes.map(z => '<option>' + esc(z) + '</option>').join('') + '</select><button class="lg-btn lg-btn-primary lg-btn-sm" id="lgMatchdayLog" type="button">' + (done ? 'Update today' : 'Log today') + '</button></div></div>' + matchdayStrip(own.matchdays14) + '</div>';
+    return crewBox + mdBox;
+  }
+  async function crewAction(path, button, okMsg) {
+    const id = state.detailId; if (!id) return; button.disabled = true;
+    try { await api('/api/leagues/listings/' + encodeURIComponent(id) + '/' + path, { method: 'POST', body: '{}' }); toast(okMsg); await load({ silent: true }); }
+    catch (error) { toast(error.message, true); button.disabled = false; }
+  }
+  async function crewKick(button) {
+    const id = button.dataset.crewKick; if (!id) return; button.disabled = true;
+    try { await api('/api/leagues/listings/' + encodeURIComponent(id) + '/kickoff', { method: 'POST', body: '{}' }); toast('Kickoff! The league is back on top for everyone.'); await load({ silent: true }); }
+    catch (error) { toast(error.message, true); await load({ silent: true }); }
+  }
+  async function crewDecide(button) {
+    const own = state.ownListings[0]; if (!own) return; button.disabled = true;
+    try {
+      await api('/api/leagues/listings/' + encodeURIComponent(own.id) + '/crew-decide', { method: 'POST', body: JSON.stringify({ accountId: button.dataset.account, action: button.dataset.crewDecide }) });
+      toast(button.dataset.crewDecide === 'approve' ? 'Added to your crew.' : 'Updated.'); await load({ silent: true });
+    } catch (error) { toast(error.message, true); await load({ silent: true }); }
+  }
+  async function logMatchday(button) {
+    const own = state.ownListings[0]; if (!own) return; button.disabled = true;
+    try {
+      await api('/api/leagues/listings/' + encodeURIComponent(own.id) + '/matchday', { method: 'POST', body: JSON.stringify({ size: $('#lgMatchdaySize').value }) });
+      toast('Tournament logged. Players can see it on your league.'); await load({ silent: true });
+    } catch (error) { toast(error.message, true); button.disabled = false; }
   }
 
   // ───────────── players panel ─────────────
@@ -1302,11 +1387,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       if (!(await token())) { showView('gate'); return; }
       const d = await api('/api/leagues/bootstrap');
       state.account = d.account; state.profile = d.profile; state.leagues = d.leagues || []; state.ownListings = d.ownListings || [];
-      state.insights = d.ownerInsights || null; state.canFindPlayers = Boolean(d.canFindPlayers); state.remaining = Number(d.outreachRemaining ?? 3); state.premiumReady = d.premiumReady !== false;
+      state.insights = d.ownerInsights || null; state.crewReady = Boolean(d.crewReady); state.myCrew = d.myCrew || null; state.ownerCrew = d.ownerCrew || []; state.canFindPlayers = Boolean(d.canFindPlayers); state.remaining = Number(d.outreachRemaining ?? 3); state.premiumReady = d.premiumReady !== false;
       if (!d.profile) { openProfile(d.suggestedProfile); return; }
       if (state.view !== 'workspace') showView('workspace', { scroll: !silent });
       if (d.directoryFailed) toast('Some leagues could not be loaded. Pull to refresh in a moment.', true);
       renderHero(); renderTabs(); renderLeagues(); renderSaved(); renderOwner();
+      if (state.detailId) renderDrawer(true);
       if (state.tab === 'players') loadPlayers();
     } catch (error) {
       if (silent) { toast(error.message, true); return; }
@@ -1392,6 +1478,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       if (spots) { const own = state.ownListings[0]; const next = Math.max(0, Math.min(50, Number(own?.openSpots || 0) + Number(spots.dataset.spots))); if (own && next !== own.openSpots) quickUpdate({ openSpots: next }); return; }
       if (t.closest('#lgRecruitToggle')) { const own = state.ownListings[0]; if (own) quickUpdate({ recruitingOpen: !own.recruitingOpen }); return; }
       const kick = t.closest('#lgKickoff'); if (kick) { doKickoff(kick); return; }
+      const cj = t.closest('[data-crew-join]'); if (cj) { crewAction('crew', cj, 'Request sent. The owner will review it.'); return; }
+      const cl = t.closest('[data-crew-leave]'); if (cl) { crewAction('crew-leave', cl, 'Done.'); return; }
+      const ck = t.closest('[data-crew-kick]'); if (ck) { crewKick(ck); return; }
+      const cd = t.closest('[data-crew-decide]'); if (cd) { crewDecide(cd); return; }
+      const ml = t.closest('#lgMatchdayLog'); if (ml) { logMatchday(ml); return; }
       const card = t.closest('[data-card]'); if (card && !t.closest('a,button')) openDrawer(card.dataset.card);
     });
   }
@@ -1400,7 +1491,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const nodes = $$('[data-until]'); if (!nodes.length) return;
     let expired = false;
     for (const n of nodes) { const left = Number(n.dataset.until) - Date.now(); if (left <= 0) expired = true; else n.textContent = clock(left); }
-    if (expired && state.view === 'workspace') renderOwner();
+    if (expired && state.view === 'workspace') { renderOwner(); renderHero(); if (state.detailId) renderDrawer(true); }
   }, 1000);
 
   buildOptions(); bindFilters(); bindForms(); bindGlobal();
