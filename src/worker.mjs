@@ -421,15 +421,15 @@ const CAPTAIN_VOTE_CONFIG = Object.freeze({
 const CAPTAIN_CROSS_PLATFORM_ESTIMATE = 757;
 
 // Fixed cross-platform support estimate, totaling exactly 757 points.
-// Bruno is the clear leader, Van Dijk is a strong second, and James is third.
+// Bruno has a clear lead (~69%); Van Dijk is a strong second; James stays below 5%.
 // These estimated points are display-only and never enter the verified vote table.
 const CAPTAIN_CROSS_PLATFORM_ESTIMATED_COUNTS = Object.freeze({
-  'reece-james': 91,
-  'bruno-fernandes': 417,
+  'reece-james': 30,
+  'bruno-fernandes': 522,
   'virgil-van-dijk': 189,
-  'lewis-dunk': 38,
-  'john-mcginn': 7,
-  'ethan-ampadu': 15
+  'lewis-dunk': 8,
+  'john-mcginn': 3,
+  'ethan-ampadu': 5
 });
 
 function allocateCaptainCrossPlatformEstimate() {
