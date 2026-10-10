@@ -144,7 +144,6 @@ import '../../styles/premium-auth.css';
                   type="password"
                   autocomplete="current-password"
                   required
-                  minlength="10"
                   placeholder="Enter your password"
                 />
                 <button class="pw-toggle" type="button" data-target="loginPassword" aria-label="Toggle password visibility">
@@ -154,7 +153,7 @@ import '../../styles/premium-auth.css';
             </div>
 
             <button class="submit-btn" type="submit">
-              <span>Sign in to Profile</span>
+              <span>Sign in</span>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             </button>
 
@@ -387,6 +386,15 @@ import '../../styles/premium-auth.css';
 
   function friendlyAuthError(error, fallback) {
     const raw = String(error?.message || error || '');
+    if (/invalid login credentials|invalid_credentials|email or password/i.test(raw)) {
+      return 'Email or password is incorrect. Check both and try again.';
+    }
+    if (/email not confirmed|email_not_confirmed/i.test(raw)) {
+      return 'Please verify your email address before signing in. Check your inbox for the verification email.';
+    }
+    if (/too many requests|rate limit|over_request_rate_limit/i.test(raw)) {
+      return 'Too many sign-in attempts. Wait a moment and try again.';
+    }
     if (/invalid api key|api key is invalid/i.test(raw)) {
       return 'The account service rejected its client key. This is a configuration issue, not an email or username error.';
     }
@@ -442,6 +450,53 @@ import '../../styles/premium-auth.css';
   });
   document.getElementById('googleSignupBtn')?.addEventListener('click', (event) => {
     continueWithGoogle(signupMessage, event.currentTarget);
+  });
+
+  // Email/password sign-in: this form previously had no submit handler.
+  // Existing passwords are accepted as-is; the 10-character minimum applies
+  // when setting a new password, not when signing in to an older account.
+  loginForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    showMessage(loginMessage, '');
+
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const email = String(emailInput?.value || '').trim().toLowerCase();
+    const password = String(passwordInput?.value || '');
+
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+      showMessage(loginMessage, 'Enter a valid email address.', true);
+      emailInput?.focus();
+      return;
+    }
+    if (!password) {
+      showMessage(loginMessage, 'Enter your password.', true);
+      passwordInput?.focus();
+      return;
+    }
+
+    const button = loginForm.querySelector('button[type="submit"]');
+    if (button) button.disabled = true;
+    try {
+      const result = await accountAuth.auth.signInWithPassword({ email, password });
+      if (result.error) throw result.error;
+
+      const activeSession = result.data?.session;
+      if (!activeSession) {
+        const refreshed = await accountAuth.auth.getSession();
+        if (!refreshed.data?.session) {
+          throw new Error('Sign-in did not create an active session. Please try again.');
+        }
+      }
+
+      // nextPath is restricted to a local same-origin path. If no explicit
+      // target was supplied, it falls back to the page that opened Account.
+      location.replace(nextPath);
+    } catch (error) {
+      showMessage(loginMessage, friendlyAuthError(error, 'Sign-in failed. Check your details and try again.'), true);
+    } finally {
+      if (button) button.disabled = false;
+    }
   });
 
   onboardingUsername?.addEventListener('input', () => {
@@ -553,7 +608,33 @@ import '../../styles/premium-auth.css';
   });
 
   const params = new URLSearchParams(location.search);
-  const nextPath = params.get('next') === '/leagues/' ? '/leagues/' : '/profile/';
+
+  function safeLocalReturnPath(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    try {
+      const target = new URL(raw, location.origin);
+      if (target.origin !== location.origin) return '';
+      // Never redirect back into the auth page, which would create a loop.
+      if (target.pathname === '/account' || target.pathname.startsWith('/account/')) return '';
+      return target.pathname + target.search + target.hash;
+    } catch {
+      return '';
+    }
+  }
+
+  const requestedNextPath = safeLocalReturnPath(params.get('next'));
+  let referrerNextPath = '';
+  try {
+    if (document.referrer) {
+      const referrer = new URL(document.referrer);
+      if (referrer.origin === location.origin) {
+        referrerNextPath = safeLocalReturnPath(referrer.pathname + referrer.search + referrer.hash);
+      }
+    }
+  } catch {}
+  const nextPath = requestedNextPath || referrerNextPath || '/profile/';
+
   if (params.get('mode') === 'signup' || location.hash === '#signup') showTab('signup');
 
   accountAuth.auth.getSession().then(async (result) => {
