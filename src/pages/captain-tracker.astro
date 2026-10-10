@@ -164,8 +164,18 @@ const barPoints = (values, width = 220, height = 64) => {
             <img src={player.image} alt="" loading="lazy" decoding="async" />
             <span class="ct-vote-info">
               <strong>{player.fullName || player.name}</strong>
-              <span data-vote-count>Loading community picks…</span>
-              <i class="ct-vote-track"><b data-vote-fill></b></i>
+              <span class="ct-vote-count-row">
+                <span data-vote-count>Loading community picks…</span>
+                <em data-vote-share>—%</em>
+              </span>
+              <i
+                class="ct-vote-track"
+                role="progressbar"
+                aria-label={"Vote share for " + (player.fullName || player.name)}
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+              ><b data-vote-fill style="width:0%"></b></i>
             </span>
             <span class="ct-vote-selected" data-vote-selected hidden>Your pick</span>
           </button>
@@ -657,36 +667,53 @@ const barPoints = (values, width = 220, height = 64) => {
         ? (payload.selected || null)
         : currentSelectedVote;
       currentSelectedVote = selected;
-      const total = Number(payload?.total || 0);
+      const rawTotal = Number(payload?.total || 0);
+      const total = Number.isFinite(rawTotal) ? Math.max(0, Math.floor(rawTotal)) : 0;
       voteDataLoaded = true;
       voteLocked = Boolean(payload?.locked);
       voteLockAtUtc = payload?.lockAtUtc || null;
 
       if (voteTotal) voteTotal.textContent = String(total);
 
-      (voteSource.players || []).forEach((player) => {
-        const count = Number(counts[player.id] || 0);
-        const share = total > 0 ? Math.round((count / total) * 100) : 0;
+      // Drive updates from the actual rendered buttons, not only the embedded
+      // player-data JSON. This keeps every tile and tracker-card control in sync.
+      voteRoot?.querySelectorAll('[data-vote-player]').forEach((node) => {
+        const playerId = node.dataset.votePlayer;
+        if (!playerId) return;
 
-        voteRoot?.querySelectorAll('[data-vote-player="' + player.id + '"]').forEach((node) => {
-          const isTile = node.classList.contains('ct-vote-tile');
-          const isSelected = selected === player.id;
-          node.classList.toggle('is-selected', isSelected);
-          node.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        const rawCount = Number(counts[playerId] || 0);
+        const count = Number.isFinite(rawCount) ? Math.max(0, Math.floor(rawCount)) : 0;
+        const share = total > 0 ? (count / total) * 100 : 0;
+        const roundedShare = Math.round(share);
+        const isTile = node.classList.contains('ct-vote-tile');
+        const isSelected = selected === playerId;
 
-          if (isTile) {
-            animateCount(node.querySelector('[data-vote-count]'), count);
-            const fill = node.querySelector('[data-vote-fill]');
-            if (fill) fill.style.width = Math.max(share, count > 0 ? 5 : 0) + '%';
-            const selectedLabel = node.querySelector('[data-vote-selected]');
-            if (selectedLabel) selectedLabel.hidden = !isSelected;
-          } else {
-            const label = node.querySelector('[data-pick-label]');
-            if (label) label.textContent = isSelected ? 'Your pick' : 'Pick as captain';
-            const countNode = node.querySelector('[data-pick-count]');
-            if (countNode) countNode.textContent = count + (count === 1 ? ' pick' : ' picks');
+        node.classList.toggle('is-selected', isSelected);
+        node.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+
+        if (isTile) {
+          animateCount(node.querySelector('[data-vote-count]'), count);
+          const shareLabel = node.querySelector('[data-vote-share]');
+          if (shareLabel) shareLabel.textContent = total > 0 ? roundedShare + '%' : '—%';
+
+          const fill = node.querySelector('[data-vote-fill]');
+          if (fill) {
+            fill.style.width = share + '%';
+            fill.setAttribute('aria-hidden', 'true');
           }
-        });
+          const track = node.querySelector('.ct-vote-track');
+          if (track) {
+            track.setAttribute('aria-valuenow', String(roundedShare));
+            track.setAttribute('aria-valuetext', count + ' of ' + total + ' picks (' + roundedShare + '%)');
+          }
+          const selectedLabel = node.querySelector('[data-vote-selected]');
+          if (selectedLabel) selectedLabel.hidden = !isSelected;
+        } else {
+          const label = node.querySelector('[data-pick-label]');
+          if (label) label.textContent = isSelected ? 'Your pick' : 'Pick as captain';
+          const countNode = node.querySelector('[data-pick-count]');
+          if (countNode) countNode.textContent = count + (count === 1 ? ' pick' : ' picks');
+        }
       });
 
       setVoteStatus(
@@ -721,6 +748,13 @@ const barPoints = (values, width = 220, height = 64) => {
         const count = tile.querySelector('[data-vote-count]');
         const fill = tile.querySelector('[data-vote-fill]');
         if (count) count.textContent = 'Vote count unavailable';
+        const share = tile.querySelector('[data-vote-share]');
+        if (share) share.textContent = '—%';
+        const track = tile.querySelector('.ct-vote-track');
+        if (track) {
+          track.setAttribute('aria-valuenow', '0');
+          track.setAttribute('aria-valuetext', 'Vote share unavailable');
+        }
         if (fill) fill.style.width = '0%';
       });
     };
@@ -1054,24 +1088,29 @@ const barPoints = (values, width = 220, height = 64) => {
     .ct-vote-grid {
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:9px;
+      gap:11px;
     }
     .ct-vote-tile {
       position:relative;
       display:grid;
-      grid-template-columns:34px 48px minmax(0,1fr);
+      grid-template-columns:24px 54px minmax(0,1fr);
       align-items:center;
-      gap:10px;
+      gap:11px;
       min-width:0;
-      padding:10px 12px;
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:15px;
-      background:rgba(255,255,255,.025);
+      min-height:102px;
+      padding:13px 14px;
+      border:1px solid rgba(112,196,226,.13);
+      border-radius:17px;
+      background:
+        radial-gradient(180px 110px at 0 0,rgba(76,201,255,.09),transparent 72%),
+        linear-gradient(145deg,rgba(18,37,51,.96),rgba(8,19,28,.98));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 10px 28px rgba(0,0,0,.18);
       color:inherit;
       text-align:left;
       cursor:pointer;
       overflow:hidden;
-      transition:transform .22s cubic-bezier(.22,1,.36,1), border-color .22s ease, background .22s ease, box-shadow .22s ease;
+      isolation:isolate;
+      transition:transform .24s cubic-bezier(.22,1,.36,1), border-color .24s ease, background .24s ease, box-shadow .24s ease;
       animation:ctVoteIn .5s cubic-bezier(.22,1,.36,1) var(--vote-delay) both;
     }
     .ct-vote-tile::after {
@@ -1085,57 +1124,94 @@ const barPoints = (values, width = 220, height = 64) => {
     }
     .ct-vote-tile:hover {
       transform:translateY(-3px);
-      border-color:rgba(76,201,255,.26);
-      background:rgba(76,201,255,.04);
-      box-shadow:0 16px 30px rgba(0,0,0,.25);
+      border-color:rgba(76,201,255,.4);
+      background:
+        radial-gradient(220px 130px at 0 0,rgba(76,201,255,.14),transparent 72%),
+        linear-gradient(145deg,rgba(20,43,59,.98),rgba(8,19,28,.99));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 18px 36px rgba(0,0,0,.3),0 0 0 1px rgba(76,201,255,.035);
     }
     .ct-vote-tile:hover::after { transform:translateX(120%); }
     .ct-vote-tile.is-selected {
-      border-color:rgba(76,201,255,.5);
-      background:linear-gradient(145deg,rgba(76,201,255,.12),rgba(76,201,255,.035));
-      box-shadow:0 0 0 1px rgba(76,201,255,.08),0 18px 34px rgba(0,0,0,.24);
+      border-color:rgba(76,201,255,.6);
+      background:
+        radial-gradient(220px 140px at 0 0,rgba(76,201,255,.19),transparent 72%),
+        linear-gradient(145deg,rgba(16,48,65,.98),rgba(8,19,28,.99));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.065),0 0 0 1px rgba(76,201,255,.1),0 18px 38px rgba(0,0,0,.3);
     }
     .ct-vote-number {
-      color:#526c7c;
-      font:900 10px/1 Inter,sans-serif;
-      letter-spacing:.08em;
+      display:grid;
+      place-items:center;
+      width:23px;
+      height:23px;
+      border:1px solid rgba(255,255,255,.065);
+      border-radius:8px;
+      background:rgba(255,255,255,.025);
+      color:#7693a5;
+      font:900 9px/1 Inter,sans-serif;
+      letter-spacing:.04em;
     }
     .ct-vote-tile img {
-      width:48px;
-      height:62px;
+      width:54px;
+      height:70px;
       object-fit:contain;
-      filter:drop-shadow(0 7px 10px rgba(0,0,0,.45));
+      filter:drop-shadow(0 8px 12px rgba(0,0,0,.48));
       transition:transform .28s cubic-bezier(.22,1,.36,1);
     }
     .ct-vote-tile:hover img,
     .ct-vote-tile.is-selected img { transform:translateY(-3px) scale(1.06); }
-    .ct-vote-info { min-width:0; display:grid; gap:5px; }
+    .ct-vote-info { min-width:0; display:grid; gap:7px; }
     .ct-vote-info strong {
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
-      color:#edf5f9;
-      font:700 12.5px/1.15 Inter,sans-serif;
+      color:#f3f9fc;
+      font:750 13px/1.2 Inter,sans-serif;
+      letter-spacing:-.015em;
     }
-    .ct-vote-info > span {
-      color:#8197a6;
+    .ct-vote-count-row {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      min-width:0;
+    }
+    .ct-vote-count-row [data-vote-count] {
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      color:#829dad;
       font:600 10px/1.2 Inter,sans-serif;
     }
+    .ct-vote-count-row [data-vote-share] {
+      flex:0 0 auto;
+      color:#92e3ff;
+      font:800 10px/1 Inter,sans-serif;
+      font-style:normal;
+      font-variant-numeric:tabular-nums;
+    }
     .ct-vote-track {
+      position:relative;
       display:block;
-      height:4px;
+      height:6px;
       overflow:hidden;
+      border:1px solid rgba(118,181,207,.1);
       border-radius:999px;
-      background:#061017;
+      background:linear-gradient(180deg,#030a10,#07131d);
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.7);
       font-style:normal;
     }
     .ct-vote-track b {
+      position:relative;
       display:block;
-      width:0;
+      width:0%;
+      min-width:0;
       height:100%;
       border-radius:inherit;
-      background:linear-gradient(90deg,#2585ad,var(--cyan));
-      transition:width .55s cubic-bezier(.22,1,.36,1);
+      background:linear-gradient(90deg,#1a739c 0%,#2eb6e8 56%,#8de8ff 100%);
+      box-shadow:0 0 10px rgba(76,201,255,.3);
+      transition:width .65s cubic-bezier(.22,1,.36,1);
+      will-change:width;
     }
     .ct-vote-selected {
       position:absolute;
@@ -1188,6 +1264,9 @@ const barPoints = (values, width = 220, height = 64) => {
     }
     .ct-vote-tile:disabled {
       cursor:not-allowed;
+    }
+    @media (prefers-reduced-motion:reduce) {
+      .ct-vote-tile, .ct-vote-tile img, .ct-vote-track b { animation:none !important; transition:none !important; }
     }
     .ct-vote-status {
       margin:12px 0 0;
