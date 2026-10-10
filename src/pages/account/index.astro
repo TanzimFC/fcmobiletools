@@ -433,7 +433,7 @@ import '../../styles/premium-auth.css';
     if (button) button.disabled = true;
     try {
       const callback = new URL('https://fcmobiletools.online/account/');
-      if (nextPath === '/leagues/') callback.searchParams.set('next', nextPath);
+      callback.searchParams.set('next', nextPath);
       const result = await accountAuth.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: callback.toString() }
@@ -464,7 +464,7 @@ import '../../styles/premium-auth.css';
     const email = String(emailInput?.value || '').trim().toLowerCase();
     const password = String(passwordInput?.value || '');
 
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       showMessage(loginMessage, 'Enter a valid email address.', true);
       emailInput?.focus();
       return;
