@@ -1,9 +1,13 @@
-// Compile every inline JavaScript block in the admin HTML during builds.
-// This catches parse failures that otherwise prevent the entire admin workspace
-// from initializing, even when individual Supabase endpoints are healthy.
-import { readdir, readFile } from 'node:fs/promises';
+// Compile every inline JavaScript block in admin HTML during builds.
+// Classic scripts are parsed as scripts; module scripts are parsed as .mjs files.
+// This is a syntax-only check. It never executes admin page code.
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import os from 'node:os';
 import path from 'node:path';
 
+const exec = promisify(execFile);
 const root = path.resolve('admin');
 const pages = [];
 
@@ -22,29 +26,41 @@ await walk(root);
 
 let checked = 0;
 const failures = [];
+const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'fcm-admin-script-check-'));
 
-for (const file of pages) {
-  const html = await readFile(file, 'utf8');
-  const blocks = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
+try {
+  for (const file of pages) {
+    const html = await readFile(file, 'utf8');
+    const blocks = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
 
-  for (let index = 0; index < blocks.length; index += 1) {
-    const [, attributes = '', source = ''] = blocks[index];
-    if (/\bsrc\s*=/i.test(attributes) || !source.trim()) continue;
-    if (/\btype\s*=\s*["']module["']/i.test(attributes)) {
-      failures.push(`${path.relative(process.cwd(), file)}: module script requires a module-aware parser.`);
-      continue;
-    }
+    for (let index = 0; index < blocks.length; index += 1) {
+      const [, attributes = '', source = ''] = blocks[index];
+      if (/\bsrc\s*=/i.test(attributes) || !source.trim()) continue;
 
-    checked += 1;
-    try {
-      // Compile only. Never execute admin page code during a build.
-      new Function(source);
-    } catch (error) {
+      checked += 1;
       const preceding = html.slice(0, blocks[index].index);
       const line = preceding.split('\n').length;
-      failures.push(`${path.relative(process.cwd(), file)} (script ${index + 1}, HTML line ${line}): ${error.message}`);
+      const relativeFile = path.relative(process.cwd(), file);
+      const isModule = /\btype\s*=\s*["']module["']/i.test(attributes);
+
+      try {
+        if (isModule) {
+          const temporaryFile = path.join(temporaryDirectory, `inline-${checked}.mjs`);
+          await writeFile(temporaryFile, source, 'utf8');
+          // Node parses .mjs in module mode. --check does not evaluate imports or execute code.
+          await exec(process.execPath, ['--check', temporaryFile], { maxBuffer: 4 * 1024 * 1024 });
+        } else {
+          // Compile only. Never execute admin page code during a build.
+          new Function(source);
+        }
+      } catch (error) {
+        const detail = String(error.stderr || error.message || 'Syntax check failed').trim();
+        failures.push(`${relativeFile} (script ${index + 1}, HTML line ${line}): ${detail}`);
+      }
     }
   }
+} finally {
+  await rm(temporaryDirectory, { recursive: true, force: true });
 }
 
 if (failures.length) {
