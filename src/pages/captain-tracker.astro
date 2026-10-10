@@ -648,10 +648,17 @@ const barPoints = (values, width = 220, height = 64) => {
       }
     };
 
+    let currentSelectedVote = null;
+    let voteDataLoaded = false;
+
     const updateVoteUI = (payload) => {
       const counts = payload?.counts || {};
-      const selected = payload?.selected || null;
+      const selected = Object.prototype.hasOwnProperty.call(payload || {}, 'selected')
+        ? (payload.selected || null)
+        : currentSelectedVote;
+      currentSelectedVote = selected;
       const total = Number(payload?.total || 0);
+      voteDataLoaded = true;
       voteLocked = Boolean(payload?.locked);
       voteLockAtUtc = payload?.lockAtUtc || null;
 
@@ -706,23 +713,83 @@ const barPoints = (values, width = 220, height = 64) => {
     );
 
     let voteLoadInProgress = false;
-    const loadVotes = async ({ quiet = false } = {}) => {
-      if (voteLoadInProgress) return;
+    let queuedPersonalRefresh = false;
+
+    const showVoteUnavailable = () => {
+      if (voteTotal) voteTotal.textContent = '—';
+      voteRoot?.querySelectorAll('.ct-vote-tile').forEach((tile) => {
+        const count = tile.querySelector('[data-vote-count]');
+        const fill = tile.querySelector('[data-vote-fill]');
+        if (count) count.textContent = 'Vote count unavailable';
+        if (fill) fill.style.width = '0%';
+      });
+    };
+
+    const loadVotes = async ({ quiet = false, includeSelected = false } = {}) => {
+      if (voteLoadInProgress) {
+        if (includeSelected) queuedPersonalRefresh = true;
+        return;
+      }
       voteLoadInProgress = true;
       try {
-        const response = await accountApi('/api/captain-votes?tracker=premier-league-matchday-7');
+        const endpoint = '/api/captain-votes?tracker=premier-league-matchday-7';
+        // Community totals are public. Fetch them without waiting for Supabase
+        // Auth so an expired or broken browser session cannot leave every count
+        // stuck at the HTML placeholder of zero.
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { accept: 'application/json' }
+        });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || 'Could not load captain picks.');
         if (!hasVoteStats(payload)) {
-          throw new Error('The community vote response was incomplete. Please refresh the page.');
+          throw new Error('The community vote response was incomplete.');
         }
-        updateVoteUI(payload);
+
+        // A public request intentionally has no per-account selection. Keep the
+        // current selection until the optional authenticated request resolves.
+        const { selected: ignoredSelection, ...publicPayload } = payload;
+        updateVoteUI(publicPayload);
+
+        if (includeSelected) {
+          try {
+            const sessionResult = await accountAuth.auth.getSession();
+            const accessToken = sessionResult?.data?.session?.access_token;
+            if (accessToken) {
+              const personalResponse = await fetch(endpoint, {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: {
+                  accept: 'application/json',
+                  authorization: 'Bearer ' + accessToken
+                }
+              });
+              const personalPayload = await personalResponse.json().catch(() => ({}));
+              if (personalResponse.ok && hasVoteStats(personalPayload)) {
+                updateVoteUI(personalPayload);
+              }
+            } else {
+              currentSelectedVote = null;
+              updateVoteUI({ ...publicPayload, selected: null });
+            }
+          } catch {
+            // A personal-session failure must not hide or reset public vote totals.
+          }
+        }
       } catch (error) {
+        if (!voteDataLoaded) showVoteUnavailable();
         if (!quiet) {
-          setVoteStatus(error?.message || 'Captain picks are temporarily unavailable.', 'error');
+          setVoteStatus(error?.message || 'Community votes could not be loaded. Retrying automatically.', 'error');
         }
       } finally {
         voteLoadInProgress = false;
+        if (queuedPersonalRefresh) {
+          queuedPersonalRefresh = false;
+          loadVotes({ quiet: true, includeSelected: true });
+        }
       }
     };
 
@@ -789,10 +856,10 @@ const barPoints = (values, width = 220, height = 64) => {
     });
 
     accountAuth.auth.onAuthStateChange(() => {
-      loadVotes();
+      loadVotes({ quiet: true, includeSelected: true });
     });
 
-    // Keep the public tally fresh for visitors who already have the page open.
+    // Keep public totals fresh for visitors who already have the page open.
     const refreshVisibleVotes = () => {
       if (!document.hidden) loadVotes({ quiet: true });
     };
@@ -800,7 +867,7 @@ const barPoints = (values, width = 220, height = 64) => {
     window.addEventListener('focus', refreshVisibleVotes);
     document.addEventListener('visibilitychange', refreshVisibleVotes);
 
-    loadVotes();
+    loadVotes({ includeSelected: true });
   </script>
 
   <AccountGateModal feature="your captain pick" title="Create an account to pick your captain" message="Your pick is saved to your profile so you can return and change it later." />
