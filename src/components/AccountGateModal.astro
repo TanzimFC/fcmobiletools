@@ -47,6 +47,20 @@ const {
       requestAnimationFrame(() => gate.querySelector('.fc-account-gate-dialog')?.classList.add('is-visible'));
     };
 
+    // Carry the page that opened this gate through sign-in/sign-up.
+    // The account route validates this as a same-origin path before redirecting.
+    const returnPath = window.location.pathname + window.location.search + window.location.hash;
+    if (!/^\\/account(?:\\/|$)/.test(window.location.pathname)) {
+      gate.querySelectorAll('a[href^="/account/"]').forEach((link) => {
+        try {
+          const destination = new URL(link.getAttribute('href'), window.location.origin);
+          if (destination.origin !== window.location.origin) return;
+          destination.searchParams.set('next', returnPath);
+          link.href = destination.pathname + destination.search + destination.hash;
+        } catch {}
+      });
+    }
+
     gate.addEventListener('click', (event) => {
       if (event.target.closest('[data-account-gate-close]')) {
         close();
