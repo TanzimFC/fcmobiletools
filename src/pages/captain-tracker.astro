@@ -138,16 +138,16 @@ const barPoints = (values, width = 220, height = 64) => {
       </div>
     </section>
 
-    <section class="ct-votes" aria-label="Community captain picks">
+    <section class="ct-votes" aria-label="Community captain picks including estimated cross-platform support">
       <header class="ct-vote-head">
         <div>
-          <span class="ct-section-kicker">COMMUNITY PICKS</span>
+          <span class="ct-section-kicker">COMMUNITY SUPPORT</span>
           <h2>Who are you backing?</h2>
-          <p>Pick one of the six captains. You can change your choice until the first Matchday 7 fixture begins.</p>
+          <p>Pick one of the six captains. You can change your choice until the first fixture begins. The tally includes 757 estimated cross-platform support points, allocated from the saved vote split; it is not a verified voter count.</p>
         </div>
         <div class="ct-vote-total">
           <strong data-vote-total>—</strong>
-          <span>community picks</span>
+          <span>combined support</span>
         </div>
       </header>
 
@@ -165,7 +165,7 @@ const barPoints = (values, width = 220, height = 64) => {
             <span class="ct-vote-info">
               <strong>{player.fullName || player.name}</strong>
               <span class="ct-vote-count-row">
-                <span data-vote-count>Loading community picks…</span>
+                <span data-vote-count>Loading combined support…</span>
                 <em data-vote-share>—%</em>
               </span>
               <i
@@ -613,7 +613,7 @@ const barPoints = (values, width = 220, height = 64) => {
     const animateCount = (node, value) => {
       if (!node) return;
       const previous = Number(node.dataset.lastCount ?? -1);
-      node.textContent = value === 1 ? '1 user picked him' : value + ' users picked him';
+      node.textContent = value + (value === 1 ? ' support point' : ' support points');
       node.dataset.lastCount = String(value);
       if (previous !== value) {
         node.classList.remove('is-bump');
@@ -704,7 +704,7 @@ const barPoints = (values, width = 220, height = 64) => {
           const track = node.querySelector('.ct-vote-track');
           if (track) {
             track.setAttribute('aria-valuenow', String(roundedShare));
-            track.setAttribute('aria-valuetext', count + ' of ' + total + ' picks (' + roundedShare + '%)');
+            track.setAttribute('aria-valuetext', count + ' of ' + total + ' combined support points (' + roundedShare + '%)');
           }
           const selectedLabel = node.querySelector('[data-vote-selected]');
           if (selectedLabel) selectedLabel.hidden = !isSelected;
@@ -712,7 +712,7 @@ const barPoints = (values, width = 220, height = 64) => {
           const label = node.querySelector('[data-pick-label]');
           if (label) label.textContent = isSelected ? 'Your pick' : 'Pick as captain';
           const countNode = node.querySelector('[data-pick-count]');
-          if (countNode) countNode.textContent = count + (count === 1 ? ' pick' : ' picks');
+          if (countNode) countNode.textContent = count + ' pts';
         }
       });
 
