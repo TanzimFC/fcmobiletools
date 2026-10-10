@@ -3,905 +3,1346 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout
-  title="Find a League | FCMobiletools"
-  description="Find an FC Mobile league that fits your squad and play style, or recruit players for your league."
+  title="Find a League"
+  description="Find an FC Mobile league that fits your OVR, region and play style, or recruit players for your own league."
   robots="noindex,nofollow"
   googlebot="noindex,nofollow"
 >
-  <main class="fl-page">
-    <div class="fl-wrap">
-      <header class="fl-heading">
-        <div class="fl-title-block">
-          <div class="fl-eyebrow"><span></span> FC MOBILE COMMUNITY</div>
-          <h1>Find a <em>League.</em></h1>
-          <p>The right squad. The right rhythm. Start with a club that plays your way.</p>
+  <main class="lg-root" id="lgRoot">
+    <div class="lg-aurora" aria-hidden="true"></div>
+    <div class="lg-wrap">
+
+      <!-- HERO -->
+      <header class="lg-hero" id="lgHero">
+        <div class="lg-hero-copy">
+          <div class="lg-eyebrow"><i></i> FC MOBILE LEAGUE HUB</div>
+          <h1>Find the league that <em>fits your squad.</em></h1>
+          <p>Verified clubs, honest activity signals and a match score built around your OVR, region and play style.</p>
         </div>
-        <div class="fl-heading-actions">
-          <button class="fl-btn fl-btn-quiet" id="editProfileBtn" type="button" hidden>My player profile</button>
-          <button class="fl-btn fl-btn-primary" id="listLeagueBtn" type="button" hidden>+ List your league</button>
+        <div class="lg-hero-side">
+          <div class="lg-stats" id="lgStats" hidden>
+            <div><strong id="statLeagues">0</strong><span>Live leagues</span></div>
+            <div><strong id="statSpots">0</strong><span>Open spots</span></div>
+            <div><strong id="statRegions">0</strong><span>Regions</span></div>
+          </div>
+          <div class="lg-me" id="lgMe" hidden></div>
         </div>
       </header>
 
-      <section class="fl-gate" id="loginGate" hidden>
-        <div class="fl-gate-mark" aria-hidden="true">
+      <!-- SIGN-IN GATE -->
+      <section class="lg-gate" id="lgGate" hidden>
+        <div class="lg-gate-mark" aria-hidden="true">
           <svg viewBox="0 0 48 48"><path d="M24 4 41 11v12c0 10-6.8 17-17 21C13.8 40 7 33 7 23V11L24 4Z"/><path d="m16 24 5 5 11-12"/></svg>
         </div>
         <h2>Your next club is one sign-in away.</h2>
-        <p>Sign in to browse leagues, keep your player profile ready and contact league owners.</p>
-        <a class="fl-btn fl-btn-primary" href="/account/?next=%2Fleagues%2F">Sign in or create account <span aria-hidden="true">↗</span></a>
+        <p>Sign in to browse leagues, get a personal match score and contact league owners.</p>
+        <ul class="lg-gate-points">
+          <li><b>Match score</b><span>See how well each league fits you</span></li>
+          <li><b>Verified clubs</b><span>Reviewed before they go live</span></li>
+          <li><b>Private by design</b><span>Your UID stays hidden until you choose</span></li>
+        </ul>
+        <a class="lg-btn lg-btn-primary lg-btn-lg" href="/account/?next=%2Fleagues%2F">Sign in or create account <span aria-hidden="true">↗</span></a>
       </section>
 
-      <section class="fl-gate" id="loadingState" aria-live="polite">
-        <div class="fl-spinner" aria-hidden="true"></div>
-        <p>Getting the league board ready…</p>
-      </section>
-
-      <section class="fl-profile-setup" id="profileSetup" hidden>
-        <div class="fl-setup-top">
-          <div>
-            <span class="fl-eyebrow"><span></span> PLAYER CARD</span>
-            <h2 id="profileSetupTitle">Set up your league profile.</h2>
-            <p>This profile is only for Find a League. It won't change your normal account profile or player database.</p>
-          </div>
-          <span class="fl-step">01 <i>/</i> PROFILE</span>
+      <!-- LOADING -->
+      <section class="lg-loading" id="lgLoading" aria-live="polite">
+        <div class="lg-skel-row"><i></i><i></i><i></i></div>
+        <div class="lg-grid">
+          <div class="lg-skel"></div><div class="lg-skel"></div><div class="lg-skel"></div>
         </div>
-        <form id="profileForm" class="fl-form">
-          <div class="fl-form-grid">
-            <label class="fl-field"><span>FC Mobile UID <b>*</b></span><input name="fcMobileUid" required minlength="3" maxlength="64" autocomplete="off" placeholder="Your in-game UID"></label>
-            <label class="fl-field"><span>In-game username <b>*</b></span><input name="inGameUsername" required minlength="2" maxlength="40" placeholder="Your FC Mobile name"></label>
-            <label class="fl-field"><span>Current OVR <b>*</b></span><input name="ovr" type="number" inputmode="numeric" min="50" max="200" required placeholder="e.g. 123"></label>
-            <label class="fl-field"><span>Region / server <b>*</b></span>
-              <select name="regionServer" required>
-                <option value="">Choose region</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option>
-              </select>
-            </label>
-            <label class="fl-field"><span>What describes you? <b>*</b></span>
-              <select name="status" required>
-                <option value="looking_for_league">Looking for a league</option>
-                <option value="in_a_league">Already in a league</option>
-                <option value="league_owner">League owner</option>
-                <option value="not_looking">Just browsing for now</option>
-              </select>
-            </label>
-            <label class="fl-field"><span>Discord handle <small>Optional</small></span><input name="discordHandle" maxlength="100" placeholder="name or @name"></label>
-            <label class="fl-field"><span>Availability</span>
-              <select name="availability"><option value="">Choose your usual availability</option><option>Daily</option><option>Most days</option><option>Weekends</option><option>Evenings</option><option>Flexible</option><option>Casual / whenever</option></select>
-            </label>
-            <label class="fl-field"><span>Play style</span>
-              <select name="playStyle"><option value="">Choose a play style</option><option>Competitive</option><option>Active and relaxed</option><option>Casual</option><option>Quest focused</option><option>Building a new team</option></select>
-            </label>
-          </div>
-          <div class="fl-upload-row">
-            <label class="fl-upload" for="profileAvatarFile"><span class="fl-upload-icon">↑</span><span><strong>Player avatar</strong><small>Optional JPG, PNG, WebP or GIF · under 8 MB</small></span><input id="profileAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
-            <div id="profileAvatarPreview" class="fl-logo-preview">Player</div>
-            <input type="hidden" name="avatarUrl">
-          </div>
-          <fieldset class="fl-choice-group">
-            <legend>Preferred languages</legend>
-            <div class="fl-choice-row">
-              <label><input type="checkbox" name="preferredLanguages" value="English" checked><span>English</span></label>
-              <label><input type="checkbox" name="preferredLanguages" value="Bengali"><span>Bengali</span></label>
-              <label><input type="checkbox" name="preferredLanguages" value="Indonesian"><span>Indonesian</span></label>
-              <label><input type="checkbox" name="preferredLanguages" value="Arabic"><span>Arabic</span></label>
-              <label><input type="checkbox" name="preferredLanguages" value="Spanish"><span>Spanish</span></label>
-              <label><input type="checkbox" name="preferredLanguages" value="Other"><span>Other</span></label>
-            </div>
-          </fieldset>
-          <fieldset class="fl-choice-group">
-            <legend>Tournament sizes you'd play</legend>
-            <div class="fl-choice-row">
-              <label><input type="checkbox" name="tournamentSizes" value="4v4"><span>4v4</span></label>
-              <label><input type="checkbox" name="tournamentSizes" value="8v8"><span>8v8</span></label>
-              <label><input type="checkbox" name="tournamentSizes" value="16v16"><span>16v16</span></label>
-              <label><input type="checkbox" name="tournamentSizes" value="32v32"><span>32v32</span></label>
-            </div>
-          </fieldset>
-          <label class="fl-field"><span>Anything league owners should know? <small>Optional</small></span><textarea name="notes" rows="3" maxlength="500" placeholder="Preferred tournament rhythm, what you're looking for, or other details."></textarea></label>
-          <div class="fl-profile-actions">
-            <p>Contact details are shown only to approved league owners when you choose “Looking for a league”.</p>
-            <button class="fl-btn fl-btn-primary" type="submit" id="saveProfileBtn">Save player profile <span aria-hidden="true">→</span></button>
-          </div>
-          <div class="fl-form-message" id="profileMessage" role="status"></div>
-        </form>
       </section>
 
-      <div class="fl-workspace" id="workspace" hidden>
-        <div class="fl-tabs" role="tablist" aria-label="League directory">
-          <button class="fl-tab active" id="tabLeagues" type="button" role="tab" aria-selected="true">Find a League <span id="leagueCount">0</span></button>
-          <button class="fl-tab" id="tabPlayers" type="button" role="tab" aria-selected="false" hidden>Find Players</button>
-          <span class="fl-tabs-spacer"></span>
-          <span class="fl-account-chip"><i></i><span id="signedInAs">Signed in</span></span>
-        </div>
+      <!-- ERROR -->
+      <section class="lg-gate" id="lgError" hidden>
+        <div class="lg-gate-mark warn" aria-hidden="true">!</div>
+        <h2>We couldn't load the league board.</h2>
+        <p id="lgErrorMsg">Something went wrong. Please try again.</p>
+        <button class="lg-btn lg-btn-primary" id="lgRetry" type="button">Try again</button>
+      </section>
 
-        <section class="fl-view" id="leagueView">
-          <div class="fl-directory-head">
+      <!-- PLAYER PROFILE SETUP -->
+      <section class="lg-setup" id="lgProfile" hidden>
+        <div class="lg-setup-main">
+          <div class="lg-panel-head">
             <div>
-              <h2>Find your fit.</h2>
-              <p>Browse current recruitment posts. Kickoff gives a club a temporary lift, not a permanent top spot.</p>
+              <span class="lg-eyebrow"><i></i> PLAYER CARD</span>
+              <h2 id="lgProfileTitle">Set up your league profile.</h2>
+              <p>Used only by Find a League. It never changes your normal account profile or any other tool.</p>
             </div>
-            <button class="fl-btn fl-btn-outline" id="openListingBtn" type="button" hidden>List your league</button>
+            <button class="lg-btn lg-btn-quiet" id="lgProfileCancel" type="button" hidden>Cancel</button>
           </div>
-          <div class="fl-filters">
-            <label class="fl-search"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="leagueSearch" type="search" placeholder="Search league name, language or region" aria-label="Search leagues"></label>
-            <select id="regionFilter" aria-label="Filter region"><option value="">All regions</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option></select>
-            <select id="frequencyFilter" aria-label="Filter tournament rhythm"><option value="">Any tournament rhythm</option><option value="daily">Daily</option><option value="most_days">Most days</option><option value="several_weekly">Several times a week</option><option value="weekly">Weekly</option><option value="occasional">Occasional</option></select>
-            <select id="sizeFilter" aria-label="Filter tournament size"><option value="">Any size</option><option value="4v4">4v4</option><option value="8v8">8v8</option><option value="16v16">16v16</option><option value="32v32">32v32</option></select>
-            <select id="squadOvrFilter" aria-label="Filter by squad OVR"><option value="my" selected>My OVR</option><option value="">Any OVR</option><option value="110">110 OVR</option><option value="115">115 OVR</option><option value="120">120 OVR</option><option value="125">125 OVR</option><option value="130">130 OVR</option></select>
+          <form id="lgProfileForm" class="lg-form" novalidate>
+            <div class="lg-grid-2">
+              <label class="lg-field"><span>FC Mobile UID <b>*</b></span><input name="fcMobileUid" required minlength="3" maxlength="64" autocomplete="off" placeholder="Your in-game UID"></label>
+              <label class="lg-field"><span>In-game username <b>*</b></span><input name="inGameUsername" required minlength="2" maxlength="40" placeholder="Your FC Mobile name"></label>
+              <label class="lg-field"><span>Current OVR <b>*</b></span><input name="ovr" type="number" inputmode="numeric" min="50" max="200" required placeholder="e.g. 123"></label>
+              <label class="lg-field"><span>Region / server <b>*</b></span><select name="regionServer" required data-options="regions"></select></label>
+              <label class="lg-field"><span>What describes you? <b>*</b></span>
+                <select name="status" required>
+                  <option value="looking_for_league">Looking for a league</option>
+                  <option value="in_a_league">Already in a league</option>
+                  <option value="league_owner">League owner</option>
+                  <option value="not_looking">Just browsing for now</option>
+                </select>
+              </label>
+              <label class="lg-field"><span>Discord handle <small>Optional</small></span><input name="discordHandle" maxlength="100" placeholder="name or @name"></label>
+              <label class="lg-field"><span>Availability</span><select name="availability" data-options="availability"></select></label>
+              <label class="lg-field"><span>Play style</span><select name="playStyle" data-options="styles"></select></label>
+            </div>
+            <div class="lg-upload-row">
+              <label class="lg-upload" for="lgAvatarFile"><span class="lg-upload-icon">↑</span><span><strong>Player avatar</strong><small>Optional · JPG, PNG, WebP or GIF · under 8 MB</small></span><input id="lgAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+              <input type="hidden" name="avatarUrl">
+            </div>
+            <fieldset class="lg-fieldset"><legend>Preferred languages</legend><div class="lg-chips" data-chips="languages" data-name="preferredLanguages"></div></fieldset>
+            <fieldset class="lg-fieldset"><legend>Tournament sizes you'd play</legend><div class="lg-chips" data-chips="sizes" data-name="tournamentSizes"></div></fieldset>
+            <label class="lg-field"><span>Anything league owners should know? <small>Optional</small></span><textarea name="notes" rows="3" maxlength="500" placeholder="Preferred rhythm, what you're looking for, other details."></textarea></label>
+            <div class="lg-form-foot">
+              <p>Your UID and Discord are shown only to approved league owners, one unlock at a time, and only while you're set to “Looking for a league”.</p>
+              <button class="lg-btn lg-btn-primary" type="submit" id="lgProfileSave">Save player profile <span aria-hidden="true">→</span></button>
+            </div>
+            <div class="lg-msg" id="lgProfileMsg" role="status"></div>
+          </form>
+        </div>
+        <aside class="lg-setup-side">
+          <div class="lg-preview-label">Live preview · what owners see</div>
+          <div id="lgProfilePreview"></div>
+        </aside>
+      </section>
+
+      <!-- MAIN WORKSPACE -->
+      <div class="lg-workspace" id="lgWorkspace" hidden>
+        <nav class="lg-tabs" id="lgTabs" role="tablist" aria-label="League hub"></nav>
+
+        <!-- LEAGUES -->
+        <section class="lg-panel" id="panelLeagues" role="tabpanel">
+          <div class="lg-toolbar">
+            <label class="lg-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="fQ" type="search" placeholder="Search name, language, region or league ID" aria-label="Search leagues" autocomplete="off"></label>
+            <select id="fSort" aria-label="Sort leagues">
+              <option value="match">Best match</option>
+              <option value="active">Most active</option>
+              <option value="newest">Newest</option>
+              <option value="spots">Most open spots</option>
+              <option value="ovr">Lowest OVR needed</option>
+            </select>
+            <button class="lg-btn lg-btn-outline lg-filter-toggle" id="fToggle" type="button" aria-expanded="false" aria-controls="lgFilters">Filters <span id="fCount" hidden>0</span></button>
           </div>
-          <div class="fl-results-meta"><span id="resultsLabel">Latest league listings</span><button type="button" class="fl-reset" id="clearFilters">Clear filters</button></div>
-          <div id="leagueList" class="fl-league-grid">
-            <div class="fl-skeleton"></div><div class="fl-skeleton"></div><div class="fl-skeleton"></div>
+          <div class="lg-filters" id="lgFilters">
+            <select id="fRegion" aria-label="Region" data-options="regions-any"></select>
+            <select id="fFreq" aria-label="Tournament rhythm">
+              <option value="">Any rhythm</option><option value="daily">Daily</option><option value="most_days">Most days</option><option value="several_weekly">Several times a week</option><option value="weekly">Weekly</option><option value="occasional">Occasional</option>
+            </select>
+            <select id="fSize" aria-label="Tournament size"><option value="">Any size</option><option>4v4</option><option>8v8</option><option>16v16</option><option>32v32</option></select>
+            <select id="fLang" aria-label="Language" data-options="languages-any"></select>
+            <select id="fCommit" aria-label="Culture"><option value="">Any culture</option><option value="casual">Casual</option><option value="regular">Regular play</option><option value="competitive">Competitive</option></select>
+            <label class="lg-switch-chip"><input type="checkbox" id="fQualify" checked><span>I qualify (OVR)</span></label>
+            <label class="lg-switch-chip"><input type="checkbox" id="fVerified"><span>Verified only</span></label>
           </div>
-          <div class="fl-empty" id="leagueEmpty" hidden>
-            <span class="fl-empty-icon" aria-hidden="true">⌕</span><h3>No matching leagues yet.</h3><p>Try a wider filter, or help the directory grow by listing your club.</p>
-            <button class="fl-btn fl-btn-outline" id="emptyListBtn" type="button" hidden>List your league</button>
+          <div class="lg-meta-row">
+            <span id="lgResults">Loading leagues…</span>
+            <span class="lg-meta-actions"><button type="button" class="lg-link" id="fShowAll" hidden>Show leagues above my OVR</button><button type="button" class="lg-link" id="fClear">Clear filters</button></span>
+          </div>
+          <div id="lgFeatured" class="lg-featured" hidden>
+            <div class="lg-rail-head"><span class="lg-badge gold">★ Featured</span><small>Hand-picked by the FCMobiletools team</small></div>
+            <div class="lg-rail" id="lgRail"></div>
+          </div>
+          <div id="lgGrid" class="lg-grid"></div>
+          <div class="lg-empty" id="lgEmpty" hidden>
+            <span class="lg-empty-icon" aria-hidden="true">⌕</span>
+            <h3>No leagues match these filters.</h3>
+            <p>Try widening the region or OVR filter, or help the board grow by listing your own club.</p>
+            <button class="lg-btn lg-btn-outline" id="lgEmptyReset" type="button">Clear filters</button>
           </div>
         </section>
 
-        <section class="fl-view" id="playersView" hidden>
-          <div class="fl-directory-head">
-            <div><h2>Recruit your next player.</h2><p>Player search is available to approved league owners. Contact details unlock one at a time.</p></div>
-            <div class="fl-usage"><strong id="outreachRemaining">3</strong><span>player contacts left today <small>Resets at 00:00 UTC</small></span></div>
+        <!-- SAVED -->
+        <section class="lg-panel" id="panelSaved" role="tabpanel" hidden>
+          <div class="lg-panel-head slim"><div><h2>Your shortlist</h2><p>Leagues you saved. Compare them and apply when you're ready.</p></div></div>
+          <div id="lgSavedGrid" class="lg-grid"></div>
+          <div class="lg-empty" id="lgSavedEmpty" hidden>
+            <span class="lg-empty-icon" aria-hidden="true">♡</span>
+            <h3>Nothing saved yet.</h3>
+            <p>Tap the heart on any league to keep it here.</p>
+            <button class="lg-btn lg-btn-outline" data-goto="leagues" type="button">Browse leagues</button>
           </div>
-          <div class="fl-filters fl-player-filters">
-            <label class="fl-search"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="playerSearch" type="search" placeholder="Search player or region" aria-label="Search players"></label>
-            <select id="playerRegionFilter" aria-label="Filter player region"><option value="">All regions</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option></select>
-            <select id="playerSizeFilter" aria-label="Preferred tournament size"><option value="">Any size</option><option value="4v4">4v4</option><option value="8v8">8v8</option><option value="16v16">16v16</option><option value="32v32">32v32</option></select>
-            <select id="playerMinOvr" aria-label="Minimum player OVR"><option value="50">Any OVR</option><option value="100">100+ OVR</option><option value="110">110+ OVR</option><option value="120">120+ OVR</option><option value="125">125+ OVR</option></select>
-          </div>
-          <div class="fl-results-meta"><span id="playerResultsLabel">Players looking for a league</span><span class="fl-private-note">UID and Discord stay hidden until you unlock a contact.</span></div>
-          <div id="playerList" class="fl-player-grid"></div>
-          <div class="fl-empty" id="playerEmpty" hidden><span class="fl-empty-icon" aria-hidden="true">⌕</span><h3>No players match those filters.</h3><p>Try a wider region or tournament-size filter.</p></div>
         </section>
 
-        <section class="fl-owner-panel" id="ownerPanel" hidden>
-          <div class="fl-owner-head"><div><span class="fl-eyebrow"><span></span> OWNER DESK</span><h2>Your league</h2><p>Keep your listing current. Kickoff is available every six hours.</p></div><span class="fl-owner-mark" aria-hidden="true">FC</span></div>
-          <div id="ownerListing"></div>
-          <div class="fl-owner-create" id="ownerCreate" hidden>
-            <div><strong>Bring your club to the board.</strong><p>Every new league listing is reviewed before it appears in search.</p></div>
-            <button class="fl-btn fl-btn-primary" id="createListingBtn" type="button">Create league listing <span aria-hidden="true">→</span></button>
+        <!-- PLAYERS -->
+        <section class="lg-panel" id="panelPlayers" role="tabpanel" hidden>
+          <div class="lg-panel-head slim">
+            <div><h2>Recruit your next player.</h2><p>Available to approved league owners. Contact details unlock one player at a time.</p></div>
+            <div class="lg-usage"><div class="lg-pips" id="lgPips"></div><span><strong id="lgRemaining">3</strong> unlocks left today<small>Resets at 00:00 UTC</small></span></div>
           </div>
-          <div class="fl-owner-create" id="ownerPending" hidden>
-            <div><strong>Your listing is with the review team.</strong><p>You can keep browsing while we review your league details.</p></div>
-            <span class="fl-status-pill">Awaiting review</span>
+          <div class="lg-toolbar">
+            <label class="lg-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="pQ" type="search" placeholder="Search player or region" aria-label="Search players" autocomplete="off"></label>
+            <select id="pSort" aria-label="Sort players"><option value="recent">Recently updated</option><option value="ovr">Highest OVR</option></select>
           </div>
+          <div class="lg-filters open-always">
+            <select id="pRegion" aria-label="Region" data-options="regions-any"></select>
+            <select id="pSize" aria-label="Tournament size"><option value="">Any size</option><option>4v4</option><option>8v8</option><option>16v16</option><option>32v32</option></select>
+            <select id="pLang" aria-label="Language" data-options="languages-any"></select>
+            <select id="pOvr" aria-label="Minimum OVR"><option value="50">Any OVR</option><option value="100">100+ OVR</option><option value="110">110+ OVR</option><option value="120">120+ OVR</option><option value="125">125+ OVR</option></select>
+          </div>
+          <div class="lg-meta-row"><span id="lgPlayerResults">Players looking for a league</span><span class="lg-note">UID and Discord stay hidden until you unlock a contact.</span></div>
+          <div id="lgPlayerGrid" class="lg-grid lg-grid-sm"></div>
+          <div class="lg-empty" id="lgPlayerEmpty" hidden><span class="lg-empty-icon" aria-hidden="true">⌕</span><h3>No players match those filters.</h3><p>Try a wider region or tournament-size filter.</p></div>
         </section>
+
+        <!-- OWNER DESK -->
+        <section class="lg-panel" id="panelOwner" role="tabpanel" hidden></section>
       </div>
 
-      <section class="fl-listing-editor" id="listingEditor" hidden>
-        <div class="fl-editor-heading"><button class="fl-back" type="button" id="cancelListing">← Back to leagues</button><span class="fl-eyebrow"><span></span> CLUB APPLICATION</span><h2>Put your league on the board.</h2><p>Clear, accurate details attract the players who actually fit your club. Your listing goes live after approval.</p></div>
-        <form id="listingForm" class="fl-form">
-          <div class="fl-form-grid">
-            <label class="fl-field"><span>League name <b>*</b></span><input name="name" required minlength="3" maxlength="70" placeholder="Your club's name"></label>
-            <label class="fl-field"><span>League UID / in-game ID</span><input name="leagueGameId" maxlength="64" placeholder="Optional"></label>
-            <label class="fl-field"><span>Region / server <b>*</b></span><select name="regionServer" required><option value="">Choose region</option><option>Asia</option><option>Europe</option><option>North America</option><option>South America</option><option>Africa</option><option>Middle East</option><option>Other</option></select></label>
-            <label class="fl-field"><span>Minimum OVR <b>*</b></span><input name="minOvr" type="number" min="50" max="200" required placeholder="e.g. 115"></label>
-            <label class="fl-field"><span>Tournament rhythm <b>*</b></span><select name="tournamentFrequency" required><option value="daily">Daily</option><option value="most_days">Most days</option><option value="several_weekly">Several times a week</option><option value="weekly">Weekly</option><option value="occasional">Occasional</option></select></label>
-            <label class="fl-field"><span>Player commitment <b>*</b></span><select name="playerCommitment" required><option value="casual">Casual, no pressure</option><option value="regular" selected>Regular play</option><option value="competitive">Competitive</option></select></label>
-            <label class="fl-field"><span>Open spots <b>*</b></span><input name="openSpots" type="number" min="0" max="50" required value="5"></label>
-            <label class="fl-field"><span>Discord invite link <small>Optional</small></span><input name="discordInviteUrl" type="url" placeholder="https://discord.gg/..." maxlength="500"></label>
-            <label class="fl-field"><span>Public Discord contact <small>Optional</small></span><input name="contactDiscord" maxlength="100" placeholder="@clubadmin or Discord handle"></label>
+      <!-- LISTING EDITOR -->
+      <section class="lg-setup" id="lgEditor" hidden>
+        <div class="lg-setup-main">
+          <div class="lg-panel-head">
+            <div>
+              <button class="lg-back" type="button" id="lgEditorBack">← Back to owner desk</button>
+              <span class="lg-eyebrow"><i></i> CLUB APPLICATION</span>
+              <h2 id="lgEditorTitle">Put your league on the board.</h2>
+              <p>Clear, accurate details attract the players who actually fit your club. Every listing is reviewed before it goes live.</p>
+            </div>
           </div>
-          <label class="fl-field"><span>Describe your league <b>*</b></span><textarea name="description" required minlength="20" maxlength="700" rows="4" placeholder="Tell players how your club plays, what you expect and what makes it a good fit."></textarea></label>
-          <div class="fl-upload-row">
-            <label class="fl-upload" for="leagueLogoFile"><span class="fl-upload-icon">↑</span><span><strong>League crest</strong><small>Optional JPG, PNG, WebP or GIF · under 8 MB</small></span><input id="leagueLogoFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
-            <div id="leagueLogoPreview" class="fl-logo-preview">FC</div>
-            <input type="hidden" name="logoUrl">
-          </div>
-          <fieldset class="fl-choice-group"><legend>Tournament sizes <b>*</b></legend><div class="fl-choice-row">
-            <label><input type="checkbox" name="tournamentSizes" value="4v4" checked><span>4v4</span></label><label><input type="checkbox" name="tournamentSizes" value="8v8"><span>8v8</span></label><label><input type="checkbox" name="tournamentSizes" value="16v16"><span>16v16</span></label><label><input type="checkbox" name="tournamentSizes" value="32v32"><span>32v32</span></label>
-          </div></fieldset>
-          <fieldset class="fl-choice-group"><legend>Languages used by your league</legend><div class="fl-choice-row">
-            <label><input type="checkbox" name="preferredLanguages" value="English" checked><span>English</span></label><label><input type="checkbox" name="preferredLanguages" value="Bengali"><span>Bengali</span></label><label><input type="checkbox" name="preferredLanguages" value="Indonesian"><span>Indonesian</span></label><label><input type="checkbox" name="preferredLanguages" value="Arabic"><span>Arabic</span></label><label><input type="checkbox" name="preferredLanguages" value="Spanish"><span>Spanish</span></label><label><input type="checkbox" name="preferredLanguages" value="Other"><span>Other</span></label>
-          </div></fieldset>
-          <label class="fl-field"><span>Weekly rewards or perks <small>Optional · describe only what your league actually offers</small></span><textarea name="weeklyRewards" rows="2" maxlength="300" placeholder="Optional rewards, recognition or member perks."></textarea></label>
-          <div class="fl-form-bottom">
-            <label class="fl-check-line"><input type="checkbox" name="discordRequired"><span>Discord is required to join</span></label>
-            <label class="fl-check-line"><input type="checkbox" name="recruitingOpen" checked><span>Open for new members</span></label>
-          </div>
-          <div class="fl-profile-actions"><p>Don't add player UID lists or private member details to the public description.</p><button class="fl-btn fl-btn-primary" type="submit" id="submitListingBtn">Submit for approval <span aria-hidden="true">→</span></button></div>
-          <div class="fl-form-message" id="listingMessage" role="status"></div>
-        </form>
+          <form id="lgListingForm" class="lg-form" novalidate>
+            <div class="lg-grid-2">
+              <label class="lg-field"><span>League name <b>*</b></span><input name="name" required minlength="3" maxlength="70" placeholder="Your club's name"><small class="lg-help" id="lgNameHelp" hidden>The name is locked after submission so players and reviewers see a stable identity.</small></label>
+              <label class="lg-field"><span>Tagline <small>Optional · shown on the card</small></span><input name="tagline" maxlength="100" placeholder="e.g. Daily 8v8 · friendly competitive core"></label>
+              <label class="lg-field"><span>Region / server <b>*</b></span><select name="regionServer" required data-options="regions"></select></label>
+              <label class="lg-field"><span>Minimum OVR <b>*</b></span><input name="minOvr" type="number" inputmode="numeric" min="50" max="200" required placeholder="e.g. 115"></label>
+              <label class="lg-field"><span>Tournament rhythm <b>*</b></span>
+                <select name="tournamentFrequency" required><option value="daily">Daily</option><option value="most_days">Most days</option><option value="several_weekly">Several times a week</option><option value="weekly">Weekly</option><option value="occasional">Occasional</option></select>
+              </label>
+              <label class="lg-field"><span>Player commitment <b>*</b></span>
+                <select name="playerCommitment" required><option value="casual">Casual, no pressure</option><option value="regular" selected>Regular play</option><option value="competitive">Competitive</option></select>
+              </label>
+              <label class="lg-field"><span>Open spots <b>*</b></span><input name="openSpots" type="number" inputmode="numeric" min="0" max="50" required value="5"></label>
+              <label class="lg-field"><span>Usual active hours <small>Optional</small></span><input name="activeHours" maxlength="60" placeholder="e.g. 18:00–23:00 UTC"></label>
+              <label class="lg-field"><span>League UID / in-game ID <small>Optional</small></span><input name="leagueGameId" maxlength="64" placeholder="Optional"></label>
+              <label class="lg-field"><span>Discord invite link <small>Optional</small></span><input name="discordInviteUrl" type="url" maxlength="500" placeholder="https://discord.gg/…"></label>
+              <label class="lg-field"><span>Public Discord contact <small>Optional</small></span><input name="contactDiscord" maxlength="100" placeholder="@clubadmin"></label>
+            </div>
+            <label class="lg-field"><span>Describe your league <b>*</b></span><textarea name="description" required minlength="20" maxlength="700" rows="4" placeholder="Tell players how your club plays, what you expect and what makes it a good fit."></textarea></label>
+            <div class="lg-upload-row">
+              <label class="lg-upload" for="lgCrestFile"><span class="lg-upload-icon">↑</span><span><strong>League crest</strong><small>Optional · JPG, PNG, WebP or GIF · under 8 MB</small></span><input id="lgCrestFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+              <input type="hidden" name="logoUrl">
+            </div>
+            <fieldset class="lg-fieldset"><legend>Tournament sizes <b>*</b></legend><div class="lg-chips" data-chips="sizes" data-name="tournamentSizes"></div></fieldset>
+            <fieldset class="lg-fieldset"><legend>Languages used by your league</legend><div class="lg-chips" data-chips="languages" data-name="preferredLanguages"></div></fieldset>
+            <label class="lg-field"><span>Weekly rewards or perks <small>Optional · only what you really offer</small></span><textarea name="weeklyRewards" rows="2" maxlength="300" placeholder="Optional rewards, recognition or member perks."></textarea></label>
+            <div class="lg-checks">
+              <label class="lg-check"><input type="checkbox" name="discordRequired"><span>Discord is required to join</span></label>
+              <label class="lg-check"><input type="checkbox" name="recruitingOpen" checked><span>Open for new members</span></label>
+            </div>
+            <div class="lg-form-foot">
+              <p>Don't put player UID lists or private member details in the public description.</p>
+              <button class="lg-btn lg-btn-primary" type="submit" id="lgListingSave">Submit for review <span aria-hidden="true">→</span></button>
+            </div>
+            <div class="lg-msg" id="lgListingMsg" role="status"></div>
+          </form>
+        </div>
+        <aside class="lg-setup-side">
+          <div class="lg-preview-label">Live preview · how players see it</div>
+          <div id="lgListingPreview"></div>
+        </aside>
       </section>
-
-      <div class="fl-toast" id="toast" role="status" aria-live="polite"></div>
     </div>
+
+    <!-- DETAIL DRAWER -->
+    <div class="lg-backdrop" id="lgBackdrop" hidden></div>
+    <aside class="lg-drawer" id="lgDrawer" role="dialog" aria-modal="true" aria-label="League details" hidden>
+      <button class="lg-drawer-close" id="lgDrawerClose" type="button" aria-label="Close details">✕</button>
+      <div class="lg-drawer-body" id="lgDrawerBody"></div>
+    </aside>
+
+    <!-- REPORT MODAL -->
+    <div class="lg-modal" id="lgReport" role="dialog" aria-modal="true" aria-labelledby="lgReportTitle" hidden>
+      <div class="lg-modal-card">
+        <h3 id="lgReportTitle">Report this league</h3>
+        <p>Reports go straight to the review team. Please only report real problems.</p>
+        <label class="lg-field"><span>Reason</span><select id="lgReportReason" data-options="reasons"></select></label>
+        <label class="lg-field"><span>Details <small>Optional</small></span><textarea id="lgReportDetails" rows="3" maxlength="500" placeholder="What did you notice?"></textarea></label>
+        <div class="lg-modal-actions"><button class="lg-btn lg-btn-quiet" id="lgReportCancel" type="button">Cancel</button><button class="lg-btn lg-btn-primary" id="lgReportSend" type="button">Send report</button></div>
+        <div class="lg-msg" id="lgReportMsg" role="status"></div>
+      </div>
+    </div>
+
+    <div class="lg-toast" id="lgToast" role="status" aria-live="polite"></div>
   </main>
 </BaseLayout>
 
-<style>
-  .fl-page{--fl-bg:#071018;--fl-panel:#0e1924;--fl-panel2:#121f2c;--fl-border:rgba(191,223,241,.12);--fl-border-hi:rgba(76,201,255,.35);--fl-text:#f5f8fb;--fl-muted:#9aabba;--fl-cyan:#4cc9ff;--fl-mint:#7ce7bd;--fl-red:#ff9b91;color:var(--fl-text);padding:clamp(30px,5vw,60px) 0 84px}
-  .fl-wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}
-  .fl-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px;animation:fl-rise .55s cubic-bezier(.2,.7,.2,1) both}
-  .fl-title-block{max-width:680px}
-  .fl-eyebrow{display:inline-flex;align-items:center;gap:9px;color:#86dcff;font-size:10.5px;font-weight:800;letter-spacing:.17em;text-transform:uppercase}
-  .fl-eyebrow>span{width:6px;height:6px;border-radius:50%;background:var(--fl-cyan);box-shadow:0 0 0 4px #4cc9ff19,0 0 12px #4cc9ff7d}
-  .fl-heading h1{margin:12px 0 9px;font:700 clamp(38px,6vw,62px)/.98 'Space Grotesk',Inter,system-ui,sans-serif;letter-spacing:-.065em;color:var(--fl-text)}
-  .fl-heading h1 em{font-style:normal;background:linear-gradient(100deg,#91e6ff 0%,#4cc9ff 55%,#9caaff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .fl-heading p,.fl-directory-head p,.fl-setup-top p,.fl-editor-heading p{margin:0;color:var(--fl-muted);font-size:14px;line-height:1.7}
-  .fl-heading-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
-  .fl-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:43px;padding:0 16px;border:1px solid var(--fl-border);border-radius:12px;text-decoration:none;cursor:pointer;font:700 12.5px/1.2 Inter,system-ui,sans-serif;white-space:nowrap;transition:transform .2s,border-color .2s,background .2s,box-shadow .2s;color:var(--fl-text);background:#0b1620}
-  .fl-btn:hover{transform:translateY(-2px);border-color:#4cc9ff67}
-  .fl-btn:active{transform:translateY(0) scale(.985)}
-  .fl-btn:focus-visible,.fl-tab:focus-visible,.fl-reset:focus-visible{outline:2px solid var(--fl-cyan);outline-offset:3px}
-  .fl-btn-primary{color:#04131c;border-color:#79dfff;background:linear-gradient(140deg,#9ae9ff,#4cc9ff 72%);box-shadow:0 9px 24px -12px #4cc9ff9c,inset 0 1px 0 #ffffff9c}
-  .fl-btn-primary:hover{background:linear-gradient(140deg,#c3f3ff,#65d7ff);box-shadow:0 13px 32px -12px #4cc9ffb3}
-  .fl-btn-quiet{background:transparent;color:#b4c5d1}
-  .fl-btn-outline{background:#10202c;border-color:#274050}
-  .fl-gate{width:min(590px,100%);margin:46px auto 10px;padding:clamp(28px,5vw,48px);text-align:center;border:1px solid transparent;border-radius:25px;background:linear-gradient(150deg,rgba(16,31,44,.96),rgba(8,17,26,.97)) padding-box,linear-gradient(145deg,#4cc9ff6b,#ffffff0b 52%,#8b94ff45) border-box;box-shadow:0 32px 100px -55px #000;animation:fl-rise .5s both}
-  .fl-gate-mark{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 18px;border-radius:18px;background:#4cc9ff10;border:1px solid #4cc9ff3a;color:#83ddff}
-  .fl-gate-mark svg{width:32px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  .fl-gate h2{margin:0 0 10px;font:700 clamp(24px,4vw,32px)/1.13 'Space Grotesk',Inter,sans-serif;letter-spacing:-.045em}
-  .fl-gate p{max-width:440px;margin:0 auto 22px;color:var(--fl-muted);font-size:14px;line-height:1.7}
-  .fl-gate .fl-btn{min-height:48px}
-  #loadingState{padding:36px 20px;background:transparent;border:0;box-shadow:none}
-  #loadingState p{margin:10px 0 0}
-  .fl-spinner{width:28px;height:28px;margin:auto;border:2px solid #4cc9ff24;border-top-color:var(--fl-cyan);border-radius:50%;animation:fl-spin .8s linear infinite}
-  .fl-profile-setup,.fl-listing-editor{padding:clamp(22px,4vw,36px);border:1px solid transparent;border-radius:23px;background:linear-gradient(155deg,rgba(16,29,42,.98),rgba(8,17,26,.98)) padding-box,linear-gradient(145deg,#4cc9ff57,#ffffff0b 58%,#91a2ff32) border-box;box-shadow:0 28px 90px -65px #000;animation:fl-rise .4s both}
-  .fl-setup-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:25px}
-  .fl-setup-top h2,.fl-editor-heading h2{margin:10px 0 8px;font:700 clamp(24px,4vw,34px)/1.08 'Space Grotesk',Inter,sans-serif;letter-spacing:-.05em}
-  .fl-setup-top p,.fl-editor-heading p{max-width:670px}
-  .fl-step{padding:9px 11px;border:1px solid var(--fl-border);border-radius:10px;color:#8aa3b4;font:800 10px/1 Inter,sans-serif;letter-spacing:.12em;white-space:nowrap}
-  .fl-step i{font-style:normal;color:#415a6a;padding:0 3px}
-  .fl-form{display:grid;gap:20px}
-  .fl-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
-  .fl-field{display:grid;gap:8px;min-width:0;color:#d5e2eb;font-size:12px;font-weight:700}
-  .fl-field>span{display:flex;gap:5px;align-items:center}
-  .fl-field b,.fl-choice-group legend b{color:#83deff}
-  .fl-field small{font-weight:500;color:#8197a7}
-  .fl-field input,.fl-field select,.fl-field textarea,.fl-filters select,.fl-search input{width:100%;min-width:0;border:1px solid #ffffff19;border-radius:11px;padding:12px 13px;background:#07121b;color:var(--fl-text);outline:0;font:500 13px/1.4 Inter,system-ui,sans-serif;transition:border-color .18s,box-shadow .18s,background .18s}
-  .fl-field input::placeholder,.fl-field textarea::placeholder,.fl-search input::placeholder{color:#5e7688}
-  .fl-field input:focus,.fl-field select:focus,.fl-field textarea:focus,.fl-filters select:focus,.fl-search:focus-within{border-color:#4cc9ff8c;box-shadow:0 0 0 3px #4cc9ff17}
-  .fl-field textarea{resize:vertical;min-height:88px}
-  .fl-field select option,.fl-filters select option{background:#0b1620;color:#f5f8fb}
-  .fl-choice-group{margin:0;padding:0;border:0;min-width:0}
-  .fl-choice-group legend{margin-bottom:10px;color:#d5e2eb;font-size:12px;font-weight:800}
-  .fl-choice-row{display:flex;gap:8px;flex-wrap:wrap}
-  .fl-choice-row label{position:relative;cursor:pointer}
-  .fl-choice-row input{position:absolute;opacity:0;pointer-events:none}
-  .fl-choice-row span{display:inline-flex;align-items:center;min-height:35px;padding:0 12px;border:1px solid #ffffff17;border-radius:10px;background:#07121b;color:#9eb1c0;font-size:12px;font-weight:650;transition:.18s}
-  .fl-choice-row input:checked+span{border-color:#4cc9ff71;background:#4cc9ff12;color:#a4e7ff;box-shadow:inset 0 0 0 1px #4cc9ff10}
-  .fl-choice-row input:focus-visible+span{outline:2px solid var(--fl-cyan);outline-offset:2px}
-  .fl-profile-actions{display:flex;justify-content:space-between;align-items:center;gap:18px;padding-top:17px;border-top:1px solid var(--fl-border)}
-  .fl-profile-actions p{max-width:570px;margin:0;color:#8298a9;font-size:11.5px;line-height:1.65}
-  .fl-form-message{min-height:0;color:var(--fl-red);font-size:12.5px}
-  .fl-form-message:empty{display:none}
-  .fl-workspace{animation:fl-rise .38s both}
-  .fl-tabs{display:flex;align-items:center;gap:5px;padding:5px;border:1px solid var(--fl-border);border-radius:15px;background:#09141e;margin-bottom:25px}
-  .fl-tab{display:inline-flex;align-items:center;gap:10px;min-height:39px;padding:0 15px;border:1px solid transparent;border-radius:10px;background:transparent;color:#8ea3b2;font:700 12px Inter,system-ui,sans-serif;cursor:pointer;transition:.2s}
-  .fl-tab:hover{color:#dbe8f0;background:#ffffff05}
-  .fl-tab.active{background:linear-gradient(110deg,#4cc9ff15,#8d9fff0b);border-color:#4cc9ff28;color:#eaf8ff;box-shadow:inset 0 0 0 1px #ffffff03}
-  .fl-tab span{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:6px;background:#ffffff0a;color:#8db0c4;font-size:10px}
-  .fl-tabs-spacer{flex:1}
-  .fl-account-chip{display:inline-flex;align-items:center;gap:8px;padding:0 11px;color:#7f96a7;font-size:11px;white-space:nowrap}
-  .fl-account-chip i{width:6px;height:6px;border-radius:50%;background:#70e5b3;box-shadow:0 0 0 4px #70e5b314}
-  .fl-directory-head,.fl-owner-head{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:19px}
-  .fl-directory-head h2,.fl-owner-head h2{margin:0 0 5px;font:700 clamp(24px,3.8vw,31px)/1.08 'Space Grotesk',Inter,sans-serif;letter-spacing:-.045em}
-  .fl-directory-head p{max-width:620px}
-  .fl-filters{display:grid;grid-template-columns:minmax(220px,1.45fr) repeat(4,minmax(120px,.72fr));gap:9px;margin-bottom:15px}
-  .fl-player-filters{grid-template-columns:minmax(220px,1.5fr) repeat(3,minmax(120px,.75fr))}
-  .fl-search{display:flex;align-items:center;gap:9px;min-width:0;border:1px solid #ffffff19;border-radius:11px;background:#09141e;padding-left:12px;transition:border-color .18s,box-shadow .18s}
-  .fl-search svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:#7795a8;stroke-width:1.8;stroke-linecap:round}
-  .fl-search input{padding-left:0;border:0;background:transparent;box-shadow:none!important}
-  .fl-filters select{padding:11px 10px;font-size:11.5px}
-  .fl-results-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 1px 12px;color:#7790a1;font-size:11.5px}
-  .fl-reset{padding:4px 0;border:0;background:transparent;color:#75d8ff;font:700 11px Inter,sans-serif;cursor:pointer}
-  .fl-reset:hover{text-decoration:underline}
-  .fl-league-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-  .fl-league-card,.fl-player-card{position:relative;min-width:0;overflow:hidden;border:1px solid var(--fl-border);border-radius:17px;background:linear-gradient(150deg,rgba(16,30,43,.9),rgba(9,18,27,.97));box-shadow:0 14px 30px -27px #000;transition:transform .22s,border-color .22s,box-shadow .22s;animation:fl-rise .32s both}
-  .fl-league-card:hover,.fl-player-card:hover{transform:translateY(-3px);border-color:#4cc9ff45;box-shadow:0 22px 45px -32px #000,0 0 25px -20px #4cc9ff7c}
-  .fl-card-accent{height:2px;background:linear-gradient(90deg,transparent,#4cc9ff76,#a4b2ff3d,transparent);opacity:.7}
-  .fl-card-inner{padding:17px}
-  .fl-card-top{display:flex;align-items:flex-start;gap:12px}
-  .fl-club-logo,.fl-player-avatar{display:grid;place-items:center;flex:0 0 54px;width:54px;height:54px;border-radius:14px;border:1px solid #4cc9ff2c;background:radial-gradient(circle at 20% 10%,#4cc9ff21,transparent 65%),#0a1721;color:#8de1ff;font:800 14px 'Space Grotesk',Inter,sans-serif;overflow:hidden}
-  .fl-club-logo img,.fl-player-avatar img{display:block;width:100%;height:100%;object-fit:cover}
-  .fl-card-ident{flex:1;min-width:0}
-  .fl-card-ident h3{margin:1px 0 5px;overflow-wrap:anywhere;font:700 17px/1.18 'Space Grotesk',Inter,sans-serif;letter-spacing:-.03em}
-  .fl-card-sub{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:#8299a9;font-size:10.5px}
-  .fl-dot-sep{width:3px;height:3px;border-radius:50%;background:#50697b}
-  .fl-status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #70e5b32a;border-radius:7px;background:#70e5b30d;color:#83e5ba;font-size:9.5px;font-weight:800;white-space:nowrap}
-  .fl-status-pill.pending{border-color:#ffcd7530;background:#ffcd750b;color:#f3cd84}
-  .fl-status-pill.paused,.fl-status-pill.rejected,.fl-status-pill.removed{border-color:#ff9b9129;background:#ff9b910b;color:#ffaaa1}
-  .fl-card-desc{margin:14px 0;color:#afbfcb;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
-  .fl-card-tags{display:flex;gap:6px;flex-wrap:wrap}
-  .fl-tag{display:inline-flex;align-items:center;gap:5px;min-height:25px;padding:0 8px;border:1px solid #ffffff0d;border-radius:7px;background:#ffffff04;color:#a9bdcc;font-size:10px;font-weight:650}
-  .fl-tag.cyan{border-color:#4cc9ff20;background:#4cc9ff08;color:#a2e5ff}
-  .fl-card-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:15px 0 0;padding:12px 0;border-top:1px solid #ffffff0d;border-bottom:1px solid #ffffff0d}
-  .fl-card-stats span{display:block;color:#718a9d;font-size:9.5px;line-height:1.3;margin-bottom:5px}
-  .fl-card-stats strong{display:block;color:#e3edf4;font-size:11.5px;line-height:1.35;overflow-wrap:anywhere}
-  .fl-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px}
-  .fl-owner-line{display:flex;align-items:center;gap:7px;min-width:0;color:#72899a;font-size:10.5px}
-  .fl-owner-line img{width:21px;height:21px;border-radius:50%;object-fit:cover;background:#152838}
-  .fl-owner-line span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .fl-card-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-  .fl-small-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:0 10px;border:1px solid #314757;border-radius:9px;background:#122432;color:#cde7f4;text-decoration:none;font:700 10.5px Inter,sans-serif;cursor:pointer;transition:.18s}
-  .fl-small-btn:hover{border-color:#4cc9ff7c;background:#153044}
-  .fl-small-btn.kickoff{border-color:#4cc9ff66;background:linear-gradient(130deg,#4cc9ff20,#8d9fff0a);color:#a9e7ff}
-  .fl-small-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
-  .fl-small-btn.external{border-color:#4cc9ff2d}
-  .fl-kickoff-icon{font-size:13px}
-  .fl-confirm-note{color:#8a9faf;font-size:10.5px;line-height:1.5}
-  .fl-usage{display:flex;align-items:center;gap:11px;padding:11px 14px;border:1px solid #4cc9ff28;border-radius:13px;background:#4cc9ff08;white-space:nowrap}
-  .fl-usage strong{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#4cc9ff15;color:#9ce6ff;font:700 19px 'Space Grotesk',Inter,sans-serif}
-  .fl-usage span{color:#b9c8d3;font-size:10.5px;line-height:1.45}
-  .fl-usage small{display:block;color:#7e95a6;font-size:9.5px;margin-top:3px}
-  .fl-private-note{color:#698396;font-size:10.5px}
-  .fl-player-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-  .fl-player-card{padding:15px}
-  .fl-player-head{display:flex;align-items:center;gap:10px}
-  .fl-player-avatar{width:44px;height:44px;flex-basis:44px;border-radius:13px;font-size:12px}
-  .fl-player-id{min-width:0;flex:1}
-  .fl-player-id h3{margin:0 0 3px;font:700 14px/1.2 'Space Grotesk',Inter,sans-serif;overflow-wrap:anywhere}
-  .fl-player-id p{margin:0;color:#7f96a7;font-size:10.5px}
-  .fl-player-ovr{padding:6px 8px;border:1px solid #4cc9ff29;border-radius:9px;background:#4cc9ff0b;color:#9ce4ff;font:800 13px 'Space Grotesk',Inter,sans-serif;white-space:nowrap}
-  .fl-player-tags{display:flex;flex-wrap:wrap;gap:5px;margin:13px 0}
-  .fl-player-tags .fl-tag{font-size:9.5px}
-  .fl-player-note{margin:0 0 14px;color:#97abba;font-size:11px;line-height:1.6}
-  .fl-player-reveal{width:100%;justify-content:center}
-  .fl-revealed{margin-top:12px;padding:12px;border:1px solid #70e5b329;border-radius:12px;background:#70e5b308;animation:fl-rise .25s both}
-  .fl-revealed h4{margin:0 0 8px;color:#86e4bc;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-  .fl-revealed dl{display:grid;grid-template-columns:76px minmax(0,1fr);gap:6px 9px;margin:0;font-size:10.5px;overflow-wrap:anywhere}
-  .fl-revealed dt{color:#769183}.fl-revealed dd{margin:0;color:#d6f0e4;overflow-wrap:anywhere}
-  .fl-owner-panel{margin-top:24px;padding:21px;border:1px solid var(--fl-border);border-radius:18px;background:linear-gradient(130deg,#0f1b26,#0a141d)}
-  .fl-owner-head{margin-bottom:18px}
-  .fl-owner-head h2{margin-top:8px}
-  .fl-owner-head p{margin:0;color:#8ba0b0;font-size:11.5px}
-  .fl-owner-mark{display:grid;place-items:center;width:45px;height:45px;border:1px solid #4cc9ff27;border-radius:13px;background:#4cc9ff0b;color:#8edfff;font:800 12px 'Space Grotesk',Inter,sans-serif}
-  .fl-owner-listing{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #ffffff12;border-radius:13px;background:#07121b}
-  .fl-owner-listing-main{flex:1;min-width:0}.fl-owner-listing-main strong{display:block;font:700 13.5px 'Space Grotesk',Inter,sans-serif}.fl-owner-listing-main p{margin:5px 0 0;color:#8197a8;font-size:11px;line-height:1.5}
-  .fl-owner-listing-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
-  .fl-owner-create{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:11px;padding:15px;border:1px dashed #4cc9ff3a;border-radius:13px;background:#4cc9ff05}
-  .fl-owner-create strong{font-size:12.5px}.fl-owner-create p{margin:5px 0 0;color:#8298a8;font-size:11px}
-  .fl-listing-editor{margin-top:18px}
-  .fl-editor-heading{margin-bottom:22px}
-  .fl-editor-heading .fl-back{display:block;margin-bottom:18px;padding:0;border:0;background:transparent;color:#7edbff;font:700 11px Inter,sans-serif;cursor:pointer}
-  .fl-upload-row{display:flex;align-items:center;gap:13px}
-  .fl-upload{display:flex;align-items:center;gap:12px;flex:1;min-height:69px;padding:12px;border:1px dashed #4cc9ff3f;border-radius:13px;background:#07121b;cursor:pointer}
-  .fl-upload-icon{display:grid;place-items:center;width:36px;height:36px;border:1px solid #4cc9ff31;border-radius:10px;color:#93e1ff;font-size:19px}
-  .fl-upload strong{display:block;color:#dce9f1;font-size:11.5px}.fl-upload small{display:block;margin-top:4px;color:#7d94a5;font-size:10px}
-  .fl-upload input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-  .fl-logo-preview{display:grid;place-items:center;width:58px;height:58px;flex:0 0 58px;overflow:hidden;border:1px solid #4cc9ff37;border-radius:14px;background:#0a1924;color:#8ce0ff;font:800 12px 'Space Grotesk',Inter,sans-serif}
-  .fl-logo-preview img{width:100%;height:100%;object-fit:cover}
-  .fl-form-bottom{display:flex;gap:18px;flex-wrap:wrap}
-  .fl-check-line{display:flex;align-items:center;gap:8px;color:#adbecb;font-size:11.5px;cursor:pointer}
-  .fl-check-line input{accent-color:#4cc9ff;width:15px;height:15px}
-  .fl-empty{margin-top:14px;padding:35px 20px;text-align:center;border:1px dashed #ffffff1c;border-radius:16px;background:#09141d}
-  .fl-empty-icon{display:grid;place-items:center;width:38px;height:38px;margin:0 auto 13px;border-radius:12px;border:1px solid #4cc9ff27;background:#4cc9ff09;color:#86dfff;font-size:24px}
-  .fl-empty h3{margin:0 0 7px;font:700 17px 'Space Grotesk',Inter,sans-serif}.fl-empty p{max-width:390px;margin:0 auto 14px;color:#7e95a5;font-size:11.5px;line-height:1.6}
-  .fl-skeleton{height:255px;border-radius:17px;border:1px solid #ffffff0a;background:linear-gradient(100deg,#0b1720 20%,#122331 45%,#0b1720 70%);background-size:220% 100%;animation:fl-shimmer 1.7s linear infinite}
-  .fl-toast{position:fixed;z-index:7000;right:22px;bottom:22px;max-width:min(420px,calc(100% - 40px));padding:13px 16px;border:1px solid #4cc9ff45;border-radius:12px;background:#10202c;color:#eaf7ff;font-size:12px;line-height:1.5;box-shadow:0 20px 60px #0008;opacity:0;transform:translateY(9px);pointer-events:none;transition:opacity .22s,transform .22s}
-  .fl-toast.show{opacity:1;transform:translateY(0)}
-  .fl-toast.error{border-color:#ff9b9160;color:#ffd2cc}
-  [hidden]{display:none!important}
-  @keyframes fl-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes fl-spin{to{transform:rotate(360deg)}}
-  @keyframes fl-shimmer{to{background-position:-220% 0}}
-  @media(max-width:900px){.fl-player-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fl-filters{grid-template-columns:minmax(220px,1.5fr) repeat(2,minmax(130px,.8fr))}.fl-filters select:last-child{grid-column:auto}}
-  @media(max-width:650px){.fl-wrap{width:min(100% - 26px,1180px)}.fl-page{padding-top:28px}.fl-heading{align-items:flex-start;flex-direction:column;gap:16px;margin-bottom:23px}.fl-heading-actions{justify-content:flex-start}.fl-heading h1{font-size:42px}.fl-tabs{flex-wrap:wrap}.fl-tabs-spacer{display:none}.fl-account-chip{margin-left:auto}.fl-directory-head,.fl-owner-head{align-items:flex-start}.fl-directory-head{flex-direction:column}.fl-filters{grid-template-columns:1fr 1fr}.fl-search{grid-column:1/-1}.fl-league-grid{grid-template-columns:1fr}.fl-player-grid{grid-template-columns:1fr}.fl-form-grid{grid-template-columns:1fr}.fl-profile-actions{align-items:stretch;flex-direction:column}.fl-profile-actions .fl-btn{width:100%}.fl-setup-top{flex-direction:column}.fl-step{display:none}.fl-owner-listing{align-items:flex-start;flex-wrap:wrap}.fl-owner-listing-actions{width:100%;justify-content:flex-start}.fl-owner-create{align-items:flex-start;flex-direction:column}.fl-owner-create .fl-btn{width:100%}.fl-usage{white-space:normal}.fl-player-filters select{min-width:0}.fl-results-meta{align-items:flex-start}.fl-private-note{text-align:right;max-width:48%}}
-  @media(max-width:390px){.fl-filters{grid-template-columns:1fr}.fl-search{grid-column:auto}.fl-tabs{align-items:stretch}.fl-tab{flex:1;padding:0 10px}.fl-account-chip{width:100%;padding:7px 8px 3px}.fl-card-stats{gap:5px}.fl-card-stats strong{font-size:10.5px}}
-  @media(prefers-reduced-motion:reduce){.fl-page *{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+<style is:global>
+  .lg-root{--bg:#071018;--s1:#0b1620;--s2:#0f1c28;--s3:#14263a;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--text:#f5f8fb;--muted:#93a7b7;--dim:#667f92;--cyan:#4cc9ff;--cyan2:#9fe6ff;--mint:#6ee7b7;--gold:#f6c453;--violet:#9a8cff;--red:#ff8f86;--amber:#f1c779;position:relative;color:var(--text);padding:clamp(22px,4vw,48px) 0 96px;font-family:Inter,system-ui,sans-serif;overflow-x:clip}
+  .lg-root *,.lg-root *::before,.lg-root *::after{box-sizing:border-box}
+  .lg-root [hidden]{display:none!important}
+  .lg-root h1,.lg-root h2,.lg-root h3,.lg-root h4{font-family:'Space Grotesk',Inter,system-ui,sans-serif;margin:0}
+  .lg-root p{margin:0}
+  .lg-root button,.lg-root input,.lg-root select,.lg-root textarea{font-family:inherit}
+  .lg-aurora{position:absolute;inset:0 0 auto 0;height:560px;pointer-events:none;background:radial-gradient(520px 260px at 12% 0,rgba(76,201,255,.16),transparent 70%),radial-gradient(480px 240px at 92% 8%,rgba(154,140,255,.12),transparent 70%)}
+  .lg-wrap{position:relative;width:min(1200px,calc(100% - 36px));margin:0 auto}
+  body.lg-lock{overflow:hidden}
+
+  /* hero */
+  .lg-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:30px;animation:lg-rise .55s cubic-bezier(.2,.7,.2,1) both}
+  .lg-hero-copy{max-width:700px}
+  .lg-eyebrow{display:inline-flex;align-items:center;gap:9px;color:#86dcff;font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+  .lg-eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px #4cc9ff1c,0 0 14px #4cc9ff80}
+  .lg-hero h1{margin:14px 0 12px;font-size:clamp(36px,5.6vw,60px);line-height:1;letter-spacing:-.06em;font-weight:700}
+  .lg-hero h1 em{font-style:normal;background:linear-gradient(100deg,#b3efff 0%,#4cc9ff 52%,#9a8cff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lg-hero p{color:var(--muted);font-size:15px;line-height:1.7;max-width:560px}
+  .lg-hero-side{display:grid;gap:12px;justify-items:end}
+  .lg-stats{display:flex;border:1px solid var(--line);border-radius:16px;background:linear-gradient(160deg,rgba(18,33,47,.8),rgba(8,16,24,.9));overflow:hidden}
+  .lg-stats>div{padding:12px 20px;text-align:left;min-width:92px}
+  .lg-stats>div+div{border-left:1px solid var(--line)}
+  .lg-stats strong{display:block;font:700 24px/1.1 'Space Grotesk',sans-serif;letter-spacing:-.03em}
+  .lg-stats span{display:block;margin-top:4px;color:var(--dim);font-size:10.5px;font-weight:600;letter-spacing:.02em}
+  .lg-me{display:flex;align-items:center;gap:11px;padding:8px 8px 8px 10px;border:1px solid var(--line);border-radius:14px;background:#0a141d}
+  .lg-me .lg-avatar{width:36px;height:36px;flex:0 0 36px;border-radius:11px}
+  .lg-me-txt{min-width:0}.lg-me-txt b{display:block;font-size:12.5px;line-height:1.2;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lg-me-txt small{display:block;color:var(--muted);font-size:10.5px;margin-top:2px}
+
+  /* buttons */
+  .lg-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:0 17px;border:1px solid var(--line2);border-radius:12px;background:#0d1923;color:var(--text);text-decoration:none;cursor:pointer;font:700 12.5px/1 Inter,sans-serif;white-space:nowrap;transition:transform .18s,border-color .18s,background .18s,box-shadow .18s}
+  .lg-btn:hover{transform:translateY(-2px);border-color:#4cc9ff66}
+  .lg-btn:active{transform:none}
+  .lg-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .lg-btn:focus-visible,.lg-tab:focus-visible,.lg-link:focus-visible,.lg-icon-btn:focus-visible,.lg-card button:focus-visible,.lg-card a:focus-visible,.lg-drawer button:focus-visible,.lg-drawer a:focus-visible,.lg-back:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+  .lg-btn-primary{color:#04131c;border-color:#7be0ff;background:linear-gradient(140deg,#a6edff,#4cc9ff 70%);box-shadow:0 10px 26px -12px #4cc9ffa8,inset 0 1px 0 #ffffffa6}
+  .lg-btn-primary:hover{background:linear-gradient(140deg,#c9f4ff,#69d8ff);box-shadow:0 14px 34px -12px #4cc9ffbb}
+  .lg-btn-outline{background:#10202c;border-color:#27465a}
+  .lg-btn-quiet{background:transparent;color:#b4c5d1}
+  .lg-btn-gold{color:#241a02;border-color:#f6d783;background:linear-gradient(140deg,#ffe9a6,#f6c453)}
+  .lg-btn-danger{color:#ffc0b7;background:#231519;border-color:#5b3438}
+  .lg-btn-lg{min-height:50px;padding:0 24px;font-size:13.5px}
+  .lg-btn-sm{min-height:34px;padding:0 12px;font-size:11.5px;border-radius:10px;gap:7px}
+  .lg-link{border:0;background:transparent;color:#75d8ff;font:700 11.5px Inter,sans-serif;cursor:pointer;padding:3px 0}
+  .lg-link:hover{text-decoration:underline}
+  .lg-icon-btn{display:inline-grid;place-items:center;width:34px;height:34px;border:1px solid var(--line2);border-radius:10px;background:#0d1923;color:#b9cad6;cursor:pointer;transition:.18s}
+  .lg-icon-btn:hover{border-color:#4cc9ff66;color:#fff}
+  .lg-icon-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .lg-icon-btn.on{color:#ff9fb6;border-color:#ff9fb655;background:#2a1420}
+  .lg-icon-btn.on svg{fill:currentColor}
+
+  /* gate / loading / empty */
+  .lg-gate{width:min(620px,100%);margin:34px auto 6px;padding:clamp(28px,5vw,48px);text-align:center;border:1px solid transparent;border-radius:26px;background:linear-gradient(150deg,rgba(16,31,44,.96),rgba(8,17,26,.98)) padding-box,linear-gradient(145deg,#4cc9ff6b,#ffffff0b 52%,#9a8cff45) border-box;box-shadow:0 34px 100px -55px #000;animation:lg-rise .5s both}
+  .lg-gate-mark{display:grid;place-items:center;width:60px;height:60px;margin:0 auto 18px;border-radius:19px;background:#4cc9ff10;border:1px solid #4cc9ff3a;color:#83ddff;font:700 26px 'Space Grotesk',sans-serif}
+  .lg-gate-mark.warn{color:var(--amber);border-color:#f1c77940;background:#f1c7790f}
+  .lg-gate-mark svg{width:32px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .lg-gate h2{font-size:clamp(24px,4vw,32px);line-height:1.12;letter-spacing:-.045em;margin-bottom:10px}
+  .lg-gate>p{max-width:440px;margin:0 auto 22px;color:var(--muted);font-size:14px;line-height:1.7}
+  .lg-gate-points{list-style:none;display:grid;gap:8px;margin:0 0 24px;padding:0;text-align:left}
+  .lg-gate-points li{display:flex;flex-direction:column;gap:2px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:#09131c}
+  .lg-gate-points b{font-size:12.5px}.lg-gate-points span{color:var(--muted);font-size:11.5px}
+  .lg-loading{animation:lg-rise .3s both}
+  .lg-skel-row{display:flex;gap:10px;margin-bottom:18px}
+  .lg-skel-row i,.lg-skel{display:block;border:1px solid #ffffff0a;background:linear-gradient(100deg,#0b1720 20%,#13242f 45%,#0b1720 70%);background-size:220% 100%;animation:lg-shimmer 1.6s linear infinite}
+  .lg-skel-row i{height:40px;flex:1;border-radius:12px}
+  .lg-skel{height:300px;border-radius:20px}
+  .lg-empty{margin-top:16px;padding:44px 20px;text-align:center;border:1px dashed #ffffff1f;border-radius:20px;background:#09141d}
+  .lg-empty-icon{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 14px;border-radius:14px;border:1px solid #4cc9ff2a;background:#4cc9ff0a;color:#86dfff;font-size:24px}
+  .lg-empty h3{font-size:18px;margin-bottom:7px}.lg-empty p{max-width:400px;margin:0 auto 16px;color:var(--muted);font-size:12.5px;line-height:1.6}
+
+  /* tabs */
+  .lg-tabs{display:flex;gap:4px;padding:5px;margin-bottom:22px;border:1px solid var(--line);border-radius:16px;background:#09141d;overflow-x:auto;scrollbar-width:none}
+  .lg-tabs::-webkit-scrollbar{display:none}
+  .lg-tab{display:inline-flex;align-items:center;gap:9px;min-height:40px;padding:0 16px;border:1px solid transparent;border-radius:11px;background:transparent;color:#8ea3b2;font:700 12.5px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:.18s}
+  .lg-tab:hover{color:#dbe8f0;background:#ffffff06}
+  .lg-tab.active{background:linear-gradient(110deg,#4cc9ff17,#9a8cff0d);border-color:#4cc9ff2b;color:#eaf8ff}
+  .lg-tab em{font-style:normal;display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:7px;background:#ffffff0c;color:#9ec0d2;font-size:10.5px}
+  .lg-tab .lg-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px #f1c77920}
+  .lg-tab .lg-dot.live{background:var(--mint);box-shadow:0 0 0 3px #6ee7b720}
+  .lg-tab-spacer{flex:1}
+
+  /* toolbar + filters */
+  .lg-toolbar{display:flex;gap:9px;margin-bottom:10px}
+  .lg-search{display:flex;align-items:center;gap:10px;flex:1;min-width:0;padding-left:14px;border:1px solid #ffffff1c;border-radius:13px;background:#09141e;transition:border-color .18s,box-shadow .18s}
+  .lg-search:focus-within{border-color:#4cc9ff8c;box-shadow:0 0 0 3px #4cc9ff17}
+  .lg-search svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:#7795a8;stroke-width:1.8;stroke-linecap:round}
+  .lg-search input{width:100%;min-width:0;padding:13px 14px 13px 0;border:0;background:transparent;color:var(--text);outline:0;font:500 13.5px Inter,sans-serif}
+  .lg-search input::placeholder{color:#5d7587}
+  .lg-root select,.lg-field input,.lg-field textarea{width:100%;min-width:0;border:1px solid #ffffff1c;border-radius:12px;padding:12px 13px;background:#07121b;color:var(--text);outline:0;font:500 13px/1.4 Inter,sans-serif;transition:border-color .18s,box-shadow .18s}
+  .lg-root select{width:auto;padding:0 12px;height:46px;background:#09141e;font-size:12.5px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,#7d97a9 50%),linear-gradient(135deg,#7d97a9 50%,transparent 50%);background-position:calc(100% - 17px) 20px,calc(100% - 12px) 20px;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
+  .lg-field select{width:100%;height:auto;padding-top:12px;padding-bottom:12px;background-color:#07121b;background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%}
+  .lg-root select:focus,.lg-field input:focus,.lg-field textarea:focus{border-color:#4cc9ff8c;box-shadow:0 0 0 3px #4cc9ff17}
+  .lg-root select option{background:#0b1620;color:#f5f8fb}
+  .lg-filter-toggle{display:none;height:46px}
+  .lg-filter-toggle span{display:inline-grid;place-items:center;min-width:19px;height:19px;border-radius:6px;background:var(--cyan);color:#04131c;font-size:10.5px}
+  .lg-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .lg-filters select{height:40px;font-size:12px;background-position:calc(100% - 17px) 17px,calc(100% - 12px) 17px}
+  .lg-switch-chip{position:relative;cursor:pointer}
+  .lg-switch-chip input{position:absolute;opacity:0;pointer-events:none}
+  .lg-switch-chip span{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 13px;border:1px solid #ffffff1c;border-radius:12px;background:#09141e;color:#9db1c0;font-size:12px;font-weight:650;transition:.18s}
+  .lg-switch-chip span::before{content:"";width:14px;height:14px;border-radius:5px;border:1.5px solid #4d6779;transition:.18s}
+  .lg-switch-chip input:checked+span{border-color:#4cc9ff6e;background:#4cc9ff12;color:#b0eaff}
+  .lg-switch-chip input:checked+span::before{background:var(--cyan);border-color:var(--cyan);box-shadow:inset 0 0 0 2.5px #09141e}
+  .lg-switch-chip input:focus-visible+span{outline:2px solid var(--cyan);outline-offset:2px}
+  .lg-meta-row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:4px 2px 14px;color:#7f97a8;font-size:12px}
+  .lg-meta-actions{display:flex;gap:16px}
+  .lg-note{color:var(--dim);font-size:11px}
+
+  /* grids */
+  .lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+  .lg-grid-sm{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+  .lg-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+  .lg-featured{margin-bottom:22px;padding:16px 0 4px}
+  .lg-rail-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}.lg-rail-head small{color:var(--dim);font-size:11.5px}
+  .lg-rail{display:flex;gap:16px;overflow-x:auto;padding:4px 2px 14px;scroll-snap-type:x proximity;scrollbar-width:thin}
+  .lg-rail>.lg-card{flex:0 0 min(380px,86vw);scroll-snap-align:start}
+
+  /* badges */
+  .lg-badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border:1px solid #ffffff12;border-radius:7px;background:#ffffff07;color:#b9cad6;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+  .lg-badge.gold{color:#ffe29a;border-color:#f6c45344;background:linear-gradient(120deg,#f6c4531c,#f6c45308)}
+  .lg-badge.cyan{color:#a6e8ff;border-color:#4cc9ff3a;background:#4cc9ff10}
+  .lg-badge.mint{color:#9af0cf;border-color:#6ee7b73a;background:#6ee7b710}
+  .lg-badge.amber{color:#f4d794;border-color:#f1c77940;background:#f1c7790e}
+  .lg-badge.red{color:#ffb5ac;border-color:#ff8f8640;background:#ff8f860e}
+  .lg-pulse{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 0 #4cc9ff99;animation:lg-pulse 1.8s infinite}
+  .lg-verified{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:linear-gradient(140deg,#8fe9ff,#4cc9ff);color:#04131c;vertical-align:middle;flex:0 0 17px}
+  .lg-verified svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* crest / avatar */
+  .lg-crest,.lg-avatar{position:relative;display:grid;place-items:center;flex:0 0 58px;width:58px;height:58px;overflow:hidden;border-radius:16px;border:1px solid #4cc9ff30;background:radial-gradient(circle at 22% 12%,#4cc9ff26,transparent 65%),#0a1822;color:#8de1ff;font:800 14px 'Space Grotesk',sans-serif}
+  .lg-crest img,.lg-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+  /* league card */
+  .lg-card{position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:linear-gradient(155deg,rgba(18,33,47,.92),rgba(8,17,26,.98));box-shadow:0 18px 40px -30px #000;transition:transform .24s cubic-bezier(.2,.7,.2,1),border-color .24s,box-shadow .24s;animation:lg-rise .4s both;cursor:pointer}
+  .lg-card:hover{transform:translateY(-4px);border-color:#4cc9ff4a;box-shadow:0 28px 54px -34px #000,0 0 40px -22px #4cc9ff90}
+  .lg-card.is-featured{border-color:transparent;background:linear-gradient(155deg,#182638,#0a1520) padding-box,linear-gradient(140deg,#f6c453aa,#ffffff10 40%,#4cc9ff66) border-box;border:1px solid transparent}
+  .lg-card.is-preview{pointer-events:none;cursor:default}
+  .lg-card-glow{height:3px;background:linear-gradient(90deg,transparent,#4cc9ff88,#9a8cff55,transparent)}
+  .lg-card.is-featured .lg-card-glow{background:linear-gradient(90deg,transparent,#f6c453cc,#ffffff30,transparent)}
+  .lg-card-in{display:flex;flex-direction:column;flex:1;padding:18px}
+  .lg-card-top{display:flex;align-items:flex-start;gap:13px}
+  .lg-card-id{flex:1;min-width:0}
+  .lg-card-id h3{display:flex;align-items:center;gap:7px;font-size:18px;line-height:1.2;letter-spacing:-.03em;overflow-wrap:anywhere}
+  .lg-card-sub{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:6px;color:#8aa0b1;font-size:11.5px}
+  .lg-dotsep{width:3px;height:3px;border-radius:50%;background:#52697b}
+  .lg-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+  .lg-tagline{margin:13px 0 0;color:#c4d3de;font-size:13px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+  .lg-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:13px}
+  .lg-tag{display:inline-flex;align-items:center;height:25px;padding:0 9px;border:1px solid #ffffff0f;border-radius:8px;background:#ffffff05;color:#a9bdcc;font-size:10.5px;font-weight:650}
+  .lg-tag.cyan{border-color:#4cc9ff24;background:#4cc9ff0a;color:#a2e5ff}
+  .lg-stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:auto;padding:13px 0;border-top:1px solid #ffffff0d}
+  .lg-card-in>.lg-tags+.lg-stat-row,.lg-card-in>.lg-tagline+.lg-stat-row{margin-top:16px}
+  .lg-stat-row span{display:block;color:var(--dim);font-size:10px;margin-bottom:5px}
+  .lg-stat-row strong{display:block;color:#e6eef4;font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}
+  .lg-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:13px;border-top:1px solid #ffffff0d}
+  .lg-signal{display:flex;align-items:center;gap:7px;min-width:0;color:#7f96a7;font-size:11px}
+  .lg-signal i{flex:0 0 7px;width:7px;height:7px;border-radius:50%;background:#52697b}
+  .lg-signal i.hot{background:var(--mint);box-shadow:0 0 0 3px #6ee7b71c}
+  .lg-signal span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lg-card-actions{display:flex;gap:7px;align-items:center}
+
+  /* match ring */
+  .lg-ring{--p:0;--c:var(--cyan);position:relative;flex:0 0 50px;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),rgba(255,255,255,.08) 0)}
+  .lg-ring::before{content:"";position:absolute;inset:4px;border-radius:50%;background:#0b1620}
+  .lg-ring b{position:relative;font:700 12.5px 'Space Grotesk',sans-serif;letter-spacing:-.02em}
+  .lg-ring small{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);white-space:nowrap;color:var(--dim);font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+  .lg-ring.great{--c:var(--mint)}.lg-ring.good{--c:var(--cyan)}.lg-ring.low{--c:var(--amber)}
+
+  /* player card */
+  .lg-pcard{position:relative;padding:17px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(155deg,rgba(18,33,47,.92),rgba(8,17,26,.98));animation:lg-rise .35s both;transition:border-color .2s,transform .2s}
+  .lg-pcard:hover{border-color:#4cc9ff3e}
+  .lg-pcard-head{display:flex;align-items:center;gap:12px}
+  .lg-pcard .lg-avatar{flex-basis:46px;width:46px;height:46px;border-radius:14px;font-size:12px}
+  .lg-pcard-id{flex:1;min-width:0}.lg-pcard-id h3{font-size:15px;line-height:1.2;overflow-wrap:anywhere}.lg-pcard-id p{margin-top:3px;color:#8197a8;font-size:11px}
+  .lg-ovr{padding:7px 10px;border:1px solid #4cc9ff2e;border-radius:11px;background:#4cc9ff0c;color:#a6e8ff;font:800 14px 'Space Grotesk',sans-serif}
+  .lg-pcard .lg-tags{margin:14px 0 0}
+  .lg-pcard-note{margin-top:12px;color:#9db0be;font-size:11.5px;line-height:1.6;overflow-wrap:anywhere}
+  .lg-pcard .lg-btn{width:100%;margin-top:14px}
+  .lg-revealed{margin-top:13px;padding:13px;border:1px solid #6ee7b730;border-radius:13px;background:#6ee7b709;animation:lg-rise .25s both}
+  .lg-revealed h4{margin-bottom:9px;color:#8be9c0;font:800 10px Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+  .lg-kv{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:7px 9px;align-items:center;font-size:11.5px}
+  .lg-kv dt{color:#769183}.lg-kv dd{margin:0;color:#d9f2e7;overflow-wrap:anywhere}
+  .lg-kv .lg-copy{border:0;background:#ffffff0c;color:#a9d9c3;font:700 10px Inter,sans-serif;padding:4px 8px;border-radius:7px;cursor:pointer}
+  .lg-usage{display:flex;align-items:center;gap:12px;padding:11px 15px;border:1px solid #4cc9ff2a;border-radius:14px;background:#4cc9ff09}
+  .lg-usage strong{font:700 17px 'Space Grotesk',sans-serif;color:#b0eaff}.lg-usage span{color:#b9c8d3;font-size:11.5px;line-height:1.4}.lg-usage small{display:block;color:var(--dim);font-size:10px;margin-top:2px}
+  .lg-pips{display:flex;gap:5px}.lg-pips i{width:9px;height:26px;border-radius:5px;background:#ffffff14}.lg-pips i.on{background:linear-gradient(180deg,#9fe6ff,#4cc9ff);box-shadow:0 0 12px -2px #4cc9ff99}
+
+  /* panels / forms */
+  .lg-panel{animation:lg-rise .35s both}
+  .lg-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:22px}
+  .lg-panel-head h2{margin:10px 0 7px;font-size:clamp(24px,3.6vw,32px);line-height:1.08;letter-spacing:-.05em}
+  .lg-panel-head.slim h2{margin-top:0}
+  .lg-panel-head p{color:var(--muted);font-size:13.5px;line-height:1.7;max-width:640px}
+  .lg-setup{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start;animation:lg-rise .4s both}
+  .lg-setup-main{padding:clamp(20px,3.5vw,34px);border:1px solid transparent;border-radius:26px;background:linear-gradient(155deg,rgba(16,29,42,.98),rgba(8,17,26,.99)) padding-box,linear-gradient(145deg,#4cc9ff55,#ffffff0b 58%,#9a8cff30) border-box}
+  .lg-setup-side{position:sticky;top:92px}
+  .lg-preview-label{margin:0 0 12px 4px;color:var(--dim);font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  .lg-back{display:block;margin-bottom:16px;padding:0;border:0;background:transparent;color:#7edbff;font:700 12px Inter,sans-serif;cursor:pointer}
+  .lg-form{display:grid;gap:20px}
+  .lg-field{display:grid;gap:8px;min-width:0;color:#d5e2eb;font-size:12px;font-weight:700}
+  .lg-field>span{display:flex;gap:6px;align-items:center}
+  .lg-field b,.lg-fieldset legend b{color:#83deff}
+  .lg-field small{font-weight:500;color:#7f95a6;font-size:11px}
+  .lg-help{margin-top:-2px;color:var(--amber)!important}
+  .lg-field input::placeholder,.lg-field textarea::placeholder{color:#58707f}
+  .lg-field input:disabled{opacity:.6;cursor:not-allowed}
+  .lg-field textarea{resize:vertical;min-height:90px}
+  .lg-fieldset{margin:0;padding:0;border:0;min-width:0}
+  .lg-fieldset legend{margin-bottom:10px;padding:0;color:#d5e2eb;font-size:12px;font-weight:800}
+  .lg-chips{display:flex;gap:8px;flex-wrap:wrap}
+  .lg-chip{position:relative;cursor:pointer}
+  .lg-chip input{position:absolute;opacity:0;pointer-events:none}
+  .lg-chip span{display:inline-flex;align-items:center;min-height:36px;padding:0 13px;border:1px solid #ffffff18;border-radius:11px;background:#07121b;color:#9eb1c0;font-size:12px;font-weight:650;transition:.18s}
+  .lg-chip:hover span{border-color:#4cc9ff45}
+  .lg-chip input:checked+span{border-color:#4cc9ff77;background:#4cc9ff14;color:#a9e9ff}
+  .lg-chip input:focus-visible+span{outline:2px solid var(--cyan);outline-offset:2px}
+  .lg-upload-row{display:flex;align-items:center}
+  .lg-upload{display:flex;align-items:center;gap:13px;flex:1;min-height:70px;padding:13px;border:1px dashed #4cc9ff44;border-radius:15px;background:#07121b;cursor:pointer;transition:border-color .18s,background .18s}
+  .lg-upload:hover{border-color:#4cc9ff88;background:#0a1823}
+  .lg-upload-icon{display:grid;place-items:center;width:38px;height:38px;border:1px solid #4cc9ff33;border-radius:11px;color:#93e1ff;font-size:19px}
+  .lg-upload strong{display:block;color:#dce9f1;font-size:12px}.lg-upload small{display:block;margin-top:4px;color:#7d94a5;font-size:10.5px}
+  .lg-upload input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .lg-checks{display:flex;gap:20px;flex-wrap:wrap}
+  .lg-check{display:flex;align-items:center;gap:9px;color:#adbecb;font-size:12px;cursor:pointer}
+  .lg-check input{accent-color:#4cc9ff;width:16px;height:16px}
+  .lg-form-foot{display:flex;justify-content:space-between;align-items:center;gap:18px;padding-top:18px;border-top:1px solid var(--line)}
+  .lg-form-foot p{max-width:520px;color:#8298a9;font-size:11.5px;line-height:1.65}
+  .lg-msg{min-height:0;font-size:12.5px;color:var(--red)}.lg-msg:empty{display:none}.lg-msg.ok{color:#87e5b8}
+
+  /* owner desk */
+  .lg-owner-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:20px;align-items:start}
+  .lg-box{padding:20px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(155deg,rgba(16,29,42,.9),rgba(9,18,27,.97))}
+  .lg-box+.lg-box{margin-top:16px}
+  .lg-box h3{font-size:15px;letter-spacing:-.02em;margin-bottom:4px}
+  .lg-box>p,.lg-box-sub{color:var(--muted);font-size:12px;line-height:1.6}
+  .lg-steps{display:flex;align-items:center;margin:16px 0 4px}
+  .lg-step{display:flex;align-items:center;gap:9px;flex:0 0 auto;color:var(--dim);font-size:11.5px;font-weight:700}
+  .lg-step i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid #3c5668;font-style:normal;font-size:11px}
+  .lg-step.done{color:#9ef0d2}.lg-step.done i{background:var(--mint);border-color:var(--mint);color:#06241a}
+  .lg-step.now{color:#fff}.lg-step.now i{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 0 4px #4cc9ff1c}
+  .lg-step.warn{color:var(--amber)}.lg-step.warn i{border-color:var(--amber);color:var(--amber);box-shadow:0 0 0 4px #f1c77918}
+  .lg-step-line{flex:1;min-width:16px;height:2px;margin:0 10px;border-radius:2px;background:#ffffff14}
+  .lg-step-line.done{background:linear-gradient(90deg,var(--mint),#6ee7b755)}
+  .lg-callout{margin-top:14px;padding:13px 15px;border-radius:14px;border:1px solid #f1c77938;background:#f1c7790b;color:#ecd6a1;font-size:12.5px;line-height:1.6}
+  .lg-callout strong{display:block;margin-bottom:3px;color:#f6e1b0}
+  .lg-callout.red{border-color:#ff8f8638;background:#ff8f860a;color:#ffc7c1}.lg-callout.red strong{color:#ffd9d4}
+  .lg-callout.cyan{border-color:#4cc9ff33;background:#4cc9ff09;color:#bfeeff}
+  .lg-insights{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .lg-insights div{padding:13px;border:1px solid var(--line);border-radius:14px;background:#08121a}
+  .lg-insights strong{display:block;font:700 24px/1.1 'Space Grotesk',sans-serif;letter-spacing:-.03em}.lg-insights span{display:block;margin-top:5px;color:var(--dim);font-size:10.5px;line-height:1.35}
+  .lg-ctrl{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0}
+  .lg-ctrl+.lg-ctrl{border-top:1px solid var(--line)}
+  .lg-ctrl b{display:block;font-size:12.5px}.lg-ctrl small{display:block;margin-top:3px;color:var(--dim);font-size:11px;line-height:1.5;max-width:300px}
+  .lg-stepper{display:flex;align-items:center;gap:6px}.lg-stepper output{min-width:34px;text-align:center;font:700 17px 'Space Grotesk',sans-serif}
+  .lg-toggle{position:relative;width:46px;height:26px;border:0;border-radius:99px;background:#2a3f4e;cursor:pointer;transition:.2s;flex:0 0 46px}
+  .lg-toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+  .lg-toggle[aria-checked="true"]{background:linear-gradient(140deg,#7be0ff,#4cc9ff)}
+  .lg-toggle[aria-checked="true"]::after{transform:translateX(20px)}
+  .lg-toggle:disabled{opacity:.5;cursor:wait}
+  .lg-toggle:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+  .lg-cd{font-variant-numeric:tabular-nums;color:#a6e8ff;font-weight:700}
+  .lg-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+
+  /* drawer */
+  .lg-backdrop{position:fixed;inset:0;z-index:8990;background:rgba(3,8,13,.66);backdrop-filter:blur(5px);animation:lg-fade .2s both}
+  .lg-drawer{position:fixed;z-index:9000;top:0;right:0;bottom:0;width:min(520px,100%);display:flex;flex-direction:column;border-left:1px solid var(--line2);background:linear-gradient(170deg,#0f1d2a,#08121a);box-shadow:-40px 0 90px -30px #000;animation:lg-slide .28s cubic-bezier(.2,.8,.2,1) both}
+  .lg-drawer-close{position:absolute;z-index:3;top:14px;right:14px;width:36px;height:36px;border:1px solid var(--line2);border-radius:11px;background:#0d1923cc;color:#c9d9e4;cursor:pointer;font-size:13px;backdrop-filter:blur(8px)}
+  .lg-drawer-close:hover{border-color:#4cc9ff77;color:#fff}
+  .lg-drawer-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:0 0 110px}
+  .lg-d-hero{position:relative;padding:30px 24px 22px;background:radial-gradient(420px 200px at 0 0,#4cc9ff1f,transparent 70%),radial-gradient(300px 180px at 100% 0,#9a8cff17,transparent 70%)}
+  .lg-d-hero.is-featured{background:radial-gradient(420px 200px at 0 0,#f6c4532b,transparent 70%),radial-gradient(300px 180px at 100% 0,#4cc9ff14,transparent 70%)}
+  .lg-d-id{display:flex;gap:15px;align-items:center;padding-right:44px}
+  .lg-d-id .lg-crest{flex-basis:70px;width:70px;height:70px;border-radius:20px;font-size:17px}
+  .lg-d-id h2{display:flex;align-items:center;gap:8px;font-size:23px;line-height:1.15;letter-spacing:-.04em;overflow-wrap:anywhere}
+  .lg-d-id p{margin-top:6px;color:var(--muted);font-size:12.5px}
+  .lg-d-sec{padding:20px 24px;border-top:1px solid var(--line)}
+  .lg-d-sec h4{margin-bottom:12px;color:var(--dim);font:800 10.5px Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+  .lg-d-desc{color:#c7d6e1;font-size:13.5px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+  .lg-d-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .lg-d-grid div{padding:12px 13px;border:1px solid var(--line);border-radius:13px;background:#08121a}
+  .lg-d-grid span{display:block;color:var(--dim);font-size:10.5px;margin-bottom:5px}
+  .lg-d-grid strong{display:block;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+  .lg-match{display:flex;gap:16px;align-items:center}
+  .lg-match .lg-ring{flex-basis:72px;width:72px;height:72px}.lg-match .lg-ring::before{inset:6px}.lg-match .lg-ring b{font-size:17px}.lg-match .lg-ring small{display:none}
+  .lg-match h5{margin:0 0 3px;font:700 15px 'Space Grotesk',sans-serif}.lg-match p{color:var(--muted);font-size:12px}
+  .lg-why{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:7px}
+  .lg-why li{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:#cbdae4;line-height:1.45}
+  .lg-why li::before{content:"✓";flex:0 0 18px;display:grid;place-items:center;height:18px;margin-top:1px;border-radius:50%;background:#6ee7b71c;color:#8be9c0;font-size:10px;font-weight:800}
+  .lg-why li.gap{color:#e5c9a0}.lg-why li.gap::before{content:"!";background:#f1c7791a;color:var(--amber)}
+  .lg-trust{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid #6ee7b730;border-radius:14px;background:#6ee7b708}
+  .lg-trust i{flex:0 0 9px;width:9px;height:9px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 4px #6ee7b71c}
+  .lg-trust.cold{border-color:var(--line);background:#08121a}.lg-trust.cold i{background:#52697b;box-shadow:none}
+  .lg-trust b{display:block;font-size:12.5px}.lg-trust small{display:block;margin-top:2px;color:var(--muted);font-size:11.5px}
+  .lg-owner-row{display:flex;align-items:center;gap:11px;font-size:12.5px;color:#c4d3de}.lg-owner-row .lg-avatar{flex-basis:34px;width:34px;height:34px;border-radius:50%}
+  .lg-d-bar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line2);background:linear-gradient(180deg,#0b1621e8,#08121af5);backdrop-filter:blur(14px)}
+  .lg-d-bar .lg-btn-primary{flex:1;min-width:150px}
+  .lg-d-links{display:flex;gap:16px;margin-top:14px}
+
+  /* modal + toast */
+  .lg-modal{position:fixed;inset:0;z-index:9100;display:grid;place-items:center;padding:18px;background:rgba(3,8,13,.72);backdrop-filter:blur(6px);animation:lg-fade .2s both}
+  .lg-modal-card{width:min(440px,100%);display:grid;gap:15px;padding:24px;border:1px solid var(--line2);border-radius:22px;background:linear-gradient(160deg,#112030,#09131c);box-shadow:0 40px 100px -30px #000}
+  .lg-modal-card h3{font-size:20px;letter-spacing:-.03em}.lg-modal-card>p{color:var(--muted);font-size:12.5px;line-height:1.6;margin-top:-8px}
+  .lg-modal-card select{width:100%;height:auto;padding-top:12px;padding-bottom:12px;background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%}
+  .lg-modal-actions{display:flex;justify-content:flex-end;gap:8px}
+  .lg-toast{position:fixed;z-index:9200;left:50%;bottom:24px;max-width:min(440px,calc(100% - 32px));padding:13px 18px;border:1px solid #4cc9ff4a;border-radius:14px;background:#10212e;color:#eaf7ff;font-size:12.5px;line-height:1.5;box-shadow:0 24px 70px #000a;opacity:0;transform:translate(-50%,10px);pointer-events:none;transition:opacity .22s,transform .22s}
+  .lg-toast.show{opacity:1;transform:translate(-50%,0)}
+  .lg-toast.error{border-color:#ff8f8670;color:#ffd5d0}
+
+  @keyframes lg-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes lg-fade{from{opacity:0}to{opacity:1}}
+  @keyframes lg-slide{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes lg-spin{to{transform:rotate(360deg)}}
+  @keyframes lg-shimmer{to{background-position:-220% 0}}
+  @keyframes lg-pulse{0%{box-shadow:0 0 0 0 #4cc9ff99}70%{box-shadow:0 0 0 7px #4cc9ff00}100%{box-shadow:0 0 0 0 #4cc9ff00}}
+
+  @media(max-width:1000px){
+    .lg-setup{grid-template-columns:1fr}.lg-setup-side{position:static;order:-1}
+    .lg-owner-grid{grid-template-columns:1fr}
+  }
+  @media(max-width:760px){
+    .lg-wrap{width:min(100% - 24px,1200px)}
+    .lg-hero{flex-direction:column;align-items:flex-start;gap:18px;margin-bottom:22px}
+    .lg-hero-side{justify-items:stretch;width:100%}.lg-stats>div{flex:1;min-width:0;padding:11px 14px}
+    .lg-me{justify-content:flex-start}
+    .lg-grid,.lg-grid-sm{grid-template-columns:1fr}
+    .lg-grid-2{grid-template-columns:1fr}
+    .lg-filter-toggle{display:inline-flex}
+    .lg-toolbar{flex-wrap:wrap}.lg-toolbar .lg-search{flex:1 1 100%}.lg-toolbar select{flex:1}
+    .lg-filters{display:none;padding:12px;border:1px solid var(--line);border-radius:16px;background:#09141e}
+    .lg-filters.open,.lg-filters.open-always{display:grid;grid-template-columns:1fr 1fr}
+    .lg-filters.open-always{padding:0;border:0;background:none;display:grid;grid-template-columns:1fr 1fr}
+    .lg-filters select{width:100%}.lg-switch-chip span{width:100%}
+    .lg-meta-row{align-items:flex-start;flex-direction:column;gap:6px}
+    .lg-form-foot{flex-direction:column;align-items:stretch}.lg-form-foot .lg-btn{width:100%}
+    .lg-panel-head{flex-direction:column}
+    .lg-insights{grid-template-columns:1fr 1fr 1fr}
+    .lg-drawer{width:100%;top:auto;height:min(94dvh,100%);border-left:0;border-top:1px solid var(--line2);border-radius:26px 26px 0 0;animation:lg-sheet .3s cubic-bezier(.2,.8,.2,1) both}
+    .lg-d-grid{grid-template-columns:1fr 1fr}
+    .lg-toast{bottom:16px}
+    .lg-steps{flex-wrap:wrap;row-gap:10px}
+  }
+  @keyframes lg-sheet{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  @media(max-width:420px){.lg-stat-row{gap:5px}.lg-stat-row strong{font-size:11.5px}.lg-card-in{padding:15px}.lg-filters.open,.lg-filters.open-always{grid-template-columns:1fr}}
+  @media(prefers-reduced-motion:reduce){.lg-root *,.lg-drawer,.lg-backdrop,.lg-modal{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 
 <script>
   import { accountAuth } from '../../lib/account-client.js';
 
-  const $ = (selector) => document.querySelector(selector);
-  const state = { session: null, account: null, profile: null, leagues: [], ownListings: [], players: [], canFindPlayers: false, outreachRemaining: 3, activeTab: 'leagues', revealed: new Map(), logoUrl: '', editingListingId: null };
-  const formMessage = (id, message, error = false) => { const node = $(id); if (node) { node.textContent = message || ''; node.style.color = error ? '#ffaaa1' : '#87e5b8'; } };
-  const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-  const fmt = (value) => Number(value || 0).toLocaleString();
-  const initials = (value) => String(value || 'FC').trim().split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase() || 'FC';
-  const labelFrequency = (value) => ({ daily: 'Daily', most_days: 'Most days', several_weekly: 'Several times a week', weekly: 'Weekly', occasional: 'Occasional' })[value] || 'Schedule varies';
-  const labelCommitment = (value) => ({ casual: 'Casual', regular: 'Regular play', competitive: 'Competitive' })[value] || 'Regular play';
-  const toast = (message, error = false) => {
-    const node = $('#toast'); node.textContent = message; node.classList.toggle('error', error); node.classList.add('show');
-    window.clearTimeout(toast.timer); toast.timer = window.setTimeout(() => node.classList.remove('show'), 4200);
+  // ───────────── constants ─────────────
+  const REGIONS = ['Asia', 'Europe', 'North America', 'South America', 'Africa', 'Middle East', 'Other'];
+  const LANGS = ['English', 'Bengali', 'Indonesian', 'Arabic', 'Spanish', 'French', 'Portuguese', 'Other'];
+  const SIZES = ['4v4', '8v8', '16v16', '32v32'];
+  const STYLES = ['Competitive', 'Active and relaxed', 'Casual', 'Quest focused', 'Building a new team'];
+  const AVAIL = ['Daily', 'Most days', 'Weekends', 'Evenings', 'Flexible', 'Casual / whenever'];
+  const FREQ = { daily: 'Daily', most_days: 'Most days', several_weekly: 'Several times a week', weekly: 'Weekly', occasional: 'Occasional' };
+  const COMMIT = { casual: 'Casual', regular: 'Regular play', competitive: 'Competitive' };
+  const STATUS = { looking_for_league: 'Looking for a league', in_a_league: 'In a league', league_owner: 'League owner', not_looking: 'Just browsing' };
+  const REASONS = [['fake_or_misleading', 'Fake or misleading details'], ['inactive', 'League looks inactive'], ['inappropriate', 'Inappropriate content'], ['spam', 'Spam or advertising'], ['other', 'Something else']];
+  const STYLE_COMMIT = { 'Competitive': ['competitive'], 'Active and relaxed': ['regular'], 'Casual': ['casual'], 'Quest focused': ['casual', 'regular'], 'Building a new team': ['casual', 'regular', 'competitive'] };
+  const ALL_FREQ = ['daily', 'most_days', 'several_weekly', 'weekly', 'occasional'];
+  const AVAIL_FREQ = {
+    'Daily': ['daily', 'most_days', 'several_weekly'], 'Most days': ['daily', 'most_days', 'several_weekly', 'weekly'],
+    'Weekends': ['weekly', 'occasional', 'several_weekly'], 'Evenings': ALL_FREQ, 'Flexible': ALL_FREQ, 'Casual / whenever': ['weekly', 'occasional']
+  };
+  const KICKOFF_MS = 6 * 60 * 60 * 1000;
+  const ICON = {
+    check: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+    heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.4-9.3C1.3 7.9 3.3 4.5 6.7 4.5c2 0 3.6 1.1 5.3 3 1.7-1.9 3.3-3 5.3-3 3.4 0 5.4 3.4 4.1 6.7-1.9 4.7-9.4 9.3-9.4 9.3Z"/></svg>'
+  };
+
+  // ───────────── helpers ─────────────
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt = (v) => Number(v || 0).toLocaleString();
+  const initials = (v) => String(v || 'FC').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || 'FC';
+  const same = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase();
+  const freqLabel = (v) => FREQ[v] || 'Schedule varies';
+  const commitLabel = (v) => COMMIT[v] || 'Regular play';
+  const ts = (iso) => { const n = Date.parse(iso || ''); return Number.isFinite(n) ? n : 0; };
+
+  function timeAgo(iso) {
+    const t = ts(iso); if (!t) return '';
+    const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if (s < 90) return 'just now';
+    if (s < 3600) return Math.round(s / 60) + ' min ago';
+    if (s < 86400) return Math.round(s / 3600) + ' h ago';
+    const d = Math.round(s / 86400);
+    return d === 1 ? 'yesterday' : d < 30 ? d + ' days ago' : new Date(t).toLocaleDateString();
+  }
+  function clock(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+    return (h ? h + 'h ' : '') + String(m).padStart(h ? 2 : 1, '0') + 'm ' + String(x).padStart(2, '0') + 's';
+  }
+  function toast(message, error = false) {
+    const node = $('#lgToast'); node.textContent = message; node.classList.toggle('error', error); node.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(() => node.classList.remove('show'), 4200);
+  }
+  function msg(sel, text, kind) { const n = $(sel); if (!n) return; n.textContent = text || ''; n.classList.toggle('ok', kind === 'ok'); }
+  async function copyText(text, label) {
+    try { await navigator.clipboard.writeText(text); toast((label || 'Text') + ' copied.'); }
+    catch { toast('Copy failed. ' + text, true); }
+  }
+  const selectedValues = (form, name) => $$('input[name="' + name + '"]:checked', form).map(i => i.value);
+  const setChecks = (form, name, values) => { const list = Array.isArray(values) ? values : []; $$('input[name="' + name + '"]', form).forEach(i => { i.checked = list.includes(i.value); }); };
+
+  // ───────────── state ─────────────
+  const state = {
+    view: 'loading', tab: 'leagues', account: null, profile: null, premiumReady: true,
+    leagues: [], ownListings: [], insights: null, players: [], revealed: new Map(),
+    canFindPlayers: false, remaining: 3, editingId: null, detailId: null, reportId: null,
+    filters: { q: '', region: '', freq: '', size: '', lang: '', commit: '', qualify: true, verified: false },
+    sort: 'match', busy: new Set(), lastFocus: null
   };
 
   async function token() {
-    const result = await accountAuth.auth.getSession();
-    state.session = result.data?.session || null;
-    return state.session?.access_token || '';
+    const r = await accountAuth.auth.getSession();
+    return r.data?.session?.access_token || '';
   }
-
   async function api(path, options = {}) {
     const accessToken = await token();
     const headers = new Headers(options.headers || {});
     if (accessToken) headers.set('authorization', 'Bearer ' + accessToken);
     if (options.body && !(options.body instanceof FormData) && !headers.has('content-type')) headers.set('content-type', 'application/json');
-    const response = await fetch(path, { ...options, headers, credentials: 'same-origin', cache: 'no-store' });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || 'Something went wrong. Please try again.');
+    const res = await fetch(path, { ...options, headers, credentials: 'same-origin', cache: 'no-store' });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { const e = new Error(body.error || 'Something went wrong. Please try again.'); e.status = res.status; e.body = body; throw e; }
     return body;
   }
 
-  function setLoading(on) { $('#loadingState').hidden = !on; }
-  function showGate() { $('#loginGate').hidden = false; $('#workspace').hidden = true; $('#profileSetup').hidden = true; $('#listingEditor').hidden = true; }
-  function selectedValues(form, name) { return [...form.querySelectorAll('input[name="' + name + '"]:checked')].map(input => input.value); }
-  function hasOpenOwnerListing() { return (state.ownListings || []).some(row => ['pending','approved','paused'].includes(row.status)); }
-  function canCreateOwnerListing() { return state.profile?.status === 'league_owner' && !hasOpenOwnerListing(); }
-  function setChecks(form, name, values) { const list = Array.isArray(values) ? values : []; form.querySelectorAll('input[name="' + name + '"]').forEach(input => { input.checked = list.includes(input.value); }); }
-
-  function fillProfileForm(profile, suggested) {
-    const form = $('#profileForm');
-    const p = profile || {};
-    const s = suggested || {};
-    form.elements.fcMobileUid.value = p.fc_mobile_uid || s.fcMobileUid || '';
-    form.elements.inGameUsername.value = p.in_game_username || s.inGameUsername || '';
-    form.elements.avatarUrl.value = p.avatar_url || '';
-    $('#profileAvatarPreview').innerHTML = p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="">' : 'Player';
-    form.elements.ovr.value = p.ovr || '';
-    form.elements.regionServer.value = p.region_server || s.regionServer || '';
-    form.elements.status.value = p.status || 'looking_for_league';
-    form.elements.discordHandle.value = p.discord_handle || s.discordHandle || '';
-    form.elements.availability.value = p.availability || '';
-    form.elements.playStyle.value = p.play_style || '';
-    form.elements.notes.value = p.notes || '';
-    setChecks(form, 'preferredLanguages', p.preferred_languages || ['English']);
-    setChecks(form, 'tournamentSizes', p.tournament_sizes || []);
-    $('#profileSetupTitle').textContent = profile ? 'Update your league profile.' : 'Set up your league profile.';
+  // ───────────── view switching ─────────────
+  const VIEWS = { gate: '#lgGate', loading: '#lgLoading', error: '#lgError', profile: '#lgProfile', workspace: '#lgWorkspace', editor: '#lgEditor' };
+  function showView(name, { scroll = false } = {}) {
+    state.view = name;
+    for (const [key, sel] of Object.entries(VIEWS)) $(sel).hidden = key !== name;
+    $('#lgHero').hidden = name === 'editor' || name === 'profile';
+    $('#lgStats').hidden = name !== 'workspace';
+    $('#lgMe').hidden = name !== 'workspace' || !state.profile;
+    if (name !== 'workspace') closeDrawer();
+    if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function showProfileSetup(profile, suggested) {
-    $('#workspace').hidden = true;
-    $('#listingEditor').hidden = true;
-    $('#profileSetup').hidden = false;
-    $('#editProfileBtn').hidden = true;
-    $('#listLeagueBtn').hidden = true;
-    fillProfileForm(profile, suggested);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // ───────────── matching ─────────────
+  function matchFor(r) {
+    const p = state.profile;
+    if (!p) return null;
+    const reasons = [], gaps = [];
+    let score = 0;
+    const ovr = Number(p.ovr || 0);
+    const qualifies = ovr >= r.minOvr;
+    if (qualifies) { score += 35; reasons.push('Your ' + ovr + ' OVR clears the ' + r.minOvr + '+ minimum'); }
+    else gaps.push('You need ' + (r.minOvr - ovr) + ' more OVR to meet the ' + r.minOvr + '+ minimum');
+    if (same(p.region_server, r.regionServer)) { score += 20; reasons.push('Same region (' + r.regionServer + ')'); }
+    else gaps.push('Different region (' + r.regionServer + ')');
+    const common = (r.preferredLanguages || []).filter(l => (p.preferred_languages || []).includes(l));
+    if (common.length) { score += 15; reasons.push('You share ' + common.slice(0, 2).join(' / ')); } else gaps.push('No shared language');
+    const sizes = p.tournament_sizes || [];
+    if (!sizes.length) score += 8;
+    else {
+      const c = (r.tournamentSizes || []).filter(s => sizes.includes(s));
+      if (c.length) { score += 15; reasons.push('Runs ' + c.join(', ') + ' tournaments you play'); } else gaps.push('Different tournament sizes');
+    }
+    if (!p.play_style) score += 5;
+    else if ((STYLE_COMMIT[p.play_style] || []).includes(r.playerCommitment)) { score += 10; reasons.push('Play style fits a ' + commitLabel(r.playerCommitment).toLowerCase() + ' club'); }
+    else gaps.push('Play style differs from the club culture');
+    if (!p.availability) score += 3;
+    else if ((AVAIL_FREQ[p.availability] || ALL_FREQ).includes(r.tournamentFrequency)) { score += 5; reasons.push('Schedule matches your availability'); }
+    else gaps.push('Tournament rhythm may not match your availability');
+    score = Math.max(0, Math.min(100, score));
+    const tone = !qualifies ? 'low' : score >= 80 ? 'great' : score >= 60 ? 'good' : 'low';
+    const label = !qualifies ? 'Below minimum OVR' : score >= 80 ? 'Great fit' : score >= 60 ? 'Good fit' : 'Partial fit';
+    return { score, reasons, gaps, qualifies, tone, label };
   }
 
-  function avatarMarkup(url, name, className) {
-    const fallback = '<span>' + esc(initials(name)) + '</span>';
-    return '<div class="' + className + '">' + (url ? '<img src="' + esc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : fallback) + '</div>';
+  // ───────────── filtering / sorting ─────────────
+  const recency = (r) => ts(r.lastActiveAt) || ts(r.createdAt);
+  const SORTERS = {
+    match: (a, b) => b._m.score - a._m.score || recency(b) - recency(a),
+    active: (a, b) => (Number(b.kickoffActive) - Number(a.kickoffActive)) || (b.kickoffActive ? ts(b.lastKickoffAt) - ts(a.lastKickoffAt) : recency(b) - recency(a)),
+    newest: (a, b) => ts(b.createdAt) - ts(a.createdAt),
+    spots: (a, b) => b.openSpots - a.openSpots || recency(b) - recency(a),
+    ovr: (a, b) => a.minOvr - b.minOvr || recency(b) - recency(a)
+  };
+  function passes(r, f, ignoreQualify = false) {
+    const q = f.q.trim().toLowerCase();
+    if (q) {
+      const hay = [r.name, r.tagline, r.description, r.regionServer, r.leagueGameId, (r.preferredLanguages || []).join(' '), r.owner?.displayName].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (f.region && r.regionServer !== f.region) return false;
+    if (f.freq && r.tournamentFrequency !== f.freq) return false;
+    if (f.size && !(r.tournamentSizes || []).includes(f.size)) return false;
+    if (f.lang && !(r.preferredLanguages || []).includes(f.lang)) return false;
+    if (f.commit && r.playerCommitment !== f.commit) return false;
+    if (f.verified && !r.verified) return false;
+    if (!ignoreQualify && f.qualify && state.profile && !r.isMine && r.minOvr > Number(state.profile.ovr || 0)) return false;
+    return true;
+  }
+  function visibleLeagues() {
+    const withMatch = state.leagues.map(r => ({ ...r, _m: matchFor(r) || { score: 0, reasons: [], gaps: [], qualifies: true, tone: 'good', label: '' } }));
+    const rows = withMatch.filter(r => passes(r, state.filters)).sort(SORTERS[state.sort] || SORTERS.match);
+    const hiddenByOvr = state.filters.qualify
+      ? withMatch.filter(r => passes(r, state.filters, true) && !passes(r, state.filters)).length : 0;
+    return { rows, hiddenByOvr };
+  }
+  function activeFilterCount() {
+    const f = state.filters;
+    return ['region', 'freq', 'size', 'lang', 'commit'].filter(k => f[k]).length + (f.verified ? 1 : 0) + (f.qualify ? 0 : 1);
   }
 
-  function leagueCard(row, index) {
-    const logo = row.logoUrl ? '<img src="' + esc(row.logoUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : esc(initials(row.name));
-    const languages = (row.preferredLanguages || []).slice(0, 3).map(value => '<span class="fl-tag">' + esc(value) + '</span>').join('');
-    const sizes = (row.tournamentSizes || []).map(value => '<span class="fl-tag cyan">' + esc(value) + '</span>').join('');
-    const ownerAvatar = row.owner?.avatarUrl ? '<img src="' + esc(row.owner.avatarUrl) + '" alt="" loading="lazy" onerror="this.remove()">' : '';
-    const kickoff = row.lastKickoffAt && row.kickoffActive ? '<span class="fl-status-pill"><span class="fl-kickoff-icon">↗</span> KICKOFF ACTIVE</span>' : '<span class="fl-status-pill">RECRUITING</span>';
-    const invite = row.discordInviteUrl ? '<a class="fl-small-btn external" href="' + esc(row.discordInviteUrl) + '" target="_blank" rel="noopener noreferrer">Apply / Join ↗</a>' : '';
-    const contactDiscord = row.contactDiscord ? '<button class="fl-small-btn" data-contact-discord="' + esc(row.contactDiscord) + '" type="button">Copy Discord</button>' : '';
-    const activeText = row.lastActiveAt ? 'Last confirmed ' + esc(new Date(row.lastActiveAt).toLocaleDateString()) : 'Awaiting first activity check';
-    const activeLabel = row.confirmedByMe ? 'Confirmed · 24h' : 'League active';
-    return '<article class="fl-league-card" style="animation-delay:' + Math.min(index * 35, 210) + 'ms"><div class="fl-card-accent"></div><div class="fl-card-inner">' +
-      '<div class="fl-card-top">' +
-      '<div class="fl-club-logo">' + logo + '</div>' +
-      '<div class="fl-card-ident"><h3>' + esc(row.name) + '</h3><div class="fl-card-sub"><span>' + esc(row.regionServer) + '</span><i class="fl-dot-sep"></i><span>' + fmt(row.openSpots) + ' spots open</span></div></div>' +
-      kickoff + '</div>' +
-      '<p class="fl-card-desc">' + esc(row.description) + '</p>' +
-      '<div class="fl-card-tags">' + sizes + languages + '</div>' +
-      '<div class="fl-card-stats"><div><span>Minimum OVR</span><strong>' + fmt(row.minOvr) + '+ OVR</strong></div><div><span>Tournament rhythm</span><strong>' + esc(labelFrequency(row.tournamentFrequency)) + '</strong></div><div><span>Club culture</span><strong>' + esc(labelCommitment(row.playerCommitment)) + '</strong></div></div>' +
-      '<div class="fl-card-bottom"><div class="fl-owner-line">' + ownerAvatar + '<span>Managed by ' + esc(row.owner?.displayName || 'FC Mobile player') + '</span></div><div class="fl-card-actions">' +
-      '<button class="fl-small-btn fl-active-confirm" data-id="' + esc(row.id) + '" type="button" ' + (row.confirmedByMe ? 'disabled' : '') + '>' + activeLabel + '</button>' + invite + contactDiscord +
-      '</div></div><div class="fl-confirm-note">' + activeText + (row.discordRequired ? ' · Discord required' : ' · Discord optional') + '</div>' +
+  // ───────────── markup builders ─────────────
+  function crest(url, name, cls) {
+    return '<div class="' + cls + '"><span>' + esc(initials(name)) + '</span>' +
+      (url ? '<img src="' + esc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '</div>';
+  }
+  function ring(m, small = true) {
+    return '<div class="lg-ring ' + m.tone + '" style="--p:' + m.score + '" title="' + esc(m.label) + '"><b>' + m.score + '</b>' + (small ? '<small>match</small>' : '') + '</div>';
+  }
+  function signalLine(r) {
+    if (r.confirmations7d > 0) return '<i class="hot"></i><span>' + r.confirmations7d + ' player' + (r.confirmations7d === 1 ? '' : 's') + ' confirmed active this week</span>';
+    if (r.lastActiveAt) return '<i></i><span>Last confirmed ' + esc(timeAgo(r.lastActiveAt)) + '</span>';
+    return '<i></i><span>Listed ' + esc(timeAgo(r.createdAt) || 'recently') + '</span>';
+  }
+  function leagueCard(r, opts = {}) {
+    const m = r._m || matchFor(r);
+    const preview = Boolean(opts.preview);
+    const showRing = m && !preview && !r.isMine;
+    const badges = [];
+    if (r.featured) badges.push('<span class="lg-badge gold">★ Featured</span>');
+    if (r.kickoffActive) badges.push('<span class="lg-badge cyan"><i class="lg-pulse"></i> Kickoff</span>');
+    if (r.isMine) badges.push('<span class="lg-badge mint">Your league</span>');
+    if (m && !m.qualifies && !r.isMine && !preview) badges.push('<span class="lg-badge amber">Needs ' + r.minOvr + '+ OVR</span>');
+    if (r.discordRequired) badges.push('<span class="lg-badge">Discord required</span>');
+    const sizes = (r.tournamentSizes || []).map(s => '<span class="lg-tag cyan">' + esc(s) + '</span>').join('');
+    const langs = (r.preferredLanguages || []).slice(0, 3).map(l => '<span class="lg-tag">' + esc(l) + '</span>').join('');
+    const saveBtn = (preview || r.isMine) ? '' :
+      '<button type="button" class="lg-icon-btn' + (r.saved ? ' on' : '') + '" data-save="' + esc(r.id) + '" aria-pressed="' + (r.saved ? 'true' : 'false') + '" aria-label="' + (r.saved ? 'Remove from shortlist' : 'Save league') + '">' + ICON.heart + '</button>';
+    const action = preview ? '' : '<button type="button" class="lg-btn lg-btn-primary lg-btn-sm" data-open="' + esc(r.id) + '">View league</button>';
+    return '<article class="lg-card' + (r.featured ? ' is-featured' : '') + (preview ? ' is-preview' : '') + '"' + (preview ? '' : ' data-card="' + esc(r.id) + '"') + ' style="animation-delay:' + Math.min((opts.index || 0) * 40, 240) + 'ms">' +
+      '<div class="lg-card-glow"></div><div class="lg-card-in">' +
+      '<div class="lg-card-top">' + crest(r.logoUrl, r.name, 'lg-crest') +
+      '<div class="lg-card-id"><h3>' + esc(r.name || 'Your league name') + (r.verified ? ' <span class="lg-verified" title="Verified by FCMobiletools">' + ICON.check + '</span>' : '') + '</h3>' +
+      '<div class="lg-card-sub"><span>' + esc(r.regionServer || 'Region') + '</span><i class="lg-dotsep"></i><span>' + fmt(r.openSpots) + ' spot' + (Number(r.openSpots) === 1 ? '' : 's') + ' open</span></div></div>' +
+      (showRing ? ring(m) : '') + '</div>' +
+      (badges.length ? '<div class="lg-badges">' + badges.join('') + '</div>' : '') +
+      '<p class="lg-tagline">' + esc(r.tagline || r.description || 'Your league description will appear here.') + '</p>' +
+      '<div class="lg-tags">' + sizes + langs + '</div>' +
+      '<div class="lg-stat-row"><div><span>Min OVR</span><strong>' + fmt(r.minOvr) + '+</strong></div><div><span>Rhythm</span><strong>' + esc(freqLabel(r.tournamentFrequency)) + '</strong></div><div><span>Culture</span><strong>' + esc(commitLabel(r.playerCommitment)) + '</strong></div></div>' +
+      '<div class="lg-card-foot"><div class="lg-signal">' + (preview ? '<i></i><span>Preview</span>' : signalLine(r)) + '</div><div class="lg-card-actions">' + saveBtn + action + '</div></div>' +
       '</div></article>';
   }
-
-  function filterLeagues() {
-    const q = $('#leagueSearch').value.trim().toLowerCase();
-    const region = $('#regionFilter').value.toLowerCase();
-    const frequency = $('#frequencyFilter').value;
-    const size = $('#sizeFilter').value;
-    const squadOvr = $('#squadOvrFilter').value;
-    const maxOvr = squadOvr === 'my' ? Number(state.profile?.ovr || 0) : (squadOvr ? Number(squadOvr) : Infinity);
-    const rows = state.leagues.filter(row => {
-      const full = [row.name,row.description,row.regionServer,(row.preferredLanguages || []).join(' '),row.owner?.displayName].join(' ').toLowerCase();
-      return (!q || full.includes(q)) && (!region || String(row.regionServer || '').toLowerCase() === region) &&
-        (!frequency || row.tournamentFrequency === frequency) && (!size || (row.tournamentSizes || []).includes(size)) &&
-        row.minOvr <= maxOvr;
-    });
-    $('#leagueCount').textContent = fmt(state.leagues.length);
-    $('#resultsLabel').textContent = rows.length + (rows.length === 1 ? ' league matches your filters' : ' leagues match your filters');
-    $('#leagueList').innerHTML = rows.map(leagueCard).join('');
-    $('#leagueEmpty').hidden = rows.length > 0;
-    $('#leagueList').hidden = rows.length === 0;
-    $('#openListingBtn').hidden = !canCreateOwnerListing();
-    $('#emptyListBtn').hidden = !canCreateOwnerListing();
-    $('#leagueList').querySelectorAll('.fl-active-confirm').forEach(button => button.addEventListener('click', () => confirmLeague(button)));
+  function playerCard(row, { preview = false, index = 0 } = {}) {
+    const tags = (row.tournamentSizes || []).map(s => '<span class="lg-tag cyan">' + esc(s) + '</span>').join('') +
+      (row.preferredLanguages || []).slice(0, 2).map(l => '<span class="lg-tag">' + esc(l) + '</span>').join('');
+    const rev = state.revealed.get(row.accountId);
+    const copyRow = (label, value) => '<dt>' + label + '</dt><dd>' + esc(value || 'Not provided') + '</dd>' +
+      (value ? '<button type="button" class="lg-copy" data-copy="' + esc(value) + '" data-label="' + label + '">Copy</button>' : '<span></span>');
+    const panel = rev ? '<div class="lg-revealed"><h4>Contact details</h4><dl class="lg-kv">' + copyRow('UID', rev.fcMobileUid) + copyRow('In-game', rev.inGameUsername) + copyRow('Discord', rev.discordHandle) + '<dt>Region</dt><dd>' + esc(rev.regionServer) + '</dd><span></span></dl></div>' : '';
+    const unlocked = rev || row.revealed;
+    const btn = preview ? '' : '<button type="button" class="lg-btn ' + (unlocked ? 'lg-btn-outline' : 'lg-btn-primary') + ' lg-btn-sm" data-reveal="' + esc(row.accountId) + '"' + (!unlocked && state.remaining <= 0 ? ' disabled' : '') + '>' +
+      (rev ? 'Contact unlocked' : unlocked ? 'View contact · already unlocked' : state.remaining <= 0 ? 'Daily limit reached' : 'Unlock contact · uses 1 of ' + state.remaining + ' left') + '</button>';
+    return '<article class="lg-pcard" style="animation-delay:' + Math.min(index * 30, 180) + 'ms"><div class="lg-pcard-head">' +
+      crest(row.avatarUrl, row.displayName, 'lg-avatar') +
+      '<div class="lg-pcard-id"><h3>' + esc(row.displayName) + '</h3><p>' + (row.username ? '@' + esc(row.username) + ' · ' : '') + esc(row.regionServer || '') + '</p></div>' +
+      '<div class="lg-ovr">' + fmt(row.ovr) + '</div></div>' +
+      '<div class="lg-tags">' + tags + '</div>' +
+      '<p class="lg-pcard-note">' + esc(row.availability || 'Availability not specified') + (row.playStyle ? ' · ' + esc(row.playStyle) : '') + '</p>' +
+      (row.notes ? '<p class="lg-pcard-note">' + esc(row.notes) + '</p>' : '') + btn + panel + '</article>';
   }
 
-  function showTab(which) {
-    state.activeTab = which;
-    const players = which === 'players';
-    $('#tabLeagues').classList.toggle('active', !players);
-    $('#tabLeagues').setAttribute('aria-selected', String(!players));
-    $('#tabPlayers').classList.toggle('active', players);
-    $('#tabPlayers').setAttribute('aria-selected', String(players));
-    $('#leagueView').hidden = players;
-    $('#playersView').hidden = !players;
-    $('#ownerPanel').hidden = players || state.profile?.status !== 'league_owner';
-    if (players) loadPlayers();
+  // ───────────── hero + tabs ─────────────
+  function renderHero() {
+    const rows = state.leagues;
+    $('#statLeagues').textContent = fmt(rows.length);
+    $('#statSpots').textContent = fmt(rows.reduce((n, r) => n + Number(r.openSpots || 0), 0));
+    $('#statRegions').textContent = fmt(new Set(rows.map(r => r.regionServer)).size);
+    const p = state.profile, me = $('#lgMe');
+    if (!p) { me.innerHTML = ''; return; }
+    me.innerHTML = crest(p.avatar_url || state.account?.avatarUrl, state.account?.displayName || p.in_game_username, 'lg-avatar') +
+      '<div class="lg-me-txt"><b>' + esc(p.in_game_username) + '</b><small>OVR ' + fmt(p.ovr) + ' · ' + esc(STATUS[p.status] || '') + '</small></div>' +
+      '<button class="lg-btn lg-btn-outline lg-btn-sm" id="lgEditProfile" type="button">Edit</button>';
+    me.hidden = state.view !== 'workspace';
   }
-
-  function ownerDesk() {
-    const list = state.ownListings || [];
-    $('#ownerPanel').hidden = state.profile?.status !== 'league_owner';
-    $('#ownerCreate').hidden = true;
-    $('#ownerPending').hidden = true;
-    $('#ownerListing').innerHTML = '';
-    $('#listLeagueBtn').hidden = !canCreateOwnerListing();
-    if (state.profile?.status !== 'league_owner') return;
-    if (!list.length) { $('#ownerCreate').hidden = false; return; }
-    const row = list[0];
-    if (row.status === 'pending') {
-      $('#ownerPending').hidden = false;
-      $('#ownerListing').innerHTML = ownerListingCard(row, false);
-      return;
+  function tabList() {
+    const savedN = state.leagues.filter(r => r.saved).length;
+    const tabs = [{ id: 'leagues', label: 'Leagues', count: state.leagues.length }, { id: 'saved', label: 'Saved', count: savedN }];
+    if (state.canFindPlayers) tabs.push({ id: 'players', label: 'Find players' });
+    if (state.profile?.status === 'league_owner') {
+      const own = state.ownListings[0];
+      const dot = own ? (own.status === 'approved' ? 'live' : (own.status === 'pending' || own.status === 'rejected' || own.status === 'paused') ? 'warn' : '') : '';
+      tabs.push({ id: 'owner', label: 'Owner desk', dot });
     }
-    $('#ownerListing').innerHTML = ownerListingCard(row, row.status === 'approved' && row.recruitingOpen);
-    if (row.status === 'rejected') {
-      $('#ownerCreate').hidden = false;
-      $('#ownerCreate').querySelector('strong').textContent = 'Your listing needs changes.';
-      $('#ownerCreate').querySelector('p').textContent = row.moderationNote || 'Review the listing and submit it again.';
+    return tabs;
+  }
+  function renderTabs() {
+    const tabs = tabList();
+    if (!tabs.some(t => t.id === state.tab)) state.tab = 'leagues';
+    $('#lgTabs').innerHTML = tabs.map(t =>
+      '<button class="lg-tab' + (t.id === state.tab ? ' active' : '') + '" role="tab" type="button" data-tab="' + t.id + '" aria-selected="' + (t.id === state.tab) + '">' + esc(t.label) +
+      (t.count !== undefined ? '<em>' + fmt(t.count) + '</em>' : '') + (t.dot !== undefined && t.dot !== '' ? '<span class="lg-dot ' + t.dot + '"></span>' : t.dot === '' && t.id === 'owner' ? '' : '') + '</button>').join('');
+    for (const [id, sel] of [['leagues', '#panelLeagues'], ['saved', '#panelSaved'], ['players', '#panelPlayers'], ['owner', '#panelOwner']]) $(sel).hidden = id !== state.tab;
+  }
+  function setTab(id) {
+    state.tab = id; renderTabs();
+    if (id === 'leagues') renderLeagues();
+    if (id === 'saved') renderSaved();
+    if (id === 'owner') renderOwner();
+    if (id === 'players') loadPlayers();
+  }
+
+  // ───────────── leagues panel ─────────────
+  function renderLeagues() {
+    const { rows, hiddenByOvr } = visibleLeagues();
+    const featured = rows.filter(r => r.featured);
+    const rest = featured.length ? rows.filter(r => !r.featured) : rows;
+    const total = state.leagues.length;
+    $('#lgFeatured').hidden = featured.length === 0;
+    $('#lgRail').innerHTML = featured.map((r, i) => leagueCard(r, { index: i })).join('');
+    $('#lgGrid').innerHTML = rest.map((r, i) => leagueCard(r, { index: i })).join('');
+    $('#lgGrid').hidden = rest.length === 0;
+    $('#lgEmpty').hidden = rows.length > 0;
+    $('#lgResults').textContent = !total ? 'No leagues are live yet.' : rows.length + (rows.length === 1 ? ' league' : ' leagues') + (activeFilterCount() || state.filters.q || state.filters.qualify ? ' match your filters' : ' live now');
+    const showAll = $('#fShowAll'); showAll.hidden = hiddenByOvr === 0;
+    showAll.textContent = 'Show ' + hiddenByOvr + ' above my OVR';
+    const count = activeFilterCount(); const badge = $('#fCount'); badge.hidden = count === 0; badge.textContent = count;
+    if (!total) {
+      $('#lgEmpty h3').textContent = 'No leagues are live yet.';
+      $('#lgEmpty p').textContent = 'Be the first. Set your profile to League owner and submit your club.';
+    } else {
+      $('#lgEmpty h3').textContent = 'No leagues match these filters.';
+      $('#lgEmpty p').textContent = 'Try widening the region or OVR filter, or help the board grow by listing your own club.';
     }
-    if (row.status === 'paused') {
-      $('#ownerCreate').hidden = true;
-    }
-    if (row.status === 'removed') {
-      $('#ownerCreate').hidden = false;
-      $('#ownerCreate').querySelector('strong').textContent = 'Your listing was removed.';
-      $('#ownerCreate').querySelector('p').textContent = row.moderationNote || 'You can submit a new listing when your club is ready.';
-    }
+  }
+  function renderSaved() {
+    const rows = state.leagues.filter(r => r.saved).map(r => ({ ...r, _m: matchFor(r) })).sort((a, b) => b._m.score - a._m.score);
+    $('#lgSavedGrid').innerHTML = rows.map((r, i) => leagueCard(r, { index: i })).join('');
+    $('#lgSavedGrid').hidden = rows.length === 0; $('#lgSavedEmpty').hidden = rows.length > 0;
+  }
+  function refreshLeagueSurfaces() {
+    renderHero(); renderTabs(); renderLeagues(); renderSaved(); if (state.tab === 'owner') renderOwner();
+    if (state.detailId) renderDrawer(true);
   }
 
-  function ownerListingCard(row, canKickoff) {
-    const statusClass = row.status === 'approved' ? '' : ' ' + esc(row.status);
-    const statusLabel = ({ approved: 'Live', pending: 'Awaiting review', rejected: 'Changes requested', paused: 'Paused', removed: 'Removed' })[row.status] || row.status;
-    const nextKickoffAt = row.lastKickoffAt ? Date.parse(row.lastKickoffAt) + 6 * 60 * 60 * 1000 : 0;
-    const kickCooldown = nextKickoffAt > Date.now();
-    const kickText = row.status !== 'approved'
-      ? 'Kickoff becomes available after approval'
-      : kickCooldown
-        ? 'Next Kickoff available ' + esc(new Date(nextKickoffAt).toLocaleString())
-        : 'Ready for Kickoff';
-    return '<div class="fl-owner-listing">' + avatarMarkup(row.logoUrl, row.name, 'fl-club-logo') +
-      '<div class="fl-owner-listing-main"><strong>' + esc(row.name) + ' <span class="fl-status-pill' + statusClass + '">' + esc(statusLabel) + '</span></strong>' +
-      '<p>' + esc(row.regionServer) + ' · ' + esc(labelFrequency(row.tournamentFrequency)) + ' · ' + esc((row.tournamentSizes || []).join(', ')) + '<br>' + (row.moderationNote ? esc(row.moderationNote) : '') + '</p></div>' +
-      '<div class="fl-owner-listing-actions">' +
-      (row.status !== 'removed' ? '<button type="button" class="fl-small-btn fl-edit-listing" data-edit-listing="' + esc(row.id) + '">Edit details</button>' : '') +
-      (canKickoff ? '<button type="button" class="fl-small-btn kickoff" id="kickoffBtn" ' + (kickCooldown ? 'disabled' : '') + '><span class="fl-kickoff-icon">↗</span> ' + (kickCooldown ? 'Kickoff cooling down' : 'Kickoff') + '</button>' : '') +
-      '<span class="fl-confirm-note">' + kickText + '</span>' +
-      '</div></div>';
+  // ───────────── drawer ─────────────
+  function findLeague(id) { return state.leagues.find(r => r.id === id); }
+  function drawerHtml(r) {
+    const m = matchFor(r);
+    const trust = r.confirmations7d > 0
+      ? '<div class="lg-trust"><i></i><div><b>' + r.confirmations7d + ' player' + (r.confirmations7d === 1 ? '' : 's') + ' confirmed this league is active this week</b><small>' + (r.lastActiveAt ? 'Last confirmation ' + esc(timeAgo(r.lastActiveAt)) : '') + '</small></div></div>'
+      : '<div class="lg-trust cold"><i></i><div><b>No activity confirmations this week</b><small>' + (r.lastActiveAt ? 'Last confirmed ' + esc(timeAgo(r.lastActiveAt)) : 'Be the first to confirm it after you visit') + '</small></div></div>';
+    const matchBlock = m && !r.isMine ? '<div class="lg-d-sec"><h4>Your match</h4><div class="lg-match">' + ring(m, false) + '<div><h5>' + esc(m.label) + '</h5><p>Based on your OVR, region, languages, play style and schedule.</p></div></div>' +
+      '<ul class="lg-why">' + m.reasons.map(x => '<li>' + esc(x) + '</li>').join('') + m.gaps.map(x => '<li class="gap">' + esc(x) + '</li>').join('') + '</ul></div>' : '';
+    const grid = [
+      ['Region', r.regionServer], ['Minimum OVR', fmt(r.minOvr) + '+'], ['Tournament rhythm', freqLabel(r.tournamentFrequency)], ['Culture', commitLabel(r.playerCommitment)],
+      ['Tournament sizes', (r.tournamentSizes || []).join(', ') || '–'], ['Languages', (r.preferredLanguages || []).join(', ') || 'English'],
+      ['Active hours', r.activeHours || 'Not specified'], ['Open spots', fmt(r.openSpots)], ['Discord', r.discordRequired ? 'Required to join' : 'Optional'], ['League ID', r.leagueGameId || 'Not shared']
+    ].map(([k, v]) => '<div><span>' + k + '</span><strong>' + esc(v) + '</strong></div>').join('');
+    const join = r.discordInviteUrl
+      ? '<a class="lg-btn lg-btn-primary" data-join="' + esc(r.id) + '" href="' + esc(r.discordInviteUrl) + '" target="_blank" rel="noopener noreferrer">Join on Discord ↗</a>'
+      : r.contactDiscord ? '' : '<span class="lg-note" style="flex:1">No public contact yet. Save it and check back.</span>';
+    const contact = r.contactDiscord ? '<button class="lg-btn lg-btn-outline" data-contact="' + esc(r.contactDiscord) + '" type="button">Copy Discord ' + esc(r.contactDiscord) + '</button>' : '';
+    const own = r.isMine;
+    const bar = '<div class="lg-d-bar">' + join + contact +
+      (own ? '<span class="lg-note" style="flex:1">This is your league. Manage it from the Owner desk.</span>' :
+        '<button type="button" class="lg-icon-btn' + (r.saved ? ' on' : '') + '" data-save="' + esc(r.id) + '" aria-pressed="' + (r.saved ? 'true' : 'false') + '" aria-label="' + (r.saved ? 'Remove from shortlist' : 'Save league') + '">' + ICON.heart + '</button>') + '</div>';
+    return '<div class="lg-d-hero' + (r.featured ? ' is-featured' : '') + '"><div class="lg-d-id">' + crest(r.logoUrl, r.name, 'lg-crest') +
+      '<div><h2>' + esc(r.name) + (r.verified ? ' <span class="lg-verified" title="Verified by FCMobiletools">' + ICON.check + '</span>' : '') + '</h2><p>' + esc(r.regionServer) + ' · ' + fmt(r.openSpots) + ' open spot' + (Number(r.openSpots) === 1 ? '' : 's') + '</p></div></div>' +
+      '<div class="lg-badges">' + (r.featured ? '<span class="lg-badge gold">★ Featured</span>' : '') + (r.verified ? '<span class="lg-badge cyan">Verified</span>' : '') + (r.kickoffActive ? '<span class="lg-badge cyan"><i class="lg-pulse"></i> Kickoff</span>' : '') + (r.isMine ? '<span class="lg-badge mint">Your league</span>' : '') + '</div>' +
+      (r.tagline ? '<p class="lg-tagline" style="-webkit-line-clamp:unset">' + esc(r.tagline) + '</p>' : '') + '</div>' +
+      matchBlock +
+      '<div class="lg-d-sec"><h4>About</h4><p class="lg-d-desc">' + esc(r.description) + '</p></div>' +
+      '<div class="lg-d-sec"><h4>League details</h4><div class="lg-d-grid">' + grid + '</div></div>' +
+      (r.weeklyRewards ? '<div class="lg-d-sec"><h4>Rewards &amp; perks</h4><p class="lg-d-desc">' + esc(r.weeklyRewards) + '</p></div>' : '') +
+      '<div class="lg-d-sec"><h4>Activity</h4>' + trust +
+      (!own ? '<div class="lg-actions"><button class="lg-btn lg-btn-outline lg-btn-sm" data-confirm="' + esc(r.id) + '" type="button"' + (r.confirmedByMe ? ' disabled' : '') + '>' + (r.confirmedByMe ? 'Confirmed · try again in 24h' : 'Confirm this league is active') + '</button></div>' : '') + '</div>' +
+      '<div class="lg-d-sec"><h4>Managed by</h4><div class="lg-owner-row">' + crest(r.owner?.avatarUrl, r.owner?.displayName, 'lg-avatar') + '<span>' + esc(r.owner?.displayName || 'FC Mobile player') + '</span></div>' +
+      (!own ? '<div class="lg-d-links"><button class="lg-link" data-report="' + esc(r.id) + '" type="button">Report this league</button></div>' : '') + '</div>' + bar;
+  }
+  function renderDrawer(keepScroll = false) {
+    const r = findLeague(state.detailId);
+    if (!r) { closeDrawer(); return; }
+    const body = $('#lgDrawerBody'); const top = body.scrollTop;
+    body.innerHTML = drawerHtml(r);
+    // the action bar must sit outside the scroll flow, so it lives inside the drawer container
+    const bar = $('.lg-d-bar', body); if (bar) { $('#lgDrawer').querySelector('.lg-d-bar')?.remove(); $('#lgDrawer').appendChild(bar); }
+    if (keepScroll) body.scrollTop = top;
+  }
+  function openDrawer(id) {
+    if (!findLeague(id)) return;
+    state.lastFocus = document.activeElement; state.detailId = id;
+    $('#lgBackdrop').hidden = false; $('#lgDrawer').hidden = false; document.body.classList.add('lg-lock');
+    renderDrawer(); $('#lgDrawerBody').scrollTop = 0; $('#lgDrawerClose').focus();
+  }
+  function closeDrawer() {
+    if ($('#lgDrawer').hidden) return;
+    state.detailId = null; $('#lgDrawer').hidden = true; $('#lgBackdrop').hidden = true; document.body.classList.remove('lg-lock');
+    $('#lgDrawer').querySelector('.lg-d-bar')?.remove();
+    if (state.lastFocus?.isConnected) state.lastFocus.focus();
   }
 
-  async function refreshBootstrap() {
-    const data = await api('/api/leagues/bootstrap');
-    state.account = data.account;
-    state.profile = data.profile;
-    state.leagues = data.leagues || [];
-    state.ownListings = data.ownListings || [];
-    state.canFindPlayers = Boolean(data.canFindPlayers);
-    state.outreachRemaining = Number(data.outreachRemaining ?? Math.max(0, 3 - Number(data.outreachUsedToday || 0)));
-    $('#signedInAs').textContent = data.account?.displayName || data.account?.username || 'Signed in';
-    if (!data.profile) {
-      showProfileSetup(null, data.suggestedProfile);
-      return;
-    }
-    $('#profileSetup').hidden = true;
-    $('#workspace').hidden = false;
-    $('#editProfileBtn').hidden = false;
-    $('#listLeagueBtn').hidden = !canCreateOwnerListing();
-    $('#tabPlayers').hidden = !state.canFindPlayers;
-    $('#outreachRemaining').textContent = String(state.outreachRemaining);
-    filterLeagues();
-    ownerDesk();
-    if (state.canFindPlayers && state.profile.status === 'league_owner') $('#tabPlayers').hidden = false;
-  }
-
-  async function openLeagueProfile() {
-    fillProfileForm(state.profile, {});
-    showProfileSetup(state.profile, {});
-  }
-
-  function openListingEditor(row = null) {
-    if (state.profile?.status !== 'league_owner') {
-      openLeagueProfile();
-      toast('Set your status to League owner to submit a club listing.');
-      return;
-    }
-    state.editingListingId = row?.id || null;
-    $('#workspace').hidden = true;
-    $('#profileSetup').hidden = true;
-    $('#listingEditor').hidden = false;
-    $('#listingMessage').textContent = '';
-    const form = $('#listingForm');
-    form.reset();
-    form.elements.openSpots.value = String(row?.openSpots ?? 5);
-    form.elements.tournamentFrequency.value = row?.tournamentFrequency || 'daily';
-    form.elements.playerCommitment.value = row?.playerCommitment || 'regular';
-    form.elements.tournamentSizes.forEach(input => { input.checked = (row?.tournamentSizes || ['4v4']).includes(input.value); });
-    form.elements.preferredLanguages.forEach(input => { input.checked = (row?.preferredLanguages || ['English']).includes(input.value); });
-    form.elements.recruitingOpen.checked = row?.recruitingOpen !== false;
-    form.elements.name.value = row?.name || '';
-    form.elements.leagueGameId.value = row?.leagueGameId || '';
-    form.elements.description.value = row?.description || '';
-    form.elements.regionServer.value = row?.regionServer || '';
-    form.elements.minOvr.value = row?.minOvr ?? '';
-    form.elements.weeklyRewards.value = row?.weeklyRewards || '';
-    form.elements.discordInviteUrl.value = row?.discordInviteUrl || '';
-    form.elements.contactDiscord.value = row?.contactDiscord || '';
-    form.elements.discordRequired.checked = Boolean(row?.discordRequired);
-    state.logoUrl = row?.logoUrl || '';
-    form.elements.logoUrl.value = state.logoUrl;
-    $('#leagueLogoPreview').innerHTML = state.logoUrl ? '<img src="' + esc(state.logoUrl) + '" alt="">' : 'FC';
-    $('#listingEditor').querySelector('.fl-editor-heading h2').textContent = row ? 'Update your league listing.' : 'Put your league on the board.';
-    $('#submitListingBtn').innerHTML = row ? 'Resubmit for approval <span aria-hidden="true">→</span>' : 'Submit for approval <span aria-hidden="true">→</span>';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  async function uploadImage(file, previewNode, hiddenInput) {
-    if (!file) return '';
-    const accepted = ['image/jpeg','image/png','image/webp','image/gif'];
-    if (!accepted.includes(file.type) || file.size > 8 * 1024 * 1024) throw new Error('Use a JPG, PNG, WebP or GIF image smaller than 8 MB.');
-    const accessToken = await token();
-    if (!accessToken) throw new Error('Sign in again before uploading an image.');
-    const body = new FormData(); body.append('file', file); body.append('permanent', 'true');
-    const response = await fetch('/api/account/image-upload', { method: 'POST', headers: { authorization: 'Bearer ' + accessToken }, body, credentials: 'same-origin', cache: 'no-store' });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || 'Image upload failed. Please try again.');
-    const url = result.image?.url || result.url || result.imageUrl || result.data?.url || result.data?.display_url || '';
-    if (!url) throw new Error('Image upload did not return a usable image URL.');
-    if (previewNode) previewNode.innerHTML = '<img src="' + esc(url) + '" alt="">';
-    if (hiddenInput) hiddenInput.value = url;
-    return url;
-  }
-
-  async function confirmLeague(button) {
-    button.disabled = true;
+  // ───────────── actions: save / confirm / join / report ─────────────
+  async function toggleSave(id) {
+    const r = findLeague(id); const key = 'save' + id;
+    if (!r || r.isMine || state.busy.has(key)) return;
+    state.busy.add(key);
+    const prev = r.saved; r.saved = !prev; r.saves = Math.max(0, r.saves + (r.saved ? 1 : -1)); refreshLeagueSurfaces();
     try {
-      const result = await api('/api/leagues/listings/' + encodeURIComponent(button.dataset.id) + '/active', { method: 'POST', body: '{}' });
-      toast('Thanks. You confirmed this league is active.');
-      const row = state.leagues.find(item => item.id === button.dataset.id);
-      if (row) { row.lastActiveAt = result.confirmedAt || new Date().toISOString(); row.confirmedByMe = true; }
-      filterLeagues();
+      const res = await api('/api/leagues/listings/' + encodeURIComponent(id) + '/save', { method: 'POST', body: '{}' });
+      if (res.saved !== r.saved) { r.saves = Math.max(0, r.saves + (res.saved ? 1 : -1)); r.saved = res.saved; }
+      refreshLeagueSurfaces();
+      toast(r.saved ? 'Saved to your shortlist.' : 'Removed from your shortlist.');
     } catch (error) {
-      toast(error.message || 'Unable to confirm this league.', true);
-      button.disabled = false;
+      r.saved = prev; r.saves = Math.max(0, r.saves + (prev ? 1 : -1)); refreshLeagueSurfaces(); toast(error.message, true);
+    } finally { state.busy.delete(key); }
+  }
+  async function confirmActive(id, button) {
+    if (button) button.disabled = true;
+    try {
+      const res = await api('/api/leagues/listings/' + encodeURIComponent(id) + '/active', { method: 'POST', body: '{}' });
+      const r = findLeague(id);
+      if (r) { r.lastActiveAt = res.confirmedAt || new Date().toISOString(); r.confirmedByMe = true; r.confirmations7d = Math.max(Number(res.confirmationsLast7Days || 0), r.confirmations7d + 1); }
+      refreshLeagueSurfaces(); toast('Thanks. That helps other players trust the board.');
+    } catch (error) {
+      toast(error.message, true); if (error.status === 429) { const r = findLeague(id); if (r) { r.confirmedByMe = true; refreshLeagueSurfaces(); } } else if (button) button.disabled = false;
     }
   }
+  function trackJoin(id) { api('/api/leagues/listings/' + encodeURIComponent(id) + '/join', { method: 'POST', body: '{}' }).catch(() => {}); }
+  function openReport(id) {
+    state.reportId = id; $('#lgReportDetails').value = ''; msg('#lgReportMsg', ''); $('#lgReportReason').selectedIndex = 0;
+    $('#lgReport').hidden = false; $('#lgReportReason').focus();
+  }
+  function closeReport() { $('#lgReport').hidden = true; state.reportId = null; }
+  async function sendReport() {
+    const btn = $('#lgReportSend'); btn.disabled = true; msg('#lgReportMsg', '');
+    try {
+      const res = await api('/api/leagues/listings/' + encodeURIComponent(state.reportId) + '/report', { method: 'POST', body: JSON.stringify({ reason: $('#lgReportReason').value, details: $('#lgReportDetails').value.trim() }) });
+      closeReport(); toast(res.message || 'Thanks. The review team will take a look.');
+    } catch (error) { msg('#lgReportMsg', error.message); } finally { btn.disabled = false; }
+  }
 
+  // ───────────── owner desk ─────────────
+  function ownerSteps(row) {
+    const s = row.status;
+    const reviewState = s === 'pending' ? 'now' : s === 'rejected' ? 'warn' : s === 'paused' ? 'warn' : 'done';
+    const liveState = s === 'approved' ? 'done' : 'todo';
+    const reviewLabel = s === 'rejected' ? 'Changes requested' : s === 'paused' ? 'Paused' : 'Review';
+    const mark = (st, n) => st === 'done' ? '✓' : st === 'warn' ? '!' : n;
+    return '<div class="lg-steps"><div class="lg-step done"><i>✓</i>Submitted</div><div class="lg-step-line done"></div>' +
+      '<div class="lg-step ' + reviewState + '"><i>' + mark(reviewState, 2) + '</i>' + reviewLabel + '</div>' +
+      '<div class="lg-step-line ' + (liveState === 'done' ? 'done' : '') + '"></div>' +
+      '<div class="lg-step ' + (liveState === 'done' ? 'done' : '') + '"><i>' + (liveState === 'done' ? '✓' : 3) + '</i>Live</div></div>';
+  }
+  function renderOwner() {
+    const el = $('#panelOwner');
+    const own = state.ownListings[0];
+    const hasOpen = state.ownListings.some(r => ['pending', 'approved', 'paused'].includes(r.status));
+    const head = '<div class="lg-panel-head slim"><div><h2>Owner desk</h2><p>Manage your club listing, boost it with Kickoff and see how players respond.</p></div></div>';
+    if (!own || (!hasOpen && own.status === 'removed')) {
+      el.innerHTML = head + '<div class="lg-box"><h3>Bring your club to the board.</h3><p>Every new listing is reviewed before it appears in search.</p>' +
+        (own?.status === 'removed' ? '<div class="lg-callout red"><strong>Your previous listing was removed.</strong>' + esc(own.moderationNote || 'You can submit a new listing when your club is ready.') + '</div>' : '') +
+        '<div class="lg-actions"><button class="lg-btn lg-btn-primary" data-create-listing type="button">Create league listing →</button></div></div>';
+      return;
+    }
+    const live = own.status === 'approved';
+    const nextAt = own.lastKickoffAt ? ts(own.lastKickoffAt) + KICKOFF_MS : 0;
+    const cooling = nextAt > Date.now();
+    let callout = '';
+    if (own.status === 'pending') callout = '<div class="lg-callout cyan"><strong>Your listing is with the review team.</strong>You can keep browsing. We will update this page as soon as there is a decision.</div>';
+    if (own.status === 'rejected') callout = '<div class="lg-callout"><strong>Changes requested</strong>' + esc(own.moderationNote || 'Please update your listing and resubmit it.') + '</div>';
+    if (own.status === 'paused') callout = '<div class="lg-callout"><strong>Your listing is paused</strong>' + esc(own.moderationNote || 'The review team paused this listing.') + ' Update your details and resubmit to request a review.</div>';
+    const ins = state.insights;
+    const insights = live && ins ? '<div class="lg-insights"><div><strong>' + fmt(ins.joinClicks7d) + '</strong><span>Join clicks<br>last 7 days</span></div><div><strong>' + fmt(ins.saves) + '</strong><span>Players who<br>saved you</span></div><div><strong>' + fmt(ins.confirmations7d) + '</strong><span>Active confirmations<br>last 7 days</span></div></div>' : '';
+    const canTune = own.status === 'approved' || own.status === 'pending';
+    const controls = canTune ? '<div class="lg-box"><h3>Quick controls</h3><p class="lg-box-sub">These apply instantly and do not need a new review.</p>' +
+      '<div class="lg-ctrl"><div><b>Open spots</b><small>How many players you can still take.</small></div><div class="lg-stepper"><button class="lg-icon-btn" data-spots="-1" type="button" aria-label="Fewer spots">−</button><output id="lgSpotsOut">' + fmt(own.openSpots) + '</output><button class="lg-icon-btn" data-spots="1" type="button" aria-label="More spots">+</button></div></div>' +
+      '<div class="lg-ctrl"><div><b>Open for new members</b><small>Turn off to hide your league from the directory. Kickoff and player search also pause.</small></div><button class="lg-toggle" id="lgRecruitToggle" type="button" role="switch" aria-checked="' + own.recruitingOpen + '" aria-label="Open for new members"></button></div>' +
+      (live ? '<div class="lg-ctrl"><div><b>Kickoff</b><small>' + (cooling ? 'Next Kickoff in <span class="lg-cd" data-until="' + nextAt + '">' + clock(nextAt - Date.now()) + '</span>' : 'Give your league a temporary boost to the top. Available every 6 hours.') + '</small></div>' +
+        '<button class="lg-btn lg-btn-primary lg-btn-sm" id="lgKickoff" type="button"' + (cooling || !own.recruitingOpen ? ' disabled' : '') + '>↗ ' + (cooling ? 'Cooling down' : 'Kickoff') + '</button></div>' : '') + '</div>' : '';
+    el.innerHTML = head + '<div class="lg-owner-grid"><div>' +
+      '<div class="lg-box"><h3>Listing status</h3>' + ownerSteps(own) + callout + insights +
+      '<div class="lg-actions">' + (own.status !== 'removed' ? '<button class="lg-btn lg-btn-outline" data-edit-listing type="button">Edit details</button>' : '') +
+      (own.status === 'rejected' || own.status === 'paused' ? '<button class="lg-btn lg-btn-primary" data-edit-listing type="button">Edit &amp; resubmit</button>' : '') + '</div>' +
+      (live ? '<p class="lg-box-sub" style="margin-top:12px">Editing your details sends the listing back for review. Spots and recruiting status do not.</p>' : '') + '</div>' + controls +
+      '</div><div><div class="lg-preview-label">How players see you</div>' + leagueCard({ ...own, isMine: true, saved: false, _m: null }, { preview: true }) + '</div></div>';
+  }
+  async function quickUpdate(patch, button) {
+    const own = state.ownListings[0]; if (!own) return;
+    $$('#panelOwner [data-spots], #lgRecruitToggle').forEach(n => { n.disabled = true; });
+    try {
+      const res = await api('/api/leagues/listings/' + encodeURIComponent(own.id) + '/quick', { method: 'POST', body: JSON.stringify(patch) });
+      own.openSpots = res.openSpots; own.recruitingOpen = res.recruitingOpen;
+      const pub = findLeague(own.id);
+      if (pub) { pub.openSpots = res.openSpots; if (!res.recruitingOpen) state.leagues = state.leagues.filter(r => r.id !== own.id); }
+      if (!pub && res.recruitingOpen && own.status === 'approved') { await load({ silent: true }); }
+      state.canFindPlayers = state.profile?.status === 'league_owner' && own.status === 'approved' && own.recruitingOpen;
+      toast('Updated.'); refreshLeagueSurfaces(); renderOwner();
+    } catch (error) { toast(error.message, true); renderOwner(); }
+  }
+  async function doKickoff(button) {
+    const own = state.ownListings[0]; if (!own) return; button.disabled = true;
+    try {
+      const res = await api('/api/leagues/listings/' + encodeURIComponent(own.id) + '/kickoff', { method: 'POST', body: '{}' });
+      own.lastKickoffAt = res.lastKickoffAt || new Date().toISOString();
+      const pub = findLeague(own.id); if (pub) { pub.lastKickoffAt = own.lastKickoffAt; pub.kickoffActive = true; }
+      toast('Kickoff complete. Your league is back in the spotlight.'); refreshLeagueSurfaces(); renderOwner();
+    } catch (error) { toast(error.message, true); load({ silent: true }); }
+  }
+
+  // ───────────── players panel ─────────────
+  let playerTimer;
   async function loadPlayers() {
-    $('#playerList').innerHTML = '<div class="fl-skeleton"></div><div class="fl-skeleton"></div><div class="fl-skeleton"></div>';
+    const grid = $('#lgPlayerGrid');
+    grid.innerHTML = '<div class="lg-skel"></div><div class="lg-skel"></div><div class="lg-skel"></div>';
+    $('#lgPlayerEmpty').hidden = true;
     try {
       const params = new URLSearchParams();
-      if ($('#playerSearch').value.trim()) params.set('q', $('#playerSearch').value.trim());
-      if ($('#playerRegionFilter').value) params.set('region', $('#playerRegionFilter').value);
-      if ($('#playerSizeFilter').value) params.set('size', $('#playerSizeFilter').value);
-      params.set('minOvr', $('#playerMinOvr').value || '50');
+      const q = $('#pQ').value.trim(); if (q) params.set('q', q);
+      if ($('#pRegion').value) params.set('region', $('#pRegion').value);
+      if ($('#pSize').value) params.set('size', $('#pSize').value);
+      if ($('#pLang').value) params.set('lang', $('#pLang').value);
+      params.set('minOvr', $('#pOvr').value || '50');
+      if ($('#pSort').value === 'ovr') params.set('sort', 'ovr');
       const data = await api('/api/leagues/players?' + params.toString());
-      state.players = data.players || [];
-      $('#outreachRemaining').textContent = String(state.outreachRemaining);
-      renderPlayers();
+      state.players = data.players || []; renderPlayers();
     } catch (error) {
-      $('#playerList').innerHTML = '<div class="fl-empty"><h3>Player search is unavailable.</h3><p>' + esc(error.message) + '</p></div>';
+      grid.innerHTML = '<div class="lg-empty" style="grid-column:1/-1"><h3>Player search is unavailable.</h3><p>' + esc(error.message) + '</p></div>';
     }
   }
-
   function renderPlayers() {
     const rows = state.players;
-    $('#playerResultsLabel').textContent = rows.length + (rows.length === 1 ? ' player found' : ' players found');
-    $('#playerList').innerHTML = rows.map((row, index) => {
-      const tags = (row.tournamentSizes || []).map(size => '<span class="fl-tag cyan">' + esc(size) + '</span>').join('') +
-        (row.preferredLanguages || []).slice(0, 2).map(lang => '<span class="fl-tag">' + esc(lang) + '</span>').join('');
-      const revealed = state.revealed.get(row.accountId);
-      const revealPanel = revealed ? '<div class="fl-revealed"><h4>Contact details</h4><dl><dt>UID</dt><dd>' + esc(revealed.fcMobileUid) + '</dd><dt>In-game name</dt><dd>' + esc(revealed.inGameUsername) + '</dd><dt>Discord</dt><dd>' + esc(revealed.discordHandle || 'Not provided') + '</dd><dt>Region</dt><dd>' + esc(revealed.regionServer) + '</dd></dl></div>' : '';
-      return '<article class="fl-player-card" style="animation-delay:' + Math.min(index * 25, 150) + 'ms">' +
-        '<div class="fl-player-head">' + avatarMarkup(row.avatarUrl, row.displayName, 'fl-player-avatar') +
-        '<div class="fl-player-id"><h3>' + esc(row.displayName) + '</h3><p>@' + esc(row.username) + ' · ' + esc(row.regionServer) + '</p></div><div class="fl-player-ovr">' + fmt(row.ovr) + '</div></div>' +
-        '<div class="fl-player-tags">' + tags + '</div>' +
-        '<p class="fl-player-note">' + esc(row.availability || 'Availability not specified') + (row.playStyle ? ' · ' + esc(row.playStyle) : '') + '</p>' +
-        (row.notes ? '<p class="fl-player-note">' + esc(row.notes) + '</p>' : '') +
-        '<button type="button" class="fl-small-btn fl-player-reveal" data-id="' + esc(row.accountId) + '" ' + (state.outreachRemaining <= 0 && !revealed ? 'disabled' : '') + '>' + (revealed ? 'Contact already unlocked' : 'Unlock contact · uses 1 daily contact') + '</button>' +
-        revealPanel + '</article>';
-    }).join('');
-    $('#playerEmpty').hidden = rows.length > 0;
-    $('#playerList').hidden = rows.length === 0;
-    $('#playerList').querySelectorAll('.fl-player-reveal').forEach(button => button.addEventListener('click', () => revealPlayer(button)));
+    $('#lgPlayerResults').textContent = rows.length + (rows.length === 1 ? ' player found' : ' players found');
+    $('#lgRemaining').textContent = state.remaining;
+    $('#lgPips').innerHTML = [0, 1, 2].map(i => '<i class="' + (i < state.remaining ? 'on' : '') + '"></i>').join('');
+    $('#lgPlayerGrid').innerHTML = rows.map((r, i) => playerCard(r, { index: i })).join('');
+    $('#lgPlayerGrid').hidden = rows.length === 0; $('#lgPlayerEmpty').hidden = rows.length > 0;
   }
-
-  async function revealPlayer(button) {
-    const playerId = button.dataset.id;
+  async function revealPlayer(id, button) {
     button.disabled = true;
     try {
-      const result = await api('/api/leagues/players/' + encodeURIComponent(playerId) + '/reveal', { method: 'POST', body: '{}' });
-      state.revealed.set(playerId, result.player);
-      state.outreachRemaining = Number(result.remainingToday || 0);
-      $('#outreachRemaining').textContent = String(state.outreachRemaining);
-      renderPlayers();
-      toast(result.alreadyRevealed ? 'Contact details restored.' : 'Contact details unlocked. Reach out respectfully.');
+      const res = await api('/api/leagues/players/' + encodeURIComponent(id) + '/reveal', { method: 'POST', body: '{}' });
+      state.revealed.set(id, res.player); state.remaining = Number(res.remainingToday || 0);
+      const row = state.players.find(p => p.accountId === id); if (row) row.revealed = true;
+      renderPlayers(); toast(res.alreadyRevealed ? 'Contact details restored.' : 'Contact unlocked. Reach out respectfully.');
     } catch (error) {
-      toast(error.message || 'Contact details could not be unlocked.', true);
-      button.disabled = false;
-      if (/daily limit/i.test(error.message)) { state.outreachRemaining = 0; $('#outreachRemaining').textContent = '0'; renderPlayers(); }
+      toast(error.message, true); button.disabled = false;
+      if (/daily limit/i.test(error.message)) { state.remaining = 0; renderPlayers(); }
     }
   }
 
-  async function initialize() {
-    setLoading(true);
-    try {
-      const accessToken = await token();
-      if (!accessToken) {
-        setLoading(false);
-        showGate();
-        return;
-      }
-      const data = await api('/api/leagues/bootstrap');
-      state.account = data.account;
-      state.profile = data.profile;
-      if (!data.profile) {
-        $('#loadingState').hidden = true;
-        state.leagues = [];
-        showProfileSetup(null, data.suggestedProfile);
-        return;
-      }
-      await refreshBootstrap();
-    } catch (error) {
-      showGate();
-      $('#loginGate').querySelector('p').textContent = error.message || 'Sign in to browse the league board.';
-    } finally {
-      setLoading(false);
-    }
+  // ───────────── profile form ─────────────
+  function profileDraft() {
+    const f = $('#lgProfileForm');
+    return {
+      displayName: state.account?.displayName || f.elements.inGameUsername.value || 'Your name', username: state.account?.username || '',
+      avatarUrl: f.elements.avatarUrl.value || state.account?.avatarUrl || null, ovr: Number(f.elements.ovr.value || 0) || '—',
+      regionServer: f.elements.regionServer.value || 'Region', tournamentSizes: selectedValues(f, 'tournamentSizes'),
+      preferredLanguages: selectedValues(f, 'preferredLanguages'), availability: f.elements.availability.value, playStyle: f.elements.playStyle.value, notes: f.elements.notes.value.trim()
+    };
   }
-
-  $('#profileForm').addEventListener('submit', async event => {
+  const renderProfilePreview = () => { $('#lgProfilePreview').innerHTML = playerCard(profileDraft(), { preview: true }); };
+  function openProfile(suggested) {
+    const f = $('#lgProfileForm'); const p = state.profile || {}; const s = suggested || {};
+    f.reset();
+    f.elements.fcMobileUid.value = p.fc_mobile_uid || s.fcMobileUid || '';
+    f.elements.inGameUsername.value = p.in_game_username || s.inGameUsername || '';
+    f.elements.avatarUrl.value = p.avatar_url || '';
+    f.elements.ovr.value = p.ovr || '';
+    f.elements.regionServer.value = p.region_server || s.regionServer || '';
+    f.elements.status.value = p.status || 'looking_for_league';
+    f.elements.discordHandle.value = p.discord_handle || s.discordHandle || '';
+    f.elements.availability.value = p.availability || '';
+    f.elements.playStyle.value = p.play_style || '';
+    f.elements.notes.value = p.notes || '';
+    setChecks(f, 'preferredLanguages', p.preferred_languages || ['English']);
+    setChecks(f, 'tournamentSizes', p.tournament_sizes || []);
+    $('#lgProfileTitle').textContent = state.profile ? 'Update your league profile.' : 'Set up your league profile.';
+    $('#lgProfileCancel').hidden = !state.profile;
+    msg('#lgProfileMsg', ''); renderProfilePreview(); showView('profile', { scroll: true });
+  }
+  async function submitProfile(event) {
     event.preventDefault();
-    const form = event.currentTarget;
-    const button = $('#saveProfileBtn');
-    button.disabled = true; button.textContent = 'Saving profile…';
-    formMessage('#profileMessage', '');
+    const f = event.currentTarget; const btn = $('#lgProfileSave');
+    if (!f.reportValidity()) return;
+    btn.disabled = true; btn.textContent = 'Saving profile…'; msg('#lgProfileMsg', '');
     const payload = {
-      fcMobileUid: form.elements.fcMobileUid.value.trim(),
-      inGameUsername: form.elements.inGameUsername.value.trim(),
-      avatarUrl: form.elements.avatarUrl.value,
-      ovr: Number(form.elements.ovr.value),
-      regionServer: form.elements.regionServer.value,
-      status: form.elements.status.value,
-      discordHandle: form.elements.discordHandle.value.trim(),
-      availability: form.elements.availability.value,
-      playStyle: form.elements.playStyle.value,
-      notes: form.elements.notes.value.trim(),
-      preferredLanguages: selectedValues(form, 'preferredLanguages'),
-      tournamentSizes: selectedValues(form, 'tournamentSizes')
+      fcMobileUid: f.elements.fcMobileUid.value.trim(), inGameUsername: f.elements.inGameUsername.value.trim(), avatarUrl: f.elements.avatarUrl.value,
+      ovr: Number(f.elements.ovr.value), regionServer: f.elements.regionServer.value, status: f.elements.status.value, discordHandle: f.elements.discordHandle.value.trim(),
+      availability: f.elements.availability.value, playStyle: f.elements.playStyle.value, notes: f.elements.notes.value.trim(),
+      preferredLanguages: selectedValues(f, 'preferredLanguages'), tournamentSizes: selectedValues(f, 'tournamentSizes')
     };
     try {
-      const result = await api('/api/leagues/profile', { method: 'POST', body: JSON.stringify(payload) });
-      state.profile = result.profile;
-      toast('Player profile saved.');
-      await refreshBootstrap();
-    } catch (error) {
-      formMessage('#profileMessage', error.message || 'Unable to save your profile.', true);
-    } finally {
-      button.disabled = false; button.innerHTML = 'Save player profile <span aria-hidden="true">→</span>';
-    }
-  });
+      await api('/api/leagues/profile', { method: 'POST', body: JSON.stringify(payload) });
+      toast('Player profile saved.'); await load(); 
+    } catch (error) { msg('#lgProfileMsg', error.message); }
+    finally { btn.disabled = false; btn.innerHTML = 'Save player profile <span aria-hidden="true">→</span>'; }
+  }
 
-  $('#listingForm').addEventListener('submit', async event => {
+  // ───────────── listing editor ─────────────
+  function listingDraft() {
+    const f = $('#lgListingForm'); const own = state.ownListings.find(r => r.id === state.editingId);
+    return {
+      id: 'preview', name: f.elements.name.value.trim() || own?.name || '', tagline: f.elements.tagline.value.trim(), description: f.elements.description.value.trim(),
+      logoUrl: f.elements.logoUrl.value || null, regionServer: f.elements.regionServer.value, minOvr: Number(f.elements.minOvr.value || 0) || 0,
+      tournamentFrequency: f.elements.tournamentFrequency.value, tournamentSizes: selectedValues(f, 'tournamentSizes'), preferredLanguages: selectedValues(f, 'preferredLanguages'),
+      playerCommitment: f.elements.playerCommitment.value, openSpots: Number(f.elements.openSpots.value || 0), discordRequired: f.elements.discordRequired.checked,
+      verified: Boolean(own?.verified), featured: false, kickoffActive: false, saved: false, isMine: true, confirmations7d: 0, lastActiveAt: null, createdAt: new Date().toISOString()
+    };
+  }
+  const renderListingPreview = () => { $('#lgListingPreview').innerHTML = leagueCard(listingDraft(), { preview: true }); };
+  function openEditor(row = null) {
+    if (state.profile?.status !== 'league_owner') { openProfile(); toast('Set your status to League owner to submit a club listing.'); return; }
+    state.editingId = row?.id || null;
+    const f = $('#lgListingForm'); f.reset();
+    f.elements.name.value = row?.name || ''; f.elements.name.disabled = Boolean(row); $('#lgNameHelp').hidden = !row;
+    f.elements.tagline.value = row?.tagline || ''; f.elements.regionServer.value = row?.regionServer || state.profile?.region_server || '';
+    f.elements.minOvr.value = row?.minOvr ?? ''; f.elements.tournamentFrequency.value = row?.tournamentFrequency || 'daily';
+    f.elements.playerCommitment.value = row?.playerCommitment || 'regular'; f.elements.openSpots.value = String(row?.openSpots ?? 5);
+    f.elements.activeHours.value = row?.activeHours || ''; f.elements.leagueGameId.value = row?.leagueGameId || '';
+    f.elements.discordInviteUrl.value = row?.discordInviteUrl || ''; f.elements.contactDiscord.value = row?.contactDiscord || '';
+    f.elements.description.value = row?.description || ''; f.elements.weeklyRewards.value = row?.weeklyRewards || '';
+    f.elements.logoUrl.value = row?.logoUrl || ''; f.elements.discordRequired.checked = Boolean(row?.discordRequired); f.elements.recruitingOpen.checked = row ? row.recruitingOpen !== false : true;
+    setChecks(f, 'tournamentSizes', row?.tournamentSizes || ['4v4']); setChecks(f, 'preferredLanguages', row?.preferredLanguages || ['English']);
+    $('#lgEditorTitle').textContent = row ? 'Update your league listing.' : 'Put your league on the board.';
+    $('#lgListingSave').innerHTML = row ? 'Resubmit for review <span aria-hidden="true">→</span>' : 'Submit for review <span aria-hidden="true">→</span>';
+    msg('#lgListingMsg', ''); renderListingPreview(); showView('editor', { scroll: true });
+  }
+  async function submitListing(event) {
     event.preventDefault();
-    const form = event.currentTarget;
-    const button = $('#submitListingBtn');
-    button.disabled = true; button.textContent = 'Submitting…';
-    formMessage('#listingMessage', '');
+    const f = event.currentTarget; const btn = $('#lgListingSave');
+    if (!selectedValues(f, 'tournamentSizes').length) { msg('#lgListingMsg', 'Choose at least one tournament size.'); return; }
+    if (!f.reportValidity()) return;
+    btn.disabled = true; btn.textContent = 'Submitting…'; msg('#lgListingMsg', '');
+    const payload = {
+      name: f.elements.name.value.trim(), tagline: f.elements.tagline.value.trim(), leagueGameId: f.elements.leagueGameId.value.trim(), description: f.elements.description.value.trim(),
+      logoUrl: f.elements.logoUrl.value, regionServer: f.elements.regionServer.value, minOvr: Number(f.elements.minOvr.value), tournamentFrequency: f.elements.tournamentFrequency.value,
+      tournamentSizes: selectedValues(f, 'tournamentSizes'), preferredLanguages: selectedValues(f, 'preferredLanguages'), playerCommitment: f.elements.playerCommitment.value,
+      weeklyRewards: f.elements.weeklyRewards.value.trim(), discordInviteUrl: f.elements.discordInviteUrl.value.trim(), contactDiscord: f.elements.contactDiscord.value.trim(),
+      activeHours: f.elements.activeHours.value.trim(), openSpots: Number(f.elements.openSpots.value), discordRequired: f.elements.discordRequired.checked, recruitingOpen: f.elements.recruitingOpen.checked
+    };
     try {
-      const payload = {
-        name: form.elements.name.value.trim(),
-        leagueGameId: form.elements.leagueGameId.value.trim(),
-        description: form.elements.description.value.trim(),
-        logoUrl: form.elements.logoUrl.value,
-        regionServer: form.elements.regionServer.value,
-        minOvr: Number(form.elements.minOvr.value),
-        tournamentFrequency: form.elements.tournamentFrequency.value,
-        tournamentSizes: selectedValues(form, 'tournamentSizes'),
-        preferredLanguages: selectedValues(form, 'preferredLanguages'),
-        playerCommitment: form.elements.playerCommitment.value,
-        weeklyRewards: form.elements.weeklyRewards.value.trim(),
-        discordInviteUrl: form.elements.discordInviteUrl.value.trim(),
-        contactDiscord: form.elements.contactDiscord.value.trim(),
-        openSpots: Number(form.elements.openSpots.value),
-        discordRequired: form.elements.discordRequired.checked,
-        recruitingOpen: form.elements.recruitingOpen.checked
-      };
-      const endpoint = state.editingListingId
-        ? '/api/leagues/listings/' + encodeURIComponent(state.editingListingId) + '/update'
-        : '/api/leagues/listings';
-      const result = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
-      state.editingListingId = null;
-      toast(result.message || (result.status === 'pending' ? 'Changes submitted for review.' : 'League submitted. It will appear after review.'));
-      $('#listingEditor').hidden = true;
-      $('#workspace').hidden = false;
-      await refreshBootstrap();
+      const endpoint = state.editingId ? '/api/leagues/listings/' + encodeURIComponent(state.editingId) + '/update' : '/api/leagues/listings';
+      const res = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+      state.editingId = null; toast(res.message || 'Submitted. It goes live after review.'); state.tab = 'owner'; await load();
+    } catch (error) { msg('#lgListingMsg', error.message); }
+    finally { btn.disabled = false; btn.innerHTML = (state.editingId ? 'Resubmit for review' : 'Submit for review') + ' <span aria-hidden="true">→</span>'; }
+  }
+
+  async function uploadImage(file, hiddenInput) {
+    const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!ok.includes(file.type) || file.size > 8 * 1024 * 1024) throw new Error('Use a JPG, PNG, WebP or GIF image smaller than 8 MB.');
+    const accessToken = await token(); if (!accessToken) throw new Error('Sign in again before uploading an image.');
+    const body = new FormData(); body.append('file', file); body.append('permanent', 'true');
+    const res = await fetch('/api/account/image-upload', { method: 'POST', headers: { authorization: 'Bearer ' + accessToken }, body, credentials: 'same-origin', cache: 'no-store' });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(result.error || 'Image upload failed. Please try again.');
+    const url = result.image?.url || result.url || result.imageUrl || result.data?.url || result.data?.display_url || '';
+    if (!url) throw new Error('Image upload did not return a usable image URL.');
+    hiddenInput.value = url; return url;
+  }
+
+  // ───────────── bootstrap ─────────────
+  async function load({ silent = false } = {}) {
+    if (!silent) showView('loading');
+    try {
+      if (!(await token())) { showView('gate'); return; }
+      const d = await api('/api/leagues/bootstrap');
+      state.account = d.account; state.profile = d.profile; state.leagues = d.leagues || []; state.ownListings = d.ownListings || [];
+      state.insights = d.ownerInsights || null; state.canFindPlayers = Boolean(d.canFindPlayers); state.remaining = Number(d.outreachRemaining ?? 3); state.premiumReady = d.premiumReady !== false;
+      if (!d.profile) { openProfile(d.suggestedProfile); return; }
+      if (state.view !== 'workspace') showView('workspace', { scroll: !silent });
+      if (d.directoryFailed) toast('Some leagues could not be loaded. Pull to refresh in a moment.', true);
+      renderHero(); renderTabs(); renderLeagues(); renderSaved(); renderOwner();
+      if (state.tab === 'players') loadPlayers();
     } catch (error) {
-      formMessage('#listingMessage', error.message || 'Unable to submit your league.', true);
-    } finally {
-      button.disabled = false; button.innerHTML = 'Submit for approval <span aria-hidden="true">→</span>';
+      if (silent) { toast(error.message, true); return; }
+      if (error.status === 401) { showView('gate'); return; }
+      $('#lgErrorMsg').textContent = error.message || 'Something went wrong. Please try again.'; showView('error');
     }
-  });
+  }
 
-  $('#profileAvatarFile').addEventListener('change', async event => {
-    const file = event.currentTarget.files?.[0];
-    if (!file) return;
-    $('#saveProfileBtn').disabled = true;
-    formMessage('#profileMessage', 'Uploading player avatar…');
-    try {
-      await uploadImage(file, $('#profileAvatarPreview'), $('#profileForm').elements.avatarUrl);
-      formMessage('#profileMessage', 'Avatar uploaded.');
-    } catch (error) {
-      formMessage('#profileMessage', error.message, true);
-    } finally {
-      $('#saveProfileBtn').disabled = false;
-    }
-  });
+  // ───────────── static setup ─────────────
+  function buildOptions() {
+    const opt = (value, label) => '<option value="' + esc(value) + '">' + esc(label == null ? value : label) + '</option>';
+    const sets = {
+      'regions': '<option value="">Choose region</option>' + REGIONS.map(r => opt(r)).join(''),
+      'regions-any': '<option value="">All regions</option>' + REGIONS.map(r => opt(r)).join(''),
+      'languages-any': '<option value="">Any language</option>' + LANGS.map(r => opt(r)).join(''),
+      'availability': '<option value="">Choose your usual availability</option>' + AVAIL.map(r => opt(r)).join(''),
+      'styles': '<option value="">Choose a play style</option>' + STYLES.map(r => opt(r)).join(''),
+      'reasons': REASONS.map(([v, l]) => opt(v, l)).join('')
+    };
+    $$('[data-options]').forEach(n => { n.innerHTML = sets[n.dataset.options] || ''; });
+    const chip = (name, v) => '<label class="lg-chip"><input type="checkbox" name="' + name + '" value="' + esc(v) + '"><span>' + esc(v) + '</span></label>';
+    $$('[data-chips]').forEach(n => { n.innerHTML = (n.dataset.chips === 'sizes' ? SIZES : LANGS).map(v => chip(n.dataset.name, v)).join(''); });
+  }
+  function resetFilters() {
+    state.filters = { q: '', region: '', freq: '', size: '', lang: '', commit: '', qualify: true, verified: false };
+    $('#fQ').value = ''; ['fRegion', 'fFreq', 'fSize', 'fLang', 'fCommit'].forEach(id => { $('#' + id).value = ''; });
+    $('#fQualify').checked = true; $('#fVerified').checked = false; renderLeagues();
+  }
+  function bindFilters() {
+    const map = { fRegion: 'region', fFreq: 'freq', fSize: 'size', fLang: 'lang', fCommit: 'commit' };
+    $('#fQ').addEventListener('input', e => { state.filters.q = e.target.value; renderLeagues(); });
+    for (const [id, key] of Object.entries(map)) $('#' + id).addEventListener('change', e => { state.filters[key] = e.target.value; renderLeagues(); });
+    $('#fQualify').addEventListener('change', e => { state.filters.qualify = e.target.checked; renderLeagues(); });
+    $('#fVerified').addEventListener('change', e => { state.filters.verified = e.target.checked; renderLeagues(); });
+    $('#fSort').addEventListener('change', e => { state.sort = e.target.value; renderLeagues(); });
+    $('#fClear').addEventListener('click', resetFilters); $('#lgEmptyReset').addEventListener('click', resetFilters);
+    $('#fShowAll').addEventListener('click', () => { state.filters.qualify = false; $('#fQualify').checked = false; renderLeagues(); });
+    $('#fToggle').addEventListener('click', e => { const open = $('#lgFilters').classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', String(open)); });
+    const reload = () => { clearTimeout(playerTimer); playerTimer = setTimeout(loadPlayers, 220); };
+    ['pQ'].forEach(id => $('#' + id).addEventListener('input', reload));
+    ['pRegion', 'pSize', 'pLang', 'pOvr', 'pSort'].forEach(id => $('#' + id).addEventListener('change', loadPlayers));
+  }
+  function bindForms() {
+    $('#lgProfileForm').addEventListener('submit', submitProfile);
+    $('#lgProfileForm').addEventListener('input', renderProfilePreview); $('#lgProfileForm').addEventListener('change', renderProfilePreview);
+    $('#lgListingForm').addEventListener('submit', submitListing);
+    $('#lgListingForm').addEventListener('input', renderListingPreview); $('#lgListingForm').addEventListener('change', renderListingPreview);
+    $('#lgProfileCancel').addEventListener('click', () => { showView('workspace', { scroll: true }); });
+    $('#lgEditorBack').addEventListener('click', () => { state.editingId = null; showView('workspace', { scroll: true }); setTab('owner'); });
+    $('#lgAvatarFile').addEventListener('change', async e => {
+      const file = e.currentTarget.files?.[0]; if (!file) return; const btn = $('#lgProfileSave'); btn.disabled = true; msg('#lgProfileMsg', 'Uploading avatar…', 'ok');
+      try { await uploadImage(file, $('#lgProfileForm').elements.avatarUrl); msg('#lgProfileMsg', 'Avatar uploaded.', 'ok'); renderProfilePreview(); } catch (error) { msg('#lgProfileMsg', error.message); } finally { btn.disabled = false; }
+    });
+    $('#lgCrestFile').addEventListener('change', async e => {
+      const file = e.currentTarget.files?.[0]; if (!file) return; const btn = $('#lgListingSave'); btn.disabled = true; msg('#lgListingMsg', 'Uploading crest…', 'ok');
+      try { await uploadImage(file, $('#lgListingForm').elements.logoUrl); msg('#lgListingMsg', 'Crest uploaded.', 'ok'); renderListingPreview(); } catch (error) { msg('#lgListingMsg', error.message); } finally { btn.disabled = false; }
+    });
+  }
+  function bindGlobal() {
+    document.addEventListener('error', e => { if (e.target?.tagName === 'IMG' && e.target.closest?.('.lg-root')) e.target.remove(); }, true);
+    $('#lgRetry').addEventListener('click', () => load());
+    $('#lgBackdrop').addEventListener('click', closeDrawer); $('#lgDrawerClose').addEventListener('click', closeDrawer);
+    $('#lgReportCancel').addEventListener('click', closeReport); $('#lgReportSend').addEventListener('click', sendReport);
+    $('#lgReport').addEventListener('click', e => { if (e.target === e.currentTarget) closeReport(); });
+    document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#lgReport').hidden) closeReport(); else closeDrawer(); });
 
-  $('#leagueLogoFile').addEventListener('change', async event => {
-    const file = event.currentTarget.files?.[0];
-    if (!file) return;
-    $('#submitListingBtn').disabled = true;
-    formMessage('#listingMessage', 'Uploading crest…');
-    try {
-      state.logoUrl = await uploadImage(file, $('#leagueLogoPreview'), $('#listingForm').elements.logoUrl);
-      formMessage('#listingMessage', 'Crest uploaded.');
-    } catch (error) {
-      formMessage('#listingMessage', error.message, true);
-    } finally {
-      $('#submitListingBtn').disabled = false;
-    }
-  });
+    $('#lgRoot').addEventListener('click', e => {
+      const t = e.target;
+      const tab = t.closest('[data-tab]'); if (tab) { setTab(tab.dataset.tab); return; }
+      const go = t.closest('[data-goto]'); if (go) { setTab(go.dataset.goto); return; }
+      const save = t.closest('[data-save]'); if (save) { e.stopPropagation(); toggleSave(save.dataset.save); return; }
+      const open = t.closest('[data-open]'); if (open) { openDrawer(open.dataset.open); return; }
+      const copy = t.closest('[data-copy]'); if (copy) { copyText(copy.dataset.copy, copy.dataset.label); return; }
+      const contact = t.closest('[data-contact]'); if (contact) { copyText(contact.dataset.contact, 'Discord contact'); return; }
+      const join = t.closest('[data-join]'); if (join) { trackJoin(join.dataset.join); return; }
+      const conf = t.closest('[data-confirm]'); if (conf) { confirmActive(conf.dataset.confirm, conf); return; }
+      const rep = t.closest('[data-report]'); if (rep) { openReport(rep.dataset.report); return; }
+      const rev = t.closest('[data-reveal]'); if (rev) { revealPlayer(rev.dataset.reveal, rev); return; }
+      if (t.closest('#lgEditProfile')) { openProfile(); return; }
+      if (t.closest('[data-create-listing]')) { openEditor(); return; }
+      if (t.closest('[data-edit-listing]')) { openEditor(state.ownListings[0]); return; }
+      const spots = t.closest('[data-spots]');
+      if (spots) { const own = state.ownListings[0]; const next = Math.max(0, Math.min(50, Number(own?.openSpots || 0) + Number(spots.dataset.spots))); if (own && next !== own.openSpots) quickUpdate({ openSpots: next }); return; }
+      if (t.closest('#lgRecruitToggle')) { const own = state.ownListings[0]; if (own) quickUpdate({ recruitingOpen: !own.recruitingOpen }); return; }
+      const kick = t.closest('#lgKickoff'); if (kick) { doKickoff(kick); return; }
+      const card = t.closest('[data-card]'); if (card && !t.closest('a,button')) openDrawer(card.dataset.card);
+    });
+  }
+  // live countdowns (owner Kickoff cooldown)
+  setInterval(() => {
+    const nodes = $$('[data-until]'); if (!nodes.length) return;
+    let expired = false;
+    for (const n of nodes) { const left = Number(n.dataset.until) - Date.now(); if (left <= 0) expired = true; else n.textContent = clock(left); }
+    if (expired && state.view === 'workspace') renderOwner();
+  }, 1000);
 
-  $('#tabLeagues').addEventListener('click', () => showTab('leagues'));
-  $('#tabPlayers').addEventListener('click', () => { if (state.canFindPlayers) showTab('players'); });
-  $('#editProfileBtn').addEventListener('click', openLeagueProfile);
-  $('#listLeagueBtn').addEventListener('click', openListingEditor);
-  $('#openListingBtn').addEventListener('click', openListingEditor);
-  $('#emptyListBtn').addEventListener('click', openListingEditor);
-  $('#createListingBtn').addEventListener('click', openListingEditor);
-  $('#cancelListing').addEventListener('click', () => { $('#listingEditor').hidden = true; $('#workspace').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); });
-  $('#leagueList').addEventListener('click', async event => {
-    const button = event.target.closest('[data-contact-discord]');
-    if (!button) return;
-    const value = button.dataset.contactDiscord || '';
-    try {
-      await navigator.clipboard.writeText(value);
-      toast('Discord contact copied.');
-    } catch {
-      toast('Copy failed. Discord handle: ' + value, true);
-    }
-  });
-
-  $('#leagueSearch').addEventListener('input', filterLeagues);
-  $('#regionFilter').addEventListener('change', filterLeagues);
-  $('#frequencyFilter').addEventListener('change', filterLeagues);
-  $('#sizeFilter').addEventListener('change', filterLeagues);
-  $('#squadOvrFilter').addEventListener('change', filterLeagues);
-  $('#clearFilters').addEventListener('click', () => { $('#leagueSearch').value = ''; $('#regionFilter').value = ''; $('#frequencyFilter').value = ''; $('#sizeFilter').value = ''; $('#squadOvrFilter').value = 'my'; filterLeagues(); });
-  $('#playerSearch').addEventListener('input', () => { window.clearTimeout(window.playerSearchTimer); window.playerSearchTimer = window.setTimeout(loadPlayers, 180); });
-  $('#playerRegionFilter').addEventListener('change', loadPlayers);
-  $('#playerSizeFilter').addEventListener('change', loadPlayers);
-  $('#playerMinOvr').addEventListener('change', loadPlayers);
-  $('#ownerPanel').addEventListener('click', async event => {
-    const button = event.target.closest('#kickoffBtn');
-    if (!button) return;
-    const row = (state.ownListings || [])[0];
-    if (!row) return;
-    button.disabled = true;
-    try {
-      const result = await api('/api/leagues/listings/' + encodeURIComponent(row.id) + '/kickoff', { method: 'POST', body: '{}' });
-      toast('Kickoff complete. Your league is back in the spotlight.');
-      row.lastKickoffAt = result.lastKickoffAt || new Date().toISOString();
-      ownerDesk();
-    } catch (error) {
-      toast(error.message || 'Kickoff is not available yet.', true);
-      button.disabled = false;
-      refreshBootstrap().catch(() => {});
-    }
-  });
-
+  buildOptions(); bindFilters(); bindForms(); bindGlobal();
   accountAuth.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_OUT') showGate();
-    if (event === 'SIGNED_IN' && session?.access_token && !state.profile) initialize();
+    if (event === 'SIGNED_OUT') { state.profile = null; showView('gate'); }
+    if (event === 'SIGNED_IN' && session?.access_token && state.view === 'gate') load();
   });
-
-  initialize();
+  load();
 </script>
