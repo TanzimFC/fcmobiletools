@@ -513,6 +513,32 @@
   .lg-cond{display:grid;gap:14px}.lg-cond[hidden]{display:none}
   .lg-counter{margin-left:auto;color:var(--dim);font-size:11px;font-weight:500}
 
+  /* Private league inbox */
+  .lg-inbox{display:grid;grid-template-columns:minmax(250px,.8fr) minmax(0,1.5fr);gap:14px;min-height:420px}
+  .lg-inbox-threads,.lg-inbox-chat{min-width:0;border:1px solid var(--line);border-radius:20px;background:linear-gradient(155deg,rgba(16,29,42,.9),rgba(9,18,27,.97));overflow:hidden}
+  .lg-inbox-threads{padding:8px;display:flex;flex-direction:column;gap:6px;max-height:660px;overflow:auto}
+  .lg-inbox-thread{display:flex;align-items:center;gap:10px;width:100%;padding:11px;border:1px solid transparent;border-radius:13px;background:transparent;color:var(--text);text-align:left;cursor:pointer;transition:.18s}
+  .lg-inbox-thread:hover{background:#ffffff06;border-color:var(--line)}
+  .lg-inbox-thread.active{background:#4cc9ff10;border-color:#4cc9ff42}
+  .lg-inbox-thread-copy{display:grid;gap:3px;min-width:0;flex:1}
+  .lg-inbox-thread-copy b,.lg-inbox-thread-copy small,.lg-inbox-thread-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lg-inbox-thread-copy b{font-size:12.5px}.lg-inbox-thread-copy small{font-size:10.5px;color:var(--muted)}.lg-inbox-thread-copy span{font-size:11px;color:#9eb1bf}
+  .lg-inbox-unread{display:grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:9px;background:var(--cyan);color:#06131b;font-size:10px;font-style:normal;font-weight:800}
+  .lg-inbox-chat{display:flex;flex-direction:column;min-height:420px}
+  .lg-inbox-chat-head{display:grid;gap:3px;padding:16px 18px;border-bottom:1px solid var(--line);background:#ffffff03}
+  .lg-inbox-chat-head b{font:700 14px 'Space Grotesk',sans-serif;overflow-wrap:anywhere}.lg-inbox-chat-head small{font-size:11px;color:var(--muted)}
+  .lg-inbox-messages{display:flex;flex:1;flex-direction:column;gap:10px;padding:16px;min-height:240px;max-height:460px;overflow:auto}
+  .lg-inbox-empty{margin:auto;text-align:center;color:var(--muted);font-size:12px;line-height:1.65;max-width:280px;padding:30px 10px}
+  .lg-inbox-msg{align-self:flex-start;max-width:min(86%,520px);padding:11px 13px;border:1px solid var(--line);border-radius:14px 14px 14px 4px;background:#ffffff06}
+  .lg-inbox-msg.mine{align-self:flex-end;border-color:#4cc9ff35;border-radius:14px 14px 4px 14px;background:#4cc9ff10}
+  .lg-inbox-msg>div{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:10px;font-weight:800;color:#b8ccda}
+  .lg-inbox-msg time{font-size:9.5px;color:var(--dim);font-weight:500}
+  .lg-inbox-msg p{margin:6px 0 0;color:#e5edf4;font-size:12.5px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+  .lg-inbox-form{display:grid;gap:10px;padding:14px;border-top:1px solid var(--line);background:#ffffff03}
+  .lg-inbox-form .lg-field{margin:0}.lg-inbox-form .lg-btn{justify-self:end}
+  .lg-inbox-form[hidden]{display:none}
+  .lg-inbox [hidden]{display:none!important}
+
   /* applications (owner + player) */
   .lg-app{padding:15px;border:1px solid var(--line);border-radius:18px;background:#08121a;display:grid;gap:12px}
   .lg-app+.lg-app{margin-top:12px}
@@ -567,6 +593,11 @@
     .lp-cols{grid-template-columns:1fr}.lp-side{position:static;order:-1}
     .lp-facts{grid-template-columns:repeat(2,1fr)}
     .lp-id{flex-direction:column;align-items:flex-start}
+  }
+  @media (max-width:760px){
+    .lg-inbox{grid-template-columns:1fr}
+    .lg-inbox-threads{max-height:230px}
+    .lg-inbox-chat{min-height:360px}
   }
   @media (max-width:700px){
     .lg-vac-box strong{font-size:18px}

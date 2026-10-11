@@ -58,9 +58,8 @@ export function scheduleLine(r) {
 export function activityLine(r) {
   const bits = [];
   if (r.confirmations7d > 0) bits.push(r.confirmations7d + ' confirmed active this week');
-  if (r.matchdays7d > 0) bits.push(r.matchdays7d + ' tournament' + (r.matchdays7d === 1 ? '' : 's') + ' this week');
   if (!bits.length) bits.push(r.lastActiveAt ? 'Last confirmed ' + timeAgo(r.lastActiveAt) : 'Listed ' + (timeAgo(r.createdAt) || 'recently'));
-  return { hot: r.confirmations7d > 0 || r.matchdays7d > 0, text: bits.join(' · ') };
+  return { hot: r.confirmations7d > 0, text: bits.join(' · ') };
 }
 
 export function ring(m, small = true) {
@@ -112,12 +111,16 @@ export const INFO = {
   division: ['Divisions', 'Leagues are grouped by division: Bronze 1,050 to 2,000, Silver 2,100 to 4,000, World Class 4,100 to 6,000, Legendary 6,100 to 8,000, FC Champions 8,100 to 10,000.'],
   joining: ['How to join', '<b>Apply here</b>: send an application with your team screenshot. <b>Join Discord</b>: open the league\u2019s server. <b>Search in game</b>: find the league by its ID inside FC Mobile.'],
   trust: ['Verified, reviewed, new', '<b>Verified club</b>: confirmed as a real, active club by FCMobiletools. <b>Reviewed</b>: the team checked the listing. <b>New</b>: listed in the last 7 days. <b>Sample club</b>: for testing only.'],
-  activity: ['Activity', '“Confirmed active” means players of that league tapped Confirm activity this week. Tournaments are logged by the owner.'],
-  kickoff: ['Kickoff', 'Kickoff puts a league at the top of the board for 6 hours. League owners and approved members can use it once every 6 hours.'],
+  activity: ['Activity', '“Confirmed active” means players from that league have confirmed they played recently. New leagues may not have activity yet.'],
+  kickoff: ['Kickoff', 'Kickoff puts a league near the top of the board for 6 hours. The owner or an approved crew member can activate it; the whole league shares one 6-hour cooldown.'],
   confirm: ['Confirm activity', 'Played in this league lately? Tap it. It tells other players the league is active. One tap per day.'],
   sharing: ['Your UID and Discord', 'They are never public. A league only sees them if you tick the box when you apply, or turn on sharing in your player card.'],
-  apply: ['Applying', 'Add a team screenshot so the owner can see your squad. The owner can shortlist you, invite you in game, or decline. You can have 5 open applications.'],
-  spotlight: ['Community Spotlight', 'The leagues players were most active in this week. It updates on its own.'],
+  apply: ['Applying', 'Add a clear screenshot of your current team so the owner can check your squad. You can keep up to 3 active applications at once. Owners can shortlist you, invite you in game, or decline.'],
+  spotlight: ['Community Spotlight', 'A separate board for leagues with recent community activity. Sample listings are excluded.'],
+  region: ['Worldwide regions', 'Choose Worldwide if your league recruits across servers or accepts players from any region. Otherwise, select the main region your players use.'],
+  saved: ['Saved leagues', 'Keep up to 3 leagues bookmarked. Saved listings stay here while they are publicly available. Remove one bookmark to save another.'],
+  inbox: ['League inbox', 'Message a league owner about an application, or reply to a player who applied to your league. Keep personal contact details private unless you choose to share them.'],
+  appeal: ['Suspension appeal', 'Explain why a suspended league should be restored. Include the changes you have made; an admin will review the appeal.'],
   listing: ['Listing a league', 'Anyone can list one league. Keep it short and true: your division, minimum OVR, open spots, schedule and how to join. You can edit it any time.'],
   pitch: ['One-line pitch', 'One short line players read first. Example: “Daily 8v8, friendly and active.” Long text is not needed.']
 };
