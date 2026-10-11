@@ -77,6 +77,7 @@ const schema = [
 
       <div class="lg-workspace" id="lgWorkspace">
         <nav class="lg-tabs" id="lgTabs" role="tablist" aria-label="Leagues" hidden></nav>
+        <div class="lg-activity-notice" id="lgActivityNotice" role="region" aria-label="League notifications" aria-live="polite" hidden></div>
 
         <!-- LEAGUES -->
         <section class="lg-panel" id="panelLeagues" role="tabpanel">
@@ -143,7 +144,7 @@ const schema = [
         <section class="lg-panel" id="panelInbox" role="tabpanel" hidden>
           <div class="lg-panel-head slim"><div><h2>Inbox <Fragment set:html={infoBtn('inbox')} /></h2><p>Messages about league applications, decisions and moderation notices.</p></div><button class="lg-btn lg-btn-outline lg-btn-sm" id="lgInboxRefresh" type="button">Refresh</button></div>
           <div class="lg-inbox-admin-warning" role="note"><b><span aria-hidden="true">!</span> Inbox safety notice</b>
-            <p>FCMOBILETOOLS admins can review Inbox messages. Never share passwords, login or recovery codes, payment details, or other sensitive information. Keep messages relevant to the league application. Abuse, spam or off-topic messages can lead to Inbox suspension. Messages are automatically deleted after 48 hours.</p>
+            <p>FCMOBILETOOLS admins can review Inbox messages. Never share passwords, login or recovery codes, payment details, or other sensitive information. Keep messages relevant to the league application. Abuse, spam or off-topic messages can lead to Inbox suspension. Messages are automatically deleted after 7 days.</p>
           </div>
           <section class="lg-inbox-notices" id="lgInboxNotices" aria-label="League decisions and moderation notices"></section>
           <div class="lg-inbox">
@@ -152,7 +153,7 @@ const schema = [
               <header class="lg-inbox-chat-head"><b id="lgInboxTitle">Choose a conversation</b><small id="lgInboxSubtitle">Your messages stay inside FCMobiletools.</small></header>
               <div class="lg-inbox-messages" id="lgInboxMessages" role="log" aria-live="polite"><div class="lg-inbox-empty">Select an application conversation to read messages.</div></div>
               <form class="lg-inbox-form" id="lgInboxForm" hidden>
-                <label class="lg-field"><span>Message <Fragment set:html={infoBtn('inbox')} /></span><textarea id="lgInboxInput" rows="2" maxlength="1200" placeholder="Write a clear, respectful message…" required></textarea><small class="lg-help">No passwords or sensitive account details. Up to 1,200 characters.</small></label>
+                <label class="lg-field"><span>Message <Fragment set:html={infoBtn('inbox')} /></span><textarea id="lgInboxInput" rows="2" maxlength="300" placeholder="Write a short, respectful message…" required></textarea><small class="lg-help">Keep it brief. Maximum 300 characters.</small></label>
                 <button class="lg-btn lg-btn-primary" id="lgInboxSend" type="submit">Send message</button>
               </form>
             </section>
@@ -329,6 +330,19 @@ const schema = [
     nav.innerHTML = tabs.map(t => '<button class="lg-tab' + (t.id === state.tab ? ' active' : '') + '" role="tab" type="button" data-tab="' + t.id + '" aria-selected="' + (t.id === state.tab) + '">' + esc(t.label) +
       (t.count !== undefined ? '<em>' + fmt(t.count) + '</em>' : '') + (t.badge ? '<span class="lg-tabbadge">' + t.badge + '</span>' : '') + '</button>').join('');
     for (const [id, sel] of [['leagues', '#panelLeagues'], ['spotlight', '#panelSpotlight'], ['saved', '#panelSaved'], ['apps', '#panelApps'], ['inbox', '#panelInbox'], ['players', '#panelPlayers'], ['owner', '#panelOwner']]) $(sel).hidden = id !== state.tab;
+    renderActivityNotice();
+  }
+  function renderActivityNotice() {
+    const el = $('#lgActivityNotice');
+    if (!el) return;
+    if (!state.signedIn) { el.hidden = true; el.innerHTML = ''; return; }
+    const unread = state.inboxThreads.reduce((n, thread) => n + Number(thread.unreadCount || 0), 0);
+    const newApps = state.ownListings.some(row => row.status === 'approved') ? Number(state.newApplications || 0) : 0;
+    const notices = [];
+    if (unread > 0) notices.push('<button type="button" class="lg-activity-item" data-goto="inbox"><span class="lg-activity-count">' + fmt(unread) + '</span><span><b>' + (unread === 1 ? 'You have 1 unread message in your Inbox' : 'You have ' + fmt(unread) + ' unread messages in your Inbox') + '</b><small>Open Inbox →</small></span></button>');
+    if (newApps > 0) notices.push('<button type="button" class="lg-activity-item" data-goto="owner"><span class="lg-activity-count">' + fmt(newApps) + '</span><span><b>' + (newApps === 1 ? '1 new league application to review' : fmt(newApps) + ' new league applications to review') + '</b><small>Review applications →</small></span></button>');
+    el.innerHTML = notices.length ? '<div class="lg-activity-kicker">You have updates</div><div class="lg-activity-items">' + notices.join('') + '</div>' : '';
+    el.hidden = !notices.length;
   }
   function inboxPolicyAccepted() {
     try { return localStorage.getItem('lg-inbox-policy-v1') === 'accepted'; } catch { return false; }
@@ -346,7 +360,7 @@ const schema = [
         '<p><b>Admins can read messages.</b> FCMOBILETOOLS moderators may review Inbox conversations and take action on misuse.</p>' +
         '<p><b>Do not share sensitive information.</b> Never send passwords, one-time or recovery codes, payment details, private account credentials or another player’s personal information.</p>' +
         '<p><b>Stay on topic.</b> Spam, harassment, scams and unrelated messages can result in Inbox suspension.</p>' +
-        '<p><b>Messages expire.</b> Inbox messages are automatically deleted after 48 hours.</p>' +
+        '<p><b>Messages expire.</b> Inbox messages are automatically deleted after 7 days.</p>' +
       '</div><div class="lg-modal-actions"><button class="lg-btn lg-btn-quiet" type="button" data-inbox-policy-cancel data-sheet-close>Not now</button><button class="lg-btn lg-btn-primary" type="button" data-inbox-policy-continue>I understand · Continue</button></div>',
       { label: 'Inbox safety notice', wide: true }
     );
@@ -598,15 +612,17 @@ const schema = [
   }
   function renderOwner() {
     const el = $('#panelOwner'); const own = state.ownListings.find(r => r.status !== 'removed');
-    const ownerIntro = !own ? 'Anyone can list one league. It goes live right away.' : own.status === 'approved' ? 'Your league is live. Keep spots up to date and answer applications.' : own.status === 'rejected' ? 'Your listing was rejected. Edit it and republish when the issue is fixed.' : own.status === 'paused' ? 'Your league is suspended. Read the moderation note or submit an appeal.' : 'Your league is not public yet. Check the moderation note below.';
-    const head = '<div class="lg-panel-head slim"><div><h2>' + (own ? 'My league' : 'List your league') + '</h2><p>' + ownerIntro + '</p></div></div>';
+    const ownerIntro = !own ? 'Anyone can list one league. It goes live right away.' : own.status === 'approved' ? (own.recruitingOpen ? 'Your league is public. Keep spots up to date and answer applications.' : 'Your listing is approved but hidden from the board while recruitment is closed.') : own.status === 'pending' ? 'Your league is waiting for review and is not public yet.' : own.status === 'rejected' ? 'Your listing was rejected. Edit it and republish when the issue is fixed.' : own.status === 'paused' ? 'Your league is suspended. Read the moderation note or submit an appeal.' : 'Your league is not public yet. Check the moderation note below.';
+    const ownerStatus = !own ? null : own.status === 'approved' ? (own.recruitingOpen ? { label: 'PUBLIC', cls: 'public' } : { label: 'HIDDEN FROM BOARD', cls: 'hidden' }) : own.status === 'pending' ? { label: 'PENDING REVIEW', cls: 'pending' } : own.status === 'rejected' ? { label: 'REJECTED', cls: 'rejected' } : own.status === 'paused' ? { label: 'SUSPENDED', cls: 'suspended' } : { label: 'NOT PUBLIC', cls: 'pending' };
+    const statusBadge = ownerStatus ? '<span class="lg-owner-status ' + ownerStatus.cls + '">' + ownerStatus.label + '</span>' : '';
+    const head = '<div class="lg-panel-head slim"><div><h2>' + (own ? 'My league' : 'List your league') + statusBadge + '</h2><p>' + ownerIntro + '</p></div></div>;
     if (!own) {
       el.innerHTML = head + '<div class="lg-box"><h3>Put your league on the board</h3><p>Division, minimum OVR, open spots, schedule and how to join. That is all players need.</p><div class="lg-actions"><button class="lg-btn lg-btn-primary" data-create-listing type="button">List my league →</button></div></div>';
       return;
     }
     const nextAt = kickCooling(own);
     const live = own.status === 'approved';
-    const note = !live ? '<div class="lg-callout red"><strong>' + (own.status === 'paused' ? 'League suspended' : own.status === 'rejected' ? 'Listing rejected' : 'This league is hidden') + '</strong>' + esc(own.moderationNote || (own.status === 'rejected' ? 'You can edit the listing and publish it again.' : 'Review the note below and contact support if you think this is a mistake.')) +
+    const note = !live ? '<div class="lg-callout red"><strong>' + (own.status === 'paused' ? 'League suspended' : own.status === 'rejected' ? 'Listing rejected' : own.status === 'pending' ? 'Pending review' : own.status === 'approved' ? 'Hidden from the public board' : 'This league is hidden') + '</strong>' + esc(own.moderationNote || (own.status === 'rejected' ? 'You can edit the listing and publish it again.' : 'Review the note below and contact support if you think this is a mistake.')) +
       (own.status === 'paused' ? (own.appealStatus === 'open' ? '<p>Your suspension appeal is waiting for review.</p>' : '<div class="lg-actions"><button class="lg-btn lg-btn-outline lg-btn-sm" type="button" data-appeal-listing="' + esc(own.id) + '">Appeal suspension</button><button class="lg-info" type="button" data-info="appeal" aria-label="About suspension appeals">i</button></div>') : '') +
       (own.appealStatus === 'denied' ? '<p>Your previous appeal was declined. Contact the moderation team for next steps.</p>' : '') + '</div>' : '';
     const controls = '<div class="lg-box"><h3>Quick controls</h3>' +
@@ -824,7 +840,8 @@ const schema = [
       state.leagues = d.leagues || []; state.spotlight = d.spotlight || []; state.loadedPersonal = true;
       if (d.directoryFailed) toast('Some leagues could not be loaded.', true);
       refresh();
-      if (state.tab === 'inbox') loadInbox({ silent: true });
+      // Fetch the lightweight conversation summary on return so unread-message notices can appear without opening Inbox.
+      if (state.tab !== 'inbox') loadInbox({ silent: true });
       if (state.tab === 'players') loadPlayers();
     } catch (e) {
       if (e.status === 401) { state.signedIn = false; refresh(); return; }

@@ -920,7 +920,7 @@ async function listInbox(request, env, authContext, supabaseRest, json) {
   const accountIds = [...new Set(conversations.flatMap(c => [c.owner_account_id, c.applicant_account_id]))];
   const [messages, listings, accounts] = await Promise.all([
     supabaseRest(env, 'league_messages?conversation_id=in.' + inList(conversationIds) +
-      '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()) +
+      '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) +
       '&select=id,conversation_id,sender_account_id,body,created_at,read_at&order=created_at.desc&limit=300').catch(() => []),
     supabaseRest(env, 'league_listings?select=id,name,slug,logo_url&id=in.' + inList(listingIds)).catch(() => []),
     supabaseRest(env, 'accounts?select=id,username,display_name,avatar_url&id=in.' + inList(accountIds)).catch(() => [])
@@ -961,7 +961,7 @@ async function inboxConversation(request, env, authContext, match, supabaseRest,
   }
   const blocked = await inboxSuspensionResponse(env, account.id, supabaseRest, json);
   if (blocked) return blocked;
-  const retentionCutoff = encodeURIComponent(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
+  const retentionCutoff = encodeURIComponent(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
   if (request.method === 'GET') {
     await supabaseRest(env,
       'league_messages?conversation_id=eq.' + encodeURIComponent(conversationId) +
@@ -987,8 +987,8 @@ async function inboxConversation(request, env, authContext, match, supabaseRest,
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
   const input = await request.json().catch(() => ({}));
   const rawBody = typeof input.body === 'string' ? input.body.trim() : '';
-  if (rawBody.length > 1200) return json({ error: 'Messages are limited to 1,200 characters.' }, 400);
-  const body = clean(rawBody, 1200);
+  if (rawBody.length > 300) return json({ error: 'Messages are limited to 300 characters.' }, 400);
+  const body = clean(rawBody, 300);
   if (!body) return json({ error: 'Write a message before sending.' }, 400);
   const cutoff = new Date(Date.now() - 60_000).toISOString();
   const recent = await supabaseRest(env,
@@ -1012,7 +1012,7 @@ async function adminInbox(env, url, supabaseRest, json) {
   const parsedOffset = Number.parseInt(url.searchParams.get('offset') || '0', 10);
   const offset = Number.isFinite(parsedOffset) ? Math.max(0, Math.min(100000, parsedOffset)) : 0;
   const pageSize = 200;
-  const cutoff = encodeURIComponent(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
+  const cutoff = encodeURIComponent(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
   const messages = await supabaseRest(env,
     'league_messages?created_at=gte.' + cutoff +
     '&select=id,conversation_id,sender_account_id,body,created_at&order=created_at.desc&limit=' + pageSize + '&offset=' + offset);

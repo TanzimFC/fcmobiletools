@@ -369,8 +369,8 @@ function renderAdminInboxRows() {
   const rows = adminInboxRows.filter((row) => [
     row.senderName, row.recipientName, row.listingName, row.body, row.restrictionReason, row.senderAccountId
   ].some(value => String(value || '').toLowerCase().includes(needle)));
-  box.innerHTML = '<div class="glass inbox-review-warning"><b>Inbox visibility</b><p>Admins can review the Inbox message contents shown here. Users are warned not to share passwords, one-time or recovery codes, payment details or sensitive account information. Messages older than 48 hours are deleted automatically.</p><small>Use moderation actions for Inbox access only. Off-topic messages, spam, scams and harassment may justify a temporary suspension.</small></div>' +
-    (rows.length ? rows.map(inboxCard).join('') : '<div class="empty"><h3>No retained messages found</h3>' + (needle ? 'No loaded messages match your search.' : 'No Inbox messages are retained from the last 48 hours in this page.') + '</div>') +
+  box.innerHTML = '<div class="glass inbox-review-warning"><b>Inbox visibility</b><p>Admins can review the Inbox message contents shown here. Users are warned not to share passwords, one-time or recovery codes, payment details or sensitive account information. Messages older than 7 days are deleted automatically.</p><small>Use moderation actions for Inbox access only. Off-topic messages, spam, scams and harassment may justify a temporary suspension.</small></div>' +
+    (rows.length ? rows.map(inboxCard).join('') : '<div class="empty"><h3>No retained messages found</h3>' + (needle ? 'No loaded messages match your search.' : 'No Inbox messages are retained from the last 7 days in this page.') + '</div>') +
     (adminInboxHasMore ? '<div class="acts" style="justify-content:center;margin:18px 0"><button id="inboxLoadMore" class="btn" type="button">Load older messages</button></div>' : '');
   $$('[data-inbox-action]', box).forEach(button => button.addEventListener('click', () => inboxAct(button)));
   $('#inboxLoadMore')?.addEventListener('click', () => loadAdminInboxPage(true));

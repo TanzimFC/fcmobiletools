@@ -102,7 +102,7 @@ async function shrink(file, maxSide = 1440) {
   } catch { return file; }
 }
 
-export async function uploadImage(file, { onProgress, signal, permanent = false, expirationDays = 2 } = {}) {
+export async function uploadImage(file, { onProgress, signal, permanent = false, expirationDays = 7 } = {}) {
   if (!file || typeof file.slice !== 'function' || file.size <= 0 || file.size > MAX_BYTES) {
     throw new Error('Choose an image under 8 MB.');
   }
@@ -123,7 +123,7 @@ export async function uploadImage(file, { onProgress, signal, permanent = false,
   const body = new FormData();
   body.append('file', prepared);
   body.append('permanent', String(Boolean(permanent)));
-  if (!permanent) body.append('expirationDays', String(Math.max(1, Math.min(180, Number(expirationDays) || 2))));
+  if (!permanent) body.append('expirationDays', String(Math.max(1, Math.min(180, Number(expirationDays) || 7))));
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -177,7 +177,7 @@ export async function uploadImage(file, { onProgress, signal, permanent = false,
 }
 
 // Drop-in uploader: idle → preparing/uploading (bar + %) → "Uploaded" tick with preview.
-export function mountUploader(root, { label, hint, value = '', onChange, round = false, permanent = false, expirationDays = 2 } = {}) {
+export function mountUploader(root, { label, hint, value = '', onChange, round = false, permanent = false, expirationDays = 7 } = {}) {
   root.classList.add('lg-up');
   root.innerHTML =
     '<label class="lg-up-drop"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="lg-up-ico">↑</span><span><b>' + esc(label) + '</b><small>' + esc(hint || 'JPG, PNG or WebP · under 8 MB') + '</small></span></label>' +

@@ -2648,7 +2648,7 @@ async function redeemPage(request, env, ctx, url) {
 
 
 const IMAGE_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
-const IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS = 30;
+const IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS = 7;
 const IMAGE_UPLOAD_HOST = /^i\.ibb\.co(?:\.com)?$/i;
 
 async function detectUploadedImageType(file) {
@@ -2830,13 +2830,13 @@ export function createExports(manifest) {
     default: {
       async scheduled(controller, env, ctx) {
         const cleanup = (async () => {
-          const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+          const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
           await supabaseRest(env,
             'league_messages?created_at=lt.' + encodeURIComponent(cutoff), {
               method: 'DELETE',
               headers: { Prefer: 'return=minimal' }
             });
-          console.info('[LEAGUE_INBOX_RETENTION] Removed messages older than 48 hours.');
+          console.info('[LEAGUE_INBOX_RETENTION] Removed messages older than 7 days.');
         })().catch(error => {
           console.error('[LEAGUE_INBOX_RETENTION]', error?.message || 'Scheduled cleanup failed.');
         });
