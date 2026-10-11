@@ -1097,7 +1097,8 @@ async function adminStats(env, supabaseRest, json) {
     const stats = await rpc(env, supabaseRest, 'server_league_admin_stats', {});
     // Listings go live at once, so the review queue is "live but not yet reviewed".
     const un = await supabaseRest(env, 'league_listings?status=eq.approved&reviewed_at=is.null&is_sample=eq.false&select=id&limit=5000').catch(() => []);
-    return json({ ok: true, stats: { ...stats, unreviewed: (un || []).length } });
+    const openAppeals = await supabaseRest(env, 'league_listing_appeals?status=eq.open&select=id&limit=5000').catch(() => []);
+    return json({ ok: true, stats: { ...stats, unreviewed: (un || []).length, openAppeals: (openAppeals || []).length } });
   } catch (error) {
     if (!isMissingSchema(error)) throw error;
     // Pre-migration fallback: derive what we can from the listing table.
@@ -1142,6 +1143,35 @@ async function adminReports(env, url, supabaseRest, json) {
   })) });
 }
 
+async function adminAppeals(env, url, supabaseRest, json) {
+  const requested = clean(url.searchParams.get('status') || 'open', 20);
+  const status = ['open', 'approved', 'denied', 'all'].includes(requested) ? requested : 'open';
+  const rows = await supabaseRest(env,
+    'league_listing_appeals?select=id,listing_id,owner_account_id,reason,status,review_note,created_at,reviewed_at,reviewed_by' +
+    (status === 'all' ? '' : '&status=eq.' + encodeURIComponent(status)) +
+    '&order=created_at.desc&limit=200');
+  const listingIds = [...new Set((rows || []).map(row => row.listing_id))];
+  const ownerIds = [...new Set((rows || []).map(row => row.owner_account_id))];
+  const [listings, owners] = await Promise.all([
+    listingIds.length ? supabaseRest(env, 'league_listings?select=id,name,status,region_server,logo_url&id=in.' + inList(listingIds)).catch(() => []) : [],
+    ownerIds.length ? supabaseRest(env, 'accounts?select=id,username,display_name&id=in.' + inList(ownerIds)).catch(() => []) : []
+  ]);
+  const listingMap = new Map((listings || []).map(row => [row.id, row]));
+  const ownerMap = new Map((owners || []).map(row => [row.id, row]));
+  return json({ appeals: (rows || []).map(row => {
+    const listing = listingMap.get(row.listing_id) || {};
+    const owner = ownerMap.get(row.owner_account_id) || {};
+    return {
+      id: row.id, listingId: row.listing_id, listingName: listing.name || 'Unknown league',
+      listingStatus: listing.status || '', regionServer: listing.region_server || '',
+      logoUrl: listing.logo_url || null, owner: owner.display_name || owner.username || 'Unknown owner',
+      ownerAccountId: row.owner_account_id, reason: row.reason, status: row.status,
+      reviewNote: row.review_note || '', createdAt: row.created_at,
+      reviewedAt: row.reviewed_at || null, reviewedBy: row.reviewed_by || ''
+    };
+  }) });
+}
+
 function adminRpcFailure(result, json, fallback) {
   const status = result?.code === 'not_found' ? 404
     : ['owner_has_open_listing', 'already_closed'].includes(result?.code) ? 409 : 400;
@@ -1155,6 +1185,7 @@ async function adminApi(request, env, url, authenticated, supabaseRest, json) {
     if (request.method === 'GET' && path === '/api/admin/leagues') return await adminListings(env, url, supabaseRest, json);
     if (request.method === 'GET' && path === '/api/admin/leagues/stats') return await adminStats(env, supabaseRest, json);
     if (request.method === 'GET' && path === '/api/admin/leagues/reports') return await adminReports(env, url, supabaseRest, json);
+    if (request.method === 'GET' && path === '/api/admin/leagues/appeals') return await adminAppeals(env, url, supabaseRest, json);
 
     const resolve = path.match(new RegExp('^/api/admin/leagues/reports/' + UUID_RE + '/resolve$', 'i'));
     if (resolve && request.method === 'POST') {
@@ -1168,7 +1199,596 @@ async function adminApi(request, env, url, authenticated, supabaseRest, json) {
       return json(result);
     }
 
-    const review = path.match(new RegExp('^/api/admin/leagues/' + UUID_RE + '/review$', 'i'));
+    const appealResolve = path.match(new RegExp('^/api/admin/leagues/appeals/' + UUID_RE + '/resolve
+    if (review && request.method === 'POST') {
+      const input = await request.json().catch(() => ({}));
+      const status = clean(input.status, 20);
+      if (!['approved', 'rejected', 'paused', 'removed'].includes(status)) {
+        return json({ error: 'Choose a valid review action.' }, 400);
+      }
+      const note = clean(input.note, 500);
+      let result;
+      try {
+        result = await rpc(env, supabaseRest, 'server_league_admin_review', {
+          p_listing_id: review[1], p_status: status, p_note: note, p_actor: 'site-admin'
+        });
+      } catch (error) {
+        if (!isMissingSchema(error)) throw error;
+        // Pre-migration fallback: original direct update.
+        if (status !== 'approved' && !note) return json({ error: 'Add a short review note for this action.' }, 400);
+        const updated = await supabaseRest(env, 'league_listings?id=eq.' + encodeURIComponent(review[1]) + '&select=id,status', {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({ status, moderation_note: note || null, reviewed_by: 'site-admin', reviewed_at: nowIso(), updated_at: nowIso() })
+        });
+        if (!updated?.length) return json({ error: 'League listing not found.' }, 404);
+        return json({ ok: true, status: updated[0].status });
+      }
+      if (!result?.ok) return adminRpcFailure(result, json, 'Review could not be saved.');
+      return json(result);
+    }
+
+    const flags = path.match(new RegExp('^/api/admin/leagues/' + UUID_RE + '/flags$', 'i'));
+    if (flags && request.method === 'POST') {
+      const input = await request.json().catch(() => ({}));
+      const args = { p_listing_id: flags[1], p_actor: 'site-admin' };
+      if (typeof input.verified === 'boolean') args.p_verified = input.verified;
+      if (typeof input.featured === 'boolean') {
+        args.p_featured = input.featured;
+        const days = intInRange(input.featuredDays ?? 7, 1, 60);
+        if (input.featured && days === null) return json({ error: 'Featured duration must be 1 to 60 days.' }, 400);
+        if (input.featured) args.p_featured_days = days;
+      }
+      if (typeof input.adminNote === 'string') { args.p_admin_note = clean(input.adminNote, 1000); args.p_set_note = true; }
+      const result = await rpc(env, supabaseRest, 'server_league_admin_set_flags', args);
+      if (!result?.ok) return adminRpcFailure(result, json, 'Listing flags could not be updated.');
+      return json(result);
+    }
+
+    const log = path.match(new RegExp('^/api/admin/leagues/' + UUID_RE + '/log$', 'i'));
+    if (log && request.method === 'GET') {
+      const rows = await supabaseRest(env,
+        'league_moderation_log?listing_id=eq.' + encodeURIComponent(log[1]) +
+        '&select=id,action,note,actor,created_at&order=created_at.desc&limit=50').catch(() => []);
+      return json({ log: (rows || []).map(r => ({ id: r.id, action: r.action, note: r.note || '', actor: r.actor || '', createdAt: r.created_at })) });
+    }
+    return json({ error: 'Admin league endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_ADMIN_API]', error?.message || error);
+    return json({ error: 'League admin request failed. Please try again.' }, 500);
+  }
+}
+
+// ───────────────────────── router ─────────────────────────
+
+export async function leagueWorkerRoute({ request, env, url, ctx, authenticated, accountContext, supabaseRest, json }) {
+  if (url.pathname === '/api/admin/leagues' || url.pathname.startsWith('/api/admin/leagues/')) {
+    return adminApi(request, env, url, authenticated, supabaseRest, json);
+  }
+  if (request.method === 'GET' && url.pathname === '/sitemap-leagues.xml') return leaguesSitemap(env, supabaseRest);
+  const iconMatch = url.pathname.match(/^\/leagues\/icons\/([a-z_]+)\.webp$/);
+  if (request.method === 'GET' && iconMatch) return divisionIcon(iconMatch[1], ctx);
+  if (!url.pathname.startsWith('/api/leagues/')) return null;
+
+  // Drop the edge-cached pages for a league and the board after a change.
+  const purge = (slug) => {
+    try {
+      const cache = caches.default;
+      const tasks = [cache.delete(new Request(url.origin + '/leagues/')), cache.delete(new Request(url.origin + '/api/leagues/public'))];
+      if (slug) tasks.push(cache.delete(new Request(url.origin + '/leagues/' + slug + '/')));
+      ctx?.waitUntil?.(Promise.all(tasks));
+    } catch { /* cache is best effort */ }
+  };
+
+  try {
+    // Signed-out visitors can always browse.
+    if (request.method === 'GET' && url.pathname === '/api/leagues/public') {
+      const cache = caches.default; const key = new Request(url.origin + '/api/leagues/public');
+      const hit = await cache.match(key);
+      if (hit) return hit;
+      const res = await publicDirectory(env, supabaseRest, json);
+      if (res.ok) ctx?.waitUntil?.(cache.put(key, res.clone()));
+      return res;
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/bootstrap') {
+      return await bootstrap(request, env, accountContext, supabaseRest, json);
+    }
+    if (!['GET','POST','PUT','PATCH'].includes(request.method)) {
+      return json({ error: 'Method not allowed.' }, 405, { allow: 'GET, POST, PUT, PATCH' });
+    }
+    const auth = await requireUser(request, env, accountContext, json);
+    if (auth.response) return auth.response;
+    const { context } = auth;
+    if (request.method === 'POST' && url.pathname === '/api/leagues/profile') {
+      return await saveProfile(request, env, context, supabaseRest, json);
+    }
+    if (request.method === 'POST' && url.pathname === '/api/leagues/listings') {
+      return await createListing(request, env, context, supabaseRest, json, purge);
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/leagues/me') return await leagueMe(request, env, context, url, supabaseRest, json);
+
+    // Private inbox conversations are tied to an existing league application.
+    if (request.method === 'GET' && url.pathname === '/api/leagues/inbox') return await listInbox(request, env, context, supabaseRest, json);
+    const inboxMessagesMatch = url.pathname.match(new RegExp('^/api/leagues/inbox/' + UUID_RE + '/messages
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], 
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
+      return await listPlayers(request, env, context, url, supabaseRest, json);
+    }
+    const revealMatch = url.pathname.match(new RegExp('^/api/leagues/players/' + UUID_RE + '/reveal$', 'i'));
+    if (request.method === 'POST' && revealMatch) {
+      const blocked = requireVerified(context, json);
+      if (blocked) return blocked;
+      return await revealPlayer(request, env, context, revealMatch, supabaseRest, json);
+    }
+    return json({ error: 'League endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_API]', error?.message || error);
+    return json({ error: 'League features are temporarily unavailable. Please try again.' }, 500);
+  }
+}
+, 'i'));
+    if (inboxMessagesMatch && ['GET', 'POST'].includes(request.method)) {
+      return await inboxConversation(request, env, context, inboxMessagesMatch, supabaseRest, json);
+    }
+    const startInboxMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/inbox
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], ['matchday', logMatchday],
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
+      return await listPlayers(request, env, context, url, supabaseRest, json);
+    }
+    const revealMatch = url.pathname.match(new RegExp('^/api/leagues/players/' + UUID_RE + '/reveal$', 'i'));
+    if (request.method === 'POST' && revealMatch) {
+      const blocked = requireVerified(context, json);
+      if (blocked) return blocked;
+      return await revealPlayer(request, env, context, revealMatch, supabaseRest, json);
+    }
+    return json({ error: 'League endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_API]', error?.message || error);
+    return json({ error: 'League features are temporarily unavailable. Please try again.' }, 500);
+  }
+}
+, 'i'));
+    if (request.method === 'POST' && startInboxMatch) return await openInboxConversation(request, env, context, startInboxMatch, supabaseRest, json);
+    const appealMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/appeal
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], ['matchday', logMatchday],
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
+      return await listPlayers(request, env, context, url, supabaseRest, json);
+    }
+    const revealMatch = url.pathname.match(new RegExp('^/api/leagues/players/' + UUID_RE + '/reveal$', 'i'));
+    if (request.method === 'POST' && revealMatch) {
+      const blocked = requireVerified(context, json);
+      if (blocked) return blocked;
+      return await revealPlayer(request, env, context, revealMatch, supabaseRest, json);
+    }
+    return json({ error: 'League endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_API]', error?.message || error);
+    return json({ error: 'League features are temporarily unavailable. Please try again.' }, 500);
+  }
+}
+, 'i'));
+    if (request.method === 'POST' && appealMatch) return await submitLeagueAppeal(request, env, context, appealMatch, supabaseRest, json);
+
+    // Listing-level actions that do not need a player profile.
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], ['matchday', logMatchday],
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
+      return await listPlayers(request, env, context, url, supabaseRest, json);
+    }
+    const revealMatch = url.pathname.match(new RegExp('^/api/leagues/players/' + UUID_RE + '/reveal$', 'i'));
+    if (request.method === 'POST' && revealMatch) {
+      const blocked = requireVerified(context, json);
+      if (blocked) return blocked;
+      return await revealPlayer(request, env, context, revealMatch, supabaseRest, json);
+    }
+    return json({ error: 'League endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_API]', error?.message || error);
+    return json({ error: 'League features are temporarily unavailable. Please try again.' }, 500);
+  }
+}
+, 'i'));
+    if (appealResolve && request.method === 'POST') {
+      const input = await request.json().catch(() => ({}));
+      const status = clean(input.status, 20);
+      if (!['approved', 'denied'].includes(status)) return json({ error: 'Choose approve or deny for this appeal.' }, 400);
+      const note = clean(input.note, 500);
+      const result = await rpc(env, supabaseRest, 'server_league_admin_resolve_appeal', {
+        p_appeal_id: appealResolve[1], p_status: status, p_note: note, p_actor: 'site-admin'
+      });
+      if (!result?.ok) return adminRpcFailure(result, json, 'Appeal could not be resolved.');
+      return json(result);
+    }
+
+    const review = path.match(new RegExp('^/api/admin/leagues/' + UUID_RE + '/review
+    if (review && request.method === 'POST') {
+      const input = await request.json().catch(() => ({}));
+      const status = clean(input.status, 20);
+      if (!['approved', 'rejected', 'paused', 'removed'].includes(status)) {
+        return json({ error: 'Choose a valid review action.' }, 400);
+      }
+      const note = clean(input.note, 500);
+      let result;
+      try {
+        result = await rpc(env, supabaseRest, 'server_league_admin_review', {
+          p_listing_id: review[1], p_status: status, p_note: note, p_actor: 'site-admin'
+        });
+      } catch (error) {
+        if (!isMissingSchema(error)) throw error;
+        // Pre-migration fallback: original direct update.
+        if (status !== 'approved' && !note) return json({ error: 'Add a short review note for this action.' }, 400);
+        const updated = await supabaseRest(env, 'league_listings?id=eq.' + encodeURIComponent(review[1]) + '&select=id,status', {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({ status, moderation_note: note || null, reviewed_by: 'site-admin', reviewed_at: nowIso(), updated_at: nowIso() })
+        });
+        if (!updated?.length) return json({ error: 'League listing not found.' }, 404);
+        return json({ ok: true, status: updated[0].status });
+      }
+      if (!result?.ok) return adminRpcFailure(result, json, 'Review could not be saved.');
+      return json(result);
+    }
+
+    const flags = path.match(new RegExp('^/api/admin/leagues/' + UUID_RE + '/flags$', 'i'));
+    if (flags && request.method === 'POST') {
+      const input = await request.json().catch(() => ({}));
+      const args = { p_listing_id: flags[1], p_actor: 'site-admin' };
+      if (typeof input.verified === 'boolean') args.p_verified = input.verified;
+      if (typeof input.featured === 'boolean') {
+        args.p_featured = input.featured;
+        const days = intInRange(input.featuredDays ?? 7, 1, 60);
+        if (input.featured && days === null) return json({ error: 'Featured duration must be 1 to 60 days.' }, 400);
+        if (input.featured) args.p_featured_days = days;
+      }
+      if (typeof input.adminNote === 'string') { args.p_admin_note = clean(input.adminNote, 1000); args.p_set_note = true; }
+      const result = await rpc(env, supabaseRest, 'server_league_admin_set_flags', args);
+      if (!result?.ok) return adminRpcFailure(result, json, 'Listing flags could not be updated.');
+      return json(result);
+    }
+
+    const log = path.match(new RegExp('^/api/admin/leagues/' + UUID_RE + '/log$', 'i'));
+    if (log && request.method === 'GET') {
+      const rows = await supabaseRest(env,
+        'league_moderation_log?listing_id=eq.' + encodeURIComponent(log[1]) +
+        '&select=id,action,note,actor,created_at&order=created_at.desc&limit=50').catch(() => []);
+      return json({ log: (rows || []).map(r => ({ id: r.id, action: r.action, note: r.note || '', actor: r.actor || '', createdAt: r.created_at })) });
+    }
+    return json({ error: 'Admin league endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_ADMIN_API]', error?.message || error);
+    return json({ error: 'League admin request failed. Please try again.' }, 500);
+  }
+}
+
+// ───────────────────────── router ─────────────────────────
+
+export async function leagueWorkerRoute({ request, env, url, ctx, authenticated, accountContext, supabaseRest, json }) {
+  if (url.pathname === '/api/admin/leagues' || url.pathname.startsWith('/api/admin/leagues/')) {
+    return adminApi(request, env, url, authenticated, supabaseRest, json);
+  }
+  if (request.method === 'GET' && url.pathname === '/sitemap-leagues.xml') return leaguesSitemap(env, supabaseRest);
+  const iconMatch = url.pathname.match(/^\/leagues\/icons\/([a-z_]+)\.webp$/);
+  if (request.method === 'GET' && iconMatch) return divisionIcon(iconMatch[1], ctx);
+  if (!url.pathname.startsWith('/api/leagues/')) return null;
+
+  // Drop the edge-cached pages for a league and the board after a change.
+  const purge = (slug) => {
+    try {
+      const cache = caches.default;
+      const tasks = [cache.delete(new Request(url.origin + '/leagues/')), cache.delete(new Request(url.origin + '/api/leagues/public'))];
+      if (slug) tasks.push(cache.delete(new Request(url.origin + '/leagues/' + slug + '/')));
+      ctx?.waitUntil?.(Promise.all(tasks));
+    } catch { /* cache is best effort */ }
+  };
+
+  try {
+    // Signed-out visitors can always browse.
+    if (request.method === 'GET' && url.pathname === '/api/leagues/public') {
+      const cache = caches.default; const key = new Request(url.origin + '/api/leagues/public');
+      const hit = await cache.match(key);
+      if (hit) return hit;
+      const res = await publicDirectory(env, supabaseRest, json);
+      if (res.ok) ctx?.waitUntil?.(cache.put(key, res.clone()));
+      return res;
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/bootstrap') {
+      return await bootstrap(request, env, accountContext, supabaseRest, json);
+    }
+    if (!['GET','POST','PUT','PATCH'].includes(request.method)) {
+      return json({ error: 'Method not allowed.' }, 405, { allow: 'GET, POST, PUT, PATCH' });
+    }
+    const auth = await requireUser(request, env, accountContext, json);
+    if (auth.response) return auth.response;
+    const { context } = auth;
+    if (request.method === 'POST' && url.pathname === '/api/leagues/profile') {
+      return await saveProfile(request, env, context, supabaseRest, json);
+    }
+    if (request.method === 'POST' && url.pathname === '/api/leagues/listings') {
+      return await createListing(request, env, context, supabaseRest, json, purge);
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/leagues/me') return await leagueMe(request, env, context, url, supabaseRest, json);
+
+    // Private inbox conversations are tied to an existing league application.
+    if (request.method === 'GET' && url.pathname === '/api/leagues/inbox') return await listInbox(request, env, context, supabaseRest, json);
+    const inboxMessagesMatch = url.pathname.match(new RegExp('^/api/leagues/inbox/' + UUID_RE + '/messages
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], 
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
+      return await listPlayers(request, env, context, url, supabaseRest, json);
+    }
+    const revealMatch = url.pathname.match(new RegExp('^/api/leagues/players/' + UUID_RE + '/reveal$', 'i'));
+    if (request.method === 'POST' && revealMatch) {
+      const blocked = requireVerified(context, json);
+      if (blocked) return blocked;
+      return await revealPlayer(request, env, context, revealMatch, supabaseRest, json);
+    }
+    return json({ error: 'League endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_API]', error?.message || error);
+    return json({ error: 'League features are temporarily unavailable. Please try again.' }, 500);
+  }
+}
+, 'i'));
+    if (inboxMessagesMatch && ['GET', 'POST'].includes(request.method)) {
+      return await inboxConversation(request, env, context, inboxMessagesMatch, supabaseRest, json);
+    }
+    const startInboxMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/inbox
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], ['matchday', logMatchday],
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
+      return await listPlayers(request, env, context, url, supabaseRest, json);
+    }
+    const revealMatch = url.pathname.match(new RegExp('^/api/leagues/players/' + UUID_RE + '/reveal$', 'i'));
+    if (request.method === 'POST' && revealMatch) {
+      const blocked = requireVerified(context, json);
+      if (blocked) return blocked;
+      return await revealPlayer(request, env, context, revealMatch, supabaseRest, json);
+    }
+    return json({ error: 'League endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_API]', error?.message || error);
+    return json({ error: 'League features are temporarily unavailable. Please try again.' }, 500);
+  }
+}
+, 'i'));
+    if (request.method === 'POST' && startInboxMatch) return await openInboxConversation(request, env, context, startInboxMatch, supabaseRest, json);
+    const appealMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/appeal
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], ['matchday', logMatchday],
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
+      return await listPlayers(request, env, context, url, supabaseRest, json);
+    }
+    const revealMatch = url.pathname.match(new RegExp('^/api/leagues/players/' + UUID_RE + '/reveal$', 'i'));
+    if (request.method === 'POST' && revealMatch) {
+      const blocked = requireVerified(context, json);
+      if (blocked) return blocked;
+      return await revealPlayer(request, env, context, revealMatch, supabaseRest, json);
+    }
+    return json({ error: 'League endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_API]', error?.message || error);
+    return json({ error: 'League features are temporarily unavailable. Please try again.' }, 500);
+  }
+}
+, 'i'));
+    if (request.method === 'POST' && appealMatch) return await submitLeagueAppeal(request, env, context, appealMatch, supabaseRest, json);
+
+    // Listing-level actions that do not need a player profile.
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], ['matchday', logMatchday],
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
+      return await listPlayers(request, env, context, url, supabaseRest, json);
+    }
+    const revealMatch = url.pathname.match(new RegExp('^/api/leagues/players/' + UUID_RE + '/reveal$', 'i'));
+    if (request.method === 'POST' && revealMatch) {
+      const blocked = requireVerified(context, json);
+      if (blocked) return blocked;
+      return await revealPlayer(request, env, context, revealMatch, supabaseRest, json);
+    }
+    return json({ error: 'League endpoint not found.' }, 404);
+  } catch (error) {
+    console.error('[LEAGUE_API]', error?.message || error);
+    return json({ error: 'League features are temporarily unavailable. Please try again.' }, 500);
+  }
+}
+, 'i'));
     if (review && request.method === 'POST') {
       const input = await request.json().catch(() => ({}));
       const status = clean(input.status, 20);
