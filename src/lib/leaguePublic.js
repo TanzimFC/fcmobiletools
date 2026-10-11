@@ -76,6 +76,7 @@ export function decorateListings(listings, ownerMap, { admin = false, includeNot
       accent: ACCENT_KEYS.includes(row.accent) ? row.accent : 'cyan',
       status: row.status,
       isSample,
+      adminNote: admin ? (row.admin_note || '') : undefined,
       // Two different things: "reviewed" = the team looked at the listing, "verified" = confirmed real club.
       verified: Boolean(row.is_verified) && !isSample,
       featured: Boolean(row.is_featured) && (!row.featured_until || Date.parse(row.featured_until) > now) && !isSample,

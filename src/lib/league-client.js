@@ -102,32 +102,76 @@ async function shrink(file, maxSide = 1600) {
   } catch { return file; }
 }
 
-export function uploadImage(file, { onProgress, signal } = {}) {
-  return new Promise(async (resolve, reject) => {
-    if (!file || typeof file.slice !== 'function' || file.size <= 0 || file.size > MAX_BYTES) return reject(new Error('Choose an image under 8 MB.'));
-    const accessToken = await token();
-    if (!accessToken) return reject(new Error('Sign in again before uploading.'));
-    onProgress?.({ phase: 'preparing', pct: 0 });
-    let detected = '';
-    try { detected = await detectImageType(file); } catch { /* show the format error below */ }
-    if (!detected) return reject(new Error('This image format is not supported. Use a JPG, PNG, WebP or GIF screenshot.'));
-    const input = file.type === detected ? file : new File([file], file.name || ('team-screenshot.' + detected.split('/')[1]), { type: detected });
-    const prepared = await shrink(input);
-    const body = new FormData(); body.append('file', prepared); body.append('permanent', 'true');
+export async function uploadImage(file, { onProgress, signal } = {}) {
+  if (!file || typeof file.slice !== 'function' || file.size <= 0 || file.size > MAX_BYTES) {
+    throw new Error('Choose an image under 8 MB.');
+  }
+  if (signal?.aborted) throw Object.assign(new Error('Upload cancelled.'), { cancelled: true });
+  const accessToken = await token();
+  if (!accessToken) throw new Error('Sign in again before uploading.');
+  onProgress?.({ phase: 'preparing', pct: 0 });
+
+  let detected = '';
+  try { detected = await detectImageType(file); } catch { /* report unsupported format below */ }
+  if (!detected) throw new Error('This image format is not supported. Use a JPG, PNG, WebP or GIF screenshot.');
+  const input = file.type === detected ? file : new File(
+    [file], file.name || ('team-screenshot.' + detected.split('/')[1]), { type: detected }
+  );
+  const prepared = await shrink(input);
+  if (signal?.aborted) throw Object.assign(new Error('Upload cancelled.'), { cancelled: true });
+
+  const body = new FormData();
+  body.append('file', prepared);
+  body.append('permanent', 'true');
+
+  return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    let settled = false;
+    const cleanup = () => signal?.removeEventListener('abort', abortUpload);
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(value);
+    };
+    const abortUpload = () => xhr.abort();
+
     xhr.open('POST', '/api/account/image-upload');
     xhr.setRequestHeader('authorization', 'Bearer ' + accessToken);
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.({ phase: e.loaded >= e.total ? 'finishing' : 'uploading', pct: Math.round(e.loaded / e.total * 100) }); };
-    xhr.onerror = () => reject(new Error('Upload failed. Check your connection and try again.'));
-    xhr.onabort = () => reject(Object.assign(new Error('Upload cancelled.'), { cancelled: true }));
-    xhr.onload = () => {
-      let result = {}; try { result = JSON.parse(xhr.responseText || '{}'); } catch { /* empty */ }
-      if (xhr.status < 200 || xhr.status >= 300) return reject(new Error(result.error || 'Image upload failed. Please try again.'));
-      const url = result.image?.url || result.url || result.imageUrl || result.data?.url || result.data?.display_url || '';
-      url ? resolve(url) : reject(new Error('The image service returned no image link. Try the upload again.'));
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      try {
+        onProgress?.({
+          phase: event.loaded >= event.total ? 'finishing' : 'uploading',
+          pct: Math.round(event.loaded / event.total * 100)
+        });
+      } catch { /* a progress UI must not break the upload */ }
     };
-    signal?.addEventListener('abort', () => xhr.abort());
-    xhr.send(body);
+    xhr.onerror = () => fail(new Error('Upload failed. Check your connection and try again.'));
+    xhr.onabort = () => fail(Object.assign(new Error('Upload cancelled.'), { cancelled: true }));
+    xhr.onload = () => {
+      let result = {};
+      try { result = JSON.parse(xhr.responseText || '{}'); } catch { /* empty response */ }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        return fail(new Error(result.error || 'Image upload failed. Please try again.'));
+      }
+      const url = result.image?.url || result.url || result.imageUrl || result.data?.url || result.data?.display_url || '';
+      if (!url) return fail(new Error('The image service returned no image link. Try the upload again.'));
+      finish(url);
+    };
+    if (signal?.aborted) {
+      fail(Object.assign(new Error('Upload cancelled.'), { cancelled: true }));
+      return;
+    }
+    signal?.addEventListener('abort', abortUpload, { once: true });
+    try { xhr.send(body); }
+    catch { fail(new Error('The upload could not start. Please try again.')); }
   });
 }
 
