@@ -10,13 +10,13 @@ import { leagueCard, leagueHref, esc, infoBtn } from '../../lib/league-card.js';
 export const prerender = false;
 
 const env = Astro.locals.runtime?.env || {};
-let board = { leagues: [], spotlight: [], stats: { leagues: 0, spots: 0, sample: 0 } };
+let board = { leagues: [], spotlight: [], stats: { leagues: 0, spots: 0 } };
 let loadFailed = false;
 try { board = await loadPublicDirectory(env, ssrSupabaseRest); } catch (e) { loadFailed = true; console.error('[LEAGUES_PAGE]', e?.message); }
 if (loadFailed) Astro.response.headers.set('cache-control', 'no-store');
 
 const ssrLeagues = board.leagues.slice(0, 24);
-const real = board.leagues.filter(l => !l.isSample);
+const real = board.leagues;
 const regions = new Set(real.map(l => l.regionServer)).size;
 const boot = JSON.stringify({ ...board, at: Date.now() }).replace(/</g, '\\u003c');
 
@@ -30,7 +30,7 @@ const faq = [
 const schema = [
   { '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'FC Mobile leagues with open spots', url: SITE_ORIGIN + '/leagues/',
     description: 'Browse FC Mobile leagues by division, region and minimum OVR.',
-    mainEntity: { '@type': 'ItemList', itemListElement: ssrLeagues.filter(l => !l.isSample).slice(0, 20).map((l, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE_ORIGIN + leagueHref(l), name: l.name })) } },
+    mainEntity: { '@type': 'ItemList', itemListElement: ssrLeagues.slice(0, 20).map((l, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE_ORIGIN + leagueHref(l), name: l.name })) } },
   { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) },
   { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN + '/' },
@@ -110,8 +110,6 @@ const schema = [
           </details>
 
           <div class="lg-meta-row"><span id="lgResults">{real.length} leagues</span><span class="lg-meta-actions"><Fragment set:html={infoBtn('trust')} /><button type="button" class="lg-link" id="fClear">Clear filters</button></span></div>
-          <p class="lg-sample-note" id="lgSampleNote" hidden>Clubs marked <b>Sample club</b> are made for testing. They are not real leagues.</p>
-
           <div id="lgGrid" class="lg-grid"><Fragment set:html={ssrLeagues.map((l, i) => leagueCard(l, { index: i, showSave: false })).join('')} /></div>
           <div class="lg-empty" id="lgEmpty" hidden>
             <span class="lg-empty-icon" aria-hidden="true">⌕</span>
@@ -299,7 +297,7 @@ const schema = [
 
   // ───────────── render: hero + tabs ─────────────
   function renderHero() {
-    const real = state.leagues.filter(r => !r.isSample);
+    const real = state.leagues;
     $('#statLeagues').textContent = fmt(real.length);
     $('#statSpots').textContent = fmt(real.reduce((n, r) => n + Number(r.openSpots || 0), 0));
     $('#statRegions').textContent = fmt(new Set(real.map(r => r.regionServer)).size);
@@ -385,8 +383,7 @@ const schema = [
     const rows = visible();
     $('#lgGrid').innerHTML = rows.map((r, i) => leagueCard(r, { index: i, match: r._m, showSave: true, spotlight: false })).join('');
     $('#lgGrid').hidden = !rows.length; $('#lgEmpty').hidden = rows.length > 0;
-    $('#lgSampleNote').hidden = !rows.some(r => r.isSample);
-    const real = rows.filter(r => !r.isSample).length;
+    const real = rows.length;
     const filtering = Object.entries(state.filters).some(([k, v]) => Boolean(v));
     $('#lgResults').textContent = real + (real === 1 ? ' league' : ' leagues') + (filtering ? ' match' : '');
     const n = moreFilterCount(); const badge = $('#fCount'); badge.hidden = n === 0; badge.textContent = n;

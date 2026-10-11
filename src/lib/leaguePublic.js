@@ -147,7 +147,7 @@ export function directoryStats(leagues) {
 export async function loadPublicDirectory(env, supabaseRest) {
   const [directory, signalPack] = await Promise.all([
     readListings(env, supabaseRest,
-      '&status=eq.approved&recruiting_open=eq.true' +
+      '&status=eq.approved&is_sample=eq.false&recruiting_open=eq.true' +
       '&order=last_kickoff_at.desc.nullslast,last_active_at.desc.nullslast,created_at.desc&limit=200'),
     rpc(env, supabaseRest, 'server_league_public_signals', {}).catch(() => null)
   ]);
@@ -162,8 +162,8 @@ export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,80}$/;
 export async function loadLeagueBySlug(env, supabaseRest, slug) {
   if (!SLUG_RE.test(String(slug || ''))) return null;
   const { rows } = await readListings(env, supabaseRest,
-    '&slug=eq.' + encodeURIComponent(slug) + '&status=eq.approved&limit=1');
-  if (!rows[0]) return null;
+    '&slug=eq.' + encodeURIComponent(slug) + '&status=eq.approved&is_sample=eq.false&limit=1');
+  if (!rows[0] || rows[0].is_sample === true) return null;
   const [signalPack, owners] = await Promise.all([
     rpc(env, supabaseRest, 'server_league_public_signals', {}).catch(() => null),
     ownerMapFor(env, supabaseRest, rows)

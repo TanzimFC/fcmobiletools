@@ -110,7 +110,7 @@ export const INFO = {
   spots: ['Open spots', 'How many players the league can take right now. Owners update this when someone joins.'],
   division: ['Divisions', 'Leagues are grouped by division: Bronze 1,050 to 2,000, Silver 2,100 to 4,000, World Class 4,100 to 6,000, Legendary 6,100 to 8,000, FC Champions 8,100 to 10,000.'],
   joining: ['How to join', '<b>Apply here</b>: send an application with your team screenshot. <b>Join Discord</b>: open the league\u2019s server. <b>Search in game</b>: find the league by its ID inside FC Mobile.'],
-  trust: ['Verified, reviewed, new', '<b>Verified club</b>: confirmed as a real, active club by FCMobiletools. <b>Reviewed</b>: the team checked the listing. <b>New</b>: listed in the last 7 days. <b>Sample club</b>: for testing only.'],
+  trust: ['Verified, reviewed, new', '<b>Verified club</b>: confirmed as a real, active club by FCMobiletools. <b>Reviewed</b>: the team checked the listing. <b>New</b>: listed in the last 7 days.'],
   activity: ['Activity', '“Confirmed active” means players from that league have confirmed they played recently. New leagues may not have activity yet.'],
   kickoff: ['Kickoff', 'Kickoff puts a league near the top of the board for 6 hours. The owner or an approved Leaguemate can activate it; the whole league shares one 6-hour cooldown.'],
   confirm: ['Confirm activity', 'Played in this league lately? Tap it. It tells other players the league is active. One tap per day.'],

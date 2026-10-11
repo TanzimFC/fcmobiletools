@@ -43,7 +43,7 @@ const schema = league ? [{
 // Only what the client needs. Join details are never in this payload.
 const boot = league ? JSON.stringify({
   id: league.id, slug: league.slug, name: league.name, minOvr: league.minOvr, openSpots: league.openSpots, recruitingOpen: league.recruitingOpen,
-  joinMethods: league.joinMethods, isSample: league.isSample, nextKickoffAt: league.nextKickoffAt, accent: accentColor(league.accent)
+  joinMethods: league.joinMethods, nextKickoffAt: league.nextKickoffAt, accent: accentColor(league.accent)
 }).replace(/</g, '\\u003c') : 'null';
 ---
 
@@ -85,7 +85,6 @@ const boot = league ? JSON.stringify({
                 </div>
               </div>
               {league.tagline && <p class="lp-pitch">{league.tagline}</p>}
-              {league.isSample && <p class="lg-sample-note">This is a sample club made for testing. It is not a real league, so applications are turned off.</p>}
               <div class="lp-facts">
                 <div class={'lp-fact ' + (full ? 'none' : 'open')}><span>Open spots<Fragment set:html={infoBtn('spots')} /></span><strong>{full ? 'Full' : fmt(league.openSpots)}</strong></div>
                 <div class="lp-fact"><span>Minimum OVR<Fragment set:html={infoBtn('ovr')} /></span><strong>{fmt(league.minOvr)}+</strong></div>
@@ -193,8 +192,7 @@ const boot = league ? JSON.stringify({
       const full = L.openSpots <= 0 || !L.recruitingOpen;
       const app = me?.application && me.application.status !== 'withdrawn' ? me.application : null;
       let html = '';
-      if (L.isSample) html = '<button class="lg-btn" disabled>Sample club · applications off</button>';
-      else if (me?.isMine) html = '<a class="lg-btn lg-btn-primary lp-btn" href="/leagues/?tab=owner">Manage your league</a>';
+      if (me?.isMine) html = '<a class="lg-btn lg-btn-primary lp-btn" href="/leagues/?tab=owner">Manage your league</a>';
       else if (app) html = '<div class="lg-callout cyan" style="margin:0"><strong>Application ' + esc(app.status === 'new' ? 'sent' : app.status) + '</strong>' +
         (app.status === 'invited' ? 'The owner invited you. Check FC Mobile for the league invite.' : app.status === 'joined' ? 'You are in this league.' : app.status === 'declined' ? 'The owner declined this time.' : 'The owner will review your team.') + '</div>' +
         (['new', 'shortlisted'].includes(app.status) ? '<button class="lg-btn lg-btn-quiet lg-btn-sm" id="lpWithdraw" type="button">Withdraw application</button>' : '');

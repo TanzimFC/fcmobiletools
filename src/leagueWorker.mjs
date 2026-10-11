@@ -248,7 +248,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
 
   const [directory, own, signalPack, publicPack, crewPack, myApps] = await Promise.all([
     readListings(env, supabaseRest,
-      '&status=eq.approved&recruiting_open=eq.true' +
+      '&status=eq.approved&is_sample=eq.false&recruiting_open=eq.true' +
       '&order=last_kickoff_at.desc.nullslast,last_active_at.desc.nullslast,created_at.desc&limit=200'
     ).catch(error => {
       console.error('[LEAGUE_DIRECTORY_READ]', error?.message);
@@ -1093,7 +1093,7 @@ async function submitLeagueAppeal(request, env, authContext, match, supabaseRest
 
 // Join details are for signed-in players only.
 async function listingContact(request, env, authContext, match, supabaseRest, json) {
-  const { rows } = await readListings(env, supabaseRest, '&id=eq.' + encodeURIComponent(match[1]) + '&status=eq.approved&limit=1');
+  const { rows } = await readListings(env, supabaseRest, '&id=eq.' + encodeURIComponent(match[1]) + '&status=eq.approved&is_sample=eq.false&limit=1');
   const r = rows[0];
   if (!r) return json({ error: 'League not found.' }, 404);
   return json({ discordInviteUrl: r.discord_invite_url || null, contactDiscord: r.contact_discord || '', leagueGameId: r.league_game_id || '' });

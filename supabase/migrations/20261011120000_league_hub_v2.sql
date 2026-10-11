@@ -295,17 +295,4 @@ grant execute on function public.server_league_application_decide(uuid, uuid, te
 grant execute on function public.server_league_application_withdraw(uuid, uuid) to service_role;
 grant execute on function public.server_league_public_signals() to service_role;
 
--- ─────────────────────────────────────────────────────────────
--- 6) Sample clubs (clearly marked, no owner, hidden from Spotlight)
--- ─────────────────────────────────────────────────────────────
-insert into public.league_listings
-  (slug, name, tagline, description, region_server, min_ovr, tournament_frequency, tournament_sizes,
-   preferred_languages, player_commitment, open_spots, recruiting_open, status, division, join_methods,
-   active_hours, accent, is_sample, discord_required)
-values
-  ('sample-dhaka-dawn-fc',  'Dhaka Dawn FC',   'Daily 8v8, friendly core',         '', 'Asia',          105, 'daily',          array['8v8'],        array['English','Bengali'],   'regular',     6, true, 'approved', 'silver',      array['apply','discord'],   '18:00–23:00 UTC+6', 'cyan',   true, false),
-  ('sample-north-star-utd', 'North Star Utd',  'Competitive 16v16, weekly cups',   '', 'Europe',        118, 'several_weekly', array['16v16'],      array['English'],             'competitive', 3, true, 'approved', 'world_class', array['apply','in_game'],   '19:00–22:00 UTC',   'violet', true, true),
-  ('sample-rio-legends',    'Rio Legends',     'Relaxed 4v4, all levels welcome',  '', 'South America',  95, 'weekly',         array['4v4','8v8'],  array['Portuguese','Spanish'],'casual',      12, true, 'approved', 'bronze',      array['apply'],             'Weekends',          'gold',   true, false),
-  ('sample-gulf-kings',     'Gulf Kings',      'Most days 8v8, Discord required',  '', 'Middle East',   112, 'most_days',      array['8v8','16v16'],array['Arabic','English'],    'regular',     4, true, 'approved', 'legendary',   array['discord','in_game'], '20:00–00:00 UTC+3', 'mint',   true, true),
-  ('sample-jakarta-elite',  'Jakarta Elite',   'Top division push, serious squads','', 'Asia',          125, 'daily',          array['16v16','32v32'],array['Indonesian','English'],'competitive', 2, true, 'approved', 'fc_champions', array['apply'],           '19:00–23:00 UTC+7', 'rose',   true, false)
-on conflict (slug) do nothing;
+-- Public sample/demo league seeding intentionally removed. Sample listings must stay out of production.
