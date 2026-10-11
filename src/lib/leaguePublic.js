@@ -78,6 +78,8 @@ export function decorateListings(listings, ownerMap, { admin = false, includeNot
       isSample,
       // Two different things: "reviewed" = the team looked at the listing, "verified" = confirmed real club.
       verified: Boolean(row.is_verified) && !isSample,
+      featured: Boolean(row.is_featured) && (!row.featured_until || Date.parse(row.featured_until) > now) && !isSample,
+      featuredUntil: row.featured_until || null,
       reviewed: Boolean(row.reviewed_at) && row.status === 'approved' && !isSample,
       lastKickoffAt: row.last_kickoff_at || null,
       kickoffActive: kickoffAt > now - KICKOFF_MS,
