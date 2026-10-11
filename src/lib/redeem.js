@@ -83,7 +83,7 @@ export function ensureRedeemSchema(db) {
 
       // One-time migrations keep the live D1 database in sync with new codes
       // without replaying the full seed or overwriting admin edits.
-      const migrationVersion = '2026-10-07-garudajuara';
+      const migrationVersion = '2026-10-11-mullertime';
       const migration = await db.prepare("SELECT value FROM redeem_meta WHERE key='seed-migrations'").first();
       if (migration?.value !== migrationVersion) {
         const c = {
@@ -110,6 +110,32 @@ export function ensureRedeemSchema(db) {
           c.lastVerified,
           c.notes,
           c.releaseDate + 'T00:00:00.000Z',
+          new Date().toISOString(),
+        ).run();
+        const muller = {
+          code: 'MULLERTIME',
+          reward: '115 OVR Thomas Müller CAM Player Item',
+          status: 'active',
+          releaseDate: '2026-10-11',
+          expiryDate: null,
+          region: 'Global',
+          lastVerified: '2026-10-11',
+          notes: 'New code reported October 11, 2026; redeem soon because availability may change.',
+        };
+        await db.prepare([
+          "INSERT OR IGNORE INTO redeem_codes",
+          "  (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)",
+          "  VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')",
+        ].join("\n")).bind(
+          muller.code,
+          muller.reward,
+          muller.status,
+          muller.releaseDate,
+          muller.expiryDate,
+          muller.region,
+          muller.lastVerified,
+          muller.notes,
+          muller.releaseDate + 'T00:00:00.000Z',
           new Date().toISOString(),
         ).run();
         await db.prepare("INSERT OR REPLACE INTO redeem_meta (key,value) VALUES ('seed-migrations',?)")
