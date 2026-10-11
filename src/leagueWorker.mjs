@@ -1122,7 +1122,7 @@ async function adminReports(env, url, supabaseRest, json) {
   const listingIds = [...new Set((rows || []).map(r => r.listing_id))];
   const reporterIds = [...new Set((rows || []).map(r => r.reporter_account_id))];
   const [listings, reporters] = await Promise.all([
-    listingIds.length ? supabaseRest(env, 'league_listings?select=id,name,status,logo_url,owner_account_id&id=in.' + inList(listingIds)).catch(() => []) : [],
+    listingIds.length ? supabaseRest(env, 'league_listings?select=id,name,slug,status,logo_url,owner_account_id&id=in.' + inList(listingIds)).catch(() => []) : [],
     reporterIds.length ? supabaseRest(env, 'accounts?select=id,username,display_name&id=in.' + inList(reporterIds)).catch(() => []) : []
   ]);
   const listingMap = new Map((listings || []).map(l => [l.id, l]));
@@ -1131,6 +1131,7 @@ async function adminReports(env, url, supabaseRest, json) {
     id: r.id,
     listingId: r.listing_id,
     listingName: listingMap.get(r.listing_id)?.name || 'Unknown league',
+    slug: listingMap.get(r.listing_id)?.slug || '',
     listingStatus: listingMap.get(r.listing_id)?.status || '',
     logoUrl: listingMap.get(r.listing_id)?.logo_url || null,
     reason: r.reason,
@@ -1153,7 +1154,7 @@ async function adminAppeals(env, url, supabaseRest, json) {
   const listingIds = [...new Set((rows || []).map(row => row.listing_id))];
   const ownerIds = [...new Set((rows || []).map(row => row.owner_account_id))];
   const [listings, owners] = await Promise.all([
-    listingIds.length ? supabaseRest(env, 'league_listings?select=id,name,status,region_server,logo_url&id=in.' + inList(listingIds)).catch(() => []) : [],
+    listingIds.length ? supabaseRest(env, 'league_listings?select=id,name,slug,status,region_server,logo_url&id=in.' + inList(listingIds)).catch(() => []) : [],
     ownerIds.length ? supabaseRest(env, 'accounts?select=id,username,display_name&id=in.' + inList(ownerIds)).catch(() => []) : []
   ]);
   const listingMap = new Map((listings || []).map(row => [row.id, row]));
@@ -1163,7 +1164,7 @@ async function adminAppeals(env, url, supabaseRest, json) {
     const owner = ownerMap.get(row.owner_account_id) || {};
     return {
       id: row.id, listingId: row.listing_id, listingName: listing.name || 'Unknown league',
-      listingStatus: listing.status || '', regionServer: listing.region_server || '',
+      slug: listing.slug || '', listingStatus: listing.status || '', regionServer: listing.region_server || '',
       logoUrl: listing.logo_url || null, owner: owner.display_name || owner.username || 'Unknown owner',
       ownerAccountId: row.owner_account_id, reason: row.reason, status: row.status,
       reviewNote: row.review_note || '', createdAt: row.created_at,
