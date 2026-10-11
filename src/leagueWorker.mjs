@@ -961,17 +961,17 @@ async function inboxConversation(request, env, authContext, match, supabaseRest,
   }
   const blocked = await inboxSuspensionResponse(env, account.id, supabaseRest, json);
   if (blocked) return blocked;
-  const cutoff = encodeURIComponent(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
+  const retentionCutoff = encodeURIComponent(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
   if (request.method === 'GET') {
     await supabaseRest(env,
       'league_messages?conversation_id=eq.' + encodeURIComponent(conversationId) +
-      '&created_at=gte.' + cutoff + '&sender_account_id=neq.' + encodeURIComponent(account.id) +
+      '&created_at=gte.' + retentionCutoff + '&sender_account_id=neq.' + encodeURIComponent(account.id) +
       '&read_at=is.null', {
         method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ read_at: nowIso() })
       }).catch(() => null);
     const recentRows = await supabaseRest(env,
       'league_messages?conversation_id=eq.' + encodeURIComponent(conversationId) +
-      '&created_at=gte.' + cutoff +
+      '&created_at=gte.' + retentionCutoff +
       '&select=id,conversation_id,sender_account_id,body,created_at&order=created_at.desc&limit=100');
     const messages = (recentRows || []).reverse();
     const senderIds = [...new Set((messages || []).map(row => row.sender_account_id))];
