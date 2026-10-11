@@ -123,7 +123,7 @@ const boot = league ? JSON.stringify({
               <section class="lp-card" aria-labelledby="lpAct">
                 <h2 id="lpAct">Activity<Fragment set:html={infoBtn('activity')} /></h2>
                 <div class={'lg-trust' + (act?.hot ? '' : ' cold')}><i></i><div><b>{act?.text}</b>
-                  <small>{league.crewCount ? league.crewCount + ' member' + (league.crewCount === 1 ? '' : 's') + ' in this league' : 'Activity comes from players of this league'}</small></div></div>
+                  <small>{league.crewCount ? league.crewCount + ' member' + (league.crewCount === 1 ? '' : 's') + ' in the Kickoff crew' : 'Activity comes from players of this league'}</small></div></div>
 
               </section>
 
@@ -221,8 +221,8 @@ const boot = league ? JSON.stringify({
       } else if (me && !me.isMine && !L.isSample && me.crewStatus !== 'removed') {
         kick.hidden = false;
         kick.innerHTML = me.crewStatus === 'pending'
-          ? '<div><b>Leaguemate request sent</b><small>The owner will review it.</small></div>'
-          : '<div><b>Play in this league?</b><small>Become a Leaguemate to use Kickoff and keep the league visible.</small></div><span><button class="lg-btn lg-btn-outline lg-btn-sm" id="lpCrew" type="button">Become a Leaguemate</button><button class="lg-info" data-info="kickoff" type="button" aria-label="About Kickoff">i</button></span>';
+          ? '<div><b>Crew request sent</b><small>The owner will review it.</small></div>'
+          : '<div><b>Play in this league?</b><small>Join the crew to use Kickoff and keep it visible.</small></div><span><button class="lg-btn lg-btn-outline lg-btn-sm" id="lpCrew" type="button">Join crew</button><button class="lg-info" data-info="kickoff" type="button" aria-label="About Kickoff">i</button></span>';
       }
     }
 
@@ -270,7 +270,7 @@ const boot = league ? JSON.stringify({
         } else if (t.id === 'lpConfirm') {
           t.disabled = true; await api('/api/leagues/listings/' + L.id + '/active', { method: 'POST', body: '{}' }); me.confirmedByMe = true; render(); toast('Thanks. That helps other players.');
         } else if (t.id === 'lpCrew') {
-          t.disabled = true; await api('/api/leagues/listings/' + L.id + '/crew', { method: 'POST', body: '{}' }); toast('Request sent to the owner.'); await loadMe();
+          t.disabled = true; await api('/api/leagues/listings/' + L.id + '/crew', { method: 'POST', body: '{}' }); toast('Leaguemate request sent to the owner.'); await loadMe();
         } else if (t.id === 'lpKickBtn') {
           t.disabled = true; const r = await api('/api/leagues/listings/' + L.id + '/kickoff', { method: 'POST', body: '{}' }); me.lastKickoffAt = r.lastKickoffAt || new Date().toISOString(); render(); toast('Kickoff! This league is back on top.');
         }
