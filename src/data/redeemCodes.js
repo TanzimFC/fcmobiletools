@@ -9,7 +9,17 @@ export const REDEEM_CODES = [
     "region": "Global",
     "lastVerified": "2026-10-07",
     "notes": "New redeem code added October 7, 2026."
-  },
+
+  {
+    "code": "MULLERTIME",
+    "reward": "115 OVR Thomas Müller CAM Player Item",
+    "status": "active",
+    "releaseDate": "2026-10-11",
+    "expiryDate": null,
+    "region": "Global",
+    "lastVerified": "2026-10-11",
+    "notes": "New code reported October 11, 2026; redeem soon because availability may change."
+  }
   {
     "code": "3RDANNIVERSARY",
     "reward": "1x Draft Voucher + 100x Rank Up Tokens",
