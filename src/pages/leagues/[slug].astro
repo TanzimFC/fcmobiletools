@@ -124,11 +124,7 @@ const boot = league ? JSON.stringify({
                 <h2 id="lpAct">Activity<Fragment set:html={infoBtn('activity')} /></h2>
                 <div class={'lg-trust' + (act?.hot ? '' : ' cold')}><i></i><div><b>{act?.text}</b>
                   <small>{league.crewCount ? league.crewCount + ' member' + (league.crewCount === 1 ? '' : 's') + ' in the Kickoff crew' : 'Activity comes from players of this league'}</small></div></div>
-                <Fragment set:html={'<div class="lg-days" role="img" aria-label="Tournaments in the last 14 days">' + Array.from({ length: 14 }, (_, i) => {
-                  const d = new Date(Date.now() - (13 - i) * 864e5).toISOString().slice(0, 10);
-                  return '<i class="' + (league.matchdays14.includes(d) ? 'on' : '') + '" title="' + d + '"></i>';
-                }).join('') + '</div>'} />
-                <p class="lg-note" style="margin-top:8px">Last 14 days · filled days had a league tournament</p>
+
               </section>
 
               <section class="lp-card" aria-labelledby="lpTrust">
@@ -260,7 +256,17 @@ const boot = league ? JSON.stringify({
           else toast('The owner has not shared a league ID yet.', true);
           t.disabled = false;
         } else if (t.id === 'lpSave') {
-          t.disabled = true; const r = await api('/api/leagues/listings/' + L.id + '/save', { method: 'POST', body: '{}' }); me.saved = r.saved; render(); toast(r.saved ? 'Saved.' : 'Removed from saved.');
+          if (!me?.saved && Number(me?.savedCount || 0) >= 3) {
+            toast('You can save up to 3 leagues. Remove a bookmark first.', true);
+            return;
+          }
+          t.disabled = true;
+          try {
+            const r = await api('/api/leagues/listings/' + L.id + '/save', { method: 'POST', body: '{}' });
+            me = { ...(me || {}), saved: r.saved, savedCount: Number(r.savedCount ?? Math.max(0, Number(me?.savedCount || 0) + (r.saved ? 1 : -1))) };
+            render();
+            toast(r.saved ? 'Saved to bookmarks.' : 'Removed from saved.');
+          } catch (error) { t.disabled = false; throw error; }
         } else if (t.id === 'lpConfirm') {
           t.disabled = true; await api('/api/leagues/listings/' + L.id + '/active', { method: 'POST', body: '{}' }); me.confirmedByMe = true; render(); toast('Thanks. That helps other players.');
         } else if (t.id === 'lpCrew') {

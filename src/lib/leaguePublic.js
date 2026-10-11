@@ -76,8 +76,11 @@ export function decorateListings(listings, ownerMap, { admin = false, includeNot
       accent: ACCENT_KEYS.includes(row.accent) ? row.accent : 'cyan',
       status: row.status,
       isSample,
+      adminNote: admin ? (row.admin_note || '') : undefined,
       // Two different things: "reviewed" = the team looked at the listing, "verified" = confirmed real club.
       verified: Boolean(row.is_verified) && !isSample,
+      featured: Boolean(row.is_featured) && (!row.featured_until || Date.parse(row.featured_until) > now) && !isSample,
+      featuredUntil: row.featured_until || null,
       reviewed: Boolean(row.reviewed_at) && row.status === 'approved' && !isSample,
       lastKickoffAt: row.last_kickoff_at || null,
       kickoffActive: kickoffAt > now - KICKOFF_MS,
@@ -125,8 +128,8 @@ export function decorateListings(listings, ownerMap, { admin = false, includeNot
 // Real activity only: sample clubs and listings with no signal never reach the Spotlight.
 export function pickSpotlight(leagues, limit = 3) {
   return leagues
-    .filter(l => !l.isSample && l.recruitingOpen && l.activityScore > 0)
-    .sort((a, b) => b.activityScore - a.activityScore || Date.parse(b.lastActiveAt || 0) - Date.parse(a.lastActiveAt || 0))
+    .filter(l => !l.isSample && l.recruitingOpen && l.confirmations7d > 0)
+    .sort((a, b) => b.confirmations7d - a.confirmations7d || Date.parse(b.lastActiveAt || 0) - Date.parse(a.lastActiveAt || 0))
     .slice(0, limit)
     .map(l => l.id);
 }
