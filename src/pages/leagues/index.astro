@@ -515,7 +515,8 @@ const schema = [
   }
   function renderOwner() {
     const el = $('#panelOwner'); const own = state.ownListings.find(r => r.status !== 'removed');
-    const head = '<div class="lg-panel-head slim"><div><h2>' + (own ? 'My league' : 'List your league') + '</h2><p>' + (own ? 'Your league is live. Keep spots up to date and answer applications.' : 'Anyone can list one league. It goes live right away.') + '</p></div></div>';
+    const ownerIntro = !own ? 'Anyone can list one league. It goes live right away.' : own.status === 'approved' ? 'Your league is live. Keep spots up to date and answer applications.' : own.status === 'rejected' ? 'Your listing was rejected. Edit it and republish when the issue is fixed.' : own.status === 'paused' ? 'Your league is suspended. Read the moderation note or submit an appeal.' : 'Your league is not public yet. Check the moderation note below.';
+    const head = '<div class="lg-panel-head slim"><div><h2>' + (own ? 'My league' : 'List your league') + '</h2><p>' + ownerIntro + '</p></div></div>';
     if (!own) {
       el.innerHTML = head + '<div class="lg-box"><h3>Put your league on the board</h3><p>Division, minimum OVR, open spots, schedule and how to join. That is all players need.</p><div class="lg-actions"><button class="lg-btn lg-btn-primary" data-create-listing type="button">List my league →</button></div></div>';
       return;
@@ -576,6 +577,33 @@ const schema = [
       (pending.length ? '<div class="lg-crew-list"><h5>Requests · ' + pending.length + '</h5>' + pending.map(m => row(m, b('approve', m.accountId, 'Approve', 'lg-btn-primary') + b('decline', m.accountId, 'Decline', 'lg-btn-quiet'))).join('') + '</div>' : '') +
       '<div class="lg-crew-list"><h5>Crew · ' + members.length + '</h5>' + (members.length ? members.map(m => row(m, b('remove', m.accountId, 'Remove', 'lg-btn-outline'))).join('') : '<p class="lg-note">No crew yet.</p>') + '</div></div>';
   }
+  async function openListingAppeal(id) {
+    const own = state.ownListings.find(row => row.id === id);
+    if (!own || own.status !== 'paused') return;
+    const sheet = openSheet('<h3>Appeal league suspension</h3><p class="lg-sub">Explain what happened and what you have changed. Keep it specific and respectful.</p>' +
+      '<label class="lg-field"><span>Reason <b>*</b></span><textarea id="lgAppealReason" rows="5" maxlength="1200" minlength="20" placeholder="Describe why the suspension should be reviewed…" required></textarea></label>' +
+      '<div class="lg-msg" id="lgAppealMsg" role="alert"></div><div class="lg-modal-actions"><button class="lg-btn lg-btn-quiet" type="button" data-sheet-close>Cancel</button><button class="lg-btn lg-btn-primary" type="button" id="lgAppealSend">Send appeal</button></div>', { label: 'League suspension appeal', wide: true });
+    $('#lgAppealSend', sheet.el).addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      const reason = $('#lgAppealReason', sheet.el).value.trim();
+      const msg = $('#lgAppealMsg', sheet.el);
+      if (reason.length < 20) { msg.textContent = 'Add at least 20 characters so the review team has enough context.'; return; }
+      button.disabled = true; button.textContent = 'Sending…';
+      try {
+        const result = await api('/api/leagues/listings/' + encodeURIComponent(id) + '/appeal', {
+          method: 'POST', body: JSON.stringify({ reason })
+        });
+        own.appealStatus = result.status || 'open';
+        sheet.close();
+        toast('Appeal submitted for review.');
+        renderOwner();
+      } catch (error) {
+        msg.textContent = error.message || 'The appeal could not be submitted.';
+        button.disabled = false; button.textContent = 'Send appeal';
+      }
+    });
+  }
+
   async function postOwner(path, body, okMsg, btn) {
     const own = state.ownListings[0]; if (!own) return; btn && (btn.disabled = true);
     try { await api('/api/leagues/listings/' + encodeURIComponent(own.id) + '/' + path, { method: 'POST', body: JSON.stringify(body || {}) }); toast(okMsg); await loadPersonal(); }
