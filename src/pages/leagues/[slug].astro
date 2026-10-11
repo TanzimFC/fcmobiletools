@@ -1,0 +1,281 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/league-hub.css';
+import { loadLeagueBySlug, ssrSupabaseRest } from '../../lib/leaguePublic.js';
+import { divisionByKey, divisionRange, SITE_ORIGIN } from '../../data/leagueConfig.js';
+import { esc, crest, divisionBadge, trustBadge, joinChips, scheduleLine, activityLine, accentColor, fmt, freqLabel, commitLabel, infoBtn, CHECK } from '../../lib/league-card.js';
+
+// Rendered on demand, cached at the edge by the Worker (same HTML for every visitor).
+export const prerender = false;
+
+const env = Astro.locals.runtime?.env || {};
+const slug = String(Astro.params.slug || '').toLowerCase();
+let league = null;
+let failed = false;
+try { league = await loadLeagueBySlug(env, ssrSupabaseRest, slug); } catch (e) { failed = true; console.error('[LEAGUE_PAGE]', e?.message); }
+
+if (!league) {
+  Astro.response.status = failed ? 503 : 404;
+  Astro.response.headers.set('cache-control', 'no-store');
+}
+
+const div = league ? divisionByKey(league.division) : null;
+const full = league ? league.openSpots <= 0 : false;
+const act = league ? activityLine(league) : null;
+const title = league ? league.name + ' · FC Mobile League' + (div ? ' · ' + div.label : '') : 'League not found';
+const description = league
+  ? league.name + ' is an FC Mobile league in ' + league.regionServer + (div ? ' (' + div.label + ' division)' : '') + '. ' +
+    (full ? 'Currently full.' : league.openSpots + ' open spot' + (league.openSpots === 1 ? '' : 's') + '.') +
+    ' Minimum OVR ' + league.minOvr + '. ' + scheduleLine(league) + '. See how to join.'
+  : 'This league is not on the board any more. Browse FC Mobile leagues with open spots.';
+const url = league ? SITE_ORIGIN + '/leagues/' + league.slug + '/' : SITE_ORIGIN + '/leagues/';
+const schema = league ? [{
+  '@context': 'https://schema.org', '@type': 'SportsOrganization', name: league.name, url,
+  description, sport: 'FC Mobile', areaServed: league.regionServer,
+  ...(league.logoUrl ? { logo: league.logoUrl } : {})
+}, {
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN + '/' },
+    { '@type': 'ListItem', position: 2, name: 'Leagues', item: SITE_ORIGIN + '/leagues/' },
+    { '@type': 'ListItem', position: 3, name: league.name, item: url }
+  ]
+}] : [];
+// Only what the client needs. Join details are never in this payload.
+const boot = league ? JSON.stringify({
+  id: league.id, slug: league.slug, name: league.name, minOvr: league.minOvr, openSpots: league.openSpots, recruitingOpen: league.recruitingOpen,
+  joinMethods: league.joinMethods, isSample: league.isSample, nextKickoffAt: league.nextKickoffAt, accent: accentColor(league.accent)
+}).replace(/</g, '\\u003c') : 'null';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  image={league?.logoUrl || undefined}
+  robots={league ? undefined : 'noindex,nofollow'}
+  googlebot={league ? undefined : 'noindex,nofollow'}
+>
+  {schema.map(s => <script slot="head" type="application/ld+json" set:html={JSON.stringify(s)}></script>)}
+
+  <main class="app fl lg-root lp" id="app" style={league ? '--ac:' + accentColor(league.accent) : ''}>
+    <div class="lg-aurora" aria-hidden="true"></div>
+    <div class="lg-wrap">
+      {!league ? (
+        <section class="lg-gate">
+          <div class="lg-gate-mark warn" aria-hidden="true">!</div>
+          <h1 style="font-size:26px;margin-bottom:10px">{failed ? 'We could not load this league.' : 'This league is not listed.'}</h1>
+          <p>{failed ? 'Please try again in a moment.' : 'It may have been closed or renamed.'}</p>
+          <a class="lg-btn lg-btn-primary lg-btn-lg" href="/leagues/">Browse leagues</a>
+        </section>
+      ) : (
+        <>
+          <nav class="lp-crumb" aria-label="Breadcrumb"><a href="/leagues/">Leagues</a><span>/</span><span>{league.name}</span></nav>
+
+          <header class="lp-hero">
+            <div class="lp-hero-in">
+              <div class="lp-id">
+                <Fragment set:html={crest(league.logoUrl, league.name, 'lg-crest')} />
+                <div>
+                  <h1>{league.name}</h1>
+                  <div class="lp-meta">
+                    <Fragment set:html={trustBadge(league)} />
+                    {league.division && <Fragment set:html={divisionBadge(league.division, { range: true })} />}
+                    <span class="lg-badge">{league.regionServer}</span>
+                    {league.kickoffActive && <span class="lg-badge cyan"><i class="lg-pulse"></i>Kickoff</span>}
+                  </div>
+                </div>
+              </div>
+              {league.tagline && <p class="lp-pitch">{league.tagline}</p>}
+              {league.isSample && <p class="lg-sample-note">This is a sample club made for testing. It is not a real league, so applications are turned off.</p>}
+              <div class="lp-facts">
+                <div class={'lp-fact ' + (full ? 'none' : 'open')}><span>Open spots<Fragment set:html={infoBtn('spots')} /></span><strong>{full ? 'Full' : fmt(league.openSpots)}</strong></div>
+                <div class="lp-fact"><span>Minimum OVR<Fragment set:html={infoBtn('ovr')} /></span><strong>{fmt(league.minOvr)}+</strong></div>
+                <div class="lp-fact"><span>Division<Fragment set:html={infoBtn('division')} /></span><strong class="sm">{div ? div.label + ' · ' + divisionRange(div) : 'Not set'}</strong></div>
+                <div class="lp-fact"><span>Schedule</span><strong class="sm">{freqLabel(league.tournamentFrequency)}{league.activeHours ? ' · ' + league.activeHours : ''}</strong></div>
+              </div>
+            </div>
+          </header>
+
+          <div class="lp-cols">
+            <div class="lp-main">
+              <section class="lp-card" aria-labelledby="lpJoin">
+                <h2 id="lpJoin">How to join {league.name}<Fragment set:html={infoBtn('joining')} /></h2>
+                <div class="lg-joinrow" style="margin:0 0 14px"><Fragment set:html={joinChips(league)} /></div>
+                <ol class="lp-steps">
+                  {league.joinMethods.includes('apply') && <li>Tap <b>Apply to join</b>, add a screenshot of your team and send. The owner reviews your squad and invites you in game.</li>}
+                  {league.joinMethods.includes('discord') && <li>Open the league Discord{league.discordRequired ? ' (required to play here)' : ''} and say hello to the owner.</li>}
+                  {league.joinMethods.includes('in_game') && <li>In FC Mobile, search for the league by its ID and send a join request.</li>}
+                </ol>
+              </section>
+
+              <section class="lp-card" aria-labelledby="lpSched">
+                <h2 id="lpSched">Schedule</h2>
+                <div class="lp-sched">
+                  <div><span>How often</span><strong>{freqLabel(league.tournamentFrequency)}</strong></div>
+                  <div><span>Tournament sizes</span><strong>{league.tournamentSizes.join(', ') || 'Not set'}</strong></div>
+                  <div><span>Usual hours</span><strong>{league.activeHours || 'Not set'}</strong></div>
+                  <div><span>Style</span><strong>{commitLabel(league.playerCommitment)}</strong></div>
+                  <div><span>Languages</span><strong>{league.preferredLanguages.join(', ') || 'English'}</strong></div>
+                  <div><span>Discord</span><strong>{league.discordRequired ? 'Required' : league.joinMethods.includes('discord') ? 'Optional' : 'Not used'}</strong></div>
+                </div>
+                {league.perks && <p class="lg-note" style="margin-top:14px;font-size:12.5px"><b style="color:#e7f2f9">Perks:</b> {league.perks}</p>}
+              </section>
+
+              <section class="lp-card" aria-labelledby="lpAct">
+                <h2 id="lpAct">Activity<Fragment set:html={infoBtn('activity')} /></h2>
+                <div class={'lg-trust' + (act?.hot ? '' : ' cold')}><i></i><div><b>{act?.text}</b>
+                  <small>{league.crewCount ? league.crewCount + ' member' + (league.crewCount === 1 ? '' : 's') + ' in the Kickoff crew' : 'Activity comes from players of this league'}</small></div></div>
+                <Fragment set:html={'<div class="lg-days" role="img" aria-label="Tournaments in the last 14 days">' + Array.from({ length: 14 }, (_, i) => {
+                  const d = new Date(Date.now() - (13 - i) * 864e5).toISOString().slice(0, 10);
+                  return '<i class="' + (league.matchdays14.includes(d) ? 'on' : '') + '" title="' + d + '"></i>';
+                }).join('') + '</div>'} />
+                <p class="lg-note" style="margin-top:8px">Last 14 days · filled days had a league tournament</p>
+              </section>
+
+              <section class="lp-card" aria-labelledby="lpTrust">
+                <h2 id="lpTrust">About this listing<Fragment set:html={infoBtn('trust')} /></h2>
+                <div class="lp-trust">
+                  <div class="lp-owner"><Fragment set:html={crest(league.owner.avatarUrl, league.owner.displayName, 'lg-avatar')} /><span>Run by <b>{league.owner.displayName}</b></span></div>
+                  <p class="lg-note">Listed {new Date(league.createdAt).toISOString().slice(0, 10)}{league.verified ? ' · Verified club' : league.reviewed ? ' · Reviewed by the team' : ' · Not reviewed yet'}</p>
+                  {!league.isSample && <p><button class="lg-link" type="button" id="lpReport">Report this league</button></p>}
+                </div>
+              </section>
+            </div>
+
+            <aside class="lp-side" aria-label="Join this league">
+              <div class="lp-cta" id="lpCta">
+                <h2>{full ? 'No spots right now' : 'Join ' + league.name}</h2>
+                <p>{full ? 'Save it and check back. Owners reopen spots often.' : 'It takes about a minute.'}</p>
+                <div id="lpActions"><a class="lg-btn lg-btn-primary lp-btn" href={'/account/?next=' + encodeURIComponent('/leagues/' + league.slug + '/')}>Sign in to apply</a></div>
+                <div class="lp-act" id="lpSecondary" hidden></div>
+              </div>
+              <div class="lp-kick" id="lpKick" hidden></div>
+              <div class="lp-card" id="lpShare"><button class="lg-btn lg-btn-outline lg-btn-sm" type="button" id="lpShareBtn" style="width:100%">Share this league</button></div>
+            </aside>
+          </div>
+
+          <div class="lp-mobile-bar" id="lpBar" hidden></div>
+        </>
+      )}
+    </div>
+    <script id="lpBoot" type="application/json" set:html={boot}></script>
+  </main>
+</BaseLayout>
+
+<script>
+  import { api, token, signInUrl, toast, openSheet, bindInfo, startApply, $ } from '../../lib/league-client.js';
+  import { esc } from '../../lib/league-card.js';
+
+  const L = JSON.parse(document.getElementById('lpBoot')?.textContent || 'null');
+  bindInfo();
+  if (L) {
+    const KICKOFF_MS = 6 * 3600 * 1000;
+    let me = null, joinInfo = null;
+    const actions = $('#lpActions'), secondary = $('#lpSecondary'), kick = $('#lpKick'), bar = $('#lpBar');
+
+    $('#lpShareBtn')?.addEventListener('click', async () => {
+      const data = { title: L.name, text: L.name + ' · FC Mobile league', url: location.href };
+      try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(location.href); toast('Link copied.'); } } catch { /* cancelled */ }
+    });
+
+    $('#lpReport')?.addEventListener('click', async () => {
+      if (!(await token())) { location.href = signInUrl(); return; }
+      const s = openSheet('<h3>Report this league</h3><p class="lg-sub">Only report real problems.</p>' +
+        '<label class="lg-field"><span>Reason</span><select id="rpReason"><option value="fake_or_misleading">Fake or misleading details</option><option value="inactive">League looks inactive</option><option value="inappropriate">Inappropriate content</option><option value="spam">Spam or advertising</option><option value="other">Something else</option></select></label>' +
+        '<label class="lg-field"><span>Details <small>Optional</small></span><textarea id="rpDetails" rows="2" maxlength="300"></textarea></label><div class="lg-msg" id="rpMsg"></div>' +
+        '<div class="lg-modal-actions"><button class="lg-btn lg-btn-quiet" data-sheet-close type="button">Cancel</button><button class="lg-btn lg-btn-primary" id="rpSend" type="button">Send report</button></div>', { label: 'Report' });
+      $('#rpSend', s.el).addEventListener('click', async (e) => {
+        e.currentTarget.disabled = true;
+        try { const r = await api('/api/leagues/listings/' + L.id + '/report', { method: 'POST', body: JSON.stringify({ reason: $('#rpReason', s.el).value, details: $('#rpDetails', s.el).value.trim() }) }); s.close(); toast(r.message || 'Thanks for the report.'); }
+        catch (err) { $('#rpMsg', s.el).textContent = err.message; e.currentTarget.disabled = false; }
+      });
+    });
+
+    const cooling = () => { const t = me?.lastKickoffAt ? Date.parse(me.lastKickoffAt) + KICKOFF_MS : (L.nextKickoffAt ? Date.parse(L.nextKickoffAt) : 0); return t > Date.now() ? t : 0; };
+    const left = (ms) => { const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + 'h ' : '') + m + 'm'; };
+
+    function render() {
+      const full = L.openSpots <= 0 || !L.recruitingOpen;
+      const app = me?.application && me.application.status !== 'withdrawn' ? me.application : null;
+      let html = '';
+      if (L.isSample) html = '<button class="lg-btn" disabled>Sample club · applications off</button>';
+      else if (me?.isMine) html = '<a class="lg-btn lg-btn-primary lp-btn" href="/leagues/?tab=owner">Manage your league</a>';
+      else if (app) html = '<div class="lg-callout cyan" style="margin:0"><strong>Application ' + esc(app.status === 'new' ? 'sent' : app.status) + '</strong>' +
+        (app.status === 'invited' ? 'The owner invited you. Check FC Mobile for the league invite.' : app.status === 'joined' ? 'You are in this league.' : app.status === 'declined' ? 'The owner declined this time.' : 'The owner will review your team.') + '</div>' +
+        (['new', 'shortlisted'].includes(app.status) ? '<button class="lg-btn lg-btn-quiet lg-btn-sm" id="lpWithdraw" type="button">Withdraw application</button>' : '');
+      else {
+        if (L.joinMethods.includes('apply')) html += '<button class="lg-btn lg-btn-primary lp-btn" id="lpApply" type="button"' + (full ? ' disabled' : '') + '>' + (full ? 'No open spots' : 'Apply to join') + '</button>';
+        if (L.joinMethods.includes('discord')) html += '<button class="lg-btn lg-btn-outline" id="lpDiscord" type="button">Join Discord</button>';
+        if (L.joinMethods.includes('in_game')) html += '<button class="lg-btn lg-btn-outline" id="lpGameId" type="button">Show league ID</button>';
+      }
+      actions.innerHTML = html;
+      bar.innerHTML = $('#lpApply') ? '<button class="lg-btn lg-btn-primary lp-btn" data-bar-apply type="button">Apply to join</button>' : '';
+      bar.hidden = !bar.innerHTML;
+
+      // Save + confirm activity live together, next to the join actions.
+      if (!L.isSample && !me?.isMine) {
+        secondary.hidden = false;
+        secondary.innerHTML = '<button class="lg-btn lg-btn-outline lg-btn-sm" id="lpSave" type="button" aria-pressed="' + Boolean(me?.saved) + '">' + (me?.saved ? '♥ Saved' : '♡ Save') + '</button>' +
+          '<button class="lg-btn lg-btn-outline lg-btn-sm" id="lpConfirm" type="button"' + (me?.confirmedByMe ? ' disabled' : '') + '>' + (me?.confirmedByMe ? 'Confirmed today' : 'Confirm activity') + '</button><button class="lg-info" data-info="confirm" type="button" aria-label="About confirming activity">i</button>';
+      }
+      if (me?.canKickoff && !L.isSample) {
+        const c = cooling();
+        kick.hidden = false;
+        kick.innerHTML = '<div><b>Kickoff</b><small>' + (c ? 'Available again in ' + left(c - Date.now()) : 'Put this league at the top of the board for 6 hours.') + '</small></div>' +
+          '<span><button class="lg-btn lg-btn-primary lg-btn-sm" id="lpKickBtn" type="button"' + (c ? ' disabled' : '') + '>↗ Kickoff</button><button class="lg-info" data-info="kickoff" type="button" aria-label="About Kickoff">i</button></span>';
+      } else if (me && !me.isMine && !L.isSample && me.crewStatus !== 'removed') {
+        kick.hidden = false;
+        kick.innerHTML = me.crewStatus === 'pending'
+          ? '<div><b>Crew request sent</b><small>The owner will review it.</small></div>'
+          : '<div><b>Play in this league?</b><small>Join the crew to use Kickoff and keep it visible.</small></div><span><button class="lg-btn lg-btn-outline lg-btn-sm" id="lpCrew" type="button">Join crew</button><button class="lg-info" data-info="kickoff" type="button" aria-label="About Kickoff">i</button></span>';
+      }
+    }
+
+    async function loadMe() {
+      if (!(await token())) return;
+      try { me = await api('/api/leagues/me?listing=' + encodeURIComponent(L.id)); }
+      catch (e) { if (e.status !== 401) toast(e.message, true); }
+      render();
+    }
+
+    document.addEventListener('click', async (ev) => {
+      const t = ev.target.closest('button'); if (!t) return;
+      try {
+        if (t.id === 'lpApply' || t.hasAttribute('data-bar-apply')) {
+          await startApply({ id: L.id, name: L.name, minOvr: L.minOvr }, {
+            profile: me?.profile, suggested: me?.suggested,
+            onProfile: (p) => { me = { ...(me || {}), profile: p }; },
+            onSent: () => loadMe()
+          });
+        } else if (t.id === 'lpWithdraw') {
+          t.disabled = true; await api('/api/leagues/applications/' + me.application.id + '/withdraw', { method: 'POST', body: '{}' }); toast('Application withdrawn.'); await loadMe();
+        } else if (t.id === 'lpDiscord' || t.id === 'lpGameId') {
+          t.disabled = true;
+          joinInfo = joinInfo || await api('/api/leagues/listings/' + L.id + '/contact');
+          api('/api/leagues/listings/' + L.id + '/join', { method: 'POST', body: '{}' }).catch(() => {});
+          if (t.id === 'lpDiscord') {
+            if (joinInfo.discordInviteUrl) window.open(joinInfo.discordInviteUrl, '_blank', 'noopener,noreferrer');
+            else if (joinInfo.contactDiscord) { await navigator.clipboard.writeText(joinInfo.contactDiscord).catch(() => {}); toast('Discord ' + joinInfo.contactDiscord + ' copied.'); }
+            else toast('The owner has not shared a Discord link yet.', true);
+          } else if (joinInfo.leagueGameId) { await navigator.clipboard.writeText(joinInfo.leagueGameId).catch(() => {}); toast('League ID ' + joinInfo.leagueGameId + ' copied. Search it in FC Mobile.'); }
+          else toast('The owner has not shared a league ID yet.', true);
+          t.disabled = false;
+        } else if (t.id === 'lpSave') {
+          t.disabled = true; const r = await api('/api/leagues/listings/' + L.id + '/save', { method: 'POST', body: '{}' }); me.saved = r.saved; render(); toast(r.saved ? 'Saved.' : 'Removed from saved.');
+        } else if (t.id === 'lpConfirm') {
+          t.disabled = true; await api('/api/leagues/listings/' + L.id + '/active', { method: 'POST', body: '{}' }); me.confirmedByMe = true; render(); toast('Thanks. That helps other players.');
+        } else if (t.id === 'lpCrew') {
+          t.disabled = true; await api('/api/leagues/listings/' + L.id + '/crew', { method: 'POST', body: '{}' }); toast('Request sent to the owner.'); await loadMe();
+        } else if (t.id === 'lpKickBtn') {
+          t.disabled = true; const r = await api('/api/leagues/listings/' + L.id + '/kickoff', { method: 'POST', body: '{}' }); me.lastKickoffAt = r.lastKickoffAt || new Date().toISOString(); render(); toast('Kickoff! This league is back on top.');
+        }
+      } catch (e) {
+        if (e.status === 401) { location.href = signInUrl(); return; }
+        if (e.status === 428) { toast('Add your player card first.', true); }
+        else toast(e.message, true);
+        t.disabled = false; render();
+      }
+    });
+    setInterval(() => { if (me?.canKickoff && cooling()) render(); }, 60000);
+    render(); loadMe();
+  }
+</script>

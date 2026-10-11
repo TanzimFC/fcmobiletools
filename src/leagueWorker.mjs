@@ -3,21 +3,19 @@
 // Premium additions need supabase/migrations/20261010120000_league_premium.sql.
 // Until that migration is applied the worker degrades gracefully to the original feature set.
 
+import {
+  ADMIN_LISTING_COLUMNS, KICKOFF_MS, inList, isMissingSchema, readListings, rpc, ownerMapFor,
+  decorateListings, loadPublicDirectory, loadSitemapSlugs, pickSpotlight as pickSpotlightIds, SLUG_RE
+} from './lib/leaguePublic.js';
+import {
+  DIVISION_KEYS, ACCENT_KEYS, JOIN_KEYS, RULES_VERSION, divisionOriginUrl, SITE_ORIGIN
+} from './data/leagueConfig.js';
+
 const PROFILE_COLUMNS = [
   'account_id','status','fc_mobile_uid','in_game_username','ovr','region_server',
   'preferred_languages','discord_handle','tournament_sizes','availability',
-  'play_style','notes','avatar_url','updated_at'
+  'play_style','notes','avatar_url','share_uid','share_discord','updated_at'
 ].join(',');
-
-const BASE_LISTING_COLUMNS = [
-  'id','owner_account_id','slug','name','description','logo_url','league_game_id',
-  'region_server','preferred_languages','min_ovr','tournament_frequency',
-  'tournament_sizes','discord_required','player_commitment','weekly_rewards',
-  'discord_invite_url','contact_discord','open_spots','recruiting_open','status','moderation_note',
-  'last_kickoff_at','last_active_at','created_at','updated_at'
-];
-const PREMIUM_LISTING_COLUMNS = ['tagline','active_hours','is_verified','is_featured','featured_until'];
-const ADMIN_LISTING_COLUMNS = ['admin_note','reviewed_by','reviewed_at'];
 
 const ACTIVE_ACCOUNT_BLOCKS = new Set(['closed','fraud_removed','frozen','restricted']);
 const PROFILE_STATUSES = new Set(['looking_for_league','in_a_league','league_owner','not_looking']);
@@ -28,7 +26,6 @@ const LANGUAGES = new Set(['English','Bengali','Indonesian','Arabic','Spanish','
 const REPORT_REASONS = new Set(['fake_or_misleading','inactive','inappropriate','spam','other']);
 const ADMIN_STATUSES = ['pending','approved','rejected','paused','removed'];
 const DAILY_OUTREACH = 3;
-const KICKOFF_MS = 6 * 60 * 60 * 1000;
 const UUID_RE = '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})';
 
 const clean = (value, max = 200) => String(value ?? '').trim().replace(/\u0000/g, '').slice(0, max);
@@ -40,9 +37,6 @@ const safeArray = (value, allowed, max = 6) =>
   [...new Set((Array.isArray(value) ? value : []).map(x => clean(x, 40)).filter(x => allowed.has(x)))].slice(0, max);
 const utcStart = () => new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z').toISOString();
 const nowIso = () => new Date().toISOString();
-const inList = (ids) => encodeURIComponent('(' + ids.join(',') + ')');
-const isMissingSchema = (error) =>
-  /column|does not exist|schema cache|could not find the function|undefined_function/i.test(String(error?.message || ''));
 
 function imageUrl(value) {
   const raw = clean(value, 2048);
@@ -91,93 +85,6 @@ async function loadLeagueProfile(env, accountId, supabaseRest) {
   return rows?.[0] || null;
 }
 
-// Reads listings with the premium columns; if the migration has not been applied yet
-// falls back to the original columns so the live site never goes dark during a deploy.
-async function readListings(env, supabaseRest, queryTail, { admin = false } = {}) {
-  const premiumCols = [...BASE_LISTING_COLUMNS, ...PREMIUM_LISTING_COLUMNS, ...(admin ? ADMIN_LISTING_COLUMNS : [])];
-  try {
-    const rows = await supabaseRest(env, 'league_listings?select=' + encodeURIComponent(premiumCols.join(',')) + queryTail);
-    return { rows: rows || [], premium: true };
-  } catch (error) {
-    if (!isMissingSchema(error)) throw error;
-    const rows = await supabaseRest(env, 'league_listings?select=' + encodeURIComponent(BASE_LISTING_COLUMNS.join(',')) + queryTail);
-    return { rows: rows || [], premium: false };
-  }
-}
-
-async function rpc(env, supabaseRest, name, args) {
-  return supabaseRest(env, 'rpc/' + name, { method: 'POST', body: JSON.stringify(args) });
-}
-
-function decorateListings(listings, ownerMap, { admin = false, includeNote = false, signals = null, viewerId = '' } = {}) {
-  const now = Date.now();
-  return (listings || []).map(row => {
-    const owner = ownerMap.get(row.owner_account_id) || {};
-    const kickoffAt = row.last_kickoff_at ? Date.parse(row.last_kickoff_at) : 0;
-    const featuredUntil = row.featured_until ? Date.parse(row.featured_until) : 0;
-    const featured = Boolean(row.is_featured) && row.status === 'approved' && (!row.featured_until || featuredUntil > now);
-    const signal = signals?.get(row.id) || {};
-    const out = {
-      id: row.id,
-      slug: row.slug,
-      name: row.name,
-      tagline: row.tagline || '',
-      description: row.description,
-      logoUrl: row.logo_url || null,
-      leagueGameId: row.league_game_id || '',
-      regionServer: row.region_server,
-      preferredLanguages: row.preferred_languages || [],
-      minOvr: Number(row.min_ovr || 0),
-      tournamentFrequency: row.tournament_frequency,
-      tournamentSizes: row.tournament_sizes || [],
-      activeHours: row.active_hours || '',
-      discordRequired: Boolean(row.discord_required),
-      playerCommitment: row.player_commitment,
-      weeklyRewards: row.weekly_rewards || '',
-      discordInviteUrl: row.discord_invite_url || null,
-      contactDiscord: row.contact_discord || '',
-      openSpots: Number(row.open_spots || 0),
-      recruitingOpen: Boolean(row.recruiting_open),
-      status: row.status,
-      verified: Boolean(row.is_verified),
-      featured,
-      lastKickoffAt: row.last_kickoff_at || null,
-      kickoffActive: kickoffAt > now - KICKOFF_MS,
-      nextKickoffAt: kickoffAt ? new Date(kickoffAt + KICKOFF_MS).toISOString() : null,
-      lastActiveAt: row.last_active_at || null,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      confirmations7d: Number(signal.confirmations7d || 0),
-      saves: Number(signal.saves || 0),
-      isMine: Boolean(viewerId) && row.owner_account_id === viewerId,
-      owner: {
-        username: owner.username || 'FC Mobile player',
-        displayName: owner.display_name || owner.username || 'FC Mobile player',
-        avatarUrl: owner.avatar_url || null
-      }
-    };
-    if (includeNote || admin) out.moderationNote = row.moderation_note || '';
-    if (admin) {
-      out.featuredUntil = row.featured_until || null;
-      out.adminNote = row.admin_note || '';
-      out.reviewedBy = row.reviewed_by || '';
-      out.reviewedAt = row.reviewed_at || null;
-    }
-    return out;
-  }).sort((a, b) => {
-    if (a.kickoffActive !== b.kickoffActive) return a.kickoffActive ? -1 : 1;
-    if (a.kickoffActive && b.kickoffActive) return Date.parse(b.lastKickoffAt || 0) - Date.parse(a.lastKickoffAt || 0);
-    return Date.parse(b.lastActiveAt || b.createdAt || 0) - Date.parse(a.lastActiveAt || a.createdAt || 0);
-  });
-}
-
-async function ownerMapFor(env, supabaseRest, listings) {
-  const ids = [...new Set((listings || []).map(row => row.owner_account_id).filter(Boolean))];
-  if (!ids.length) return new Map();
-  const rows = await supabaseRest(env, 'accounts?select=id,username,display_name,avatar_url&id=in.' + inList(ids)).catch(() => []);
-  return new Map((rows || []).map(row => [row.id, row]));
-}
-
 async function outreachUsage(env, accountId, supabaseRest) {
   const rows = await supabaseRest(env,
     'league_outreach?owner_account_id=eq.' + encodeURIComponent(accountId) +
@@ -203,28 +110,30 @@ function requireVerified(context, json) {
   return null;
 }
 
+// One line, no markup, no pasted essays.
+const oneLine = (value, max) => clean(String(value ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' '), max);
+
 function validateProfile(input) {
-  const status = clean(input.status, 40);
-  const uid = clean(input.fcMobileUid, 64);
-  const inGameUsername = clean(input.inGameUsername, 40);
+  const status = PROFILE_STATUSES.has(clean(input.status, 40)) ? clean(input.status, 40) : 'looking_for_league';
+  const uid = oneLine(input.fcMobileUid, 64);
+  const inGameUsername = oneLine(input.inGameUsername, 40);
   const ovr = intInRange(input.ovr, 50, 200);
   const region = clean(input.regionServer, 60);
   const languages = safeArray(input.preferredLanguages, LANGUAGES, 5);
   const sizes = safeArray(input.tournamentSizes, SIZES, 4);
   const availability = clean(input.availability, 100);
   const playStyle = clean(input.playStyle, 60);
-  const notes = clean(input.notes, 500);
-  const discordHandle = clean(input.discordHandle, 100);
+  const notes = oneLine(input.notes, 160);
+  const discordHandle = oneLine(input.discordHandle, 100);
   const avatar = imageUrl(input.avatarUrl || '');
-  if (!PROFILE_STATUSES.has(status)) throw new Error('Choose a profile status.');
-  if (uid.length < 3) throw new Error('Enter your FC Mobile UID.');
-  if (inGameUsername.length < 2) throw new Error('Enter your in-game username.');
+  if (inGameUsername.length < 2) throw new Error('Enter your in-game name.');
   if (ovr === null) throw new Error('Enter a valid OVR between 50 and 200.');
-  if (region.length < 2) throw new Error('Choose your region or server.');
+  if (region.length < 2) throw new Error('Choose your region.');
+  if (uid && uid.length < 3) throw new Error('That UID looks too short.');
   if (input.avatarUrl && avatar === undefined) throw new Error('Upload your profile image again.');
   return {
     status,
-    fc_mobile_uid: uid,
+    fc_mobile_uid: uid || null,
     in_game_username: inGameUsername,
     ovr,
     region_server: region,
@@ -235,41 +144,49 @@ function validateProfile(input) {
     play_style: playStyle || null,
     notes: notes || null,
     avatar_url: avatar || null,
+    // Sharing is always the player's choice, per field.
+    share_uid: Boolean(input.shareUid) && Boolean(uid),
+    share_discord: Boolean(input.shareDiscord) && Boolean(discordHandle),
     updated_at: nowIso()
   };
 }
 
 function validateListing(input, premium) {
-  const name = clean(input.name, 70);
-  const description = clean(input.description, 700);
+  const name = oneLine(input.name, 70);
+  const pitch = oneLine(input.tagline ?? input.description, 100);
   const logo = imageUrl(input.logoUrl || '');
   const invite = inviteUrl(input.discordInviteUrl || '');
-  const contactDiscord = clean(input.contactDiscord, 100);
+  const contactDiscord = oneLine(input.contactDiscord, 100);
   const frequency = clean(input.tournamentFrequency, 32);
   const sizes = safeArray(input.tournamentSizes, SIZES, 4);
   const languages = safeArray(input.preferredLanguages, LANGUAGES, 5);
-  const commitment = clean(input.playerCommitment, 24);
+  const commitment = clean(input.playerCommitment || 'regular', 24);
   const minOvr = intInRange(input.minOvr, 50, 200);
   const openSpots = intInRange(input.openSpots ?? 1, 0, 50);
   const region = clean(input.regionServer, 60);
-  const gameId = clean(input.leagueGameId, 64);
-  const rewards = clean(input.weeklyRewards, 300);
-  const tagline = clean(input.tagline, 100);
-  const activeHours = clean(input.activeHours, 60);
+  const gameId = oneLine(input.leagueGameId, 64);
+  const perks = oneLine(input.perks ?? input.weeklyRewards, 80);
+  const activeHours = oneLine(input.activeHours, 60);
+  const division = clean(input.division, 20);
+  const accent = ACCENT_KEYS.includes(clean(input.accent, 12)) ? clean(input.accent, 12) : 'cyan';
+  const joinMethods = safeArray(input.joinMethods, new Set(JOIN_KEYS), 3);
   if (name.length < 3) throw new Error('League name must have at least 3 characters.');
-  if (description.length < 20) throw new Error('Add a short description of at least 20 characters.');
+  if (!DIVISION_KEYS.includes(division)) throw new Error('Choose your league division.');
   if (input.logoUrl && logo === undefined) throw new Error('Upload the league crest again.');
   if (input.discordInviteUrl && invite === undefined) throw new Error('Enter a valid Discord invite link.');
-  if (!FREQUENCIES.has(frequency)) throw new Error('Choose how often this league runs tournaments.');
+  if (!FREQUENCIES.has(frequency)) throw new Error('Choose how often you play tournaments.');
   if (!sizes.length) throw new Error('Choose at least one tournament size.');
   if (!COMMITMENTS.has(commitment)) throw new Error('Choose the league commitment level.');
   if (minOvr === null) throw new Error('Enter a valid minimum OVR between 50 and 200.');
-  if (openSpots === null) throw new Error('Enter a valid number of open spots.');
-  if (region.length < 2) throw new Error('Choose the league region or server.');
+  if (openSpots === null) throw new Error('Enter how many spots are open (0 to 50).');
+  if (region.length < 2) throw new Error('Choose the league region.');
+  if (!joinMethods.length) throw new Error('Choose at least one way to join.');
+  if (joinMethods.includes('discord') && !invite) throw new Error('Add your Discord invite link, or remove “Join Discord”.');
+  if (joinMethods.includes('in_game') && !gameId) throw new Error('Add your league ID, or remove “Search in game”.');
   const row = {
     name,
     slug: slugFor(name),
-    description,
+    description: '',
     logo_url: logo || null,
     league_game_id: gameId || null,
     region_server: region,
@@ -277,9 +194,9 @@ function validateListing(input, premium) {
     min_ovr: minOvr,
     tournament_frequency: frequency,
     tournament_sizes: sizes,
-    discord_required: Boolean(input.discordRequired),
+    discord_required: joinMethods.includes('discord') && Boolean(input.discordRequired),
     player_commitment: commitment,
-    weekly_rewards: rewards || null,
+    weekly_rewards: perks || null,
     discord_invite_url: invite || null,
     contact_discord: contactDiscord || null,
     open_spots: openSpots,
@@ -287,8 +204,11 @@ function validateListing(input, premium) {
     updated_at: nowIso()
   };
   if (premium) {
-    row.tagline = tagline || null;
+    row.tagline = pitch || null;
     row.active_hours = activeHours || null;
+    row.division = division;
+    row.accent = accent;
+    row.join_methods = joinMethods;
   }
   return row;
 }
@@ -299,7 +219,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
   const auth = await requireUser(request, env, accountContext, json);
   if (auth.response) return auth.response;
   const { account, user } = auth.context;
-  let profile;
+  let profile = null;
   try {
     profile = await loadLeagueProfile(env, account.id, supabaseRest);
   } catch (error) {
@@ -307,7 +227,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     return json({ error: 'League profiles are temporarily unavailable.' }, 503);
   }
 
-  const suggested = await supabaseRest(env,
+  const suggested = profile ? [] : await supabaseRest(env,
     'account_game_profiles?account_id=eq.' + encodeURIComponent(account.id) +
     '&select=fc_mobile_uid,in_game_username,region_server,discord_handle&limit=1'
   ).catch(() => []);
@@ -326,15 +246,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     discordHandle: gameProfile.discord_handle || ''
   };
 
-  if (!profile) {
-    return json({
-      account: accountOut, profile: null, needsProfile: true, suggestedProfile,
-      leagues: [], ownListings: [], ownerInsights: null, saved: [], approvedOwner: false,
-      canFindPlayers: false, outreachUsedToday: 0, outreachRemaining: DAILY_OUTREACH, premiumReady: true
-    });
-  }
-
-  const [directory, own, signalPack] = await Promise.all([
+  const [directory, own, signalPack, publicPack, crewPack, myApps] = await Promise.all([
     readListings(env, supabaseRest,
       '&status=eq.approved&recruiting_open=eq.true' +
       '&order=last_kickoff_at.desc.nullslast,last_active_at.desc.nullslast,created_at.desc&limit=200'
@@ -345,10 +257,14 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     readListings(env, supabaseRest,
       '&owner_account_id=eq.' + encodeURIComponent(account.id) + '&order=created_at.desc&limit=5'
     ).catch(() => ({ rows: [], premium: true })),
-    rpc(env, supabaseRest, 'server_league_directory_signals', { p_account_id: account.id }).catch(() => null)
+    rpc(env, supabaseRest, 'server_league_directory_signals', { p_account_id: account.id }).catch(() => null),
+    rpc(env, supabaseRest, 'server_league_public_signals', {}).catch(() => null),
+    rpc(env, supabaseRest, 'server_league_crew_signals', { p_account_id: account.id }).catch(() => null),
+    supabaseRest(env,
+      'league_applications?applicant_account_id=eq.' + encodeURIComponent(account.id) +
+      '&select=id,listing_id,status,created_at,status_changed_at&order=created_at.desc&limit=50').catch(() => [])
   ]);
-  // Crew + matchday signals. Optional: null until 20261010150000_league_crew_and_matchdays.sql is applied.
-  const crewPack = await rpc(env, supabaseRest, 'server_league_crew_signals', { p_account_id: account.id }).catch(() => null);
+
   const crewMap = new Map((crewPack?.signals || []).map(s => [s.listingId, s]));
   const myRequestIds = new Set(crewPack?.myRequests || []);
   const myCrew = crewPack?.myCrew || null;
@@ -356,8 +272,8 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     const c = crewMap.get(row.id) || {};
     return {
       ...row,
-      crewCount: Number(c.crewCount || 0),
-      matchdays7d: Number(c.matchdays7d || 0),
+      crewCount: Number(c.crewCount || row.crewCount || 0),
+      matchdays7d: Number(c.matchdays7d || row.matchdays7d || 0),
       matchdays14: c.matchdays14 || [],
       lastKickoffBy: c.lastKickoffBy || '',
       myCrewStatus: myCrew && myCrew.listingId === row.id && myCrew.status === 'approved' ? 'approved'
@@ -365,18 +281,23 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     };
   };
 
-  const premiumReady = Boolean(directory.premium && signalPack);
-  const signalMap = new Map((signalPack?.signals || []).map(s => [s.listingId, s]));
+  const signalMap = new Map();
+  for (const sig of (Array.isArray(publicPack) ? publicPack : [])) signalMap.set(sig.listingId, { ...sig });
+  for (const sig of (signalPack?.signals || [])) signalMap.set(sig.listingId, { ...(signalMap.get(sig.listingId) || {}), ...sig });
   const savedIds = new Set(signalPack?.saved || []);
   const confirmedIds = new Set(signalPack?.confirmedRecently || []);
+  const myAppByListing = new Map((myApps || []).map(a => [a.listing_id, a]));
 
   const owners = await ownerMapFor(env, supabaseRest, [...directory.rows, ...own.rows]);
   const leagues = decorateListings(directory.rows, owners, { signals: signalMap, viewerId: account.id }).map(row => ({
     ...withCrew(row),
     saved: savedIds.has(row.id),
-    confirmedByMe: confirmedIds.has(row.id)
+    confirmedByMe: confirmedIds.has(row.id),
+    myApplication: myAppByListing.get(row.id)
+      ? { id: myAppByListing.get(row.id).id, status: myAppByListing.get(row.id).status } : null
   }));
-  let ownListings = decorateListings(own.rows, owners, { includeNote: true, viewerId: account.id }).map(withCrew);
+  const spotlight = pickSpotlightIds(leagues);
+  let ownListings = decorateListings(own.rows, owners, { includeNote: true, viewerId: account.id, signals: signalMap }).map(withCrew);
   let ownerCrew = [];
   if (crewPack && ownListings[0]?.status === 'approved') {
     const oc = await rpc(env, supabaseRest, 'server_league_owner_crew', {
@@ -384,35 +305,39 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     }).catch(() => null);
     if (oc?.ok) {
       ownerCrew = oc.crew || [];
-      ownListings = ownListings.map((row, i) => i === 0 ? { ...row, matchdays14: oc.matchdays14 || [], matchdays7d: Number(oc.matchdays7d || 0), crewCount: ownerCrew.filter(m => m.status === 'approved').length } : row);
+      ownListings = ownListings.map((row, i) => i === 0 ? {
+        ...row, matchdays14: oc.matchdays14 || [], matchdays7d: Number(oc.matchdays7d || 0),
+        crewCount: ownerCrew.filter(m => m.status === 'approved').length
+      } : row);
     }
   }
 
-  const approvedOwner = profile.status === 'league_owner' &&
-    own.rows.some(row => row.status === 'approved' && row.recruiting_open);
-  const [usedToday, insights] = await Promise.all([
-    approvedOwner ? outreachUsage(env, account.id, supabaseRest).catch(() => 0) : Promise.resolve(0),
-    ownListings.length && ownListings[0].status !== 'removed'
-      ? rpc(env, supabaseRest, 'server_league_owner_insights', { p_listing_id: ownListings[0].id, p_owner_account_id: account.id }).catch(() => null)
-      : Promise.resolve(null)
-  ]);
+  const liveOwn = own.rows.find(row => row.status === 'approved');
+  const approvedOwner = Boolean(liveOwn && liveOwn.recruiting_open);
+  let newApplications = 0;
+  if (liveOwn) {
+    const counts = await supabaseRest(env,
+      'league_applications?listing_id=eq.' + encodeURIComponent(liveOwn.id) + '&status=eq.new&select=id&limit=100').catch(() => []);
+    newApplications = (counts || []).length;
+  }
+  const usedToday = approvedOwner ? await outreachUsage(env, account.id, supabaseRest).catch(() => 0) : 0;
 
   return json({
     account: accountOut,
     profile,
-    needsProfile: false,
     suggestedProfile,
     leagues,
+    spotlight,
     ownListings,
-    ownerInsights: insights?.ok ? insights : null,
     crewReady: Boolean(crewPack),
     myCrew,
     ownerCrew,
+    myApplications: (myApps || []).map(a => ({ id: a.id, listingId: a.listing_id, status: a.status, createdAt: a.created_at })),
+    newApplications,
     approvedOwner,
     canFindPlayers: approvedOwner,
     outreachUsedToday: usedToday,
     outreachRemaining: Math.max(0, DAILY_OUTREACH - usedToday),
-    premiumReady,
     directoryFailed: Boolean(directory.failed)
   });
 }
@@ -454,14 +379,10 @@ async function supportsPremiumColumns(env, supabaseRest) {
   }
 }
 
-async function createListing(request, env, authContext, supabaseRest, json) {
+async function createListing(request, env, authContext, supabaseRest, json, purge) {
   const blocked = requireVerified(authContext, json);
   if (blocked) return blocked;
   const { account } = authContext;
-  const profile = await loadLeagueProfile(env, account.id, supabaseRest);
-  if (!profile || profile.status !== 'league_owner') {
-    return json({ error: 'Set your league profile status to League owner first.' }, 403);
-  }
   const existing = await supabaseRest(env,
     'league_listings?owner_account_id=eq.' + encodeURIComponent(account.id) +
     '&status=in.(pending,approved,paused)&select=id,status&limit=1'
@@ -469,16 +390,22 @@ async function createListing(request, env, authContext, supabaseRest, json) {
   if (existing?.length) return json({ error: 'You already have a league listing. Edit it instead of creating another.' }, 409);
 
   const premium = await supportsPremiumColumns(env, supabaseRest);
+  if (!premium) return json({ error: 'League listings are being upgraded. Please try again shortly.' }, 503);
+  const input = await request.json().catch(() => ({}));
+  if (input.acceptRules !== true) return json({ error: 'Agree to the league rules to list your league.' }, 400);
   let fields;
   try {
-    fields = validateListing(await request.json().catch(() => ({})), premium);
+    fields = validateListing(input, premium);
   } catch (error) {
     return json({ error: error?.message || 'Check your league listing.' }, 400);
   }
   const row = {
     ...fields,
     owner_account_id: account.id,
-    status: 'pending',
+    status: 'approved',
+    is_sample: false,
+    rules_accepted_at: nowIso(),
+    rules_version: RULES_VERSION,
     moderation_note: null,
     reviewed_by: null,
     reviewed_at: null
@@ -489,13 +416,14 @@ async function createListing(request, env, authContext, supabaseRest, json) {
       headers: { Prefer: 'return=minimal' },
       body: JSON.stringify([row])
     });
-    return json({ ok: true, status: 'pending', message: 'League submitted. It goes live after review.' }, 201);
+    purge?.(row.slug);
+    return json({ ok: true, slug: row.slug, url: '/leagues/' + row.slug + '/', message: 'Your league is live.' }, 201);
   } catch (error) {
     console.error('[LEAGUE_LISTING_CREATE]', error?.message);
     if (/duplicate key|unique/i.test(String(error?.message || ''))) {
-      return json({ error: 'This account already has a listing awaiting review.' }, 409);
+      return json({ error: 'You already have a league listing.' }, 409);
     }
-    return json({ error: 'The league listing could not be submitted. Please try again.' }, 500);
+    return json({ error: 'The league could not be listed. Please try again.' }, 500);
   }
 }
 
@@ -505,7 +433,7 @@ async function loadOwnListing(env, supabaseRest, id, accountId) {
   return { listing: rows[0] || null, premium };
 }
 
-async function updateListing(request, env, authContext, match, supabaseRest, json) {
+async function updateListing(request, env, authContext, match, supabaseRest, json, purge) {
   const blocked = requireVerified(authContext, json);
   if (blocked) return blocked;
   const { account } = authContext;
@@ -519,7 +447,7 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
   try {
     fields = validateListing({
       name: old.name,
-      description: input.description ?? old.description,
+      tagline: input.tagline ?? old.tagline,
       logoUrl: input.logoUrl ?? old.logo_url,
       leagueGameId: input.leagueGameId ?? old.league_game_id,
       regionServer: input.regionServer ?? old.region_server,
@@ -529,46 +457,40 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
       tournamentSizes: input.tournamentSizes ?? old.tournament_sizes,
       discordRequired: input.discordRequired ?? old.discord_required,
       playerCommitment: input.playerCommitment ?? old.player_commitment,
-      weeklyRewards: input.weeklyRewards ?? old.weekly_rewards,
+      perks: input.perks ?? old.weekly_rewards,
       discordInviteUrl: input.discordInviteUrl ?? old.discord_invite_url,
       contactDiscord: input.contactDiscord ?? old.contact_discord,
       openSpots: input.openSpots ?? old.open_spots,
       recruitingOpen: input.recruitingOpen ?? old.recruiting_open,
-      tagline: input.tagline ?? old.tagline,
-      activeHours: input.activeHours ?? old.active_hours
+      activeHours: input.activeHours ?? old.active_hours,
+      division: input.division ?? old.division,
+      accent: input.accent ?? old.accent,
+      joinMethods: input.joinMethods ?? old.join_methods
     }, premium);
   } catch (error) {
     return json({ error: error?.message || 'Check your league listing.' }, 400);
   }
   delete fields.slug;
-  delete fields.name; // the name is locked after submission so reviewers and players see a stable identity
+  delete fields.name; // the name is locked so players always recognise the league
   try {
     const saved = await supabaseRest(env,
       'league_listings?id=eq.' + encodeURIComponent(id) + '&owner_account_id=eq.' + encodeURIComponent(account.id), {
         method: 'PATCH',
         headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({
-          ...fields,
-          status: 'pending',
-          moderation_note: null,
-          reviewed_by: null,
-          reviewed_at: null,
-          updated_at: nowIso()
-        })
+        // Edits go live straight away. The "Reviewed" badge is cleared because the team reviewed the old details.
+        body: JSON.stringify({ ...fields, reviewed_by: null, reviewed_at: null, updated_at: nowIso() })
       });
     if (!saved?.length) return json({ error: 'League listing could not be updated.' }, 500);
   } catch (error) {
     console.error('[LEAGUE_LISTING_UPDATE]', error?.message);
-    if (/duplicate key|unique/i.test(String(error?.message || ''))) {
-      return json({ error: 'You already have another listing that is pending, live or paused.' }, 409);
-    }
     return json({ error: 'League listing could not be updated.' }, 500);
   }
-  return json({ ok: true, status: 'pending', message: 'Your changes were sent for review.' });
+  purge?.(old.slug);
+  return json({ ok: true, slug: old.slug, url: '/leagues/' + old.slug + '/', message: 'Saved.' });
 }
 
 // Open spots and recruiting on/off are operational, not content, so they apply instantly without re-review.
-async function quickUpdate(request, env, authContext, match, supabaseRest, json) {
+async function quickUpdate(request, env, authContext, match, supabaseRest, json, purge) {
   const blocked = requireVerified(authContext, json);
   if (blocked) return blocked;
   const { account } = authContext;
@@ -594,6 +516,7 @@ async function quickUpdate(request, env, authContext, match, supabaseRest, json)
       body: JSON.stringify(patch)
     });
   if (!saved?.length) return json({ error: 'League listing could not be updated.' }, 409);
+  purge?.(listing.slug);
   return json({ ok: true, openSpots: Number(saved[0].open_spots), recruitingOpen: Boolean(saved[0].recruiting_open) });
 }
 
@@ -710,12 +633,10 @@ async function reportListing(request, env, authContext, match, supabaseRest, jso
 
 async function listPlayers(request, env, authContext, url, supabaseRest, json) {
   const { account } = authContext;
-  const profile = await loadLeagueProfile(env, account.id, supabaseRest);
-  if (profile?.status !== 'league_owner') return json({ error: 'Set your profile status to League owner before searching for players.' }, 403);
   const own = await supabaseRest(env,
     'league_listings?owner_account_id=eq.' + encodeURIComponent(account.id) +
     '&status=eq.approved&recruiting_open=eq.true&select=id&limit=1');
-  if (!own?.length) return json({ error: 'Player search is available to approved league owners with recruitment open.' }, 403);
+  if (!own?.length) return json({ error: 'Player search opens once your league is live with spots open.' }, 403);
 
   const staleBefore = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
   const [rows, outreach] = await Promise.all([
@@ -779,7 +700,7 @@ async function revealPlayer(request, env, authContext, match, supabaseRest, json
   }
   const rows = await supabaseRest(env,
     'league_profiles?account_id=eq.' + encodeURIComponent(playerId) +
-    '&status=eq.looking_for_league&select=fc_mobile_uid,in_game_username,ovr,region_server,discord_handle,preferred_languages,tournament_sizes,availability,play_style,notes,avatar_url,updated_at&limit=1');
+    '&status=eq.looking_for_league&select=share_uid,share_discord,fc_mobile_uid,in_game_username,ovr,region_server,discord_handle,preferred_languages,tournament_sizes,availability,play_style,notes,avatar_url,updated_at&limit=1');
   if (!rows?.[0]) return json({ error: 'This player is no longer looking for a league.' }, 404);
   const p = rows[0];
   return json({
@@ -788,11 +709,13 @@ async function revealPlayer(request, env, authContext, match, supabaseRest, json
     remainingToday: Number(usage.remaining_today ?? Math.max(0, DAILY_OUTREACH - Number(usage.used_today || 0))),
     alreadyRevealed: Boolean(usage.already_revealed),
     player: {
-      fcMobileUid: p.fc_mobile_uid,
+      fcMobileUid: p.share_uid ? (p.fc_mobile_uid || '') : '',
+      uidShared: Boolean(p.share_uid),
       inGameUsername: p.in_game_username,
       ovr: Number(p.ovr || 0),
       regionServer: p.region_server,
-      discordHandle: p.discord_handle || '',
+      discordHandle: p.share_discord ? (p.discord_handle || '') : '',
+      discordShared: Boolean(p.share_discord),
       preferredLanguages: p.preferred_languages || [],
       tournamentSizes: p.tournament_sizes || [],
       availability: p.availability || '',
@@ -803,13 +726,156 @@ async function revealPlayer(request, env, authContext, match, supabaseRest, json
   });
 }
 
+// Lightweight personal state for one league page (the page itself is public and cached).
+async function leagueMe(request, env, authContext, url, supabaseRest, json) {
+  const id = clean(url.searchParams.get('listing'), 40).toLowerCase();
+  if (!new RegExp('^' + UUID_RE + '$', 'i').test(id)) return json({ error: 'Choose a league.' }, 400);
+  const { account, user } = authContext;
+  const q = (v) => encodeURIComponent(v);
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const [profile, listing, saved, confirmed, app, crew, crewPack] = await Promise.all([
+    loadLeagueProfile(env, account.id, supabaseRest).catch(() => null),
+    readListings(env, supabaseRest, '&id=eq.' + q(id) + '&limit=1').then(r => r.rows[0] || null).catch(() => null),
+    supabaseRest(env, 'league_saves?account_id=eq.' + q(account.id) + '&listing_id=eq.' + q(id) + '&select=listing_id&limit=1').catch(() => []),
+    supabaseRest(env, 'league_active_confirmations?account_id=eq.' + q(account.id) + '&listing_id=eq.' + q(id) + '&created_at=gte.' + q(since) + '&select=id&limit=1').catch(() => []),
+    supabaseRest(env, 'league_applications?applicant_account_id=eq.' + q(account.id) + '&listing_id=eq.' + q(id) + '&select=id,status,created_at&limit=1').catch(() => []),
+    supabaseRest(env, 'league_crew?account_id=eq.' + q(account.id) + '&listing_id=eq.' + q(id) + '&select=status&limit=1').catch(() => []),
+    Promise.resolve(null)
+  ]);
+  let suggested = {};
+  if (!profile) {
+    const g = await supabaseRest(env, 'account_game_profiles?account_id=eq.' + q(account.id) + '&select=fc_mobile_uid,in_game_username,region_server,discord_handle&limit=1').catch(() => []);
+    suggested = { fcMobileUid: g?.[0]?.fc_mobile_uid || '', inGameUsername: g?.[0]?.in_game_username || '', regionServer: g?.[0]?.region_server || '', discordHandle: g?.[0]?.discord_handle || '' };
+  }
+  const isMine = Boolean(listing) && listing.owner_account_id === account.id;
+  const crewStatus = crew?.[0]?.status || '';
+  return json({
+    account: { id: account.id, username: account.username, displayName: account.display_name || account.username, emailConfirmed: Boolean(user.email_confirmed_at) },
+    profile, suggested, isMine,
+    saved: Boolean(saved?.length), confirmedByMe: Boolean(confirmed?.length),
+    application: app?.[0] ? { id: app[0].id, status: app[0].status, createdAt: app[0].created_at } : null,
+    crewStatus,
+    canKickoff: isMine || crewStatus === 'approved',
+    lastKickoffAt: listing?.last_kickoff_at || null
+  });
+}
+
+// ───────────────────────── applications ─────────────────────────
+
+const APP_STATUSES = new Set(['new', 'shortlisted', 'invited', 'joined', 'declined']);
+
+async function applyToLeague(request, env, authContext, match, supabaseRest, json) {
+  const blocked = requireVerified(authContext, json);
+  if (blocked) return blocked;
+  const input = await request.json().catch(() => ({}));
+  const shot = imageUrl(input.screenshotUrl || '');
+  if (input.screenshotUrl && shot === undefined) return json({ error: 'Upload your team screenshot again.' }, 400);
+  const result = await rpc(env, supabaseRest, 'server_league_apply', {
+    p_listing_id: match[1], p_account_id: authContext.account.id,
+    p_message: oneLine(input.message, 200), p_screenshot_url: shot || null,
+    p_share_uid: Boolean(input.shareUid), p_share_discord: Boolean(input.shareDiscord)
+  });
+  if (!result?.ok) return rpcFailure(result, json, 'Your application could not be sent.');
+  return json({ ok: true, id: result.id, status: 'new', message: 'Application sent. The owner will review it.' }, 201);
+}
+
+async function listApplications(request, env, authContext, match, supabaseRest, json) {
+  const { account } = authContext;
+  const { listing } = await loadOwnListing(env, supabaseRest, match[1], account.id);
+  if (!listing) return json({ error: 'League listing not found.' }, 404);
+  const rows = await supabaseRest(env,
+    'league_applications?listing_id=eq.' + encodeURIComponent(listing.id) +
+    '&status=neq.withdrawn&select=id,applicant_account_id,status,message,screenshot_url,ovr,in_game_username,region_server,shared_uid,shared_discord,owner_note,created_at,status_changed_at' +
+    '&order=created_at.desc&limit=100').catch(() => []);
+  const ids = [...new Set((rows || []).map(r => r.applicant_account_id))];
+  const accounts = ids.length ? await supabaseRest(env, 'accounts?select=id,username,display_name,avatar_url&id=in.' + inList(ids)).catch(() => []) : [];
+  const accMap = new Map((accounts || []).map(a => [a.id, a]));
+  return json({ applications: (rows || []).map(r => {
+    const a = accMap.get(r.applicant_account_id) || {};
+    return {
+      id: r.id, status: r.status, message: r.message || '', screenshotUrl: r.screenshot_url || null,
+      ovr: Number(r.ovr || 0), inGameUsername: r.in_game_username || '', regionServer: r.region_server || '',
+      uid: r.shared_uid || '', discord: r.shared_discord || '', ownerNote: r.owner_note || '',
+      username: a.username || '', displayName: a.display_name || a.username || 'FC Mobile player', avatarUrl: a.avatar_url || null,
+      createdAt: r.created_at, statusChangedAt: r.status_changed_at
+    };
+  }) });
+}
+
+async function decideApplication(request, env, authContext, match, supabaseRest, json) {
+  const input = await request.json().catch(() => ({}));
+  const status = clean(input.status, 20);
+  if (!APP_STATUSES.has(status)) return json({ error: 'Choose a valid status.' }, 400);
+  const result = await rpc(env, supabaseRest, 'server_league_application_decide', {
+    p_application_id: match[1], p_owner_account_id: authContext.account.id, p_status: status, p_note: oneLine(input.note, 300)
+  });
+  if (!result?.ok) return rpcFailure(result, json, 'That change could not be saved.');
+  return json(result);
+}
+
+async function withdrawApplication(request, env, authContext, match, supabaseRest, json) {
+  const result = await rpc(env, supabaseRest, 'server_league_application_withdraw', {
+    p_application_id: match[1], p_account_id: authContext.account.id
+  });
+  if (!result?.ok) return rpcFailure(result, json, 'Could not withdraw this application.');
+  return json(result);
+}
+
+// Join details are for signed-in players only.
+async function listingContact(request, env, authContext, match, supabaseRest, json) {
+  const { rows } = await readListings(env, supabaseRest, '&id=eq.' + encodeURIComponent(match[1]) + '&status=eq.approved&limit=1');
+  const r = rows[0];
+  if (!r) return json({ error: 'League not found.' }, 404);
+  return json({ discordInviteUrl: r.discord_invite_url || null, contactDiscord: r.contact_discord || '', leagueGameId: r.league_game_id || '' });
+}
+
+// ───────────────────────── public (no sign-in) ─────────────────────────
+
+const PUBLIC_CACHE = 'public, max-age=30, s-maxage=120, stale-while-revalidate=600';
+
+async function publicDirectory(env, supabaseRest, json) {
+  try {
+    const data = await loadPublicDirectory(env, supabaseRest);
+    return json(data, 200, { 'cache-control': PUBLIC_CACHE });
+  } catch (error) {
+    console.error('[LEAGUE_PUBLIC]', error?.message);
+    return json({ error: 'The league board could not be loaded. Please try again.' }, 503, { 'cache-control': 'no-store' });
+  }
+}
+
+// Division icons never change: fetched once from the origin, then served immutable from the edge.
+async function divisionIcon(key, ctx) {
+  const origin = divisionOriginUrl(key);
+  if (!origin) return new Response('Not found', { status: 404 });
+  const res = await fetch(origin, { cf: { cacheEverything: true, cacheTtl: 31536000 } });
+  if (!res.ok) return new Response('Icon unavailable', { status: 502, headers: { 'cache-control': 'no-store' } });
+  return new Response(res.body, {
+    headers: {
+      'content-type': res.headers.get('content-type') || 'image/webp',
+      'cache-control': 'public, max-age=31536000, immutable',
+      'x-content-type-options': 'nosniff'
+    }
+  });
+}
+
+async function leaguesSitemap(env, supabaseRest) {
+  const rows = await loadSitemapSlugs(env, supabaseRest);
+  const urls = [{ loc: SITE_ORIGIN + '/leagues/', lastmod: '' }, ...rows.map(r => ({
+    loc: SITE_ORIGIN + '/leagues/' + r.slug + '/', lastmod: r.updated_at ? String(r.updated_at).slice(0, 10) : ''
+  }))];
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
+    urls.map(u => '<url><loc>' + u.loc + '</loc>' + (u.lastmod ? '<lastmod>' + u.lastmod + '</lastmod>' : '') + '</url>').join('') + '</urlset>';
+  return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
+}
+
 // ───────────────────────── admin API ─────────────────────────
 
 async function adminListings(env, url, supabaseRest, json) {
   const requested = clean(url.searchParams.get('status') || 'pending', 20);
-  const status = [...ADMIN_STATUSES, 'all'].includes(requested) ? requested : 'pending';
+  const status = [...ADMIN_STATUSES, 'all', 'unreviewed'].includes(requested) ? requested : 'unreviewed';
+  const filter = status === 'all' ? '' : status === 'unreviewed' ? '&status=eq.approved&reviewed_at=is.null&is_sample=eq.false' : '&status=eq.' + encodeURIComponent(status);
   const { rows, premium } = await readListings(env, supabaseRest,
-    (status === 'all' ? '' : '&status=eq.' + encodeURIComponent(status)) + '&order=created_at.desc&limit=300',
+    filter + '&order=created_at.desc&limit=300',
     { admin: true });
   const owners = await ownerMapFor(env, supabaseRest, rows);
   const decorated = decorateListings(rows, owners, { admin: true });
@@ -845,7 +911,9 @@ async function adminListings(env, url, supabaseRest, json) {
 async function adminStats(env, supabaseRest, json) {
   try {
     const stats = await rpc(env, supabaseRest, 'server_league_admin_stats', {});
-    return json({ ok: true, stats });
+    // Listings go live at once, so the review queue is "live but not yet reviewed".
+    const un = await supabaseRest(env, 'league_listings?status=eq.approved&reviewed_at=is.null&is_sample=eq.false&select=id&limit=5000').catch(() => []);
+    return json({ ok: true, stats: { ...stats, unreviewed: (un || []).length } });
   } catch (error) {
     if (!isMissingSchema(error)) throw error;
     // Pre-migration fallback: derive what we can from the listing table.
@@ -978,12 +1046,35 @@ async function adminApi(request, env, url, authenticated, supabaseRest, json) {
 
 // ───────────────────────── router ─────────────────────────
 
-export async function leagueWorkerRoute({ request, env, url, authenticated, accountContext, supabaseRest, json }) {
+export async function leagueWorkerRoute({ request, env, url, ctx, authenticated, accountContext, supabaseRest, json }) {
   if (url.pathname === '/api/admin/leagues' || url.pathname.startsWith('/api/admin/leagues/')) {
     return adminApi(request, env, url, authenticated, supabaseRest, json);
   }
+  if (request.method === 'GET' && url.pathname === '/sitemap-leagues.xml') return leaguesSitemap(env, supabaseRest);
+  const iconMatch = url.pathname.match(/^\/leagues\/icons\/([a-z_]+)\.webp$/);
+  if (request.method === 'GET' && iconMatch) return divisionIcon(iconMatch[1], ctx);
   if (!url.pathname.startsWith('/api/leagues/')) return null;
+
+  // Drop the edge-cached pages for a league and the board after a change.
+  const purge = (slug) => {
+    try {
+      const cache = caches.default;
+      const tasks = [cache.delete(new Request(url.origin + '/leagues/')), cache.delete(new Request(url.origin + '/api/leagues/public'))];
+      if (slug) tasks.push(cache.delete(new Request(url.origin + '/leagues/' + slug + '/')));
+      ctx?.waitUntil?.(Promise.all(tasks));
+    } catch { /* cache is best effort */ }
+  };
+
   try {
+    // Signed-out visitors can always browse.
+    if (request.method === 'GET' && url.pathname === '/api/leagues/public') {
+      const cache = caches.default; const key = new Request(url.origin + '/api/leagues/public');
+      const hit = await cache.match(key);
+      if (hit) return hit;
+      const res = await publicDirectory(env, supabaseRest, json);
+      if (res.ok) ctx?.waitUntil?.(cache.put(key, res.clone()));
+      return res;
+    }
     if (request.method === 'GET' && url.pathname === '/api/leagues/bootstrap') {
       return await bootstrap(request, env, accountContext, supabaseRest, json);
     }
@@ -996,21 +1087,38 @@ export async function leagueWorkerRoute({ request, env, url, authenticated, acco
     if (request.method === 'POST' && url.pathname === '/api/leagues/profile') {
       return await saveProfile(request, env, context, supabaseRest, json);
     }
-    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
-    if (!leagueProfile) {
-      return json({ error: 'Complete your league profile first.', needsProfile: true }, 428);
-    }
     if (request.method === 'POST' && url.pathname === '/api/leagues/listings') {
-      return await createListing(request, env, context, supabaseRest, json);
+      return await createListing(request, env, context, supabaseRest, json, purge);
     }
-    const routes = [
-      ['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff],
-      ['active', confirmActive], ['save', toggleSave], ['join', trackJoin], ['report', reportListing],
-      ['crew', crewRequest], ['crew-leave', crewLeave], ['crew-decide', crewDecide], ['matchday', logMatchday]
-    ];
-    for (const [name, handler] of routes) {
+
+    if (request.method === 'GET' && url.pathname === '/api/leagues/me') return await leagueMe(request, env, context, url, supabaseRest, json);
+
+    // Listing-level actions that do not need a player profile.
+    const ownerRoutes = [['update', updateListing], ['quick', quickUpdate], ['kickoff', kickoff], ['matchday', logMatchday],
+      ['crew-decide', crewDecide], ['applications', listApplications]];
+    for (const [name, handler] of ownerRoutes) {
       const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
-      if (request.method === 'POST' && m) return await handler(request, env, context, m, supabaseRest, json);
+      const method = name === 'applications' ? 'GET' : 'POST';
+      if (request.method === method && m) return await handler(request, env, context, m, supabaseRest, json, purge);
+    }
+    const contactMatch = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/contact$', 'i'));
+    if (request.method === 'GET' && contactMatch) return await listingContact(request, env, context, contactMatch, supabaseRest, json);
+    const decideMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/decide$', 'i'));
+    if (request.method === 'POST' && decideMatch) return await decideApplication(request, env, context, decideMatch, supabaseRest, json);
+    const withdrawMatch = url.pathname.match(new RegExp('^/api/leagues/applications/' + UUID_RE + '/withdraw$', 'i'));
+    if (request.method === 'POST' && withdrawMatch) return await withdrawApplication(request, env, context, withdrawMatch, supabaseRest, json);
+
+    // Player actions: these need the short player card (OVR, name, region).
+    const leagueProfile = await loadLeagueProfile(env, context.account.id, supabaseRest);
+    const needsProfile = () => json({ error: 'Add your OVR and in-game name first.', needsProfile: true }, 428);
+    const playerRoutes = [['apply', applyToLeague], ['active', confirmActive], ['save', toggleSave], ['join', trackJoin],
+      ['report', reportListing], ['crew', crewRequest], ['crew-leave', crewLeave]];
+    for (const [name, handler] of playerRoutes) {
+      const m = url.pathname.match(new RegExp('^/api/leagues/listings/' + UUID_RE + '/' + name + '$', 'i'));
+      if (request.method === 'POST' && m) {
+        if (!leagueProfile && ['apply', 'active', 'save', 'crew'].includes(name)) return needsProfile();
+        return await handler(request, env, context, m, supabaseRest, json);
+      }
     }
     if (request.method === 'GET' && url.pathname === '/api/leagues/players') {
       return await listPlayers(request, env, context, url, supabaseRest, json);

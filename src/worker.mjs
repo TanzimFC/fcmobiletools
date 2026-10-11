@@ -2879,7 +2879,7 @@ export function createExports(manifest) {
   const tournamentRoute=await tournamentWorkerRoute(request,env,url);
   if(tournamentRoute) return tournamentRoute;
 
-  const leagueRoute=await leagueWorkerRoute({request,env,url,authenticated,accountContext,supabaseRest,json});
+  const leagueRoute=await leagueWorkerRoute({request,env,url,ctx,authenticated,accountContext,supabaseRest,json});
   if(leagueRoute) return leagueRoute;
 
   if(url.pathname === '/api/account/image-upload') return imageUploadApi(request,env,url);
@@ -2984,6 +2984,31 @@ export function createExports(manifest) {
     if(creator && url.pathname === '/admin/dashboard.html') return env.ASSETS.fetch(request);
     return new Response('Not found',{status:404});
   }
+  // League pages are rendered on demand and cached at the edge. The HTML is the same for every
+  // visitor (personal data loads client-side), so one cached copy serves everyone.
+  if (request.method === 'GET' && /^\/leagues(?:\/[a-z0-9][a-z0-9-]*)?\/?$/.test(url.pathname)) {
+    const cache = caches.default;
+    const key = new Request(url.origin + url.pathname.replace(/\/?$/, '/'), { method: 'GET' });
+    const hit = await cache.match(key);
+    if (hit) {
+      const headers = new Headers(hit.headers);
+      headers.set('x-edge-cache', 'HIT');
+      return new Response(hit.body, { status: hit.status, headers });
+    }
+    const fresh = await handle(manifest, app, request, env, ctx);
+    const cacheable = fresh.status === 200 && (fresh.headers.get('content-type') || '').includes('text/html');
+    const headers = new Headers(fresh.headers);
+    headers.set('x-edge-cache', cacheable ? 'MISS' : 'BYPASS');
+    if (cacheable) {
+      headers.set('cache-control', 'public, max-age=60, s-maxage=300');
+      const out = new Response(fresh.body, { status: fresh.status, headers });
+      ctx.waitUntil(cache.put(key, out.clone()));
+      return out;
+    }
+    if (fresh.status === 404) headers.set('cache-control', 'public, max-age=30');
+    return new Response(fresh.body, { status: fresh.status, headers });
+  }
+
   // Let Astro handle the remaining static and on-demand routes.
   const astroResponse = await handle(manifest, app, request, env, ctx);
 

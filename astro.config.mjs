@@ -58,8 +58,6 @@ export default defineConfig({
         '/leaderboard/',
         '/rewards',
         '/rewards/',
-        '/leagues',
-        '/leagues/',
         '/surveys',
         '/surveys/'
       ].includes(pathname);
