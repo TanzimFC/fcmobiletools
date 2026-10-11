@@ -372,6 +372,88 @@ const schema = [
         (['new', 'shortlisted'].includes(a.status) ? '<button class="lg-btn lg-btn-quiet lg-btn-sm" data-withdraw="' + esc(a.id) + '" type="button">Withdraw</button>' : '') + '</div></div>';
     }).join('') : '<div class="lg-empty"><h3>No applications yet.</h3><p>Open a league and tap Apply to join.</p></div>';
   }
+  function inboxTime(value) {
+    const time = Date.parse(value || '');
+    return Number.isFinite(time) ? new Date(time).toLocaleString() : '';
+  }
+  function renderInbox() {
+    const threads = $('#lgInboxThreads'), messages = $('#lgInboxMessages'), form = $('#lgInboxForm');
+    const unread = state.inboxThreads.reduce((n, t) => n + Number(t.unreadCount || 0), 0);
+    const tabButton = $('[data-tab="inbox"]', $('#lgTabs'));
+    if (tabButton) tabButton.innerHTML = 'Inbox' + (unread ? '<em>' + fmt(unread) + '</em>' : '');
+    threads.innerHTML = state.inboxThreads.length ? state.inboxThreads.map(t =>
+      '<button class="lg-inbox-thread' + (t.id === state.activeConversationId ? ' active' : '') + '" type="button" data-inbox-thread="' + esc(t.id) + '">' +
+        crest(t.logoUrl, t.listingName, 'lg-avatar') + '<span class="lg-inbox-thread-copy"><b>' + esc(t.listingName || 'League') + '</b><small>' + esc(t.participantName || 'Conversation') + '</small><span>' + esc(t.lastMessage || 'No messages yet') + '</span></span>' +
+        (Number(t.unreadCount) > 0 ? '<i class="lg-inbox-unread">' + fmt(t.unreadCount) + '</i>' : '') + '</button>').join('') :
+      '<div class="lg-empty"><h3>No conversations yet.</h3><p>Open My applications to message a league, or manage applications in My league to reply to players.</p></div>';
+    const active = state.inboxThreads.find(t => t.id === state.activeConversationId);
+    $('#lgInboxTitle').textContent = active ? active.listingName + ' · ' + active.participantName : 'Choose a conversation';
+    $('#lgInboxSubtitle').textContent = active ? 'About an FC Mobile league application' : 'Your messages stay inside FCMobiletools.';
+    if (!active) {
+      messages.innerHTML = '<div class="lg-inbox-empty">Choose a conversation to read messages.</div>';
+      form.hidden = true;
+      return;
+    }
+    messages.innerHTML = state.inboxMessages.length ? state.inboxMessages.map(m =>
+      '<article class="lg-inbox-msg' + (m.senderAccountId === state.account?.id ? ' mine' : '') + '">' +
+        '<div>' + esc(m.senderAccountId === state.account?.id ? 'You' : m.senderName || active.participantName || 'Member') + '<time>' + esc(inboxTime(m.createdAt)) + '</time></div>' +
+        '<p>' + esc(m.body || '') + '</p></article>').join('') : '<div class="lg-inbox-empty">No messages yet. Start the conversation.</div>';
+    form.hidden = false;
+    messages.scrollTop = messages.scrollHeight;
+  }
+  async function loadInbox({ silent = false } = {}) {
+    if (!state.signedIn || state.inboxLoading) return;
+    state.inboxLoading = true;
+    try {
+      const res = await api('/api/leagues/inbox');
+      state.inboxThreads = res.conversations || [];
+      if (state.activeConversationId && !state.inboxThreads.some(t => t.id === state.activeConversationId)) {
+        state.activeConversationId = null;
+        state.inboxMessages = [];
+      }
+      renderTabs();
+      renderInbox();
+    } catch (e) {
+      if (!silent) toast(e.message || 'Inbox could not be loaded.', true);
+      $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox unavailable.</h3><p>' + esc(e.message) + '</p><button class="lg-btn lg-btn-outline" id="lgInboxRetry" type="button">Try again</button></div>';
+    } finally { state.inboxLoading = false; }
+  }
+  async function loadInboxMessages() {
+    if (!state.activeConversationId) { renderInbox(); return; }
+    try {
+      const res = await api('/api/leagues/inbox/' + encodeURIComponent(state.activeConversationId) + '/messages');
+      state.inboxMessages = res.messages || [];
+      await loadInbox({ silent: true });
+      renderInbox();
+    } catch (e) { toast(e.message || 'Messages could not be loaded.', true); }
+  }
+  async function openInboxForListing(listingId, applicantId = '') {
+    if (!state.signedIn) { location.href = signInUrl('/leagues/?tab=inbox'); return; }
+    try {
+      const res = await api('/api/leagues/listings/' + encodeURIComponent(listingId) + '/inbox', {
+        method: 'POST', body: JSON.stringify(applicantId ? { applicantId } : {})
+      });
+      state.activeConversationId = res.conversationId;
+      state.inboxMessages = [];
+      await loadInbox({ silent: true });
+      setTab('inbox');
+      await loadInboxMessages();
+    } catch (e) { toast(e.message || 'Conversation could not be opened.', true); }
+  }
+  async function sendInboxMessage(event) {
+    event.preventDefault();
+    const input = $('#lgInboxInput'), btn = $('#lgInboxSend'), body = input.value.trim();
+    if (!state.activeConversationId || !body) return;
+    btn.disabled = true;
+    try {
+      await api('/api/leagues/inbox/' + encodeURIComponent(state.activeConversationId) + '/messages', { method: 'POST', body: JSON.stringify({ body }) });
+      input.value = '';
+      await loadInbox({ silent: true });
+      await loadInboxMessages();
+    } catch (e) { toast(e.message || 'Message could not be sent.', true); }
+    finally { btn.disabled = false; }
+  }
+
   function refresh() { renderHero(); renderTabs(); setSortOptions(); renderLeagues(); renderSpotlight(); renderSaved(); if (state.tab === 'apps') renderApps(); if (state.tab === 'inbox') renderInbox(); if (state.tab === 'owner') renderOwner(); }
 
   // ───────────── fit line next to OVR input ─────────────
@@ -468,7 +550,7 @@ const schema = [
         (a.screenshotUrl ? '<a class="lg-app-shot" href="' + esc(a.screenshotUrl) + '" target="_blank" rel="noopener noreferrer"><img src="' + esc(a.screenshotUrl) + '" alt="Team screenshot of ' + esc(a.inGameUsername) + '" loading="lazy" decoding="async"></a>' : '<p class="lg-note">No screenshot added.</p>') +
         (a.message ? '<p class="lg-app-note">' + esc(a.message) + '</p>' : '') +
         '<div class="lg-tags" style="margin:0">' + copy('UID', a.uid) + copy('Discord', a.discord) + (!a.uid && !a.discord ? '<span class="lg-note">The player did not share a UID or Discord.</span>' : '') + '</div>' +
-        '<div class="lg-app-actions"><span class="lg-stat ' + a.status + '">' + esc(APP_LABEL[a.status]) + '</span>' + btn(a.id, 'shortlisted', 'Shortlist', 'lg-btn-outline', a.status) + btn(a.id, 'invited', 'Invited in game', 'lg-btn-primary', a.status) + btn(a.id, 'joined', 'Joined', 'lg-btn-outline', a.status) + btn(a.id, 'declined', 'Decline', 'lg-btn-danger', a.status) + '</div></div>').join('')
+        '<div class="lg-app-actions"><button class="lg-btn lg-btn-outline lg-btn-sm" type="button" data-message-listing="' + esc(state.ownListings[0]?.id || '') + '" data-applicant="' + esc(a.accountId || '') + '">Message player</button><span class="lg-stat ' + a.status + '">' + esc(APP_LABEL[a.status]) + '</span>' + btn(a.id, 'shortlisted', 'Shortlist', 'lg-btn-outline', a.status) + btn(a.id, 'invited', 'Invited in game', 'lg-btn-primary', a.status) + btn(a.id, 'joined', 'Joined', 'lg-btn-outline', a.status) + btn(a.id, 'declined', 'Decline', 'lg-btn-danger', a.status) + '</div></div>').join('')
         : '<div class="lg-empty" style="margin-top:12px;padding:26px"><p style="margin:0">No applications yet. Share your league page to get some.</p></div>');
   }
   async function decideApp(id, status, btn) {
@@ -542,7 +624,7 @@ const schema = [
       '</div>' +
       '<fieldset class="lg-fieldset"><legend>Division <b>*</b> ' + infoBtn('division') + '</legend><div class="lg-div-pick">' + DIVISIONS.map(x => '<label><input type="radio" name="division" value="' + x.key + '"' + (d.division === x.key ? ' checked' : '') + '><span><img src="' + divisionIcon(x.key) + '" alt="" width="28" height="28" loading="lazy"><b>' + esc(x.label) + '<small>' + divisionRange(x) + '</small></b></span></label>').join('') + '</div></fieldset>' +
       '<div class="lg-grid-2">' +
-        '<label class="lg-field"><span>Region <b>*</b></span><select name="regionServer" required><option value="">Choose</option>' + REGIONS.map(r => '<option' + (d.regionServer === r ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></label>' +
+        '<label class="lg-field"><span>Region <b>*</b> ' + infoBtn('region') + '</span><select name="regionServer" required><option value="">Choose</option>' + REGIONS.map(r => '<option' + (d.regionServer === r ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></label>' +
         '<label class="lg-field"><span>Minimum OVR <b>*</b> ' + infoBtn('ovr') + '</span><input name="minOvr" type="number" inputmode="numeric" min="50" max="200" required placeholder="e.g. 115" value="' + esc(d.minOvr ?? '') + '"></label>' +
         '<label class="lg-field"><span>Open spots <b>*</b> ' + infoBtn('spots') + '</span><input name="openSpots" type="number" inputmode="numeric" min="0" max="50" required value="' + esc(d.openSpots ?? 5) + '"></label>' +
         '<label class="lg-field"><span>How often do you play? <b>*</b></span><select name="tournamentFrequency" required>' + [['daily', 'Daily'], ['most_days', 'Most days'], ['several_weekly', '3 to 4 days a week'], ['weekly', 'Weekly'], ['occasional', 'Occasional']].map(([v, l]) => '<option value="' + v + '"' + ((d.tournamentFrequency || 'daily') === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
@@ -627,10 +709,11 @@ const schema = [
     try {
       const d = await api('/api/leagues/bootstrap');
       Object.assign(state, { signedIn: true, account: d.account, profile: d.profile, suggested: d.suggestedProfile || {}, ownListings: d.ownListings || [], ownerCrew: d.ownerCrew || [], crewReady: Boolean(d.crewReady),
-        myCrew: d.myCrew || null, myApplications: d.myApplications || [], newApplications: d.newApplications || 0, canFindPlayers: Boolean(d.canFindPlayers), remaining: Number(d.outreachRemaining ?? 3) });
+        myCrew: d.myCrew || null, myApplications: d.myApplications || [], newApplications: d.newApplications || 0, canFindPlayers: Boolean(d.canFindPlayers), remaining: Number(d.outreachRemaining ?? 3), savedCount: Number(d.savedCount || 0) });
       state.leagues = d.leagues || []; state.spotlight = d.spotlight || []; state.loadedPersonal = true;
       if (d.directoryFailed) toast('Some leagues could not be loaded.', true);
       refresh();
+      loadInbox({ silent: true });
       if (state.tab === 'players') loadPlayers();
     } catch (e) {
       if (e.status === 401) { state.signedIn = false; refresh(); return; }
@@ -652,6 +735,7 @@ const schema = [
     form.addEventListener('click', async e => { if (e.target.closest('#lgReadRules')) { e.preventDefault(); if (await openRulesSheet()) { const c = $('#lgAcceptRules'); if (c) c.checked = true; } } });
     document.addEventListener('error', e => { if (e.target?.tagName === 'IMG' && e.target.closest?.('.lg-root') && !e.target.classList.contains('lg-up-thumb')) e.target.remove(); }, true);
 
+    $('#lgInboxForm').addEventListener('submit', sendInboxMessage);
     $('#app').addEventListener('click', async e => {
       const t = e.target;
       const tab = t.closest('[data-tab]'); if (tab) { setTab(tab.dataset.tab); return; }
@@ -668,6 +752,10 @@ const schema = [
       if (t.closest('#lgRecruitToggle')) { const own = state.ownListings[0]; if (own) quickUpdate({ recruitingOpen: !own.recruitingOpen }); return; }
       const kick = t.closest('[data-kick]'); if (kick) { doKickoff(kick.dataset.kick, kick); return; }
       const ap = t.closest('[data-app]'); if (ap) { decideApp(ap.dataset.app, ap.dataset.status, ap); return; }
+      const message = t.closest('[data-message-listing]'); if (message) { openInboxForListing(message.dataset.messageListing, message.dataset.applicant || ''); return; }
+      const conv = t.closest('[data-inbox-thread]'); if (conv) { state.activeConversationId = conv.dataset.inboxThread; state.inboxMessages = []; renderInbox(); loadInboxMessages(); return; }
+      if (t.closest('#lgInboxRefresh') || t.closest('#lgInboxRetry')) { loadInbox(); return; }
+      const appeal = t.closest('[data-appeal-listing]'); if (appeal) { openListingAppeal(appeal.dataset.appealListing); return; }
       if (t.closest('#lgAppsRetry')) { loadOwnerApps(); return; }
       const cd = t.closest('[data-crew-decide]'); if (cd) { postOwner('crew-decide', { accountId: cd.dataset.account, action: cd.dataset.crewDecide }, 'Updated.', cd); return; }
 
@@ -693,7 +781,7 @@ const schema = [
   });
   function sessionStorageFlag() { try { if (sessionStorage.getItem('lg-ed')) return true; sessionStorage.setItem('lg-ed', '1'); return false; } catch { return false; } }
   accountAuth.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') { state.signedIn = false; state.loadedPersonal = false; state.profile = null; state.ownListings = []; loadPublic({ silent: true }); refresh(); }
+    if (event === 'SIGNED_OUT') { state.signedIn = false; state.loadedPersonal = false; state.profile = null; state.ownListings = []; state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null; state.savedCount = 0; loadPublic({ silent: true }); refresh(); }
     if (event === 'SIGNED_IN' && !state.signedIn) loadPersonal();
   });
 </script>
