@@ -836,6 +836,175 @@ async function withdrawApplication(request, env, authContext, match, supabaseRes
   return json(result);
 }
 
+
+async function openInboxConversation(request, env, authContext, match, supabaseRest, json) {
+  const { account } = authContext;
+  const listingId = match[1];
+  const input = await request.json().catch(() => ({}));
+  const listings = await supabaseRest(env,
+    'league_listings?id=eq.' + encodeURIComponent(listingId) +
+    '&select=id,owner_account_id,name,status,slug&limit=1').catch(() => []);
+  const listing = listings?.[0];
+  if (!listing || !listing.owner_account_id) return json({ error: 'League listing not found.' }, 404);
+  const isOwner = listing.owner_account_id === account.id;
+  const applicantId = isOwner ? clean(input.applicantId, 64) : account.id;
+  if (!applicantId || applicantId === listing.owner_account_id) {
+    return json({ error: 'Choose a player who applied to this league.' }, 400);
+  }
+  if (!isOwner && listing.status === 'removed') return json({ error: 'This listing is no longer available.' }, 404);
+  const application = await supabaseRest(env,
+    'league_applications?listing_id=eq.' + encodeURIComponent(listingId) +
+    '&applicant_account_id=eq.' + encodeURIComponent(applicantId) +
+    '&status=neq.withdrawn&select=id&limit=1').catch(() => []);
+  if (!application?.length) {
+    return json({ error: 'Inbox messages are available only between a league owner and a player who applied.' }, 403);
+  }
+  if (!isOwner && applicantId !== account.id) return json({ error: 'You cannot message this player.' }, 403);
+  const existing = await supabaseRest(env,
+    'league_conversations?listing_id=eq.' + encodeURIComponent(listingId) +
+    '&applicant_account_id=eq.' + encodeURIComponent(applicantId) + '&select=id&limit=1').catch(() => []);
+  let conversationId = existing?.[0]?.id || '';
+  if (!conversationId) {
+    const inserted = await supabaseRest(env,
+      'league_conversations?on_conflict=listing_id,applicant_account_id&select=id', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+        body: JSON.stringify([{
+          listing_id: listingId,
+          owner_account_id: listing.owner_account_id,
+          applicant_account_id: applicantId,
+          updated_at: nowIso()
+        }])
+      });
+    conversationId = inserted?.[0]?.id || '';
+  }
+  if (!conversationId) {
+    const retry = await supabaseRest(env,
+      'league_conversations?listing_id=eq.' + encodeURIComponent(listingId) +
+      '&applicant_account_id=eq.' + encodeURIComponent(applicantId) + '&select=id&limit=1').catch(() => []);
+    conversationId = retry?.[0]?.id || '';
+  }
+  if (!conversationId) return json({ error: 'Conversation could not be opened. Try again.' }, 500);
+  return json({ ok: true, conversationId });
+}
+
+async function listInbox(request, env, authContext, supabaseRest, json) {
+  const { account } = authContext;
+  const columns = 'id,listing_id,owner_account_id,applicant_account_id,created_at,updated_at';
+  const [owned, applied] = await Promise.all([
+    supabaseRest(env, 'league_conversations?owner_account_id=eq.' + encodeURIComponent(account.id) +
+      '&select=' + columns + '&order=updated_at.desc&limit=100').catch(() => []),
+    supabaseRest(env, 'league_conversations?applicant_account_id=eq.' + encodeURIComponent(account.id) +
+      '&select=' + columns + '&order=updated_at.desc&limit=100').catch(() => [])
+  ]);
+  const byId = new Map([...(owned || []), ...(applied || [])].map(row => [row.id, row]));
+  const conversations = [...byId.values()].sort((a, b) => Date.parse(b.updated_at || 0) - Date.parse(a.updated_at || 0));
+  if (!conversations.length) return json({ conversations: [] });
+  const conversationIds = conversations.map(c => c.id);
+  const listingIds = [...new Set(conversations.map(c => c.listing_id))];
+  const accountIds = [...new Set(conversations.flatMap(c => [c.owner_account_id, c.applicant_account_id]))];
+  const [messages, listings, accounts] = await Promise.all([
+    supabaseRest(env, 'league_messages?conversation_id=in.' + inList(conversationIds) +
+      '&select=id,conversation_id,sender_account_id,body,created_at,read_at&order=created_at.desc&limit=1200').catch(() => []),
+    supabaseRest(env, 'league_listings?select=id,name,slug,logo_url&id=in.' + inList(listingIds)).catch(() => []),
+    supabaseRest(env, 'accounts?select=id,username,display_name,avatar_url&id=in.' + inList(accountIds)).catch(() => [])
+  ]);
+  const listingMap = new Map((listings || []).map(row => [row.id, row]));
+  const accountMap = new Map((accounts || []).map(row => [row.id, row]));
+  const latest = new Map(), unread = new Map();
+  for (const message of (messages || [])) {
+    if (!latest.has(message.conversation_id)) latest.set(message.conversation_id, message);
+    if (message.sender_account_id !== account.id && !message.read_at) {
+      unread.set(message.conversation_id, (unread.get(message.conversation_id) || 0) + 1);
+    }
+  }
+  return json({ conversations: conversations.map(row => {
+    const listing = listingMap.get(row.listing_id) || {};
+    const partnerId = row.owner_account_id === account.id ? row.applicant_account_id : row.owner_account_id;
+    const partner = accountMap.get(partnerId) || {};
+    const last = latest.get(row.id);
+    return {
+      id: row.id, listingId: row.listing_id, listingName: listing.name || 'League',
+      slug: listing.slug || '', logoUrl: listing.logo_url || null,
+      participantName: partner.display_name || partner.username || 'Member',
+      lastMessage: last?.body ? clean(last.body, 180) : '',
+      lastMessageAt: last?.created_at || row.updated_at,
+      unreadCount: unread.get(row.id) || 0,
+      updatedAt: row.updated_at
+    };
+  }) });
+}
+
+async function inboxConversation(request, env, authContext, match, supabaseRest, json) {
+  const { account } = authContext;
+  const conversationId = match[1];
+  const rows = await supabaseRest(env,
+    'league_conversations?id=eq.' + encodeURIComponent(conversationId) +
+    '&select=id,listing_id,owner_account_id,applicant_account_id&limit=1').catch(() => []);
+  const conversation = rows?.[0];
+  if (!conversation) return json({ error: 'Conversation not found.' }, 404);
+  if (![conversation.owner_account_id, conversation.applicant_account_id].includes(account.id)) {
+    return json({ error: 'You are not part of this conversation.' }, 403);
+  }
+  if (request.method === 'GET') {
+    await supabaseRest(env,
+      'league_messages?conversation_id=eq.' + encodeURIComponent(conversationId) +
+      '&sender_account_id=neq.' + encodeURIComponent(account.id) + '&read_at=is.null', {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ read_at: nowIso() })
+      }).catch(() => null);
+    const messages = await supabaseRest(env,
+      'league_messages?conversation_id=eq.' + encodeURIComponent(conversationId) +
+      '&select=id,conversation_id,sender_account_id,body,created_at&order=created_at.asc&limit=100');
+    const senderIds = [...new Set((messages || []).map(row => row.sender_account_id))];
+    const accounts = senderIds.length ? await supabaseRest(env,
+      'accounts?select=id,username,display_name&id=in.' + inList(senderIds)).catch(() => []) : [];
+    const accountMap = new Map((accounts || []).map(row => [row.id, row]));
+    return json({ messages: (messages || []).map(row => ({
+      id: row.id, senderAccountId: row.sender_account_id,
+      senderName: accountMap.get(row.sender_account_id)?.display_name || accountMap.get(row.sender_account_id)?.username || 'Member',
+      body: row.body, createdAt: row.created_at
+    })) });
+  }
+  if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
+  const input = await request.json().catch(() => ({}));
+  const body = clean(input.body, 1200);
+  if (!body) return json({ error: 'Write a message before sending.' }, 400);
+  const cutoff = new Date(Date.now() - 60_000).toISOString();
+  const recent = await supabaseRest(env,
+    'league_messages?sender_account_id=eq.' + encodeURIComponent(account.id) +
+    '&created_at=gte.' + encodeURIComponent(cutoff) + '&select=id&limit=11').catch(() => []);
+  if ((recent || []).length >= 10) return json({ error: 'Message limit reached. Wait a minute before sending again.' }, 429);
+  const inserted = await supabaseRest(env, 'league_messages?select=id,conversation_id,sender_account_id,body,created_at', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify([{ conversation_id: conversationId, sender_account_id: account.id, body }])
+  });
+  await supabaseRest(env, 'league_conversations?id=eq.' + encodeURIComponent(conversationId), {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ updated_at: nowIso() })
+  });
+  const message = inserted?.[0];
+  return json({ ok: true, message: message ? {
+    id: message.id, senderAccountId: message.sender_account_id, body: message.body, createdAt: message.created_at
+  } : null });
+}
+
+async function submitLeagueAppeal(request, env, authContext, match, supabaseRest, json) {
+  const blocked = requireVerified(authContext, json);
+  if (blocked) return blocked;
+  const input = await request.json().catch(() => ({}));
+  const reason = clean(input.reason, 1200);
+  if (reason.length < 20) return json({ error: 'Add at least 20 characters so the moderation team can review your appeal.' }, 400);
+  const result = await rpc(env, supabaseRest, 'server_league_submit_appeal', {
+    p_listing_id: match[1], p_owner_account_id: authContext.account.id, p_reason: reason
+  });
+  if (!result?.ok) return rpcFailure(result, json, 'Your appeal could not be submitted.');
+  return json(result);
+}
+
 // Join details are for signed-in players only.
 async function listingContact(request, env, authContext, match, supabaseRest, json) {
   const { rows } = await readListings(env, supabaseRest, '&id=eq.' + encodeURIComponent(match[1]) + '&status=eq.approved&limit=1');
