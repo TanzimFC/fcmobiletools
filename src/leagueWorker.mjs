@@ -901,6 +901,25 @@ async function openInboxConversation(request, env, authContext, match, supabaseR
   return json({ ok: true, conversationId });
 }
 
+async function leagueNotifications(request, env, authContext, supabaseRest, json) {
+  const { account } = authContext;
+  const [owned, applied] = await Promise.all([
+    supabaseRest(env, 'league_conversations?owner_account_id=eq.' + encodeURIComponent(account.id) +
+      '&select=id&order=updated_at.desc&limit=50').catch(() => []),
+    supabaseRest(env, 'league_conversations?applicant_account_id=eq.' + encodeURIComponent(account.id) +
+      '&select=id&order=updated_at.desc&limit=50').catch(() => [])
+  ]);
+  const ids = [...new Set([...(owned || []), ...(applied || [])].map(row => row.id).filter(Boolean))];
+  if (!ids.length) return json({ unreadMessages: 0 });
+  const cutoff = encodeURIComponent(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+  const unread = await supabaseRest(env,
+    'league_messages?conversation_id=in.' + inList(ids) +
+    '&created_at=gte.' + cutoff +
+    '&sender_account_id=neq.' + encodeURIComponent(account.id) +
+    '&read_at=is.null&select=id&limit=1000').catch(() => []);
+  return json({ unreadMessages: (unread || []).length });
+}
+
 async function listInbox(request, env, authContext, supabaseRest, json) {
   const { account } = authContext;
   const blocked = await inboxSuspensionResponse(env, account.id, supabaseRest, json);
@@ -1405,6 +1424,7 @@ export async function leagueWorkerRoute({ request, env, url, ctx, authenticated,
     const auth = await requireUser(request, env, accountContext, json);
     if (auth.response) return auth.response;
     const { context } = auth;
+    if (request.method === 'GET' && url.pathname === '/api/leagues/notifications') return await leagueNotifications(request, env, context, supabaseRest, json);
     if (request.method === 'POST' && url.pathname === '/api/leagues/profile') {
       return await saveProfile(request, env, context, supabaseRest, json);
     }

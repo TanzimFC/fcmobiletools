@@ -229,7 +229,7 @@ const schema = [
   const state = {
     signedIn: false, loadedPersonal: false, account: null, profile: null, suggested: {},
     leagues: [], spotlight: [], ownListings: [], ownerCrew: [], crewReady: false, myCrew: null, myApplications: [], ownerApps: null, newApplications: 0,
-    inboxThreads: [], inboxMessages: [], activeConversationId: null, inboxLoading: false, savedCount: 0,
+    inboxThreads: [], unreadMessages: 0, inboxMessages: [], activeConversationId: null, inboxLoading: false, savedCount: 0,
     canFindPlayers: false, remaining: 3, players: [], revealed: new Map(), editingId: null, tab: 'leagues', view: 'board',
     filters: { q: '', division: '', region: '', freq: '', size: '', lang: '', commit: '', join: '', verified: false, spots: false, ovr: 0 }, sort: 'active'
   };
@@ -336,7 +336,7 @@ const schema = [
     const el = $('#lgActivityNotice');
     if (!el) return;
     if (!state.signedIn) { el.hidden = true; el.innerHTML = ''; return; }
-    const unread = state.inboxThreads.reduce((n, thread) => n + Number(thread.unreadCount || 0), 0);
+    const unread = Number(state.unreadMessages || 0);
     const newApps = state.ownListings.some(row => row.status === 'approved') ? Number(state.newApplications || 0) : 0;
     const notices = [];
     if (unread > 0) notices.push('<button type="button" class="lg-activity-item" data-goto="inbox"><span class="lg-activity-count">' + fmt(unread) + '</span><span><b>' + (unread === 1 ? 'You have 1 unread message in your Inbox' : 'You have ' + fmt(unread) + ' unread messages in your Inbox') + '</b><small>Open Inbox →</small></span></button>');
@@ -470,12 +470,24 @@ const schema = [
     form.hidden = false;
     messages.scrollTop = messages.scrollHeight;
   }
+  async function loadNotificationCount({ silent = true } = {}) {
+    if (!state.signedIn) return;
+    try {
+      const result = await api('/api/leagues/notifications');
+      state.unreadMessages = Math.max(0, Number(result.unreadMessages || 0));
+      renderTabs();
+    } catch (error) {
+      if (!silent) toast(error.message || 'Notifications could not be loaded.', true);
+    }
+  }
+
   async function loadInbox({ silent = false } = {}) {
     if (!state.signedIn || state.inboxLoading) return;
     state.inboxLoading = true;
     try {
       const res = await api('/api/leagues/inbox');
       state.inboxThreads = res.conversations || [];
+      state.unreadMessages = state.inboxThreads.reduce((count, thread) => count + Number(thread.unreadCount || 0), 0);
       if (state.activeConversationId && !state.inboxThreads.some(t => t.id === state.activeConversationId)) {
         state.activeConversationId = null;
         state.inboxMessages = [];
@@ -484,7 +496,7 @@ const schema = [
       renderInbox();
     } catch (e) {
       if (e.body?.inboxSuspended) {
-        state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null; renderInbox();
+        state.inboxThreads = []; state.unreadMessages = 0; state.inboxMessages = []; state.activeConversationId = null; renderTabs(); renderInbox();
         $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox access suspended</h3><p>' + esc(e.message) + '</p>' + (e.body.suspendedUntil ? '<p>Available again: ' + esc(inboxTime(e.body.suspendedUntil)) + '</p>' : '') + '</div>';
         return;
       }
@@ -501,7 +513,7 @@ const schema = [
       renderInbox();
     } catch (e) {
       if (e.body?.inboxSuspended) {
-        state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null; renderInbox();
+        state.inboxThreads = []; state.unreadMessages = 0; state.inboxMessages = []; state.activeConversationId = null; renderTabs(); renderInbox();
         $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox access suspended</h3><p>' + esc(e.message) + '</p>' + (e.body.suspendedUntil ? '<p>Available again: ' + esc(inboxTime(e.body.suspendedUntil)) + '</p>' : '') + '</div>';
         return;
       }
@@ -840,8 +852,9 @@ const schema = [
       state.leagues = d.leagues || []; state.spotlight = d.spotlight || []; state.loadedPersonal = true;
       if (d.directoryFailed) toast('Some leagues could not be loaded.', true);
       refresh();
-      // Fetch the lightweight conversation summary on return so unread-message notices can appear without opening Inbox.
-      if (state.tab !== 'inbox') loadInbox({ silent: true });
+      // Check counts only; message contents load only after the user opens Inbox.
+      if (state.tab === 'inbox') loadInbox({ silent: true });
+      else loadNotificationCount({ silent: true });
       if (state.tab === 'players') loadPlayers();
     } catch (e) {
       if (e.status === 401) { state.signedIn = false; refresh(); return; }
@@ -918,7 +931,7 @@ const schema = [
   });
   function sessionStorageFlag() { try { if (sessionStorage.getItem('lg-ed')) return true; sessionStorage.setItem('lg-ed', '1'); return false; } catch { return false; } }
   accountAuth.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') { state.signedIn = false; state.loadedPersonal = false; state.profile = null; state.ownListings = []; state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null; state.savedCount = 0; loadPublic({ silent: true }); refresh(); }
+    if (event === 'SIGNED_OUT') { state.signedIn = false; state.loadedPersonal = false; state.profile = null; state.ownListings = []; state.inboxThreads = []; state.unreadMessages = 0; state.inboxMessages = []; state.activeConversationId = null; state.savedCount = 0; loadPublic({ silent: true }); refresh(); }
     if (event === 'SIGNED_IN' && !state.signedIn) loadPersonal();
   });
 </script>
