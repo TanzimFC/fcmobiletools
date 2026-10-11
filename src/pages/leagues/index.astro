@@ -80,11 +80,6 @@ const schema = [
 
         <!-- LEAGUES -->
         <section class="lg-panel" id="panelLeagues" role="tabpanel">
-          <div id="lgSpot" class="lg-spot" hidden>
-            <div class="lg-spot-head"><span class="lg-badge gold">★ Community Spotlight</span><Fragment set:html={infoBtn('spotlight')} /><small>Most active leagues this week</small></div>
-            <div class="lg-rail" id="lgRail"></div>
-          </div>
-
           <div class="lg-divbar" id="lgDivbar" role="group" aria-label="Division">
             <button type="button" class="lg-divpick on" data-div="">All divisions</button>
             {DIVISIONS.map(d => (
@@ -125,6 +120,15 @@ const schema = [
           </div>
         </section>
 
+        <section class="lg-panel" id="panelSpotlight" role="tabpanel" hidden>
+          <div class="lg-panel-head slim"><div><h2>Community Spotlight <Fragment set:html={infoBtn('spotlight')} /></h2><p>Leagues with recent community activity. Open a league to learn more or save it for later.</p></div></div>
+          <div id="lgSpot" class="lg-spot">
+            <div class="lg-spot-head"><span class="lg-badge gold">★ Community Spotlight</span><small>Updated automatically</small></div>
+            <div class="lg-rail" id="lgRail"></div>
+          </div>
+          <div class="lg-empty" id="lgSpotEmpty" hidden><span class="lg-empty-icon" aria-hidden="true">✦</span><h3>Spotlight is warming up.</h3><p>As players confirm activity, active leagues will appear here.</p><button class="lg-btn lg-btn-outline" data-goto="leagues" type="button">Browse all leagues</button></div>
+        </section>
+
         <section class="lg-panel" id="panelSaved" role="tabpanel" hidden>
           <div class="lg-panel-head slim"><div><h2>Saved leagues</h2><p>Leagues you saved to look at again.</p></div></div>
           <div id="lgSavedGrid" class="lg-grid"></div>
@@ -134,6 +138,21 @@ const schema = [
         <section class="lg-panel" id="panelApps" role="tabpanel" hidden>
           <div class="lg-panel-head slim"><div><h2>My applications</h2><p>Leagues you applied to and what happened.</p></div></div>
           <div id="lgAppList"></div>
+        </section>
+
+        <section class="lg-panel" id="panelInbox" role="tabpanel" hidden>
+          <div class="lg-panel-head slim"><div><h2>Inbox <Fragment set:html={infoBtn('inbox')} /></h2><p>Private messages between players and league owners, linked to applications.</p></div><button class="lg-btn lg-btn-outline lg-btn-sm" id="lgInboxRefresh" type="button">Refresh</button></div>
+          <div class="lg-inbox">
+            <div class="lg-inbox-threads" id="lgInboxThreads" aria-label="Conversations"><div class="lg-empty"><p>Loading conversations…</p></div></div>
+            <section class="lg-inbox-chat" aria-label="Message conversation">
+              <header class="lg-inbox-chat-head"><b id="lgInboxTitle">Choose a conversation</b><small id="lgInboxSubtitle">Your messages stay inside FCMobiletools.</small></header>
+              <div class="lg-inbox-messages" id="lgInboxMessages" role="log" aria-live="polite"><div class="lg-inbox-empty">Select an application conversation to read messages.</div></div>
+              <form class="lg-inbox-form" id="lgInboxForm" hidden>
+                <label class="lg-field"><span>Message <Fragment set:html={infoBtn('inbox')} /></span><textarea id="lgInboxInput" rows="2" maxlength="1200" placeholder="Write a clear, respectful message…" required></textarea><small class="lg-help">No passwords or sensitive account details. Up to 1,200 characters.</small></label>
+                <button class="lg-btn lg-btn-primary" id="lgInboxSend" type="submit">Send message</button>
+              </form>
+            </section>
+          </div>
         </section>
 
         <section class="lg-panel" id="panelPlayers" role="tabpanel" hidden>
@@ -205,6 +224,7 @@ const schema = [
   const state = {
     signedIn: false, loadedPersonal: false, account: null, profile: null, suggested: {},
     leagues: [], spotlight: [], ownListings: [], ownerCrew: [], crewReady: false, myCrew: null, myApplications: [], ownerApps: null, newApplications: 0,
+    inboxThreads: [], inboxMessages: [], activeConversationId: null, inboxLoading: false, savedCount: 0,
     canFindPlayers: false, remaining: 3, players: [], revealed: new Map(), editingId: null, tab: 'leagues', view: 'board',
     filters: { q: '', division: '', region: '', freq: '', size: '', lang: '', commit: '', join: '', verified: false, spots: false, ovr: 0 }, sort: 'active'
   };
@@ -287,10 +307,12 @@ const schema = [
     $('#lgListCta').textContent = state.ownListings[0] && state.ownListings[0].status !== 'removed' ? 'Manage my league' : 'List your league';
   }
   function tabList() {
-    const tabs = [{ id: 'leagues', label: 'Leagues' }];
+    const tabs = [{ id: 'leagues', label: 'Leagues' }, { id: 'spotlight', label: 'Spotlight' }];
     if (!state.signedIn) return tabs;
-    tabs.push({ id: 'saved', label: 'Saved', count: state.leagues.filter(r => r.saved).length });
-    if (state.myApplications.length) tabs.push({ id: 'apps', label: 'My applications', count: state.myApplications.filter(a => a.status !== 'withdrawn').length });
+    tabs.push({ id: 'saved', label: 'Saved', count: state.savedCount || state.leagues.filter(r => r.saved).length });
+    tabs.push({ id: 'apps', label: 'My applications', count: state.myApplications.filter(a => a.status !== 'withdrawn').length });
+    const unread = state.inboxThreads.reduce((n, t) => n + Number(t.unreadCount || 0), 0);
+    tabs.push({ id: 'inbox', label: 'Inbox', count: unread });
     if (state.canFindPlayers) tabs.push({ id: 'players', label: 'Find players' });
     const hasOwn = state.ownListings[0] && state.ownListings[0].status !== 'removed';
     tabs.push({ id: 'owner', label: hasOwn ? 'My league' : 'List a league', badge: state.newApplications });
@@ -302,11 +324,12 @@ const schema = [
     if (!tabs.some(t => t.id === state.tab)) state.tab = 'leagues';
     nav.innerHTML = tabs.map(t => '<button class="lg-tab' + (t.id === state.tab ? ' active' : '') + '" role="tab" type="button" data-tab="' + t.id + '" aria-selected="' + (t.id === state.tab) + '">' + esc(t.label) +
       (t.count !== undefined ? '<em>' + fmt(t.count) + '</em>' : '') + (t.badge ? '<span class="lg-tabbadge">' + t.badge + '</span>' : '') + '</button>').join('');
-    for (const [id, sel] of [['leagues', '#panelLeagues'], ['saved', '#panelSaved'], ['apps', '#panelApps'], ['players', '#panelPlayers'], ['owner', '#panelOwner']]) $(sel).hidden = id !== state.tab;
+    for (const [id, sel] of [['leagues', '#panelLeagues'], ['spotlight', '#panelSpotlight'], ['saved', '#panelSaved'], ['apps', '#panelApps'], ['inbox', '#panelInbox'], ['players', '#panelPlayers'], ['owner', '#panelOwner']]) $(sel).hidden = id !== state.tab;
   }
   function setTab(id) {
     state.tab = id; renderTabs();
-    if (id === 'leagues') renderLeagues(); if (id === 'saved') renderSaved(); if (id === 'apps') renderApps();
+    if (id === 'leagues') renderLeagues(); if (id === 'spotlight') renderSpotlight(); if (id === 'saved') renderSaved(); if (id === 'apps') renderApps();
+    if (id === 'inbox') { loadInbox(); if (state.activeConversationId) loadInboxMessages(); }
     if (id === 'owner') renderOwner(); if (id === 'players') loadPlayers();
     const u = new URL(location.href); id === 'leagues' ? u.searchParams.delete('tab') : u.searchParams.set('tab', id); history.replaceState(null, '', u);
   }
@@ -314,11 +337,6 @@ const schema = [
   // ───────────── render: leagues ─────────────
   function renderLeagues() {
     const rows = visible();
-    const hasSpot = state.spotlight.map(id => state.leagues.find(l => l.id === id)).filter(Boolean);
-    const spotIds = new Set(hasSpot.map(l => l.id));
-    const filtering = Object.entries(state.filters).some(([k, v]) => k === 'verified' || k === 'spots' ? v : Boolean(v));
-    $('#lgSpot').hidden = !hasSpot.length || filtering;
-    $('#lgRail').innerHTML = hasSpot.map((r, i) => leagueCard({ ...r, _m: null }, { index: i, spotlight: true, match: matchFor(r), showSave: true })).join('');
     $('#lgGrid').innerHTML = rows.map((r, i) => leagueCard(r, { index: i, match: r._m, showSave: true, spotlight: false })).join('');
     $('#lgGrid').hidden = !rows.length; $('#lgEmpty').hidden = rows.length > 0;
     $('#lgSampleNote').hidden = !rows.some(r => r.isSample);
@@ -333,6 +351,12 @@ const schema = [
     }
     document.querySelectorAll('.lg-divpick').forEach(b => b.classList.toggle('on', b.dataset.div === state.filters.division));
   }
+  function renderSpotlight() {
+    const rows = state.spotlight.map(id => state.leagues.find(l => l.id === id)).filter(Boolean);
+    $('#lgSpot').hidden = !rows.length;
+    $('#lgSpotEmpty').hidden = rows.length > 0;
+    $('#lgRail').innerHTML = rows.map((r, i) => leagueCard({ ...r, _m: null }, { index: i, spotlight: true, match: matchFor(r), showSave: state.signedIn })).join('');
+  }
   function renderSaved() {
     const rows = withMatch().filter(r => r.saved).sort(SORTERS.match);
     $('#lgSavedGrid').innerHTML = rows.map((r, i) => leagueCard(r, { index: i, match: r._m, showSave: true })).join('');
@@ -344,10 +368,11 @@ const schema = [
       const l = state.leagues.find(x => x.id === a.listingId);
       return '<div class="lg-app"><div class="lg-app-head">' + crest(l?.logoUrl, l?.name, 'lg-avatar') + '<div><b>' + (l ? '<a href="' + leagueHref(l) + '">' + esc(l.name) + '</a>' : 'League') + '</b><small>' + esc(new Date(a.createdAt).toISOString().slice(0, 10)) + '</small></div><span class="lg-stat ' + a.status + ' lg-app-ovr">' + esc(APP_LABEL[a.status] || a.status) + '</span></div>' +
         (a.status === 'invited' ? '<p class="lg-app-note">The owner invited you. Open FC Mobile and accept the league invite.</p>' : '') +
-        (['new', 'shortlisted'].includes(a.status) ? '<div class="lg-app-actions"><button class="lg-btn lg-btn-quiet lg-btn-sm" data-withdraw="' + esc(a.id) + '" type="button">Withdraw</button></div>' : '') + '</div>';
+        '<div class="lg-app-actions"><button class="lg-btn lg-btn-outline lg-btn-sm" data-message-listing="' + esc(a.listingId) + '" type="button">Message league</button>' +
+        (['new', 'shortlisted'].includes(a.status) ? '<button class="lg-btn lg-btn-quiet lg-btn-sm" data-withdraw="' + esc(a.id) + '" type="button">Withdraw</button>' : '') + '</div></div>';
     }).join('') : '<div class="lg-empty"><h3>No applications yet.</h3><p>Open a league and tap Apply to join.</p></div>';
   }
-  function refresh() { renderHero(); renderTabs(); setSortOptions(); renderLeagues(); renderSaved(); if (state.tab === 'apps') renderApps(); if (state.tab === 'owner') renderOwner(); }
+  function refresh() { renderHero(); renderTabs(); setSortOptions(); renderLeagues(); renderSpotlight(); renderSaved(); if (state.tab === 'apps') renderApps(); if (state.tab === 'inbox') renderInbox(); if (state.tab === 'owner') renderOwner(); }
 
   // ───────────── fit line next to OVR input ─────────────
   function bindFilters() {
