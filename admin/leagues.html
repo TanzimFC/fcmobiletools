@@ -397,8 +397,8 @@ async function list() {
     const needle = query.trim().toLowerCase();
     if (tab === 'reports' || tab === 'appeals') {
       const data = tab === 'reports'
-        ? await api('/api/admin/leagues/reports?status=all')
-        : await api('/api/admin/leagues/appeals?status=all');
+        ? await api('/api/admin/leagues/reports?status=open')
+        : await api('/api/admin/leagues/appeals?status=open');
       const all = tab === 'reports' ? (data.reports || []) : (data.appeals || []);
       const rows = all.filter((row) => [
         row.listingName, row.reporter, row.owner, row.reason, row.details, row.reviewNote, row.regionServer, row.status
