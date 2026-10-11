@@ -112,7 +112,7 @@ export const INFO = {
   joining: ['How to join', '<b>Apply here</b>: send an application with your team screenshot. <b>Join Discord</b>: open the league\u2019s server. <b>Search in game</b>: find the league by its ID inside FC Mobile.'],
   trust: ['Verified, reviewed, new', '<b>Verified club</b>: confirmed as a real, active club by FCMobiletools. <b>Reviewed</b>: the team checked the listing. <b>New</b>: listed in the last 7 days. <b>Sample club</b>: for testing only.'],
   activity: ['Activity', '“Confirmed active” means players from that league have confirmed they played recently. New leagues may not have activity yet.'],
-  kickoff: ['Kickoff', 'Kickoff puts a league near the top of the board for 6 hours. The owner or an approved crew member can activate it; the whole league shares one 6-hour cooldown.'],
+  kickoff: ['Kickoff', 'Kickoff puts a league near the top of the board for 6 hours. The owner or an approved Leaguemate can activate it; the whole league shares one 6-hour cooldown.'],
   confirm: ['Confirm activity', 'Played in this league lately? Tap it. It tells other players the league is active. One tap per day.'],
   sharing: ['Your UID and Discord', 'They are never public. A league only sees them if you tick the box when you apply, or turn on sharing in your player card.'],
   apply: ['Applying', 'Add a clear screenshot of your current team so the owner can check your squad. You can keep up to 3 active applications at once. Owners can shortlist you, invite you in game, or decline.'],

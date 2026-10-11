@@ -141,7 +141,11 @@ const schema = [
         </section>
 
         <section class="lg-panel" id="panelInbox" role="tabpanel" hidden>
-          <div class="lg-panel-head slim"><div><h2>Inbox <Fragment set:html={infoBtn('inbox')} /></h2><p>Private messages between players and league owners, linked to applications.</p></div><button class="lg-btn lg-btn-outline lg-btn-sm" id="lgInboxRefresh" type="button">Refresh</button></div>
+          <div class="lg-panel-head slim"><div><h2>Inbox <Fragment set:html={infoBtn('inbox')} /></h2><p>Messages about league applications, decisions and moderation notices.</p></div><button class="lg-btn lg-btn-outline lg-btn-sm" id="lgInboxRefresh" type="button">Refresh</button></div>
+          <div class="lg-inbox-admin-warning" role="note"><b><span aria-hidden="true">!</span> Inbox safety notice</b>
+            <p>FCMOBILETOOLS admins can review Inbox messages. Never share passwords, login or recovery codes, payment details, or other sensitive information. Keep messages relevant to the league application. Abuse, spam or off-topic messages can lead to Inbox suspension. Messages are automatically deleted after 48 hours.</p>
+          </div>
+          <section class="lg-inbox-notices" id="lgInboxNotices" aria-label="League decisions and moderation notices"></section>
           <div class="lg-inbox">
             <div class="lg-inbox-threads" id="lgInboxThreads" aria-label="Conversations"><div class="lg-empty"><p>Loading conversations…</p></div></div>
             <section class="lg-inbox-chat" aria-label="Message conversation">
@@ -307,12 +311,12 @@ const schema = [
     $('#lgListCta').textContent = state.ownListings[0] && state.ownListings[0].status !== 'removed' ? 'Manage my league' : 'List your league';
   }
   function tabList() {
-    const tabs = [{ id: 'leagues', label: 'Leagues' }, { id: 'spotlight', label: 'Spotlight' }];
+    const unread = state.inboxThreads.reduce((n, t) => n + Number(t.unreadCount || 0), 0);
+    const tabs = [{ id: 'leagues', label: 'Leagues' }, { id: 'spotlight', label: 'Spotlight' },
+      { id: 'inbox', label: 'Inbox', count: unread }];
     if (!state.signedIn) return tabs;
     tabs.push({ id: 'saved', label: 'Saved', count: state.savedCount || state.leagues.filter(r => r.saved).length });
     tabs.push({ id: 'apps', label: 'My applications', count: state.myApplications.filter(a => a.status !== 'withdrawn').length });
-    const unread = state.inboxThreads.reduce((n, t) => n + Number(t.unreadCount || 0), 0);
-    tabs.push({ id: 'inbox', label: 'Inbox', count: unread });
     if (state.canFindPlayers) tabs.push({ id: 'players', label: 'Find players' });
     const hasOwn = state.ownListings[0] && state.ownListings[0].status !== 'removed';
     tabs.push({ id: 'owner', label: hasOwn ? 'My league' : 'List a league', badge: state.newApplications });
@@ -326,7 +330,35 @@ const schema = [
       (t.count !== undefined ? '<em>' + fmt(t.count) + '</em>' : '') + (t.badge ? '<span class="lg-tabbadge">' + t.badge + '</span>' : '') + '</button>').join('');
     for (const [id, sel] of [['leagues', '#panelLeagues'], ['spotlight', '#panelSpotlight'], ['saved', '#panelSaved'], ['apps', '#panelApps'], ['inbox', '#panelInbox'], ['players', '#panelPlayers'], ['owner', '#panelOwner']]) $(sel).hidden = id !== state.tab;
   }
+  function inboxPolicyAccepted() {
+    try { return localStorage.getItem('lg-inbox-policy-v1') === 'accepted'; } catch { return false; }
+  }
+  function setInboxPolicyAccepted() {
+    try { localStorage.setItem('lg-inbox-policy-v1', 'accepted'); } catch { /* still allow this session */ }
+  }
+  function requestInboxAccess(onContinue) {
+    if (!state.signedIn) { location.href = signInUrl('/leagues/?tab=inbox'); return; }
+    if (inboxPolicyAccepted()) { onContinue?.(); return; }
+    const sheet = openSheet(
+      '<div class="lg-inbox-policy-icon" aria-hidden="true">!</div><h3>Before you use Inbox</h3>' +
+      '<p class="lg-sub">Inbox is for respectful, on-topic communication about FC Mobile league applications.</p>' +
+      '<div class="lg-inbox-policy-list">' +
+        '<p><b>Admins can read messages.</b> FCMOBILETOOLS moderators may review Inbox conversations and take action on misuse.</p>' +
+        '<p><b>Do not share sensitive information.</b> Never send passwords, one-time or recovery codes, payment details, private account credentials or another player’s personal information.</p>' +
+        '<p><b>Stay on topic.</b> Spam, harassment, scams and unrelated messages can result in Inbox suspension.</p>' +
+        '<p><b>Messages expire.</b> Inbox messages are automatically deleted after 48 hours.</p>' +
+      '</div><div class="lg-modal-actions"><button class="lg-btn lg-btn-quiet" type="button" data-inbox-policy-cancel data-sheet-close>Not now</button><button class="lg-btn lg-btn-primary" type="button" data-inbox-policy-continue>I understand · Continue</button></div>',
+      { label: 'Inbox safety notice', wide: true }
+    );
+    $('[data-inbox-policy-continue]', sheet.el).addEventListener('click', () => {
+      setInboxPolicyAccepted(); sheet.close(); onContinue?.();
+    });
+  }
   function setTab(id) {
+    if (id === 'inbox') { requestInboxAccess(() => activateTab('inbox')); return; }
+    activateTab(id);
+  }
+  function activateTab(id) {
     state.tab = id; renderTabs();
     if (id === 'leagues') renderLeagues(); if (id === 'spotlight') renderSpotlight(); if (id === 'saved') renderSaved(); if (id === 'apps') renderApps();
     if (id === 'inbox') { loadInbox(); if (state.activeConversationId) loadInboxMessages(); }
@@ -341,6 +373,7 @@ const schema = [
     $('#lgGrid').hidden = !rows.length; $('#lgEmpty').hidden = rows.length > 0;
     $('#lgSampleNote').hidden = !rows.some(r => r.isSample);
     const real = rows.filter(r => !r.isSample).length;
+    const filtering = Object.entries(state.filters).some(([k, v]) => Boolean(v));
     $('#lgResults').textContent = real + (real === 1 ? ' league' : ' leagues') + (filtering ? ' match' : '');
     const n = moreFilterCount(); const badge = $('#fCount'); badge.hidden = n === 0; badge.textContent = n;
     const ovr = myOvr();
@@ -379,6 +412,28 @@ const schema = [
   function renderInbox() {
     const threads = $('#lgInboxThreads'), messages = $('#lgInboxMessages'), form = $('#lgInboxForm');
     const unread = state.inboxThreads.reduce((n, t) => n + Number(t.unreadCount || 0), 0);
+    const notices = [];
+    for (const listing of state.ownListings.filter(row => ['rejected', 'paused'].includes(row.status))) {
+      notices.push({
+        title: listing.status === 'paused' ? 'League suspended' : 'League listing rejected',
+        body: listing.moderationNote || (listing.status === 'paused' ? 'Review the moderation note and appeal if you believe this is a mistake.' : 'Edit your listing to address the rejection, then republish it.'),
+        action: listing.status === 'paused'
+          ? '<button class="lg-btn lg-btn-outline lg-btn-sm" type="button" data-appeal-listing="' + esc(listing.id) + '">Appeal suspension</button>'
+          : '<button class="lg-btn lg-btn-outline lg-btn-sm" type="button" data-goto="owner">Review listing</button>'
+      });
+    }
+    for (const application of state.myApplications.filter(row => ['declined', 'invited', 'joined'].includes(row.status))) {
+      const listing = state.leagues.find(row => row.id === application.listingId);
+      notices.push({
+        title: application.status === 'declined' ? 'Application declined' : application.status === 'invited' ? 'League invitation' : 'You joined a league',
+        body: (listing?.name || 'A league') + (application.status === 'declined' ? ' declined your application.' : application.status === 'invited' ? ' invited you. Check FC Mobile for the in-game invite.' : ' marked your application as joined.'),
+        action: listing ? '<a class="lg-btn lg-btn-outline lg-btn-sm" href="' + leagueHref(listing) + '">View league</a>' : ''
+      });
+    }
+    $('#lgInboxNotices').innerHTML = notices.length
+      ? '<div class="lg-inbox-notices-head"><b>League decisions & moderation</b><span>' + notices.length + '</span></div>' +
+        notices.map(n => '<article class="lg-inbox-notice"><div><b>' + esc(n.title) + '</b><p>' + esc(n.body) + '</p></div><div class="lg-inbox-notice-action">' + n.action + '</div></article>').join('')
+      : '<div class="lg-inbox-notices-head"><b>League decisions & moderation</b></div><p class="lg-inbox-no-notices">No league decisions or moderation notices right now.</p>';
     const tabButton = $('[data-tab="inbox"]', $('#lgTabs'));
     if (tabButton) tabButton.innerHTML = 'Inbox' + (unread ? '<em>' + fmt(unread) + '</em>' : '');
     threads.innerHTML = state.inboxThreads.length ? state.inboxThreads.map(t =>
@@ -414,6 +469,11 @@ const schema = [
       renderTabs();
       renderInbox();
     } catch (e) {
+      if (e.body?.inboxSuspended) {
+        state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null; renderInbox();
+        $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox access suspended</h3><p>' + esc(e.message) + '</p>' + (e.body.suspendedUntil ? '<p>Available again: ' + esc(inboxTime(e.body.suspendedUntil)) + '</p>' : '') + '</div>';
+        return;
+      }
       if (!silent) toast(e.message || 'Inbox could not be loaded.', true);
       $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox unavailable.</h3><p>' + esc(e.message) + '</p><button class="lg-btn lg-btn-outline" id="lgInboxRetry" type="button">Try again</button></div>';
     } finally { state.inboxLoading = false; }
@@ -425,7 +485,14 @@ const schema = [
       state.inboxMessages = res.messages || [];
       await loadInbox({ silent: true });
       renderInbox();
-    } catch (e) { toast(e.message || 'Messages could not be loaded.', true); }
+    } catch (e) {
+      if (e.body?.inboxSuspended) {
+        state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null; renderInbox();
+        $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox access suspended</h3><p>' + esc(e.message) + '</p>' + (e.body.suspendedUntil ? '<p>Available again: ' + esc(inboxTime(e.body.suspendedUntil)) + '</p>' : '') + '</div>';
+        return;
+      }
+      toast(e.message || 'Messages could not be loaded.', true);
+    }
   }
   async function openInboxForListing(listingId, applicantId = '') {
     if (!state.signedIn) { location.href = signInUrl('/leagues/?tab=inbox'); return; }
@@ -438,7 +505,15 @@ const schema = [
       await loadInbox({ silent: true });
       setTab('inbox');
       await loadInboxMessages();
-    } catch (e) { toast(e.message || 'Conversation could not be opened.', true); }
+    } catch (e) {
+      if (e.body?.inboxSuspended) {
+        state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null;
+        state.tab = 'inbox'; renderTabs(); renderInbox();
+        $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox access suspended</h3><p>' + esc(e.message) + '</p>' + (e.body.suspendedUntil ? '<p>Available again: ' + esc(inboxTime(e.body.suspendedUntil)) + '</p>' : '') + '</div>';
+        return;
+      }
+      toast(e.message || 'Conversation could not be opened.', true);
+    }
   }
   async function sendInboxMessage(event) {
     event.preventDefault();
@@ -450,7 +525,15 @@ const schema = [
       input.value = '';
       await loadInbox({ silent: true });
       await loadInboxMessages();
-    } catch (e) { toast(e.message || 'Message could not be sent.', true); }
+    } catch (e) {
+      if (e.body?.inboxSuspended) {
+        state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null;
+        state.tab = 'inbox'; renderTabs(); renderInbox();
+        $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox access suspended</h3><p>' + esc(e.message) + '</p>' + (e.body.suspendedUntil ? '<p>Available again: ' + esc(inboxTime(e.body.suspendedUntil)) + '</p>' : '') + '</div>';
+        return;
+      }
+      toast(e.message || 'Message could not be sent.', true);
+    }
     finally { btn.disabled = false; }
   }
 
@@ -567,15 +650,15 @@ const schema = [
     catch (e) { toast(e.message, true); renderOwner(); }
   }
 
-  // Kickoff crew management. Tournament log entries are no longer part of the listing workflow.
+  // Kickoff Leaguemates management. Tournament log entries are no longer part of the listing workflow.
   function ownerExtras(own, live) {
     if (!live || !state.crewReady) return '';
     const pending = state.ownerCrew.filter(m => m.status === 'pending'), members = state.ownerCrew.filter(m => m.status === 'approved');
     const row = (m, btns) => '<div class="lg-crew-row">' + crest(m.avatarUrl, m.displayName, 'lg-avatar') + '<div class="lg-crew-id"><b>' + esc(m.inGameUsername || m.displayName) + '</b><small>' + (m.ovr ? 'OVR ' + fmt(m.ovr) : '') + '</small></div><div class="lg-crew-btns">' + btns + '</div></div>';
     const b = (a, acct, label, cls) => '<button class="lg-btn ' + cls + ' lg-btn-sm" type="button" data-crew-decide="' + a + '" data-account="' + esc(acct) + '">' + label + '</button>';
-    return '<div class="lg-box"><h3>Kickoff crew ' + infoBtn('kickoff') + '</h3><p class="lg-box-sub">Approve real members so they can Kickoff the league too.</p>' +
+    return '<div class="lg-box"><h3>Kickoff Leaguemates ' + infoBtn('kickoff') + '</h3><p class="lg-box-sub">Approve real members so they can Kickoff the league too.</p>' +
       (pending.length ? '<div class="lg-crew-list"><h5>Requests · ' + pending.length + '</h5>' + pending.map(m => row(m, b('approve', m.accountId, 'Approve', 'lg-btn-primary') + b('decline', m.accountId, 'Decline', 'lg-btn-quiet'))).join('') + '</div>' : '') +
-      '<div class="lg-crew-list"><h5>Crew · ' + members.length + '</h5>' + (members.length ? members.map(m => row(m, b('remove', m.accountId, 'Remove', 'lg-btn-outline'))).join('') : '<p class="lg-note">No crew yet.</p>') + '</div></div>';
+      '<div class="lg-crew-list"><h5>Leaguemates · ' + members.length + '</h5>' + (members.length ? members.map(m => row(m, b('remove', m.accountId, 'Remove', 'lg-btn-outline'))).join('') : '<p class="lg-note">No Leaguemates approved yet.</p>') + '</div></div>';
   }
   async function openListingAppeal(id) {
     const own = state.ownListings.find(row => row.id === id);
@@ -698,7 +781,7 @@ const schema = [
     if (!state.account?.emailConfirmed) { toast('Verify your email first, then list your league.', true); return; }
     state.editingId = row?.id || null;
     const f = $('#lgListingForm'); f.innerHTML = editorHtml(row);
-    crestUp = mountUploader($('#crestSlot', f), { label: 'League crest', hint: 'Optional · square images look best', value: row?.logoUrl || '', onChange: () => renderListingPreview() });
+    crestUp = mountUploader($('#crestSlot', f), { label: 'League crest', hint: 'Optional · square images look best', value: row?.logoUrl || '', permanent: true, onChange: () => renderListingPreview() });
     $('#lgEditorTitle').textContent = row ? 'Edit your league' : 'List your league';
     $('#lgEditorBack').textContent = '← Back';
     syncConditional(); renderListingPreview(); showView('editor');
@@ -741,7 +824,7 @@ const schema = [
       state.leagues = d.leagues || []; state.spotlight = d.spotlight || []; state.loadedPersonal = true;
       if (d.directoryFailed) toast('Some leagues could not be loaded.', true);
       refresh();
-      loadInbox({ silent: true });
+      if (state.tab === 'inbox') loadInbox({ silent: true });
       if (state.tab === 'players') loadPlayers();
     } catch (e) {
       if (e.status === 401) { state.signedIn = false; refresh(); return; }
@@ -780,12 +863,17 @@ const schema = [
       if (t.closest('#lgRecruitToggle')) { const own = state.ownListings[0]; if (own) quickUpdate({ recruitingOpen: !own.recruitingOpen }); return; }
       const kick = t.closest('[data-kick]'); if (kick) { doKickoff(kick.dataset.kick, kick); return; }
       const ap = t.closest('[data-app]'); if (ap) { decideApp(ap.dataset.app, ap.dataset.status, ap); return; }
-      const message = t.closest('[data-message-listing]'); if (message) { openInboxForListing(message.dataset.messageListing, message.dataset.applicant || ''); return; }
+      const message = t.closest('[data-message-listing]'); if (message) { requestInboxAccess(() => openInboxForListing(message.dataset.messageListing, message.dataset.applicant || '')); return; }
       const conv = t.closest('[data-inbox-thread]'); if (conv) { state.activeConversationId = conv.dataset.inboxThread; state.inboxMessages = []; renderInbox(); loadInboxMessages(); return; }
       if (t.closest('#lgInboxRefresh') || t.closest('#lgInboxRetry')) { loadInbox(); return; }
       const appeal = t.closest('[data-appeal-listing]'); if (appeal) { openListingAppeal(appeal.dataset.appealListing); return; }
       if (t.closest('#lgAppsRetry')) { loadOwnerApps(); return; }
       const cd = t.closest('[data-crew-decide]'); if (cd) { postOwner('crew-decide', { accountId: cd.dataset.account, action: cd.dataset.crewDecide }, 'Updated.', cd); return; }
+      const card = t.closest('.lg-card:not(.is-preview)');
+      if (card && !t.closest('a,button,input,select,textarea,label,[data-info],[data-save]')) {
+        const link = card.querySelector('.lg-card-id h3 a, .lg-card-actions a');
+        if (link?.href) { location.assign(link.href); return; }
+      }
 
     });
     setInterval(() => {
@@ -802,10 +890,14 @@ const schema = [
     if (boot?.leagues) ingestPublic(boot);
   } catch { /* the live request below fills the board */ }
   const urlTab = new URLSearchParams(location.search).get('tab'); if (urlTab) state.tab = urlTab;
-  renderHero(); renderLeagues();
+  renderHero(); renderTabs(); renderLeagues();
   loadPublic({ silent: true });
   loadPersonal().then(() => {
     if (urlTab === 'owner' && state.signedIn) { state.tab = 'owner'; renderTabs(); renderOwner(); if (!state.ownListings.find(r => r.status !== 'removed') && !sessionStorageFlag()) openEditor(); }
+    if (urlTab === 'inbox') {
+      if (state.signedIn) requestInboxAccess(() => activateTab('inbox'));
+      else location.href = signInUrl('/leagues/?tab=inbox');
+    }
   });
   function sessionStorageFlag() { try { if (sessionStorage.getItem('lg-ed')) return true; sessionStorage.setItem('lg-ed', '1'); return false; } catch { return false; } }
   accountAuth.auth.onAuthStateChange((event) => {

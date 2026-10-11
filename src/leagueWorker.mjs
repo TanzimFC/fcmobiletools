@@ -570,7 +570,7 @@ async function crewRequest(request, env, authContext, match, supabaseRest, json)
   const result = await rpc(env, supabaseRest, 'server_league_crew_request', {
     p_listing_id: match[1], p_account_id: authContext.account.id
   });
-  if (!result?.ok) return rpcFailure(result, json, 'Your crew request could not be sent.');
+  if (!result?.ok) return rpcFailure(result, json, 'Your Leaguemate request could not be sent.');
   return json(result);
 }
 
@@ -578,7 +578,7 @@ async function crewLeave(request, env, authContext, match, supabaseRest, json) {
   const result = await rpc(env, supabaseRest, 'server_league_crew_leave', {
     p_listing_id: match[1], p_account_id: authContext.account.id
   });
-  if (!result?.ok) return rpcFailure(result, json, 'You are not in this crew.');
+  if (!result?.ok) return rpcFailure(result, json, 'You are not an approved Leaguemate.');
   return json(result);
 }
 
@@ -586,12 +586,12 @@ async function crewDecide(request, env, authContext, match, supabaseRest, json) 
   const body = await request.json().catch(() => ({}));
   const accountId = clean(body.accountId, 64).toLowerCase();
   const action = clean(body.action, 16);
-  if (!new RegExp('^' + UUID_RE + '$', 'i').test(accountId)) return json({ error: 'Choose a crew member.' }, 400);
-  if (!['approve', 'decline', 'remove'].includes(action)) return json({ error: 'Unknown crew action.' }, 400);
+  if (!new RegExp('^' + UUID_RE + '$', 'i').test(accountId)) return json({ error: 'Choose a Leaguemate.' }, 400);
+  if (!['approve', 'decline', 'remove'].includes(action)) return json({ error: 'Unknown Leaguemate action.' }, 400);
   const result = await rpc(env, supabaseRest, 'server_league_crew_decide', {
     p_listing_id: match[1], p_owner_account_id: authContext.account.id, p_account_id: accountId, p_action: action
   });
-  if (!result?.ok) return rpcFailure(result, json, 'That crew change could not be saved.');
+  if (!result?.ok) return rpcFailure(result, json, 'That Leaguemate change could not be saved.');
   return json(result);
 }
 
@@ -838,8 +838,25 @@ async function withdrawApplication(request, env, authContext, match, supabaseRes
 }
 
 
+async function inboxSuspensionResponse(env, accountId, supabaseRest, json) {
+  const now = encodeURIComponent(nowIso());
+  const rows = await supabaseRest(env,
+    'league_inbox_restrictions?account_id=eq.' + encodeURIComponent(accountId) +
+    '&suspended_until=gt.' + now + '&select=reason,suspended_until&limit=1');
+  const restriction = rows?.[0];
+  if (!restriction) return null;
+  return json({
+    error: 'Inbox access is suspended until ' + restriction.suspended_until + '.',
+    inboxSuspended: true,
+    reason: restriction.reason || 'Inbox policy violation',
+    suspendedUntil: restriction.suspended_until
+  }, 403);
+}
+
 async function openInboxConversation(request, env, authContext, match, supabaseRest, json) {
   const { account } = authContext;
+  const blocked = await inboxSuspensionResponse(env, account.id, supabaseRest, json);
+  if (blocked) return blocked;
   const listingId = match[1];
   const input = await request.json().catch(() => ({}));
   const listings = await supabaseRest(env,
@@ -886,12 +903,14 @@ async function openInboxConversation(request, env, authContext, match, supabaseR
 
 async function listInbox(request, env, authContext, supabaseRest, json) {
   const { account } = authContext;
+  const blocked = await inboxSuspensionResponse(env, account.id, supabaseRest, json);
+  if (blocked) return blocked;
   const columns = 'id,listing_id,owner_account_id,applicant_account_id,created_at,updated_at';
   const [owned, applied] = await Promise.all([
     supabaseRest(env, 'league_conversations?owner_account_id=eq.' + encodeURIComponent(account.id) +
-      '&select=' + columns + '&order=updated_at.desc&limit=100').catch(() => []),
+      '&select=' + columns + '&order=updated_at.desc&limit=50').catch(() => []),
     supabaseRest(env, 'league_conversations?applicant_account_id=eq.' + encodeURIComponent(account.id) +
-      '&select=' + columns + '&order=updated_at.desc&limit=100').catch(() => [])
+      '&select=' + columns + '&order=updated_at.desc&limit=50').catch(() => [])
   ]);
   const byId = new Map([...(owned || []), ...(applied || [])].map(row => [row.id, row]));
   const conversations = [...byId.values()].sort((a, b) => Date.parse(b.updated_at || 0) - Date.parse(a.updated_at || 0));
@@ -901,7 +920,8 @@ async function listInbox(request, env, authContext, supabaseRest, json) {
   const accountIds = [...new Set(conversations.flatMap(c => [c.owner_account_id, c.applicant_account_id]))];
   const [messages, listings, accounts] = await Promise.all([
     supabaseRest(env, 'league_messages?conversation_id=in.' + inList(conversationIds) +
-      '&select=id,conversation_id,sender_account_id,body,created_at,read_at&order=created_at.desc&limit=1200').catch(() => []),
+      '&created_at=gte.' + encodeURIComponent(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()) +
+      '&select=id,conversation_id,sender_account_id,body,created_at,read_at&order=created_at.desc&limit=300').catch(() => []),
     supabaseRest(env, 'league_listings?select=id,name,slug,logo_url&id=in.' + inList(listingIds)).catch(() => []),
     supabaseRest(env, 'accounts?select=id,username,display_name,avatar_url&id=in.' + inList(accountIds)).catch(() => [])
   ]);
@@ -939,15 +959,21 @@ async function inboxConversation(request, env, authContext, match, supabaseRest,
   if (![conversation.owner_account_id, conversation.applicant_account_id].includes(account.id)) {
     return json({ error: 'You are not part of this conversation.' }, 403);
   }
+  const blocked = await inboxSuspensionResponse(env, account.id, supabaseRest, json);
+  if (blocked) return blocked;
+  const retentionCutoff = encodeURIComponent(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
   if (request.method === 'GET') {
     await supabaseRest(env,
       'league_messages?conversation_id=eq.' + encodeURIComponent(conversationId) +
-      '&sender_account_id=neq.' + encodeURIComponent(account.id) + '&read_at=is.null', {
+      '&created_at=gte.' + retentionCutoff + '&sender_account_id=neq.' + encodeURIComponent(account.id) +
+      '&read_at=is.null', {
         method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ read_at: nowIso() })
       }).catch(() => null);
-    const messages = await supabaseRest(env,
+    const recentRows = await supabaseRest(env,
       'league_messages?conversation_id=eq.' + encodeURIComponent(conversationId) +
-      '&select=id,conversation_id,sender_account_id,body,created_at&order=created_at.asc&limit=100');
+      '&created_at=gte.' + retentionCutoff +
+      '&select=id,conversation_id,sender_account_id,body,created_at&order=created_at.desc&limit=100');
+    const messages = (recentRows || []).reverse();
     const senderIds = [...new Set((messages || []).map(row => row.sender_account_id))];
     const accounts = senderIds.length ? await supabaseRest(env,
       'accounts?select=id,username,display_name&id=in.' + inList(senderIds)).catch(() => []) : [];
@@ -980,6 +1006,57 @@ async function inboxConversation(request, env, authContext, match, supabaseRest,
   return json({ ok: true, message: message ? {
     id: message.id, senderAccountId: message.sender_account_id, body: message.body, createdAt: message.created_at
   } : null });
+}
+
+async function adminInbox(env, url, supabaseRest, json) {
+  const parsedOffset = Number.parseInt(url.searchParams.get('offset') || '0', 10);
+  const offset = Number.isFinite(parsedOffset) ? Math.max(0, Math.min(100000, parsedOffset)) : 0;
+  const pageSize = 200;
+  const cutoff = encodeURIComponent(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
+  const messages = await supabaseRest(env,
+    'league_messages?created_at=gte.' + cutoff +
+    '&select=id,conversation_id,sender_account_id,body,created_at&order=created_at.desc&limit=' + pageSize + '&offset=' + offset);
+  if (!messages?.length) return json({ messages: [], offset, hasMore: false });
+  const conversationIds = [...new Set(messages.map(row => row.conversation_id))];
+  const conversations = await supabaseRest(env,
+    'league_conversations?id=in.' + inList(conversationIds) +
+    '&select=id,listing_id,owner_account_id,applicant_account_id');
+  const conversationMap = new Map((conversations || []).map(row => [row.id, row]));
+  const listingIds = [...new Set((conversations || []).map(row => row.listing_id))];
+  const accountIds = [...new Set((conversations || []).flatMap(row => [row.owner_account_id, row.applicant_account_id]).filter(Boolean))];
+  const [listings, accounts, restrictions] = await Promise.all([
+    listingIds.length ? supabaseRest(env, 'league_listings?select=id,name,slug&id=in.' + inList(listingIds)).catch(() => []) : [],
+    accountIds.length ? supabaseRest(env, 'accounts?select=id,username,display_name&id=in.' + inList(accountIds)).catch(() => []) : [],
+    accountIds.length ? supabaseRest(env, 'league_inbox_restrictions?account_id=in.' + inList(accountIds) +
+      '&select=account_id,reason,suspended_until,updated_at').catch(() => []) : []
+  ]);
+  const listingMap = new Map((listings || []).map(row => [row.id, row]));
+  const accountMap = new Map((accounts || []).map(row => [row.id, row]));
+  const restrictionMap = new Map((restrictions || []).map(row => [row.account_id, row]));
+  const now = Date.now();
+  return json({
+    messages: messages.map(message => {
+      const conversation = conversationMap.get(message.conversation_id) || {};
+      const senderId = message.sender_account_id;
+      const recipientId = conversation.owner_account_id === senderId
+        ? conversation.applicant_account_id : conversation.owner_account_id;
+      const listing = listingMap.get(conversation.listing_id) || {};
+      const sender = accountMap.get(senderId) || {};
+      const recipient = accountMap.get(recipientId) || {};
+      const restriction = restrictionMap.get(senderId) || null;
+      const suspended = Boolean(restriction && Date.parse(restriction.suspended_until) > now);
+      return {
+        id: message.id, conversationId: message.conversation_id, listingId: conversation.listing_id,
+        listingName: listing.name || 'League', slug: listing.slug || '',
+        senderAccountId: senderId, senderName: sender.display_name || sender.username || 'Member',
+        recipientAccountId: recipientId, recipientName: recipient.display_name || recipient.username || 'Member',
+        body: message.body, createdAt: message.created_at,
+        senderSuspended: suspended, suspendedUntil: suspended ? restriction.suspended_until : null,
+        restrictionReason: restriction?.reason || ''
+      };
+    }),
+    offset, hasMore: messages.length === pageSize
+  });
 }
 
 async function submitLeagueAppeal(request, env, authContext, match, supabaseRest, json) {
@@ -1177,6 +1254,31 @@ async function adminApi(request, env, url, authenticated, supabaseRest, json) {
     if (request.method === 'GET' && path === '/api/admin/leagues/stats') return await adminStats(env, supabaseRest, json);
     if (request.method === 'GET' && path === '/api/admin/leagues/reports') return await adminReports(env, url, supabaseRest, json);
     if (request.method === 'GET' && path === '/api/admin/leagues/appeals') return await adminAppeals(env, url, supabaseRest, json);
+    if (request.method === 'GET' && path === '/api/admin/leagues/inbox') return await adminInbox(env, url, supabaseRest, json);
+
+    if (request.method === 'POST' && path === '/api/admin/leagues/inbox/restriction') {
+      const input = await request.json().catch(() => ({}));
+      const accountId = clean(input.accountId, 64);
+      if (!new RegExp('^' + UUID_RE + '$', 'i').test(accountId)) return json({ error: 'Choose a valid account.' }, 400);
+      const action = clean(input.action, 20);
+      if (action === 'unsuspend') {
+        await supabaseRest(env, 'league_inbox_restrictions?account_id=eq.' + encodeURIComponent(accountId), {
+          method: 'DELETE', headers: { Prefer: 'return=minimal' }
+        });
+        return json({ ok: true, suspended: false });
+      }
+      if (action !== 'suspend') return json({ error: 'Choose suspend or unsuspend.' }, 400);
+      const hours = intInRange(input.hours ?? 24, 1, 8760);
+      const reason = clean(input.reason, 500);
+      if (hours === null || !reason) return json({ error: 'Provide a suspension reason and duration from 1 hour to 365 days.' }, 400);
+      const until = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+      await supabaseRest(env, 'league_inbox_restrictions?on_conflict=account_id', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify([{ account_id: accountId, reason, suspended_until: until, updated_by: 'site-admin', updated_at: nowIso() }])
+      });
+      return json({ ok: true, suspended: true, suspendedUntil: until });
+    }
 
     const resolve = path.match(new RegExp('^/api/admin/leagues/reports/' + UUID_RE + '/resolve$', 'i'));
     if (resolve && request.method === 'POST') {

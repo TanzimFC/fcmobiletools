@@ -2827,7 +2827,23 @@ async function imageUploadApi(request, env, url) {
 export function createExports(manifest) {
   const app = new App(manifest);
   return {
-    default: { async fetch(request,env,ctx) {
+    default: {
+      async scheduled(controller, env, ctx) {
+        const cleanup = (async () => {
+          const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+          await supabaseRest(env,
+            'league_messages?created_at=lt.' + encodeURIComponent(cutoff), {
+              method: 'DELETE',
+              headers: { Prefer: 'return=minimal' }
+            });
+          console.info('[LEAGUE_INBOX_RETENTION] Removed messages older than 48 hours.');
+        })().catch(error => {
+          console.error('[LEAGUE_INBOX_RETENTION]', error?.message || 'Scheduled cleanup failed.');
+        });
+        if (ctx?.waitUntil) ctx.waitUntil(cleanup);
+        else await cleanup;
+      },
+      async fetch(request,env,ctx) {
   const url=new URL(request.url);
   const hostHeader=(request.headers.get('host')||'').split(':')[0].toLowerCase();
 

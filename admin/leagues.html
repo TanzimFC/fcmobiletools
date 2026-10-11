@@ -163,6 +163,12 @@ html body .pill.active,html body .pill.published,html body .pill.live{border-col
 html body .pill.review,html body .pill.scheduled,html body .pill.pending{border-color:rgba(246,196,83,.45);background:rgba(246,196,83,.1);color:#ffe29a}
 html body .pill.expired,html body .pill.rejected,html body .pill.frozen{border-color:rgba(255,143,134,.45);background:rgba(255,143,134,.1);color:#ffc0ba}
 
+.inbox-review-warning{margin-bottom:16px;padding:16px 18px;border:1px solid rgba(246,196,83,.28);border-radius:16px;background:linear-gradient(120deg,rgba(246,196,83,.09),rgba(255,255,255,.02))}
+.inbox-review-warning b{color:#ffe5a6;font:700 14px var(--display)}
+.inbox-review-warning p{margin:6px 0;color:#ced9e0;line-height:1.65;font-size:12.5px}
+.inbox-review-warning small{color:#9bb0bd;line-height:1.6}
+.inbox-review-body{padding:14px 16px;border:1px solid var(--pa-line);border-radius:12px;background:rgba(0,0,0,.18);color:#e1edf4;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;font-size:13px}
+
 /* ---------- Modal / toast ---------- */
 html body .modal{backdrop-filter:blur(10px);background:rgba(2,6,10,.7)}
 html body .dialog{border:1px solid var(--pa-line2);border-radius:24px;background:linear-gradient(165deg,#12202f,#09121b);box-shadow:0 60px 120px -30px #000}
@@ -203,11 +209,15 @@ const TABS = {
   paused: 'Suspended',
   removed: 'Removed',
   reports: 'Reports',
-  appeals: 'Suspension appeals'
+  appeals: 'Suspension appeals',
+  inbox: 'Inbox review'
 };
 let tab = 'unreviewed';
 let query = '';
 let loading = false;
+let adminInboxRows = [];
+let adminInboxOffset = 0;
+let adminInboxHasMore = false;
 
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
@@ -333,6 +343,81 @@ function appealCard(appeal) {
     '</div></article>';
 }
 
+function inboxCard(message) {
+  const suspended = Boolean(message.senderSuspended);
+  return '<article class="glass acard inbox-review-card">' +
+    '<div class="r1"><div class="grow"><b style="font-size:15px">' + esc(message.senderName || 'Member') +
+      '</b><div class="hint">To ' + esc(message.recipientName || 'Member') + ' · ' + esc(message.listingName || 'League') +
+      ' · ' + esc(ago(message.createdAt)) + '</div></div><span class="pill ' + (suspended ? 'bad' : 'ok') + '">' +
+      (suspended ? 'Inbox suspended' : 'Inbox active') + '</span></div>' +
+    '<div class="inbox-review-body">' + esc(message.body || '') + '</div>' +
+    '<div class="hint">Sender account: ' + esc(message.senderAccountId || '—') +
+      (suspended && message.suspendedUntil ? ' · suspended until ' + esc(new Date(message.suspendedUntil).toLocaleString()) : '') +
+      (suspended && message.restrictionReason ? ' · Reason: ' + esc(message.restrictionReason) : '') + '</div>' +
+    '<div class="acts">' +
+      '<a class="btn sm" href="/leagues/' + encodeURIComponent(message.slug || '') + '/" target="_blank" rel="noopener noreferrer">View league</a>' +
+      (suspended
+        ? '<button class="btn primary sm" data-inbox-action="unsuspend" data-user="' + esc(message.senderAccountId) + '">Restore Inbox access</button>'
+        : '<button class="btn danger sm" data-inbox-action="suspend" data-user="' + esc(message.senderAccountId) + '">Suspend Inbox access</button>') +
+    '</div></article>';
+}
+
+function renderAdminInboxRows() {
+  const box = $('#list');
+  if (!box) return;
+  const needle = query.trim().toLowerCase();
+  const rows = adminInboxRows.filter((row) => [
+    row.senderName, row.recipientName, row.listingName, row.body, row.restrictionReason, row.senderAccountId
+  ].some(value => String(value || '').toLowerCase().includes(needle)));
+  box.innerHTML = '<div class="glass inbox-review-warning"><b>Inbox visibility</b><p>Admins can review the Inbox message contents shown here. Users are warned not to share passwords, one-time or recovery codes, payment details or sensitive account information. Messages older than 48 hours are deleted automatically.</p><small>Use moderation actions for Inbox access only. Off-topic messages, spam, scams and harassment may justify a temporary suspension.</small></div>' +
+    (rows.length ? rows.map(inboxCard).join('') : '<div class="empty"><h3>No retained messages found</h3>' + (needle ? 'No loaded messages match your search.' : 'No Inbox messages are retained from the last 48 hours in this page.') + '</div>') +
+    (adminInboxHasMore ? '<div class="acts" style="justify-content:center;margin:18px 0"><button id="inboxLoadMore" class="btn" type="button">Load older messages</button></div>' : '');
+  $$('[data-inbox-action]', box).forEach(button => button.addEventListener('click', () => inboxAct(button)));
+  $('#inboxLoadMore')?.addEventListener('click', () => loadAdminInboxPage(true));
+}
+
+async function loadAdminInboxPage(append = false) {
+  const box = $('#list');
+  if (!append) {
+    adminInboxOffset = 0;
+    adminInboxRows = [];
+    adminInboxHasMore = false;
+    if (box) box.innerHTML = '<p class="mute">Loading recent Inbox messages…</p>';
+  }
+  const data = await api('/api/admin/leagues/inbox?offset=' + adminInboxOffset);
+  const page = data.messages || [];
+  adminInboxRows = append ? adminInboxRows.concat(page) : page;
+  adminInboxOffset = Number(data.offset || 0) + page.length;
+  adminInboxHasMore = Boolean(data.hasMore);
+  renderAdminInboxRows();
+}
+
+async function inboxAct(button) {
+  const accountId = button.dataset.user, action = button.dataset.inboxAction;
+  let hours = 24, reason = '';
+  if (action === 'suspend') {
+    reason = prompt('Reason for restricting Inbox access. The user may see this reason:', 'Inbox policy violation');
+    if (reason === null) return;
+    reason = reason.trim();
+    if (!reason) { toast('Enter a reason for the suspension.', 'err'); return; }
+    const rawHours = prompt('Suspension duration in hours (1–8760):', '24');
+    if (rawHours === null) return;
+    hours = Number(rawHours);
+    if (!Number.isInteger(hours) || hours < 1 || hours > 8760) { toast('Choose a duration from 1 to 8,760 hours.', 'err'); return; }
+  }
+  button.disabled = true;
+  try {
+    await api('/api/admin/leagues/inbox/restriction', {
+      method: 'POST', body: JSON.stringify({ accountId, action, hours, reason })
+    });
+    toast(action === 'suspend' ? 'Inbox access suspended.' : 'Inbox access restored.');
+    await Promise.all([stats(), list()]);
+  } catch (error) {
+    toast(error.message || 'Inbox restriction could not be changed.', 'err');
+    button.disabled = false;
+  }
+}
+
 function safeDiscord(value) {
   const url = String(value || '');
   return /^https:\/\/(www\.)?(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]{2,40}\/?$/i.test(url) ? url : '';
@@ -395,6 +480,10 @@ async function list() {
   box.innerHTML = '<p class="mute">Loading…</p>';
   try {
     const needle = query.trim().toLowerCase();
+    if (tab === 'inbox') {
+      await loadAdminInboxPage(false);
+      return;
+    }
     if (tab === 'reports' || tab === 'appeals') {
       const data = tab === 'reports'
         ? await api('/api/admin/leagues/reports?status=open')
@@ -546,7 +635,7 @@ async function shell() {
   $('#q').addEventListener('input', (event) => {
     clearTimeout(timer);
     query = event.target.value;
-    timer = setTimeout(list, 180);
+    timer = setTimeout(() => tab === 'inbox' ? renderAdminInboxRows() : list(), 180);
   });
   $('#rf').addEventListener('click', refresh);
   await Promise.all([stats(), list()]);
