@@ -88,8 +88,8 @@ async function detectImageType(file) {
   return '';
 }
 
-async function shrink(file, maxSide = 1600) {
-  if (file.type === 'image/gif' || file.size < 400 * 1024) return file;
+async function shrink(file, maxSide = 1440) {
+  if (file.type === 'image/gif' || file.size < 250 * 1024) return file;
   try {
     const bmp = await createImageBitmap(file);
     const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
@@ -97,12 +97,12 @@ async function shrink(file, maxSide = 1600) {
     const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
     const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
-    const blob = await new Promise(r => canvas.toBlob(r, 'image/webp', 0.86));
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/webp', 0.78));
     return blob && blob.size < file.size ? new File([blob], file.name.replace(/\.\w+$/, '') + '.webp', { type: 'image/webp' }) : file;
   } catch { return file; }
 }
 
-export async function uploadImage(file, { onProgress, signal } = {}) {
+export async function uploadImage(file, { onProgress, signal, permanent = false, expirationDays = 2 } = {}) {
   if (!file || typeof file.slice !== 'function' || file.size <= 0 || file.size > MAX_BYTES) {
     throw new Error('Choose an image under 8 MB.');
   }
@@ -122,7 +122,8 @@ export async function uploadImage(file, { onProgress, signal } = {}) {
 
   const body = new FormData();
   body.append('file', prepared);
-  body.append('permanent', 'true');
+  body.append('permanent', String(Boolean(permanent)));
+  if (!permanent) body.append('expirationDays', String(Math.max(1, Math.min(180, Number(expirationDays) || 2))));
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -176,7 +177,7 @@ export async function uploadImage(file, { onProgress, signal } = {}) {
 }
 
 // Drop-in uploader: idle → preparing/uploading (bar + %) → "Uploaded" tick with preview.
-export function mountUploader(root, { label, hint, value = '', onChange, round = false } = {}) {
+export function mountUploader(root, { label, hint, value = '', onChange, round = false, permanent = false, expirationDays = 2 } = {}) {
   root.classList.add('lg-up');
   root.innerHTML =
     '<label class="lg-up-drop"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="lg-up-ico">↑</span><span><b>' + esc(label) + '</b><small>' + esc(hint || 'JPG, PNG or WebP · under 8 MB') + '</small></span></label>' +
@@ -198,7 +199,7 @@ export function mountUploader(root, { label, hint, value = '', onChange, round =
     q('.lg-up-run .lg-up-thumb').src = objectUrl; q('.lg-up-name').textContent = file.name; bar(0, 'Preparing…'); show('run');
     onChange?.({ busy: true });
     try {
-      const u = await uploadImage(file, { signal: ctrl.signal, onProgress: ({ phase, pct }) =>
+      const u = await uploadImage(file, { signal: ctrl.signal, permanent, expirationDays, onProgress: ({ phase, pct }) =>
         bar(phase === 'finishing' ? 100 : pct, phase === 'preparing' ? 'Preparing…' : phase === 'finishing' ? 'Almost done…' : 'Uploading ' + pct + '%') });
       bar(100, 'Done'); setDone(u, file.name); onChange?.({ url: u, busy: false });
     } catch (e) {
@@ -250,7 +251,7 @@ export function openProfileSheet({ profile, suggested = {}, intro = '' } = {}) {
         '<div class="lg-modal-actions"><button class="lg-btn lg-btn-quiet" type="button" data-sheet-close>Cancel</button><button class="lg-btn lg-btn-primary" type="submit">Save player card</button></div>' +
       '</form>', { label: 'Player card', onClose: (r) => resolve(r || null) });
     const f = $('form', sheet.el);
-    const up = mountUploader($('[data-slot=avatar]', sheet.el), { label: 'Profile picture', hint: 'Optional', value: p.avatar_url || '', round: true });
+    const up = mountUploader($('[data-slot=avatar]', sheet.el), { label: 'Profile picture', hint: 'Optional', value: p.avatar_url || '', round: true, permanent: true });
     f.addEventListener('submit', async e => {
       e.preventDefault();
       const msg = $('.lg-msg', f); msg.textContent = '';
