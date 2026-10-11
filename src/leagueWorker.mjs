@@ -321,6 +321,15 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     newApplications = (counts || []).length;
   }
   const usedToday = approvedOwner ? await outreachUsage(env, account.id, supabaseRest).catch(() => 0) : 0;
+  const appealRows = ownListings.length ? await supabaseRest(env,
+    'league_listing_appeals?owner_account_id=eq.' + encodeURIComponent(account.id) +
+    '&select=listing_id,status,review_note,created_at&order=created_at.desc&limit=50').catch(() => []) : [];
+  const appealsByListing = new Map();
+  for (const appeal of (appealRows || [])) if (!appealsByListing.has(appeal.listing_id)) appealsByListing.set(appeal.listing_id, appeal);
+  ownListings = ownListings.map(row => {
+    const appeal = appealsByListing.get(row.id);
+    return { ...row, appealStatus: appeal?.status || '', appealNote: appeal?.review_note || '' };
+  });
 
   return json({
     account: accountOut,
@@ -329,6 +338,7 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     leagues,
     spotlight,
     ownListings,
+    savedCount: savedIds.size,
     crewReady: Boolean(crewPack),
     myCrew,
     ownerCrew,
@@ -385,7 +395,7 @@ async function createListing(request, env, authContext, supabaseRest, json, purg
   const { account } = authContext;
   const existing = await supabaseRest(env,
     'league_listings?owner_account_id=eq.' + encodeURIComponent(account.id) +
-    '&status=in.(pending,approved,paused)&select=id,status&limit=1'
+    '&status=in.(pending,approved,paused,rejected)&select=id,status&limit=1'
   );
   if (existing?.length) return json({ error: 'You already have a league listing. Edit it instead of creating another.' }, 409);
 
@@ -441,6 +451,7 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
   const { listing: old, premium } = await loadOwnListing(env, supabaseRest, id, account.id);
   if (!old) return json({ error: 'League listing not found.' }, 404);
   if (old.status === 'removed') return json({ error: 'This listing was removed. Create a new listing instead.' }, 403);
+  const resubmitting = old.status === 'rejected';
 
   const input = await request.json().catch(() => ({}));
   let fields;
@@ -478,7 +489,11 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
         method: 'PATCH',
         headers: { Prefer: 'return=representation' },
         // Edits go live straight away. The "Reviewed" badge is cleared because the team reviewed the old details.
-        body: JSON.stringify({ ...fields, reviewed_by: null, reviewed_at: null, updated_at: nowIso() })
+        body: JSON.stringify({
+          ...fields,
+          ...(resubmitting ? { status: 'approved', moderation_note: null } : {}),
+          reviewed_by: null, reviewed_at: null, updated_at: nowIso()
+        })
       });
     if (!saved?.length) return json({ error: 'League listing could not be updated.' }, 500);
   } catch (error) {
@@ -486,7 +501,7 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
     return json({ error: 'League listing could not be updated.' }, 500);
   }
   purge?.(old.slug);
-  return json({ ok: true, slug: old.slug, url: '/leagues/' + old.slug + '/', message: 'Saved.' });
+  return json({ ok: true, slug: old.slug, url: '/leagues/' + old.slug + '/', message: resubmitting ? 'Your league is live again.' : 'Saved.' });
 }
 
 // Open spots and recruiting on/off are operational, not content, so they apply instantly without re-review.
@@ -793,7 +808,7 @@ async function listApplications(request, env, authContext, match, supabaseRest, 
   return json({ applications: (rows || []).map(r => {
     const a = accMap.get(r.applicant_account_id) || {};
     return {
-      id: r.id, status: r.status, message: r.message || '', screenshotUrl: r.screenshot_url || null,
+      id: r.id, accountId: r.applicant_account_id, status: r.status, message: r.message || '', screenshotUrl: r.screenshot_url || null,
       ovr: Number(r.ovr || 0), inGameUsername: r.in_game_username || '', regionServer: r.region_server || '',
       uid: r.shared_uid || '', discord: r.shared_discord || '', ownerNote: r.owner_note || '',
       username: a.username || '', displayName: a.display_name || a.username || 'FC Mobile player', avatarUrl: a.avatar_url || null,
