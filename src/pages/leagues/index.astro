@@ -347,7 +347,7 @@ const schema = [
         '<p><b>Do not share sensitive information.</b> Never send passwords, one-time or recovery codes, payment details, private account credentials or another player’s personal information.</p>' +
         '<p><b>Stay on topic.</b> Spam, harassment, scams and unrelated messages can result in Inbox suspension.</p>' +
         '<p><b>Messages expire.</b> Inbox messages are automatically deleted after 48 hours.</p>' +
-      '</div><div class="lg-modal-actions"><button class="lg-btn lg-btn-quiet" type="button" data-inbox-policy-cancel>Not now</button><button class="lg-btn lg-btn-primary" type="button" data-inbox-policy-continue>I understand · Continue</button></div>',
+      '</div><div class="lg-modal-actions"><button class="lg-btn lg-btn-quiet" type="button" data-inbox-policy-cancel data-sheet-close>Not now</button><button class="lg-btn lg-btn-primary" type="button" data-inbox-policy-continue>I understand · Continue</button></div>',
       { label: 'Inbox safety notice', wide: true }
     );
     $('[data-inbox-policy-continue]', sheet.el).addEventListener('click', () => {
@@ -525,7 +525,15 @@ const schema = [
       input.value = '';
       await loadInbox({ silent: true });
       await loadInboxMessages();
-    } catch (e) { toast(e.message || 'Message could not be sent.', true); }
+    } catch (e) {
+      if (e.body?.inboxSuspended) {
+        state.inboxThreads = []; state.inboxMessages = []; state.activeConversationId = null;
+        state.tab = 'inbox'; renderTabs(); renderInbox();
+        $('#lgInboxThreads').innerHTML = '<div class="lg-empty"><h3>Inbox access suspended</h3><p>' + esc(e.message) + '</p>' + (e.body.suspendedUntil ? '<p>Available again: ' + esc(inboxTime(e.body.suspendedUntil)) + '</p>' : '') + '</div>';
+        return;
+      }
+      toast(e.message || 'Message could not be sent.', true);
+    }
     finally { btn.disabled = false; }
   }
 
