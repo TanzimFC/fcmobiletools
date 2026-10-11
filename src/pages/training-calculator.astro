@@ -4,8 +4,73 @@ import { TRAINING_LEVELS, FODDER, MAX_TRAINING_LEVEL } from '../data/fcMobileTra
 const fmt = (n) => Number(n).toLocaleString();
 const nextXp = (i) => i < MAX_TRAINING_LEVEL ? `${fmt(TRAINING_LEVELS[i + 1] - TRAINING_LEVELS[i])} XP` : 'MAX';
 const maxXp = TRAINING_LEVELS[MAX_TRAINING_LEVEL];
+
+/* Training Transfer: the game keeps this share of the XP you move */
+const TRANSFER_LOSS_PCT = 10;
+/* Bronze Fodder exchange (60–69 OVR) */
+const BRONZE_XP = 120;
+const PACK_SIZE = 30;
+const PACK_COINS = 1000000;
+const DAILY_PACKS = 20;
+const maxBronzeCards = Math.ceil(maxXp / BRONZE_XP);
+const maxPacks = Math.ceil(maxBronzeCards / PACK_SIZE);
+const maxPackCoins = maxPacks * PACK_COINS;
+const maxDays = Math.ceil(maxPacks / DAILY_PACKS);
+
+/* Token image: self-hosted copy first (long browser cache), Cloudinary only as a fallback */
+const TOKEN_LOCAL = '/assets/images/training-transfer-token.webp';
+const TOKEN_REMOTE = 'https://res.cloudinary.com/b0qikv7n/image/upload/v1791743386/fc-mobile-tools/mxavtjtgypheowpnkjqs.webp';
+
+const pageUrl = 'https://fcmobiletools.online/training-calculator/';
+const updatedISO = '2026-10-12';
+const updatedLabel = 'October 12, 2026';
+
+const faqs = [
+  { q: 'How much XP do I need to train a player?', a: 'The calculator subtracts the XP of your current Training Level from the XP of your target level. Going from Level 0 to Level ' + MAX_TRAINING_LEVEL + ' takes ' + fmt(maxXp) + ' XP in total.' },
+  { q: 'How are the cards worked out?', a: 'The XP you need is divided by the XP of the fodder card you picked and rounded up to a whole card. Any XP left over in the last card is shown as excess XP.' },
+  { q: 'What is the highest Training Level?', a: 'Training goes up to Level ' + MAX_TRAINING_LEVEL + '.' },
+  { q: "Does Training raise a player's OVR?", a: 'No. Training makes a player\'s attributes better. OVR goes up through Rank Up, which is a separate system.' },
+  { q: 'What is Training Transfer?', a: 'Training Transfer moves Training XP from one player to another. The game keeps ' + TRANSFER_LOSS_PCT + '% of the XP you move, so the target gets ' + (100 - TRANSFER_LOSS_PCT) + '%. It also uses Training Transfer Points, and the game shows the cost before you confirm.' },
+  { q: 'How much XP do I lose in a Training Transfer?', a: TRANSFER_LOSS_PCT + '% of the XP you move. If you move 10,000 XP, the target gets 9,000 XP. The Training Transfer tab on this page does the maths for you. The game may round by 1 XP.' },
+  { q: 'How do I get Training Transfer Points?', a: 'Events, passes and other rewards give out Training Transfer Points. The amount changes from event to event, so check the reward list of each event.' },
+  { q: 'How does the Bronze Fodder exchange work?', a: 'Apart from the transfer market, you can exchange a pack of ' + PACK_SIZE + ' Bronze Fodder players (60–69 OVR) for ' + fmt(PACK_COINS) + ' Coins. You can do this ' + DAILY_PACKS + ' times a day, so you can get up to ' + (PACK_SIZE * DAILY_PACKS) + ' players a day.' },
+  { q: 'Are the numbers on this page exact?', a: 'The tables come from the Training data we keep for FC Mobile. EA can change values in an update, so check the preview in the game before you confirm anything.' },
+];
+
+const schemas = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'FC Mobile Training Calculator',
+    url: pageUrl,
+    description: 'Free calculator for FC Mobile Training XP, cards, Coins and Training Transfer.',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    browserRequirements: 'Requires JavaScript',
+    inLanguage: 'en',
+    isAccessibleForFree: true,
+    dateModified: updatedISO,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } }))
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://fcmobiletools.online/' },
+      { '@type': 'ListItem', position: 2, name: 'Training Calculator', item: pageUrl }
+    ]
+  }
+];
 ---
-<BaseLayout title="FC Mobile Training Calculator | XP Calculator | FCMOBILETOOLS" description="Calculate FC Mobile Training XP, cards required, excess XP and every Training Level from 0 to 30 with a complete reference table.">
+<BaseLayout title="FC Mobile Training & Transfer Calculator" description="Free FC Mobile Training Calculator. Find the XP, cards and Coins you need for Levels 0 to 30, and see what a Training Transfer gives after the 10% fee.">
+<Fragment slot="head">
+  {schemas.map((schema) => <script type="application/ld+json" set:html={JSON.stringify(schema)}></script>)}
+</Fragment>
 <main class="training-page">
 <div class="ambient" aria-hidden="true"><i></i><i></i><i></i></div>
 
@@ -19,7 +84,7 @@ const maxXp = TRAINING_LEVELS[MAX_TRAINING_LEVEL];
           <span class="rise" style="--d:0s"><span>Training</span></span>
           <span class="rise" style="--d:.12s"><span><em>Calculator</em></span></span>
         </h1>
-        <p class="lede">Work out the exact XP needed to reach any Training Level, how many cards it takes and how much XP is left over.</p>
+        <p class="lede">Work out the exact XP, cards and Coins it takes to reach any Training Level, and see what a Training Transfer gives your target player.</p>
         <div class="hero-stats">
           <div><b>{MAX_TRAINING_LEVEL}</b><span>Training levels</span></div>
           <div><b>{fmt(maxXp)}</b><span>XP to max out</span></div>
@@ -42,6 +107,19 @@ const maxXp = TRAINING_LEVELS[MAX_TRAINING_LEVEL];
 
 <section class="wrap section">
 <div class="calculator-shell">
+  <div class="shell-bar">
+    <div class="tabs" role="tablist" aria-label="Calculator type">
+      <i class="tab-ink" aria-hidden="true"></i>
+      <button type="button" role="tab" id="tab-train" class="tab" data-tab="train" aria-selected="true" aria-controls="panel-train"><span>Training XP</span></button>
+      <button type="button" role="tab" id="tab-transfer" class="tab" data-tab="transfer" aria-selected="false" aria-controls="panel-transfer" tabindex="-1"><img class="tab-token" src={TOKEN_LOCAL} data-fallback={TOKEN_REMOTE} width="82" height="82" alt="" decoding="async" /><span>Training Transfer</span></button>
+    </div>
+    <div class="bar-actions">
+      <button type="button" id="copyLink" class="ghost">Copy link</button>
+      <button type="button" id="copyResult" class="ghost">Copy result</button>
+    </div>
+  </div>
+
+  <div id="panel-train" class="panel" role="tabpanel" aria-labelledby="tab-train">
   <div class="planner-head">
     <div>
       <span class="label">XP planner</span>
@@ -98,6 +176,21 @@ const maxXp = TRAINING_LEVELS[MAX_TRAINING_LEVEL];
     <div id="ladder" class="ladder" aria-hidden="true"></div>
   </div>
 
+  <section class="bronze" aria-label="Bronze Fodder exchange planner">
+    <div class="bz-head">
+      <span class="label">Bronze Fodder exchange</span>
+      <h3>What your route costs in exchange packs</h3>
+      <p>Apart from the transfer market, you can exchange a pack of {PACK_SIZE} Bronze Fodder players (60–69 OVR) for {fmt(PACK_COINS)} Coins, up to {DAILY_PACKS} times a day. That is up to {PACK_SIZE * DAILY_PACKS} players a day.</p>
+    </div>
+    <div class="bz-grid">
+      <article><small>Bronze players needed</small><b id="bzCards">0</b><span>{BRONZE_XP} XP each</span></article>
+      <article><small>Exchange packs</small><b id="bzPacks">0</b><span>{PACK_SIZE} players per pack</span></article>
+      <article><small>Coins for the packs</small><b id="bzCoins">0</b><span>{fmt(PACK_COINS)} per pack</span></article>
+      <article><small>Days at the daily limit</small><b id="bzDays">0</b><span>{DAILY_PACKS} packs a day</span></article>
+    </div>
+    <p class="bz-note" id="bzNote"></p>
+  </section>
+
   <section class="fodder-guide" aria-label="Training fodder guide">
     <div class="guide-head">
       <div>
@@ -118,9 +211,9 @@ const maxXp = TRAINING_LEVELS[MAX_TRAINING_LEVEL];
       </article>
       <article class="guide-card exchange">
         <div class="guide-copy">
-          <span class="guide-kicker">Bronze exchange</span>
-          <h4>30 Bronze Players</h4>
-          <p><strong>Bronze = 69 OVR or below.</strong> Use the player exchange to obtain 30 Bronze players for <strong>1,000,000 Coins</strong>, then feed those cards into training.</p>
+          <span class="guide-kicker">Bronze Fodder exchange</span>
+          <h4>30 Bronze players per pack</h4>
+          <p>Apart from the transfer market, you can exchange a pack of <strong>30 Bronze Fodder players (60–69 OVR)</strong> for <strong>1,000,000 Coins</strong>, then feed those cards into training.</p>
         </div>
         <div class="guide-stat"><b>20×</b><span>Daily limit</span></div>
       </article>
@@ -131,6 +224,62 @@ const maxXp = TRAINING_LEVELS[MAX_TRAINING_LEVEL];
   <div class="break">
     <div class="break-title"><span class="label">Level breakdown</span><h3>Expandable training levels</h3><p>Open a level to see the XP added and the cumulative total.</p></div>
     <div id="breakdown" class="level-cards"></div>
+  </div>
+  </div>
+
+  <div id="panel-transfer" class="panel" role="tabpanel" aria-labelledby="tab-transfer" hidden>
+    <div class="planner-head tx-intro">
+      <div class="intro-main">
+        <span class="token-wrap"><img class="token" src={TOKEN_LOCAL} data-fallback={TOKEN_REMOTE} width="82" height="82" alt="Training Transfer Points token" decoding="async" /></span>
+        <div>
+          <span class="label">Training Transfer</span>
+          <h2>Move XP to a better player</h2>
+          <p>Training Transfer moves the Training XP of one player onto another. The game keeps {TRANSFER_LOSS_PCT}% of the XP you move, so the target gets {100 - TRANSFER_LOSS_PCT}%. Each transfer also uses Training Transfer Points, and the game shows that cost before you confirm.</p>
+        </div>
+      </div>
+      <b class="max">{TRANSFER_LOSS_PCT}% fee</b>
+    </div>
+
+    <div class="tx-grid">
+      <section class="tx-card" aria-labelledby="tx-h1">
+        <h3 id="tx-h1">What will my target get?</h3>
+        <p class="tx-sub">Pick the player you move XP from and the player who receives it.</p>
+        <div class="fields fields-3">
+          <label class="field"><span class="cap">From</span><span class="name">Source level</span><span class="select"><select id="txSrcLevel">{TRAINING_LEVELS.map((_, i) => <option value={i}>Level {i}</option>)}</select></span></label>
+          <label class="field"><span class="cap">Optional</span><span class="name">Extra XP</span><input id="txSrcExtra" type="number" inputmode="numeric" min="0" step="1" value="0" /><span class="hint" id="txExtraHint"></span></label>
+          <label class="field"><span class="cap">To</span><span class="name">Target level</span><span class="select"><select id="txTgtLevel">{TRAINING_LEVELS.map((_, i) => <option value={i}>Level {i}</option>)}</select></span></label>
+        </div>
+        <div class="tx-result" data-spot>
+          <div class="tx-main"><small>Target receives</small><strong id="txGet">0</strong><span>XP after the fee</span></div>
+          <div class="tx-meta">
+            <div><small>XP moved</small><b id="txMoved">0</b></div>
+            <div><small>Lost to the fee</small><b id="txLoss">0</b></div>
+            <div><small>Target ends at</small><b id="txLevel">Level 0</b></div>
+          </div>
+          <div class="progress-track"><i id="txFill"></i></div>
+          <p class="tx-note" id="txNote"></p>
+        </div>
+      </section>
+
+      <section class="tx-card" aria-labelledby="tx-h2">
+        <h3 id="tx-h2">How much XP must I move?</h3>
+        <p class="tx-sub">Pick the level your target is at now and the level you want it to reach.</p>
+        <div class="fields fields-2">
+          <label class="field"><span class="cap">Now</span><span class="name">Target level</span><span class="select"><select id="rvFrom">{TRAINING_LEVELS.map((_, i) => <option value={i}>Level {i}</option>)}</select></span></label>
+          <label class="field"><span class="cap">Goal</span><span class="name">Goal level</span><span class="select"><select id="rvTo">{TRAINING_LEVELS.map((_, i) => <option value={i}>Level {i}</option>)}</select></span></label>
+        </div>
+        <div class="tx-result" data-spot>
+          <div class="tx-main"><small>XP to move</small><strong id="rvMove">0</strong><span>from the source player</span></div>
+          <div class="tx-meta">
+            <div><small>Target needs</small><b id="rvNeed">0</b></div>
+            <div><small>Lost to the fee</small><b id="rvFee">0</b></div>
+            <div><small>Source player</small><b id="rvSrc">None</b></div>
+          </div>
+          <p class="tx-note" id="rvNote"></p>
+        </div>
+      </section>
+    </div>
+    <p class="tx-foot">Transfer Points are not part of this maths. The game shows the Points cost on the transfer screen, so check it there before you confirm.</p>
   </div>
 </div>
 </section>
@@ -145,13 +294,78 @@ const maxXp = TRAINING_LEVELS[MAX_TRAINING_LEVEL];
   </div>
 </section>
 
-<section class="faq">
+<section class="guide-article" id="guide">
+  <div class="wrap article-grid">
+    <nav class="toc" aria-label="On this page">
+      <span class="label">On this page</span>
+      <a href="#what-training-does">What Training does</a>
+      <a href="#how-it-works">How the calculator works</a>
+      <a href="#fodder">Where to get fodder</a>
+      <a href="#transfer">Training Transfer</a>
+      <a href="#tips">Quick tips</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <article class="prose">
+      <span class="label">Training guide</span>
+      <h2>FC Mobile Training, explained in plain words</h2>
+      <p class="intro">Training makes a player's attributes stronger by feeding other player cards into them. This page shows the exact XP, cards and Coins it takes, so you can plan before you spend anything.</p>
+
+      <h3 id="what-training-does">What Training does</h3>
+      <ul>
+        <li>Training makes a player's attributes better. It does not change OVR. OVR goes up through Rank Up, which is a separate system.</li>
+        <li>You train a player by using other player cards as XP. A card used for training leaves your club, so only use cards you do not need.</li>
+        <li>The highest Training Level is {MAX_TRAINING_LEVEL}. Going from Level 0 to Level {MAX_TRAINING_LEVEL} takes {fmt(maxXp)} XP in total.</li>
+        <li>Each fodder group gives a set amount of XP per card. You can see every value in the table above.</li>
+      </ul>
+
+      <h3 id="how-it-works">How the calculator works</h3>
+      <ol>
+        <li>Choose your player's current Training Level.</li>
+        <li>Choose the level you want to reach.</li>
+        <li>Choose the fodder rating you plan to use.</li>
+        <li>Read the XP needed, the number of cards and the excess XP.</li>
+      </ol>
+      <p>The page subtracts the XP of your current level from the XP of your target level. It then divides the result by the XP of one fodder card and rounds up to a whole card. Excess XP is what is left over in the last card.</p>
+
+      <h3 id="fodder">Where to get fodder</h3>
+      <p>Apart from the transfer market, you can exchange a pack of {PACK_SIZE} Bronze Fodder players (60–69 OVR) for {fmt(PACK_COINS)} Coins. You can do this {DAILY_PACKS} times a day, which is up to {PACK_SIZE * DAILY_PACKS} players a day.</p>
+      <p>For example, taking a player from Level 0 to Level {MAX_TRAINING_LEVEL} with Bronze Fodder at {BRONZE_XP} XP a card needs {fmt(maxBronzeCards)} cards. That is {fmt(maxPacks)} exchange packs, {fmt(maxPackCoins)} Coins and {fmt(maxDays)} days at the daily limit of {DAILY_PACKS} packs.</p>
+
+      <h3 id="transfer">Training Transfer</h3>
+      <p>Training Transfer moves the Training XP of one player to another. It helps when you replace a trained player with a better card and do not want to lose the XP you already put in.</p>
+      <ul>
+        <li>The game keeps {TRANSFER_LOSS_PCT}% of the XP you move. Move 10,000 XP and the target gets 9,000 XP.</li>
+        <li>Each transfer uses Training Transfer Points. The game shows the cost before you confirm, so check it first.</li>
+        <li>Fewer, bigger transfers waste less XP than moving the same XP through several players.</li>
+      </ul>
+      <p>Open the Training Transfer tab at the top of the calculator to see what your target player will get, or to work out how much XP you need to move to reach a goal level.</p>
+
+      <h3 id="tips">Quick tips</h3>
+      <ul>
+        <li>Plan the full route first, then buy or exchange the fodder.</li>
+        <li>Train the players you plan to keep for a long time.</li>
+        <li>Keep valuable cards out of the fodder pile.</li>
+        <li>Check the preview in the game before you confirm.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section class="faq" id="faq">
   <div class="wrap">
     <span class="label">FAQ</span>
     <h2>FC Mobile Training Calculator FAQ</h2>
-    <details open><summary>How much XP do I need?</summary><p>The calculator subtracts the stored cumulative XP of the current level from the target level.</p></details>
-    <details><summary>How are cards calculated?</summary><p>Required XP is divided by the selected fodder XP and rounded up to a whole card.</p></details>
-    <details><summary>What is the highest Training Level?</summary><p>Training goes up to Level {MAX_TRAINING_LEVEL}. Maxing a player from Level 0 takes {fmt(maxXp)} XP in total.</p></details>
+    {faqs.map((f, i) => <details open={i === 0}><summary>{f.q}</summary><p>{f.a}</p></details>)}
+  </div>
+</section>
+
+<section class="page-note">
+  <div class="wrap">
+    <div class="note-card">
+      <p><strong>Last updated:</strong> <time datetime={updatedISO}>{updatedLabel}</time>. The numbers on this page come from the Training data we keep for FC Mobile and can change when EA updates the game.</p>
+      <p>FCMOBILETOOLS is a fan-made site. It is not affiliated with or endorsed by EA SPORTS or Electronic Arts. FC Mobile is a trademark of Electronic Arts Inc.</p>
+      <p class="rel-links"><span>More tools:</span> <a href="/redeem-codes">Redeem codes</a> <a href="/events">Events and resets</a> <a href="/investment-calculator">Investment calculator</a></p>
+    </div>
   </div>
 </section>
 </main>
@@ -159,6 +373,14 @@ const maxXp = TRAINING_LEVELS[MAX_TRAINING_LEVEL];
 <script>
 import { calculateTraining } from '../lib/fcMobileTraining.js';
 import { TRAINING_LEVELS, FODDER, MAX_TRAINING_LEVEL } from '../data/fcMobileTraining.js';
+
+const TRANSFER_LOSS_PCT = 10;
+const BRONZE_XP = 120;
+const PACK_SIZE = 30;
+const PACK_COINS = 1000000;
+const DAILY_PACKS = 20;
+const MAX = MAX_TRAINING_LEVEL;
+const TL = TRAINING_LEVELS;
 
 const page = document.querySelector('.training-page');
 page?.classList.add('js');
@@ -168,11 +390,47 @@ const fmt = (n) => Number(n).toLocaleString();
 const current = $('currentLevel');
 const target = $('targetLevel');
 const fodder = $('fodderId');
-current.value = '0';
-target.value = String(MAX_TRAINING_LEVEL);
-fodder.value = FODDER[FODDER.length - 1].id;
+const txSrc = $('txSrcLevel');
+const txExtra = $('txSrcExtra');
+const txTgt = $('txTgtLevel');
+const rvFrom = $('rvFrom');
+const rvTo = $('rvTo');
 
-/* Animated number counter: tweens from the last shown value to the new one */
+/* Defaults */
+current.value = '0';
+target.value = String(MAX);
+fodder.value = FODDER[FODDER.length - 1].id;
+txSrc.value = '10';
+txExtra.value = '0';
+txTgt.value = '0';
+rvFrom.value = '0';
+rvTo.value = String(Math.min(20, MAX));
+
+/* Shareable link: read values from the address bar */
+const params = new URLSearchParams(location.search);
+const intParam = (key, min, max) => {
+  const v = params.get(key);
+  if (v === null || !/^\d+$/.test(v)) return null;
+  const n = Number(v);
+  return n >= min && n <= max ? n : null;
+};
+const setIf = (el, key, min, max) => { const n = intParam(key, min, max); if (n !== null) el.value = String(n); };
+setIf(current, 'from', 0, MAX);
+setIf(target, 'to', 0, MAX);
+setIf(txSrc, 'sl', 0, MAX);
+setIf(txTgt, 'tl', 0, MAX);
+setIf(rvFrom, 'nf', 0, MAX);
+setIf(rvTo, 'nt', 0, MAX);
+const fParam = params.get('f');
+if (fParam && FODDER.some((x) => String(x.id) === fParam)) fodder.value = fParam;
+const sxParam = intParam('sx', 0, 99999999);
+if (sxParam !== null) txExtra.value = String(sxParam);
+
+let active = params.get('tab') === 'transfer' ? 'transfer' : 'train';
+let touched = false;
+const summaries = { train: '', transfer: '' };
+
+/* Animated number counter */
 const counters = new WeakMap();
 function tween(el, to) {
   to = Number(to);
@@ -198,18 +456,37 @@ function tween(el, to) {
   state.raf = requestAnimationFrame(step);
 }
 
-/* Level ladder: one bar per level, lit across the selected route */
+const levelFromXp = (xp) => {
+  let lv = 0;
+  for (let i = 0; i <= MAX; i++) { if (TL[i] <= xp) lv = i; else break; }
+  return lv;
+};
+
+/* Token image: if the self-hosted copy is missing, use the Cloudinary copy */
+document.querySelectorAll('img[data-fallback]').forEach((img) => {
+  const swap = () => {
+    if (img.dataset.swapped) return;
+    img.dataset.swapped = '1';
+    img.src = img.dataset.fallback;
+  };
+  img.addEventListener('error', swap);
+  if (img.complete && img.naturalWidth === 0) swap();
+});
+
+/* Level ladder */
 const ladder = $('ladder');
-ladder.innerHTML = TRAINING_LEVELS.map((_, i) => `<i style="--h:${Math.round(26 + (i / MAX_TRAINING_LEVEL) * 74)}%"></i>`).join('');
+ladder.innerHTML = TL.map((_, i) => `<i style="--h:${Math.round(26 + (i / MAX) * 74)}%"></i>`).join('');
 const bars = Array.from(ladder.children);
 const rows = Array.from(document.querySelectorAll('[data-level-row]'));
 const fodderItems = Array.from(document.querySelectorAll('[data-fodder]'));
 
+/* ---------------------------------------------------------- Training XP */
 function render() {
   const d = calculateTraining({ currentLevel: current.value, targetLevel: target.value, fodderId: fodder.value });
   if (!d.valid) {
     $('error').hidden = false;
     $('error').textContent = d.error;
+    summaries.train = '';
     return;
   }
   $('error').hidden = true;
@@ -223,11 +500,24 @@ function render() {
   $('summaryTo').textContent = `Level ${d.targetLevel}`;
   $('from').textContent = `Level ${d.currentLevel}`;
   $('to').textContent = `Level ${d.targetLevel}`;
-  const pct = Math.round(d.targetLevel / MAX_TRAINING_LEVEL * 100);
+  const pct = Math.round(d.targetLevel / MAX * 100);
   $('pct').textContent = `${pct}%`;
   $('gaugePct').textContent = `${pct}%`;
   $('fill').style.width = `${pct}%`;
   $('gaugeArc').style.strokeDashoffset = String(100 - pct);
+
+  /* Bronze Fodder exchange planner */
+  const bronzeCards = Math.ceil(d.requiredXP / BRONZE_XP);
+  const packs = Math.ceil(bronzeCards / PACK_SIZE);
+  tween($('bzCards'), bronzeCards);
+  tween($('bzPacks'), packs);
+  tween($('bzCoins'), packs * PACK_COINS);
+  tween($('bzDays'), Math.ceil(packs / DAILY_PACKS));
+  $('bzNote').textContent = packs
+    ? `The last pack leaves ${fmt(packs * PACK_SIZE - bronzeCards)} spare Bronze players.`
+    : 'This route needs no XP.';
+
+  summaries.train = `FC Mobile Training: Level ${d.currentLevel} to Level ${d.targetLevel} with ${d.fodder.label} needs ${fmt(d.requiredXP)} XP (${fmt(d.cards)} cards). With Bronze Fodder that is ${fmt(packs)} exchange packs and ${fmt(packs * PACK_COINS)} Coins.\nhttps://fcmobiletools.online/training-calculator/`;
 
   bars.forEach((bar, i) => {
     const on = i >= d.currentLevel && i <= d.targetLevel;
@@ -242,29 +532,189 @@ function render() {
   fodderItems.forEach((item) => item.classList.toggle('sel', item.dataset.fodder === String(fodder.value)));
 
   const steps = [];
-  for (let i = d.currentLevel; i < d.targetLevel; i++) steps.push(TRAINING_LEVELS[i + 1] - TRAINING_LEVELS[i]);
+  for (let i = d.currentLevel; i < d.targetLevel; i++) steps.push(TL[i + 1] - TL[i]);
   const biggest = Math.max(1, ...steps);
   const html = [];
   steps.forEach((step, n) => {
     const i = d.currentLevel + n;
     const w = Math.max(4, Math.round(step / biggest * 100));
-    html.push(`<details class="level-card" style="--i:${Math.min(n, 14)}" ${n === 0 ? 'open' : ''}><summary><span class="lc-title"><b>Level ${i} to ${i + 1}</b><small>${fmt(step)} XP added</small><em class="lc-bar"><i style="width:${w}%"></i></em></span><strong>${fmt(TRAINING_LEVELS[i + 1])} XP</strong><i class="lc-plus">+</i></summary><div class="level-detail"><span>Required for this step</span><b>${fmt(step)} XP</b><span>Cumulative XP</span><b>${fmt(TRAINING_LEVELS[i + 1])} XP</b></div></details>`);
+    html.push(`<details class="level-card" style="--i:${Math.min(n, 14)}" ${n === 0 ? 'open' : ''}><summary><span class="lc-title"><b>Level ${i} to ${i + 1}</b><small>${fmt(step)} XP added</small><em class="lc-bar"><i style="width:${w}%"></i></em></span><strong>${fmt(TL[i + 1])} XP</strong><i class="lc-plus">+</i></summary><div class="level-detail"><span>Required for this step</span><b>${fmt(step)} XP</b><span>Cumulative XP</span><b>${fmt(TL[i + 1])} XP</b></div></details>`);
   });
   $('breakdown').innerHTML = html.join('') || '<div class="empty-breakdown">No XP required. Pick a target level above your current level.</div>';
 }
 
-[current, target, fodder].forEach((e) => e.addEventListener('change', render));
+/* ---------------------------------------------------- Training Transfer */
+let sxClamped = 0;
+const lossPct = TRANSFER_LOSS_PCT;
+
+function renderTransfer() {
+  const sl = Number(txSrc.value);
+  const tl = Number(txTgt.value);
+  const maxExtra = sl < MAX ? TL[sl + 1] - TL[sl] - 1 : 0;
+  txExtra.max = String(maxExtra);
+  $('txExtraHint').textContent = maxExtra ? `0 to ${fmt(maxExtra)} XP` : 'Max level';
+  let extra = Math.floor(Number(txExtra.value));
+  if (!Number.isFinite(extra) || extra < 0) extra = 0;
+  if (extra > maxExtra) extra = maxExtra;
+  sxClamped = extra;
+
+  const moved = TL[sl] + extra;
+  const got = Math.floor(moved * (100 - lossPct) / 100);
+  const fee = moved - got;
+  const total = TL[tl] + got;
+  const capped = Math.min(total, TL[MAX]);
+  const over = total - capped;
+  const lv = levelFromXp(capped);
+  const into = capped - TL[lv];
+  const step = lv < MAX ? TL[lv + 1] - TL[lv] : 0;
+
+  tween($('txGet'), got);
+  tween($('txMoved'), moved);
+  tween($('txLoss'), fee);
+  $('txLevel').textContent = `Level ${lv}`;
+  $('txFill').style.width = `${step ? Math.round(into / step * 100) : 100}%`;
+
+  let note;
+  if (moved === 0) {
+    note = 'The source player has no XP to move.';
+  } else {
+    const gained = lv - tl;
+    note = `Target goes from Level ${tl} to Level ${lv}${gained > 0 ? ` (+${gained})` : ''}. ` +
+      (step ? `It sits ${fmt(into)} of ${fmt(step)} XP into the next level.` : 'It has reached the max level.');
+    if (over > 0) note += ` ${fmt(over)} XP would go past Level ${MAX}.`;
+  }
+  $('txNote').textContent = note;
+
+  summaries.transfer = `FC Mobile Training Transfer: moving ${fmt(moved)} XP (Level ${sl}${extra ? ` + ${fmt(extra)} XP` : ''}) gives ${fmt(got)} XP after the ${lossPct}% fee. A Level ${tl} target ends at Level ${lv}.\nhttps://fcmobiletools.online/training-calculator/?tab=transfer`;
+}
+
+function renderReverse() {
+  const a = Number(rvFrom.value);
+  const b = Number(rvTo.value);
+  if (b <= a) {
+    ['rvMove', 'rvNeed', 'rvFee'].forEach((id) => tween($(id), 0));
+    $('rvSrc').textContent = 'None';
+    $('rvNote').textContent = 'Pick a goal level above the current level.';
+    return;
+  }
+  const need = TL[b] - TL[a];
+  const move = Math.ceil(need * 100 / (100 - lossPct));
+  const fee = move - need;
+  tween($('rvMove'), move);
+  tween($('rvNeed'), need);
+  tween($('rvFee'), fee);
+  if (move > TL[MAX]) {
+    $('rvSrc').textContent = `Above Level ${MAX}`;
+    $('rvNote').textContent = `You need ${fmt(move)} XP, which is more than one Level ${MAX} player holds (${fmt(TL[MAX])} XP). Split it across two or more transfers.`;
+  } else {
+    const lv = levelFromXp(move);
+    const rem = move - TL[lv];
+    $('rvSrc').textContent = rem ? `Level ${lv} + ${fmt(rem)}` : `Level ${lv}`;
+    $('rvNote').textContent = `A source player with at least ${fmt(move)} XP covers it. ${fmt(fee)} XP is lost to the fee.`;
+  }
+}
+
+/* -------------------------------------------------------------- Tabs */
+const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+const ink = document.querySelector('.tab-ink');
+function moveInk() {
+  const t = tabs.find((x) => x.getAttribute('aria-selected') === 'true');
+  if (!t || !ink) return;
+  ink.style.width = `${t.offsetWidth}px`;
+  ink.style.transform = `translateX(${t.offsetLeft}px)`;
+}
+function setTab(name, focus) {
+  active = name;
+  tabs.forEach((t) => {
+    const on = t.dataset.tab === name;
+    t.setAttribute('aria-selected', String(on));
+    t.tabIndex = on ? 0 : -1;
+    if (on && focus) t.focus();
+  });
+  $('panel-train').hidden = name !== 'train';
+  $('panel-transfer').hidden = name !== 'transfer';
+  moveInk();
+  writeUrl();
+}
+tabs.forEach((t, i) => {
+  t.addEventListener('click', () => { touched = true; setTab(t.dataset.tab, false); });
+  t.addEventListener('keydown', (e) => {
+    let n = -1;
+    if (e.key === 'ArrowRight') n = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') n = 0;
+    else if (e.key === 'End') n = tabs.length - 1;
+    if (n < 0) return;
+    e.preventDefault();
+    touched = true;
+    setTab(tabs[n].dataset.tab, true);
+  });
+});
+window.addEventListener('resize', moveInk);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInk);
+
+/* ------------------------------------------------- Link + copy buttons */
+function buildParams() {
+  const p = new URLSearchParams();
+  p.set('tab', active);
+  p.set('from', current.value);
+  p.set('to', target.value);
+  p.set('f', fodder.value);
+  p.set('sl', txSrc.value);
+  p.set('sx', String(sxClamped));
+  p.set('tl', txTgt.value);
+  p.set('nf', rvFrom.value);
+  p.set('nt', rvTo.value);
+  return p;
+}
+function writeUrl() {
+  if (!touched) return;
+  try { history.replaceState(null, '', `${location.pathname}?${buildParams().toString()}`); } catch (e) { /* ignore */ }
+}
+async function copyText(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (err) { /* ignore */ }
+    ta.remove();
+  }
+  const old = btn.textContent;
+  btn.textContent = 'Copied';
+  btn.classList.add('ok');
+  setTimeout(() => { btn.textContent = old; btn.classList.remove('ok'); }, 1600);
+}
+$('copyLink').addEventListener('click', (e) => {
+  copyText(`${location.origin}${location.pathname}?${buildParams().toString()}`, e.currentTarget);
+});
+$('copyResult').addEventListener('click', (e) => {
+  const text = summaries[active];
+  if (text) copyText(text, e.currentTarget);
+});
+
+/* -------------------------------------------------------- Wiring */
+const onTrain = () => { touched = true; render(); writeUrl(); };
+const onTransfer = () => { touched = true; renderTransfer(); renderReverse(); writeUrl(); };
+[current, target, fodder].forEach((e) => e.addEventListener('change', onTrain));
+[txSrc, txTgt, rvFrom, rvTo].forEach((e) => e.addEventListener('change', onTransfer));
+txExtra.addEventListener('input', onTransfer);
+txExtra.addEventListener('change', () => { txExtra.value = String(sxClamped); onTransfer(); });
 
 document.querySelectorAll('[data-preset]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const p = btn.dataset.preset;
-    if (p === 'next') target.value = String(Math.min(MAX_TRAINING_LEVEL, Number(current.value) + 1));
+    if (p === 'next') target.value = String(Math.min(MAX, Number(current.value) + 1));
     else { current.value = '0'; target.value = p; }
-    render();
+    onTrain();
   });
 });
 
-/* Light follows the pointer on the result card */
+/* Light follows the pointer on result cards */
 page?.addEventListener('pointermove', (e) => {
   const card = e.target.closest ? e.target.closest('[data-spot]') : null;
   if (!card) return;
@@ -291,6 +741,9 @@ if (mark && !reduce && window.matchMedia('(hover: hover)').matches) {
 }
 
 render();
+renderTransfer();
+renderReverse();
+setTab(active, false);
 </script>
 
 <style is:global>
@@ -511,6 +964,122 @@ render();
 .training-page .faq summary::after{content:"+";color:#6c8ea2;font:400 24px/1 var(--sans);transition:transform .25s,color .25s}
 .training-page .faq details[open] summary::after{transform:rotate(45deg);color:var(--cyan)}
 .training-page .faq p{max-width:720px;margin:0;padding:0 0 22px;color:#86a3b5;font:400 15px/1.7 var(--sans)}
+
+/* Tabs and actions */
+.training-page .shell-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:18px 24px;border-bottom:1px solid var(--line)}
+.training-page .tabs{position:relative;display:inline-flex;padding:4px;border:1px solid var(--line);border-radius:999px;background:#071725}
+.training-page .tab-ink{position:absolute;left:0;top:4px;bottom:4px;width:0;border:1px solid rgba(76,201,255,.34);border-radius:999px;background:linear-gradient(135deg,#14425f,#0d2c44);box-shadow:0 0 24px rgba(76,201,255,.16);transition:transform .5s cubic-bezier(.3,.8,.2,1),width .5s cubic-bezier(.3,.8,.2,1)}
+.training-page .tab{position:relative;z-index:1;display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:0 20px;border:0;border-radius:999px;background:transparent;color:var(--muted);font:600 14px/1 var(--sans);cursor:pointer;transition:color .25s}
+.training-page .tab:hover{color:#dff5ff}
+.training-page .tab[aria-selected="true"]{color:#fff}
+.training-page .tab:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.training-page .tab-token{width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(76,201,255,.4))}
+.training-page .bar-actions{display:flex;gap:8px}
+.training-page .ghost{min-height:38px;padding:0 15px;border:1px solid var(--line-soft);border-radius:999px;background:rgba(9,29,47,.8);color:#bfe6f6;font:600 13px/1 var(--sans);cursor:pointer;transition:border-color .2s,background .2s,color .2s,transform .15s}
+.training-page .ghost:hover{border-color:rgba(76,201,255,.5);background:rgba(76,201,255,.1);color:#fff}
+.training-page .ghost:active{transform:scale(.96)}
+.training-page .ghost.ok{border-color:rgba(110,230,170,.6);color:#9df0c6}
+.training-page .ghost:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.training-page .panel:not([hidden]){animation:panelIn .55s cubic-bezier(.2,.75,.2,1) both}
+@keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* Bronze Fodder planner */
+.training-page .bronze{margin:14px 30px 0;padding:22px;border:1px solid rgba(76,201,255,.16);border-radius:24px;background:radial-gradient(480px 200px at 100% 0%,rgba(76,201,255,.06),transparent 65%),linear-gradient(150deg,#091c2e,#061522)}
+.training-page .bz-head h3{margin:10px 0 8px;color:#e8f7fd;font:700 24px/1.05 var(--display);letter-spacing:-.04em}
+.training-page .bz-head p{max-width:680px;margin:0;color:#7f9db0;font:400 14px/1.6 var(--sans)}
+.training-page .bz-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
+.training-page .bz-grid article{padding:16px;border:1px solid var(--line-soft);border-radius:18px;background:#071725;transition:border-color .2s,transform .2s}
+.training-page .bz-grid article:hover{border-color:rgba(76,201,255,.3);transform:translateY(-2px)}
+.training-page .bz-grid small{display:block;color:#79a9bc;font:500 12px/1.3 var(--sans)}
+.training-page .bz-grid b{display:block;margin:10px 0 6px;color:#edfaff;font:700 clamp(22px,2.6vw,30px)/1 var(--display);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.training-page .bz-grid span{color:#5f8196;font:400 12px/1 var(--sans)}
+.training-page .bz-note{margin:14px 0 0;color:#7f9db0;font:400 13px/1.5 var(--sans)}
+
+/* Training Transfer */
+.training-page .tx-intro .intro-main{display:flex;align-items:center;gap:22px}
+.training-page .tx-intro p{max-width:640px}
+.training-page .token-wrap{position:relative;flex:none;display:grid;place-items:center;width:104px;height:104px}
+.training-page .token-wrap::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(76,201,255,0),rgba(76,201,255,.55),rgba(76,201,255,0) 60%);-webkit-mask:radial-gradient(circle,transparent 60%,#000 62%);mask:radial-gradient(circle,transparent 60%,#000 62%);animation:spin 6s linear infinite}
+.training-page .token-wrap::after{content:"";position:absolute;inset:14px;border-radius:50%;background:radial-gradient(circle,rgba(76,201,255,.18),transparent 70%)}
+.training-page .token{position:relative;z-index:1;width:82px;height:82px;object-fit:contain;filter:drop-shadow(0 10px 22px rgba(76,201,255,.38));animation:floaty 5s ease-in-out infinite}
+.training-page .tx-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:20px 30px 6px}
+.training-page .tx-card{padding:22px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(150deg,#0a2236,#071a2b)}
+.training-page .tx-card h3{margin:0 0 6px;color:#e8f7fd;font:700 21px/1.1 var(--display);letter-spacing:-.04em}
+.training-page .tx-sub{margin:0 0 16px;color:#7f9db0;font:400 13px/1.55 var(--sans)}
+.training-page .fields.fields-3,.training-page .fields.fields-2{padding:0;gap:10px}
+.training-page .fields.fields-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.training-page .field input{width:100%;min-height:50px;padding:0 14px;border:1px solid #21445a;border-radius:13px;background:#061522;color:var(--text);font:600 14px/1 var(--sans);transition:border-color .2s,box-shadow .2s;-moz-appearance:textfield}
+.training-page .field input::-webkit-outer-spin-button,.training-page .field input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.training-page .field input:hover{border-color:#2b607b}
+.training-page .field input:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 4px rgba(76,201,255,.1)}
+.training-page .field .hint{margin-top:2px;color:var(--dim);font:400 11px/1.2 var(--sans)}
+.training-page .tx-result{position:relative;margin-top:14px;padding:22px;border:1px solid var(--line);border-radius:20px;background:#071725;overflow:hidden}
+.training-page .tx-main{position:relative}
+.training-page .tx-main small,.training-page .tx-meta small{display:block;color:#79a9bc;font:500 12px/1.2 var(--sans)}
+.training-page .tx-main strong{display:block;margin:10px 0 6px;color:var(--text);font:700 clamp(40px,4.6vw,58px)/.95 var(--display);letter-spacing:-.06em;font-variant-numeric:tabular-nums;text-shadow:0 0 36px rgba(76,201,255,.14)}
+.training-page .tx-main span{color:var(--muted);font:400 13px/1.4 var(--sans)}
+.training-page .tx-meta{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0 16px}
+.training-page .tx-meta div{padding:12px;border:1px solid var(--line-soft);border-radius:14px;background:#081a2a}
+.training-page .tx-meta b{display:block;margin-top:8px;color:#e6f6fb;font:700 16px/1.15 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.training-page .tx-note{position:relative;margin:14px 0 0;color:#86a3b5;font:400 13px/1.6 var(--sans)}
+.training-page .tx-foot{margin:0;padding:12px 30px 30px;color:#6c8ea2;font:400 13px/1.6 var(--sans)}
+
+/* Guide article */
+.training-page .guide-article{position:relative;z-index:1;padding:80px 0 40px}
+.training-page .article-grid{display:grid;grid-template-columns:210px minmax(0,1fr);gap:64px;align-items:start}
+.training-page .toc{position:sticky;top:110px;display:grid;gap:2px}
+.training-page .toc .label{margin-bottom:10px}
+.training-page .toc a{padding:8px 0 8px 14px;border-left:1px solid var(--line);color:var(--muted);font:500 14px/1.3 var(--sans);text-decoration:none;transition:color .2s,border-color .2s}
+.training-page .toc a:hover{color:#fff;border-left-color:var(--cyan)}
+.training-page .prose{max-width:720px}
+.training-page .prose h2{margin:12px 0 16px;color:var(--text);font:700 clamp(28px,3.6vw,40px)/1.08 var(--display);letter-spacing:-.045em}
+.training-page .prose h3{margin:44px 0 14px;color:#e8f7fd;font:700 24px/1.15 var(--display);letter-spacing:-.035em;scroll-margin-top:100px}
+.training-page .prose p,.training-page .prose li{color:#9db6c5;font:400 16px/1.75 var(--sans)}
+.training-page .prose p{margin:0 0 16px}
+.training-page .prose .intro{color:#c3d8e4;font-size:18px;line-height:1.7}
+.training-page .prose ul,.training-page .prose ol{margin:0 0 18px;padding-left:22px}
+.training-page .prose li{margin:0 0 8px;padding-left:4px}
+.training-page .prose li::marker{color:var(--cyan)}
+.training-page .faq{scroll-margin-top:90px}
+.training-page .faq .wrap{max-width:820px}
+
+/* Page note */
+.training-page .page-note{position:relative;z-index:1;padding:0 0 84px}
+.training-page .note-card{max-width:820px;margin:0 auto;padding:24px 26px;border:1px solid var(--line);border-radius:20px;background:#071725}
+.training-page .note-card p{margin:0 0 12px;color:#86a3b5;font:400 14px/1.7 var(--sans)}
+.training-page .note-card p:last-child{margin:0}
+.training-page .note-card strong{color:#cfe8f4;font-weight:600}
+.training-page .rel-links{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.training-page .rel-links a{color:var(--cyan);text-decoration:none;font-weight:600}
+.training-page .rel-links a:hover{text-decoration:underline}
+
+@media(max-width:980px){
+  .training-page .tx-grid{grid-template-columns:1fr}
+  .training-page .bz-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .training-page .article-grid{grid-template-columns:1fr;gap:28px}
+  .training-page .toc{position:static;display:flex;flex-wrap:wrap;gap:8px}
+  .training-page .toc .label{width:100%;margin-bottom:2px}
+  .training-page .toc a{padding:8px 12px;border:1px solid var(--line);border-radius:999px}
+}
+@media(max-width:760px){
+  .training-page .shell-bar{padding:16px 20px}
+  .training-page .tabs{width:100%}
+  .training-page .tab{flex:1;justify-content:center;padding:0 10px}
+  .training-page .bar-actions{width:100%}
+  .training-page .bar-actions .ghost{flex:1}
+  .training-page .bronze{margin-inline:20px;padding:18px}
+  .training-page .tx-intro .intro-main{flex-direction:column;align-items:flex-start;gap:14px}
+  .training-page .tx-grid{padding:16px 20px 4px}
+  .training-page .tx-card{padding:18px}
+  .training-page .fields.fields-3{grid-template-columns:1fr}
+  .training-page .tx-foot{padding:12px 20px 24px}
+  .training-page .guide-article{padding:56px 0 24px}
+}
+@media(max-width:520px){
+  .training-page .tx-meta{grid-template-columns:1fr}
+  .training-page .fields.fields-2{grid-template-columns:1fr}
+  .training-page .bz-grid{gap:8px}
+}
 
 /* Responsive */
 @media(max-width:980px){
