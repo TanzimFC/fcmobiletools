@@ -256,7 +256,17 @@ const boot = league ? JSON.stringify({
           else toast('The owner has not shared a league ID yet.', true);
           t.disabled = false;
         } else if (t.id === 'lpSave') {
-          t.disabled = true; const r = await api('/api/leagues/listings/' + L.id + '/save', { method: 'POST', body: '{}' }); me.saved = r.saved; render(); toast(r.saved ? 'Saved.' : 'Removed from saved.');
+          if (!me?.saved && Number(me?.savedCount || 0) >= 3) {
+            toast('You can save up to 3 leagues. Remove a bookmark first.', true);
+            return;
+          }
+          t.disabled = true;
+          try {
+            const r = await api('/api/leagues/listings/' + L.id + '/save', { method: 'POST', body: '{}' });
+            me = { ...(me || {}), saved: r.saved, savedCount: Number(r.savedCount ?? Math.max(0, Number(me?.savedCount || 0) + (r.saved ? 1 : -1))) };
+            render();
+            toast(r.saved ? 'Saved to bookmarks.' : 'Removed from saved.');
+          } catch (error) { t.disabled = false; throw error; }
         } else if (t.id === 'lpConfirm') {
           t.disabled = true; await api('/api/leagues/listings/' + L.id + '/active', { method: 'POST', body: '{}' }); me.confirmedByMe = true; render(); toast('Thanks. That helps other players.');
         } else if (t.id === 'lpCrew') {

@@ -748,10 +748,11 @@ async function leagueMe(request, env, authContext, url, supabaseRest, json) {
   const { account, user } = authContext;
   const q = (v) => encodeURIComponent(v);
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-  const [profile, listing, saved, confirmed, app, crew, crewPack] = await Promise.all([
+  const [profile, listing, saved, savedCountRows, confirmed, app, crew, crewPack] = await Promise.all([
     loadLeagueProfile(env, account.id, supabaseRest).catch(() => null),
     readListings(env, supabaseRest, '&id=eq.' + q(id) + '&limit=1').then(r => r.rows[0] || null).catch(() => null),
     supabaseRest(env, 'league_saves?account_id=eq.' + q(account.id) + '&listing_id=eq.' + q(id) + '&select=listing_id&limit=1').catch(() => []),
+    supabaseRest(env, 'league_saves?account_id=eq.' + q(account.id) + '&select=listing_id&limit=4').catch(() => []),
     supabaseRest(env, 'league_active_confirmations?account_id=eq.' + q(account.id) + '&listing_id=eq.' + q(id) + '&created_at=gte.' + q(since) + '&select=id&limit=1').catch(() => []),
     supabaseRest(env, 'league_applications?applicant_account_id=eq.' + q(account.id) + '&listing_id=eq.' + q(id) + '&select=id,status,created_at&limit=1').catch(() => []),
     supabaseRest(env, 'league_crew?account_id=eq.' + q(account.id) + '&listing_id=eq.' + q(id) + '&select=status&limit=1').catch(() => []),
@@ -767,7 +768,7 @@ async function leagueMe(request, env, authContext, url, supabaseRest, json) {
   return json({
     account: { id: account.id, username: account.username, displayName: account.display_name || account.username, emailConfirmed: Boolean(user.email_confirmed_at) },
     profile, suggested, isMine,
-    saved: Boolean(saved?.length), confirmedByMe: Boolean(confirmed?.length),
+    saved: Boolean(saved?.length), savedCount: (savedCountRows || []).length, confirmedByMe: Boolean(confirmed?.length),
     application: app?.[0] ? { id: app[0].id, status: app[0].status, createdAt: app[0].created_at } : null,
     crewStatus,
     canKickoff: isMine || crewStatus === 'approved',
