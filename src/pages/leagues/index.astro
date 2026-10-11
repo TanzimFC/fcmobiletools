@@ -409,9 +409,13 @@ const schema = [
     if (!state.signedIn) { location.href = signInUrl(); return; }
     const r = state.leagues.find(x => x.id === id); if (!r || r.isMine) return;
     if (!(await ensureProfile('Add your OVR once to save leagues and see matches.'))) return;
+    if (!r.saved && state.savedCount >= 3) { toast('You can save up to 3 leagues. Remove a bookmark first.', true); return; }
     const prev = r.saved; r.saved = !prev; refresh();
-    try { const res = await api('/api/leagues/listings/' + encodeURIComponent(id) + '/save', { method: 'POST', body: '{}' }); r.saved = res.saved; refresh(); toast(r.saved ? 'Saved.' : 'Removed from saved.'); }
-    catch (e) { r.saved = prev; refresh(); toast(e.message, true); }
+    try {
+      const res = await api('/api/leagues/listings/' + encodeURIComponent(id) + '/save', { method: 'POST', body: '{}' });
+      r.saved = res.saved; state.savedCount = Number(res.savedCount ?? Math.max(0, state.savedCount + (r.saved ? 1 : -1)));
+      refresh(); toast(r.saved ? 'Saved to bookmarks.' : 'Removed from saved.');
+    } catch (e) { r.saved = prev; refresh(); toast(e.message, true); }
   }
   async function doKickoff(id, btn) {
     btn && (btn.disabled = true);
@@ -435,15 +439,17 @@ const schema = [
       return;
     }
     const nextAt = kickCooling(own);
-    const note = own.status !== 'approved' ? '<div class="lg-callout red"><strong>This league is hidden</strong>' + esc(own.moderationNote || 'The team paused this listing. Contact support if you think this is a mistake.') + '</div>' : '';
     const live = own.status === 'approved';
+    const note = !live ? '<div class="lg-callout red"><strong>' + (own.status === 'paused' ? 'League suspended' : own.status === 'rejected' ? 'Listing rejected' : 'This league is hidden') + '</strong>' + esc(own.moderationNote || (own.status === 'rejected' ? 'You can edit the listing and publish it again.' : 'Review the note below and contact support if you think this is a mistake.')) +
+      (own.status === 'paused' ? (own.appealStatus === 'open' ? '<p>Your suspension appeal is waiting for review.</p>' : '<div class="lg-actions"><button class="lg-btn lg-btn-outline lg-btn-sm" type="button" data-appeal-listing="' + esc(own.id) + '">Appeal suspension</button><button class="lg-info" type="button" data-info="appeal" aria-label="About suspension appeals">i</button></div>') : '') +
+      (own.appealStatus === 'denied' ? '<p>Your previous appeal was declined. Contact the moderation team for next steps.</p>' : '') + '</div>' : '';
     const controls = '<div class="lg-box"><h3>Quick controls</h3>' +
       '<div class="lg-ctrl"><div><b>Open spots ' + infoBtn('spots') + '</b><small>Players you can still take.</small></div><div class="lg-stepper"><button class="lg-icon-btn" data-spots="-1" type="button" aria-label="Fewer spots">−</button><output>' + own.openSpots + '</output><button class="lg-icon-btn" data-spots="1" type="button" aria-label="More spots">+</button></div></div>' +
       '<div class="lg-ctrl"><div><b>Open for new members</b><small>Turn off to hide the league from the board.</small></div><button class="lg-toggle" id="lgRecruitToggle" type="button" role="switch" aria-checked="' + own.recruitingOpen + '" aria-label="Open for new members"></button></div>' +
       (live ? '<div class="lg-ctrl"><div><b>Kickoff ' + infoBtn('kickoff') + '</b><small>' + (nextAt ? 'Next Kickoff in <span class="lg-cd" data-until="' + nextAt + '">' + clock(nextAt - Date.now()) + '</span>' : 'Move your league to the top for 6 hours.') + '</small></div><button class="lg-btn lg-btn-primary lg-btn-sm" data-kick="' + esc(own.id) + '" type="button"' + (nextAt || !own.recruitingOpen ? ' disabled' : '') + '>↗ Kickoff</button></div>' : '') + '</div>';
     el.innerHTML = head + '<div class="lg-owner-grid"><div>' +
       '<div class="lg-box"><div class="lg-owner-row" style="margin-bottom:12px">' + crest(own.logoUrl, own.name, 'lg-crest') + '<div><h3 style="margin:0">' + esc(own.name) + '</h3><div style="margin-top:6px">' + trustBadge(own) + '</div></div></div>' + note +
-        '<div class="lg-actions" style="margin-top:0"><a class="lg-btn lg-btn-outline" href="' + leagueHref(own) + '">Open league page</a><button class="lg-btn lg-btn-outline" data-edit-listing type="button">Edit details</button><button class="lg-btn lg-btn-quiet" data-copy-link="' + esc(leagueHref(own)) + '" type="button">Copy link</button></div></div>' +
+        '<div class="lg-actions" style="margin-top:0"><a class="lg-btn lg-btn-outline" href="' + leagueHref(own) + '">Open league page</a><button class="lg-btn lg-btn-outline" data-edit-listing type="button">' + (own.status === 'rejected' ? 'Edit & republish' : 'Edit details') + '</button><button class="lg-btn lg-btn-quiet" data-copy-link="' + esc(leagueHref(own)) + '" type="button">Copy link</button></div></div>' +
       controls + '<div class="lg-box" id="lgAppsBox"><h3>Applications</h3><p class="lg-box-sub">Loading…</p></div>' + ownerExtras(own, live) +
       '</div><div><div class="lg-preview-label">How players see you</div>' + leagueCard({ ...own, isMine: true, saved: false }, { preview: true }) + '</div></div>';
     if (live) loadOwnerApps();
@@ -478,22 +484,15 @@ const schema = [
     catch (e) { toast(e.message, true); renderOwner(); }
   }
 
-  // crew + tournament log (owner)
-  const todayUtc = () => new Date().toISOString().slice(0, 10);
+  // Kickoff crew management. Tournament log entries are no longer part of the listing workflow.
   function ownerExtras(own, live) {
     if (!live || !state.crewReady) return '';
     const pending = state.ownerCrew.filter(m => m.status === 'pending'), members = state.ownerCrew.filter(m => m.status === 'approved');
     const row = (m, btns) => '<div class="lg-crew-row">' + crest(m.avatarUrl, m.displayName, 'lg-avatar') + '<div class="lg-crew-id"><b>' + esc(m.inGameUsername || m.displayName) + '</b><small>' + (m.ovr ? 'OVR ' + fmt(m.ovr) : '') + '</small></div><div class="lg-crew-btns">' + btns + '</div></div>';
     const b = (a, acct, label, cls) => '<button class="lg-btn ' + cls + ' lg-btn-sm" type="button" data-crew-decide="' + a + '" data-account="' + esc(acct) + '">' + label + '</button>';
-    const crew = '<div class="lg-box"><h3>Kickoff crew ' + infoBtn('kickoff') + '</h3><p class="lg-box-sub">Approve real members so they can Kickoff the league too.</p>' +
+    return '<div class="lg-box"><h3>Kickoff crew ' + infoBtn('kickoff') + '</h3><p class="lg-box-sub">Approve real members so they can Kickoff the league too.</p>' +
       (pending.length ? '<div class="lg-crew-list"><h5>Requests · ' + pending.length + '</h5>' + pending.map(m => row(m, b('approve', m.accountId, 'Approve', 'lg-btn-primary') + b('decline', m.accountId, 'Decline', 'lg-btn-quiet'))).join('') + '</div>' : '') +
       '<div class="lg-crew-list"><h5>Crew · ' + members.length + '</h5>' + (members.length ? members.map(m => row(m, b('remove', m.accountId, 'Remove', 'lg-btn-outline'))).join('') : '<p class="lg-note">No crew yet.</p>') + '</div></div>';
-    const done = (own.matchdays14 || []).includes(todayUtc());
-    const sizes = own.tournamentSizes?.length ? own.tournamentSizes : SIZES;
-    const days = Array.from({ length: 14 }, (_, i) => { const d = new Date(Date.now() - (13 - i) * 864e5).toISOString().slice(0, 10); return '<i class="' + ((own.matchdays14 || []).includes(d) ? 'on' : '') + '" title="' + d + '"></i>'; }).join('');
-    const md = '<div class="lg-box"><h3>Tournament log</h3><p class="lg-box-sub">Log the tournament you ran today so players see you are active.</p><div class="lg-days">' + days + '</div>' +
-      '<div class="lg-ctrl"><div><b>' + (own.matchdays7d || 0) + ' this week</b><small>' + (done ? 'Today is logged.' : 'One entry per day (UTC).') + '</small></div><div class="lg-crew-btns"><select id="lgMatchdaySize" class="lg-select" aria-label="Tournament size">' + sizes.map(z => '<option>' + esc(z) + '</option>').join('') + '</select><button class="lg-btn lg-btn-primary lg-btn-sm" id="lgMatchdayLog" type="button">' + (done ? 'Update' : 'Log today') + '</button></div></div></div>';
-    return crew + md;
   }
   async function postOwner(path, body, okMsg, btn) {
     const own = state.ownListings[0]; if (!own) return; btn && (btn.disabled = true);
@@ -671,7 +670,7 @@ const schema = [
       const ap = t.closest('[data-app]'); if (ap) { decideApp(ap.dataset.app, ap.dataset.status, ap); return; }
       if (t.closest('#lgAppsRetry')) { loadOwnerApps(); return; }
       const cd = t.closest('[data-crew-decide]'); if (cd) { postOwner('crew-decide', { accountId: cd.dataset.account, action: cd.dataset.crewDecide }, 'Updated.', cd); return; }
-      if (t.closest('#lgMatchdayLog')) { postOwner('matchday', { size: $('#lgMatchdaySize').value }, 'Tournament logged.', t.closest('#lgMatchdayLog')); return; }
+
     });
     setInterval(() => {
       const nodes = $$('[data-until]'); let expired = false;
