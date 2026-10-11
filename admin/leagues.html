@@ -201,7 +201,9 @@ const TABS = {
   approved: 'Live',
   rejected: 'Rejected',
   paused: 'Suspended',
-  removed: 'Removed'
+  removed: 'Removed',
+  reports: 'Reports',
+  appeals: 'Suspension appeals'
 };
 let tab = 'unreviewed';
 let query = '';
@@ -284,7 +286,7 @@ async function stats() {
   const tabs = $('#tabs');
   tabs.innerHTML = Object.entries(TABS).map(([key, label]) =>
     '<button class="tgl" data-t="' + esc(key) + '" aria-pressed="' + String(tab === key) + '">' +
-    esc(label) + (key === 'unreviewed' && Number(values.unreviewed) ? ' · ' + esc(values.unreviewed) : '') + '</button>'
+    esc(label) + ((key === 'unreviewed' ? Number(values.unreviewed) : key === 'reports' ? Number(values.openReports) : key === 'appeals' ? Number(values.openAppeals) : 0) ? ' · ' + esc(key === 'unreviewed' ? values.unreviewed : key === 'reports' ? values.openReports : values.openAppeals) : '') + '</button>'
   ).join('');
   $$('[data-t]', tabs).forEach((button) => {
     button.addEventListener('click', () => {
@@ -293,6 +295,42 @@ async function stats() {
       list();
     });
   });
+}
+
+function reportCard(report) {
+  const labels = {
+    fake_or_misleading: 'Fake or misleading listing',
+    inactive: 'Inactive league',
+    inappropriate: 'Inappropriate content',
+    spam: 'Spam',
+    other: 'Other'
+  };
+  return '<article class="glass acard"><div class="r1">' + mono(report.listingName, report.logoUrl) +
+    '<div class="grow"><b style="font-size:17px">' + esc(report.listingName || 'Unknown league') + '</b>' +
+    '<div class="hint">Reported by ' + esc(report.reporter || 'Member') + ' · ' + esc(ago(report.createdAt)) + '</div></div>' +
+    '<span class="pill warn">' + esc(report.status || 'open') + '</span></div>' +
+    '<div class="kv"><div><small>Reason</small><b>' + esc(labels[report.reason] || report.reason || 'Other') + '</b></div>' +
+    '<div><small>Current listing status</small><b>' + esc(TABS[report.listingStatus] || report.listingStatus || 'Unknown') + '</b></div></div>' +
+    (report.details ? '<p style="white-space:pre-wrap;color:#c9d2e0">' + esc(report.details) + '</p>' : '') +
+    '<div class="acts">' +
+      '<a class="btn sm" href="/leagues/' + encodeURIComponent(report.slug || '') + '/" target="_blank" rel="noopener noreferrer">View league</a>' +
+      (report.status === 'open' ? '<button class="btn primary sm" data-report-action="resolved" data-id="' + esc(report.id) + '">Resolve</button><button class="btn danger sm" data-report-action="dismissed" data-id="' + esc(report.id) + '">Dismiss report</button>' : '') +
+    '</div></article>';
+}
+
+function appealCard(appeal) {
+  return '<article class="glass acard"><div class="r1">' + mono(appeal.listingName, appeal.logoUrl) +
+    '<div class="grow"><b style="font-size:17px">' + esc(appeal.listingName || 'Unknown league') + '</b>' +
+    '<div class="hint">Owner: ' + esc(appeal.owner || 'Unknown owner') + ' · ' + esc(appeal.regionServer || 'Region not set') +
+    ' · submitted ' + esc(ago(appeal.createdAt)) + '</div></div><span class="pill ' + (appeal.status === 'open' ? 'warn' : appeal.status === 'approved' ? 'ok' : 'bad') + '">' + esc(appeal.status) + '</span></div>' +
+    '<div class="kv"><div><small>Current listing status</small><b>' + esc(TABS[appeal.listingStatus] || appeal.listingStatus || 'Unknown') + '</b></div>' +
+    '<div><small>Appeal ID</small><b>' + esc(appeal.id) + '</b></div></div>' +
+    '<p style="white-space:pre-wrap;color:#d8e6f0">' + esc(appeal.reason || '') + '</p>' +
+    (appeal.reviewNote ? '<p class="hint">Review note: ' + esc(appeal.reviewNote) + '</p>' : '') +
+    '<div class="acts">' +
+      '<a class="btn sm" href="/leagues/' + encodeURIComponent(appeal.slug || '') + '/" target="_blank" rel="noopener noreferrer">View league</a>' +
+      (appeal.status === 'open' ? '<button class="btn primary sm" data-appeal-action="approved" data-id="' + esc(appeal.id) + '">Restore league</button><button class="btn danger sm" data-appeal-action="denied" data-id="' + esc(appeal.id) + '">Keep suspended</button>' : '') +
+    '</div></article>';
 }
 
 function safeDiscord(value) {
@@ -323,6 +361,11 @@ function listingCard(listing) {
   if (listing.status !== 'removed') {
     actions += '<button class="btn danger sm" data-a="removed" data-id="' + esc(listing.id) + '">Remove</button>';
   }
+  if (listing.status !== 'removed') {
+    actions += '<button class="btn sm" data-f="verified" data-id="' + esc(listing.id) + '" data-value="' + String(!listing.verified) + '">' + (listing.verified ? 'Unverify' : 'Verify club') + '</button>';
+    actions += '<button class="btn sm" data-f="featured" data-id="' + esc(listing.id) + '" data-value="' + String(!listing.featured) + '">' + (listing.featured ? 'Unfeature' : 'Feature 7 days') + '</button>';
+    actions += '<button class="btn sm" data-note="' + esc(listing.id) + '" data-current-note="' + esc(listing.adminNote || '') + '">Internal note</button>';
+  }
   return '<article class="glass acard">' +
     '<div class="r1">' + mono(listing.name, listing.logoUrl) +
       '<div class="grow"><b style="font-size:17px">' + esc(listing.name || 'Untitled league') + '</b>' +
@@ -351,9 +394,26 @@ async function list() {
   if (!box) return;
   box.innerHTML = '<p class="mute">Loading…</p>';
   try {
+    const needle = query.trim().toLowerCase();
+    if (tab === 'reports' || tab === 'appeals') {
+      const data = tab === 'reports'
+        ? await api('/api/admin/leagues/reports?status=all')
+        : await api('/api/admin/leagues/appeals?status=all');
+      const all = tab === 'reports' ? (data.reports || []) : (data.appeals || []);
+      const rows = all.filter((row) => [
+        row.listingName, row.reporter, row.owner, row.reason, row.details, row.reviewNote, row.regionServer, row.status
+      ].some(value => String(value || '').toLowerCase().includes(needle)));
+      if (!rows.length) {
+        box.innerHTML = '<div class="empty"><h3>Nothing here</h3>No ' + esc(tab === 'reports' ? 'reports' : 'suspension appeals') + (needle ? ' match your search' : '') + '.</div>';
+        return;
+      }
+      box.innerHTML = rows.map(tab === 'reports' ? reportCard : appealCard).join('');
+      $('[data-report-action]', box).forEach(button => button.addEventListener('click', () => reportAct(button)));
+      $('[data-appeal-action]', box).forEach(button => button.addEventListener('click', () => appealAct(button)));
+      return;
+    }
     const data = await api('/api/admin/leagues?status=' + encodeURIComponent(tab));
     const all = Array.isArray(data.listings) ? data.listings : [];
-    const needle = query.trim().toLowerCase();
     const rows = all.filter((listing) => {
       if (!needle) return true;
       const player = listing.ownerGameProfile || {};
@@ -370,9 +430,79 @@ async function list() {
       return;
     }
     box.innerHTML = rows.map(listingCard).join('');
-    $$('[data-a]', box).forEach((button) => button.addEventListener('click', () => act(button)));
+    $('[data-a]', box).forEach((button) => button.addEventListener('click', () => act(button)));
+    $('[data-f]', box).forEach((button) => button.addEventListener('click', () => flagAct(button)));
+    $('[data-note]', box).forEach((button) => button.addEventListener('click', () => internalNoteAct(button)));
   } catch (error) {
     box.innerHTML = '<div class="empty"><h3>Could not load listings</h3>' + esc(error.message) + '</div>';
+  }
+}
+
+async function flagAct(button) {
+  const id = button.dataset.id, flag = button.dataset.f, value = button.dataset.value === 'true';
+  button.disabled = true;
+  try {
+    await api('/api/admin/leagues/' + encodeURIComponent(id) + '/flags', {
+      method: 'POST', body: JSON.stringify({ [flag]: value })
+    });
+    toast(flag === 'verified' ? (value ? 'League verified.' : 'Verification removed.') : (value ? 'League featured.' : 'Feature removed.'));
+    await Promise.all([stats(), list()]);
+  } catch (error) {
+    toast(error.message || 'Moderation flag could not be changed.', 'err');
+    button.disabled = false;
+  }
+}
+
+async function internalNoteAct(button) {
+  const id = button.dataset.note;
+  const note = prompt('Internal moderation note (visible to admins only):', button.dataset.currentNote || '');
+  if (note === null) return;
+  button.disabled = true;
+  try {
+    await api('/api/admin/leagues/' + encodeURIComponent(id) + '/flags', {
+      method: 'POST', body: JSON.stringify({ adminNote: note })
+    });
+    toast('Internal note saved.');
+    await Promise.all([stats(), list()]);
+  } catch (error) {
+    toast(error.message || 'Internal note could not be saved.', 'err');
+    button.disabled = false;
+  }
+}
+
+async function reportAct(button) {
+  const id = button.dataset.id, status = button.dataset.reportAction;
+  const note = prompt(status === 'resolved' ? 'Resolution note (optional):' : 'Why is this report being dismissed?');
+  if (note === null) return;
+  if (status === 'dismissed' && !note.trim()) { toast('Add a short reason to dismiss a report.', 'err'); return; }
+  button.disabled = true;
+  try {
+    await api('/api/admin/leagues/reports/' + encodeURIComponent(id) + '/resolve', {
+      method: 'POST', body: JSON.stringify({ status, note })
+    });
+    toast(status === 'resolved' ? 'Report resolved.' : 'Report dismissed.');
+    await Promise.all([stats(), list()]);
+  } catch (error) {
+    toast(error.message || 'Report could not be updated.', 'err');
+    button.disabled = false;
+  }
+}
+
+async function appealAct(button) {
+  const id = button.dataset.id, status = button.dataset.appealAction;
+  const note = prompt(status === 'approved' ? 'Optional note for the owner:' : 'Reason the suspension will remain:');
+  if (note === null) return;
+  if (status === 'denied' && !note.trim()) { toast('Add a reason before keeping the suspension.', 'err'); return; }
+  button.disabled = true;
+  try {
+    await api('/api/admin/leagues/appeals/' + encodeURIComponent(id) + '/resolve', {
+      method: 'POST', body: JSON.stringify({ status, note })
+    });
+    toast(status === 'approved' ? 'League restored from appeal.' : 'Appeal declined.');
+    await Promise.all([stats(), list()]);
+  } catch (error) {
+    toast(error.message || 'Appeal could not be resolved.', 'err');
+    button.disabled = false;
   }
 }
 
