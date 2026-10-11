@@ -1,0 +1,157 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SEASON_RECAP_QUESTIONS } from '../../data/seasonRecapTrivia.js';
+const banner = 'https://res.cloudinary.com/b0qikv7n/image/upload/v1791739595/fc-mobile-tools/tra319zimnvlfas22fj8.jpg';
+---
+<BaseLayout
+  title="Season Recap (Challenge) Trivia Answers October 2026"
+  description="Search the FC Mobile 27 Extra Time Season Recap Challenge question and answer bank for October 2026. All answers are stored locally."
+  image={banner}
+>
+  <main class="recap-page">
+    <a class="back-link" href="/trivia/">← All Trivia</a>
+    <section class="recap-hero">
+      <img class="recap-banner" src="/assets/trivia/season-recap-banner.jpg" width="1024" height="572" alt="FC Mobile Season Recap Challenge" loading="eager" decoding="async" fetchpriority="low" />
+      <div class="recap-shade"></div>
+      <div class="recap-head">
+        <span class="eyebrow">EXTRA TIME · OCTOBER 2026</span>
+        <h1>Season Recap <span>answers.</span></h1>
+        <p>Search a player, club, award or question phrase. The full answer bank is stored in the site, so searches work without a database.</p>
+        <div class="hero-stats"><span><b>{SEASON_RECAP_QUESTIONS.length}</b> questions and answers</span><span>2025/26 season</span><span>2026/27 transfers</span></div>
+      </div>
+    </section>
+
+    <section class="answer-library" aria-labelledby="answer-title">
+      <div class="library-heading">
+        <div><span class="eyebrow">ANSWER FINDER</span><h2 id="answer-title">Find your question</h2><p>Type any part of the question or the answer.</p></div>
+        <div class="result-count" id="result-count" aria-live="polite">{SEASON_RECAP_QUESTIONS.length} answers</div>
+      </div>
+      <div class="search-shell">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="answer-search" type="search" autocomplete="off" placeholder="Search clubs, players, goals, awards..." aria-label="Search Season Recap questions and answers" />
+        <button id="clear-search" type="button" aria-label="Clear search">Clear</button>
+      </div>
+      <div class="filter-row" aria-label="Filter questions by topic">
+        <button type="button" class="filter-chip active" data-filter="all">All questions</button>
+        <button type="button" class="filter-chip" data-filter="Season stats">Season stats</button>
+        <button type="button" class="filter-chip" data-filter="Player stats">Player stats</button>
+        <button type="button" class="filter-chip" data-filter="Awards">Awards</button>
+        <button type="button" class="filter-chip" data-filter="League winners">League winners</button>
+        <button type="button" class="filter-chip" data-filter="2026/27 transfers">2026/27 transfers</button>
+        <button type="button" class="filter-chip" data-filter="European qualification">European qualification</button>
+      </div>
+
+      <div class="question-list" id="question-list">
+        {SEASON_RECAP_QUESTIONS.map((item,index) => (
+          <article class="qa-card" data-category={item.category} data-search={(item.question + ' ' + item.answer + ' ' + item.category).toLowerCase()}>
+            <div class="qa-top"><span>QUESTION {String(index + 1).padStart(2,'0')}</span><span>{item.category}</span></div>
+            <h3>{item.question}</h3>
+            <div class="answer-row"><span>ANSWER</span><p>{item.answer}</p></div>
+          </article>
+        ))}
+      </div>
+      <div id="no-results" class="no-results" hidden><strong>No matching question.</strong><span>Try a shorter player name, club, competition or statistic.</span></div>
+    </section>
+
+    <aside class="source-note">
+      <p><strong>Reference note:</strong> The FC Mobile question pool can rotate, and exact wording may vary. This locally stored answer list was compiled from October 2026 community guides; transfer answers should be checked against the question shown in-game.</p>
+      <div class="source-links"><a href="https://www.fifamobileguide.com/season-recap-daily-trivia-answers" target="_blank" rel="noopener noreferrer">FIFAMobileGuide reference ↗</a><a href="https://www.sportsdunia.com/esports/ea-fc-mobile-season-recap-trivia-challenge" target="_blank" rel="noopener noreferrer">SportsDunia reference ↗</a></div>
+    </aside>
+    <div class="bottom-links"><a href="/trivia/">← Back to Trivia</a><a href="/a-nations-story/">A Nation's Story answers ↗</a></div>
+  </main>
+</BaseLayout>
+
+<script>
+const search=document.querySelector('#answer-search');
+const cards=[...document.querySelectorAll('.qa-card')];
+const count=document.querySelector('#result-count');
+const empty=document.querySelector('#no-results');
+const clear=document.querySelector('#clear-search');
+const chips=[...document.querySelectorAll('.filter-chip')];
+let activeCategory='all';
+
+function applyFilter(){
+  const terms=(search?.value||'').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  let visible=0;
+  for(const card of cards){
+    const matchesCategory=activeCategory==='all'||card.dataset.category===activeCategory;
+    const text=card.dataset.search||'';
+    const matchesText=terms.every(term=>text.includes(term));
+    const show=matchesCategory&&matchesText;
+    card.hidden=!show;
+    if(show) visible++;
+  }
+  count.textContent=visible+' '+(visible===1?'answer':'answers');
+  empty.hidden=visible!==0;
+}
+search?.addEventListener('input',applyFilter);
+clear?.addEventListener('click',()=>{if(search) search.value='';applyFilter();search?.focus()});
+chips.forEach(chip=>chip.addEventListener('click',()=>{
+  activeCategory=chip.dataset.filter||'all';
+  chips.forEach(item=>item.classList.toggle('active',item===chip));
+  applyFilter();
+}));
+window.addEventListener('keydown',event=>{
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){
+    event.preventDefault();search?.focus();
+  }
+});
+</script>
+
+<style>
+.recap-page{max-width:1120px;margin:0 auto;padding:25px 20px 90px}
+.back-link,.bottom-links a{color:#4cc9ff;text-decoration:none;font:800 10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+.back-link{display:inline-block;margin:0 0 17px}
+.back-link:hover,.bottom-links a:hover{color:#a5e7ff}
+.recap-hero{position:relative;isolation:isolate;overflow:hidden;min-height:385px;aspect-ratio:1024/572;border:1px solid rgba(255,255,255,.09);border-radius:22px;background:#0b1621}
+.recap-banner,.recap-shade{position:absolute;inset:0;width:100%;height:100%}
+.recap-banner{z-index:-2;object-fit:cover}
+.recap-shade{z-index:-1;background:linear-gradient(90deg,rgba(5,12,19,.88),rgba(5,12,19,.38) 70%),linear-gradient(0deg,rgba(5,12,19,.86),transparent 68%)}
+.recap-head{position:absolute;left:clamp(22px,5vw,55px);right:24px;bottom:clamp(23px,4vw,45px);max-width:700px}
+.eyebrow{color:#4cc9ff;font:900 9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.15em}
+.recap-head h1{font:700 clamp(43px,6.5vw,73px)/.93 "Space Grotesk",Inter,system-ui,sans-serif;letter-spacing:-.075em;margin:16px 0 13px}
+.recap-head h1 span{color:#4cc9ff}
+.recap-head>p{max-width:560px;color:#c0ced7;font-size:12px;line-height:1.75;margin:0}
+.hero-stats{display:flex;flex-wrap:wrap;gap:7px;margin-top:19px}
+.hero-stats span{padding:8px 10px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(5,12,19,.5);color:#d0dce3;font:750 8px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;backdrop-filter:blur(9px)}
+.hero-stats b{color:#4cc9ff}
+.answer-library{padding-top:57px}
+.library-heading{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:18px}
+.library-heading h2{font:700 clamp(30px,4.5vw,46px)/1 "Space Grotesk",Inter,system-ui,sans-serif;letter-spacing:-.06em;margin:9px 0 8px}
+.library-heading p{color:#a7b4c3;font-size:11px;margin:0}
+.result-count{flex:none;padding:9px 12px;border:1px solid rgba(76,201,255,.2);border-radius:9px;background:rgba(76,201,255,.06);color:#b9ecff;font:800 9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+.search-shell{display:flex;align-items:center;gap:12px;min-height:62px;padding:0 15px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:linear-gradient(145deg,#101d29,#0b141e);transition:border-color .2s,box-shadow .2s}
+.search-shell:focus-within{border-color:rgba(76,201,255,.55);box-shadow:0 0 0 4px rgba(76,201,255,.07)}
+.search-icon{color:#4cc9ff;font-size:25px;line-height:1}
+.search-shell input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#f5f8fb;font:500 13px Inter,system-ui,sans-serif}
+.search-shell input::placeholder{color:#6e8292}
+.search-shell button{border:1px solid rgba(255,255,255,.09);border-radius:8px;background:rgba(255,255,255,.04);color:#b4c2cc;padding:8px 10px;font:800 8px ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer}
+.filter-row{display:flex;gap:7px;overflow:auto;padding:13px 0 18px;scrollbar-width:thin}
+.filter-chip{flex:none;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:transparent;color:#9eafbd;padding:8px 11px;font:800 8px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer;transition:color .16s,border-color .16s,background .16s}
+.filter-chip:hover,.filter-chip.active{border-color:rgba(76,201,255,.35);background:rgba(76,201,255,.1);color:#a9eaff}
+.question-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+.qa-card{min-width:0;padding:18px;border:1px solid rgba(255,255,255,.075);border-radius:14px;background:linear-gradient(145deg,#101d29,#0b141e);transition:border-color .2s,transform .2s}
+.qa-card:hover{border-color:rgba(76,201,255,.3);transform:translateY(-2px)}
+.qa-card[hidden]{display:none}
+.qa-top{display:flex;justify-content:space-between;gap:10px;align-items:center;color:#4cc9ff;font:900 7px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}
+.qa-top span:last-child{color:#7f95a5;text-align:right}
+.qa-card h3{font:650 13px/1.55 Inter,system-ui,sans-serif;color:#edf5f9;margin:16px 0 17px}
+.answer-row{display:grid;grid-template-columns:48px 1fr;gap:10px;padding-top:13px;border-top:1px solid rgba(255,255,255,.075)}
+.answer-row>span{padding-top:2px;color:#47d18a;font:900 7px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em}
+.answer-row p{margin:0;color:#d0e0e8;font-size:11px;line-height:1.65;font-weight:650;overflow-wrap:anywhere}
+.no-results{padding:36px 20px;text-align:center;border:1px dashed rgba(255,255,255,.15);border-radius:14px;color:#a7b4c3}
+.no-results[hidden]{display:none}
+.no-results strong,.no-results span{display:block}
+.no-results strong{color:#f5f8fb;font-size:14px}
+.no-results span{font-size:11px;margin-top:7px}
+.source-note{margin-top:29px;padding:17px 19px;border:1px solid rgba(255,255,255,.07);border-radius:13px;background:rgba(15,26,38,.55)}
+.source-note p{color:#91a5b5;font-size:10px;line-height:1.75;margin:0}
+.source-note strong{color:#d9eaf3}
+.source-links{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px}
+.source-links a{color:#4cc9ff;text-decoration:none;font:800 8px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+.source-links a:hover{color:#a5e7ff}
+.bottom-links{display:flex;justify-content:space-between;gap:12px;margin-top:23px;padding-top:17px;border-top:1px solid rgba(255,255,255,.08)}
+@media(max-width:760px){.recap-page{padding:20px 14px 65px}.recap-hero{min-height:430px;aspect-ratio:auto;border-radius:17px}.recap-head h1{font-size:43px}.question-list{grid-template-columns:1fr}.library-heading{align-items:flex-start;flex-direction:column;gap:12px}.result-count{align-self:flex-start}}
+@media(max-width:480px){.recap-hero{min-height:465px}.recap-head{left:17px;right:15px;bottom:18px}.recap-head>p{font-size:11px}.hero-stats span{font-size:7px}.qa-card{padding:15px}.bottom-links{flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.qa-card,.search-shell,.filter-chip{transition:none}}
+</style>

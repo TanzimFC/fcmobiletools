@@ -65,7 +65,6 @@ export default defineConfig({
   })],
   markdown: { remarkPlugins: [remarkGfm], rehypePlugins: [optimizeMarkdownImages] },
   redirects: {
-    '/trivia': '/a-nations-story/',
     '/fcmtv': '/academy/',
     ...nationRedirects
   },
