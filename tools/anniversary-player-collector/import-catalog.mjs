@@ -10,8 +10,6 @@ const REPORT_FILE = path.resolve(ROOT, "data/catalog-import-report.json");
 const SUPABASE_URL_DEFAULT = "https://moczgrwxtfexdbjthxpd.supabase.co";
 const PROGRAM_KEY = "anniversary-3rd-2026";
 const VALID_KINDS = new Set(["player-card-background", "player-image", "club-logo", "league-logo", "nation-flag"]);
-const configuredLiveMinOvr = Number.parseInt(process.env.ANNIVERSARY_LIVE_MIN_OVR || "117", 10);
-const LIVE_MIN_OVR = Number.isInteger(configuredLiveMinOvr) && configuredLiveMinOvr >= 1 && configuredLiveMinOvr <= 150 ? configuredLiveMinOvr : 117;
 const dryRun = process.argv.includes("--dry-run");
 const help = process.argv.includes("--help") || process.argv.includes("-h");
 
@@ -329,6 +327,11 @@ async function main() {
     if (error?.code !== "ENOENT") throw error;
   }
 
+  const configuredLiveMinOvr = Number.parseInt(process.env.ANNIVERSARY_LIVE_MIN_OVR || "117", 10);
+  const liveMinOvr = Number.isInteger(configuredLiveMinOvr) && configuredLiveMinOvr >= 1 && configuredLiveMinOvr <= 150
+    ? configuredLiveMinOvr
+    : 117;
+
   const records = JSON.parse(await readFile(DATA_FILE, "utf8"));
   if (!Array.isArray(records) || !records.length) throw new Error("Player JSON must be a non-empty array: " + DATA_FILE);
 
@@ -382,7 +385,7 @@ async function main() {
     }
 
     const specificTemplate = exactRecordTemplate(record, record.assets || []);
-    const templateKey = specificTemplate || (Number(record.ovr) >= LIVE_MIN_OVR ? "anniversary27-live" : "anniversary27-base");
+    const templateKey = specificTemplate || (Number(record.ovr) >= liveMinOvr ? "anniversary27-live" : "anniversary27-base");
     const selected = {
       playerImage: selectAsset(record, "player-image"),
       clubLogo: selectAsset(record, "club-logo"),
