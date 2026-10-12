@@ -1574,6 +1574,7 @@ async function run() {
     const errors = [];
     const completedThisRun = [];
     const failedThisRun = [];
+    const assetFailuresThisRun = [];
 
     for (let index = 0; index < targetCards.length; index += 1) {
       const card = targetCards[index];
@@ -1585,12 +1586,22 @@ async function run() {
         const previousRecord = byUrl.get(record.sourceUrl);
         record = await preservePreviouslyVerifiedData(record, previousRecord);
         byUrl.set(record.sourceUrl, record);
+        const recordAssets = Array.isArray(record.assets) ? record.assets : [];
+        const assetFailures = recordAssets.filter((asset) => asset.downloadError).map((asset) => ({
+          sourceCardId: record.sourceCardId,
+          sourceUrl: record.sourceUrl,
+          kind: asset.kind,
+          message: asset.downloadError
+        }));
+        assetFailuresThisRun.push(...assetFailures);
         completedThisRun.push({
           sourceCardId: record.sourceCardId,
           sourceUrl: record.sourceUrl,
           name: record.name,
           statStatus: record.statExtraction?.status ?? "unknown",
-          assetCount: Array.isArray(record.assets) ? record.assets.length : 0
+          assetReferenceCount: recordAssets.length,
+          downloadedAssetCount: recordAssets.filter((asset) => asset.localPath && !asset.downloadError).length,
+          assetFailures: assetFailures.length
         });
         await writeJsonAtomic(RECORDS_FILE, [...byUrl.values()]);
         await writeJsonAtomic(CHECKPOINT_FILE, {
@@ -1629,6 +1640,8 @@ async function run() {
       requestedDetailCount: targetCards.length,
       succeededThisRun: completedThisRun.length,
       failedThisRun: failedThisRun.length,
+      failedAssetDownloadsThisRun: assetFailuresThisRun.length,
+      failedAssets: assetFailuresThisRun,
       completedPlayersThisRun: completedThisRun,
       savedRecordCount: finalRecords.length,
       recordsWithStats: finalRecords.filter((record) => (record.statExtraction?.groupsFound ?? 0) > 0).length,
@@ -1650,11 +1663,14 @@ async function run() {
       failuresThisRun: errors
     };
     await writeJsonAtomic(path.join(OUTPUT_DIR, "pilot-report.json"), report);
-    if (errors.length) {
-      console.error("\nRun finished with " + errors.length + " failed player page(s). Existing records were preserved; this run is PARTIAL.");
+    if (errors.length || assetFailuresThisRun.length) {
+      console.error(
+        "\nRun finished with " + errors.length + " failed player page(s) and "
+        + assetFailuresThisRun.length + " failed image download(s). Existing verified data was preserved where available; review the report before treating this run as complete."
+      );
       process.exitCode = 1;
     } else {
-      console.log("\nRun complete. All requested player pages were collected.");
+      console.log("\nRun complete. All requested player pages and attempted image downloads succeeded.");
     }
     console.log(JSON.stringify(report, null, 2));
     console.log("\nStored-record totals include records from earlier runs; see succeededThisRun for this invocation.");
