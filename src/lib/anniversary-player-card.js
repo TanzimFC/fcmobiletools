@@ -77,6 +77,9 @@ export function renderAnniversaryPlayerCard(player) {
   const ovr = Number(player.ovr) || "—";
   const position = String(player.position || "—").toUpperCase();
   const template = player.template_key === "anniversary27-live" ? "live" : "base";
+  const backgroundUrl = template === "live"
+    ? "https://res.cloudinary.com/b0qikv7n/image/upload/v1791830265/player-card-background-6310d43df9e82264f22d.webp"
+    : "https://res.cloudinary.com/b0qikv7n/image/upload/v1791830025/player-card-background-5b7a16deacdd0a0099e5.webp";
   const stats = player.stats || {};
   const details = player.details || {};
   const playerType = player.stat_extraction?.playerType || player.statExtraction?.playerType || (position === "GK" ? "goalkeeper" : "outfield");
@@ -95,9 +98,9 @@ export function renderAnniversaryPlayerCard(player) {
 
   const groupStats = statGroups.map(([key, label]) => statLine(key, label, stats)).join("");
   const imageMissing = !safeImageUrl(player.player_image_url);
-  const backgroundMissing = !safeImageUrl(player.card_background_url);
+  const backgroundMissing = !safeImageUrl(backgroundUrl);
 
-  return '<article class="fc-player-tile" data-tier="' + escapeHtml(template) + '" data-position="' + escapeHtml(position) + '" data-card-id="' + escapeHtml(player.source_card_id || "") + '">' +
+  return '<article class="fc-player-tile" role="link" tabindex="0" aria-label="View stats for ' + escapeHtml(name) + '" data-tier="' + escapeHtml(template) + '" data-position="' + escapeHtml(position) + '" data-card-id="' + escapeHtml(player.source_card_id || "") + '">' +
     '<div class="fc-player-card-art" data-template="' + escapeHtml(template) + '">' +
       image(player.card_background_url, "fc-player-card-art__frame", "") +
       image(player.player_image_url, "fc-player-card-art__athlete", name) +
@@ -117,6 +120,7 @@ export function renderAnniversaryPlayerCard(player) {
         (player.skill_points_to_spend === null || player.skill_points_to_spend === undefined ? "" :
           '<span>Skill points to spend <b>' + escapeHtml(player.skill_points_to_spend) + '</b></span>') +
         '<span class="fc-player-template-label">' + escapeHtml(player.template_key || "Anniversary template") + '</span>' +
+        '<span class="fc-player-open-label">VIEW PLAYER ↗</span>' +
       '</div>' +
     '</div>' +
   '</article>';
