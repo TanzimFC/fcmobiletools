@@ -1,0 +1,127 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/anniversary-player-cards.css';
+---
+
+<BaseLayout
+  title="Anniversary Player Cards Preview · FCMOBILETOOLS"
+  description="Private preview of the FC Mobile 3rd Anniversary player card collection."
+  robots="noindex,nofollow,noarchive"
+  googlebot="noindex,nofollow,noarchive"
+>
+  <main class="anniv-page">
+    <header class="anniv-page__hero">
+      <span class="anniv-page__eyebrow">FC Mobile · Card workshop</span>
+      <h1>Anniversary player cards</h1>
+      <p class="anniv-page__intro">A reusable card renderer, not 151 separate designs. Each player uses the correct Anniversary background, unique player artwork, and shared club, league and nation assets. Rank and training calculations are intentionally excluded from this preview.</p>
+      <div class="anniv-page__status" aria-live="polite">
+        <strong id="anniv-count">Connecting to the catalog…</strong>
+        <span id="anniv-status">Loading published cards from Supabase</span>
+      </div>
+    </header>
+
+    <section aria-label="Player card filters">
+      <div class="anniv-page__controls">
+        <input id="anniv-search" class="anniv-control anniv-search" type="search" placeholder="Search player, club, league or nation…" autocomplete="off" aria-label="Search players" />
+        <select id="anniv-position" class="anniv-control" aria-label="Filter by position">
+          <option value="">All positions</option>
+          <option>ST</option><option>CF</option><option>LW</option><option>RW</option><option>CAM</option><option>CM</option><option>CDM</option><option>LM</option><option>RM</option><option>LB</option><option>RB</option><option>CB</option><option>LWB</option><option>RWB</option><option>GK</option>
+        </select>
+        <select id="anniv-template" class="anniv-control" aria-label="Filter by Anniversary background">
+          <option value="">Both card designs</option>
+          <option value="anniversary27-live">Higher OVR · LIVE</option>
+          <option value="anniversary27-base">Lower OVR · BASE</option>
+        </select>
+        <button id="anniv-reset" class="anniv-reset" type="button">Reset filters</button>
+      </div>
+      <div id="anniv-grid" class="anniv-grid" aria-live="polite">
+        <div class="anniv-state"><strong>Loading the catalog</strong>Cards appear here once the dataset has been imported and published.</div>
+      </div>
+      <p class="anniv-footnote">Images are served from the configured Backblaze B2 public asset URL. Supabase stores searchable metadata and asset references. Only validated and published records appear here.</p>
+    </section>
+  </main>
+
+  <script>
+    import { accountAuth } from '../lib/account-client.js';
+    import { renderAnniversaryPlayerCard } from '../lib/anniversary-player-card.js';
+
+    const grid = document.querySelector('#anniv-grid');
+    const search = document.querySelector('#anniv-search');
+    const position = document.querySelector('#anniv-position');
+    const template = document.querySelector('#anniv-template');
+    const reset = document.querySelector('#anniv-reset');
+    const count = document.querySelector('#anniv-count');
+    const status = document.querySelector('#anniv-status');
+
+    let players = [];
+
+    const text = (value) => String(value ?? '').toLocaleLowerCase();
+    const metaText = (player) => [
+      player.player_name,
+      player.position,
+      player.details?.club,
+      player.details?.league,
+      player.details?.nation
+    ].map(text).join(' ');
+
+    function render() {
+      const query = text(search.value).trim();
+      const pos = position.value;
+      const key = template.value;
+      const filtered = players.filter((player) =>
+        (!query || metaText(player).includes(query))
+        && (!pos || player.position === pos)
+        && (!key || player.template_key === key)
+      );
+
+      count.textContent = filtered.length + ' / ' + players.length + ' players';
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="anniv-state"><strong>No matching cards</strong>Try a different search or reset the filters.</div>';
+        return;
+      }
+      grid.innerHTML = filtered.map(renderAnniversaryPlayerCard).join('');
+    }
+
+    function showSetupMessage(message) {
+      count.textContent = 'Catalog not ready';
+      status.textContent = message;
+      grid.innerHTML = '<div class="anniv-state"><strong>Waiting for the catalog</strong><span>' + message.replace(/[&<>"]/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])) + '</span><br><br>Once the local importer uploads assets to Backblaze B2 and upserts validated player records to Supabase, refresh this page.</div>';
+    }
+
+    async function loadCatalog() {
+      try {
+        const { data, error } = await accountAuth
+          .from('fc_player_cards')
+          .select('source_card_id,source_slug,player_name,ovr,position,alternate_positions,program_name,program_key,card_tier,template_key,stats,stat_extraction,details,play_styles,skill_points_to_spend,skill_points_to_spend_label,player_image_url,card_background_url,club_logo_url,league_logo_url,nation_flag_url,is_published')
+          .eq('program_key', 'anniversary-3rd-2026')
+          .eq('is_published', true)
+          .order('ovr', { ascending: false })
+          .limit(200);
+
+        if (error) throw error;
+        players = Array.isArray(data) ? data : [];
+        if (!players.length) {
+          showSetupMessage('Supabase is connected, but no Anniversary records are published yet.');
+          return;
+        }
+        status.textContent = 'Supabase catalog connected · B2 images';
+        render();
+      } catch (error) {
+        console.error('[anniversary-player-preview] Catalog load failed', error);
+        showSetupMessage('Could not read fc_player_cards. Check the migration, public read policy and import report.');
+      }
+    }
+
+    search.addEventListener('input', render);
+    position.addEventListener('change', render);
+    template.addEventListener('change', render);
+    reset.addEventListener('click', () => {
+      search.value = '';
+      position.value = '';
+      template.value = '';
+      render();
+    });
+
+    loadCatalog();
+  </script>
+</BaseLayout>
