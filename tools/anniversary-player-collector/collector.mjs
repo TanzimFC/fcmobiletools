@@ -19,6 +19,7 @@ function parseArgs(argv) {
     limit: 5,
     all: false,
     discover: false,
+    refreshListing: false,
     downloadImages: false,
     delayMs: DEFAULT_DELAY_MS,
     help: false
@@ -29,6 +30,7 @@ function parseArgs(argv) {
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--all") options.all = true;
     else if (arg === "--discover") options.discover = true;
+    else if (arg === "--refresh-listing") options.refreshListing = true;
     else if (arg === "--download-images") options.downloadImages = true;
     else if (arg === "--limit") {
       const value = Number(argv[++i]);
@@ -60,7 +62,8 @@ Usage:
   node collector.mjs --all --download-images
 
 Options:
-  --discover          Visit listing pages only; don't visit player details.
+  --discover          Refresh and save listing pages only; don't visit player details.
+  --refresh-listing   Force a fresh listing crawl before collecting player details.
   --limit <number>    Number of player detail pages to collect (default: 5).
   --all               Explicitly collect all player cards discovered in the listing.
   --download-images   Download only the player card background and action shot.
@@ -433,8 +436,20 @@ async function run() {
   const browser = await chromium.launch({ headless: true });
 
   try {
-    const listing = await discoverListing(browser, options.delayMs);
-    if (options.discover) return;
+    let listing;
+    if (options.discover) {
+      await discoverListing(browser, options.delayMs);
+      return;
+    }
+
+    if (!options.refreshListing) {
+      listing = await readJson(LISTING_FILE, null);
+    }
+    if (!listing?.cards?.length || options.refreshListing) {
+      listing = await discoverListing(browser, options.delayMs);
+    } else {
+      console.log(`Using cached listing: ${LISTING_FILE} (${listing.cards.length} cards; run with --refresh-listing to rescan)`);
+    }
 
     const targetCards = listing.cards.slice(0, options.limit);
     const existing = await readJson(RECORDS_FILE, []);
