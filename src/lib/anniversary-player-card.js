@@ -1,10 +1,19 @@
-const STAT_GROUPS = [
+const OUTFIELD_STAT_GROUPS = [
   ["pace", "Pace"],
   ["shooting", "Shooting"],
   ["passing", "Passing"],
   ["dribbling", "Dribbling"],
   ["defending", "Defending"],
   ["physical", "Physical"]
+];
+
+const GOALKEEPER_STAT_GROUPS = [
+  ["diving", "Diving"],
+  ["positioning", "Positioning"],
+  ["handling", "Handling"],
+  ["reflexes", "Reflexes"],
+  ["jumping", "Jumping"],
+  ["kicking", "Kicking"]
 ];
 
 function escapeHtml(value) {
@@ -70,6 +79,8 @@ export function renderAnniversaryPlayerCard(player) {
   const template = player.template_key === "anniversary27-live" ? "live" : "base";
   const stats = player.stats || {};
   const details = player.details || {};
+  const playerType = player.stat_extraction?.playerType || player.statExtraction?.playerType || (position === "GK" ? "goalkeeper" : "outfield");
+  const statGroups = playerType === "goalkeeper" || position === "GK" ? GOALKEEPER_STAT_GROUPS : OUTFIELD_STAT_GROUPS;
   const badges = [
     image(player.nation_flag_url, "fc-card-badge fc-card-badge--nation", details.nation || "Nation"),
     image(player.club_logo_url, "fc-card-badge fc-card-badge--club", details.club || "Club"),
@@ -82,7 +93,7 @@ export function renderAnniversaryPlayerCard(player) {
     details.nation ? '<span class="fc-player-meta__item">' + escapeHtml(details.nation) + '</span>' : ""
   ].filter(Boolean).join("");
 
-  const groupStats = STAT_GROUPS.map(([key, label]) => statLine(key, label, stats)).join("");
+  const groupStats = statGroups.map(([key, label]) => statLine(key, label, stats)).join("");
   const imageMissing = !safeImageUrl(player.player_image_url);
   const backgroundMissing = !safeImageUrl(player.card_background_url);
 
