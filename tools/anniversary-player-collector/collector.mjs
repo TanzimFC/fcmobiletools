@@ -25,6 +25,7 @@ function parseArgs(argv) {
     downloadImages: false,
     captureProgression: false,
     keepSourceText: false,
+    fresh: false,
     playerUrl: null,
     playerUrlInput: null,
     delayMs: DEFAULT_DELAY_MS,
@@ -40,6 +41,7 @@ function parseArgs(argv) {
     else if (arg === "--download-images") options.downloadImages = true;
     else if (arg === "--capture-progression") options.captureProgression = true;
     else if (arg === "--keep-source-text") options.keepSourceText = true;
+    else if (arg === "--fresh") options.fresh = true;
     else if (arg === "--player-url") {
       const value = argv[++i];
       if (!value) throw new Error("--player-url requires a RenderZ player URL.");
@@ -68,6 +70,12 @@ function parseArgs(argv) {
   }
 
   if (options.all) options.limit = Number.POSITIVE_INFINITY;
+  if (options.fresh && !options.all) {
+    throw new Error("--fresh can only be used together with --all so a partial run cannot accidentally wipe the existing dataset.");
+  }
+  if (options.fresh && options.discover) {
+    throw new Error("--fresh cannot be combined with --discover.");
+  }
   return options;
 }
 
@@ -81,7 +89,7 @@ Usage:
   node collector.mjs --limit 5 --download-images
   node collector.mjs --limit 5 --capture-progression
   node collector.mjs --player-url "https://renderz.app/player/123-example" --capture-progression
-  node collector.mjs --all --download-images --capture-progression
+  node collector.mjs --all --download-images --fresh
 
 Options:
   --discover          Refresh and save listing pages only; don't visit player details.
@@ -89,8 +97,9 @@ Options:
   --limit <number>    Number of player detail pages to collect (default: 5).
   --all               Explicitly collect all player cards discovered in the listing.
   --download-images   Download card background, player image, and detected club/league/nation images.
-  --capture-progression Capture the visible stats at rank 1-5 and training levels 0-30 when controls and stats are available.
-  --keep-source-text  Retain the raw page text in each record for parser debugging (off by default).
+  --capture-progression Capture rank/training snapshots (experimental; not needed for base collection).
+  --fresh             Clear existing player records/checkpoints/reports before a full --all collection; keep listing and asset cache.
+  --keep-source-text  Retain filtered page text for parser debugging (off by default).
   --player-url <url>  Collect one specific RenderZ player page (useful for testing a card that displays stats).
   --delay-ms <n>      Delay between player pages; minimum 600 ms (default: 900).
   --help              Show this help.
@@ -103,6 +112,46 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function cleanText(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+const PAGE_CHROME_LINES = new Set([
+  "help us improve this and make your experience even better.",
+  "give feedback",
+  "home",
+  "tools",
+  "players",
+  "games",
+  "news",
+  "membership",
+  "creators",
+  "search for players...",
+  "sign up",
+  "log in or sign up",
+  "upgrade to premium",
+  "for ad-free browsing",
+  "menu",
+  "open menu",
+  "close menu"
+]);
+
+function cleanStoredSourceText(value) {
+  return String(value ?? "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => cleanText(line))
+    .filter((line) => {
+      const lower = line.toLowerCase();
+      return line && !PAGE_CHROME_LINES.has(lower)
+        && !/^copyright\s+©?/i.test(line)
+        && !/^all rights reserved\b/i.test(line)
+        && !/^cookie settings?$/i.test(line)
+        && !/^privacy policy$/i.test(line)
+        && !/^terms(?: of service)?$/i.test(line);
+    })
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 30000);
 }
 
 function safeFilePart(value) {
@@ -1420,6 +1469,7 @@ async function collectPlayer(context, card, options, imageCache, assetLibrary) {
       statExtraction: parsedStats.extraction,
       statsCollectedAt: parsedStats.extraction.groupsFound > 0 ? new Date().toISOString() : null,
       skillPointsToSpend: parseSkillPointsToSpend(sourceText),
+      skillPointsToSpendLabel: "Skill Points to Spend",
       playStyles: parsePlayStyles(sourceText),
       skillTree: parseSkillTree(sourceText),
       gameTraits: parseGameTraitKeys(sourceText),
@@ -1428,7 +1478,7 @@ async function collectPlayer(context, card, options, imageCache, assetLibrary) {
       assets: mainImages
     };
 
-    if (options.keepSourceText) detailRecord.sourceText = sourceText;
+    if (options.keepSourceText) detailRecord.sourceText = cleanStoredSourceText(sourceText);
 
     await Promise.allSettled(pendingImageBodies);
     if (options.downloadImages && mainImages.length) {
@@ -1565,6 +1615,22 @@ async function run() {
       throw new Error("No player cards selected for detail collection.");
     }
     console.log("Preparing " + targetCards.length + " player detail page(s).");
+
+    if (options.fresh) {
+      console.log("Fresh collection requested: clearing previous player records, checkpoint, and reports; keeping the verified listing and shared asset cache.");
+      for (const filePath of [
+        RECORDS_FILE,
+        CHECKPOINT_FILE,
+        path.join(OUTPUT_DIR, "pilot-report.json"),
+        path.join(OUTPUT_DIR, "validation-report.json")
+      ]) {
+        try {
+          await fs.unlink(filePath);
+        } catch (error) {
+          if (error?.code !== "ENOENT") throw error;
+        }
+      }
+    }
 
     const existing = await readJson(RECORDS_FILE, []);
     const byUrl = new Map(existing.map((record) => {
