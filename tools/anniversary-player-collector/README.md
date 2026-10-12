@@ -44,9 +44,27 @@ This visits the listing pages at a conservative pace and saves `data/anniversary
 npm run pilot
 ```
 
-Records are saved to `data/anniversary-3rd-2026.json`. The script checkpoints after each successful player page, so it can preserve work if interrupted. Re-running the pilot refreshes those five records; it doesn't duplicate records by URL.
+The collector now parses the six main stat groups and their substats into `stats`, with an extraction status showing whether the page exposed all, some, or none of the groups. It waits briefly for stat content to hydrate. Some player pages may not expose stats in their visible page content; those cards are marked as missing rather than filled with invented values.
 
-## Step 3 — Test images for the pilot
+Records are saved to `data/anniversary-3rd-2026.json`. The script checkpoints after each successful player page, so it can preserve work if interrupted. Re-running the pilot refreshes the selected records; it doesn't duplicate records by URL.
+
+## Step 3 — Test rank and training progression
+
+```powershell
+npm run pilot:progression
+```
+
+This opt-in test attempts to record visible stat snapshots for ranks 1–5 and training levels 0–30, including the displayed “skill points to spend” count. It only captures states when the page exposes parseable stats and usable controls. This records the page's default skill-point allocation at each state; it does **not** enumerate every possible skill-tree allocation. Inspect the returned `progression.status`, `controls`, and `rankTrainingSnapshots` before treating the progression as complete.
+
+To test a particular player page that visibly shows stats (instead of the first five cards in the listing):
+
+```powershell
+node collector.mjs --player-url "https://renderz.app/player/PASTE-PLAYER-SLUG-HERE" --capture-progression
+```
+
+Copy the real player URL from RenderZ. Do not leave the example slug in place.
+
+## Step 4 — Test images for the pilot
 
 ```powershell
 npm run pilot:assets
@@ -54,9 +72,9 @@ npm run pilot:assets
 
 Downloads only images identified on the detail page as `Player Card Background` or `Action shot`. It writes the local asset paths into each record. This is intentionally narrow until we verify the right portrait/card layers and image matching.
 
-## Step 4 — Collect the entire Anniversary program
+## Step 5 — Collect the entire Anniversary program
 
-Only after the pilot records and image matches have been manually checked:
+Only after the pilot's stats, progression behavior, and image matches have been manually checked:
 
 ```powershell
 npm run collect
@@ -71,6 +89,8 @@ Optional flags:
 - `--discover`: refresh and save the listing only
 - `--refresh-listing`: force a fresh listing crawl before collecting detail pages
 - `--download-images`: download selected image assets
+- `--capture-progression`: opt into rank/training state sampling
+- `--player-url <url>`: test a single known RenderZ player page instead of selecting cards from the listing
 - `--delay-ms 1800`: change the delay between page visits; the script enforces a minimum of 1200 ms
 - `--help`: show options
 
