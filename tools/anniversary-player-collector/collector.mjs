@@ -13,8 +13,8 @@ const LISTING_FILE = path.join(OUTPUT_DIR, "anniversary-listing.json");
 const RECORDS_FILE = path.join(OUTPUT_DIR, "anniversary-3rd-2026.json");
 const CHECKPOINT_FILE = path.join(OUTPUT_DIR, "checkpoint.json");
 const ASSET_LIBRARY_FILE = path.join(OUTPUT_DIR, "asset-library.json");
-const DEFAULT_DELAY_MS = 1800;
-const MIN_DELAY_MS = 1200;
+const DEFAULT_DELAY_MS = 900;
+const MIN_DELAY_MS = 600;
 
 function parseArgs(argv) {
   const options = {
@@ -92,7 +92,7 @@ Options:
   --capture-progression Capture the visible stats at rank 1-5 and training levels 0-30 when controls and stats are available.
   --keep-source-text  Retain the raw page text in each record for parser debugging (off by default).
   --player-url <url>  Collect one specific RenderZ player page (useful for testing a card that displays stats).
-  --delay-ms <n>      Delay between page visits; minimum 1200 ms (default: 1800).
+  --delay-ms <n>      Delay between player pages; minimum 600 ms (default: 900).
   --help              Show this help.
 
 Collection happens on this computer. HTTP 403/429 and challenge pages stop the run.
@@ -1316,8 +1316,8 @@ async function downloadImage(asset, playerUrl, outputDir, requestCache, captured
   return { ...result, sourceUrl: asset.sourceUrl };
 }
 
-async function collectPlayer(browser, card, options, imageCache, assetLibrary) {
-  const page = await browser.newPage();
+async function collectPlayer(context, card, options, imageCache, assetLibrary) {
+  const page = await context.newPage();
   page.setDefaultNavigationTimeout(45000);
   const capturedImageBodies = new Map();
   const pendingImageBodies = [];
@@ -1347,15 +1347,19 @@ async function collectPlayer(browser, card, options, imageCache, assetLibrary) {
     let parsedPosition = card.positionFromListing || null;
     let parsedStats = { stats: {}, extraction: { status: "not-visible", groupsFound: 0, groupsExpected: 6, substatsFound: 0, missingGroups: [] } };
 
-    // Wait for client-rendered stats to appear; don't overwrite previously valid stats
-    // with an empty parse just because the first paint hasn't hydrated yet.
-    for (let attempt = 0; attempt < 13; attempt += 1) {
+    // Stats may live below the fold and hydrate on scroll. Trigger lazy sections once,
+    // then poll briefly; do not spend several seconds polling a page with no stat panel.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)).catch(() => {});
+    await page.waitForTimeout(180);
+    for (let attempt = 0; attempt < 7; attempt += 1) {
       sourceText = (await page.locator("body").innerText().catch(() => "")).replace(/\r/g, "").slice(0, 50000);
       parsedPosition = pickMatch(sourceText, /\bPosition\s+([A-Z]{2,3})\b/i) || card.positionFromListing || parsedPosition;
       parsedStats = parsePlayerStats(sourceText, parsedPosition);
       if (parsedStats.extraction.groupsFound > 0) break;
-      if (attempt < 12) await page.waitForTimeout(650);
+      if (attempt < 6) await page.waitForTimeout(350);
     }
+    // Return to the top so later capture/control operations start in a predictable view.
+    await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
 
     const progression = options.captureProgression ? await collectProgression(page, parsedPosition) : null;
     const imageElements = await page.locator("img").evaluateAll((images) => images.map((img) => {
@@ -1431,7 +1435,6 @@ async function collectPlayer(browser, card, options, imageCache, assetLibrary) {
       const assetDir = path.join(OUTPUT_DIR, "assets");
       const downloaded = [];
       for (const asset of mainImages) {
-        await sleep(Math.min(options.delayMs, 2500));
         try {
           downloaded.push(await downloadImage(asset, card.detailUrl, assetDir, imageCache, capturedImageBodies, assetLibrary, page.context().request));
         } catch (error) {
@@ -1512,6 +1515,10 @@ async function run() {
 
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
   const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1100 },
+    deviceScaleFactor: 1
+  });
 
   try {
     let listing = null;
@@ -1579,10 +1586,10 @@ async function run() {
     for (let index = 0; index < targetCards.length; index += 1) {
       const card = targetCards[index];
       console.log(`[player ${index + 1}/${targetCards.length}] ${card.nameFromListing} — ${card.detailUrl}`);
-      await sleep(options.delayMs);
+      if (index > 0) await sleep(options.delayMs);
 
       try {
-        let record = await collectPlayer(browser, card, options, imageCache, assetLibrary);
+        let record = await collectPlayer(context, card, options, imageCache, assetLibrary);
         const previousRecord = byUrl.get(record.sourceUrl);
         record = await preservePreviouslyVerifiedData(record, previousRecord);
         byUrl.set(record.sourceUrl, record);
@@ -1675,6 +1682,7 @@ async function run() {
     console.log(JSON.stringify(report, null, 2));
     console.log("\nStored-record totals include records from earlier runs; see succeededThisRun for this invocation.");
   } finally {
+    await context.close().catch(() => {});
     await browser.close();
   }
 }
