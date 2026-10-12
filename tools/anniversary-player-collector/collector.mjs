@@ -3,6 +3,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { createHash } from "node:crypto";
 import { chromium } from "playwright";
 
 const PROGRAM_NAME = "3rd Anniversary";
@@ -86,7 +87,7 @@ Options:
   --refresh-listing   Force a fresh listing crawl before collecting player details.
   --limit <number>    Number of player detail pages to collect (default: 5).
   --all               Explicitly collect all player cards discovered in the listing.
-  --download-images   Download only the player card background and action shot.
+  --download-images   Download card background, player image, and detected club/league/nation images.
   --capture-progression Capture the visible stats at rank 1-5 and training levels 0-30 when controls and stats are available.
   --keep-source-text  Retain the raw page text in each record for parser debugging (off by default).
   --player-url <url>  Collect one specific RenderZ player page (useful for testing a card that displays stats).
@@ -1123,6 +1124,32 @@ async function collectProgression(page, positionHint = null) {
   };
 }
 
+function canonicalAssetUrl(sourceUrl) {
+  try {
+    const url = new URL(sourceUrl);
+    return url.origin + url.pathname;
+  } catch {
+    return String(sourceUrl || "");
+  }
+}
+
+function makeAssetKey(asset) {
+  return createHash("sha256")
+    .update(String(asset.kind || "asset") + "|" + canonicalAssetUrl(asset.sourceUrl))
+    .digest("hex")
+    .slice(0, 20);
+}
+
+function classifyImageAlt(alt) {
+  const label = cleanText(alt).toLowerCase();
+  if (/player card background/.test(label)) return "player-card-background";
+  if (/action shot/.test(label)) return "player-image";
+  if (/\bclub\b/.test(label)) return "club-logo";
+  if (/\bleague\b/.test(label)) return "league-logo";
+  if (/\bnation\b/.test(label)) return "nation-flag";
+  return null;
+}
+
 function getExtensions(contentType, url) {
   const mime = (contentType || "").split(";")[0].trim().toLowerCase();
   const byMime = {
@@ -1143,14 +1170,18 @@ function getExtensions(contentType, url) {
 }
 
 async function downloadImage(asset, playerUrl, outputDir, requestCache) {
-  if (requestCache.has(asset.sourceUrl)) {
-    const cached = requestCache.get(asset.sourceUrl);
+  const assetKey = asset.assetKey || makeAssetKey(asset);
+  if (requestCache.has(assetKey)) {
+    const cached = requestCache.get(assetKey);
     return {
       ...cached,
       ...asset,
+      assetKey,
       localPath: cached.localPath,
       bytes: cached.bytes,
-      contentType: cached.contentType
+      contentType: cached.contentType,
+      contentHash: cached.contentHash,
+      reusedFromCache: true
     };
   }
 
@@ -1163,30 +1194,35 @@ async function downloadImage(asset, playerUrl, outputDir, requestCache) {
   });
 
   if (response.status === 403 || response.status === 429) {
-    throw new Error(`Image host returned HTTP ${response.status}. Stopping without retrying around the restriction.`);
+    throw new Error(\`Image host returned HTTP \${response.status}. Stopping without trying to bypass the restriction.\`);
   }
-  if (!response.ok) throw new Error(`Image download returned HTTP ${response.status}: ${asset.sourceUrl}`);
+  if (!response.ok) throw new Error(\`Image download returned HTTP \${response.status}: \${asset.sourceUrl}\`);
 
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.toLowerCase().startsWith("image/")) {
-    throw new Error(`Expected an image but received ${contentType || "unknown content type"}: ${asset.sourceUrl}`);
+    throw new Error(\`Expected an image but received \${contentType || "unknown content type"}: \${asset.sourceUrl}\`);
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
-  if (!buffer.length) throw new Error(`Downloaded empty image: ${asset.sourceUrl}`);
+  if (!buffer.length) throw new Error(\`Downloaded empty image: \${asset.sourceUrl}\`);
 
   const extension = getExtensions(contentType, asset.sourceUrl);
-  const outputPath = path.join(outputDir, `${asset.cardId}-${asset.kind}${extension}`);
+  const outputPath = path.join(outputDir, \`\${asset.kind}-\${assetKey}\${extension}\`);
   await fs.mkdir(outputDir, { recursive: true });
-  await fs.writeFile(outputPath, buffer);
+  if (!(await fs.stat(outputPath).catch(() => null))) {
+    await fs.writeFile(outputPath, buffer);
+  }
 
   const result = {
     ...asset,
+    assetKey,
     localPath: path.relative(process.cwd(), outputPath).replaceAll(path.sep, "/"),
     bytes: buffer.length,
-    contentType
+    contentType,
+    contentHash: createHash("sha256").update(buffer).digest("hex"),
+    reusedFromCache: false
   };
-  requestCache.set(asset.sourceUrl, result);
+  requestCache.set(assetKey, result);
   return result;
 }
 
@@ -1219,16 +1255,23 @@ async function collectPlayer(browser, card, options, imageCache) {
 
     const mainImages = imageElements
       .filter((image) => image.sourceUrl && /^https?:/i.test(image.sourceUrl))
-      .filter((image) => /player card background|action shot/i.test(image.alt))
-      .map((image) => ({
-        cardId: card.sourceCardId,
-        kind: /player card background/i.test(image.alt) ? "player-card-background" : "action-shot",
-        alt: image.alt,
-        sourceUrl: image.sourceUrl,
-        width: image.width,
-        height: image.height
-      }))
-      .filter((image, index, all) => all.findIndex((candidate) => candidate.sourceUrl === image.sourceUrl && candidate.kind === image.kind) === index);
+      .map((image) => {
+        const kind = classifyImageAlt(image.alt);
+        if (!kind) return null;
+        const asset = {
+          cardId: card.sourceCardId,
+          kind,
+          alt: image.alt,
+          sourceUrl: image.sourceUrl,
+          canonicalSourceUrl: canonicalAssetUrl(image.sourceUrl),
+          width: image.width,
+          height: image.height
+        };
+        asset.assetKey = makeAssetKey(asset);
+        return asset;
+      })
+      .filter(Boolean)
+      .filter((asset, index, all) => all.findIndex((candidate) => candidate.canonicalSourceUrl === asset.canonicalSourceUrl && candidate.kind === asset.kind) === index);
 
     const detailRecord = {
       sourceCardId: card.sourceCardId,
