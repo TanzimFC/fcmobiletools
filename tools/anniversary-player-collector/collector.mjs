@@ -367,6 +367,103 @@ const STAT_GROUPS = [
   { key: "physical", label: "Physical", substats: ["Strength", "Aggression", "Jumping", "Stamina"] }
 ];
 
+const GOALKEEPER_STAT_GROUPS = [
+  { key: "diving", label: "Diving", substats: ["GK Diving"] },
+  { key: "positioning", label: "Positioning", substats: ["GK Positioning"] },
+  { key: "handling", label: "Handling", substats: ["GK Handling"] },
+  { key: "reflexes", label: "Reflexes", substats: ["GK Reflexes"] },
+  { key: "jumping", label: "Jumping", substats: [] },
+  { key: "kicking", label: "Kicking", substats: ["GK Kicking", "Long Passing"] },
+  { key: "physical", label: "Physical", substats: ["Reactions", "Agility", "Sprint Speed", "Strength"] }
+];
+
+function cleanLocalizedValue(value) {
+  const cleaned = cleanText(value);
+  if (!cleaned) return null;
+  if (/^(?:NationName|LeagueName|ClubName|TeamName|NAME_SKILL|skillmove_name|celebration_name|traits_title)_\d+$/i.test(cleaned)) return null;
+  return cleaned;
+}
+
+function parseGameTraitKeys(sourceText) {
+  const matches = String(sourceText || "").matchAll(/\b(skillmove_name|celebration_name|traits_title)_(\d+)\b/gi);
+  const seen = new Set();
+  const traits = [];
+  for (const match of matches) {
+    const type = match[1].toLowerCase();
+    const id = Number(match[2]);
+    const key = type + "_" + id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    traits.push({
+      type: type === "skillmove_name" ? "skill-move" : type === "celebration_name" ? "celebration" : "trait",
+      id,
+      sourceKey: key,
+      displayName: null
+    });
+  }
+  return traits;
+}
+
+function parseSkillTree(sourceText) {
+  const lines = String(sourceText || "").replace(/\r/g, "").split("\n").map(cleanText).filter(Boolean);
+  const nodes = [];
+  const byId = new Map();
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = lines[index].match(/^NAME_SKILL_(\d+)(?:\s+LVL(\d+))?$/i);
+    if (!match) continue;
+    const id = Number(match[1]);
+    const next = lines[index + 1] || "";
+    const levelFromNext = next.match(/^LVL(\d+)$/i);
+    const unlock = next.match(/Unlocks after NAME_SKILL_(\d+) is LVL(\d+)/i);
+    const current = {
+      id,
+      nameKey: "NAME_SKILL_" + id,
+      level: match[2] !== undefined ? Number(match[2]) : levelFromNext ? Number(levelFromNext[1]) : null,
+      unlocksAfter: unlock ? { skillId: Number(unlock[1]), level: Number(unlock[2]) } : null
+    };
+    if (!byId.has(id)) {
+      byId.set(id, current);
+      nodes.push(current);
+    }
+  }
+
+  for (const node of nodes) {
+    const index = lines.findIndex((line) => line === node.nameKey || line.startsWith(node.nameKey + " "));
+    if (index >= 0) {
+      const next = lines[index + 1] || "";
+      const unlock = next.match(/Unlocks after NAME_SKILL_(\d+) is LVL(\d+)/i);
+      if (unlock) node.unlocksAfter = { skillId: Number(unlock[1]), level: Number(unlock[2]) };
+    }
+  }
+  return nodes;
+}
+
+function parseRequestedViewState(url) {
+  try {
+    const parsed = new URL(url);
+    const numericParam = (key) => {
+      const value = parsed.searchParams.get(key);
+      return value !== null && /^\d+$/.test(value) ? Number(value) : null;
+    };
+    const raw = parsed.searchParams.get("skillUpgrades");
+    const skillUpgrades = raw
+      ? raw.split("-").map((entry) => {
+          const match = entry.match(/^(\d+)\.(\d+)$/);
+          return match ? { skillId: Number(match[1]), level: Number(match[2]) } : null;
+        }).filter(Boolean)
+      : [];
+    return {
+      rankUp: numericParam("rankUp"),
+      trainingLevel: numericParam("level"),
+      skillUpgradesRaw: raw,
+      skillUpgrades
+    };
+  } catch {
+    return null;
+  }
+}
+
 function getNumberAfterLabel(lines, label, startIndex = 0, endIndex = lines.length) {
   const wanted = label.toLowerCase();
   for (let index = startIndex; index < endIndex; index += 1) {
@@ -383,23 +480,27 @@ function getNumberAfterLabel(lines, label, startIndex = 0, endIndex = lines.leng
   return null;
 }
 
-function parsePlayerStats(sourceText) {
+function parsePlayerStats(sourceText, positionHint = null) {
   const lines = String(sourceText || "")
     .replace(/\r/g, "")
     .split("\n")
     .map((line) => cleanText(line))
     .filter(Boolean);
 
+  const hintedPosition = cleanText(positionHint).toUpperCase();
+  const isGoalkeeper = hintedPosition
+    ? hintedPosition === "GK"
+    : /(?:^|\n)GK(?:\n|$)/i.test(lines.slice(0, 60).join("\n"));
+  const groups = isGoalkeeper ? GOALKEEPER_STAT_GROUPS : STAT_GROUPS;
   const starts = new Map();
-  for (const group of STAT_GROUPS) {
+  for (const group of groups) {
     const found = getNumberAfterLabel(lines, group.label);
     if (found) starts.set(group.key, found);
   }
 
-  const presentGroups = STAT_GROUPS.filter((group) => starts.has(group.key));
+  const presentGroups = groups.filter((group) => starts.has(group.key));
   const result = {};
-  for (let groupIndex = 0; groupIndex < STAT_GROUPS.length; groupIndex += 1) {
-    const group = STAT_GROUPS[groupIndex];
+  for (const group of groups) {
     const start = starts.get(group.key);
     const nextStarts = presentGroups
       .map((candidate) => starts.get(candidate.key))
@@ -412,7 +513,8 @@ function parsePlayerStats(sourceText) {
       const found = start
         ? getNumberAfterLabel(lines, substat, start.index + 1, end)
         : null;
-      substats[substat.replace(/[^a-zA-Z0-9]+(.)/g, (_, letter) => letter.toUpperCase()).replace(/^[A-Z]/, (letter) => letter.toLowerCase())] = found?.value ?? null;
+      const key = substat.replace(/[^a-zA-Z0-9]+(.)/g, (_, letter) => letter.toUpperCase()).replace(/^[A-Z]/, (letter) => letter.toLowerCase());
+      substats[key] = found?.value ?? null;
     }
 
     result[group.key] = {
@@ -421,22 +523,22 @@ function parsePlayerStats(sourceText) {
     };
   }
 
-  const missingGroups = STAT_GROUPS.filter((group) => !starts.has(group.key)).map((group) => group.key);
+  const missingGroups = groups.filter((group) => !starts.has(group.key)).map((group) => group.key);
   const foundSubstats = Object.values(result).reduce((count, group) => {
     return count + Object.entries(group).filter(([key, value]) => key !== "value" && Number.isInteger(value)).length;
   }, 0);
+  const expectedSubstats = groups.reduce((count, group) => count + group.substats.length, 0);
+  const complete = presentGroups.length === groups.length && foundSubstats === expectedSubstats;
 
   return {
     stats: result,
     extraction: {
-      status: presentGroups.length === STAT_GROUPS.length && foundSubstats >= 20
-        ? "complete"
-        : presentGroups.length > 0
-          ? "partial"
-          : "not-visible",
+      playerType: isGoalkeeper ? "goalkeeper" : "outfield",
+      status: complete ? "complete" : presentGroups.length > 0 ? "partial" : "not-visible",
       groupsFound: presentGroups.length,
-      groupsExpected: STAT_GROUPS.length,
+      groupsExpected: groups.length,
       substatsFound: foundSubstats,
+      substatsExpected: expectedSubstats,
       missingGroups
     }
   };
@@ -877,9 +979,9 @@ async function setTrainingLevel(page, level) {
   }, level);
 }
 
-async function collectProgression(page) {
+async function collectProgression(page, positionHint = null) {
   const initialText = (await page.locator("body").innerText().catch(() => "")).replace(/\r/g, "");
-  const initialStats = parsePlayerStats(initialText);
+  const initialStats = parsePlayerStats(initialText, positionHint);
   const controls = await getUpgradeControls(page);
 
   if (initialStats.extraction.groupsFound === 0) {
@@ -962,7 +1064,7 @@ async function collectProgression(page) {
       }
 
       const currentText = (await page.locator("body").innerText().catch(() => "")).replace(/\r/g, "");
-      const parsed = parsePlayerStats(currentText);
+      const parsed = parsePlayerStats(currentText, positionHint);
       const skillPointsToSpend = parseSkillPointsToSpend(currentText);
       const title = cleanText(await page.locator("h1").first().innerText().catch(() => ""));
       const titleOvrMatch = title.match(/[—–-]\s*(\d{2,3})\s*OVR/i);
@@ -1102,8 +1204,9 @@ async function collectPlayer(browser, card, options, imageCache) {
     }, null, { timeout: 2200 }).catch(() => {});
     const title = cleanText(await page.locator("h1").first().innerText().catch(() => ""));
     const sourceText = (await page.locator("body").innerText()).replace(/\r/g, "").slice(0, 30000);
-    const parsedStats = parsePlayerStats(sourceText);
-    const progression = options.captureProgression ? await collectProgression(page) : null;
+    const parsedPosition = pickMatch(sourceText, /\bPosition\s+([A-Z]{2,3})\b/i) || card.positionFromListing;
+    const parsedStats = parsePlayerStats(sourceText, parsedPosition);
+    const progression = options.captureProgression ? await collectProgression(page, parsedPosition) : null;
     const imageElements = await page.locator("img").evaluateAll((images) => images.map((img) => {
       const source = img.currentSrc || img.src || img.getAttribute("data-src") || "";
       return {
@@ -1132,7 +1235,7 @@ async function collectPlayer(browser, card, options, imageCache) {
       sourceSlug: card.slug,
       name: pickMatch(title, /^(.+?)\s+[—–-]\s+\d{2,3}\s+OVR/i) || card.nameFromListing,
       ovr: Number(pickMatch(title, /[—–-]\s+(\d{2,3})\s+OVR/i)) || card.ovrFromListing,
-      position: pickMatch(sourceText, /\bPosition\s+([A-Z]{2,3})\b/i) || card.positionFromListing,
+      position: parsedPosition,
       program: PROGRAM_NAME,
       sourceUrl: new URL(card.detailUrl).origin + new URL(card.detailUrl).pathname,
       requestedViewUrl: options.playerUrlInput || null,
@@ -1142,10 +1245,10 @@ async function collectPlayer(browser, card, options, imageCache) {
       sourcePageTitle: title,
       details: {
         alternatePositions: pickMatch(sourceText, /Alternate\s+Postions?\s+([^\n]+)/i),
-        club: pickMatch(sourceText, /\bTEAM\s+([^\n]+)/i),
-        league: pickMatch(sourceText, /\bLEAGUE\s+([^\n]+)/i),
-        nation: pickMatch(sourceText, /\bNATION\/REGION\s+([^\n]+)/i),
-        strongFootWeakFoot: pickMatch(sourceText, /STRONG\s+FOOT\s*\/\s*WEAK\s+FOOT\s+([^\n]+)/i),
+        club: cleanLocalizedValue(pickMatch(sourceText, /\bTEAM\s+([^\n]+)/i)),
+        league: cleanLocalizedValue(pickMatch(sourceText, /\bLEAGUE\s+([^\n]+)/i)),
+        nation: cleanLocalizedValue(pickMatch(sourceText, /\bNATION\/REGION\s+([^\n]+)/i)),
+        strongFootWeakFoot: (pickMatch(sourceText, /STRONG\s+FOOT\s*\/\s*WEAK\s+FOOT\s+([^\n]+)/i) || "").replace(/\bCommon_Right\b/gi, "RIGHT").replace(/\bCommon_Left\b/gi, "LEFT") || null,
         height: pickMatch(sourceText, /\bHeight\s+([^\n]+)/i),
         weight: pickMatch(sourceText, /\bWeight\s+([^\n]+)/i),
         attackingDefensiveWorkRate: pickMatch(sourceText, /Work\s+Rate\s*\(ATT\)\s*\/\s*Work\s+Rate\s*\(DEF\)\s*([^\n]+)/i),
@@ -1155,6 +1258,9 @@ async function collectPlayer(browser, card, options, imageCache) {
       statExtraction: parsedStats.extraction,
       skillPointsToSpend: parseSkillPointsToSpend(sourceText),
       playStyles: parsePlayStyles(sourceText),
+      skillTree: parseSkillTree(sourceText),
+      gameTraits: parseGameTraitKeys(sourceText),
+      requestedViewState: options.playerUrlInput ? parseRequestedViewState(options.playerUrlInput) : null,
       progression,
       assets: mainImages
     };
