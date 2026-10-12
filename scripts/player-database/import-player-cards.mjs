@@ -480,6 +480,8 @@ async function uploadOne(auth, target, item, publicBaseUrl) {
     });
     const text = await response.text();
     if (response.ok) {
+      target.uploadUrl = activeTarget.uploadUrl;
+      target.authorizationToken = activeTarget.authorizationToken;
       return { b2_object_key: objectKey, public_url: buildPublicUrl(publicBaseUrl, objectKey) };
     }
     if ((response.status === 401 || response.status >= 500) && attempt < 5) {
@@ -613,8 +615,8 @@ async function main() {
   if (uploadJobs.length) {
     const publicBaseUrl = process.env.B2_PUBLIC_BASE_URL || '';
     if (!publicBaseUrl) throw new Error('Set B2_PUBLIC_BASE_URL to the public download base for the B2 bucket before uploading.');
-    if (!process.env.B2_BUCKET_ID || !process.env.B2_BUCKET_NAME) {
-      throw new Error('Set B2_BUCKET_ID and B2_BUCKET_NAME before uploading.');
+    if (!process.env.B2_BUCKET_ID) {
+      throw new Error('Set B2_BUCKET_ID before uploading.');
     }
     const auth = await b2Authorize();
     const newUploads = await uploadAssets(auth, uploadJobs, publicBaseUrl, options.manifestPath, manifest);
