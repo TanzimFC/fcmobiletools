@@ -672,11 +672,12 @@ async function collectProgression(page) {
       const parsed = parsePlayerStats(currentText);
       const skillPointsToSpend = parseSkillPointsToSpend(currentText);
       const title = cleanText(await page.locator("h1").first().innerText().catch(() => ""));
-      const ovrMatch = title.match(/[—–-]\s*(\d{2,3})\s*OVR/i);
+      const titleOvrMatch = title.match(/[—–-]\s*(\d{2,3})\s*OVR/i);
+      const visibleOvrMatch = currentText.match(/\b(\d{2,3})\s+(GK|RWB|RB|CB|LB|LWB|CDM|RM|CM|CAM|LM|RW|RF|CF|ST|LF|LW)\b/i);
       snapshots.push({
         rank,
         trainingLevel: level,
-        ovr: ovrMatch ? Number(ovrMatch[1]) : null,
+        ovr: visibleOvrMatch ? Number(visibleOvrMatch[1]) : titleOvrMatch ? Number(titleOvrMatch[1]) : null,
         skillPointsToSpend,
         stats: parsed.stats,
         statExtraction: parsed.extraction
