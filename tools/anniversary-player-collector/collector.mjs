@@ -21,6 +21,7 @@ function parseArgs(argv) {
     discover: false,
     refreshListing: false,
     downloadImages: false,
+    captureProgression: false,
     delayMs: DEFAULT_DELAY_MS,
     help: false
   };
@@ -32,6 +33,7 @@ function parseArgs(argv) {
     else if (arg === "--discover") options.discover = true;
     else if (arg === "--refresh-listing") options.refreshListing = true;
     else if (arg === "--download-images") options.downloadImages = true;
+    else if (arg === "--capture-progression") options.captureProgression = true;
     else if (arg === "--limit") {
       const value = Number(argv[++i]);
       if (!Number.isInteger(value) || value < 1) throw new Error("--limit must be a positive integer.");
@@ -59,7 +61,8 @@ Usage:
   node collector.mjs --discover
   node collector.mjs --limit 5
   node collector.mjs --limit 5 --download-images
-  node collector.mjs --all --download-images
+  node collector.mjs --limit 5 --capture-progression
+  node collector.mjs --all --download-images --capture-progression
 
 Options:
   --discover          Refresh and save listing pages only; don't visit player details.
@@ -67,6 +70,7 @@ Options:
   --limit <number>    Number of player detail pages to collect (default: 5).
   --all               Explicitly collect all player cards discovered in the listing.
   --download-images   Download only the player card background and action shot.
+  --capture-progression Capture the visible stats at rank 1-5 and training levels 0-30 when controls and stats are available.
   --delay-ms <n>      Delay between page visits; minimum 1200 ms (default: 1800).
   --help              Show this help.
 
@@ -335,6 +339,274 @@ function pickMatch(text, regex) {
   return match?.[1] ? cleanText(match[1]) : null;
 }
 
+const STAT_GROUPS = [
+  { key: "pace", label: "Pace", substats: ["Acceleration", "Sprint Speed"] },
+  { key: "shooting", label: "Shooting", substats: ["Finishing", "Long Shot", "Shot Power", "Positioning", "Volley", "Penalties"] },
+  { key: "passing", label: "Passing", substats: ["Short Passing", "Long Passing", "Vision", "Crossing", "Curve", "Free Kick"] },
+  { key: "dribbling", label: "Dribbling", substats: ["Dribbling", "Balance", "Agility", "Reactions", "Ball Control"] },
+  { key: "defending", label: "Defending", substats: ["Marking", "Standing Tackle", "Sliding Tackle", "Awareness", "Heading"] },
+  { key: "physical", label: "Physical", substats: ["Strength", "Aggression", "Jumping", "Stamina"] }
+];
+
+function getNumberAfterLabel(lines, label, startIndex = 0, endIndex = lines.length) {
+  const wanted = label.toLowerCase();
+  for (let index = startIndex; index < endIndex; index += 1) {
+    const line = cleanText(lines[index]);
+    const lowered = line.toLowerCase();
+    if (lowered !== wanted && !lowered.startsWith(wanted + " ") && !lowered.startsWith(wanted + ":")) continue;
+
+    let remainder = line.slice(label.length).trim().replace(/^[:\-]\s*/, "").trim();
+    if (/^\d{1,3}$/.test(remainder)) return { index, value: Number(remainder) };
+    if (!remainder && /^\d{1,3}$/.test(lines[index + 1] || "")) {
+      return { index, value: Number(lines[index + 1]) };
+    }
+  }
+  return null;
+}
+
+function parsePlayerStats(sourceText) {
+  const lines = String(sourceText || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => cleanText(line))
+    .filter(Boolean);
+
+  const starts = new Map();
+  for (const group of STAT_GROUPS) {
+    const found = getNumberAfterLabel(lines, group.label);
+    if (found) starts.set(group.key, found);
+  }
+
+  const presentGroups = STAT_GROUPS.filter((group) => starts.has(group.key));
+  const result = {};
+  for (let groupIndex = 0; groupIndex < STAT_GROUPS.length; groupIndex += 1) {
+    const group = STAT_GROUPS[groupIndex];
+    const start = starts.get(group.key);
+    const nextStarts = presentGroups
+      .map((candidate) => starts.get(candidate.key))
+      .filter((candidate) => candidate && candidate.index > (start?.index ?? -1))
+      .map((candidate) => candidate.index);
+    const end = nextStarts.length ? Math.min(...nextStarts) : lines.length;
+    const substats = {};
+
+    for (const substat of group.substats) {
+      const found = start
+        ? getNumberAfterLabel(lines, substat, start.index + 1, end)
+        : null;
+      substats[substat.replace(/[^a-zA-Z0-9]+(.)/g, (_, letter) => letter.toUpperCase()).replace(/^[A-Z]/, (letter) => letter.toLowerCase())] = found?.value ?? null;
+    }
+
+    result[group.key] = {
+      value: start?.value ?? null,
+      ...substats
+    };
+  }
+
+  const missingGroups = STAT_GROUPS.filter((group) => !starts.has(group.key)).map((group) => group.key);
+  const foundSubstats = Object.values(result).reduce((count, group) => {
+    return count + Object.entries(group).filter(([key, value]) => key !== "value" && Number.isInteger(value)).length;
+  }, 0);
+
+  return {
+    stats: result,
+    extraction: {
+      status: presentGroups.length === STAT_GROUPS.length && foundSubstats >= 20
+        ? "complete"
+        : presentGroups.length > 0
+          ? "partial"
+          : "not-visible",
+      groupsFound: presentGroups.length,
+      groupsExpected: STAT_GROUPS.length,
+      substatsFound: foundSubstats,
+      missingGroups
+    }
+  };
+}
+
+function parseSkillPointsToSpend(sourceText) {
+  const match = String(sourceText || "").match(/Skill\s*points?\s+to\s+spend\s*:?\s*(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+async function getUpgradeControls(page) {
+  return page.evaluate(() => {
+    const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+    const inputs = Array.from(document.querySelectorAll('input, [role="slider"]')).map((element) => {
+      const input = element;
+      const context = clean(input.parentElement?.parentElement?.innerText || input.parentElement?.innerText || "");
+      return {
+        tag: input.tagName.toLowerCase(),
+        type: input.getAttribute("type") || input.getAttribute("role") || "",
+        min: input.getAttribute("min"),
+        max: input.getAttribute("max"),
+        value: input.value ?? input.getAttribute("aria-valuenow"),
+        ariaLabel: input.getAttribute("aria-label"),
+        context: context.slice(0, 220)
+      };
+    });
+    const rankLabel = Array.from(document.querySelectorAll("body *")).find((element) =>
+      element.children.length === 0 && /^select\s+rank$/i.test(clean(element.textContent))
+    );
+    const trainingLabel = Array.from(document.querySelectorAll("body *")).find((element) =>
+      element.children.length === 0 && /^select\s+training$/i.test(clean(element.textContent))
+    );
+    const rankContext = clean(rankLabel?.parentElement?.parentElement?.innerText || rankLabel?.parentElement?.innerText || "");
+    const trainingContext = clean(trainingLabel?.parentElement?.parentElement?.innerText || trainingLabel?.parentElement?.innerText || "");
+    const clickable = Array.from(document.querySelectorAll('button, [role="button"], [role="radio"], label, [tabindex]'))
+      .map((element) => ({
+        text: clean(element.innerText || element.textContent),
+        tag: element.tagName.toLowerCase(),
+        role: element.getAttribute("role"),
+        ariaPressed: element.getAttribute("aria-pressed"),
+        ariaSelected: element.getAttribute("aria-selected"),
+        ariaChecked: element.getAttribute("aria-checked"),
+        context: clean(element.parentElement?.innerText || "").slice(0, 160)
+      }))
+      .filter((item) => item.text && (["1", "2", "3", "4", "5"].includes(item.text) || /training|rank/i.test(item.text)))
+      .slice(0, 40);
+    return { inputs, rankContext: rankContext.slice(0, 500), trainingContext: trainingContext.slice(0, 500), clickable };
+  });
+}
+
+async function setSelectedRank(page, rank) {
+  return page.evaluate((wantedRank) => {
+    const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+    const label = Array.from(document.querySelectorAll("body *")).find((element) =>
+      element.children.length === 0 && /^select\s+rank$/i.test(clean(element.textContent))
+    );
+    if (!label) return false;
+
+    let scope = label;
+    for (let depth = 0; depth < 8 && scope; depth += 1, scope = scope.parentElement) {
+      const candidates = Array.from(scope.querySelectorAll('button, [role="button"], [role="radio"], label, [tabindex]'))
+        .filter((element) => clean(element.innerText || element.textContent) === String(wantedRank));
+      if (candidates.length) {
+        const candidate = candidates[0];
+        candidate.click();
+        return true;
+      }
+    }
+    return false;
+  }, rank);
+}
+
+async function setTrainingLevel(page, level) {
+  return page.evaluate((wantedLevel) => {
+    const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+    const label = Array.from(document.querySelectorAll("body *")).find((element) =>
+      element.children.length === 0 && /^select\s+training$/i.test(clean(element.textContent))
+    );
+    const matches = Array.from(document.querySelectorAll('input[type="range"], input[type="number"], [role="slider"]'));
+    let target = null;
+    if (label) {
+      let scope = label;
+      for (let depth = 0; depth < 8 && scope && !target; depth += 1, scope = scope.parentElement) {
+        target = matches.find((element) => scope.contains(element)) || null;
+      }
+    }
+    if (!target && matches.length === 1) target = matches[0];
+    if (!target || target.tagName.toLowerCase() !== "input") {
+      return { ok: false, value: null, min: null, max: null };
+    }
+
+    const min = Number(target.min || 0);
+    const max = Number(target.max || 30);
+    if (wantedLevel < min || wantedLevel > max) {
+      return { ok: false, value: Number(target.value), min, max };
+    }
+
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    if (setter) setter.call(target, String(wantedLevel));
+    else target.value = String(wantedLevel);
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+    target.dispatchEvent(new Event("change", { bubbles: true }));
+    return { ok: Number(target.value) === wantedLevel, value: Number(target.value), min, max };
+  }, level);
+}
+
+async function collectProgression(page) {
+  const initialText = (await page.locator("body").innerText().catch(() => "")).replace(/\r/g, "");
+  const initialStats = parsePlayerStats(initialText);
+  const controls = await getUpgradeControls(page);
+
+  if (initialStats.extraction.groupsFound === 0) {
+    return {
+      status: "not-captured-stats-not-visible",
+      supportedTrainingLevels: [],
+      rankTrainingSnapshots: [],
+      controls
+    };
+  }
+
+  const levelZero = await setTrainingLevel(page, 0);
+  if (!levelZero.ok) {
+    return {
+      status: "not-captured-training-control-not-detected-or-settable",
+      supportedTrainingLevels: [],
+      rankTrainingSnapshots: [],
+      controls
+    };
+  }
+
+  const maxLevel = Math.min(30, levelZero.max ?? 30);
+  const rankButtons = {};
+  for (const rank of [1, 2, 3, 4, 5]) {
+    rankButtons[rank] = await setSelectedRank(page, rank);
+    if (rankButtons[rank]) break;
+  }
+  const hasRankControl = Object.values(rankButtons).some(Boolean);
+  const ranks = hasRankControl ? [1, 2, 3, 4, 5] : [null];
+  const snapshots = [];
+  const supportedTrainingLevels = [];
+
+  for (const rank of ranks) {
+    if (rank !== null) {
+      const clicked = await setSelectedRank(page, rank);
+      if (!clicked) {
+        snapshots.push({ rank, status: "rank-control-not-settable" });
+        continue;
+      }
+      await page.waitForTimeout(80);
+    }
+
+    const reset = await setTrainingLevel(page, 0);
+    if (!reset.ok) {
+      snapshots.push({ rank, status: "training-control-not-settable" });
+      continue;
+    }
+    await page.waitForTimeout(100);
+
+    for (let level = 0; level <= maxLevel; level += 1) {
+      const changed = await setTrainingLevel(page, level);
+      if (!changed.ok) break;
+      await page.waitForTimeout(65);
+
+      const currentText = (await page.locator("body").innerText().catch(() => "")).replace(/\r/g, "");
+      const parsed = parsePlayerStats(currentText);
+      const skillPointsToSpend = parseSkillPointsToSpend(currentText);
+      const title = cleanText(await page.locator("h1").first().innerText().catch(() => ""));
+      const ovrMatch = title.match(/[—–-]\s*(\d{2,3})\s*OVR/i);
+      snapshots.push({
+        rank,
+        trainingLevel: level,
+        ovr: ovrMatch ? Number(ovrMatch[1]) : null,
+        skillPointsToSpend,
+        stats: parsed.stats,
+        statExtraction: parsed.extraction
+      });
+      if (rank === (hasRankControl ? 1 : null)) supportedTrainingLevels.push(level);
+    }
+  }
+
+  return {
+    status: snapshots.some((item) => item.statExtraction?.groupsFound > 0) ? "captured" : "controls-detected-stats-missing",
+    supportedTrainingLevels,
+    rankLevelsCaptured: hasRankControl ? [1, 2, 3, 4, 5] : [],
+    rankTrainingSnapshots: snapshots,
+    controls
+  };
+}
+
 function getExtensions(contentType, url) {
   const mime = (contentType || "").split(";")[0].trim().toLowerCase();
   const byMime = {
@@ -408,8 +680,16 @@ async function collectPlayer(browser, card, options, imageCache) {
 
   try {
     const response = await goToPage(page, card.detailUrl);
+    // RenderZ sometimes hydrates stat sections after the first document paint.
+    await page.waitForFunction(() => {
+      const text = document.body?.innerText || "";
+      return /(?:^|\\n)Pace\\s*\\n\\s*\\d{2,3}/i.test(text)
+        || /(?:^|\\n)Shooting\\s*\\n\\s*\\d{2,3}/i.test(text);
+    }, { timeout: 2200 }).catch(() => {});
     const title = cleanText(await page.locator("h1").first().innerText().catch(() => ""));
-    const sourceText = (await page.locator("body").innerText()).replace(/\r/g, "").slice(0, 18000);
+    const sourceText = (await page.locator("body").innerText()).replace(/\r/g, "").slice(0, 30000);
+    const parsedStats = parsePlayerStats(sourceText);
+    const progression = options.captureProgression ? await collectProgression(page) : null;
     const imageElements = await page.locator("img").evaluateAll((images) => images.map((img) => {
       const source = img.currentSrc || img.src || img.getAttribute("data-src") || "";
       return {
@@ -456,6 +736,10 @@ async function collectPlayer(browser, card, options, imageCache) {
         attackingDefensiveWorkRate: pickMatch(sourceText, /Work\s+Rate\s*\(ATT\)\s*\/\s*Work\s+Rate\s*\(DEF\)\s*([^\n]+)/i),
         skillMoves: pickMatch(sourceText, /Skill\s+Moves\s*\((\d)\)/i)
       },
+      stats: parsedStats.stats,
+      statExtraction: parsedStats.extraction,
+      skillPointsToSpend: parseSkillPointsToSpend(sourceText),
+      progression,
       assets: mainImages,
       sourceText
     };
@@ -540,7 +824,7 @@ async function run() {
           lastCompletedAt: record.collectedAt,
           errors
         });
-        console.log(`  saved: ${record.name} | OVR ${record.ovr ?? "unknown"} | ${record.assets.length} selected image(s)`);
+        console.log(`  saved: ${record.name} | OVR ${record.ovr ?? "unknown"} | stats: ${record.statExtraction.status} (${record.statExtraction.groupsFound}/6 groups)${record.progression ? " | progression: " + record.progression.status : ""} | ${record.assets.length} selected image(s)`);
       } catch (error) {
         errors.push({ sourceUrl: card.detailUrl, message: String(error?.message || error), at: new Date().toISOString() });
         await writeJsonAtomic(CHECKPOINT_FILE, {
