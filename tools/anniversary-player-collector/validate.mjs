@@ -46,6 +46,10 @@ async function main() {
   const seenIds = new Map();
   let recordsWithActionShot = 0;
   let recordsWithBackground = 0;
+  let recordsWithCompleteStats = 0;
+  let recordsWithPartialStats = 0;
+  let recordsWithoutStats = 0;
+  let recordsWithProgressionSnapshots = 0;
   let localImagesVerified = 0;
   let localImagesMissing = 0;
 
@@ -77,6 +81,16 @@ async function main() {
       seenIds.set(id, record.sourceUrl);
     }
 
+    if (record.statExtraction?.status === "complete") recordsWithCompleteStats += 1;
+    else if ((record.statExtraction?.groupsFound ?? 0) > 0) {
+      recordsWithPartialStats += 1;
+      addIssue(issues, "warning", "partial-player-stats", id, label + ": only " + record.statExtraction.groupsFound + "/6 stat groups were parsed");
+    } else {
+      recordsWithoutStats += 1;
+      addIssue(issues, "warning", "player-stats-not-visible", id, label + ": the source page did not expose parseable main player stats");
+    }
+    if ((record.progression?.rankTrainingSnapshots?.length ?? 0) > 0) recordsWithProgressionSnapshots += 1;
+
     const assets = Array.isArray(record.assets) ? record.assets : [];
     const actionShot = assets.some((asset) => asset.kind === "action-shot" && !asset.downloadError);
     const background = assets.some((asset) => asset.kind === "player-card-background" && !asset.downloadError);
@@ -102,6 +116,10 @@ async function main() {
     totalRecords: records.length,
     recordsWithActionShot,
     recordsWithCardBackground: recordsWithBackground,
+    recordsWithCompleteStats,
+    recordsWithPartialStats,
+    recordsWithoutStats,
+    recordsWithProgressionSnapshots,
     localImagesVerified,
     localImagesMissing,
     errors,
