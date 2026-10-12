@@ -76,13 +76,19 @@ Assets use a stable key based on asset type plus canonical URL (the short-lived 
 
 ## Step 5 — Collect the entire Anniversary program
 
-Only after the pilot's stats, progression behavior, and image matches have been manually checked:
+After the pilot's stats and image matches have been manually checked, collect all discovered cards sequentially:
 
 ```powershell
 npm run collect
 ```
 
-This is an explicit action that visits all discovered cards sequentially, saves one base stat record per card, and downloads the available image assets. It does not capture every training level/rank variant for every player. Training XP thresholds belong in one shared table; trained attribute changes must be verified from source behavior before a universal formula is used. Rank skill trees and actual skill allocations are kept as a separate layer. This is not run by the website or by GitHub Actions.
+That command preserves existing records and is useful for resuming or refreshing a dataset. For the first clean full collection, use:
+
+```powershell
+npm run collect:fresh
+```
+
+The fresh command deletes prior player records, checkpoint, and stale reports before starting. It preserves the verified listing cache and shared asset library/files to avoid downloading known shared backgrounds and logos again. It saves one base-stat record per card and downloads available images. Rank/training snapshots are deliberately out of scope for this stage; the base record still stores the `Skill Points to Spend` value when the page exposes it. Training XP thresholds and trained attribute changes can be integrated as a separate, verified layer later. This tool is not run by the website or by GitHub Actions.
 
 Optional flags:
 
@@ -91,7 +97,8 @@ Optional flags:
 - `--discover`: refresh and save the listing only
 - `--refresh-listing`: force a fresh listing crawl before collecting detail pages
 - `--download-images`: download selected image assets
-- `--capture-progression`: opt into rank/training state sampling
+- `--capture-progression`: experimental rank/training sampling (not part of base collection)
+- `--fresh`: with `--all`, clear existing player records/checkpoint/reports before a clean full run, preserving listing and shared assets
 - `--player-url <url>`: test a single known RenderZ player page instead of selecting cards from the listing
 - `--keep-source-text`: retain the raw source text in each record for debugging (off by default)
 - `--delay-ms 900`: change the delay between player pages; the script enforces a minimum of 600 ms
