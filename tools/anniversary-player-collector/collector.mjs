@@ -1745,8 +1745,17 @@ async function run() {
     } else {
       console.log("\nRun complete. All requested player pages and attempted image downloads succeeded.");
     }
-    console.log(JSON.stringify(report, null, 2));
-    console.log("\nStored-record totals include records from earlier runs; see succeededThisRun for this invocation.");
+    console.log(JSON.stringify({
+      requestedDetailCount: report.requestedDetailCount,
+      succeededThisRun: report.succeededThisRun,
+      failedThisRun: report.failedThisRun,
+      failedAssetDownloadsThisRun: report.failedAssetDownloadsThisRun,
+      savedRecordCount: report.savedRecordCount,
+      recordsWithCompleteStats: report.recordsWithCompleteStats,
+      uniqueAssetsInLibrary: report.uniqueAssetsInLibrary,
+      reportFile: "data/pilot-report.json"
+    }, null, 2));
+    console.log("\nFull per-player details are saved to data/pilot-report.json.");
   } finally {
     await context.close().catch(() => {});
     await browser.close();
