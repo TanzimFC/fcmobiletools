@@ -50,6 +50,13 @@ async function main() {
   let recordsWithPartialStats = 0;
   let recordsWithoutStats = 0;
   let recordsWithProgressionSnapshots = 0;
+  const assetKindCounts = {
+    "player-card-background": 0,
+    "player-image": 0,
+    "club-logo": 0,
+    "league-logo": 0,
+    "nation-flag": 0
+  };
   let localImagesVerified = 0;
   let localImagesMissing = 0;
 
@@ -101,6 +108,7 @@ async function main() {
     if (background) recordsWithBackground += 1;
 
     for (const asset of assets) {
+      if (Object.hasOwn(assetKindCounts, asset.kind)) assetKindCounts[asset.kind] += 1;
       if (!asset.localPath) continue;
       const localPath = path.resolve(asset.localPath);
       if (await exists(localPath)) localImagesVerified += 1;
@@ -123,6 +131,7 @@ async function main() {
     recordsWithPartialStats,
     recordsWithoutStats,
     recordsWithProgressionSnapshots,
+    assetKindCounts,
     localImagesVerified,
     localImagesMissing,
     errors,
