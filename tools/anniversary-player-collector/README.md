@@ -70,7 +70,9 @@ Copy the real player URL from RenderZ. Do not leave the example slug in place.
 npm run pilot:assets
 ```
 
-Downloads images identified on the detail page as `Player Card Background`, `Action shot`, `Club`, `League`, or `Nation`. They are stored as reusable, hashed local assets, so identical images can be shared across players instead of saving duplicate copies. The exact available asset types depend on what RenderZ exposes on that page.
+Downloads images identified on the detail page as card backgrounds, player artwork, club logos, league logos, and nation flags. The collector first captures the actual bytes requested by the browser, then falls back to the same browser context for binary downloads. This handles image hosts that return images as `application/octet-stream`, and avoids relying on expired or restricted direct Node fetches. Content signatures are checked before files are saved.
+
+Assets use a stable key based on asset type plus canonical URL (the short-lived signature query is excluded). A persistent `data/asset-library.json` manifest records each distinct downloaded asset once. Player records reference those keys and paths; shared backgrounds and crests do not need separate physical copies for every player. Player artwork remains per-card because its source image differs.
 
 ## Step 5 — Collect the entire Anniversary program
 
@@ -101,6 +103,7 @@ Optional flags:
 data/
   anniversary-listing.json
   anniversary-3rd-2026.json
+  asset-library.json
   checkpoint.json
   assets/
     player-card-background-<asset-hash>.<ext>
