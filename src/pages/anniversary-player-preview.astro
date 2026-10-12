@@ -113,7 +113,7 @@ import '../styles/anniversary-player-cards.css';
       const safe = safeImageUrl(url);
       return safe ? '<img class="' + klass + '" src="' + esc(safe) + '" alt="' + esc(alt) + '" loading="lazy" decoding="async">' : '';
     };
-    const number = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
+    const number = (value) => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
     const statValue = (stats, key) => {
       const entry = stats && stats[key];
       const value = entry && typeof entry === 'object' && 'value' in entry ? entry.value : entry;
