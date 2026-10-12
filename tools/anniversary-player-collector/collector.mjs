@@ -485,16 +485,21 @@ function parseSkillPointsToSpend(sourceText) {
 async function getUpgradeControls(page) {
   return page.evaluate(() => {
     const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
-    const inputs = Array.from(document.querySelectorAll('input, [role="slider"]')).map((element) => {
-      const input = element;
-      const context = clean(input.parentElement?.parentElement?.innerText || input.parentElement?.innerText || "");
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+    };
+    const inputs = Array.from(document.querySelectorAll("input, [role='slider']")).map((element) => {
+      const context = clean(element.parentElement?.parentElement?.innerText || element.parentElement?.innerText || "");
       return {
-        tag: input.tagName.toLowerCase(),
-        type: input.getAttribute("type") || input.getAttribute("role") || "",
-        min: input.getAttribute("min"),
-        max: input.getAttribute("max"),
-        value: input.value ?? input.getAttribute("aria-valuenow"),
-        ariaLabel: input.getAttribute("aria-label"),
+        tag: element.tagName.toLowerCase(),
+        type: element.getAttribute("type") || element.getAttribute("role") || "",
+        min: element.getAttribute("min"),
+        max: element.getAttribute("max"),
+        value: element.value ?? element.getAttribute("aria-valuenow"),
+        ariaLabel: element.getAttribute("aria-label"),
+        html: (element.outerHTML || "").slice(0, 400),
         context: context.slice(0, 220)
       };
     });
@@ -504,9 +509,24 @@ async function getUpgradeControls(page) {
     const trainingLabel = Array.from(document.querySelectorAll("body *")).find((element) =>
       element.children.length === 0 && /^select\s+training$/i.test(clean(element.textContent))
     );
+    const trainingButton = Array.from(document.querySelectorAll("button, [role='button']"))
+      .find((element) => visible(element) && /^Training Level\s+\d+$/i.test(clean(element.innerText || element.textContent)));
     const rankContext = clean(rankLabel?.parentElement?.parentElement?.innerText || rankLabel?.parentElement?.innerText || "");
     const trainingContext = clean(trainingLabel?.parentElement?.parentElement?.innerText || trainingLabel?.parentElement?.innerText || "");
-    const clickable = Array.from(document.querySelectorAll('button, [role="button"], [role="radio"], label, [tabindex]'))
+    const hierarchy = [];
+    let node = trainingButton;
+    for (let depth = 0; depth < 5 && node; depth += 1, node = node.parentElement) {
+      hierarchy.push({
+        depth,
+        tag: node.tagName.toLowerCase(),
+        role: node.getAttribute("role"),
+        className: typeof node.className === "string" ? node.className.slice(0, 200) : "",
+        text: clean(node.innerText || node.textContent).slice(0, 300),
+        html: (node.outerHTML || "").slice(0, 700)
+      });
+    }
+    const clickable = Array.from(document.querySelectorAll("button, [role='button'], [role='radio'], [role='option'], [role='menuitem'], label, [tabindex]"))
+      .filter(visible)
       .map((element) => ({
         text: clean(element.innerText || element.textContent),
         tag: element.tagName.toLowerCase(),
@@ -514,11 +534,24 @@ async function getUpgradeControls(page) {
         ariaPressed: element.getAttribute("aria-pressed"),
         ariaSelected: element.getAttribute("aria-selected"),
         ariaChecked: element.getAttribute("aria-checked"),
+        dataState: element.getAttribute("data-state"),
+        className: typeof element.className === "string" ? element.className.slice(0, 180) : "",
         context: clean(element.parentElement?.innerText || "").slice(0, 160)
       }))
       .filter((item) => item.text && (["1", "2", "3", "4", "5"].includes(item.text) || /training|rank/i.test(item.text)))
-      .slice(0, 40);
-    return { inputs, rankContext: rankContext.slice(0, 500), trainingContext: trainingContext.slice(0, 500), clickable };
+      .slice(0, 60);
+    return {
+      inputs,
+      rankContext: rankContext.slice(0, 500),
+      trainingContext: trainingContext.slice(0, 500),
+      trainingButton: trainingButton ? {
+        text: clean(trainingButton.innerText || trainingButton.textContent),
+        html: (trainingButton.outerHTML || "").slice(0, 1200)
+      } : null,
+      trainingButtonHierarchy: hierarchy,
+      clickable,
+      currentUrl: location.href
+    };
   });
 }
 
@@ -532,11 +565,10 @@ async function setSelectedRank(page, rank) {
 
     let scope = label;
     for (let depth = 0; depth < 8 && scope; depth += 1, scope = scope.parentElement) {
-      const candidates = Array.from(scope.querySelectorAll('button, [role="button"], [role="radio"], label, [tabindex]'))
+      const candidates = Array.from(scope.querySelectorAll("button, [role='button'], [role='radio'], label, [tabindex]"))
         .filter((element) => clean(element.innerText || element.textContent) === String(wantedRank));
       if (candidates.length) {
-        const candidate = candidates[0];
-        candidate.click();
+        candidates[0].click();
         return true;
       }
     }
@@ -544,49 +576,212 @@ async function setSelectedRank(page, rank) {
   }, rank);
 }
 
-async function readCurrentTrainingValue(page) {
+async function readCurrentRankState(page) {
   return page.evaluate(() => {
     const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
     const label = Array.from(document.querySelectorAll("body *")).find((element) =>
-      element.children.length === 0 && /^select\s+training$/i.test(clean(element.textContent))
+      element.children.length === 0 && /^select\s+rank$/i.test(clean(element.textContent))
     );
-    const matches = Array.from(document.querySelectorAll('input[type="range"], input[type="number"], [role="slider"]'));
-    let target = null;
+    const candidates = [];
     if (label) {
       let scope = label;
-      for (let depth = 0; depth < 8 && scope && !target; depth += 1, scope = scope.parentElement) {
-        target = matches.find((element) => scope.contains(element)) || null;
+      for (let depth = 0; depth < 8 && scope; depth += 1, scope = scope.parentElement) {
+        const found = Array.from(scope.querySelectorAll("button, [role='button'], [role='radio'], label, [tabindex]"))
+          .filter((element) => /^[1-5]$/.test(clean(element.innerText || element.textContent)));
+        if (found.length) {
+          for (const element of found) {
+            const input = element.matches("input") ? element : element.querySelector("input");
+            const radioLabel = element.tagName.toLowerCase() === "label" && element.htmlFor
+              ? document.getElementById(element.htmlFor)
+              : null;
+            const associatedInput = input || (radioLabel?.matches("input") ? radioLabel : null);
+            const stateText = [
+              element.getAttribute("aria-checked"),
+              element.getAttribute("aria-pressed"),
+              element.getAttribute("aria-selected"),
+              element.getAttribute("data-state"),
+              typeof element.className === "string" ? element.className : ""
+            ].filter(Boolean).join(" ");
+            const active = associatedInput?.checked === true
+              || /^(true|checked|on)$/i.test(element.getAttribute("aria-checked") || "")
+              || /^(true|checked|on)$/i.test(element.getAttribute("aria-pressed") || "")
+              || /^true$/i.test(element.getAttribute("aria-selected") || "")
+              || /(^|\s)(active|selected|checked|current)(\s|$)/i.test(stateText)
+              || /(?:^|[-_])(active|selected|checked|current)(?:$|[-_])/i.test(stateText);
+            candidates.push({
+              rank: Number(clean(element.innerText || element.textContent)),
+              active,
+              inputChecked: associatedInput?.checked ?? null,
+              ariaChecked: element.getAttribute("aria-checked"),
+              ariaPressed: element.getAttribute("aria-pressed"),
+              ariaSelected: element.getAttribute("aria-selected"),
+              dataState: element.getAttribute("data-state"),
+              className: typeof element.className === "string" ? element.className : ""
+            });
+          }
+          break;
+        }
       }
     }
-    if (!target && matches.length === 1) target = matches[0];
+    const activeRanks = candidates.filter((candidate) => candidate.active).map((candidate) => candidate.rank);
+    const params = new URL(location.href).searchParams;
+    const rankParam = params.get("rankUp");
+    return {
+      selectedRank: activeRanks.length === 1 ? activeRanks[0] : null,
+      activeRanks,
+      rankParam,
+      candidates,
+      url: location.href
+    };
+  });
+}
+
+async function readCurrentTrainingValue(page) {
+  return page.evaluate(() => {
+    const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+    const button = Array.from(document.querySelectorAll("button, [role='button']")).find((element) =>
+      /^Training Level\s+\d+$/i.test(clean(element.innerText || element.textContent))
+    );
+    const buttonMatch = button && clean(button.innerText || button.textContent).match(/^Training Level\s+(\d+)$/i);
+    if (buttonMatch) return Number(buttonMatch[1]);
+
+    const matches = Array.from(document.querySelectorAll("input[type='range'], input[type='number'], [role='slider']"));
+    const target = matches.find((element) => {
+      const context = clean(element.parentElement?.parentElement?.innerText || element.parentElement?.innerText || "");
+      return /select\s+training/i.test(context);
+    }) || (matches.length === 1 ? matches[0] : null);
     const raw = target ? (target.value ?? target.getAttribute("aria-valuenow")) : null;
     return raw === null || raw === undefined || raw === "" ? null : Number(raw);
   });
 }
 
 async function setTrainingLevel(page, level) {
-  return page.evaluate((wantedLevel) => {
+  return page.evaluate(async (wantedLevel) => {
     const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
-    const label = Array.from(document.querySelectorAll("body *")).find((element) =>
-      element.children.length === 0 && /^select\s+training$/i.test(clean(element.textContent))
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+    };
+    const readButtonValue = () => {
+      const button = Array.from(document.querySelectorAll("button, [role='button']")).find((element) =>
+        /^Training Level\s+\d+$/i.test(clean(element.innerText || element.textContent))
+      );
+      const match = button && clean(button.innerText || button.textContent).match(/^Training Level\s+(\d+)$/i);
+      return match ? Number(match[1]) : null;
+    };
+
+    const button = Array.from(document.querySelectorAll("button, [role='button']")).find((element) =>
+      visible(element) && /^Training Level\s+\d+$/i.test(clean(element.innerText || element.textContent))
     );
-    const matches = Array.from(document.querySelectorAll('input[type="range"], input[type="number"], [role="slider"]'));
-    let target = null;
-    if (label) {
-      let scope = label;
-      for (let depth = 0; depth < 8 && scope && !target; depth += 1, scope = scope.parentElement) {
-        target = matches.find((element) => scope.contains(element)) || null;
+
+    if (button) {
+      const current = readButtonValue();
+      if (current === wantedLevel) {
+        return { ok: true, value: current, min: 0, max: 30, mode: "dropdown", unchanged: true };
       }
+
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const rootSelectors = [
+        "[role='listbox']",
+        "[role='menu']",
+        "[data-radix-popper-content-wrapper]",
+        "[data-state='open']",
+        "[role='dialog']",
+        ".dropdown-menu",
+        ".select-content"
+      ];
+      const roots = rootSelectors.flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+        .filter((root) => visible(root) && !root.contains(button));
+      const preferredRoots = roots.filter((root) =>
+        root.matches("[role='listbox'], [role='menu'], [data-radix-popper-content-wrapper], [role='dialog'], .dropdown-menu, .select-content")
+      );
+      const searchRoots = preferredRoots.length ? preferredRoots : roots;
+      const clickableSelector = "button, [role='button'], [role='option'], [role='menuitem'], [role='radio'], label, li, [tabindex], [data-value]";
+      let candidates = searchRoots.flatMap((root) =>
+        Array.from(root.querySelectorAll(clickableSelector)).filter((element) => {
+          if (!visible(element)) return false;
+          const text = clean(element.innerText || element.textContent);
+          return text === String(wantedLevel)
+            || element.getAttribute("data-value") === String(wantedLevel)
+            || element.getAttribute("value") === String(wantedLevel);
+        })
+      );
+
+      if (!candidates.length && searchRoots.length) {
+        candidates = searchRoots.flatMap((root) =>
+          Array.from(root.querySelectorAll("*")).filter((element) =>
+            visible(element) && element.children.length === 0
+            && clean(element.textContent) === String(wantedLevel)
+          )
+        ).map((leaf) => {
+          let candidate = leaf;
+          for (let depth = 0; depth < 3 && candidate.parentElement; depth += 1) {
+            const parent = candidate.parentElement;
+            if (searchRoots.some((root) => root === parent || root.contains(parent)) &&
+                (parent.matches(clickableSelector) || parent.getAttribute("role") || parent.hasAttribute("tabindex"))) {
+              candidate = parent;
+            } else {
+              break;
+            }
+          }
+          return candidate;
+        });
+      }
+
+      const uniqueCandidates = [...new Set(candidates)];
+      const option = uniqueCandidates.find((element) => {
+        const text = clean(element.innerText || element.textContent);
+        return text === String(wantedLevel)
+          || element.getAttribute("data-value") === String(wantedLevel)
+          || element.getAttribute("value") === String(wantedLevel);
+      });
+      if (option) {
+        option.click();
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        const observed = readButtonValue();
+        return {
+          ok: observed === wantedLevel,
+          value: observed,
+          min: 0,
+          max: 30,
+          mode: "dropdown",
+          optionText: clean(option.innerText || option.textContent),
+          optionRole: option.getAttribute("role")
+        };
+      }
+
+      return {
+        ok: false,
+        value: readButtonValue(),
+        min: 0,
+        max: 30,
+        mode: "dropdown",
+        reason: "Training dropdown opened, but the requested level option was not found.",
+        visibleMenus: searchRoots.map((root) => ({
+          role: root.getAttribute("role"),
+          className: typeof root.className === "string" ? root.className : "",
+          text: clean(root.innerText || root.textContent).slice(0, 700)
+        }))
+      };
     }
-    if (!target && matches.length === 1) target = matches[0];
+
+    // Fallback for versions of the page that expose a native range/number input.
+    const matches = Array.from(document.querySelectorAll("input[type='range'], input[type='number'], [role='slider']"));
+    const target = matches.find((element) => {
+      const context = clean(element.parentElement?.parentElement?.innerText || element.parentElement?.innerText || "");
+      return /select\s+training/i.test(context);
+    }) || (matches.length === 1 ? matches[0] : null);
     if (!target || target.tagName.toLowerCase() !== "input") {
-      return { ok: false, value: null, min: null, max: null };
+      return { ok: false, value: null, min: null, max: null, mode: "unknown-control" };
     }
 
     const min = Number(target.min || 0);
     const max = Number(target.max || 30);
     if (wantedLevel < min || wantedLevel > max) {
-      return { ok: false, value: Number(target.value), min, max };
+      return { ok: false, value: Number(target.value), min, max, mode: "input" };
     }
 
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
@@ -594,7 +789,8 @@ async function setTrainingLevel(page, level) {
     else target.value = String(wantedLevel);
     target.dispatchEvent(new Event("input", { bubbles: true }));
     target.dispatchEvent(new Event("change", { bubbles: true }));
-    return { ok: Number(target.value) === wantedLevel, value: Number(target.value), min, max };
+    const value = Number(target.value);
+    return { ok: value === wantedLevel, value, min, max, mode: "input" };
   }, level);
 }
 
@@ -607,6 +803,9 @@ async function collectProgression(page) {
     return {
       status: "not-captured-stats-not-visible",
       supportedTrainingLevels: [],
+      rankLevelsCaptured: [],
+      expectedSnapshotCount: 0,
+      validSnapshotCount: 0,
       rankTrainingSnapshots: [],
       controls
     };
@@ -617,53 +816,65 @@ async function collectProgression(page) {
     return {
       status: "not-captured-training-control-not-detected-or-settable",
       supportedTrainingLevels: [],
+      rankLevelsCaptured: [],
+      expectedSnapshotCount: 0,
+      validSnapshotCount: 0,
       rankTrainingSnapshots: [],
+      trainingSetupError: levelZero,
       controls
     };
   }
 
   const maxLevel = Math.min(30, levelZero.max ?? 30);
-  const rankButtons = {};
-  for (const rank of [1, 2, 3, 4, 5]) {
-    rankButtons[rank] = await setSelectedRank(page, rank);
-    if (rankButtons[rank]) break;
-  }
-  const hasRankControl = Object.values(rankButtons).some(Boolean);
-  const ranks = hasRankControl ? [1, 2, 3, 4, 5] : [null];
   const snapshots = [];
   const supportedTrainingLevels = [];
+  const ranks = [1, 2, 3, 4, 5];
+  let hasRankControl = false;
 
   for (const rank of ranks) {
-    if (rank !== null) {
-      const clicked = await setSelectedRank(page, rank);
-      if (!clicked) {
-        snapshots.push({ rank, status: "rank-control-not-settable" });
-        continue;
-      }
-      await page.waitForTimeout(80);
-    }
-
-    const reset = await setTrainingLevel(page, 0);
-    if (!reset.ok) {
-      snapshots.push({ rank, status: "training-control-not-settable" });
+    const clicked = await setSelectedRank(page, rank);
+    if (!clicked) {
+      snapshots.push({ rank, status: "rank-control-not-settable" });
       continue;
     }
-    await page.waitForTimeout(100);
+    hasRankControl = true;
+    await page.waitForTimeout(140);
+    const rankState = await readCurrentRankState(page);
+    const rankConfirmed = rankState.selectedRank === rank
+      || rankState.rankParam === String(rank);
+
+    // If selection is ambiguous, still inspect the current visible state but mark it unverified.
+    const reset = await setTrainingLevel(page, 0);
+    if (!reset.ok) {
+      snapshots.push({ rank, status: "training-control-not-settable", rankConfirmed, rankState, trainingError: reset });
+      continue;
+    }
+    await page.waitForTimeout(120);
 
     for (let level = 0; level <= maxLevel; level += 1) {
       const changed = await setTrainingLevel(page, level);
       if (!changed.ok) {
-        snapshots.push({ rank, trainingLevel: level, status: "training-control-not-settable" });
+        snapshots.push({
+          rank,
+          trainingLevel: level,
+          status: "training-control-not-settable",
+          rankConfirmed,
+          rankState,
+          trainingError: changed
+        });
         break;
       }
-      await page.waitForTimeout(65);
+
+      await page.waitForTimeout(100);
       const observedTrainingValue = await readCurrentTrainingValue(page);
       if (observedTrainingValue !== level) {
         snapshots.push({
           rank,
           trainingLevel: level,
           status: "training-value-not-confirmed",
-          observedTrainingValue
+          observedTrainingValue,
+          rankConfirmed,
+          rankState
         });
         break;
       }
@@ -679,32 +890,38 @@ async function collectProgression(page) {
         trainingLevel: level,
         ovr: visibleOvrMatch ? Number(visibleOvrMatch[1]) : titleOvrMatch ? Number(titleOvrMatch[1]) : null,
         skillPointsToSpend,
+        rankConfirmed,
+        rankState,
         stats: parsed.stats,
         statExtraction: parsed.extraction
       });
-      if (rank === (hasRankControl ? 1 : null)) supportedTrainingLevels.push(level);
+      if (rank === 1) supportedTrainingLevels.push(level);
     }
   }
 
   const validSnapshots = snapshots.filter((item) =>
-    Number.isInteger(item.trainingLevel) && item.statExtraction?.status === "complete"
+    Number.isInteger(item.trainingLevel)
+    && item.statExtraction?.status === "complete"
+    && item.rankConfirmed === true
   );
   const uniqueStatStates = new Set(validSnapshots.map((item) => JSON.stringify(item.stats)));
-  const rankLevelsCaptured = hasRankControl
-    ? [...new Set(validSnapshots.filter((item) => item.rank !== null && item.trainingLevel === 0).map((item) => item.rank))].sort()
-    : [];
+  const rankLevelsCaptured = [...new Set(validSnapshots
+    .filter((item) => item.trainingLevel === 0)
+    .map((item) => item.rank))].sort((a, b) => a - b);
   const expectedSnapshotCount = ranks.length * (maxLevel + 1);
   const allExpectedSnapshotsCaptured = validSnapshots.length === expectedSnapshotCount
-    && (!hasRankControl || rankLevelsCaptured.length === 5)
+    && rankLevelsCaptured.length === ranks.length
     && supportedTrainingLevels.length === maxLevel + 1;
 
   let status = "controls-detected-stats-missing";
-  if (validSnapshots.length > 0 && uniqueStatStates.size === 1 && snapshots.length > 1) {
+  if (validSnapshots.length > 0 && uniqueStatStates.size === 1 && validSnapshots.length > 1) {
     status = "controls-detected-but-stats-never-changed";
   } else if (allExpectedSnapshotsCaptured) {
     status = "captured";
   } else if (validSnapshots.length > 0) {
     status = "partial";
+  } else if (hasRankControl) {
+    status = "rank-training-controls-detected-but-not-confirmed";
   }
 
   return {
