@@ -42,21 +42,17 @@ function helpText() {
     "  npm run import:catalog",
     "",
     "Dry-run validates records and asset files without uploading anything.",
-    "Real import uploads unique assets to Backblaze B2, then upserts the catalog into Supabase.",
+    "Real import stores versioned Cloudinary URLs for the two Anniversary templates and RenderZ URLs for other artwork, then upserts metadata to Supabase.",
     "",
     "Required local .env variables for real import:",
     "  SUPABASE_SERVICE_ROLE_KEY",
-    "  B2_ACCOUNT_ID",
-    "  B2_APPLICATION_KEY",
-    "  B2_BUCKET_ID",
-    "  B2_BUCKET_NAME",
-    "  B2_PUBLIC_BASE_URL",
     "",
     "Optional:",
     "  SUPABASE_URL (defaults to this site's existing Supabase project)",
     "  ANNIVERSARY_LIVE_MIN_OVR (defaults to 117 only when exact card template metadata is unavailable)",
     "  PLAYER_CATALOG_JSON (defaults to data/anniversary-3rd-2026.json)",
-    "  PLAYER_ASSET_LIBRARY_JSON (defaults to data/asset-library.json)"
+    "  PLAYER_ASSET_LIBRARY_JSON (defaults to data/asset-library.json)",
+    "  --publish (optional; publish only after you approve the preview)"
   ].join("\n"));
 }
 
@@ -161,6 +157,18 @@ function publicUrl(base, objectKey) {
   return base.replace(/\/+$/, "") + "/" + encoded;
 }
 
+const CLOUDINARY_BACKGROUND_URLS = {
+  "5b7a16deacdd0a0099e5": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791830025/player-card-background-5b7a16deacdd0a0099e5.webp",
+  "6310d43df9e82264f22d": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791830265/player-card-background-6310d43df9e82264f22d.webp"
+};
+
+function deliveredAssetUrl(asset) {
+  const key = deriveAssetKey(asset);
+  if (CLOUDINARY_BACKGROUND_URLS[key]) return CLOUDINARY_BACKGROUND_URLS[key];
+  return String(asset?.sourceUrl || asset?.canonicalSourceUrl || "").trim();
+}
+
+
 function resolveCardDisplayName(record) {
   const explicit = String(record.cardDisplayName || record.card_display_name || "").trim();
   if (explicit) return explicit;
@@ -244,57 +252,6 @@ async function requestJson(url, init = {}) {
     throw new Error("HTTP " + response.status + " for " + url + ": " + String(message).slice(0, 500));
   }
   return json;
-}
-
-async function authorizeB2(accountId, applicationKey) {
-  const basic = Buffer.from(accountId + ":" + applicationKey).toString("base64");
-  const auth = await requestJson("https://api.backblazeb2.com/b2api/v2/b2_authorize_account", {
-    headers: { Authorization: "Basic " + basic }
-  });
-  return {
-    apiUrl: auth.apiUrl,
-    downloadUrl: auth.downloadUrl,
-    authorizationToken: auth.authorizationToken,
-    getUpload: async () => requestJson(auth.apiUrl + "/b2api/v2/b2_get_upload_url", {
-      method: "POST",
-      headers: { Authorization: auth.authorizationToken, "Content-Type": "application/json" },
-      body: JSON.stringify({ bucketId: process.env.B2_BUCKET_ID })
-    })
-  };
-}
-
-async function uploadB2File(auth, uploadInfoRef, filePath, objectKey, contentType) {
-  const data = await readFile(filePath);
-  const sha1 = createHash("sha1").update(data).digest("hex");
-  let uploadInfo = uploadInfoRef.current || await auth.getUpload();
-
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const response = await fetch(uploadInfo.uploadUrl, {
-      method: "POST",
-      headers: {
-        Authorization: uploadInfo.authorizationToken,
-        "X-Bz-File-Name": encodeURIComponent(objectKey),
-        "Content-Type": contentType || "application/octet-stream",
-        "X-Bz-Content-Sha1": sha1,
-        "X-Bz-Info-src_last_modified_millis": String(Date.now()),
-        "Cache-Control": "public, max-age=31536000, immutable"
-      },
-      body: data
-    });
-    const bodyText = await response.text();
-    let body = null;
-    try { body = bodyText ? JSON.parse(bodyText) : null; } catch { body = null; }
-    if (response.ok) {
-      uploadInfoRef.current = uploadInfo;
-      return { response: body, bytes: data.length, sha1 };
-    }
-    if (attempt === 0 && (response.status === 401 || response.status === 403 || response.status >= 500)) {
-      uploadInfo = await auth.getUpload();
-      continue;
-    }
-    throw new Error("B2 upload failed for " + objectKey + " (HTTP " + response.status + "): " + String(body?.message || bodyText || response.statusText).slice(0, 400));
-  }
-  throw new Error("B2 upload failed after retry: " + objectKey);
 }
 
 async function upsertSupabase(table, rows, supabaseUrl, serviceKey) {
@@ -428,14 +385,13 @@ async function main() {
   }
 
   const neededAssets = [...requiredAssetKeys].map((key) => assetIndex.get(key)).filter(Boolean);
-  const missingFiles = [];
-  for (const asset of neededAssets) {
-    const filePath = safeLocalPath(asset);
-    if (!(await fileExists(filePath))) missingFiles.push({ assetKey: asset.assetKey, kind: asset.kind, localPath: asset.localPath || null });
-  }
-
-  if (missingFiles.length) {
-    issues.push(...missingFiles.map((item) => ({ issue: "missing-local-asset", ...item })));
+  const assetsMissingUrls = neededAssets.filter((asset) => !deliveredAssetUrl(asset));
+  if (assetsMissingUrls.length) {
+    issues.push(...assetsMissingUrls.map((asset) => ({
+      issue: "missing-source-image-url",
+      assetKey: asset.assetKey,
+      kind: asset.kind
+    })));
   }
 
   const initialReport = {
@@ -443,89 +399,66 @@ async function main() {
     sourceJson: path.relative(ROOT, DATA_FILE).replaceAll(path.sep, "/"),
     inputRecords: records.length,
     uniqueRequiredAssets: neededAssets.length,
-    completeStats: completeStats,
-    publishableBeforeAssetUpload: publishable,
-    missingLocalAssets: missingFiles.length,
-    liveTemplateAssetKey: templateAssets["anniversary27-live"]?.assetKey || null,
-    baseTemplateAssetKey: templateAssets["anniversary27-base"]?.assetKey || null,
-    liveTemplatePath: templateAssets["anniversary27-live"]?.localPath || null,
-    baseTemplatePath: templateAssets["anniversary27-base"]?.localPath || null,
+    completeStats,
+    publishableBeforeUpload: publishable,
+    missingLocalAssets: 0,
+    missingSourceUrls: assetsMissingUrls.length,
+    cloudinaryTemplateAssets: Object.keys(CLOUDINARY_BACKGROUND_URLS),
     dryRun,
+    publishRequested: process.argv.includes("--publish"),
     issues
   };
 
   if (dryRun) {
     await writeFile(REPORT_FILE, JSON.stringify(initialReport, null, 2) + "\n");
     console.log(JSON.stringify(initialReport, null, 2));
-    if (missingFiles.length) process.exitCode = 1;
+    if (assetsMissingUrls.length) process.exitCode = 1;
     return;
   }
 
   const supabaseUrl = env("SUPABASE_URL", SUPABASE_URL_DEFAULT).replace(/\/+$/, "");
   const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY");
-  const accountId = env("B2_ACCOUNT_ID");
-  const applicationKey = env("B2_APPLICATION_KEY");
-  const bucketId = env("B2_BUCKET_ID");
-  const bucketName = env("B2_BUCKET_NAME");
-  const publicBase = env("B2_PUBLIC_BASE_URL").replace(/\/+$/, "");
-  const missingEnv = [
-    ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
-    ["B2_ACCOUNT_ID", accountId],
-    ["B2_APPLICATION_KEY", applicationKey],
-    ["B2_BUCKET_ID", bucketId],
-    ["B2_BUCKET_NAME", bucketName],
-    ["B2_PUBLIC_BASE_URL", publicBase]
-  ].filter(([, value]) => !value).map(([name]) => name);
-  if (missingEnv.length) throw new Error("Set these values in the local .env file before real import: " + missingEnv.join(", "));
-  if (missingFiles.length) throw new Error("Import stopped before upload: " + missingFiles.length + " required image files are missing. Run npm run validate and check data/asset-library.json.");
+  if (!serviceKey) throw new Error("Set SUPABASE_SERVICE_ROLE_KEY in the local .env file before importing.");
+  if (assetsMissingUrls.length) throw new Error("Import stopped: " + assetsMissingUrls.length + " referenced assets have no usable URL.");
   if (records.length !== 151) console.warn("Expected 151 Anniversary cards in this snapshot; found " + records.length + ". Continuing with the actual data.");
 
-  // Ensure the current B2 bucket name is used in object key paths and keep every name stable.
-  const auth = await authorizeB2(accountId, applicationKey);
-  const uploadInfoRef = { current: null };
-  const assetRows = [];
+  // Cloudinary's two versioned Anniversary backgrounds are permanent references;
+  // the remaining image URLs use RenderZ directly until an owned image pipeline is added.
   const urlByKey = new Map();
-  let uploadCount = 0;
-
-  for (let index = 0; index < neededAssets.length; index += 1) {
-    const asset = neededAssets[index];
-    const localFile = safeLocalPath(asset);
-    const fileBytes = await readFile(localFile);
-    const contentHash = createHash("sha256").update(fileBytes).digest("hex");
-    const ext = extensionFor(localFile, asset.contentType);
-    const objectKey = "fc-mobile/anniversary-3rd-2026/" + asset.assetKey + ext;
-    const contentType = asset.contentType || ({ ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".svg": "image/svg+xml" }[ext]) || "application/octet-stream";
-
-    await uploadB2File(auth, uploadInfoRef, localFile, objectKey, contentType);
-    uploadCount += 1;
-    const url = publicUrl(publicBase, objectKey);
-    urlByKey.set(asset.assetKey, url);
+  const assetRows = [];
+  for (const asset of neededAssets) {
+    const key = deriveAssetKey(asset);
+    const url = deliveredAssetUrl(asset);
+    const isCloudinary = Boolean(CLOUDINARY_BACKGROUND_URLS[key]);
+    const ext = isCloudinary ? "webp" : extensionFor(asset.localPath, asset.contentType).replace(/^\./, "");
+    const objectKey = (isCloudinary ? "cloudinary/" : "renderz/") + key + "." + ext;
+    const canonical = canonicalUrl(asset.canonicalSourceUrl || asset.sourceUrl);
+    const contentType = isCloudinary ? "image/webp" : (asset.contentType || "image/png");
+    urlByKey.set(key, url);
     assetRows.push({
-      asset_key: asset.assetKey,
+      asset_key: key,
       kind: normalizeKind(asset.kind),
-      canonical_source_url: canonicalUrl(asset.canonicalSourceUrl || asset.sourceUrl),
+      canonical_source_url: canonical,
       object_key: objectKey,
       public_url: url,
       content_type: contentType,
-      byte_size: fileBytes.length,
-      sha256: contentHash,
+      byte_size: Number.isFinite(Number(asset.bytes)) ? Number(asset.bytes) : 0,
+      sha256: asset.contentHash || null,
       width: asset.width !== null && asset.width !== undefined && asset.width !== "" && Number.isFinite(Number(asset.width)) ? Number(asset.width) : null,
       height: asset.height !== null && asset.height !== undefined && asset.height !== "" && Number.isFinite(Number(asset.height)) ? Number(asset.height) : null,
       is_public: true,
       updated_at: new Date().toISOString()
     });
-    if (uploadCount % 20 === 0 || uploadCount === neededAssets.length) {
-      console.log("B2 assets uploaded " + uploadCount + "/" + neededAssets.length);
-    }
   }
 
   await upsertSupabase("fc_player_assets", assetRows, supabaseUrl, serviceKey);
 
+  const publishRequested = process.argv.includes("--publish");
   const cards = prepared.map(({ record, templateKey, references, recordIssues }) => {
     const urls = {};
     for (const [field, asset] of Object.entries(references)) {
       if (!asset) { urls[field] = null; continue; }
-      urls[field] = urlByKey.get(asset.assetKey) || null;
+      urls[field] = urlByKey.get(asset.assetKey) || deliveredAssetUrl(asset) || null;
     }
     const built = cardData(record, {
       playerImage: references.playerImage ? { ...references.playerImage, publicUrl: urls.playerImage } : null,
@@ -534,8 +467,9 @@ async function main() {
       leagueLogo: references.leagueLogo ? { ...references.leagueLogo, publicUrl: urls.leagueLogo } : null,
       nationFlag: references.nationFlag ? { ...references.nationFlag, publicUrl: urls.nationFlag } : null
     }, templateKey);
-    // A card only becomes public after all required data and essential art are present.
-    if (recordIssues.length) built.is_published = false;
+
+    // Keep imported cards hidden unless a human explicitly requests publication.
+    built.is_published = publishRequested && built.is_published && recordIssues.length === 0;
     return built;
   });
 
@@ -543,24 +477,23 @@ async function main() {
 
   const report = {
     ...initialReport,
-    missingLocalAssets: 0,
-    uploadedUniqueAssets: uploadCount,
-    supabaseAssetRows: assetRows.length,
-    supabasePlayerRows: cards.length,
+    missingSourceUrls: 0,
+    assetMetadataRows: assetRows.length,
+    cardRowsUpserted: cards.length,
+    cloudinaryTemplateUrls: Object.entries(CLOUDINARY_BACKGROUND_URLS).map(([assetKey, url]) => ({ assetKey, url })),
+    renderzAssetUrls: assetRows.filter((asset) => asset.object_key.startsWith("renderz/")).length,
+    cloudinaryAssets: assetRows.filter((asset) => asset.object_key.startsWith("cloudinary/")).length,
     publishedCards: cards.filter((card) => card.is_published).length,
     unpublishedCards: cards.filter((card) => !card.is_published).length,
-    templateKeys: {
-      live: templateAssets["anniversary27-live"]?.assetKey || null,
-      base: templateAssets["anniversary27-base"]?.assetKey || null
-    },
     importedAt: new Date().toISOString()
   };
   await writeFile(REPORT_FILE, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify({
     inputRecords: report.inputRecords,
-    uploadedUniqueAssets: report.uploadedUniqueAssets,
-    supabaseAssetRows: report.supabaseAssetRows,
-    supabasePlayerRows: report.supabasePlayerRows,
+    assetMetadataRows: report.assetMetadataRows,
+    cardRowsUpserted: report.cardRowsUpserted,
+    renderzAssetUrls: report.renderzAssetUrls,
+    cloudinaryAssets: report.cloudinaryAssets,
     publishedCards: report.publishedCards,
     unpublishedCards: report.unpublishedCards,
     reportFile: "data/catalog-import-report.json",

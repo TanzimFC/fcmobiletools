@@ -4,122 +4,305 @@ import '../styles/anniversary-player-cards.css';
 ---
 
 <BaseLayout
-  title="Anniversary Player Cards Preview · FCMOBILETOOLS"
-  description="Private preview of the FC Mobile 3rd Anniversary player card collection."
+  title="Anniversary Player Database Preview · FCMOBILETOOLS"
+  description="Private review of the FC Mobile Anniversary player catalog."
   robots="noindex,nofollow,noarchive"
   googlebot="noindex,nofollow,noarchive"
 >
-  <main class="anniv-page">
-    <header class="anniv-page__hero">
-      <span class="anniv-page__eyebrow">FC Mobile · Card workshop</span>
-      <h1>Anniversary player cards</h1>
-      <p class="anniv-page__intro">A reusable card renderer, not 151 separate designs. Each player uses the correct Anniversary background, unique player artwork, and shared club, league and nation assets. Rank and training calculations are intentionally excluded from this preview.</p>
-      <div class="anniv-page__status" aria-live="polite">
-        <strong id="anniv-count">Connecting to the catalog…</strong>
-        <span id="anniv-status">Loading published cards from Supabase</span>
+  <main class="anniv-page anniv-preview">
+    <header class="anniv-page__hero anniv-preview__hero">
+      <div class="anniv-preview__topline">
+        <span class="anniv-page__eyebrow">FC Mobile · Database preview</span>
+        <span class="anniv-preview__private"><span></span> PRIVATE PREVIEW</span>
+      </div>
+      <h1>Know every detail.</h1>
+      <p class="anniv-page__intro">Browse the Anniversary collection card by card. Search, compare both designs, then open a player to inspect the full base-stat breakdown.</p>
+      <div class="anniv-preview__metrics" aria-live="polite">
+        <div><strong id="anniv-count">—</strong><span>cards loaded</span></div>
+        <div><strong id="anniv-high-count">—</strong><span>LIVE design</span></div>
+        <div><strong id="anniv-base-count">—</strong><span>BASE design</span></div>
+        <div class="anniv-preview__connection"><span class="anniv-preview__pulse"></span><span id="anniv-status">Checking admin access…</span></div>
       </div>
     </header>
 
-    <section aria-label="Player card filters">
-      <div class="anniv-page__controls">
-        <input id="anniv-search" class="anniv-control anniv-search" type="search" placeholder="Search player, club, league or nation…" autocomplete="off" aria-label="Search players" />
-        <select id="anniv-position" class="anniv-control" aria-label="Filter by position">
-          <option value="">All positions</option>
-          <option>ST</option><option>CF</option><option>LW</option><option>RW</option><option>CAM</option><option>CM</option><option>CDM</option><option>LM</option><option>RM</option><option>LB</option><option>RB</option><option>CB</option><option>LWB</option><option>RWB</option><option>GK</option>
-        </select>
-        <select id="anniv-template" class="anniv-control" aria-label="Filter by Anniversary background">
-          <option value="">Both card designs</option>
-          <option value="anniversary27-live">Higher OVR · LIVE</option>
-          <option value="anniversary27-base">Lower OVR · BASE</option>
-        </select>
-        <button id="anniv-reset" class="anniv-reset" type="button">Reset filters</button>
+    <section id="anniv-list-view" class="anniv-list-view" aria-label="Anniversary player listing">
+      <div class="anniv-list-head">
+        <div>
+          <p class="anniv-section-kicker">THE COLLECTION</p>
+          <h2>Player cards <span id="anniv-result-count">151</span></h2>
+        </div>
+        <label class="anniv-sort-label" for="anniv-sort">Sort by
+          <select id="anniv-sort" class="anniv-control anniv-sort">
+            <option value="ovr-desc">Highest OVR</option>
+            <option value="ovr-asc">Lowest OVR</option>
+            <option value="name-asc">Name A–Z</option>
+          </select>
+        </label>
       </div>
+
+      <div class="anniv-page__controls anniv-filters">
+        <label class="anniv-search-wrap"><span class="anniv-visually-hidden">Search players</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 4 4"></path></svg><input id="anniv-search" class="anniv-control anniv-search" type="search" placeholder="Search name, club, league or nation…" autocomplete="off" /></label>
+        <label><span class="anniv-visually-hidden">Position</span><select id="anniv-position" class="anniv-control"><option value="">All positions</option></select></label>
+        <label><span class="anniv-visually-hidden">Card design</span><select id="anniv-template" class="anniv-control"><option value="">All designs</option><option value="anniversary27-live">LIVE · High tier</option><option value="anniversary27-base">BASE · Standard tier</option></select></label>
+        <button id="anniv-reset" class="anniv-reset" type="button">Reset</button>
+      </div>
+
+      <div class="anniv-results-line"><span id="anniv-result-copy">Loading cards…</span><span>Tap any card for full stats <span aria-hidden="true">↗</span></span></div>
       <div id="anniv-grid" class="anniv-grid" aria-live="polite">
-        <div class="anniv-state"><strong>Loading the catalog</strong>Cards appear here once the dataset has been imported and published.</div>
+        <div class="anniv-state"><strong>Connecting to the catalog</strong>Checking the private preview endpoint…</div>
       </div>
-      <p class="anniv-footnote">Images are served from the configured Backblaze B2 public asset URL. Supabase stores searchable metadata and asset references. Only validated and published records appear here.</p>
+      <div id="anniv-empty" class="anniv-state anniv-empty" hidden><strong>No cards found</strong>Try another search or reset the filters.</div>
     </section>
+
+    <section id="anniv-detail-view" class="anniv-detail-view" hidden aria-label="Player detail and statistics">
+      <button class="anniv-back" id="anniv-back" type="button"><span aria-hidden="true">←</span> All players</button>
+      <div id="anniv-player-detail"></div>
+    </section>
+
+    <p class="anniv-footnote">Review mode only. Player data remains unpublished. Card backgrounds are served from versioned Cloudinary URLs; the other artwork currently uses RenderZ image URLs.</p>
   </main>
 
   <script>
-    import { accountAuth } from '../lib/account-client.js';
-    import { renderAnniversaryPlayerCard } from '../lib/anniversary-player-card.js';
+    import { renderAnniversaryPlayerCard, getAnniversaryPlayerCardEscapeHtml } from '../lib/anniversary-player-card.js';
 
     const grid = document.querySelector('#anniv-grid');
+    const empty = document.querySelector('#anniv-empty');
+    const listView = document.querySelector('#anniv-list-view');
+    const detailView = document.querySelector('#anniv-detail-view');
+    const detailRoot = document.querySelector('#anniv-player-detail');
     const search = document.querySelector('#anniv-search');
     const position = document.querySelector('#anniv-position');
     const template = document.querySelector('#anniv-template');
+    const sort = document.querySelector('#anniv-sort');
     const reset = document.querySelector('#anniv-reset');
     const count = document.querySelector('#anniv-count');
+    const highCount = document.querySelector('#anniv-high-count');
+    const baseCount = document.querySelector('#anniv-base-count');
+    const resultCount = document.querySelector('#anniv-result-count');
+    const resultCopy = document.querySelector('#anniv-result-copy');
     const status = document.querySelector('#anniv-status');
+    const esc = getAnniversaryPlayerCardEscapeHtml();
 
+    const STAT_GROUPS = [
+      { key: 'pace', label: 'Pace', tint: 'cyan', stats: [['acceleration','Acceleration'],['sprintSpeed','Sprint speed']] },
+      { key: 'shooting', label: 'Shooting', tint: 'orange', stats: [['finishing','Finishing'],['longShot','Long shots'],['shotPower','Shot power'],['positioning','Positioning'],['volley','Volleys'],['penalties','Penalties']] },
+      { key: 'passing', label: 'Passing', tint: 'blue', stats: [['shortPassing','Short passing'],['longPassing','Long passing'],['vision','Vision'],['crossing','Crossing'],['curve','Curve'],['freeKick','Free kick']] },
+      { key: 'dribbling', label: 'Dribbling', tint: 'purple', stats: [['dribbling','Dribbling'],['balance','Balance'],['agility','Agility'],['reactions','Reactions'],['ballControl','Ball control']] },
+      { key: 'defending', label: 'Defending', tint: 'green', stats: [['marking','Marking'],['standingTackle','Standing tackle'],['slidingTackle','Sliding tackle'],['awareness','Awareness'],['heading','Heading']] },
+      { key: 'physical', label: 'Physical', tint: 'gold', stats: [['strength','Strength'],['aggression','Aggression'],['jumping','Jumping'],['stamina','Stamina']] }
+    ];
+    const GK_GROUPS = [
+      { key: 'diving', label: 'Diving', tint: 'cyan', stats: [] },
+      { key: 'positioning', label: 'Positioning', tint: 'blue', stats: [] },
+      { key: 'handling', label: 'Handling', tint: 'purple', stats: [] },
+      { key: 'reflexes', label: 'Reflexes', tint: 'green', stats: [] },
+      { key: 'jumping', label: 'Jumping', tint: 'gold', stats: [] },
+      { key: 'kicking', label: 'Kicking', tint: 'orange', stats: [] }
+    ];
+
+    const liveBackground = 'https://res.cloudinary.com/b0qikv7n/image/upload/v1791830265/player-card-background-6310d43df9e82264f22d.webp';
+    const baseBackground = 'https://res.cloudinary.com/b0qikv7n/image/upload/v1791830025/player-card-background-5b7a16deacdd0a0099e5.webp';
     let players = [];
 
-    const text = (value) => String(value ?? '').toLocaleLowerCase();
-    const metaText = (player) => [
-      player.player_name,
-      player.position,
-      player.details?.club,
-      player.details?.league,
-      player.details?.nation
-    ].map(text).join(' ');
+    const lower = (value) => String(value ?? '').toLocaleLowerCase();
+    const safeImageUrl = (value) => {
+      try { const url = new URL(String(value || '')); return url.protocol === 'https:' ? url.href : ''; }
+      catch { return ''; }
+    };
+    const img = (url, klass, alt = '') => {
+      const safe = safeImageUrl(url);
+      return safe ? '<img class="' + klass + '" src="' + esc(safe) + '" alt="' + esc(alt) + '" loading="lazy" decoding="async">' : '';
+    };
+    const number = (value) => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
+    const statValue = (stats, key) => {
+      const entry = stats && stats[key];
+      const value = entry && typeof entry === 'object' && 'value' in entry ? entry.value : entry;
+      return number(value);
+    };
+    const groupScore = (stats, key) => statValue(stats, key);
+    const isGoalkeeper = (player) => player.position === 'GK' || player.stat_extraction?.playerType === 'goalkeeper';
+    const background = (player) => player.template_key === 'anniversary27-live' ? liveBackground : baseBackground;
+    const allSearchText = (player) => [
+      player.player_name, player.card_display_name, player.position, player.ovr,
+      player.program_name, player.card_tier, player.template_key,
+      player.details?.club, player.details?.league, player.details?.nation,
+      player.details?.alternatePositions
+    ].map(lower).join(' ');
 
-    function render() {
-      const query = text(search.value).trim();
+    function populatePositions() {
+      const positions = [...new Set(players.map((player) => String(player.position || '').toUpperCase()).filter(Boolean))].sort();
+      position.innerHTML = '<option value="">All positions</option>' + positions.map((value) => '<option value="' + esc(value) + '">' + esc(value) + '</option>').join('');
+    }
+
+    function sortedFiltered() {
+      const query = lower(search.value).trim();
       const pos = position.value;
-      const key = template.value;
-      const filtered = players.filter((player) =>
-        (!query || metaText(player).includes(query))
-        && (!pos || player.position === pos)
-        && (!key || player.template_key === key)
+      const tier = template.value;
+      const found = players.filter((player) =>
+        (!query || allSearchText(player).includes(query)) &&
+        (!pos || player.position === pos) &&
+        (!tier || player.template_key === tier)
       );
+      const mode = sort.value;
+      found.sort((a, b) => {
+        if (mode === 'ovr-asc') return Number(a.ovr) - Number(b.ovr) || a.player_name.localeCompare(b.player_name);
+        if (mode === 'name-asc') return a.player_name.localeCompare(b.player_name) || Number(b.ovr) - Number(a.ovr);
+        return Number(b.ovr) - Number(a.ovr) || a.player_name.localeCompare(b.player_name);
+      });
+      return found;
+    }
 
-      count.textContent = filtered.length + ' / ' + players.length + ' players';
-      if (!filtered.length) {
-        grid.innerHTML = '<div class="anniv-state"><strong>No matching cards</strong>Try a different search or reset the filters.</div>';
-        return;
-      }
+    function renderList() {
+      const filtered = sortedFiltered();
+      resultCount.textContent = String(filtered.length);
+      resultCopy.textContent = filtered.length === players.length
+        ? 'Showing all ' + players.length + ' cards'
+        : 'Showing ' + filtered.length + ' of ' + players.length + ' cards';
+      grid.hidden = !filtered.length;
+      empty.hidden = Boolean(filtered.length);
       grid.innerHTML = filtered.map(renderAnniversaryPlayerCard).join('');
     }
 
-    function showSetupMessage(message) {
-      count.textContent = 'Catalog not ready';
-      status.textContent = message;
-      grid.innerHTML = '<div class="anniv-state"><strong>Waiting for the catalog</strong><span>' + message.replace(/[&<>"]/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])) + '</span><br><br>Once the local importer uploads assets to Backblaze B2 and upserts validated player records to Supabase, refresh this page.</div>';
+    function metaPill(label, value) {
+      if (value === null || value === undefined || String(value).trim() === '') return '';
+      return '<div class="anniv-detail-meta"><span>' + esc(label) + '</span><strong>' + esc(Array.isArray(value) ? value.join(', ') : String(value)) + '</strong></div>';
+    }
+
+    function renderStatGroup(group, stats) {
+      const source = stats && stats[group.key] && typeof stats[group.key] === 'object' ? stats[group.key] : {};
+      const score = statValue(stats, group.key);
+      const entries = group.stats.length
+        ? group.stats.map(([key, label]) => [key, label, statValue(source, key)]).filter(([, , value]) => value !== null)
+        : Object.entries(source).filter(([key, value]) => key !== 'value' && number(value) !== null).map(([key, value]) => [key, key.replace(/([A-Z])/g, ' $1').replace(/^./, (x) => x.toUpperCase()), number(value)]);
+      const visibleEntries = entries.length ? entries : [];
+      const cells = visibleEntries.map(([key, label, value]) =>
+        '<div class="anniv-substat"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>'
+      ).join('');
+      const percent = score === null ? 0 : Math.min(100, Math.max(0, (score / 170) * 100));
+      return '<section class="anniv-stat-group anniv-stat-group--' + esc(group.tint) + '">' +
+        '<header class="anniv-stat-group__head"><div><span>' + esc(group.label) + '</span><strong>' + (score === null ? '—' : esc(score)) + '</strong></div>' +
+        '<div class="anniv-stat-bar"><i style="width:' + percent + '%"></i></div></header>' +
+        '<div class="anniv-substats">' + (cells || '<p class="anniv-stat-empty">No individual attributes recorded.</p>') + '</div></section>';
+    }
+
+    function renderDetails(player) {
+      const details = player.details || {};
+      const meta = [
+        ['Club', details.club], ['League', details.league], ['Nation', details.nation],
+        ['Alternate positions', player.alternate_positions?.join(', ') || details.alternatePositions],
+        ['Preferred foot', details.strongFootWeakFoot], ['Height', details.height], ['Weight', details.weight],
+        ['Work rate', details.attackingDefensiveWorkRate], ['Skill moves', details.skillMoves]
+      ].map(([label, value]) => metaPill(label, value)).join('');
+      const stats = player.stats || {};
+      const groups = (isGoalkeeper(player) ? GK_GROUPS : STAT_GROUPS).map((group) => renderStatGroup(group, stats)).join('');
+      const positions = [player.position, ...(player.alternate_positions || [])].filter(Boolean);
+      const playStyles = Array.isArray(player.play_styles) ? player.play_styles : [];
+      const styleMarkup = playStyles.length ? playStyles.map((style) => {
+        const name = typeof style === 'string' ? style : style?.name;
+        const desc = typeof style === 'object' ? style?.description : '';
+        if (!name) return '';
+        return '<article class="anniv-playstyle"><strong>' + esc(name) + '</strong>' + (style.level ? '<span class="anniv-playstyle__level">LEVEL ' + esc(style.level) + '</span>' : '') + (desc ? '<p>' + esc(desc) + '</p>' : '') + '</article>';
+      }).join('') : '<p class="anniv-muted">No play-style notes were collected for this card.</p>';
+
+      return '<div class="anniv-detail-head">' +
+        '<div><p class="anniv-section-kicker">PLAYER FILE / ' + esc(player.source_card_id) + '</p><h1>' + esc(player.player_name) + '</h1>' +
+        '<p class="anniv-detail-head__sub">' + esc(player.position) + ' · ' + esc(player.ovr) + ' OVR · ' + esc(player.program_name || '3rd Anniversary') + '</p>' +
+        '<div class="anniv-detail-chips">' + positions.map((value) => '<span>' + esc(value) + '</span>').join('') + '<span class="anniv-detail-chip--tier">' + esc(player.card_tier === 'high' ? 'LIVE DESIGN' : 'BASE DESIGN') + '</span></div></div>' +
+        '<div class="anniv-detail-head__rating"><strong>' + esc(player.ovr) + '</strong><span>OVERALL</span><b>' + esc(player.position) + '</b></div>' +
+      '</div>' +
+      '<div class="anniv-detail-layout">' +
+        '<aside class="anniv-detail-aside"><div class="anniv-detail-card">' +
+          img(background(player), 'anniv-detail-card__background', '') +
+          img(player.player_image_url, 'anniv-detail-card__player', player.player_name) +
+          '<div class="anniv-detail-card__shade"></div><div class="anniv-detail-card__rating"><strong>' + esc(player.ovr) + '</strong><span>' + esc(player.position) + '</span></div>' +
+          '<div class="anniv-detail-card__logos">' + img(player.nation_flag_url, 'anniv-detail-flag', details.nation || 'Nation') + img(player.club_logo_url, 'anniv-detail-logo', details.club || 'Club') + img(player.league_logo_url, 'anniv-detail-logo', details.league || 'League') + '</div>' +
+          '<div class="anniv-detail-card__name">' + esc(player.card_display_name || player.player_name) + '</div>' +
+        '</div><div class="anniv-detail-quick">' +
+          metaPill('Skill points to spend', player.skill_points_to_spend) +
+          metaPill('Card version', player.card_tier === 'high' ? 'Higher OVR · LIVE' : 'Base OVR · BASE') +
+        '</div></aside>' +
+        '<div class="anniv-detail-content">' +
+          '<section class="anniv-detail-block"><div class="anniv-detail-block__title"><div><p class="anniv-section-kicker">PLAYER PROFILE</p><h2>At a glance</h2></div><span class="anniv-detail-block__tag">CARD ' + esc(player.source_card_id) + '</span></div><div class="anniv-detail-meta-grid">' + meta + '</div></section>' +
+          '<section class="anniv-detail-block"><div class="anniv-detail-block__title"><div><p class="anniv-section-kicker">BASE ATTRIBUTES</p><h2>Statistics</h2></div><span class="anniv-detail-block__tag">' + (isGoalkeeper(player) ? 'GOALKEEPER' : 'OUTFIELD') + '</span></div><div class="anniv-stat-grid">' + groups + '</div></section>' +
+          '<section class="anniv-detail-block"><div class="anniv-detail-block__title"><div><p class="anniv-section-kicker">PLAY STYLE</p><h2>Traits & tendencies</h2></div><span class="anniv-detail-block__tag">' + esc(playStyles.length) + ' RECORDED</span></div><div class="anniv-playstyle-grid">' + styleMarkup + '</div></section>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function showPlayer(playerId, push = false) {
+      const player = players.find((item) => String(item.source_card_id) === String(playerId));
+      if (!player) {
+        listView.hidden = false;
+        detailView.hidden = true;
+        return;
+      }
+      listView.hidden = true;
+      detailView.hidden = false;
+      detailRoot.innerHTML = renderDetails(player);
+      if (push) history.pushState({ player: String(playerId) }, '', '?player=' + encodeURIComponent(playerId));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showList(push = false) {
+      detailView.hidden = true;
+      listView.hidden = false;
+      if (push) history.pushState({}, '', location.pathname);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showAccessError(message, isAuth = false) {
+      count.textContent = '—';
+      status.textContent = isAuth ? 'Admin sign-in required' : 'Catalog unavailable';
+      grid.hidden = false;
+      grid.innerHTML = '<div class="anniv-state anniv-state--wide"><strong>' + (isAuth ? 'This preview is locked' : 'Could not load the player catalog') + '</strong><p>' + esc(message) + '</p>' + (isAuth ? '<a class="anniv-signin" href="/admin/">Sign in to the admin workspace <span aria-hidden="true">↗</span></a>' : '<button class="anniv-reset" id="anniv-retry" type="button">Try again</button>') + '</div>';
+      empty.hidden = true;
     }
 
     async function loadCatalog() {
       try {
-        const { data, error } = await accountAuth
-          .from('fc_player_cards')
-          .select('source_card_id,source_slug,player_name,card_display_name,ovr,position,alternate_positions,program_name,program_key,card_tier,template_key,stats,stat_extraction,details,play_styles,skill_points_to_spend,skill_points_to_spend_label,player_image_url,card_background_url,club_logo_url,league_logo_url,nation_flag_url,is_published')
-          .eq('program_key', 'anniversary-3rd-2026')
-          .eq('is_published', true)
-          .order('ovr', { ascending: false })
-          .limit(200);
-
-        if (error) throw error;
-        players = Array.isArray(data) ? data : [];
-        if (!players.length) {
-          showSetupMessage('Supabase is connected, but no Anniversary records are published yet.');
+        const response = await fetch('/api/admin/player-preview', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } });
+        const body = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          showAccessError('Sign in with the site admin account to view unpublished player records. These cards are not public yet.', true);
           return;
         }
-        status.textContent = 'Supabase catalog connected · B2 images';
-        render();
+        if (!response.ok) throw new Error(body.error || 'The preview endpoint returned ' + response.status + '.');
+        players = Array.isArray(body.players) ? body.players : [];
+        count.textContent = String(players.length);
+        highCount.textContent = String(players.filter((player) => player.template_key === 'anniversary27-live').length);
+        baseCount.textContent = String(players.filter((player) => player.template_key === 'anniversary27-base').length);
+        status.textContent = 'Admin verified · Cloudinary + RenderZ art';
+        populatePositions();
+        renderList();
+        const selected = new URLSearchParams(location.search).get('player');
+        if (selected) showPlayer(selected);
       } catch (error) {
-        console.error('[anniversary-player-preview] Catalog load failed', error);
-        showSetupMessage('Could not read fc_player_cards. Check the migration, public read policy and import report.');
+        console.error('[anniversary-player-preview]', error);
+        showAccessError(error?.message || 'A connection error occurred.');
       }
     }
 
-    search.addEventListener('input', render);
-    position.addEventListener('change', render);
-    template.addEventListener('change', render);
-    reset.addEventListener('click', () => {
-      search.value = '';
-      position.value = '';
-      template.value = '';
-      render();
+    search.addEventListener('input', renderList);
+    position.addEventListener('change', renderList);
+    template.addEventListener('change', renderList);
+    sort.addEventListener('change', renderList);
+    reset.addEventListener('click', () => { search.value = ''; position.value = ''; template.value = ''; sort.value = 'ovr-desc'; renderList(); });
+    document.querySelector('#anniv-back').addEventListener('click', () => showList(true));
+    grid.addEventListener('click', (event) => {
+      const card = event.target.closest('[data-card-id]');
+      if (card) showPlayer(card.dataset.cardId, true);
+    });
+    grid.addEventListener('keydown', (event) => {
+      if (!['Enter', ' '].includes(event.key)) return;
+      const card = event.target.closest('[data-card-id]');
+      if (card) { event.preventDefault(); showPlayer(card.dataset.cardId, true); }
+    });
+    window.addEventListener('popstate', () => {
+      const playerId = new URLSearchParams(location.search).get('player');
+      if (playerId) showPlayer(playerId); else showList();
+    });
+    grid.addEventListener('click', (event) => {
+      if (event.target.closest('#anniv-retry')) loadCatalog();
     });
 
     loadCatalog();

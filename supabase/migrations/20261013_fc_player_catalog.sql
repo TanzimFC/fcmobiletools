@@ -86,7 +86,7 @@ grant select on public.fc_player_cards to anon, authenticated;
 grant all on public.fc_player_assets to service_role;
 grant all on public.fc_player_cards to service_role;
 
-comment on table public.fc_player_assets is 'Deduplicated metadata for image objects stored in Backblaze B2; no binary image content is stored in Supabase.';
+comment on table public.fc_player_assets is 'Deduplicated metadata for externally hosted image URLs, including Cloudinary and RenderZ; binary image content is not stored in Supabase.';
 comment on table public.fc_player_cards is 'Searchable FC Mobile player card records. Only validated records should be published.';
 comment on column public.fc_player_cards.template_key is 'Template selected from the card-specific Anniversary BASE/LIVE family.';
 comment on column public.fc_player_cards.stats is 'Structured base attribute groups; training calculations are intentionally maintained separately.';
