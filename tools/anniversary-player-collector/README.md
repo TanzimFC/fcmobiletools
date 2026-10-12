@@ -36,7 +36,7 @@ If this is a fresh checkout, first ensure you're on the `feature/anniversary-pla
 npm run discover
 ```
 
-This visits the listing pages at a conservative pace and saves `data/anniversary-listing.json`. It does not crawl each player's detail page or download images. The later pilot commands reuse this saved listing, so you don't repeatedly revisit all seven listing pages.
+This visits the listing pages at a conservative pace and saves `data/anniversary-listing.json`. It does not crawl each player's detail page or download images. The later pilot commands reuse this saved listing, so you don't repeatedly revisit all seven listing pages. Player pages share one browser context, so browser cache can reuse common resources across cards.
 
 ## Step 2 — Collect a five-card pilot
 
@@ -94,7 +94,7 @@ Optional flags:
 - `--capture-progression`: opt into rank/training state sampling
 - `--player-url <url>`: test a single known RenderZ player page instead of selecting cards from the listing
 - `--keep-source-text`: retain the raw source text in each record for debugging (off by default)
-- `--delay-ms 1800`: change the delay between page visits; the script enforces a minimum of 1200 ms
+- `--delay-ms 900`: change the delay between player pages; the script enforces a minimum of 600 ms
 - `--help`: show options
 
 ## Local outputs
