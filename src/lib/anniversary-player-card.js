@@ -102,7 +102,7 @@ export function renderAnniversaryPlayerCard(player) {
 
   return '<article class="fc-player-tile" role="link" tabindex="0" aria-label="View stats for ' + escapeHtml(name) + '" data-tier="' + escapeHtml(template) + '" data-position="' + escapeHtml(position) + '" data-card-id="' + escapeHtml(player.source_card_id || "") + '">' +
     '<div class="fc-player-card-art" data-template="' + escapeHtml(template) + '">' +
-      image(player.card_background_url, "fc-player-card-art__frame", "") +
+      image(backgroundUrl, "fc-player-card-art__frame", "") +
       image(player.player_image_url, "fc-player-card-art__athlete", name) +
       '<div class="fc-player-card-art__shade"></div>' +
       '<div class="fc-player-card-art__rating"><strong>' + escapeHtml(ovr) + '</strong><span>' + escapeHtml(position) + '</span></div>' +
