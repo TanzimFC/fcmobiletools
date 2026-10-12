@@ -72,7 +72,8 @@ export function renderAnniversaryPlayerCard(player) {
   const details = player.details || {};
   const badges = [
     image(player.nation_flag_url, "fc-card-badge fc-card-badge--nation", details.nation || "Nation"),
-    image(player.club_logo_url, "fc-card-badge fc-card-badge--club", details.club || "Club")
+    image(player.club_logo_url, "fc-card-badge fc-card-badge--club", details.club || "Club"),
+    image(player.league_logo_url, "fc-card-badge fc-card-badge--league", details.league || "League")
   ].filter(Boolean).join("");
 
   const metaLines = [
