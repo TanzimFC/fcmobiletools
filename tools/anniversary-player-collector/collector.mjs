@@ -22,6 +22,7 @@ function parseArgs(argv) {
     refreshListing: false,
     downloadImages: false,
     captureProgression: false,
+    keepSourceText: false,
     playerUrl: null,
     delayMs: DEFAULT_DELAY_MS,
     help: false
@@ -35,6 +36,7 @@ function parseArgs(argv) {
     else if (arg === "--refresh-listing") options.refreshListing = true;
     else if (arg === "--download-images") options.downloadImages = true;
     else if (arg === "--capture-progression") options.captureProgression = true;
+    else if (arg === "--keep-source-text") options.keepSourceText = true;
     else if (arg === "--player-url") {
       const value = argv[++i];
       if (!value) throw new Error("--player-url requires a RenderZ player URL.");
@@ -83,6 +85,7 @@ Options:
   --all               Explicitly collect all player cards discovered in the listing.
   --download-images   Download only the player card background and action shot.
   --capture-progression Capture the visible stats at rank 1-5 and training levels 0-30 when controls and stats are available.
+  --keep-source-text  Retain the raw page text in each record for parser debugging (off by default).
   --player-url <url>  Collect one specific RenderZ player page (useful for testing a card that displays stats).
   --delay-ms <n>      Delay between page visits; minimum 1200 ms (default: 1800).
   --help              Show this help.
@@ -436,6 +439,44 @@ function parsePlayerStats(sourceText) {
   };
 }
 
+function parsePlayStyles(sourceText) {
+  const lines = String(sourceText || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => cleanText(line))
+    .filter(Boolean);
+  const start = lines.findIndex((line) => /^playstyles?$/i.test(line));
+  if (start < 0) return [];
+
+  const endFound = lines.findIndex((line, index) => index > start && /^select\s+rank$/i.test(line));
+  const end = endFound < 0 ? lines.length : endFound;
+  const section = lines.slice(start + 1, end);
+  const styles = [];
+
+  for (let index = 0; index < section.length - 1; index += 1) {
+    const levelMatch = section[index + 1].match(/^Level\s+(\d+)$/i);
+    if (!levelMatch) continue;
+    const name = section[index];
+    if (!name || /^(read more|playstyles?)$/i.test(name)) continue;
+
+    const descriptionParts = [];
+    for (let cursor = index + 2; cursor < section.length; cursor += 1) {
+      if (/^Read more$/i.test(section[cursor])) break;
+      if (/^Level\s+\d+$/i.test(section[cursor])) break;
+      if (cursor + 1 < section.length && /^Level\s+\d+$/i.test(section[cursor + 1])) break;
+      descriptionParts.push(section[cursor]);
+    }
+
+    styles.push({
+      name,
+      level: Number(levelMatch[1]),
+      description: descriptionParts.join(" ") || null
+    });
+  }
+
+  return styles.filter((style, index, all) => all.findIndex((candidate) => candidate.name === style.name && candidate.level === style.level) === index);
+}
+
 function parseSkillPointsToSpend(sourceText) {
   const match = String(sourceText || "").match(/Skill\s*points?\s+to\s+spend\s*:?\s*(\d+)/i);
   return match ? Number(match[1]) : null;
@@ -501,6 +542,26 @@ async function setSelectedRank(page, rank) {
     }
     return false;
   }, rank);
+}
+
+async function readCurrentTrainingValue(page) {
+  return page.evaluate(() => {
+    const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+    const label = Array.from(document.querySelectorAll("body *")).find((element) =>
+      element.children.length === 0 && /^select\s+training$/i.test(clean(element.textContent))
+    );
+    const matches = Array.from(document.querySelectorAll('input[type="range"], input[type="number"], [role="slider"]'));
+    let target = null;
+    if (label) {
+      let scope = label;
+      for (let depth = 0; depth < 8 && scope && !target; depth += 1, scope = scope.parentElement) {
+        target = matches.find((element) => scope.contains(element)) || null;
+      }
+    }
+    if (!target && matches.length === 1) target = matches[0];
+    const raw = target ? (target.value ?? target.getAttribute("aria-valuenow")) : null;
+    return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+  });
 }
 
 async function setTrainingLevel(page, level) {
@@ -591,8 +652,21 @@ async function collectProgression(page) {
 
     for (let level = 0; level <= maxLevel; level += 1) {
       const changed = await setTrainingLevel(page, level);
-      if (!changed.ok) break;
+      if (!changed.ok) {
+        snapshots.push({ rank, trainingLevel: level, status: "training-control-not-settable" });
+        break;
+      }
       await page.waitForTimeout(65);
+      const observedTrainingValue = await readCurrentTrainingValue(page);
+      if (observedTrainingValue !== level) {
+        snapshots.push({
+          rank,
+          trainingLevel: level,
+          status: "training-value-not-confirmed",
+          observedTrainingValue
+        });
+        break;
+      }
 
       const currentText = (await page.locator("body").innerText().catch(() => "")).replace(/\r/g, "");
       const parsed = parsePlayerStats(currentText);
@@ -611,11 +685,21 @@ async function collectProgression(page) {
     }
   }
 
+  const validSnapshots = snapshots.filter((item) => item.statExtraction?.groupsFound > 0);
+  const uniqueStatStates = new Set(validSnapshots.map((item) => JSON.stringify(item.stats)));
+  let status = "controls-detected-stats-missing";
+  if (validSnapshots.length > 0 && uniqueStatStates.size === 1 && snapshots.length > 1) {
+    status = "controls-detected-but-stats-never-changed";
+  } else if (validSnapshots.length > 0) {
+    status = "captured";
+  }
+
   return {
-    status: snapshots.some((item) => item.statExtraction?.groupsFound > 0) ? "captured" : "controls-detected-stats-missing",
+    status,
     supportedTrainingLevels,
     rankLevelsCaptured: hasRankControl ? [1, 2, 3, 4, 5] : [],
     rankTrainingSnapshots: snapshots,
+    uniqueStatStates: uniqueStatStates.size,
     controls
   };
 }
@@ -752,10 +836,12 @@ async function collectPlayer(browser, card, options, imageCache) {
       stats: parsedStats.stats,
       statExtraction: parsedStats.extraction,
       skillPointsToSpend: parseSkillPointsToSpend(sourceText),
+      playStyles: parsePlayStyles(sourceText),
       progression,
-      assets: mainImages,
-      sourceText
+      assets: mainImages
     };
+
+    if (options.keepSourceText) detailRecord.sourceText = sourceText;
 
     if (options.downloadImages && mainImages.length) {
       const assetDir = path.join(OUTPUT_DIR, "assets");
