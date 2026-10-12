@@ -685,19 +685,33 @@ async function collectProgression(page) {
     }
   }
 
-  const validSnapshots = snapshots.filter((item) => item.statExtraction?.groupsFound > 0);
+  const validSnapshots = snapshots.filter((item) =>
+    Number.isInteger(item.trainingLevel) && item.statExtraction?.status === "complete"
+  );
   const uniqueStatStates = new Set(validSnapshots.map((item) => JSON.stringify(item.stats)));
+  const rankLevelsCaptured = hasRankControl
+    ? [...new Set(validSnapshots.filter((item) => item.rank !== null && item.trainingLevel === 0).map((item) => item.rank))].sort()
+    : [];
+  const expectedSnapshotCount = ranks.length * (maxLevel + 1);
+  const allExpectedSnapshotsCaptured = validSnapshots.length === expectedSnapshotCount
+    && (!hasRankControl || rankLevelsCaptured.length === 5)
+    && supportedTrainingLevels.length === maxLevel + 1;
+
   let status = "controls-detected-stats-missing";
   if (validSnapshots.length > 0 && uniqueStatStates.size === 1 && snapshots.length > 1) {
     status = "controls-detected-but-stats-never-changed";
-  } else if (validSnapshots.length > 0) {
+  } else if (allExpectedSnapshotsCaptured) {
     status = "captured";
+  } else if (validSnapshots.length > 0) {
+    status = "partial";
   }
 
   return {
     status,
     supportedTrainingLevels,
-    rankLevelsCaptured: hasRankControl ? [1, 2, 3, 4, 5] : [],
+    rankLevelsCaptured,
+    expectedSnapshotCount,
+    validSnapshotCount: validSnapshots.length,
     rankTrainingSnapshots: snapshots,
     uniqueStatStates: uniqueStatStates.size,
     controls
