@@ -683,9 +683,9 @@ async function collectPlayer(browser, card, options, imageCache) {
     // RenderZ sometimes hydrates stat sections after the first document paint.
     await page.waitForFunction(() => {
       const text = document.body?.innerText || "";
-      return /(?:^|\\n)Pace\\s*\\n\\s*\\d{2,3}/i.test(text)
-        || /(?:^|\\n)Shooting\\s*\\n\\s*\\d{2,3}/i.test(text);
-    }, { timeout: 2200 }).catch(() => {});
+      return /(?:^|\n)Pace\s*\n\s*\d{2,3}/i.test(text)
+        || /(?:^|\n)Shooting\s*\n\s*\d{2,3}/i.test(text);
+    }, null, { timeout: 2200 }).catch(() => {});
     const title = cleanText(await page.locator("h1").first().innerText().catch(() => ""));
     const sourceText = (await page.locator("body").innerText()).replace(/\r/g, "").slice(0, 30000);
     const parsedStats = parsePlayerStats(sourceText);
@@ -848,6 +848,10 @@ async function run() {
       listingCount: listing.count,
       requestedDetailCount: targetCards.length,
       savedRecordCount: finalRecords.length,
+      recordsWithStats: finalRecords.filter((record) => (record.statExtraction?.groupsFound ?? 0) > 0).length,
+      recordsWithCompleteStats: finalRecords.filter((record) => record.statExtraction?.status === "complete").length,
+      recordsWithProgressionSnapshots: finalRecords.filter((record) => (record.progression?.rankTrainingSnapshots?.length ?? 0) > 0).length,
+      progressionRequested: options.captureProgression,
       recordsWithActionShot: finalRecords.filter((record) => record.assets.some((asset) => asset.kind === "action-shot" && !asset.downloadError)).length,
       recordsWithCardBackground: finalRecords.filter((record) => record.assets.some((asset) => asset.kind === "player-card-background" && !asset.downloadError)).length,
       failuresThisRun: errors
