@@ -36,7 +36,7 @@ If this is a fresh checkout, first ensure you're on the `feature/anniversary-pla
 npm run discover
 ```
 
-This visits the listing pages at a conservative pace and saves `data/anniversary-listing.json`. It does not crawl each player's detail page or download images.
+This visits the listing pages at a conservative pace and saves `data/anniversary-listing.json`. It does not crawl each player's detail page or download images. The later pilot commands reuse this saved listing, so you don't repeatedly revisit all seven listing pages.
 
 ## Step 2 — Collect a five-card pilot
 
@@ -68,7 +68,8 @@ Optional flags:
 
 - `--limit 5`: set a pilot size
 - `--all`: opt into all discovered cards
-- `--discover`: only inspect listing pages
+- `--discover`: refresh and save the listing only
+- `--refresh-listing`: force a fresh listing crawl before collecting detail pages
 - `--download-images`: download selected image assets
 - `--delay-ms 1800`: change the delay between page visits; the script enforces a minimum of 1200 ms
 - `--help`: show options
