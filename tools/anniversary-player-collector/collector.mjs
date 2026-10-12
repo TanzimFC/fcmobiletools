@@ -658,6 +658,65 @@ async function readCurrentTrainingValue(page) {
   });
 }
 
+async function getAvailableTrainingLevels(page) {
+  const levels = await page.evaluate(async () => {
+    const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+    };
+    const button = Array.from(document.querySelectorAll("button, [role='button']")).find((element) =>
+      visible(element) && /^Training Level\s+\d+$/i.test(clean(element.innerText || element.textContent))
+    );
+    if (!button) return { levels: [], reason: "Training Level dropdown button not found." };
+
+    button.click();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const rootSelectors = [
+      "[role='listbox']",
+      "[role='menu']",
+      "[data-radix-popper-content-wrapper]",
+      "[role='dialog']",
+      ".dropdown-menu",
+      ".select-content",
+      "[data-state='open']"
+    ];
+    const roots = rootSelectors.flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+      .filter((root) => visible(root) && !root.contains(button));
+    const preferredRoots = roots.filter((root) =>
+      root.matches("[role='listbox'], [role='menu'], [data-radix-popper-content-wrapper], [role='dialog'], .dropdown-menu, .select-content")
+    );
+    const searchRoots = preferredRoots.length ? preferredRoots : roots;
+    const found = new Set();
+
+    for (const root of searchRoots) {
+      for (const element of Array.from(root.querySelectorAll("*"))) {
+        if (!visible(element)) continue;
+        const text = clean(element.innerText || element.textContent);
+        const match = text.match(/^(?:Training Level\s*)?(\d{1,2})$/i);
+        if (!match) continue;
+        const value = Number(match[1]);
+        if (value >= 0 && value <= 30) found.add(value);
+      }
+    }
+
+    return {
+      levels: [...found].sort((a, b) => a - b),
+      menuCount: searchRoots.length,
+      menus: searchRoots.map((root) => ({
+        role: root.getAttribute("role"),
+        className: typeof root.className === "string" ? root.className.slice(0, 180) : "",
+        text: clean(root.innerText || root.textContent).slice(0, 700)
+      }))
+    };
+  });
+
+  await page.keyboard.press("Escape").catch(() => {});
+  return levels;
+}
+
 async function setTrainingLevel(page, level) {
   return page.evaluate(async (wantedLevel) => {
     const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
@@ -814,25 +873,13 @@ async function collectProgression(page) {
     };
   }
 
-  const levelZero = await setTrainingLevel(page, 0);
-  if (!levelZero.ok) {
-    return {
-      status: "not-captured-training-control-not-detected-or-settable",
-      supportedTrainingLevels: [],
-      rankLevelsCaptured: [],
-      expectedSnapshotCount: 0,
-      validSnapshotCount: 0,
-      rankTrainingSnapshots: [],
-      trainingSetupError: levelZero,
-      controls
-    };
-  }
-
-  const maxLevel = Math.min(30, levelZero.max ?? 30);
   const snapshots = [];
   const supportedTrainingLevels = [];
+  const rankLevelsCaptured = [];
   const ranks = [1, 2, 3, 4, 5];
-  let hasRankControl = false;
+  const trainingLevelsByRank = {};
+  let expectedSnapshotCount = 0;
+  let rankControlDetected = false;
 
   for (const rank of ranks) {
     const clicked = await setSelectedRank(page, rank);
@@ -840,21 +887,32 @@ async function collectProgression(page) {
       snapshots.push({ rank, status: "rank-control-not-settable" });
       continue;
     }
-    hasRankControl = true;
+    rankControlDetected = true;
     await page.waitForTimeout(140);
     const rankState = await readCurrentRankState(page);
-    const rankConfirmed = rankState.selectedRank === rank
-      || rankState.rankParam === String(rank);
+    const rankConfirmed = rankState.selectedRank === rank || rankState.rankParam === String(rank);
 
-    // If selection is ambiguous, still inspect the current visible state but mark it unverified.
-    const reset = await setTrainingLevel(page, 0);
-    if (!reset.ok) {
-      snapshots.push({ rank, status: "training-control-not-settable", rankConfirmed, rankState, trainingError: reset });
+    const trainingOptions = await getAvailableTrainingLevels(page);
+    const availableLevels = Array.isArray(trainingOptions.levels)
+      ? trainingOptions.levels.filter((level) => Number.isInteger(level) && level >= 0 && level <= 30)
+      : [];
+    trainingLevelsByRank[rank] = availableLevels;
+    if (!availableLevels.length) {
+      snapshots.push({
+        rank,
+        status: "training-level-options-not-detected",
+        rankConfirmed,
+        rankState,
+        trainingOptions
+      });
       continue;
     }
-    await page.waitForTimeout(120);
 
-    for (let level = 0; level <= maxLevel; level += 1) {
+    expectedSnapshotCount += availableLevels.length;
+    if (rankConfirmed && availableLevels.includes(0)) rankLevelsCaptured.push(rank);
+    if (rank === 5) supportedTrainingLevels.push(...availableLevels);
+
+    for (const level of availableLevels) {
       const changed = await setTrainingLevel(page, level);
       if (!changed.ok) {
         snapshots.push({
@@ -865,10 +923,10 @@ async function collectProgression(page) {
           rankState,
           trainingError: changed
         });
-        break;
+        continue;
       }
 
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(110);
       const observedTrainingValue = await readCurrentTrainingValue(page);
       if (observedTrainingValue !== level) {
         snapshots.push({
@@ -879,7 +937,7 @@ async function collectProgression(page) {
           rankConfirmed,
           rankState
         });
-        break;
+        continue;
       }
 
       const currentText = (await page.locator("body").innerText().catch(() => "")).replace(/\r/g, "");
@@ -898,7 +956,6 @@ async function collectProgression(page) {
         stats: parsed.stats,
         statExtraction: parsed.extraction
       });
-      if (rank === 1) supportedTrainingLevels.push(level);
     }
   }
 
@@ -908,29 +965,33 @@ async function collectProgression(page) {
     && item.rankConfirmed === true
   );
   const uniqueStatStates = new Set(validSnapshots.map((item) => JSON.stringify(item.stats)));
-  const rankLevelsCaptured = [...new Set(validSnapshots
+  const rankLevelsCapturedSorted = [...new Set(validSnapshots
     .filter((item) => item.trainingLevel === 0)
     .map((item) => item.rank))].sort((a, b) => a - b);
-  const expectedSnapshotCount = ranks.length * (maxLevel + 1);
-  const allExpectedSnapshotsCaptured = validSnapshots.length === expectedSnapshotCount
-    && rankLevelsCaptured.length === ranks.length
-    && supportedTrainingLevels.length === maxLevel + 1;
+  const allRanksHaveLevels = ranks.every((rank) => (trainingLevelsByRank[rank]?.length ?? 0) > 0);
+  const allStatesCaptured = allRanksHaveLevels
+    && validSnapshots.length === expectedSnapshotCount
+    && rankLevelsCapturedSorted.length === ranks.length
+    && ranks.every((rank) => trainingLevelsByRank[rank].every((level) =>
+      validSnapshots.some((item) => item.rank === rank && item.trainingLevel === level)
+    ));
 
   let status = "controls-detected-stats-missing";
   if (validSnapshots.length > 0 && uniqueStatStates.size === 1 && validSnapshots.length > 1) {
     status = "controls-detected-but-stats-never-changed";
-  } else if (allExpectedSnapshotsCaptured) {
+  } else if (allStatesCaptured) {
     status = "captured";
   } else if (validSnapshots.length > 0) {
     status = "partial";
-  } else if (hasRankControl) {
+  } else if (rankControlDetected) {
     status = "rank-training-controls-detected-but-not-confirmed";
   }
 
   return {
     status,
-    supportedTrainingLevels,
-    rankLevelsCaptured,
+    supportedTrainingLevels: [...new Set(supportedTrainingLevels)].sort((a, b) => a - b),
+    trainingLevelsByRank,
+    rankLevelsCaptured: rankLevelsCapturedSorted,
     expectedSnapshotCount,
     validSnapshotCount: validSnapshots.length,
     rankTrainingSnapshots: snapshots,
