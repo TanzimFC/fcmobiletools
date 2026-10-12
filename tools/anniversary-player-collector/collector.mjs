@@ -170,22 +170,43 @@ async function getNextPageUrl(page) {
   });
 }
 
+async function getNextButtonIndex(page) {
+  return page.locator('button, [role="button"]').evaluateAll((elements) => {
+    return elements.findIndex((element) => {
+      const label = (element.innerText || element.textContent || "").replace(/\\s+/g, " ").trim();
+      const disabled = element.hasAttribute("disabled") || element.getAttribute("aria-disabled") === "true";
+      return !disabled && /^next\\b/i.test(label);
+    });
+  });
+}
+
 async function discoverListing(browser, delayMs) {
   const page = await browser.newPage();
   page.setDefaultNavigationTimeout(45000);
-  const seenPages = new Set();
+  const seenUrls = new Set();
+  const seenSignatures = new Set();
   const cardsByUrl = new Map();
   const pageSummaries = [];
   let nextUrl = PROGRAM_URL;
+  let pageAlreadyLoaded = false;
 
   try {
-    while (nextUrl && !seenPages.has(nextUrl)) {
-      seenPages.add(nextUrl);
-      console.log(`[listing ${seenPages.size}] ${nextUrl}`);
-      const response = await goToPage(page, nextUrl);
-      const rows = await getListingRows(page);
-      let newOnThisPage = 0;
+    for (let pageNumber = 1; pageNumber <= 30; pageNumber += 1) {
+      if (!pageAlreadyLoaded) {
+        if (seenUrls.has(nextUrl)) break;
+        seenUrls.add(nextUrl);
+        console.log(`[listing ${pageNumber}] ${nextUrl}`);
+        await goToPage(page, nextUrl);
+      }
+      pageAlreadyLoaded = false;
 
+      const responseStatus = await page.locator("body").count() ? null : null;
+      const rows = await getListingRows(page);
+      const signature = rows.map((row) => new URL(row.url).pathname).sort().join("|");
+      if (!signature || seenSignatures.has(signature)) break;
+      seenSignatures.add(signature);
+
+      let newOnThisPage = 0;
       for (const row of rows) {
         const normalizedUrl = new URL(row.url).href;
         if (!cardsByUrl.has(normalizedUrl)) {
@@ -195,17 +216,31 @@ async function discoverListing(browser, delayMs) {
       }
 
       pageSummaries.push({
-        url: nextUrl,
-        status: response.status,
-        title: response.title,
+        url: page.url(),
+        status: responseStatus,
         linksFound: rows.length,
         newCardsFound: newOnThisPage
       });
 
       const candidate = await getNextPageUrl(page);
-      if (!candidate || seenPages.has(candidate) || newOnThisPage === 0) break;
-      nextUrl = candidate;
+      if (candidate && candidate !== page.url() && !seenUrls.has(candidate)) {
+        nextUrl = candidate;
+        await sleep(delayMs);
+        continue;
+      }
+
+      // Some paginated views expose Next as a button rather than a link.
+      const nextButtonIndex = await getNextButtonIndex(page);
+      if (nextButtonIndex < 0) break;
       await sleep(delayMs);
+      await page.locator('button, [role="button"]').nth(nextButtonIndex).click({ timeout: 5000 });
+      await page.waitForTimeout(500);
+
+      const nextRows = await getListingRows(page);
+      const nextSignature = nextRows.map((row) => new URL(row.url).pathname).sort().join("|");
+      if (!nextSignature || nextSignature === signature || seenSignatures.has(nextSignature)) break;
+      nextUrl = page.url();
+      pageAlreadyLoaded = true;
     }
   } finally {
     await page.close();
@@ -228,8 +263,8 @@ async function discoverListing(browser, delayMs) {
 
   await writeJsonAtomic(LISTING_FILE, listing);
   console.log(`Saved listing: ${LISTING_FILE} (${cards.length} unique player URLs across ${pageSummaries.length} page(s))`);
-  if (pageSummaries.length === 1 && /of\s+[2-9]\d*/i.test(pageSummaries[0].title)) {
-    console.warn("Only one listing page was found although pagination may exist. Check the pagination selector before collecting.");
+  if (pageSummaries.length === 1 && cards.length <= 24) {
+    console.warn("Only one listing page was found. The program may be paginated; inspect data/anniversary-listing.json before running the full collection.");
   }
   return listing;
 }
