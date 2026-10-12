@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createHash, createHmac } from "node:crypto";
+import { createHash } from "node:crypto";
 import { readFile, writeFile, stat } from "node:fs/promises";
 import path from "node:path";
 
@@ -10,7 +10,8 @@ const REPORT_FILE = path.resolve(ROOT, "data/catalog-import-report.json");
 const SUPABASE_URL_DEFAULT = "https://moczgrwxtfexdbjthxpd.supabase.co";
 const PROGRAM_KEY = "anniversary-3rd-2026";
 const VALID_KINDS = new Set(["player-card-background", "player-image", "club-logo", "league-logo", "nation-flag"]);
-const LIVE_MIN_OVR = Number.parseInt(process.env.ANNIVERSARY_LIVE_MIN_OVR || "117", 10);
+const configuredLiveMinOvr = Number.parseInt(process.env.ANNIVERSARY_LIVE_MIN_OVR || "117", 10);
+const LIVE_MIN_OVR = Number.isInteger(configuredLiveMinOvr) && configuredLiveMinOvr >= 1 && configuredLiveMinOvr <= 150 ? configuredLiveMinOvr : 117;
 const dryRun = process.argv.includes("--dry-run");
 const help = process.argv.includes("--help") || process.argv.includes("-h");
 
@@ -90,7 +91,7 @@ function exactRecordTemplate(record, assets) {
   const wantedOvr = Number(record.ovr);
   const currentCandidates = assets.filter((asset) => {
     if (normalizeKind(asset.kind) !== "player-card-background" || !templateFromAsset(asset)) return false;
-    const alt = String(asset.alt || "").toLowerCase();
+    const alt = normName(asset.alt || "");
     return alt.includes(wantedName) && new RegExp("\\b" + wantedOvr + "\\s*OVR\\b", "i").test(alt);
   });
   if (currentCandidates.length === 1) return templateFromAsset(currentCandidates[0]);
@@ -111,7 +112,7 @@ function selectAsset(record, kind) {
     const name = normName(record.name);
     const ovr = Number(record.ovr);
     const exact = matches.find((asset) => {
-      const alt = String(asset.alt || "").toLowerCase();
+      const alt = normName(asset.alt || "");
       return alt.includes(name) && new RegExp("\\b" + ovr + "\\s*OVR\\b", "i").test(alt) && templateFromAsset(asset);
     });
     if (exact) return exact;
@@ -499,8 +500,8 @@ async function main() {
       content_type: contentType,
       byte_size: fileBytes.length,
       sha256: contentHash,
-      width: Number.isFinite(Number(asset.width)) ? Number(asset.width) : null,
-      height: Number.isFinite(Number(asset.height)) ? Number(asset.height) : null,
+      width: asset.width !== null && asset.width !== undefined && asset.width !== "" && Number.isFinite(Number(asset.width)) ? Number(asset.width) : null,
+      height: asset.height !== null && asset.height !== undefined && asset.height !== "" && Number.isFinite(Number(asset.height)) ? Number(asset.height) : null,
       is_public: true,
       updated_at: new Date().toISOString()
     });
