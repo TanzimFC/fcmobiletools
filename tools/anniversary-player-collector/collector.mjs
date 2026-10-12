@@ -141,7 +141,26 @@ async function writeJsonAtomic(filePath, value) {
 }
 
 async function goToPage(page, url) {
-  const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+  let response = null;
+  let lastNavigationError = null;
+  const retryableNavigationError = /net::ERR_CONNECTION_ABORTED|net::ERR_CONNECTION_RESET|net::ERR_CONNECTION_CLOSED|net::ERR_TIMED_OUT|net::ERR_NETWORK_CHANGED|net::ERR_HTTP2_PROTOCOL_ERROR/i;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+      lastNavigationError = null;
+      break;
+    } catch (error) {
+      lastNavigationError = error;
+      const message = String(error?.message || error);
+      if (!retryableNavigationError.test(message) || attempt === 2) throw error;
+      const waitMs = 1200 * (attempt + 1);
+      console.warn(`  [navigation retry ${attempt + 1}/2] temporary connection error; retrying after ${waitMs} ms.`);
+      await sleep(waitMs);
+    }
+  }
+
+  if (lastNavigationError && !response) throw lastNavigationError;
   const status = response?.status();
 
   if (status === 403 || status === 429) {
@@ -1399,6 +1418,8 @@ async function run() {
     }));
     const imageCache = new Map();
     const errors = [];
+    const completedThisRun = [];
+    const failedThisRun = [];
 
     for (let index = 0; index < targetCards.length; index += 1) {
       const card = targetCards[index];
@@ -1408,6 +1429,13 @@ async function run() {
       try {
         const record = await collectPlayer(browser, card, options, imageCache);
         byUrl.set(record.sourceUrl, record);
+        completedThisRun.push({
+          sourceCardId: record.sourceCardId,
+          sourceUrl: record.sourceUrl,
+          name: record.name,
+          statStatus: record.statExtraction?.status ?? "unknown",
+          assetCount: Array.isArray(record.assets) ? record.assets.length : 0
+        });
         await writeJsonAtomic(RECORDS_FILE, [...byUrl.values()]);
         await writeJsonAtomic(CHECKPOINT_FILE, {
           program: PROGRAM_NAME,
@@ -1420,7 +1448,9 @@ async function run() {
         });
         console.log(`  saved: ${record.name} | OVR ${record.ovr ?? "unknown"} | stats: ${record.statExtraction.status} (${record.statExtraction.groupsFound}/6 groups)${record.progression ? " | progression: " + record.progression.status : ""} | ${record.assets.length} selected image(s)`);
       } catch (error) {
-        errors.push({ sourceUrl: card.detailUrl, message: String(error?.message || error), at: new Date().toISOString() });
+        const failure = { sourceUrl: card.detailUrl, message: String(error?.message || error), at: new Date().toISOString() };
+        errors.push(failure);
+        failedThisRun.push(failure);
         await writeJsonAtomic(CHECKPOINT_FILE, {
           program: PROGRAM_NAME,
           sourceProgramUrl: PROGRAM_URL,
@@ -1441,19 +1471,31 @@ async function run() {
       runAt: new Date().toISOString(),
       listingCount: listing?.count ?? null,
       requestedDetailCount: targetCards.length,
+      succeededThisRun: completedThisRun.length,
+      failedThisRun: failedThisRun.length,
+      completedPlayersThisRun: completedThisRun,
       savedRecordCount: finalRecords.length,
       recordsWithStats: finalRecords.filter((record) => (record.statExtraction?.groupsFound ?? 0) > 0).length,
       recordsWithCompleteStats: finalRecords.filter((record) => record.statExtraction?.status === "complete").length,
       recordsWithProgressionSnapshots: finalRecords.filter((record) => (record.progression?.rankTrainingSnapshots?.length ?? 0) > 0).length,
       progressionRequested: options.captureProgression,
-      recordsWithActionShot: finalRecords.filter((record) => record.assets.some((asset) => asset.kind === "action-shot" && !asset.downloadError)).length,
+      recordsWithActionShot: finalRecords.filter((record) => record.assets.some((asset) => ["player-image", "action-shot"].includes(asset.kind) && !asset.downloadError)).length,
       recordsWithCardBackground: finalRecords.filter((record) => record.assets.some((asset) => asset.kind === "player-card-background" && !asset.downloadError)).length,
+      assetKindCounts: Object.fromEntries(["player-card-background", "player-image", "club-logo", "league-logo", "nation-flag"].map((kind) => [
+        kind,
+        finalRecords.reduce((count, record) => count + (Array.isArray(record.assets) ? record.assets.filter((asset) => asset.kind === kind && !asset.downloadError).length : 0), 0)
+      ])),
       failuresThisRun: errors
     };
     await writeJsonAtomic(path.join(OUTPUT_DIR, "pilot-report.json"), report);
-    console.log("\nRun complete.");
+    if (errors.length) {
+      console.error("\nRun finished with " + errors.length + " failed player page(s). Existing records were preserved; this run is PARTIAL.");
+      process.exitCode = 1;
+    } else {
+      console.log("\nRun complete. All requested player pages were collected.");
+    }
     console.log(JSON.stringify(report, null, 2));
-    console.log("\nReview the saved records and images before attempting --all.");
+    console.log("\nStored-record totals include records from earlier runs; see succeededThisRun for this invocation.");
   } finally {
     await browser.close();
   }
