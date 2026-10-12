@@ -100,7 +100,7 @@ Optional flags:
 - `--capture-progression`: experimental rank/training sampling (not part of base collection)
 - `--fresh`: with `--all`, clear existing player records/checkpoint/reports before a clean full run, preserving listing and shared assets
 - `--player-url <url>`: test a single known RenderZ player page instead of selecting cards from the listing
-- `--keep-source-text`: retain the raw source text in each record for debugging (off by default)
+- `--keep-source-text`: retain filtered source text in each record for debugging (off by default)
 - `--delay-ms 900`: change the delay between player pages; the script enforces a minimum of 600 ms
 - `--help`: show options
 
@@ -122,6 +122,29 @@ data/
 
 No records, images, cookies or session credentials are committed. Raw page text is omitted from records by default so the output stays focused on usable fields; use `--keep-source-text` only when debugging a specific extraction problem. Review the output before publication.
 
-## Next milestone
+## Step 6 — Import into Backblaze B2 and Supabase
 
-Validate five cards against RenderZ, including OVR, primary position, unique card ID, action-shot image and card background. After that, build a separate Backblaze B2 uploader and the small Worker read endpoint. Do not publish the full catalogue until the pilot passes.
+The card renderer uses a split storage model:
+
+- **Backblaze B2** stores image files. Shared logos and the two Anniversary templates are uploaded once, with stable object keys under `fc-mobile/anniversary-3rd-2026/`.
+- **Supabase** stores searchable player data, structured stats, card tier/template keys, and the public URLs/asset keys. Browser clients can read published records only; importing requires the server-only service-role key in a local `.env`.
+
+The schema migration is in `supabase/migrations/20261013_fc_player_catalog.sql`. It creates `fc_player_assets` and `fc_player_cards`, enables row-level security, grants public read access only, and reserves writes for the server-side import credential.
+
+Copy `.env.example` to `.env` and fill the actual B2 values from your account. Do not commit `.env` or put the service-role/application keys in browser code.
+
+```powershell
+Copy-Item .env.example .env
+# Fill .env with real values, then validate paths/assets first:
+npm run import:catalog:dry
+# Upload selected unique images to B2 and upsert asset/player metadata:
+npm run import:catalog
+```
+
+The importer uses the card-specific Anniversary background when the source metadata identifies it. If it is missing, it uses the observed OVR rule (default 117+ = LIVE, below 117 = BASE); change `ANNIVERSARY_LIVE_MIN_OVR` in `.env` if later verification establishes a different cutoff. Both shared template files must exist locally before an import can proceed. Records are published only when stats are complete and the player image, club, league and nation assets are present; incomplete cards remain unpublished and are reported.
+
+## Step 7 — Preview and assemble cards
+
+After the import completes, open `/anniversary-player-preview/` on the branch build. The page queries published rows from Supabase and composes each card in the browser using the B2 URLs. It includes search, position filtering, separate LIVE/BASE filter options, stats, metadata, and missing-image diagnostics. The preview is intentionally `noindex` and is not linked in public navigation.
+
+Review a higher-tier card and a lower-tier card, plus at least one goalkeeper, before adding a public Player Database route. Training formula/rank progression stays separate for a later phase.
