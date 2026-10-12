@@ -12,6 +12,7 @@ const OUTPUT_DIR = path.resolve("data");
 const LISTING_FILE = path.join(OUTPUT_DIR, "anniversary-listing.json");
 const RECORDS_FILE = path.join(OUTPUT_DIR, "anniversary-3rd-2026.json");
 const CHECKPOINT_FILE = path.join(OUTPUT_DIR, "checkpoint.json");
+const ASSET_LIBRARY_FILE = path.join(OUTPUT_DIR, "asset-library.json");
 const DEFAULT_DELAY_MS = 1800;
 const MIN_DELAY_MS = 1200;
 
@@ -1159,17 +1160,61 @@ function makeAssetKey(asset) {
     .slice(0, 20);
 }
 
-function classifyImageAlt(alt) {
+function classifyImageAlt(alt, sourceUrl = "") {
   const label = cleanText(alt).toLowerCase();
-  if (/player card background/.test(label)) return "player-card-background";
-  if (/action shot/.test(label)) return "player-image";
+  let pathname = "";
+  try { pathname = new URL(sourceUrl).pathname.toLowerCase(); } catch {}
+
+  // Prefer the actual RenderZ asset path where it provides an unambiguous type.
+  if (/\/bg_[^/]*background/i.test(pathname) || /player card background/.test(label)) return "player-card-background";
+  if (/\/player_[^/]+/.test(pathname) || /action shot/.test(label)) return "player-image";
+  if (/\/club_[^/]+/.test(pathname)) return "club-logo";
+  if (/\/league_[^/]+/.test(pathname)) return "league-logo";
+  if (/\/flags?_[^/]+/.test(pathname)) return "nation-flag";
+
   if (/\bclub\b/.test(label)) return "club-logo";
   if (/\bleague\b/.test(label)) return "league-logo";
-  if (/\bnation\b/.test(label)) return "nation-flag";
+  if (/\bnation\b|\bflag\b/.test(label)) return "nation-flag";
   return null;
 }
 
-function getExtensions(contentType, url) {
+function inspectImageBuffer(buffer, contentType = "") {
+  const bytes = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || []);
+  const mime = String(contentType || "").split(";")[0].trim().toLowerCase();
+  const ascii = bytes.subarray(0, Math.min(bytes.length, 512)).toString("latin1").trimStart().toLowerCase();
+
+  if (bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+    return { isImage: true, contentType: "image/png", extension: ".png" };
+  }
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return { isImage: true, contentType: "image/jpeg", extension: ".jpg" };
+  }
+  if (bytes.length >= 6 && /^GIF8[79]a$/.test(bytes.subarray(0, 6).toString("ascii"))) {
+    return { isImage: true, contentType: "image/gif", extension: ".gif" };
+  }
+  if (bytes.length >= 12 && bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP") {
+    return { isImage: true, contentType: "image/webp", extension: ".webp" };
+  }
+  if (bytes.length >= 12 && bytes.subarray(4, 8).toString("ascii") === "ftyp"
+    && /^(avif|avis|heic|heix|mif1)$/.test(bytes.subarray(8, 12).toString("ascii"))) {
+    return { isImage: true, contentType: "image/avif", extension: ".avif" };
+  }
+  if (/<svg[\s>]/i.test(ascii) || (/^<\?xml/i.test(ascii) && /<svg[\s>]/i.test(ascii))) {
+    return { isImage: true, contentType: "image/svg+xml", extension: ".svg" };
+  }
+  if (mime.startsWith("image/")) {
+    const extension = {
+      "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png", "image/webp": ".webp",
+      "image/avif": ".avif", "image/gif": ".gif", "image/svg+xml": ".svg"
+    }[mime] || null;
+    return { isImage: Boolean(extension), contentType: mime, extension };
+  }
+  return { isImage: false, contentType: mime || "application/octet-stream", extension: null };
+}
+
+function getExtensions(contentType, url, buffer = null) {
+  const inspected = buffer ? inspectImageBuffer(buffer, contentType) : null;
+  if (inspected?.extension) return inspected.extension;
   const mime = (contentType || "").split(";")[0].trim().toLowerCase();
   const byMime = {
     "image/jpeg": ".jpg",
@@ -1188,79 +1233,130 @@ function getExtensions(contentType, url) {
   return ".img";
 }
 
-async function downloadImage(asset, playerUrl, outputDir, requestCache) {
+async function downloadImage(asset, playerUrl, outputDir, requestCache, capturedImageBodies, assetLibrary, requestContext) {
   const assetKey = asset.assetKey || makeAssetKey(asset);
-  if (requestCache.has(assetKey)) {
-    const cached = requestCache.get(assetKey);
-    return {
-      ...cached,
-      ...asset,
-      assetKey,
-      localPath: cached.localPath,
-      bytes: cached.bytes,
-      contentType: cached.contentType,
-      contentHash: cached.contentHash,
-      reusedFromCache: true
-    };
+  const inMemory = requestCache.get(assetKey);
+  if (inMemory) {
+    return { ...inMemory, ...asset, assetKey, localPath: inMemory.localPath, reusedFromCache: true };
   }
 
-  const response = await fetch(asset.sourceUrl, {
-    headers: {
-      "Referer": playerUrl,
-      "User-Agent": "FCMobiletools-Anniversary-Collector/0.1 (local authorized collection)"
-    },
-    signal: AbortSignal.timeout(30000)
-  });
-
-  if (response.status === 403 || response.status === 429) {
-    throw new Error(`Image host returned HTTP ${response.status}. Stopping without trying to bypass the restriction.`);
-  }
-  if (!response.ok) throw new Error(`Image download returned HTTP ${response.status}: ${asset.sourceUrl}`);
-
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.toLowerCase().startsWith("image/")) {
-    throw new Error(`Expected an image but received ${contentType || "unknown content type"}: ${asset.sourceUrl}`);
+  const libraryEntry = assetLibrary.get(assetKey);
+  if (libraryEntry?.localPath) {
+    const existingPath = path.resolve(libraryEntry.localPath);
+    if (await fs.access(existingPath).then(() => true).catch(() => false)) {
+      const reused = { ...libraryEntry, ...asset, assetKey, localPath: libraryEntry.localPath, reusedFromLibrary: true };
+      requestCache.set(assetKey, reused);
+      return reused;
+    }
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  if (!buffer.length) throw new Error(`Downloaded empty image: ${asset.sourceUrl}`);
+  const canonicalUrl = asset.canonicalSourceUrl || canonicalAssetUrl(asset.sourceUrl);
+  const captured = capturedImageBodies.get(canonicalUrl);
+  let buffer = captured?.buffer || null;
+  let contentType = captured?.contentType || "";
 
-  const extension = getExtensions(contentType, asset.sourceUrl);
-  const outputPath = path.join(outputDir, `${asset.kind}-${assetKey}${extension}`);
+  // Prefer bytes from the image request that the browser already loaded. This avoids
+  // re-fetching short-lived signed image URLs from a separate Node network session.
+  if (!buffer) {
+    if (!requestContext?.get) {
+      throw new Error("No browser-captured image body or browser request context was available.");
+    }
+    const response = await requestContext.get(asset.sourceUrl, {
+      timeout: 30000,
+      headers: {
+        "Referer": playerUrl,
+        "User-Agent": "FCMobiletools-Anniversary-Collector/0.1 (local authorized collection)",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+      }
+    });
+    const status = response.status();
+    if (status === 403 || status === 429) {
+      throw new Error("Image host returned HTTP " + status + ". Stopping without trying to bypass the restriction.");
+    }
+    if (!response.ok()) throw new Error("Image download returned HTTP " + status + ": " + asset.sourceUrl);
+    contentType = response.headers()["content-type"] || "";
+    buffer = await response.body();
+  }
+
+  if (!buffer?.length) throw new Error("Downloaded empty image: " + asset.sourceUrl);
+  const inspected = inspectImageBuffer(buffer, contentType);
+  if (!inspected.isImage || !inspected.extension) {
+    throw new Error("Image response was not a recognizable image (content-type " + (contentType || "unknown") + "): " + asset.sourceUrl);
+  }
+
+  const normalizedType = inspected.contentType || contentType || "application/octet-stream";
+  const extension = getExtensions(normalizedType, asset.sourceUrl, buffer);
+  const outputPath = path.join(outputDir, asset.kind + "-" + assetKey + extension);
   await fs.mkdir(outputDir, { recursive: true });
-  if (!(await fs.stat(outputPath).catch(() => null))) {
-    await fs.writeFile(outputPath, buffer);
-  }
+
+  const existingFile = await fs.access(outputPath).then(() => true).catch(() => false);
+  if (!existingFile) await fs.writeFile(outputPath, buffer);
 
   const result = {
-    ...asset,
     assetKey,
+    kind: asset.kind,
+    canonicalSourceUrl: canonicalUrl,
+    alt: asset.alt || null,
     localPath: path.relative(process.cwd(), outputPath).replaceAll(path.sep, "/"),
     bytes: buffer.length,
-    contentType,
+    contentType: normalizedType,
     contentHash: createHash("sha256").update(buffer).digest("hex"),
-    reusedFromCache: false
+    width: asset.width ?? null,
+    height: asset.height ?? null,
+    reusedFromCache: false,
+    reusedFromLibrary: false
   };
   requestCache.set(assetKey, result);
-  return result;
+  assetLibrary.set(assetKey, {
+    ...result,
+    firstSeenAt: libraryEntry?.firstSeenAt || new Date().toISOString(),
+    lastVerifiedAt: new Date().toISOString()
+  });
+  await writeJsonAtomic(ASSET_LIBRARY_FILE, [...assetLibrary.values()]);
+  return { ...result, sourceUrl: asset.sourceUrl };
 }
 
-async function collectPlayer(browser, card, options, imageCache) {
+async function collectPlayer(browser, card, options, imageCache, assetLibrary) {
   const page = await browser.newPage();
   page.setDefaultNavigationTimeout(45000);
+  const capturedImageBodies = new Map();
+  const pendingImageBodies = [];
+
+  page.on("response", (response) => {
+    let parsedUrl;
+    try { parsedUrl = new URL(response.url()); } catch { return; }
+    if (parsedUrl.hostname !== "images-v2.renderz.app") return;
+    const canonicalUrl = canonicalAssetUrl(response.url());
+    const capture = (async () => {
+      if (response.status() < 200 || response.status() >= 400) return;
+      const buffer = await response.body();
+      if (!buffer?.length) return;
+      const contentType = await response.headerValue("content-type").catch(() => "") || "";
+      const inspected = inspectImageBuffer(buffer, contentType);
+      if (inspected.isImage) {
+        capturedImageBodies.set(canonicalUrl, { buffer: Buffer.from(buffer), contentType: inspected.contentType || contentType, status: response.status() });
+      }
+    })().catch(() => {});
+    pendingImageBodies.push(capture);
+  });
 
   try {
     const response = await goToPage(page, card.detailUrl);
-    // RenderZ sometimes hydrates stat sections after the first document paint.
-    await page.waitForFunction(() => {
-      const text = document.body?.innerText || "";
-      return /(?:^|\n)Pace\s*\n\s*\d{2,3}/i.test(text)
-        || /(?:^|\n)Shooting\s*\n\s*\d{2,3}/i.test(text);
-    }, null, { timeout: 2200 }).catch(() => {});
     const title = cleanText(await page.locator("h1").first().innerText().catch(() => ""));
-    const sourceText = (await page.locator("body").innerText()).replace(/\r/g, "").slice(0, 30000);
-    const parsedPosition = pickMatch(sourceText, /\bPosition\s+([A-Z]{2,3})\b/i) || card.positionFromListing;
-    const parsedStats = parsePlayerStats(sourceText, parsedPosition);
+    let sourceText = "";
+    let parsedPosition = card.positionFromListing || null;
+    let parsedStats = { stats: {}, extraction: { status: "not-visible", groupsFound: 0, groupsExpected: 6, substatsFound: 0, missingGroups: [] } };
+
+    // Wait for client-rendered stats to appear; don't overwrite previously valid stats
+    // with an empty parse just because the first paint hasn't hydrated yet.
+    for (let attempt = 0; attempt < 13; attempt += 1) {
+      sourceText = (await page.locator("body").innerText().catch(() => "")).replace(/\r/g, "").slice(0, 50000);
+      parsedPosition = pickMatch(sourceText, /\bPosition\s+([A-Z]{2,3})\b/i) || card.positionFromListing || parsedPosition;
+      parsedStats = parsePlayerStats(sourceText, parsedPosition);
+      if (parsedStats.extraction.groupsFound > 0) break;
+      if (attempt < 12) await page.waitForTimeout(650);
+    }
+
     const progression = options.captureProgression ? await collectProgression(page, parsedPosition) : null;
     const imageElements = await page.locator("img").evaluateAll((images) => images.map((img) => {
       const source = img.currentSrc || img.src || img.getAttribute("data-src") || "";
@@ -1275,7 +1371,7 @@ async function collectPlayer(browser, card, options, imageCache) {
     const mainImages = imageElements
       .filter((image) => image.sourceUrl && /^https?:/i.test(image.sourceUrl))
       .map((image) => {
-        const kind = classifyImageAlt(image.alt);
+        const kind = classifyImageAlt(image.alt, image.sourceUrl);
         if (!kind) return null;
         const asset = {
           cardId: card.sourceCardId,
@@ -1318,6 +1414,7 @@ async function collectPlayer(browser, card, options, imageCache) {
       },
       stats: parsedStats.stats,
       statExtraction: parsedStats.extraction,
+      statsCollectedAt: parsedStats.extraction.groupsFound > 0 ? new Date().toISOString() : null,
       skillPointsToSpend: parseSkillPointsToSpend(sourceText),
       playStyles: parsePlayStyles(sourceText),
       skillTree: parseSkillTree(sourceText),
@@ -1329,13 +1426,14 @@ async function collectPlayer(browser, card, options, imageCache) {
 
     if (options.keepSourceText) detailRecord.sourceText = sourceText;
 
+    await Promise.allSettled(pendingImageBodies);
     if (options.downloadImages && mainImages.length) {
       const assetDir = path.join(OUTPUT_DIR, "assets");
       const downloaded = [];
       for (const asset of mainImages) {
         await sleep(Math.min(options.delayMs, 2500));
         try {
-          downloaded.push(await downloadImage(asset, card.detailUrl, assetDir, imageCache));
+          downloaded.push(await downloadImage(asset, card.detailUrl, assetDir, imageCache, capturedImageBodies, assetLibrary, page.context().request));
         } catch (error) {
           if (/HTTP 403|HTTP 429/.test(String(error?.message || error))) throw error;
           console.warn(`  [asset warning] ${asset.kind}: ${error.message}`);
@@ -1417,6 +1515,8 @@ async function run() {
       return [canonicalUrl, { ...record, sourceUrl: canonicalUrl }];
     }));
     const imageCache = new Map();
+    const priorAssetEntries = await readJson(ASSET_LIBRARY_FILE, []);
+    const assetLibrary = new Map(Array.isArray(priorAssetEntries) ? priorAssetEntries.map((asset) => [asset.assetKey, asset]) : []);
     const errors = [];
     const completedThisRun = [];
     const failedThisRun = [];
@@ -1427,7 +1527,7 @@ async function run() {
       await sleep(options.delayMs);
 
       try {
-        const record = await collectPlayer(browser, card, options, imageCache);
+        const record = await collectPlayer(browser, card, options, imageCache, assetLibrary);
         byUrl.set(record.sourceUrl, record);
         completedThisRun.push({
           sourceCardId: record.sourceCardId,
