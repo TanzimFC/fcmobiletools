@@ -93,7 +93,7 @@ async function main() {
     if (record.statExtraction?.status === "complete") recordsWithCompleteStats += 1;
     else if ((record.statExtraction?.groupsFound ?? 0) > 0) {
       recordsWithPartialStats += 1;
-      addIssue(issues, "warning", "partial-player-stats", id, label + ": only " + record.statExtraction.groupsFound + "/6 stat groups were parsed");
+      addIssue(issues, "warning", "partial-player-stats", id, label + ": only " + record.statExtraction.groupsFound + "/" + (record.statExtraction.groupsExpected ?? 6) + " stat groups were parsed");
     } else {
       recordsWithoutStats += 1;
       addIssue(issues, "warning", "player-stats-not-visible", id, label + ": the source page did not expose parseable main player stats");
