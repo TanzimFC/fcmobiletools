@@ -91,6 +91,7 @@ Optional flags:
 - `--download-images`: download selected image assets
 - `--capture-progression`: opt into rank/training state sampling
 - `--player-url <url>`: test a single known RenderZ player page instead of selecting cards from the listing
+- `--keep-source-text`: retain the raw source text in each record for debugging (off by default)
 - `--delay-ms 1800`: change the delay between page visits; the script enforces a minimum of 1200 ms
 - `--help`: show options
 
@@ -106,7 +107,7 @@ data/
     <card-id>-player-card-background.<ext>
 ```
 
-No records, images, cookies or session credentials are committed. Review the output before publication. The first pass retains source text for verification; it is not yet the final public catalogue schema.
+No records, images, cookies or session credentials are committed. Raw page text is omitted from records by default so the output stays focused on usable fields; use `--keep-source-text` only when debugging a specific extraction problem. Review the output before publication.
 
 ## Next milestone
 
