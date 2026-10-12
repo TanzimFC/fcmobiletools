@@ -19,6 +19,7 @@ create table if not exists public.fc_player_cards (
   source_card_id text primary key,
   source_slug text not null,
   player_name text not null,
+  card_display_name text not null,
   ovr smallint not null check (ovr between 1 and 150),
   position text not null,
   alternate_positions text[] not null default '{}',
