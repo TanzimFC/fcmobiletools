@@ -158,9 +158,13 @@ async function getListingRows(page) {
 async function getNextPageUrl(page) {
   return page.locator("a[href]").evaluateAll((anchors) => {
     const matches = anchors.map((anchor) => ({
-      text: (anchor.innerText || anchor.textContent || "").replace(/\s+/g, " ").trim(),
+      label: [
+        anchor.innerText || anchor.textContent || "",
+        anchor.getAttribute("aria-label") || "",
+        anchor.getAttribute("title") || ""
+      ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim(),
       url: anchor.href
-    })).filter((item) => /^next\b/i.test(item.text));
+    })).filter((item) => /\bnext\b/i.test(item.label));
 
     return matches.find((item) => {
       try {
@@ -176,9 +180,16 @@ async function getNextPageUrl(page) {
 async function getNextButtonIndex(page) {
   return page.locator('button, [role="button"]').evaluateAll((elements) => {
     return elements.findIndex((element) => {
-      const label = (element.innerText || element.textContent || "").replace(/\\s+/g, " ").trim();
-      const disabled = element.hasAttribute("disabled") || element.getAttribute("aria-disabled") === "true";
-      return !disabled && /^next\\b/i.test(label);
+      const label = [
+        element.innerText || element.textContent || "",
+        element.getAttribute("aria-label") || "",
+        element.getAttribute("title") || "",
+        element.getAttribute("data-testid") || ""
+      ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+      const disabled = element.disabled === true
+        || element.hasAttribute("disabled")
+        || element.getAttribute("aria-disabled") === "true";
+      return !disabled && /\bnext\b/i.test(label);
     });
   });
 }
@@ -192,22 +203,43 @@ async function discoverListing(browser, delayMs) {
   const pageSummaries = [];
   let nextUrl = PROGRAM_URL;
   let pageAlreadyLoaded = false;
+  let expectedPageCount = null;
+  let paginationStoppedReason = null;
 
   try {
     for (let pageNumber = 1; pageNumber <= 30; pageNumber += 1) {
       let responseStatus = null;
       if (!pageAlreadyLoaded) {
-        if (seenUrls.has(nextUrl)) break;
+        if (seenUrls.has(nextUrl)) {
+          paginationStoppedReason = "A previously visited listing URL was encountered.";
+          break;
+        }
         seenUrls.add(nextUrl);
-        console.log(`[listing ${pageNumber}] ${nextUrl}`);
+        console.log("[listing " + pageNumber + "] " + nextUrl);
         const navigation = await goToPage(page, nextUrl);
         responseStatus = navigation.status;
       }
       pageAlreadyLoaded = false;
 
+      const bodyText = cleanText(await page.locator("body").innerText().catch(() => ""));
+      const paginationMatch = bodyText.match(/\bPage\s+(\d+)\s+of\s+(\d+)\b/i);
+      if (paginationMatch) {
+        const reportedTotal = Number(paginationMatch[2]);
+        if (Number.isInteger(reportedTotal) && reportedTotal > 0) {
+          expectedPageCount = Math.max(expectedPageCount || 0, reportedTotal);
+        }
+      }
+
       const rows = await getListingRows(page);
       const signature = rows.map((row) => new URL(row.url).pathname).sort().join("|");
-      if (!signature || seenSignatures.has(signature)) break;
+      if (!signature) {
+        paginationStoppedReason = "No player-card links were found on this listing page.";
+        break;
+      }
+      if (seenSignatures.has(signature)) {
+        paginationStoppedReason = "Pagination returned a listing page already collected.";
+        break;
+      }
       seenSignatures.add(signature);
 
       let newOnThisPage = 0;
@@ -222,6 +254,8 @@ async function discoverListing(browser, delayMs) {
       pageSummaries.push({
         url: page.url(),
         status: responseStatus,
+        reportedPage: paginationMatch ? Number(paginationMatch[1]) : pageSummaries.length + 1,
+        expectedPagesOnSource: expectedPageCount,
         linksFound: rows.length,
         newCardsFound: newOnThisPage
       });
@@ -233,16 +267,32 @@ async function discoverListing(browser, delayMs) {
         continue;
       }
 
-      // Some paginated views expose Next as a button rather than a link.
+      // Some RenderZ pagination controls are buttons rather than links.
       const nextButtonIndex = await getNextButtonIndex(page);
-      if (nextButtonIndex < 0) break;
+      if (nextButtonIndex < 0) {
+        paginationStoppedReason = "No enabled Next link or button was found.";
+        break;
+      }
+
       await sleep(delayMs);
       await page.locator('button, [role="button"]').nth(nextButtonIndex).click({ timeout: 5000 });
-      await page.waitForTimeout(500);
+      await page.waitForFunction((previousSignature) => {
+        const paths = Array.from(document.querySelectorAll('a[href*="/player/"]'))
+          .map((anchor) => {
+            try { return new URL(anchor.href).pathname; } catch { return ""; }
+          })
+          .filter(Boolean)
+          .sort();
+        return paths.length > 0 && paths.join("|") !== previousSignature;
+      }, signature, { timeout: 10000 }).catch(() => {});
 
       const nextRows = await getListingRows(page);
       const nextSignature = nextRows.map((row) => new URL(row.url).pathname).sort().join("|");
-      if (!nextSignature || nextSignature === signature || seenSignatures.has(nextSignature)) break;
+      if (!nextSignature || nextSignature === signature || seenSignatures.has(nextSignature)) {
+        paginationStoppedReason = "Clicking Next did not produce a new, distinct set of player cards.";
+        break;
+      }
+
       nextUrl = page.url();
       pageAlreadyLoaded = true;
     }
@@ -255,20 +305,27 @@ async function discoverListing(browser, delayMs) {
     throw new Error("No player links found. The page structure may have changed; inspect the RenderZ page before adapting selectors.");
   }
 
+  const complete = expectedPageCount === null || pageSummaries.length >= expectedPageCount;
   const listing = {
     sourceProgramUrl: PROGRAM_URL,
     program: PROGRAM_NAME,
     discoveredAt: new Date().toISOString(),
     listingPagesVisited: pageSummaries.length,
+    expectedPageCount,
+    complete,
+    paginationStoppedReason,
     listingPages: pageSummaries,
     count: cards.length,
     cards
   };
 
   await writeJsonAtomic(LISTING_FILE, listing);
-  console.log(`Saved listing: ${LISTING_FILE} (${cards.length} unique player URLs across ${pageSummaries.length} page(s))`);
-  if (pageSummaries.length === 1 && cards.length <= 24) {
-    console.warn("Only one listing page was found. The program may be paginated; inspect data/anniversary-listing.json before running the full collection.");
+  console.log("Saved listing: " + LISTING_FILE + " (" + cards.length + " unique player URLs across " + pageSummaries.length + " page(s))");
+  if (!complete) {
+    console.error("INCOMPLETE LISTING: visited " + pageSummaries.length + " of " + expectedPageCount + " reported pages. Do not collect player details yet.");
+    console.error("Reason: " + (paginationStoppedReason || "Pagination ended before all source pages were visited."));
+  } else {
+    console.log("Listing pagination verified: " + pageSummaries.length + (expectedPageCount ? " of " + expectedPageCount : "") + " page(s).");
   }
   return listing;
 }
@@ -445,13 +502,15 @@ async function run() {
     if (!options.refreshListing) {
       listing = await readJson(LISTING_FILE, null);
     }
-    if (!listing?.cards?.length || options.refreshListing) {
+    if (!listing?.cards?.length || listing.complete !== true || options.refreshListing) {
       listing = await discoverListing(browser, options.delayMs);
     } else {
-      console.log(`Using cached listing: ${LISTING_FILE} (${listing.cards.length} cards; run with --refresh-listing to rescan)`);
+      console.log(\`Using cached complete listing: \${LISTING_FILE} (\${listing.cards.length} cards; run with --refresh-listing to rescan)\`);
+    }
+    if (listing.complete !== true) {
+      throw new Error("The Anniversary listing is incomplete. Fix pagination before collecting player details; partial collections are blocked.");
     }
 
-    const targetCards = listing.cards.slice(0, options.limit);
     const existing = await readJson(RECORDS_FILE, []);
     const byUrl = new Map(existing.map((record) => [record.sourceUrl, record]));
     const imageCache = new Map();
