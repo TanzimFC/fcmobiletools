@@ -1158,7 +1158,14 @@ async function run() {
     console.log("Preparing " + targetCards.length + " player detail page(s).");
 
     const existing = await readJson(RECORDS_FILE, []);
-    const byUrl = new Map(existing.map((record) => [record.sourceUrl, record]));
+    const byUrl = new Map(existing.map((record) => {
+      let canonicalUrl = record.sourceUrl;
+      try {
+        const parsed = new URL(record.sourceUrl);
+        canonicalUrl = parsed.origin + parsed.pathname;
+      } catch {}
+      return [canonicalUrl, { ...record, sourceUrl: canonicalUrl }];
+    }));
     const imageCache = new Map();
     const errors = [];
 
