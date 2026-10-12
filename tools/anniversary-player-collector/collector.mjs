@@ -1613,7 +1613,7 @@ async function run() {
           lastCompletedAt: record.collectedAt,
           errors
         });
-        console.log(`  saved: ${record.name} | OVR ${record.ovr ?? "unknown"} | stats: ${record.statExtraction.status} (${record.statExtraction.groupsFound}/6 groups)${record.progression ? " | progression: " + record.progression.status : ""} | ${record.assets.length} selected image(s)`);
+        console.log(`  saved: ${record.name} | OVR ${record.ovr ?? "unknown"} | stats: ${record.statExtraction.status} (${record.statExtraction.groupsFound}/${record.statExtraction.groupsExpected ?? 6} groups)${record.progression ? " | progression: " + record.progression.status : ""} | ${record.assets.length} selected image(s)`);
       } catch (error) {
         const failure = { sourceUrl: card.detailUrl, message: String(error?.message || error), at: new Date().toISOString() };
         errors.push(failure);
