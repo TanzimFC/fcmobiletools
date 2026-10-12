@@ -24,6 +24,7 @@ function parseArgs(argv) {
     captureProgression: false,
     keepSourceText: false,
     playerUrl: null,
+    playerUrlInput: null,
     delayMs: DEFAULT_DELAY_MS,
     help: false
   };
@@ -45,7 +46,9 @@ function parseArgs(argv) {
       if (parsed.hostname !== "renderz.app" || !/^\/player\/[^/]+$/.test(parsed.pathname)) {
         throw new Error("--player-url must point to a RenderZ player detail page.");
       }
-      options.playerUrl = parsed.href;
+      // Ignore UI-state query parameters (rankUp, skillUpgrades, etc.) for canonical base-card collection.
+      options.playerUrlInput = parsed.href;
+      options.playerUrl = parsed.origin + parsed.pathname;
     }
     else if (arg === "--limit") {
       const value = Number(argv[++i]);
@@ -1049,7 +1052,8 @@ async function collectPlayer(browser, card, options, imageCache) {
       ovr: Number(pickMatch(title, /[—–-]\s+(\d{2,3})\s+OVR/i)) || card.ovrFromListing,
       position: pickMatch(sourceText, /\bPosition\s+([A-Z]{2,3})\b/i) || card.positionFromListing,
       program: PROGRAM_NAME,
-      sourceUrl: card.detailUrl,
+      sourceUrl: new URL(card.detailUrl).origin + new URL(card.detailUrl).pathname,
+      requestedViewUrl: options.playerUrlInput || null,
       sourceProgramUrl: PROGRAM_URL,
       collectedAt: new Date().toISOString(),
       sourcePageStatus: response.status,
