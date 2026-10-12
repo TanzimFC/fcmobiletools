@@ -259,7 +259,16 @@ function getExtensions(contentType, url) {
 }
 
 async function downloadImage(asset, playerUrl, outputDir, requestCache) {
-  if (requestCache.has(asset.sourceUrl)) return requestCache.get(asset.sourceUrl);
+  if (requestCache.has(asset.sourceUrl)) {
+    const cached = requestCache.get(asset.sourceUrl);
+    return {
+      ...cached,
+      ...asset,
+      localPath: cached.localPath,
+      bytes: cached.bytes,
+      contentType: cached.contentType
+    };
+  }
 
   const response = await fetch(asset.sourceUrl, {
     headers: {
