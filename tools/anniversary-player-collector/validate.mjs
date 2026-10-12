@@ -90,6 +90,9 @@ async function main() {
       addIssue(issues, "warning", "player-stats-not-visible", id, label + ": the source page did not expose parseable main player stats");
     }
     if ((record.progression?.rankTrainingSnapshots?.length ?? 0) > 0) recordsWithProgressionSnapshots += 1;
+    if (record.progression && record.progression.status !== "captured") {
+      addIssue(issues, "warning", "incomplete-progression", id, label + ": progression status is " + record.progression.status);
+    }
 
     const assets = Array.isArray(record.assets) ? record.assets : [];
     const actionShot = assets.some((asset) => asset.kind === "action-shot" && !asset.downloadError);
