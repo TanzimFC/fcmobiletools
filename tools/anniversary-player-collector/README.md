@@ -155,6 +155,6 @@ RenderZ image URLs may be signed or change access rules. They're a temporary del
 
 ## Step 7 — Preview and assemble cards
 
-After the import completes, open `/anniversary-player-preview/` on the branch build. The page queries published rows from Supabase and composes each card in the browser using the B2 URLs. It includes search, position filtering, separate LIVE/BASE filter options, stats, metadata, and missing-image diagnostics. The preview is intentionally `noindex` and is not linked in public navigation.
+After the import completes, open `/anniversary-player-preview/` on the branch build. The page uses an admin-only Worker endpoint to read unpublished records safely; the browser cannot fetch draft cards directly through the public Supabase key. It includes search, position and design filters, sorting, a dedicated player detail view, all captured base attributes, profile metadata, play-style notes and goalkeeper-specific stats. The preview is intentionally `noindex` and is not linked in public navigation.
 
 Review a higher-tier card and a lower-tier card, plus at least one goalkeeper, before adding a public Player Database route. Training formula/rank progression stays separate for a later phase.
