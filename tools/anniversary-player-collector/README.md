@@ -122,26 +122,36 @@ data/
 
 No records, images, cookies or session credentials are committed. Raw page text is omitted from records by default so the output stays focused on usable fields; use `--keep-source-text` only when debugging a specific extraction problem. Review the output before publication.
 
-## Step 6 — Import into Backblaze B2 and Supabase
+## Step 6 — Import Cloudinary and RenderZ URLs into Supabase
 
-The card renderer uses a split storage model:
+The image split is intentionally simple; no Backblaze B2 bucket is used.
 
-- **Backblaze B2** stores image files. Shared logos and the two Anniversary templates are uploaded once, with stable object keys under `fc-mobile/anniversary-3rd-2026/`.
-- **Supabase** stores searchable player data, structured stats, card tier/template keys, and the public URLs/asset keys. Browser clients can read published records only; importing requires the server-only service-role key in a local `.env`.
+- **Cloudinary** serves the two stable Anniversary card backgrounds with versioned URLs and long-lived browser/edge caching.
+- **RenderZ** image URLs are used for player artwork, club crests, league marks and nation flags for the preview.
+- **Supabase** stores searchable player data, structured base stats, card-tier/template keys, asset references and delivery URLs.
 
-The schema migration is in `supabase/migrations/20261013_fc_player_catalog.sql`. It creates `fc_player_assets` and `fc_player_cards`, enables row-level security, grants public read access only, and reserves writes for the server-side import credential.
+The known background references are configured in the importer:
 
-Copy `.env.example` to `.env` and fill the actual B2 values from your account. Do not commit `.env` or put the service-role/application keys in browser code.
+- BASE template: `player-card-background-5b7a16deacdd0a0099e5.webp`
+- LIVE template: `player-card-background-6310d43df9e82264f22d.webp`
+
+The schema is in `supabase/migrations/20261013_fc_player_catalog.sql`. It creates `fc_player_assets` and `fc_player_cards`, enables RLS, exposes published catalog rows to public readers, and keeps database writes on a server-only service-role credential.
+
+Copy `.env.example` to `.env`. Only the Supabase URL (optional for this project) and service-role key are needed for a real import. **Do not add Cloudinary or RenderZ URLs as secrets, and never commit the real `.env`.**
 
 ```powershell
 Copy-Item .env.example .env
-# Fill .env with real values, then validate paths/assets first:
+
+# Validate that all asset records have usable delivery URLs. No uploads happen.
 npm run import:catalog:dry
-# Upload selected unique images to B2 and upsert asset/player metadata:
+
+# Upsert asset URL metadata and player records. Cards remain unpublished.
 npm run import:catalog
 ```
 
-The importer uses the card-specific Anniversary background when the source metadata identifies it. If it is missing, it uses the observed OVR rule (default 117+ = LIVE, below 117 = BASE); change `ANNIVERSARY_LIVE_MIN_OVR` in `.env` if later verification establishes a different cutoff. Both shared template files must exist locally before an import can proceed. Records are published only when stats are complete and the player image, club, league and nation assets are present; incomplete cards remain unpublished and are reported.
+The importer uses the exact Anniversary template asset when source metadata identifies it. OVR-based fallback (default 117+ = LIVE, below 117 = BASE) is used only when that metadata is unavailable. A normal import keeps every card unpublished. Add `--publish` only after reviewing the preview and deciding to release the dataset.
+
+RenderZ image URLs may be signed or change access rules. They're a temporary delivery source for this preview; the versioned Cloudinary backgrounds are the stable cached assets.
 
 ## Step 7 — Preview and assemble cards
 
