@@ -44,7 +44,7 @@ This visits the listing pages at a conservative pace and saves `data/anniversary
 npm run pilot
 ```
 
-The collector now parses the six main stat groups and their substats into `stats`, with an extraction status showing whether the page exposed all, some, or none of the groups. It waits briefly for stat content to hydrate. Some player pages may not expose stats in their visible page content; those cards are marked as missing rather than filled with invented values.
+The collector parses six outfield stat groups (28 substats) and has a separate goalkeeper schema for goalkeeper-specific attributes. Each record has a coverage status so missing stats are visible instead of being filled with invented values. It waits briefly for stats to hydrate. RenderZ may also expose unresolved localization keys for club, league, nation, skill-tree labels, or traits; those remain null or are stored as source keys until a reliable translation mapping is available.
 
 Records are saved to `data/anniversary-3rd-2026.json`. The script checkpoints after each successful player page, so it can preserve work if interrupted. Re-running the pilot refreshes the selected records; it doesn't duplicate records by URL.
 
@@ -54,7 +54,7 @@ Records are saved to `data/anniversary-3rd-2026.json`. The script checkpoints af
 npm run pilot:progression
 ```
 
-This opt-in test attempts to record visible stat snapshots for ranks 1–5 and training levels 0–30, including the displayed “skill points to spend” count. It only captures states when the page exposes parseable stats and usable controls. This records the page's default skill-point allocation at each state; it does **not** enumerate every possible skill-tree allocation. Inspect the returned `progression.status`, `controls`, and `rankTrainingSnapshots` before treating the progression as complete.
+This opt-in test attempts to capture the stats available for each rank and each training level exposed by that rank's RenderZ selector, including the displayed “skill points to spend” count. It discovers the visible training options instead of assuming all ranks expose the same levels. It only counts snapshots as valid when rank selection and the selected training level can be verified and all stat groups parse successfully. This records the current/default skill-tree state at each rank; it does **not** enumerate every possible skill-point allocation. Inspect `progression.status`, `trainingLevelsByRank`, `controls`, and `rankTrainingSnapshots` before treating the progression as complete.
 
 To test a particular player page that visibly shows stats (instead of the first five cards in the listing):
 
