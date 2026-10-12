@@ -192,15 +192,16 @@ async function discoverListing(browser, delayMs) {
 
   try {
     for (let pageNumber = 1; pageNumber <= 30; pageNumber += 1) {
+      let responseStatus = null;
       if (!pageAlreadyLoaded) {
         if (seenUrls.has(nextUrl)) break;
         seenUrls.add(nextUrl);
         console.log(`[listing ${pageNumber}] ${nextUrl}`);
-        await goToPage(page, nextUrl);
+        const navigation = await goToPage(page, nextUrl);
+        responseStatus = navigation.status;
       }
       pageAlreadyLoaded = false;
 
-      const responseStatus = await page.locator("body").count() ? null : null;
       const rows = await getListingRows(page);
       const signature = rows.map((row) => new URL(row.url).pathname).sort().join("|");
       if (!signature || seenSignatures.has(signature)) break;
