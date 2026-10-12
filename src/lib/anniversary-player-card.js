@@ -34,23 +34,37 @@ function image(url, className, alt = "") {
 }
 
 function statLine(key, label, stats) {
-  const value = stats && stats[key] && Number.isFinite(Number(stats[key].value))
-    ? Number(stats[key].value)
+  const raw = stats && stats[key] ? stats[key].value : null;
+  const value = raw !== null && raw !== undefined && String(raw).trim() !== "" && Number.isFinite(Number(raw))
+    ? Number(raw)
     : null;
   return '<div class="fc-player-stat"><span>' + escapeHtml(label) + '</span><b>' + (value === null ? "—" : value) + '</b></div>';
 }
 
-function makeCardName(name) {
-  const cleaned = String(name || "Unknown Player").trim();
-  const parts = cleaned.split(/\s+/);
-  if (cleaned.length <= 19) return cleaned;
-  if (parts.length > 1) return parts.slice(-1).join("");
-  return cleaned;
+function normalizeNameWord(value) {
+  return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function makeCardName(player) {
+  const explicit = String(player.card_display_name || player.cardDisplayName || "").trim();
+  if (explicit) return explicit;
+  const fullName = String(player.player_name || player.name || "Unknown Player").trim();
+  const slug = String(player.source_slug || player.sourceSlug || "").replace(/^\d+-/, "");
+  const wanted = slug.split("-").map(normalizeNameWord).filter(Boolean);
+  const nameParts = fullName.split(/\s+/).filter(Boolean);
+  const matched = [];
+  for (const slugPart of wanted) {
+    const candidate = nameParts.find((part) => normalizeNameWord(part) === slugPart);
+    if (candidate && !matched.includes(candidate)) matched.push(candidate);
+  }
+  if (matched.length) return matched.join(" ");
+  const parts = fullName.split(/\s+/);
+  return parts.length > 1 ? parts.slice(-1).join("") : fullName;
 }
 
 export function renderAnniversaryPlayerCard(player) {
   const name = String(player.player_name || player.name || "Unknown Player").trim();
-  const cardName = makeCardName(name);
+  const cardName = makeCardName(player);
   const ovr = Number(player.ovr) || "—";
   const position = String(player.position || "—").toUpperCase();
   const template = player.template_key === "anniversary27-live" ? "live" : "base";
