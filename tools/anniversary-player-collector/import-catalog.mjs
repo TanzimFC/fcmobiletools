@@ -497,7 +497,7 @@ async function main() {
     publishedCards: report.publishedCards,
     unpublishedCards: report.unpublishedCards,
     reportFile: "data/catalog-import-report.json",
-    previewRoute: "/anniversary-player-preview/"
+    previewRoute: null, // Temporarily disabled while image delivery is rebuilt
   }, null, 2));
 }
 

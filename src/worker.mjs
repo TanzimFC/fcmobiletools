@@ -2152,16 +2152,10 @@ function adminAuthLog(stage, details={}) {
 
 async function api(request,env,path) {
 
-  // Private preview endpoint for the unpublished FC Mobile player catalog.
-  // Do not expose draft player data through the public Supabase client/RLS.
+  // Player catalogue preview is temporarily disabled while image delivery is rebuilt.
+  // Keep draft card records private; do not return them through the Worker API.
   if(path === '/player-preview' && request.method === 'GET') {
-    if(!(await authenticated(request,env))) return json({error:'Admin authentication required.'},401);
-    const rows=await supabaseRest(env,
-      'fc_player_cards?program_key=eq.anniversary-3rd-2026' +
-      '&select=source_card_id,source_slug,player_name,card_display_name,ovr,position,alternate_positions,program_name,program_key,card_tier,template_key,stats,stat_extraction,details,play_styles,skill_points_to_spend,skill_points_to_spend_label,player_image_url,card_background_url,club_logo_url,league_logo_url,nation_flag_url,is_published,source_url' +
-      '&order=ovr.desc,player_name.asc&limit=200'
-    );
-    return json({players:Array.isArray(rows)?rows:[],total:Array.isArray(rows)?rows.length:0});
+    return json({error:'Player catalogue preview is temporarily unavailable.'},404);
   }
 
   if(path === '/accounts' && request.method === 'GET') {

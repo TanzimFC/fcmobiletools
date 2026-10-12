@@ -35,7 +35,7 @@ export default defineConfig({
   integrations: [sitemap({
     filter: (page) => {
       const pathname = new URL(page).pathname;
-      return !pathname.startsWith('/anniversary-player-preview') && ![
+      return ![
         '/admin',
         '/admin/',
         '/creator/login',
