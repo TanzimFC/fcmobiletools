@@ -156,6 +156,31 @@ function publicUrl(base, objectKey) {
   return base.replace(/\/+$/, "") + "/" + encoded;
 }
 
+function resolveCardDisplayName(record) {
+  const explicit = String(record.cardDisplayName || record.card_display_name || "").trim();
+  if (explicit) return explicit;
+  const sourceText = String(record.sourceText || "").replace(/\r/g, "");
+  const lines = sourceText.split("\n").map((line) => line.trim()).filter(Boolean);
+  const targetOvr = String(record.ovr || "");
+  const targetPosition = String(record.position || "").toUpperCase();
+  for (let index = 0; index < lines.length - 2; index += 1) {
+    if (lines[index] !== targetOvr || lines[index + 1].toUpperCase() !== targetPosition) continue;
+    const candidate = lines[index + 2];
+    if (candidate && candidate.length <= 32 && !/^\d+$/.test(candidate) && !/^(pace|shooting|passing|dribbling|defending|physical|diving|handling|reflexes|kicking)$/i.test(candidate)) return candidate;
+  }
+  const name = String(record.name || "Unknown Player").trim();
+  const slug = String(record.sourceSlug || "").replace(/^\d+-/, "");
+  const wanted = slug.split("-").map((word) => word.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "")).filter(Boolean);
+  const parts = name.split(/\s+/).filter(Boolean);
+  const matched = [];
+  for (const word of wanted) {
+    const found = parts.find((part) => part.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "") === word);
+    if (found && !matched.includes(found)) matched.push(found);
+  }
+  if (matched.length) return matched.join(" ");
+  return parts.length > 1 ? parts[parts.length - 1] : name;
+}
+
 function cardData(record, references, backgroundTemplate) {
   const details = record.details && typeof record.details === "object" ? record.details : {};
   const alternateRaw = details.alternatePositions;
@@ -171,6 +196,7 @@ function cardData(record, references, backgroundTemplate) {
     source_card_id: String(record.sourceCardId),
     source_slug: String(record.sourceSlug || ""),
     player_name: String(record.name || "Unknown Player"),
+    card_display_name: resolveCardDisplayName(record),
     ovr: Number(record.ovr),
     position: String(record.position || "NA").toUpperCase(),
     alternate_positions: alternatePositions,
