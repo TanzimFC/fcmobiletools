@@ -513,7 +513,7 @@ function parsePlayerStats(sourceText, positionHint = null) {
       const found = start
         ? getNumberAfterLabel(lines, substat, start.index + 1, end)
         : null;
-      const key = substat.replace(/[^a-zA-Z0-9]+(.)/g, (_, letter) => letter.toUpperCase()).replace(/^[A-Z]/, (letter) => letter.toLowerCase());
+      const key = substat.replace(/\bGK\b/gi, "gk").replace(/[^a-zA-Z0-9]+(.)/g, (_, letter) => letter.toUpperCase()).replace(/^[A-Z]/, (letter) => letter.toLowerCase());
       substats[key] = found?.value ?? null;
     }
 
