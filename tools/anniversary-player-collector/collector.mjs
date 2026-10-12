@@ -1449,6 +1449,60 @@ async function collectPlayer(browser, card, options, imageCache, assetLibrary) {
   }
 }
 
+async function preservePreviouslyVerifiedData(currentRecord, previousRecord) {
+  if (!previousRecord) return currentRecord;
+
+  if ((currentRecord.statExtraction?.groupsFound ?? 0) === 0
+    && previousRecord.statExtraction?.status === "complete") {
+    currentRecord.stats = previousRecord.stats;
+    currentRecord.statExtraction = previousRecord.statExtraction;
+    currentRecord.statsCollectedAt = previousRecord.statsCollectedAt || previousRecord.collectedAt || null;
+    currentRecord.statsRetainedFromPreviousCollection = true;
+  }
+
+  const previousAssets = Array.isArray(previousRecord.assets) ? previousRecord.assets : [];
+  const previousByCanonicalUrl = new Map();
+  for (const asset of previousAssets) {
+    if (!asset?.sourceUrl) continue;
+    previousByCanonicalUrl.set(
+      String(asset.kind || "") + "|" + canonicalAssetUrl(asset.sourceUrl),
+      asset
+    );
+    previousByCanonicalUrl.set(
+      "any|" + canonicalAssetUrl(asset.sourceUrl),
+      asset
+    );
+  }
+
+  const currentAssets = Array.isArray(currentRecord.assets) ? currentRecord.assets : [];
+  for (let index = 0; index < currentAssets.length; index += 1) {
+    const asset = currentAssets[index];
+    const hasWorkingLocalFile = asset.localPath
+      && !asset.downloadError
+      && await fs.access(path.resolve(asset.localPath)).then(() => true).catch(() => false);
+    if (hasWorkingLocalFile) continue;
+
+    const prior = previousByCanonicalUrl.get(String(asset.kind || "") + "|" + canonicalAssetUrl(asset.sourceUrl))
+      || previousByCanonicalUrl.get("any|" + canonicalAssetUrl(asset.sourceUrl));
+    if (!prior?.localPath || prior.downloadError) continue;
+    const priorFileExists = await fs.access(path.resolve(prior.localPath)).then(() => true).catch(() => false);
+    if (!priorFileExists) continue;
+
+    currentAssets[index] = {
+      ...prior,
+      ...asset,
+      localPath: prior.localPath,
+      bytes: prior.bytes ?? asset.bytes ?? null,
+      contentType: prior.contentType ?? asset.contentType ?? null,
+      contentHash: prior.contentHash ?? asset.contentHash ?? null,
+      downloadError: undefined,
+      reusedFromPreviousRecord: true
+    };
+  }
+  currentRecord.assets = currentAssets;
+  return currentRecord;
+}
+
 async function run() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) return printHelp();
@@ -1527,7 +1581,9 @@ async function run() {
       await sleep(options.delayMs);
 
       try {
-        const record = await collectPlayer(browser, card, options, imageCache, assetLibrary);
+        let record = await collectPlayer(browser, card, options, imageCache, assetLibrary);
+        const previousRecord = byUrl.get(record.sourceUrl);
+        record = await preservePreviouslyVerifiedData(record, previousRecord);
         byUrl.set(record.sourceUrl, record);
         completedThisRun.push({
           sourceCardId: record.sourceCardId,
@@ -1581,10 +1637,16 @@ async function run() {
       progressionRequested: options.captureProgression,
       recordsWithActionShot: finalRecords.filter((record) => record.assets.some((asset) => ["player-image", "action-shot"].includes(asset.kind) && !asset.downloadError)).length,
       recordsWithCardBackground: finalRecords.filter((record) => record.assets.some((asset) => asset.kind === "player-card-background" && !asset.downloadError)).length,
+      uniqueAssetsInLibrary: assetLibrary.size,
       assetKindCounts: Object.fromEntries(["player-card-background", "player-image", "club-logo", "league-logo", "nation-flag"].map((kind) => [
+        kind,
+        [...assetLibrary.values()].filter((asset) => asset.kind === kind).length
+      ])),
+      assetReferencesByKind: Object.fromEntries(["player-card-background", "player-image", "club-logo", "league-logo", "nation-flag"].map((kind) => [
         kind,
         finalRecords.reduce((count, record) => count + (Array.isArray(record.assets) ? record.assets.filter((asset) => asset.kind === kind && !asset.downloadError).length : 0), 0)
       ])),
+      assetLibraryFile: path.relative(process.cwd(), ASSET_LIBRARY_FILE).replaceAll(path.sep, "/"),
       failuresThisRun: errors
     };
     await writeJsonAtomic(path.join(OUTPUT_DIR, "pilot-report.json"), report);
