@@ -70,7 +70,7 @@ Copy the real player URL from RenderZ. Do not leave the example slug in place.
 npm run pilot:assets
 ```
 
-Downloads only images identified on the detail page as `Player Card Background` or `Action shot`. It writes the local asset paths into each record. This is intentionally narrow until we verify the right portrait/card layers and image matching.
+Downloads images identified on the detail page as `Player Card Background`, `Action shot`, `Club`, `League`, or `Nation`. They are stored as reusable, hashed local assets, so identical images can be shared across players instead of saving duplicate copies. The exact available asset types depend on what RenderZ exposes on that page.
 
 ## Step 5 — Collect the entire Anniversary program
 
@@ -80,7 +80,7 @@ Only after the pilot's stats, progression behavior, and image matches have been 
 npm run collect
 ```
 
-This is an explicit action that visits all discovered cards sequentially and downloads the selected image assets. It is not run by the website or by GitHub Actions.
+This is an explicit action that visits all discovered cards sequentially, saves one base stat record per card, and downloads the available image assets. It does not capture every training level/rank variant for every player. Training XP thresholds belong in one shared table; trained attribute changes must be verified from source behavior before a universal formula is used. Rank skill trees and actual skill allocations are kept as a separate layer. This is not run by the website or by GitHub Actions.
 
 Optional flags:
 
@@ -103,8 +103,11 @@ data/
   anniversary-3rd-2026.json
   checkpoint.json
   assets/
-    <card-id>-action-shot.<ext>
-    <card-id>-player-card-background.<ext>
+    player-card-background-<asset-hash>.<ext>
+    player-image-<asset-hash>.<ext>
+    club-logo-<asset-hash>.<ext>
+    league-logo-<asset-hash>.<ext>
+    nation-flag-<asset-hash>.<ext>
 ```
 
 No records, images, cookies or session credentials are committed. Raw page text is omitted from records by default so the output stays focused on usable fields; use `--keep-source-text` only when debugging a specific extraction problem. Review the output before publication.
