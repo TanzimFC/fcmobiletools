@@ -22,6 +22,7 @@ function parseArgs(argv) {
     refreshListing: false,
     downloadImages: false,
     captureProgression: false,
+    playerUrl: null,
     delayMs: DEFAULT_DELAY_MS,
     help: false
   };
@@ -34,6 +35,16 @@ function parseArgs(argv) {
     else if (arg === "--refresh-listing") options.refreshListing = true;
     else if (arg === "--download-images") options.downloadImages = true;
     else if (arg === "--capture-progression") options.captureProgression = true;
+    else if (arg === "--player-url") {
+      const value = argv[++i];
+      if (!value) throw new Error("--player-url requires a RenderZ player URL.");
+      let parsed;
+      try { parsed = new URL(value); } catch { throw new Error("--player-url must be a valid URL."); }
+      if (parsed.hostname !== "renderz.app" || !/^\/player\/[^/]+$/.test(parsed.pathname)) {
+        throw new Error("--player-url must point to a RenderZ player detail page.");
+      }
+      options.playerUrl = parsed.href;
+    }
     else if (arg === "--limit") {
       const value = Number(argv[++i]);
       if (!Number.isInteger(value) || value < 1) throw new Error("--limit must be a positive integer.");
@@ -62,6 +73,7 @@ Usage:
   node collector.mjs --limit 5
   node collector.mjs --limit 5 --download-images
   node collector.mjs --limit 5 --capture-progression
+  node collector.mjs --player-url "https://renderz.app/player/123-example" --capture-progression
   node collector.mjs --all --download-images --capture-progression
 
 Options:
@@ -71,6 +83,7 @@ Options:
   --all               Explicitly collect all player cards discovered in the listing.
   --download-images   Download only the player card background and action shot.
   --capture-progression Capture the visible stats at rank 1-5 and training levels 0-30 when controls and stats are available.
+  --player-url <url>  Collect one specific RenderZ player page (useful for testing a card that displays stats).
   --delay-ms <n>      Delay between page visits; minimum 1200 ms (default: 1800).
   --help              Show this help.
 
@@ -777,25 +790,46 @@ async function run() {
   const browser = await chromium.launch({ headless: true });
 
   try {
-    let listing;
+    let listing = null;
     if (options.discover) {
       await discoverListing(browser, options.delayMs);
       return;
     }
 
-    if (!options.refreshListing) {
+    if (options.playerUrl) {
       listing = await readJson(LISTING_FILE, null);
-    }
-    if (!listing?.cards?.length || listing.complete !== true || options.refreshListing) {
-      listing = await discoverListing(browser, options.delayMs);
+      console.log("Using explicit player URL for a focused extraction test.");
     } else {
-      console.log("Using cached complete listing: " + LISTING_FILE + " (" + listing.cards.length + " cards; run with --refresh-listing to rescan)");
-    }
-    if (listing.complete !== true) {
-      throw new Error("The Anniversary listing is incomplete. Fix pagination before collecting player details; partial collections are blocked.");
+      if (!options.refreshListing) {
+        listing = await readJson(LISTING_FILE, null);
+      }
+      if (!listing?.cards?.length || listing.complete !== true || options.refreshListing) {
+        listing = await discoverListing(browser, options.delayMs);
+      } else {
+        console.log("Using cached complete listing: " + LISTING_FILE + " (" + listing.cards.length + " cards; run with --refresh-listing to rescan)");
+      }
+      if (listing.complete !== true) {
+        throw new Error("The Anniversary listing is incomplete. Fix pagination before collecting player details; partial collections are blocked.");
+      }
     }
 
-    const targetCards = listing.cards.slice(0, options.limit);
+    let targetCards;
+    if (options.playerUrl) {
+      const parsedUrl = new URL(options.playerUrl);
+      const slug = parsedUrl.pathname.split("/").filter(Boolean).at(-1) || "";
+      const idMatch = slug.match(/^(\d+)/);
+      const nameFromSlug = slug.replace(/^\d+-?/, "").replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) || slug;
+      targetCards = [{
+        sourceCardId: idMatch?.[1] || slug,
+        slug,
+        nameFromListing: nameFromSlug,
+        ovrFromListing: null,
+        positionFromListing: null,
+        detailUrl: parsedUrl.href
+      }];
+    } else {
+      targetCards = listing.cards.slice(0, options.limit);
+    }
     if (targetCards.length === 0) {
       throw new Error("No player cards selected for detail collection.");
     }
@@ -845,7 +879,7 @@ async function run() {
       program: PROGRAM_NAME,
       sourceProgramUrl: PROGRAM_URL,
       runAt: new Date().toISOString(),
-      listingCount: listing.count,
+      listingCount: listing?.count ?? null,
       requestedDetailCount: targetCards.length,
       savedRecordCount: finalRecords.length,
       recordsWithStats: finalRecords.filter((record) => (record.statExtraction?.groupsFound ?? 0) > 0).length,
