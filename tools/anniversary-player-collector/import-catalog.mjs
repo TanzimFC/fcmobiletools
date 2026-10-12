@@ -88,7 +88,7 @@ function templateFromAsset(asset) {
 
 function exactRecordTemplate(record, assets) {
   const wantedOvr = Number(record.ovr);
-  const slugWords = String(record.sourceSlug || "").replace(/^\\d+-/, "").replace(/-/g, " ");
+  const slugWords = String(record.sourceSlug || "").replace(/^\d+-/, "").replace(/-/g, " ");
   const wantedNames = [
     normName(record.name || record.player_name),
     normName(resolveCardDisplayName(record)),
