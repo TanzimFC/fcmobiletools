@@ -511,6 +511,12 @@ async function run() {
       throw new Error("The Anniversary listing is incomplete. Fix pagination before collecting player details; partial collections are blocked.");
     }
 
+    const targetCards = listing.cards.slice(0, options.limit);
+    if (targetCards.length === 0) {
+      throw new Error("No player cards selected for detail collection.");
+    }
+    console.log("Preparing " + targetCards.length + " player detail page(s).");
+
     const existing = await readJson(RECORDS_FILE, []);
     const byUrl = new Map(existing.map((record) => [record.sourceUrl, record]));
     const imageCache = new Map();
