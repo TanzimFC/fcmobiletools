@@ -87,12 +87,18 @@ function templateFromAsset(asset) {
 }
 
 function exactRecordTemplate(record, assets) {
-  const wantedName = normName(record.name || record.player_name);
   const wantedOvr = Number(record.ovr);
+  const slugWords = String(record.sourceSlug || "").replace(/^\\d+-/, "").replace(/-/g, " ");
+  const wantedNames = [
+    normName(record.name || record.player_name),
+    normName(resolveCardDisplayName(record)),
+    normName(slugWords)
+  ].filter(Boolean);
   const currentCandidates = assets.filter((asset) => {
     if (normalizeKind(asset.kind) !== "player-card-background" || !templateFromAsset(asset)) return false;
     const alt = normName(asset.alt || "");
-    return alt.includes(wantedName) && new RegExp("\\b" + wantedOvr + "\\s*OVR\\b", "i").test(alt);
+    const matchingName = wantedNames.some((name) => name && alt.includes(name));
+    return matchingName && new RegExp("\\b" + wantedOvr + "\\s*OVR\\b", "i").test(alt);
   });
   if (currentCandidates.length === 1) return templateFromAsset(currentCandidates[0]);
   if (currentCandidates.length > 1) {
