@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const dataPath = path.resolve("data/anniversary-3rd-2026.json");
+const assetLibraryPath = path.resolve("data/asset-library.json");
 const reportPath = path.resolve("data/validation-report.json");
 
 function addIssue(list, severity, code, cardId, message) {
@@ -44,15 +45,16 @@ async function main() {
 
   const seenUrls = new Set();
   const seenIds = new Map();
-  let recordsWithActionShot = 0;
+  let recordsWithPlayerImage = 0;
   let recordsWithBackground = 0;
   let recordsWithCompleteStats = 0;
   let recordsWithPartialStats = 0;
   let recordsWithoutStats = 0;
   let recordsWithProgressionSnapshots = 0;
-  const assetKindCounts = {
+  const assetReferenceCounts = {
     "player-card-background": 0,
     "player-image": 0,
+    "action-shot": 0,
     "club-logo": 0,
     "league-logo": 0,
     "nation-flag": 0
@@ -102,13 +104,13 @@ async function main() {
     }
 
     const assets = Array.isArray(record.assets) ? record.assets : [];
-    const actionShot = assets.some((asset) => asset.kind === "action-shot" && !asset.downloadError);
+    const playerImage = assets.some((asset) => ["player-image", "action-shot"].includes(asset.kind) && !asset.downloadError);
     const background = assets.some((asset) => asset.kind === "player-card-background" && !asset.downloadError);
-    if (actionShot) recordsWithActionShot += 1;
+    if (playerImage) recordsWithPlayerImage += 1;
     if (background) recordsWithBackground += 1;
 
     for (const asset of assets) {
-      if (Object.hasOwn(assetKindCounts, asset.kind)) assetKindCounts[asset.kind] += 1;
+      if (Object.hasOwn(assetReferenceCounts, asset.kind)) assetReferenceCounts[asset.kind] += 1;
       if (!asset.localPath) continue;
       const localPath = path.resolve(asset.localPath);
       if (await exists(localPath)) localImagesVerified += 1;
@@ -119,19 +121,54 @@ async function main() {
     }
   }
 
+  let assetLibrary = [];
+  try {
+    const rawLibrary = JSON.parse(await fs.readFile(assetLibraryPath, "utf8"));
+    if (Array.isArray(rawLibrary)) assetLibrary = rawLibrary;
+    else addIssue(issues, "warning", "invalid-asset-library", null, "Asset library file is not a JSON array.");
+  } catch (error) {
+    if (error?.code !== "ENOENT") addIssue(issues, "warning", "invalid-asset-library", null, "Could not read asset library: " + error.message);
+  }
+
+  const uniqueAssetsByKind = {
+    "player-card-background": 0,
+    "player-image": 0,
+    "club-logo": 0,
+    "league-logo": 0,
+    "nation-flag": 0
+  };
+  let uniqueAssetFilesVerified = 0;
+  let uniqueAssetFilesMissing = 0;
+  const seenAssetKeys = new Set();
+  for (const asset of assetLibrary) {
+    if (!asset?.assetKey || seenAssetKeys.has(asset.assetKey)) continue;
+    seenAssetKeys.add(asset.assetKey);
+    if (Object.hasOwn(uniqueAssetsByKind, asset.kind)) uniqueAssetsByKind[asset.kind] += 1;
+    if (!asset.localPath) continue;
+    if (await exists(path.resolve(asset.localPath))) uniqueAssetFilesVerified += 1;
+    else {
+      uniqueAssetFilesMissing += 1;
+      addIssue(issues, "error", "missing-library-asset", asset.assetKey, "Asset library file is missing: " + asset.localPath);
+    }
+  }
+
   const errors = issues.filter((issue) => issue.severity === "error").length;
   const warnings = issues.filter((issue) => issue.severity === "warning").length;
   const report = {
     generatedAt: new Date().toISOString(),
     sourceFile: path.relative(process.cwd(), dataPath).replaceAll(path.sep, "/"),
     totalRecords: records.length,
-    recordsWithActionShot,
+    recordsWithPlayerImage,
     recordsWithCardBackground: recordsWithBackground,
     recordsWithCompleteStats,
     recordsWithPartialStats,
     recordsWithoutStats,
     recordsWithProgressionSnapshots,
-    assetKindCounts,
+    assetReferencesByKind: assetReferenceCounts,
+    uniqueAssetsInLibrary: seenAssetKeys.size,
+    uniqueAssetsByKind,
+    uniqueAssetFilesVerified,
+    uniqueAssetFilesMissing,
     localImagesVerified,
     localImagesMissing,
     errors,
