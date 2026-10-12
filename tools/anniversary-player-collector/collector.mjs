@@ -1194,20 +1194,20 @@ async function downloadImage(asset, playerUrl, outputDir, requestCache) {
   });
 
   if (response.status === 403 || response.status === 429) {
-    throw new Error(\`Image host returned HTTP \${response.status}. Stopping without trying to bypass the restriction.\`);
+    throw new Error(`Image host returned HTTP ${response.status}. Stopping without trying to bypass the restriction.`);
   }
-  if (!response.ok) throw new Error(\`Image download returned HTTP \${response.status}: \${asset.sourceUrl}\`);
+  if (!response.ok) throw new Error(`Image download returned HTTP ${response.status}: ${asset.sourceUrl}`);
 
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.toLowerCase().startsWith("image/")) {
-    throw new Error(\`Expected an image but received \${contentType || "unknown content type"}: \${asset.sourceUrl}\`);
+    throw new Error(`Expected an image but received ${contentType || "unknown content type"}: ${asset.sourceUrl}`);
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
-  if (!buffer.length) throw new Error(\`Downloaded empty image: \${asset.sourceUrl}\`);
+  if (!buffer.length) throw new Error(`Downloaded empty image: ${asset.sourceUrl}`);
 
   const extension = getExtensions(contentType, asset.sourceUrl);
-  const outputPath = path.join(outputDir, \`\${asset.kind}-\${assetKey}\${extension}\`);
+  const outputPath = path.join(outputDir, `${asset.kind}-${assetKey}${extension}`);
   await fs.mkdir(outputDir, { recursive: true });
   if (!(await fs.stat(outputPath).catch(() => null))) {
     await fs.writeFile(outputPath, buffer);
