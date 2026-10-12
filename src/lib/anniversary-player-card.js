@@ -1,0 +1,101 @@
+const STAT_GROUPS = [
+  ["pace", "Pace"],
+  ["shooting", "Shooting"],
+  ["passing", "Passing"],
+  ["dribbling", "Dribbling"],
+  ["defending", "Defending"],
+  ["physical", "Physical"]
+];
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function safeImageUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" ? parsed.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function image(url, className, alt = "") {
+  const safe = safeImageUrl(url);
+  if (!safe) return "";
+  return '<img class="' + className + '" src="' + escapeHtml(safe) + '" alt="' + escapeHtml(alt) + '" loading="lazy" decoding="async" draggable="false">';
+}
+
+function statLine(key, label, stats) {
+  const value = stats && stats[key] && Number.isFinite(Number(stats[key].value))
+    ? Number(stats[key].value)
+    : null;
+  return '<div class="fc-player-stat"><span>' + escapeHtml(label) + '</span><b>' + (value === null ? "—" : value) + '</b></div>';
+}
+
+function makeCardName(name) {
+  const cleaned = String(name || "Unknown Player").trim();
+  const parts = cleaned.split(/\s+/);
+  if (cleaned.length <= 19) return cleaned;
+  if (parts.length > 1) return parts.slice(-1).join("");
+  return cleaned;
+}
+
+export function renderAnniversaryPlayerCard(player) {
+  const name = String(player.player_name || player.name || "Unknown Player").trim();
+  const cardName = makeCardName(name);
+  const ovr = Number(player.ovr) || "—";
+  const position = String(player.position || "—").toUpperCase();
+  const template = player.template_key === "anniversary27-live" ? "live" : "base";
+  const stats = player.stats || {};
+  const details = player.details || {};
+  const badges = [
+    image(player.nation_flag_url, "fc-card-badge fc-card-badge--nation", details.nation || "Nation"),
+    image(player.club_logo_url, "fc-card-badge fc-card-badge--club", details.club || "Club")
+  ].filter(Boolean).join("");
+
+  const metaLines = [
+    details.club ? '<span class="fc-player-meta__item">' + escapeHtml(details.club) + '</span>' : "",
+    details.league ? '<span class="fc-player-meta__item">' + escapeHtml(details.league) + '</span>' : "",
+    details.nation ? '<span class="fc-player-meta__item">' + escapeHtml(details.nation) + '</span>' : ""
+  ].filter(Boolean).join("");
+
+  const groupStats = STAT_GROUPS.map(([key, label]) => statLine(key, label, stats)).join("");
+  const imageMissing = !safeImageUrl(player.player_image_url);
+  const backgroundMissing = !safeImageUrl(player.card_background_url);
+
+  return '<article class="fc-player-tile" data-tier="' + escapeHtml(template) + '" data-position="' + escapeHtml(position) + '" data-card-id="' + escapeHtml(player.source_card_id || "") + '">' +
+    '<div class="fc-player-card-art" data-template="' + escapeHtml(template) + '">' +
+      image(player.card_background_url, "fc-player-card-art__frame", "") +
+      image(player.player_image_url, "fc-player-card-art__athlete", name) +
+      '<div class="fc-player-card-art__shade"></div>' +
+      '<div class="fc-player-card-art__rating"><strong>' + escapeHtml(ovr) + '</strong><span>' + escapeHtml(position) + '</span></div>' +
+      '<div class="fc-player-card-art__badges">' + badges + '</div>' +
+      '<div class="fc-player-card-art__name" title="' + escapeHtml(name) + '">' + escapeHtml(cardName) + '</div>' +
+      (imageMissing ? '<div class="fc-player-card-art__missing">PLAYER IMAGE MISSING</div>' : '') +
+      (backgroundMissing ? '<div class="fc-player-card-art__missing fc-player-card-art__missing--background">TEMPLATE MISSING</div>' : '') +
+    '</div>' +
+    '<div class="fc-player-tile__body">' +
+      '<div class="fc-player-tile__heading"><div><h3>' + escapeHtml(name) + '</h3><p>' + escapeHtml(position) + ' · ' + escapeHtml(ovr) + ' OVR</p></div>' +
+      '<span class="fc-player-tier">' + (template === "live" ? "LIVE" : "BASE") + '</span></div>' +
+      '<div class="fc-player-meta">' + metaLines + '</div>' +
+      '<div class="fc-player-stats">' + groupStats + '</div>' +
+      '<div class="fc-player-tile__footer">' +
+        (player.skill_points_to_spend === null || player.skill_points_to_spend === undefined ? "" :
+          '<span>Skill points to spend <b>' + escapeHtml(player.skill_points_to_spend) + '</b></span>') +
+        '<span class="fc-player-template-label">' + escapeHtml(player.template_key || "Anniversary template") + '</span>' +
+      '</div>' +
+    '</div>' +
+  '</article>';
+}
+
+export function getAnniversaryPlayerCardEscapeHtml() {
+  return escapeHtml;
+}
