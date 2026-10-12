@@ -815,6 +815,27 @@ async function setTrainingLevel(page, level) {
         };
       }
 
+      // Last resort for RenderZ builds where the numeric training input is rendered
+      // but the dropdown options are not exposed as normal interactive elements.
+      const trainingInput = Array.from(document.querySelectorAll("input")).find((element) => {
+        const context = clean(element.parentElement?.parentElement?.innerText || element.parentElement?.innerText || "");
+        const value = clean(element.value);
+        return /select\s+training/i.test(context) && /^\d{1,2}$/.test(value);
+      });
+      if (trainingInput && wantedLevel >= 0 && wantedLevel <= 30) {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+        if (setter) setter.call(trainingInput, String(wantedLevel));
+        else trainingInput.value = String(wantedLevel);
+        trainingInput.dispatchEvent(new Event("input", { bubbles: true }));
+        trainingInput.dispatchEvent(new Event("change", { bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        const inputValue = Number(trainingInput.value);
+        const buttonValue = readButtonValue();
+        if (inputValue === wantedLevel && buttonValue === wantedLevel) {
+          return { ok: true, value: buttonValue, min: 0, max: 30, mode: "training-input-fallback" };
+        }
+      }
+
       return {
         ok: false,
         value: readButtonValue(),
