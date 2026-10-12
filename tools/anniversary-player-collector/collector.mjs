@@ -505,7 +505,7 @@ async function run() {
     if (!listing?.cards?.length || listing.complete !== true || options.refreshListing) {
       listing = await discoverListing(browser, options.delayMs);
     } else {
-      console.log(\`Using cached complete listing: \${LISTING_FILE} (\${listing.cards.length} cards; run with --refresh-listing to rescan)\`);
+      console.log("Using cached complete listing: " + LISTING_FILE + " (" + listing.cards.length + " cards; run with --refresh-listing to rescan)");
     }
     if (listing.complete !== true) {
       throw new Error("The Anniversary listing is incomplete. Fix pagination before collecting player details; partial collections are blocked.");
