@@ -151,10 +151,10 @@ npm run import:catalog
 
 The importer uses the exact Anniversary template asset when source metadata identifies it. OVR-based fallback (default 117+ = LIVE, below 117 = BASE) is used only when that metadata is unavailable. A normal import keeps every card unpublished. Add `--publish` only after reviewing the preview and deciding to release the dataset.
 
-RenderZ image URLs may be signed or change access rules. They're a temporary delivery source for this preview; the versioned Cloudinary backgrounds are the stable cached assets.
+RenderZ image URLs may be signed or reject requests outside their source context. They currently fail when embedded on FCMobiletools, so the player listing/detail preview and its Worker endpoint are disabled until image delivery is rebuilt. The imported cards and asset metadata remain in Supabase for future work; keep all cards unpublished.
 
-## Step 7 — Preview and assemble cards
+## Step 7 — Preview and assemble cards (paused)
 
-After the import completes, open `/anniversary-player-preview/` on the branch build. The page uses an admin-only Worker endpoint to read unpublished records safely; the browser cannot fetch draft cards directly through the public Supabase key. It includes search, position and design filters, sorting, a dedicated player detail view, all captured base attributes, profile metadata, play-style notes and goalkeeper-specific stats. The preview is intentionally `noindex` and is not linked in public navigation.
+The player preview route is intentionally unavailable while the artwork delivery pipeline is rebuilt. Do not link or publish a player listing/detail page yet, and keep all imported cards unpublished. The Worker endpoint returns `404` during this pause so draft player records cannot be retrieved through the old preview API.
 
-Review a higher-tier card and a lower-tier card, plus at least one goalkeeper, before adding a public Player Database route. Training formula/rank progression stays separate for a later phase.
+The card rows and deduplicated asset metadata are retained in Supabase. Resume visual QA only after every card, badge, and template image can be served reliably from a stable, approved host. Training formula/rank progression stays separate for a later phase.
