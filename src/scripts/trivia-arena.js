@@ -84,11 +84,15 @@ export async function openArena(opts = {}) {
   if (!dlg.open) dlg.showModal();
   try {
     if (!data[setKey]) {
-      const list = await (await fetch(SETS[setKey].src)).json();
+      const response = await fetch(SETS[setKey].src, { headers: { accept: 'application/json' } });
+      if (!response.ok) throw new Error('Question data request failed: HTTP ' + response.status);
+      const list = await response.json();
+      if (!Array.isArray(list) || list.length === 0) throw new Error('Question data was empty or invalid.');
       data[setKey] = { list, pools: setKey === 'season-recap' ? buildPools(list) : null };
     }
-  } catch {
-    root().innerHTML = head(SETS[setKey].title, 'Practice') + '<div class="tva-body tva-center"><p>Couldn\'t load the questions. Check your connection and try again.</p></div>';
+  } catch (error) {
+    console.error('[Trivia] Could not load practice questions:', error);
+    root().innerHTML = head(SETS[setKey].title, 'Practice') + '<div class="tva-body tva-center"><p>Couldn\'t load the questions. Refresh the page and try again.</p><a class="tv-btn ghost" href="' + esc(SETS[setKey].src) + '" target="_blank" rel="noopener">Check question data</a></div>';
     return;
   }
   state = { setKey, mode: MODES[opts.mode] ? opts.mode : 'quiz', topic: opts.nation || opts.topic || 'all', day: opts.day || 'all', length: Number(opts.length) || SETS[setKey].lengths[0] };
