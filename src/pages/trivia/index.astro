@@ -1,6 +1,5 @@
 ---
 import TriviaLayout from '../../layouts/TriviaLayout.astro';
-import SearchBox from '../../components/trivia/SearchBox.astro';
 import { ICONS } from '../../lib/triviaIcons.js';
 import { SEASON_RECAP_META as SR, SEASON_RECAP_QUESTION_COUNT } from '../../data/seasonRecapTrivia.js';
 import { buildNationQuestions, nationImage, NATION_STYLE } from '../../lib/triviaNations.js';
@@ -11,15 +10,14 @@ import { EXTRA_TIME_ROUTE, NATIONS_ROUTE, SEASON_RECAP_ROUTE } from '../../lib/t
 const ansCount = buildNationQuestions().length;
 const nationCount = NATIONS_STORY.length;
 const fan = ['japan', 'france', 'brazil'];
-const popular = ['Haaland', 'Mbappé', 'Bayern', 'Real Madrid', 'Clean sheets', 'Hat-trick', 'World Cup 2022', 'Zidane', 'Japan', 'Balon d\'Or'].filter((x) => x !== "Balon d'Or");
 
 const title = 'FC Mobile Trivia Answers: Season Recap & A Nation\'s Story';
-const description = `Every FC Mobile trivia answer in one place: ${SEASON_RECAP_QUESTION_COUNT} Season Recap (Challenge) answers and ${ansCount} A Nation's Story questions. Search, study with flashcards, or race the clock.`;
+const description = `Choose between two FC Mobile trivia collections: ${SEASON_RECAP_QUESTION_COUNT} Season Recap (Challenge) answers in Extra Time, or ${ansCount} A Nation's Story questions grouped by nation and day.`;
 const faq = [
   ['How does FC Mobile trivia work?', `There are two kinds. Extra Time trivia runs for a limited window and gives you a round of roughly 10 to 30 questions (Season Recap currently uses 30 questions with 2 options each). A Nation's Story is a day-by-day set with 4 options per question. Correct answers earn points, and in Extra Time faster answers typically earn more.`],
   ['How many Season Recap questions are there?', `The game draws 30 questions per round from a larger pool. We list ${SEASON_RECAP_QUESTION_COUNT} questions with their answers, checked against two independent guides on ${SR.verifiedLabel}.`],
   ['Why do I only see two options in Season Recap?', 'Season Recap shows two options and exactly one is right. A few questions, such as which clubs qualified for the Champions League, have many valid answers, so every valid answer is listed.'],
-  ['Where did A Nation\'s Story go?', `It now lives inside Trivia at ${NATIONS_ROUTE}. Every question has its own page with all four options and the correct answer.`],
+  ['Where did A Nation\'s Story go?', `It has its own collection at ${NATIONS_ROUTE}. Each nation has an overview, and each day groups all questions, options and correct answers together.`],
   ['Are the questions the same for everyone?', 'Extra Time rounds are drawn at random from the pool, so two players rarely see the same 30. A Nation\'s Story is fixed by nation and day, so everyone sees the same set.']
 ];
 const jsonLd = [
@@ -35,15 +33,16 @@ const jsonLd = [
 <TriviaLayout title={title} description={description} image={SR.banner.jpg} jsonLd={jsonLd}>
   <header class="tv-wrap tv-hero">
     <div class="tv-hero-copy">
-      <span class="tv-eyebrow"><i class="tv-live"></i>Season Recap is live</span>
+      <span class="tv-eyebrow"><i class="tv-live"></i>Two trivia collections</span>
       <h1 class="tv-h1">Know every answer.<br /><span class="tv-grad">Win every round.</span></h1>
-      <p class="tv-lede">Verified answers for FC Mobile Extra Time and A Nation's Story. Search any question in a keystroke, then train with flashcards, quizzes and a race against the clock.</p>
-      <SearchBox scope="all" />
-      <div class="tv-chips" style="margin-top:18px" aria-label="Popular searches">
-        {popular.map((p) => <a class="tv-chip" href={`/trivia/?q=${encodeURIComponent(p)}`}>{p}</a>)}
+      <p class="tv-lede">Choose the format you need: searchable answers and practice for Extra Time, or football-history challenges organised by nation and day.</p>
+      <div class="tv-actions" style="margin-top:18px">
+        <a class="tv-btn" href={EXTRA_TIME_ROUTE}>Explore Extra Time</a>
+        <a class="tv-btn ghost" href={NATIONS_ROUTE}>Explore A Nation&apos;s Story</a>
       </div>
+      <p class="tv-note">Each collection has its own search, answer list and practice modes.</p>
     </div>
-    <div class="tv-hero-visual" aria-hidden="true">
+    <div class="tv-hero-visual aria-hidden="true">
       <div class="tv-float f1">
         <span class="lbl">Extra Time · Season Recap</span>
         <h3>Which team won the 2025/26 Premier League title?</h3>
@@ -64,7 +63,7 @@ const jsonLd = [
     <div class="tv-stats tv-reveal">
       <div class="tv-stat"><b data-count={SEASON_RECAP_QUESTION_COUNT + ansCount}>{(SEASON_RECAP_QUESTION_COUNT + ansCount).toLocaleString('en-US')}</b><span>Questions with answers</span></div>
       <div class="tv-stat"><b data-count="2">2</b><span>Trivia collections</span></div>
-      <div class="tv-stat"><b data-count="4">4</b><span>Ways to practice</span></div>
+      <div class="tv-stat"><b data-count={nationCount}>{nationCount}</b><span>Nations in A Nation&apos;s Story</span></div>
       <div class="tv-stat"><b>{SR.verifiedLabel.replace(', 2026', '')}</b><span>Answers last verified</span></div>
     </div>
   </div>
@@ -90,7 +89,7 @@ const jsonLd = [
         </div>
         <div class="tv-coll-body">
           <h2>A Nation's Story</h2>
-          <p>Day-by-day football history for each nation, with four options per question. Every question has its own answer page.</p>
+          <p>Day-by-day football history for each nation, with four options per question. Each day has one page containing its complete question set and answers.</p>
           <div class="tv-coll-meta"><span class="tv-pill accent"><b>{ansCount}</b> questions</span><span class="tv-pill"><b>{nationCount}</b> nations</span><span class="tv-pill"><b>4</b> options</span></div>
           <div class="tv-coll-go">Open A Nation's Story <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div>
         </div>
@@ -125,12 +124,12 @@ const jsonLd = [
         <li><div><h3>Choose a nation</h3><p>Each nation is its own story with its own set of questions. We cover {nationCount} so far.</p></div></li>
         <li><div><h3>Play it day by day</h3><p>A nation unfolds across Day 1 to Day 9, and the questions are different on every day.</p></div></li>
         <li><div><h3>Pick from four options</h3><p>Every question has 4 options. Early days are easier and later days dig into football history.</p></div></li>
-        <li><div><h3>Find any answer instantly</h3><p>Every question here has its own page, so searching the exact wording takes you to the answer.</p></div></li>
+        <li><div><h3>Jump to the right question</h3><p>Search results open the nation and day page, then scroll to the matching question in that complete set.</p></div></li>
       </ol>
       <div class="tv-facts">
         <div class="tv-fact"><b>4</b><span>options per question</span></div>
         <div class="tv-fact"><b>9</b><span>days per nation</span></div>
-        <div class="tv-fact"><b>{ansCount}</b><span>questions with answer pages</span></div>
+        <div class="tv-fact"><b>{ansCount}</b><span>questions grouped into day pages</span></div>
         <div class="tv-fact"><b>{nationCount}</b><span>nations available</span></div>
       </div>
     </div>
@@ -140,7 +139,7 @@ const jsonLd = [
         <caption class="sr-only" style="position:absolute;left:-9999px">Extra Time compared with A Nation's Story</caption>
         <thead><tr><th></th><th>Extra Time</th><th>A Nation's Story</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Questions per round</th><td>10 to 30 (Season Recap: 30)</td><td>3 to 5 per day, or 1 on single-question nations</td></tr>
+          <tr><th scope="row">Question set</th><td>10 to 30 (Season Recap: 30)</td><td>One complete day per page</td></tr>
           <tr><th scope="row">Options</th><td>2 per question</td><td>4 per question</td></tr>
           <tr><th scope="row">Question set</th><td>Random from a larger pool</td><td>Fixed by nation and day</td></tr>
           <tr><th scope="row">Availability</th><td>Limited-time event</td><td>Day-by-day, per nation</td></tr>
@@ -149,18 +148,16 @@ const jsonLd = [
     </div>
   </section>
 
-  <section class="tv-wrap tv-section" id="modes">
-    <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">Practice modes</span><h2 class="tv-h2">Train like it's matchday.</h2><p class="tv-sub">Free, instant, and nothing to sign up for. Your personal bests are saved on your device.</p></div></div>
-    <div class="tv-modes">
-      <div class="tv-card tv-mode tv-spot tv-reveal" style="--d:0"><div class="tv-mode-ico" set:html={ICONS.finder} /><h3>Answer Finder</h3><p>Type a few words and jump to the answer. Filter by topic or league, and copy a link to any question.</p><a class="tv-btn ghost sm" href={SEASON_RECAP_ROUTE}>Open finder</a></div>
-      <div class="tv-card tv-mode tv-spot tv-reveal" style="--d:1"><div class="tv-mode-ico" set:html={ICONS.cards} /><h3>Flashcards</h3><p>Flip each card, mark what you know, and re-drill only the ones you missed.</p><button class="tv-btn ghost sm" data-arena="season-recap" data-mode="cards">Study cards</button></div>
-      <div class="tv-card tv-mode tv-spot tv-reveal" style="--d:2"><div class="tv-mode-ico" set:html={ICONS.quiz} /><h3>Practice Quiz</h3><p>No timer, instant feedback and a full review of every question you got wrong.</p><button class="tv-btn ghost sm" data-arena="season-recap" data-mode="quiz">Start quiz</button></div>
-      <div class="tv-card tv-mode hot tv-spot tv-reveal" style="--d:3"><div class="tv-mode-ico" set:html={ICONS.bolt} /><h3>Time Attack</h3><p>Race a 12-second clock. Faster answers and streaks earn bonus points.</p><button class="tv-btn gold sm" data-arena="season-recap" data-mode="attack">Start attack</button></div>
-    </div>
-    <div class="tv-card tv-box tv-reveal" style="margin-top:28px">
-      <h3>Play free. Sign in for account features.</h3>
-      <p>Browse answers, use the finder and play Flashcards, Practice Quiz or Time Attack without registering. Practice bests stay on this device. Your profile, Quests, achievements and Tokens are tied to your FCMobiletools account.</p>
-      <div class="tv-actions"><a class="tv-btn" href="/account/">Sign in or create a free account</a></div>
+  <section class="tv-wrap tv-section" id="accounts">
+    <div class="tv-card tv-box tv-reveal">
+      <span class="tv-kicker">Free to play</span>
+      <h2 class="tv-h2">Answers and practice stay free.</h2>
+      <p class="tv-sub">Browse either collection and practise without an account. Sign in only for your profile, Quests, achievements and Tokens.</p>
+      <div class="tv-actions">
+        <a class="tv-btn" href="/account/">Sign in or create a free account</a>
+        <a class="tv-btn ghost" href={EXTRA_TIME_ROUTE}>Season Recap</a>
+        <a class="tv-btn ghost" href={NATIONS_ROUTE}>A Nation&apos;s Story</a>
+      </div>
     </div>
   </section>
 
