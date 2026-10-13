@@ -50,7 +50,6 @@ const MORE = 6;
   </div>
 
   <section class="tv-wrap tv-section" id="finder" style="padding-top:48px">
-    <div id="sentinel" aria-hidden="true" style="height:1px;margin-bottom:-1px"></div>
     <div class="tv-toolbar" id="toolbar">
       <div class="tv-search has-fin" id="finder-search">
         <label class="tv-search-box">
@@ -147,7 +146,6 @@ const MORE = 6;
       q ? url.searchParams.set('q', q) : url.searchParams.delete('q');
       history.replaceState(null, '', url);
     }
-    new IntersectionObserver(([e]) => document.getElementById('toolbar').classList.toggle('stuck', !e.isIntersecting && e.boundingClientRect.top < 0), { rootMargin: '-80px 0px 0px 0px' }).observe(document.getElementById('sentinel'));
     input.addEventListener('input', apply);
     document.getElementById('fx').addEventListener('click', () => { input.value = ''; apply(); input.focus(); });
     const bind = (rowId, key, set) => document.getElementById(rowId).addEventListener('click', (e) => {
