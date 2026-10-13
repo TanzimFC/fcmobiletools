@@ -4,6 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import remarkGfm from 'remark-gfm';
 import cloudflare from '@astrojs/cloudflare';
 import { optimizeMarkdownImages } from './src/lib/image-delivery.js';
+import { buildNationQuestions } from './src/lib/triviaNations.js';
 
 const NATIONS = ['japan', 'netherlands', 'mexico', 'france', 'brazil'];
 const DAYS = Array.from({ length: 9 }, (_, i) => `day-${i + 1}`);
@@ -20,6 +21,10 @@ const nationRedirects = Object.fromEntries(
     ])
   ])
 );
+const questionRedirects = Object.fromEntries(
+  buildNationQuestions().map((question) => [question.legacyUrl, question.url])
+);
+const redirectPaths = new Set([...Object.keys(nationRedirects), ...Object.keys(questionRedirects)]);
 
 export default defineConfig({
   site: 'https://fcmobiletools.online',
@@ -68,14 +73,15 @@ export default defineConfig({
         '/rewards/',
         '/surveys',
         '/surveys/'
-      ].includes(pathname);
+      ].includes(pathname) && !redirectPaths.has(pathname);
     }
   })],
   markdown: { remarkPlugins: [remarkGfm], rehypePlugins: [optimizeMarkdownImages] },
   redirects: {
     '/fcmtv': '/academy/',
     '/trivia/season-recap/': '/trivia/extra-time/season-recap/',
-    ...nationRedirects
+    ...nationRedirects,
+    ...questionRedirects
   },
   experimental: {
     preserveScriptOrder: true
