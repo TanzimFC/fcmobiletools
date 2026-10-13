@@ -36,7 +36,7 @@ export async function api(path, options = {}) {
   if (!res.ok) { const e = new Error(body.error || 'Something went wrong. Please try again.'); e.status = res.status; e.body = body; throw e; }
   return body;
 }
-export const signInUrl = (next) => '/account/?next=' + encodeURIComponent(next || location.pathname + location.search);
+export const signInUrl = (next) => '/account/?next=' + encodeURIComponent(next || location.pathname + location.search + location.hash);
 
 // ───────────── sheets (modals) ─────────────
 let sheetStack = [];

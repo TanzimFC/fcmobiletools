@@ -409,21 +409,52 @@ const pageSchema = {
   </script>
   <script is:inline>
     (() => {
-      // Preserve the page being used whenever any part of the site sends a
-      // visitor to Account. This also covers links rendered dynamically later.
+      // Carry the current page (including filters and hash anchors) through every
+      // account entry point. sessionStorage is a backup for JS redirects and OAuth.
+      const RETURN_KEY = 'fcmt:account:return:v1';
       const isAccountPath = (pathname) => pathname === '/account' || pathname.startsWith('/account/');
-      document.addEventListener('click', (event) => {
-        const link = event.target?.closest?.('a[href]');
-        if (!link || event.defaultPrevented || isAccountPath(location.pathname)) return;
+      const currentReturnPath = () => location.pathname + location.search + location.hash;
 
+      const rememberReturnPath = (path) => {
+        try {
+          sessionStorage.setItem(RETURN_KEY, JSON.stringify({ path, savedAt: Date.now() }));
+        } catch {}
+      };
+
+      const makeAccountUrl = (mode = '', path = currentReturnPath()) => {
+        const destination = new URL('/account/', location.origin);
+        if (mode) destination.searchParams.set('mode', mode);
+        destination.searchParams.set('next', path);
+        return destination.pathname + destination.search + destination.hash;
+      };
+
+      window.FCAccountNavigation = {
+        url: (mode = '', path = currentReturnPath()) => makeAccountUrl(mode, path),
+        go: (mode = '', path = currentReturnPath()) => {
+          rememberReturnPath(path);
+          location.assign(makeAccountUrl(mode, path));
+        }
+      };
+
+      const prepareAccountLink = (event) => {
+        const link = event.target?.closest?.('a[href]');
+        if (!link || isAccountPath(location.pathname)) return;
         try {
           const destination = new URL(link.getAttribute('href'), location.href);
           if (destination.origin !== location.origin || !isAccountPath(destination.pathname)) return;
-          if (destination.searchParams.has('next')) return;
-
-          destination.searchParams.set('next', location.pathname + location.search + location.hash);
+          const explicitNext = destination.searchParams.get('next');
+          const returnPath = explicitNext || currentReturnPath();
+          rememberReturnPath(returnPath);
+          if (!explicitNext) destination.searchParams.set('next', returnPath);
           link.href = destination.pathname + destination.search + destination.hash;
         } catch {}
+      };
+
+      document.addEventListener('pointerdown', prepareAccountLink, true);
+      document.addEventListener('click', prepareAccountLink, true);
+      document.addEventListener('auxclick', prepareAccountLink, true);
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') prepareAccountLink(event);
       }, true);
     })();
   </script>

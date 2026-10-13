@@ -437,7 +437,7 @@ import AccountNav from '../../components/AccountNav.astro';
       btn.disabled=false;
       const copy=document.getElementById('streakCopy');
       if(copy) copy.textContent='Sign in to start your UTC streak and earn the daily check-in reward.';
-      btn.onclick=()=>{ location.href='/account/'; };
+      btn.onclick=()=>{ if (window.FCAccountNavigation?.go) window.FCAccountNavigation.go(); else location.href='/account/?next='+encodeURIComponent(location.pathname+location.search+location.hash); };
       return;
     }
     btn.onclick=null;

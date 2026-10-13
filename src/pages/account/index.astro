@@ -628,6 +628,14 @@ import '../../styles/premium-auth.css';
   }
 
   const requestedNextPath = safeLocalReturnPath(params.get('next'));
+  let storedNextPath = '';
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('fcmt:account:return:v1') || 'null');
+    sessionStorage.removeItem('fcmt:account:return:v1');
+    if (stored && Number.isFinite(Number(stored.savedAt)) && Date.now() - Number(stored.savedAt) < 15 * 60 * 1000) {
+      storedNextPath = safeLocalReturnPath(stored.path);
+    }
+  } catch {}
   let referrerNextPath = '';
   try {
     if (document.referrer) {
@@ -637,7 +645,7 @@ import '../../styles/premium-auth.css';
       }
     }
   } catch {}
-  const nextPath = requestedNextPath || referrerNextPath || '/profile/';
+  const nextPath = requestedNextPath || storedNextPath || referrerNextPath || '/profile/';
 
   if (params.get('mode') === 'signup' || location.hash === '#signup') showTab('signup');
 
