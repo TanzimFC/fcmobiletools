@@ -1,3 +1,5 @@
+import { openArena } from './trivia-arena.js';
+
 // Small, dependency-free polish for Trivia pages. Everything degrades cleanly:
 // without JS the content is simply visible.
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -78,20 +80,51 @@ document.querySelectorAll('img[data-optional]').forEach((img) => {
   else img.addEventListener('error', hide, { once: true });
 });
 
-// 6. Lazy features: palette search + practice arena load only when needed.
+// 6. Lazy search; use a statically bundled practice launcher so the arena
+// is available reliably in both development and the production static build.
 if (document.querySelector('[data-tv-search]')) import('./trivia-search.js');
+
+async function launchPractice(btn, opts = {}) {
+  if (btn?.dataset.arenaBusy === 'true') return;
+  if (btn) {
+    btn.dataset.arenaBusy = 'true';
+    btn.setAttribute('aria-busy', 'true');
+    if ('disabled' in btn) btn.disabled = true;
+  }
+  try {
+    await openArena({ ...(btn?.dataset || {}), ...opts, set: btn?.dataset.arena || opts.set || 'season-recap' });
+  } catch (error) {
+    console.error('[Trivia] Practice mode failed to open:', error);
+    const host = btn?.closest('.tv-mode, .tv-banner-copy, .tv-event-copy, .tv-box') || document.querySelector('.tv-wrap');
+    if (host) {
+      let note = host.querySelector('.tv-practice-feedback');
+      if (!note) {
+        note = document.createElement('p');
+        note.className = 'tv-practice-feedback';
+        note.setAttribute('role', 'alert');
+        host.append(note);
+      }
+      note.textContent = 'Practice could not open. Refresh the page and try again.';
+    }
+  } finally {
+    if (btn) {
+      delete btn.dataset.arenaBusy;
+      btn.removeAttribute('aria-busy');
+      if ('disabled' in btn) btn.disabled = false;
+    }
+  }
+}
+
 document.addEventListener('click', (e) => {
   const btn = e.target instanceof Element ? e.target.closest('[data-arena]') : null;
   if (!btn) return;
   e.preventDefault();
-  btn.setAttribute('aria-busy', 'true');
-  import('./trivia-arena.js')
-    .then((m) => m.openArena({ ...btn.dataset, set: btn.dataset.arena }))
-    .finally(() => btn.removeAttribute('aria-busy'));
+  void launchPractice(btn);
 });
+
 // Deep-link: ?practice=quiz opens the arena for the first launcher on the page.
 {
   const mode = new URLSearchParams(location.search).get('practice');
   const first = mode && document.querySelector('[data-arena]');
-  if (first) import('./trivia-arena.js').then((m) => m.openArena({ ...first.dataset, set: first.dataset.arena, mode }));
+  if (first) void launchPractice(first, { mode });
 }
