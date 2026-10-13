@@ -27,6 +27,8 @@ for (const q of ANS) {
   ok(q.correctIndex >= 0, `cannot resolve the correct option for ${q.id}: "${q.answer}" vs [${q.options.join(' | ')}]`);
   if (q.correctIndex >= 0 && q.options[q.correctIndex] !== q.answer) warn(`${q.id}: answer "${q.answer}" matched option "${q.options[q.correctIndex]}"`);
   ok(q.slug.length > 8 && q.slug.length <= 110, `odd slug length for ${q.id}: ${q.slug}`);
+  ok(q.url === `/trivia/a-nations-story/${q.nation}/${q.dayId}/#q-${q.index}`, `question should link to its grouped day anchor: ${q.id} -> ${q.url}`);
+  ok(q.legacyUrl === `/trivia/a-nations-story/${q.nation}/${q.dayId}/${q.slug}/`, `legacy question URL should be preserved for redirect: ${q.id}`);
   ok(q.related.length > 0, `no related questions for ${q.id}`);
 }
 
