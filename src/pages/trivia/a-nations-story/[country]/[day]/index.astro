@@ -22,7 +22,7 @@ const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', hre
     <Crumbs trail={[{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story", href: NATIONS_ROUTE }, { name: nation.name, href: nationUrl(nation.slug) }, { name: `Day ${n}` }]} />
     <span class="tv-eyebrow">{nation.flag} {nation.name} · {day.title}</span>
     <h1 class="tv-h1">Day {n} <span class="tv-grad">answers</span></h1>
-    <p class="tv-lede">{qs.length} question{qs.length === 1 ? '' : 's'}. The correct option is marked on each one. Switch on study mode to cover the answers and test yourself first.</p>
+    <p class="tv-lede">All {qs.length} questions from {nation.name} Day {n}, grouped on this page. Turn on study mode to hide the answers, choose an option, and reveal the correct answer for each question.</p>
     <div class="tv-actions">
       <button class="tv-btn ghost" id="study" aria-pressed="false">Study mode: off</button>
       <button class="tv-btn" data-arena="nations-story" data-nation={nation.slug} data-day={String(n)} data-mode="quiz">Practice this day</button>
@@ -36,16 +36,15 @@ const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', hre
       {qs.map((q) => (
         <article class="tv-card tv-dq tv-reveal" id={`q-${q.index}`}>
           <div class="tv-dq-top"><span class="tv-pill accent">Question {q.index} of {q.countInDay}</span><span class="tv-pill">Day {n}</span></div>
-          <h2><a href={q.url}>{q.question}</a></h2>
-          <div class="tv-opts" role="list">
+          <h2>{q.question}</h2>
+          <div class="tv-opts">
             {q.options.map((o, i) => (
-              <button type="button" role="listitem" class={`tv-opt${i === q.correctIndex ? ' ok shown' : ''}`} data-ok={i === q.correctIndex ? '1' : '0'}>
+              <button type="button"  class={`tv-opt${i === q.correctIndex ? ' ok shown' : ''}`} data-ok={i === q.correctIndex ? '1' : '0'} disabled>
                 <span class="ltr">{String.fromCharCode(65 + i)}</span><span>{o}</span><span class="tick">✓</span>
               </button>
             ))}
           </div>
           <div class="tv-ans-panel"><span class="chk">✓</span><div><small>CORRECT ANSWER</small><strong>{q.answer}</strong></div></div>
-          <a class="tv-dq-link" href={q.url}>Open answer page →</a>
         </article>
       ))}
     </div>
@@ -58,7 +57,7 @@ const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', hre
       btn.setAttribute('aria-pressed', String(on));
       btn.textContent = `Study mode: ${on ? 'on' : 'off'}`;
       root.querySelectorAll('.tv-dq').forEach((c) => c.classList.toggle('revealed', !on));
-      root.querySelectorAll('.tv-opt').forEach((o) => { o.classList.remove('bad'); o.classList.toggle('shown', !on && o.dataset.ok === '1'); });
+      root.querySelectorAll('.tv-opt').forEach((o) => { o.classList.remove('bad'); o.classList.toggle('shown', !on && o.dataset.ok === '1'); o.disabled = !on; });
     });
     root.addEventListener('click', (e) => {
       const opt = e.target.closest('.tv-opt');
@@ -66,7 +65,7 @@ const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', hre
       const card = opt.closest('.tv-dq');
       if (card.classList.contains('revealed')) return;
       card.classList.add('revealed');
-      card.querySelectorAll('.tv-opt').forEach((o) => { if (o.dataset.ok === '1') o.classList.add('shown'); });
+      card.querySelectorAll('.tv-opt').forEach((o) => { if (o.dataset.ok === '1') o.classList.add('shown'); o.disabled = true; });
       if (opt.dataset.ok !== '1') opt.classList.add('bad');
     });
   </script>
