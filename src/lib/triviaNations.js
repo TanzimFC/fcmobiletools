@@ -1,7 +1,7 @@
 // A Nation's Story: keep each day's questions together; question links target anchors on grouped day pages.
 import { NATIONS_STORY } from '../data/aNationsStory.js';
 import { getQuestionOptions } from '../data/aNationsStoryOptions.js';
-import { slugify, tokenize, haystack, fold } from './triviaCore.js';
+import { slugify, haystack, fold } from './triviaCore.js';
 
 export const ANS_BASE = '/trivia/a-nations-story';
 
@@ -19,9 +19,6 @@ export const nationUrl = (slug) => `${ANS_BASE}/${slug}/`;
 export const dayUrl = (slug, dayId) => `${ANS_BASE}/${slug}/${dayId}/`;
 export const questionUrl = (slug, dayId, qSlug) => `${ANS_BASE}/${slug}/${dayId}/${qSlug}/`;
 export const groupedQuestionUrl = (slug, dayId, qSlug) => `${dayUrl(slug, dayId)}#${qSlug}`;
-
-const STOP = new Set('the a an of in to for and or at by on with was were is are did does do which who what how many from as that this their his her its into after before during over than then them they he she it be been has have had not no yes year years team player players'.split(' '));
-const keywords = (text) => tokenize(text).filter((t) => t.length > 2 && !STOP.has(t));
 
 
 function editDistance(a, b) {
@@ -92,41 +89,6 @@ export function buildNationQuestions() {
       });
     }
   }
-
-  // Previous / next within each nation, in play order.
-  const byNation = new Map();
-  for (const q of flat) {
-    if (!byNation.has(q.nation)) byNation.set(q.nation, []);
-    byNation.get(q.nation).push(q);
-  }
-  for (const list of byNation.values()) {
-    list.forEach((q, i) => {
-      q.prev = list[i - 1] ? { url: list[i - 1].url, question: list[i - 1].question } : null;
-      q.next = list[i + 1] ? { url: list[i + 1].url, question: list[i + 1].question } : null;
-    });
-  }
-
-  // Related questions: keyword overlap weighted by rarity (small TF-IDF).
-  const docs = flat.map((q) => new Set(keywords(`${q.question} ${q.answer}`)));
-  const df = new Map();
-  for (const set of docs) for (const t of set) df.set(t, (df.get(t) || 0) + 1);
-  const idf = (t) => Math.log(1 + flat.length / (df.get(t) || 1));
-  flat.forEach((q, i) => {
-    const scored = [];
-    flat.forEach((other, j) => {
-      if (i === j || (other.nation === q.nation && other.dayId === q.dayId)) return;
-      let score = 0;
-      for (const t of docs[i]) if (docs[j].has(t)) score += idf(t);
-      if (score > 0) scored.push({ other, score });
-    });
-    scored.sort((a, b) => b.score - a.score);
-    q.related = scored.slice(0, 4).map(({ other }) => ({
-      url: other.url,
-      question: other.question,
-      answer: other.answer,
-      label: `${other.nationName} · Day ${other.dayNumber}`
-    }));
-  });
 
   cache = flat;
   return flat;
