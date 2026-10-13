@@ -3,7 +3,7 @@ id: fc-mobile-anniversary-week-4-final-week
 slug: "fc-mobile-anniversary-week-4-final-week"
 title: "FC Mobile Anniversary Week 4: Jairzinho, Balotelli & Völler"
 subtitle: "The final Anniversary Draft pool is taking shape, with a Hall of FUT reveal, a new Box report and two events expected on October 15"
-description: "FC Mobile Anniversary Week 4 guide: reported Beckham, Petit, Layún, Jairzinho, Balotelli, Sturridge and Völler cards, Hall of FUT details, October events, new redeem code and the rumored 124 OVR ceiling."
+description: "FC Mobile Anniversary Week 4 guide: reported Beckham, Petit, Layún, Jairzinho, Balotelli, Sturridge and Völler cards, Hall of FUT details, October events, a new redeem code and the confirmed 124 OVR cap increase."
 type: "news"
 category: "Updates"
 author: "TanzimFC"
@@ -28,7 +28,7 @@ relatedCodes: ["PUMPKINSPICEPACK", "MULLERTIME"]
 featured: false
 readingTime: 7
 seoTitle: "FC Mobile Anniversary Week 4: Jairzinho, Balotelli & Völler"
-seoDescription: "See the reported Week 4 Anniversary players, Balotelli's Hall of FUT reveal, Völler's Box card, October 15 events and the rumored 124 OVR ceiling."
+seoDescription: "See the reported Week 4 Anniversary players, Balotelli's Hall of FUT reveal, Völler's Box card, October 15 events and the confirmed 124 OVR cap increase."
 canonicalUrl: ""
 sources: ["https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary", "https://forums.ea.com/discussions/fc-mobile-general-discussion-en/re-fc-mobile-beta-has-closed/8091303"]
 factStatus: "partially-verified"
@@ -96,18 +96,9 @@ The reported Unbreakable pools also include Theo Walcott, Antonio Valencia, Ales
 
 These are leaks, not final EA reward tables. Both events could compete for your attention and resources on the same day, so compare the actual Draft requirements before using limited vouchers. Read the [Unbreakable Draft report](/blog/fc-mobile-unbreakable-2026-drafts/) and the [Libertadores preview](/blog/fc-mobile-conmebol-libertadores-2026-coming-soon/) for the complete reported pools.
 
-## Ballon d'Or on October 22: is the OVR cap rising to 124?
+## Ballon d'Or on October 22: OVR cap rises to 124
 
-The Ballon d'Or event is **expected on October 22**. Community reports also point to a **two-point OVR ceiling increase, from 122 to 124**. EA has not confirmed that ceiling change in the official anniversary announcement, so treat it as a planning possibility rather than a guarantee.
-
-That rumour is enough to make resource timing worth thinking about.
-
-- **Hold non-essential Rank Up Points and expensive upgrades** if your current squad is performing well and you want to see what the next OVR tier brings.
-- **Don't automatically skip Jairzinho or Balotelli.** If a card fits your formation or fixes a weak position, its actual stats, PlayStyles and gameplay value matter more than the base OVR alone.
-- **Use resources with an expiry date before they expire.** Check Draft Vouchers, event currencies and reset timers in-game; never assume a ticket will carry into the next event.
-- **Wait for the real Ballon d'Or cards and prices** before making a big Coins or FC Points decision based only on the 124 OVR report.
-
-If the cap does rise, higher-base-OVR cards may become the new targets. But the value of any upgrade still depends on your squad and the cost of getting it.
+The Ballon d'Or event is expected on **October 22**, alongside the confirmed **+2 OVR cap increase, from 122 to 124**.
 
 ## Other updates to check this week
 
@@ -125,10 +116,8 @@ The code **PUMPKINSPICEPACK** was posted on EA Forums on October 13. Community t
 
 The Chapter 8 and Chapter 9 reports are separate from the Week 4 Draft pool. They cover **Glorious Eras** and **Footyverse**, with reported entries including 122 OVR Beckham and 121 OVR Petit alongside several 117 OVR cards and different card-design concepts. See the [Chapter 8 and 9 report](/blog/fc-mobile-3rd-anniversary-chapter-8-9-leaks/) for the named cards and the details still missing from the leaks.
 
-## What to do before Week 4 opens
+## Week 4 timeline
 
-Check the current Draft requirements and expiry timers first. If you are saving for the next OVR tier, keep discretionary upgrades small until Ballon d'Or details are visible; if a Week 4 player solves a clear squad problem, judge the live card rather than the rumour.
-
-**Dates to watch:** October 15 for the expected Unbreakable and Libertadores launches, and October 22 for the expected Ballon d'Or event and Anniversary end window.
+Anniversary Week 4 is expected to run from **October 15 to October 21**. Unbreakable and CONMEBOL Libertadores are both expected to launch on October 15, followed by Ballon d'Or on October 22 with the confirmed 124 OVR cap increase.
 
 **Last reviewed: October 13, 2026**
