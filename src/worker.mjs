@@ -2022,10 +2022,10 @@ async function assertFcmTvVideosFromOfficialChannel(videos) {
       authorUrl = new URL(String(metadata.author_url || ''));
     } catch {}
     const authorHost = String(authorUrl?.hostname || '').toLowerCase();
-    const authorPath = String(authorUrl?.pathname || '').replace(/\\/+$/, '').toLowerCase();
+    const authorPath = String(authorUrl?.pathname || '').toLowerCase().replaceAll('/', '');
     const isOfficialChannel =
       ['youtube.com', 'www.youtube.com'].includes(authorHost) &&
-      authorPath === '/@tanzimfc';
+      authorPath === '@tanzimfc';
 
     if (!isOfficialChannel) {
       throw new Error('"' + video.title + '" is not uploaded to the official @TanzimFC channel. Only TanzimFC videos can be added to the Academy.');
