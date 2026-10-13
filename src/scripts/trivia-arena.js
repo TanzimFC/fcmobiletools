@@ -7,7 +7,7 @@ const SETS = {
   'nations-story': { src: '/trivia/data/nations-story.json', title: "A Nation's Story", options: 4, secs: 15, lengths: [5, 10, 20] }
 };
 const MODES = {
-  quiz: { name: 'Quiz', icon: '🎯', blurb: 'No timer. Instant feedback after every answer.' },
+  quiz: { name: 'Quiz', icon: '🎯', blurb: 'Untimed questions, instant feedback and automatic progression.' },
   attack: { name: 'Time Attack', icon: '⚡', blurb: 'Answer fast for bonus points, like the real event.' },
   cards: { name: 'Flashcards', icon: '🃏', blurb: 'Flip, check yourself and re-drill what you missed.' }
 };
@@ -66,7 +66,7 @@ function ensureDialog() {
   dlg.setAttribute('aria-labelledby', 'tva-title');
   dlg.innerHTML = '<div class="tva-inner" id="tva-root"></div>';
   document.body.appendChild(dlg);
-  dlg.addEventListener('close', () => { clearInterval(state?.timer); document.documentElement.classList.remove('tva-lock'); });
+  dlg.addEventListener('close', () => { clearInterval(state?.timer); clearTimeout(state?.advanceTimer); document.documentElement.classList.remove('tva-lock'); });
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
   // Document-level: focus falls back to <body> whenever a screen re-renders.
   document.addEventListener('keydown', (e) => { if (dlg.open && !e.ctrlKey && !e.metaKey && !e.altKey) onKey(e); });
@@ -145,6 +145,7 @@ function start(only) {
 function renderQuestion() {
   const s = state, r = s.rounds[s.i], cfg = SETS[s.setKey];
   clearInterval(s.timer);
+  clearTimeout(s.advanceTimer); s.advanceTimer = null;
   s.locked = false; s.flipped = false;
   const pct = (s.i / s.rounds.length) * 100;
   const top = `${head(MODES[s.mode].name, `${esc(r.tag)}`)}
@@ -192,14 +193,26 @@ function answer(i) {
   const btns = [...root().querySelectorAll('.tva-opt')];
   btns.forEach((b, n) => { b.disabled = true; if (n === r.ci) b.classList.add('ok'); else if (n === i) b.classList.add('bad'); });
   const fb = root().querySelector('.tva-fb');
-  fb.innerHTML = `<div class="tva-fbrow ${good ? 'good' : 'bad'}"><strong>${good ? (gain > 100 ? `Correct +${gain}` : 'Correct +100') : i < 0 ? "Time's up" : 'Not quite'}</strong>${good ? '' : `<span>Answer: <b>${esc(r.answerText)}</b></span>`}<a href="${r.link}" class="tva-more">Open answer page ↗</a></div>
+  fb.innerHTML = `<div class="tva-fbrow ${good ? 'good' : 'bad'}"><strong>${good ? (gain > 100 ? `Correct +${gain}` : 'Correct +100') : i < 0 ? "Time's up" : 'Not quite'}</strong>${good ? '' : `<span>Answer: <b>${esc(r.answerText)}</b></span>`}<a href="${r.link}" class="tva-more">View answer in collection ↗</a></div>
     ${s.mode === 'quiz' || !good ? `<button class="tv-btn sm" data-act="next">${s.i + 1 === s.rounds.length ? 'See results' : 'Next question'} →</button>` : ''}`;
+  if (s.mode === 'quiz') {
+    const hint = document.createElement('p');
+    hint.className = 'tva-autonext';
+    hint.textContent = 'Moving to the next question automatically…';
+    fb.appendChild(hint);
+  }
   const sc = root().querySelector('#tva-score'); if (sc) sc.textContent = s.score;
   const st = root().querySelector('.tva-streak'); if (st) { st.classList.toggle('on', s.streak > 1); st.querySelector('b').textContent = s.streak; }
-  if (s.mode === 'attack' && good) setTimeout(next, 850);
+  if (s.mode === 'quiz') {
+    s.advanceTimer = setTimeout(() => { if (state === s && dlg?.open && s.locked) next(); }, 1200);
+  } else if (s.mode === 'attack' && good) {
+    s.advanceTimer = setTimeout(() => { if (state === s && dlg?.open && s.locked) next(); }, 850);
+  }
 }
 function next() {
   const s = state;
+  clearTimeout(s?.advanceTimer);
+  if (s) s.advanceTimer = null;
   if (s.i + 1 >= s.rounds.length) return results();
   s.i++; renderQuestion();
 }
