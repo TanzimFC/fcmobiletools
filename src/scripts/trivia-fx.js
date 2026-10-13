@@ -66,11 +66,33 @@ document.addEventListener('click', async (e) => {
   const btn = e.target instanceof Element ? e.target.closest('[data-copy]') : null;
   if (!btn) return;
   const url = new URL(btn.dataset.copy, location.origin).toString();
-  try { await navigator.clipboard.writeText(url); } catch { return; }
-  btn.classList.add('done');
   const old = btn.getAttribute('aria-label');
-  btn.setAttribute('aria-label', 'Link copied');
-  setTimeout(() => { btn.classList.remove('done'); btn.setAttribute('aria-label', old || 'Copy link'); }, 1600);
+  const oldTitle = btn.getAttribute('title');
+  try {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const field = document.createElement('textarea');
+      field.value = url; field.setAttribute('readonly', '');
+      field.style.position = 'fixed'; field.style.opacity = '0'; field.style.pointerEvents = 'none';
+      document.body.appendChild(field); field.select();
+      const copied = document.execCommand?.('copy'); field.remove();
+      if (!copied) throw new Error('Clipboard copy failed');
+    }
+    btn.classList.add('done');
+    btn.setAttribute('aria-label', 'Link copied');
+    btn.setAttribute('title', 'Link copied');
+  } catch {
+    btn.classList.add('error');
+    btn.setAttribute('aria-label', 'Copy failed. Copy the page address manually.');
+    btn.setAttribute('title', 'Copy failed. Copy the page address manually.');
+  }
+  setTimeout(() => {
+    btn.classList.remove('done', 'error');
+    btn.setAttribute('aria-label', old || 'Copy link');
+    if (oldTitle === null) btn.removeAttribute('title'); else btn.setAttribute('title', oldTitle);
+  }, 1600);
 });
 
 // 5. Banner / art images that are not deployed yet: hide cleanly, gradient shows.
