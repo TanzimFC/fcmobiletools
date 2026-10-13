@@ -12,7 +12,7 @@ seriesOrder: 1
 status: "published"
 createdBy: "TanzimFC"
 createdAt: "2026-10-03T11:00:00.000Z"
-updatedAt: "2026-10-03T11:00:00.000Z"
+updatedAt: "2026-10-13T14:00:00.000Z"
 publishedAt: "2026-10-03T11:00:00.000Z"
 image: "https://res.cloudinary.com/b0qikv7n/image/upload/v1791024730/fc-mobile-tools/yd1rntt4gdbwzsiyusfd.png"
 imageAlt: "FC Mobile 3rd Anniversary leaked Draft and Box player pool"
@@ -32,10 +32,14 @@ seoDescription: "See the reported FC Mobile 3rd Anniversary Draft A, Draft B and
 canonicalUrl: ""
 sources: []
 factStatus: "community-reported"
-lastReviewed: "2026-10-03"
+lastReviewed: "2026-10-13"
 ---
 
 ![FC Mobile 3rd Anniversary leaked Draft and Box player pool](https://res.cloudinary.com/b0qikv7n/image/upload/v1791024730/fc-mobile-tools/yd1rntt4gdbwzsiyusfd.png)
+
+
+> **Week 4 correction — October 13, 2026:** Newer community reports identify **Rudi Völler (122 OVR ST)** as the Week 4 Anniversary Box player. The earlier Gullit and Maldini Box predictions below are superseded; check the live Box for the final reward.
+
 
 The FC Mobile 3rd Anniversary event already has a pretty serious leaked player list floating around.
 
@@ -213,16 +217,13 @@ Draft B is much more direct. Jairzinho leads the route at 122 OVR, followed by t
 
 That is a very different pool from Week 4 Draft A, which is more midfield and full-back focused.
 
-### Anniversary Box
+### Latest Week 4 Box report
 
-| Box | Reported 122 OVR player | Position |
-| :--- | :--- | :--- |
-| **Box A** | **Ruud Gullit** | CM |
-| **Box B** | **Paolo Maldini** | CB |
+| Player | Reported OVR | Reported position |
+| :--- | ---: | :--- |
+| **Rudi Völler** | **122** | **ST** |
 
-Gullit and Maldini close out the reported Box rotation.
-
-A 122 OVR CM and a 122 OVR CB means the last week would give players two very different ways to target a premium upgrade.
+Newer reports published after the original leak sheet point to Völler as the Week 4 Box player. The earlier Gullit and Maldini predictions are superseded; check the live Box before spending.
 
 ## Full Week 1 to Week 4 122 OVR list
 
@@ -233,7 +234,7 @@ For quick reference, here are all the reported 122 OVR players in one place.
 | **Week 1** | Mbappé | Laurent Blanc | Zambrotta | Ginola |
 | **Week 2** | Bellingham | Cristiano Ronaldo | Patrick Vieira | Roberto Carlos |
 | **Week 3** | Messi | Sergio Agüero | Zidane | Thierry Henry |
-| **Week 4** | Beckham | Jairzinho | Ruud Gullit | Paolo Maldini |
+| **Week 4** | Beckham | Jairzinho | **Rudi Völler (latest report)** | — |
 
 That is a seriously stacked headline list for a single four-week event rotation.
 
@@ -336,10 +337,10 @@ Here is the complete reported four-week table in one place.
 
 The reported FC Mobile 3rd Anniversary player pool is loaded from Week 1 through Week 4.
 
-The Draft side reportedly rotates through major names including **Mbappé, Blanc, Bellingham, Ronaldo, Messi, Agüero, Beckham and Jairzinho**, while the Box adds another line of 122 OVR stars such as **Zambrotta, Ginola, Vieira, Roberto Carlos, Zidane, Henry, Gullit and Maldini**.
+The Draft side reportedly rotates through major names including **Mbappé, Blanc, Bellingham, Ronaldo, Messi, Agüero, Beckham and Jairzinho**, while the earlier Box reports included **Zambrotta, Ginola, Vieira, Roberto Carlos, Zidane and Henry**. The latest Week 4 report points to **Rudi Völler** instead of the older Gullit and Maldini guesses..
 
 The Box is the part to read carefully: **one free attempt, 11 FC Point attempts, 12 total slots and no duplicates according to the reported structure**. Clear the Box and the featured 122 OVR reward is reportedly guaranteed.
 
 Everything in this article is **community-reported leak information**. The live Anniversary event is the final source of truth.
 
-**Last reviewed: October 3, 2026**
+**Last reviewed: October 13, 2026**
