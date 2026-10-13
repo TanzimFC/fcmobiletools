@@ -6,6 +6,19 @@
 /assets/images/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
-# Season Recap is a local, static answer reference. Revalidate the HTML daily.
-/trivia/season-recap/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+# Trivia banners / art are self-hosted and versioned by filename (a new banner gets a new
+# name), so browsers and the edge never need to re-download them. Cloudinary is not hit at runtime.
+/assets/trivia/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# A Nation's Story art (WebP) never changes under the same filename.
+/assets/images/anationstory/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Trivia pages are static answer references: revalidate daily, serve stale while refreshing.
+/trivia/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+# Search/practice data only changes on deploy.
+/trivia/data/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=604800
