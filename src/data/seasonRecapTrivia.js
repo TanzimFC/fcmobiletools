@@ -32,11 +32,11 @@ export const SEASON_RECAP_META = {
   verified: '2026-10-11',
   verifiedLabel: 'Oct 11, 2026',
   format: { perRound: 30, options: 2 },
-  // Self-hosted (see scripts/cache-trivia-banner.mjs) so it is never re-downloaded
-  // from Cloudinary. Versioned filename => the 1-year immutable cache is safe.
+  // Versioned Cloudinary URLs are browser/CDN-cacheable and avoid depending on
+  // image files that are not present in the repository.
   banner: {
-    webp: '/assets/trivia/season-recap-challenge-2026-10.webp',
-    jpg: '/assets/trivia/season-recap-challenge-2026-10.jpg',
+    webp: 'https://res.cloudinary.com/b0qikv7n/image/upload/v1791739595/fc-mobile-tools/tra319zimnvlfas22fj8.webp',
+    jpg: 'https://res.cloudinary.com/b0qikv7n/image/upload/v1791739595/fc-mobile-tools/tra319zimnvlfas22fj8.jpg',
     width: 1024,
     height: 572,
     alt: 'FC Mobile Season Recap Challenge trivia banner'
