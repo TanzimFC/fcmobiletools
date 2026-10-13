@@ -1,91 +1,178 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { SEASON_RECAP_QUESTION_COUNT } from '../../data/seasonRecapTrivia.js';
-const banner = '/assets/trivia/season-recap-banner.jpg';
+import TriviaLayout from '../../layouts/TriviaLayout.astro';
+import SearchBox from '../../components/trivia/SearchBox.astro';
+import { ICONS } from '../../lib/triviaIcons.js';
+import { SEASON_RECAP_META as SR, SEASON_RECAP_QUESTION_COUNT } from '../../data/seasonRecapTrivia.js';
+import { buildNationQuestions, nationImage, NATION_STYLE } from '../../lib/triviaNations.js';
+import { NATIONS_STORY } from '../../data/aNationsStory.js';
+import { breadcrumbLd, absolute } from '../../lib/triviaCore.js';
+import { EXTRA_TIME_ROUTE, NATIONS_ROUTE, SEASON_RECAP_ROUTE } from '../../lib/triviaRoutes.js';
+
+const ansCount = buildNationQuestions().length;
+const nationCount = NATIONS_STORY.length;
+const fan = ['japan', 'france', 'brazil'];
+const popular = ['Haaland', 'Mbappé', 'Bayern', 'Real Madrid', 'Clean sheets', 'Hat-trick', 'World Cup 2022', 'Zidane', 'Japan', 'Balon d\'Or'].filter((x) => x !== "Balon d'Or");
+
+const title = 'FC Mobile Trivia Answers: Season Recap & A Nation\'s Story';
+const description = `Every FC Mobile trivia answer in one place: ${SEASON_RECAP_QUESTION_COUNT} Season Recap (Challenge) answers and ${ansCount} A Nation's Story questions. Search, study with flashcards, or race the clock.`;
+const faq = [
+  ['How does FC Mobile trivia work?', `There are two kinds. Extra Time trivia runs for a limited window and gives you a round of roughly 10 to 30 questions (Season Recap currently uses 30 questions with 2 options each). A Nation's Story is a day-by-day set with 4 options per question. Correct answers earn points, and in Extra Time faster answers typically earn more.`],
+  ['How many Season Recap questions are there?', `The game draws 30 questions per round from a larger pool. We list ${SEASON_RECAP_QUESTION_COUNT} questions with their answers, checked against two independent guides on ${SR.verifiedLabel}.`],
+  ['Why do I only see two options in Season Recap?', 'Season Recap shows two options and exactly one is right. A few questions, such as which clubs qualified for the Champions League, have many valid answers, so every valid answer is listed.'],
+  ['Where did A Nation\'s Story go?', `It now lives inside Trivia at ${NATIONS_ROUTE}. Every question has its own page with all four options and the correct answer.`],
+  ['Are the questions the same for everyone?', 'Extra Time rounds are drawn at random from the pool, so two players rarely see the same 30. A Nation\'s Story is fixed by nation and day, so everyone sees the same set.']
+];
+const jsonLd = [
+  breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }]),
+  { '@context': 'https://schema.org', '@type': 'CollectionPage', name: title, url: absolute('/trivia/'), description,
+    hasPart: [
+      { '@type': 'WebPage', name: 'Extra Time trivia answers', url: absolute(EXTRA_TIME_ROUTE) },
+      { '@type': 'WebPage', name: "A Nation's Story trivia answers", url: absolute(NATIONS_ROUTE) }
+    ] },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }
+];
 ---
-<BaseLayout
-  title="FC Mobile Trivia | Season Recap & A Nation's Story"
-  description="Find the latest FC Mobile 27 Extra Time Season Recap answers or browse every A Nation's Story answer set in one place."
->
-  <main class="trivia-hub">
-    <section class="hub-intro">
-      <span class="eyebrow">FC MOBILE 27 / TRIVIA</span>
-      <h1>Know the answer.<br /><span>Get back in game.</span></h1>
-      <p>Two trivia collections. One place to find the question you remember.</p>
-    </section>
-
-    <section class="mode-grid" aria-label="Trivia collections">
-      <a class="recap-card" href="/trivia/season-recap/">
-        <div class="recap-art">
-          <img src={banner} width="1024" height="572" alt="FC Mobile 27 Season Recap Challenge banner" loading="lazy" decoding="async" fetchpriority="low" />
-          <span class="art-shade"></span>
-          <span class="art-label">EXTRA TIME · OCTOBER 2026</span>
-          <span class="art-content">
-            <strong>Season Recap</strong>
-            <span>Challenge answers</span>
-            <em>{SEASON_RECAP_QUESTION_COUNT} stored questions · Searchable answer list</em>
-          </span>
-        </div>
-        <div class="card-foot"><span>Find current Extra Time answers</span><b>VIEW ANSWERS ↗</b></div>
-      </a>
-
-      <a class="nation-card" href="/a-nations-story/">
-        <div class="nation-kicker">A NATION'S STORY · MOVED TO TRIVIA</div>
-        <div class="nation-symbol" aria-hidden="true"><span>球</span><i></i><b></b></div>
-        <h2>A Nation's Story</h2>
-        <p>Japan, Netherlands, Mexico, France and Brazil. Search by a player, year, team, or any part of a question.</p>
-        <div class="nation-bottom"><span>All nations · Day-by-day answers</span><b>OPEN NATION'S STORY ↗</b></div>
-      </a>
-    </section>
-
-    <div class="move-note">
-      <span class="note-mark">i</span>
-      <p><strong>A Nation's Story is now part of Trivia.</strong> Use the Nation's Story card above to reach its answer hub and day-by-day pages.</p>
-      <a href="/a-nations-story/">View A Nation's Story <span aria-hidden="true">↗</span></a>
+<TriviaLayout title={title} description={description} image={SR.banner.jpg} jsonLd={jsonLd}>
+  <header class="tv-wrap tv-hero">
+    <div class="tv-hero-copy">
+      <span class="tv-eyebrow"><i class="tv-live"></i>Season Recap is live</span>
+      <h1 class="tv-h1">Know every answer.<br /><span class="tv-grad">Win every round.</span></h1>
+      <p class="tv-lede">Verified answers for FC Mobile Extra Time and A Nation's Story. Search any question in a keystroke, then train with flashcards, quizzes and a race against the clock.</p>
+      <SearchBox scope="all" />
+      <div class="tv-chips" style="margin-top:18px" aria-label="Popular searches">
+        {popular.map((p) => <a class="tv-chip" href={`/trivia/?q=${encodeURIComponent(p)}`}>{p}</a>)}
+      </div>
     </div>
-  </main>
-</BaseLayout>
+    <div class="tv-hero-visual" aria-hidden="true">
+      <div class="tv-float f1">
+        <span class="lbl">Extra Time · Season Recap</span>
+        <h3>Which team won the 2025/26 Premier League title?</h3>
+        <div class="tv-fopts"><div class="tv-fopt ok">Arsenal <i>✓</i></div><div class="tv-fopt">Liverpool</div></div>
+      </div>
+      <div class="tv-float f2">
+        <span class="lbl">Round result</span>
+        <div class="tv-ringbox"><svg class="tv-ring" viewBox="0 0 110 110"><circle class="bg" cx="55" cy="55" r="46" /><circle class="fg" cx="55" cy="55" r="46" /></svg>
+        <div class="tv-ringnum"><span>28</span><small>of 30 correct</small></div></div>
+      </div>
+      <div class="tv-float f3">
+        <div class="tv-streak"><b>🔥 9</b><span>answer<br />streak</span></div>
+      </div>
+    </div>
+  </header>
 
-<style>
-.trivia-hub{--trivia-blue:#4cc9ff;max-width:1160px;margin:0 auto;padding:44px 20px 100px;color:#f5f8fb}
-.eyebrow{display:inline-flex;align-items:center;gap:9px;color:#4cc9ff;font:800 10px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.16em}
-.eyebrow:before{content:"";display:inline-block;width:24px;height:1px;background:#4cc9ff}
-.hub-intro{padding:18px 0 34px}
-.hub-intro h1{font-family:"Space Grotesk",Inter,system-ui,sans-serif;font-size:clamp(50px,7.5vw,88px);line-height:.92;letter-spacing:-.075em;margin:20px 0 17px}
-.hub-intro h1 span{color:#4cc9ff}
-.hub-intro p{font-size:15px;line-height:1.7;color:#a7b4c3;max-width:570px;margin:0}
-.mode-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,.7fr);gap:16px;align-items:stretch}
-.recap-card,.nation-card{min-width:0;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:22px;background:#0f1a26;text-decoration:none;color:#f5f8fb;transition:transform .28s cubic-bezier(.22,1,.36,1),border-color .28s,box-shadow .28s}
-.recap-card:hover,.nation-card:hover{transform:translateY(-4px);border-color:rgba(76,201,255,.48);box-shadow:0 28px 70px -45px rgba(76,201,255,.52)}
-.recap-art{position:relative;isolation:isolate;overflow:hidden;aspect-ratio:1024/572;background:#0c1824}
-.recap-art img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.22,1,.36,1)}
-.recap-card:hover .recap-art img{transform:scale(1.025)}
-.art-shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(5,12,19,.05) 14%,rgba(5,12,19,.15) 36%,rgba(5,12,19,.92) 100%),linear-gradient(90deg,rgba(5,12,19,.2),transparent 70%)}
-.art-label{position:absolute;z-index:2;left:24px;top:22px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(5,12,19,.5);padding:8px 11px;color:#e5f8ff;font:800 8px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.11em;backdrop-filter:blur(12px)}
-.art-content{position:absolute;z-index:2;left:25px;right:22px;bottom:25px;display:flex;flex-direction:column;align-items:flex-start}
-.art-content strong{font:700 clamp(30px,4.1vw,49px)/1 "Space Grotesk",Inter,system-ui,sans-serif;letter-spacing:-.06em}
-.art-content>span{font-size:14px;font-weight:650;color:#d9e9f0;margin-top:6px}
-.art-content em{font-style:normal;color:#a8bdca;font-size:10px;margin-top:13px}
-.card-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 22px}
-.card-foot span{color:#9eafbd;font-size:11px}
-.card-foot b,.nation-bottom b{font:900 8px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;color:#4cc9ff;white-space:nowrap}
-.nation-card{display:flex;flex-direction:column;padding:26px;position:relative;background:radial-gradient(340px 250px at 100% 0,rgba(76,201,255,.14),transparent 70%),linear-gradient(160deg,#122333,#0c1520)}
-.nation-kicker{font:900 8px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.11em;color:#4cc9ff}
-.nation-symbol{height:130px;display:flex;align-items:center;justify-content:center;position:relative;margin:6px 0 4px;overflow:hidden}
-.nation-symbol span{position:relative;z-index:1;font-family:serif;font-size:96px;font-weight:900;line-height:1;color:rgba(76,201,255,.72);text-shadow:0 0 60px rgba(76,201,255,.22);transform:rotate(-9deg)}
-.nation-symbol i,.nation-symbol b{position:absolute;width:124px;height:124px;border:1px solid rgba(76,201,255,.24);border-radius:50%;transform:rotate(32deg) scaleX(1.7)}
-.nation-symbol b{width:92px;height:92px;transform:rotate(-35deg) scaleX(1.7);border-color:rgba(255,255,255,.09)}
-.nation-card h2{font:700 clamp(27px,3vw,36px)/1.03 "Space Grotesk",Inter,system-ui,sans-serif;letter-spacing:-.055em;margin:12px 0}
-.nation-card>p{font-size:12px;line-height:1.8;color:#a7b4c3;margin:0 0 28px;max-width:430px}
-.nation-bottom{display:flex;flex-direction:column;gap:13px;margin-top:auto;padding-top:17px;border-top:1px solid rgba(255,255,255,.1)}
-.nation-bottom span{font-size:10px;color:#93a9b8}
-.move-note{display:flex;align-items:center;gap:13px;margin-top:16px;padding:16px 18px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:rgba(15,26,38,.68)}
-.note-mark{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;border-radius:50%;background:rgba(76,201,255,.12);color:#4cc9ff;font:800 13px/1 Inter,system-ui,sans-serif}
-.move-note p{flex:1;margin:0;color:#9eafbd;font-size:11px;line-height:1.65}
-.move-note p strong{color:#e8f5fa;font-weight:700}
-.move-note>a{color:#4cc9ff;font:800 9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;text-decoration:none}
-.move-note>a:hover{color:#a5e7ff}
-@media(max-width:820px){.mode-grid{grid-template-columns:1fr}.nation-card{min-height:365px}.nation-symbol{height:100px}.nation-symbol span{font-size:76px}.nation-card h2{font-size:31px}}
-@media(max-width:560px){.trivia-hub{padding:27px 14px 70px}.hub-intro{padding:14px 0 26px}.hub-intro h1{font-size:clamp(43px,13vw,62px)}.hub-intro p{font-size:13px}.mode-grid{gap:12px}.recap-card,.nation-card{border-radius:17px}.art-label{left:14px;top:14px;font-size:7px}.art-content{left:15px;right:13px;bottom:15px}.art-content strong{font-size:32px}.art-content>span{font-size:12px}.art-content em{font-size:9px}.card-foot{align-items:flex-start;flex-direction:column;gap:9px;padding:14px 15px}.nation-card{padding:20px}.nation-symbol{height:92px}.nation-symbol span{font-size:72px}.move-note{align-items:flex-start;flex-wrap:wrap;padding:14px}.move-note p{flex-basis:calc(100% - 42px)}.move-note>a{margin-left:38px}}
-@media(prefers-reduced-motion:reduce){.recap-card,.nation-card,.recap-art img{transition:none}}
-</style>
+  <div class="tv-wrap">
+    <div class="tv-stats tv-reveal">
+      <div class="tv-stat"><b data-count={SEASON_RECAP_QUESTION_COUNT + ansCount}>{(SEASON_RECAP_QUESTION_COUNT + ansCount).toLocaleString('en-US')}</b><span>Questions with answers</span></div>
+      <div class="tv-stat"><b data-count="2">2</b><span>Trivia collections</span></div>
+      <div class="tv-stat"><b data-count="4">4</b><span>Ways to practice</span></div>
+      <div class="tv-stat"><b>{SR.verifiedLabel.replace(', 2026', '')}</b><span>Answers last verified</span></div>
+    </div>
+  </div>
+
+  <section class="tv-wrap tv-section" id="collections">
+    <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">Two collections</span><h2 class="tv-h2">Pick your trivia.</h2></div></div>
+    <div class="tv-colls">
+      <a class="tv-card tv-coll tv-edge tv-spot tv-reveal" href={EXTRA_TIME_ROUTE} style="--d:1">
+        <div class="tv-coll-art tv-art" data-label="Season Recap">
+          <img data-optional src={SR.banner.webp} width={SR.banner.width} height={SR.banner.height} alt={SR.banner.alt} loading="lazy" decoding="async" />
+          <div class="tv-coll-badges"><span class="tv-pill live"><i class="tv-live"></i>Live now</span><span class="tv-pill gold">Season Recap</span></div>
+        </div>
+        <div class="tv-coll-body">
+          <h2>Extra Time</h2>
+          <p>Limited-time trivia events with rounds of up to 30 questions. Season Recap (Challenge) is on right now, with every answer listed and searchable.</p>
+          <div class="tv-coll-meta"><span class="tv-pill accent"><b>{SEASON_RECAP_QUESTION_COUNT}</b> answers</span><span class="tv-pill"><b>2</b> options</span><span class="tv-pill"><b>30</b> per round</span></div>
+          <div class="tv-coll-go">Open Extra Time <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div>
+        </div>
+      </a>
+      <a class="tv-card tv-coll tv-edge tv-spot tv-reveal" href={NATIONS_ROUTE} style="--d:2">
+        <div class="tv-fan">
+          {fan.map((n) => <img src={nationImage(n, 640)} width="640" height="360" alt="" loading="lazy" decoding="async" />)}
+        </div>
+        <div class="tv-coll-body">
+          <h2>A Nation's Story</h2>
+          <p>Day-by-day football history for each nation, with four options per question. Every question has its own answer page.</p>
+          <div class="tv-coll-meta"><span class="tv-pill accent"><b>{ansCount}</b> questions</span><span class="tv-pill"><b>{nationCount}</b> nations</span><span class="tv-pill"><b>4</b> options</span></div>
+          <div class="tv-coll-go">Open A Nation's Story <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="tv-wrap tv-section" id="how-it-works">
+    <div class="tv-sec-head tv-reveal">
+      <div><span class="tv-kicker">How trivia works</span><h2 class="tv-h2">Two formats, one goal.</h2></div>
+      <div class="tv-seg" role="tablist" aria-label="Trivia type">
+        <button role="tab" aria-selected="true" aria-controls="how-et" data-how="et">Extra Time</button>
+        <button role="tab" aria-selected="false" aria-controls="how-ans" data-how="ans">A Nation's Story</button>
+      </div>
+    </div>
+    <div class="tv-how tv-reveal" id="how-et" role="tabpanel">
+      <ol class="tv-steps">
+        <li><div><h3>Open the Extra Time event</h3><p>Trivia sits inside the Extra Time hub and runs for a limited window. Season Recap (Challenge) is currently open.</p></div></li>
+        <li><div><h3>Play a round of 10 to 30 questions</h3><p>Extra Time rounds are usually 10 to 30 questions. Season Recap serves 30, each with just 2 options.</p></div></li>
+        <li><div><h3>Questions come from a bigger pool</h3><p>Rounds are drawn from a larger pool, so your 30 differ from a friend's. That is why this site lists the whole pool.</p></div></li>
+        <li><div><h3>Correct and fast scores best</h3><p>Correct answers earn points, and faster answers typically earn more. Points climb through reward tiers.</p></div></li>
+      </ol>
+      <div class="tv-facts">
+        <div class="tv-fact"><b>10–30</b><span>questions in a typical round</span></div>
+        <div class="tv-fact"><b>2</b><span>options in Season Recap</span></div>
+        <div class="tv-fact"><b>{SEASON_RECAP_QUESTION_COUNT}</b><span>answers listed in the pool</span></div>
+        <div class="tv-fact"><b>10</b><span>reward tiers up to 60,000 points</span></div>
+      </div>
+    </div>
+    <div class="tv-how" id="how-ans" role="tabpanel" hidden>
+      <ol class="tv-steps">
+        <li><div><h3>Choose a nation</h3><p>Each nation is its own story with its own set of questions. We cover {nationCount} so far.</p></div></li>
+        <li><div><h3>Play it day by day</h3><p>A nation unfolds across Day 1 to Day 9, and the questions are different on every day.</p></div></li>
+        <li><div><h3>Pick from four options</h3><p>Every question has 4 options. Early days are easier and later days dig into football history.</p></div></li>
+        <li><div><h3>Find any answer instantly</h3><p>Every question here has its own page, so searching the exact wording takes you to the answer.</p></div></li>
+      </ol>
+      <div class="tv-facts">
+        <div class="tv-fact"><b>4</b><span>options per question</span></div>
+        <div class="tv-fact"><b>9</b><span>days per nation</span></div>
+        <div class="tv-fact"><b>{ansCount}</b><span>questions with answer pages</span></div>
+        <div class="tv-fact"><b>{nationCount}</b><span>nations available</span></div>
+      </div>
+    </div>
+
+    <div class="tv-table-wrap tv-reveal" style="margin-top:34px">
+      <table class="tv-table">
+        <caption class="sr-only" style="position:absolute;left:-9999px">Extra Time compared with A Nation's Story</caption>
+        <thead><tr><th></th><th>Extra Time</th><th>A Nation's Story</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Questions per round</th><td>10 to 30 (Season Recap: 30)</td><td>3 to 5 per day, or 1 on single-question nations</td></tr>
+          <tr><th scope="row">Options</th><td>2 per question</td><td>4 per question</td></tr>
+          <tr><th scope="row">Question set</th><td>Random from a larger pool</td><td>Fixed by nation and day</td></tr>
+          <tr><th scope="row">Availability</th><td>Limited-time event</td><td>Day-by-day, per nation</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tv-wrap tv-section" id="modes">
+    <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">Practice modes</span><h2 class="tv-h2">Train like it's matchday.</h2><p class="tv-sub">Free, instant, and nothing to sign up for. Your personal bests are saved on your device.</p></div></div>
+    <div class="tv-modes">
+      <div class="tv-card tv-mode tv-spot tv-reveal" style="--d:0"><div class="tv-mode-ico" set:html={ICONS.finder} /><h3>Answer Finder</h3><p>Type a few words and jump to the answer. Filter by topic or league, and copy a link to any question.</p><a class="tv-btn ghost sm" href={SEASON_RECAP_ROUTE}>Open finder</a></div>
+      <div class="tv-card tv-mode tv-spot tv-reveal" style="--d:1"><div class="tv-mode-ico" set:html={ICONS.cards} /><h3>Flashcards</h3><p>Flip each card, mark what you know, and re-drill only the ones you missed.</p><button class="tv-btn ghost sm" data-arena="season-recap" data-mode="cards">Study cards</button></div>
+      <div class="tv-card tv-mode tv-spot tv-reveal" style="--d:2"><div class="tv-mode-ico" set:html={ICONS.quiz} /><h3>Practice Quiz</h3><p>No timer, instant feedback and a full review of every question you got wrong.</p><button class="tv-btn ghost sm" data-arena="season-recap" data-mode="quiz">Start quiz</button></div>
+      <div class="tv-card tv-mode hot tv-spot tv-reveal" style="--d:3"><div class="tv-mode-ico" set:html={ICONS.bolt} /><h3>Time Attack</h3><p>Race a 12-second clock. Faster answers and streaks earn bonus points.</p><button class="tv-btn gold sm" data-arena="season-recap" data-mode="attack">Start attack</button></div>
+    </div>
+  </section>
+
+  <section class="tv-wrap tv-section" id="faq">
+    <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">FAQ</span><h2 class="tv-h2">Quick answers.</h2></div></div>
+    <div class="tv-faq tv-reveal">
+      {faq.map(([q, a], i) => <details open={i === 0}><summary>{q}</summary><p>{a}</p></details>)}
+    </div>
+  </section>
+
+  <script>
+    // Switch the "How trivia works" panels (both are visible without JS).
+    const tabs = document.querySelectorAll('[data-how]');
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      tabs.forEach((t) => { const on = t === tab; t.setAttribute('aria-selected', String(on)); document.getElementById(on ? t.getAttribute('aria-controls') : t.getAttribute('aria-controls')).hidden = !on; });
+    }));
+    // JS only: show just the first panel to start with.
+    document.getElementById('how-ans').hidden = true;
+  </script>
+</TriviaLayout>

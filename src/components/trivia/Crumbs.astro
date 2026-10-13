@@ -1,0 +1,12 @@
+---
+interface Props { trail: { name: string; href?: string }[] }
+const { trail } = Astro.props;
+---
+<nav class="tv-crumbs" aria-label="Breadcrumb">
+  {trail.map((step, i) => (
+    <>
+      {i > 0 && <i aria-hidden="true">/</i>}
+      {step.href ? <a href={step.href}>{step.name}</a> : <span aria-current="page">{step.name}</span>}
+    </>
+  ))}
+</nav>

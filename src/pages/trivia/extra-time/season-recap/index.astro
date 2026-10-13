@@ -1,0 +1,181 @@
+---
+import TriviaLayout from '../../../../layouts/TriviaLayout.astro';
+import Crumbs from '../../../../components/trivia/Crumbs.astro';
+import SearchBox from '../../../../components/trivia/SearchBox.astro';
+import { SEASON_RECAP_META as SR, SEASON_RECAP_QUESTIONS as QS } from '../../../../data/seasonRecapTrivia.js';
+import { CATEGORIES, LEAGUES, countBy } from '../../../../lib/triviaExtraTime.js';
+import { ICONS } from '../../../../lib/triviaIcons.js';
+import { breadcrumbLd, absolute } from '../../../../lib/triviaCore.js';
+import { SEASON_RECAP_ROUTE } from '../../../../lib/triviaRoutes.js';
+
+const total = QS.length;
+const cats = countBy(QS, 'category', CATEGORIES);
+const leagues = countBy(QS, 'league', LEAGUES);
+const title = `Season Recap (Challenge) Trivia Answers October 2026: All ${total} Questions`;
+const description = `All FC Mobile Season Recap (Challenge) trivia answers for ${SR.window.label.replace(', 2026', '')}: ${total} questions with correct answers for transfers, goals, clean sheets and awards. Searchable and verified ${SR.verifiedLabel}.`;
+const faq = [
+  ['How many questions are in Season Recap (Challenge)?', `Each round has ${SR.format.perRound} questions with ${SR.format.options} options. They come from a larger pool, and this page lists ${total} of them with their correct answers.`],
+  ['Some questions list many answers. Why?', 'Questions such as which teams qualified for the Champions League have many valid answers. The game shows two options and exactly one is correct, so any listed answer is right.'],
+  ['When does Season Recap end?', `The event window is ${SR.window.label}. Check the in-game timer, as EA can adjust it.`],
+  ['My question is not listed. What do I do?', 'The pool is large and can grow during the event. Search a distinctive word, such as a player or club, and check back as the list updates.']
+];
+const jsonLd = [
+  breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: 'Extra Time', href: '/trivia/extra-time/' }, { name: 'Season Recap', href: SEASON_RECAP_ROUTE }]),
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) },
+  { '@context': 'https://schema.org', '@type': 'Article', headline: `Season Recap (Challenge) Trivia Answers: all ${total} questions`, dateModified: SR.verified, image: absolute(SR.banner.jpg), about: 'EA SPORTS FC Mobile trivia' }
+];
+const MORE = 6;
+---
+<TriviaLayout title={title} description={description} image={SR.banner.jpg} jsonLd={jsonLd}>
+  <div class="tv-wrap">
+    <Crumbs trail={[{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: 'Extra Time', href: '/trivia/extra-time/' }, { name: 'Season Recap' }]} />
+    <div class="tv-banner tv-art">
+      <img data-optional src={SR.banner.webp} width={SR.banner.width} height={SR.banner.height} alt={SR.banner.alt} fetchpriority="high" decoding="async" />
+      <div class="tv-banner-copy">
+        <span class="tv-eyebrow"><i class="tv-live"></i>Extra Time · Live</span>
+        <h1 class="tv-h1">Season Recap <span class="tv-grad">(Challenge)</span> Trivia Answers</h1>
+        <p class="tv-lede">Every question and correct answer for the {SR.event} event, checked against two independent guides.</p>
+        <div class="tv-pills">
+          <span class="tv-pill accent"><b>{total}</b> answers</span>
+          <span class="tv-pill"><b>{SR.format.perRound}</b> per round</span>
+          <span class="tv-pill"><b>{SR.format.options}</b> options</span>
+          <span class="tv-pill gold">{SR.window.label}</span>
+        </div>
+        <div class="tv-actions">
+          <a class="tv-btn" href="#finder">Find an answer <span set:html={ICONS.arrow} style="display:contents" /></a>
+          <button class="tv-btn ghost" data-arena="season-recap" data-mode="attack">Practice in Time Attack</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="tv-wrap tv-section" id="finder" style="padding-top:48px">
+    <div id="sentinel" aria-hidden="true" style="height:1px;margin-bottom:-1px"></div>
+    <div class="tv-toolbar" id="toolbar">
+      <div class="tv-search has-fin" id="finder-search">
+        <label class="tv-search-box">
+          <span set:html={ICONS.search} style="display:contents" />
+          <input type="search" id="fq" placeholder={`Search ${total} questions: player, club, league…`} aria-label="Search Season Recap questions" autocomplete="off" spellcheck="false" />
+          <kbd class="tv-kbd" aria-hidden="true">/</kbd>
+          <button type="button" class="tv-x" id="fx" aria-label="Clear search">×</button>
+        </label>
+      </div>
+      <div class="tv-filters">
+        <div class="tv-filter-row"><label for="cat-row">Topic</label>
+          <div class="tv-scroll" id="cat-row" role="group" aria-label="Filter by topic">
+            <button class="tv-chip on" data-cat="all" aria-pressed="true">All <small>{total}</small></button>
+            {cats.map((c) => <button class="tv-chip" data-cat={c.name} aria-pressed="false">{c.name} <small>{c.count}</small></button>)}
+          </div></div>
+        <div class="tv-filter-row"><label for="lg-row">League</label>
+          <div class="tv-scroll" id="lg-row" role="group" aria-label="Filter by league">
+            <button class="tv-chip on" data-lg="all" aria-pressed="true">All</button>
+            {leagues.map((l) => <button class="tv-chip" data-lg={l.name} aria-pressed="false">{l.name} <small>{l.count}</small></button>)}
+          </div></div>
+      </div>
+    </div>
+
+    <div class="tv-meta-row">
+      <p class="tv-count" aria-live="polite">Showing <b id="shown">{total}</b> of <b>{total}</b> questions</p>
+      <div class="tv-chips"><button class="tv-chip" id="cover" aria-pressed="false">Cover answers <span class="tv-hint">· tap a card to reveal</span></button></div>
+    </div>
+
+    <div class="tv-qlist" id="qlist">
+      {QS.map((q, i) => (
+        <article class="tv-q" id={q.slug} data-i={i} data-cat={q.category} data-lg={q.league}>
+          <div class="tv-q-top">
+            <span class="tv-q-no">#{String(i + 1).padStart(3, '0')}</span>
+            <div class="tv-q-tags"><span class="tv-pill">{q.category}</span>{q.league !== 'Other' && <span class="tv-pill accent">{q.league}</span>}</div>
+          </div>
+          <h3>{q.question}</h3>
+          <div class="tv-ans">
+            <div class="tv-ans-lbl"><span>{q.multi ? `ANY OF ${q.answers.length} ANSWERS` : 'ANSWER'}</span><button class="tv-copy" type="button" data-copy={`${SEASON_RECAP_ROUTE}#${q.slug}`} aria-label="Copy link to this question" set:html={ICONS.copy} /></div>
+            <div class={`tv-ans-chips${q.answers.length > MORE ? ' more' : ''}`}>
+              {q.answers.map((a) => <span class={`tv-ans-chip${q.kind === 'number' ? ' num' : ''}`}>{a}</span>)}
+            </div>
+            {q.answers.length > MORE && <button class="tv-ans-more" type="button" data-more>Show all {q.answers.length}</button>}
+          </div>
+        </article>
+      ))}
+    </div>
+    <div class="tv-empty" id="empty" hidden><b>No question matches that.</b>Try one distinctive word, like a player or club. The pool is large, so wording in-game may differ slightly.</div>
+  </section>
+
+  <section class="tv-wrap tv-section" id="rewards">
+    <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">Rewards</span><h2 class="tv-h2">Score tiers</h2><p class="tv-sub">Points from your rounds add up across tiers. Reward amounts are as reported by community guides, so confirm in-game.</p></div></div>
+    <div class="tv-tiers">
+      {SR.rewards.map((r) => (
+        <div class={`tv-tier tv-reveal${r.tier === 10 ? ' top' : ''}`} style={`--d:${r.tier % 5}`}><small>Tier {r.tier}</small><b>{r.points.toLocaleString('en-US')}</b><span>{r.reward}</span></div>
+      ))}
+    </div>
+  </section>
+
+  <section class="tv-wrap tv-section" id="faq">
+    <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">FAQ</span><h2 class="tv-h2">Season Recap, explained.</h2></div></div>
+    <div class="tv-faq tv-reveal">{faq.map(([q, a], i) => <details open={i === 0}><summary>{q}</summary><p>{a}</p></details>)}</div>
+    <p class="tv-note">Answers reconciled on {SR.verifiedLabel} against {SR.sources.map((s, i) => <><a href={s.url} rel="noopener" target="_blank" style="color:var(--tv-cyan-2)">{s.name}</a>{i < SR.sources.length - 1 ? ' and ' : '.'}</>)} Question wording follows the game, including its spellings.</p>
+  </section>
+
+  <script>
+    import { rank, highlight } from '../../../../lib/triviaCore.js';
+    const list = document.getElementById('qlist');
+    const cards = [...list.children];
+    const input = document.getElementById('fq');
+    const wrap = document.getElementById('finder-search');
+    const shown = document.getElementById('shown');
+    const empty = document.getElementById('empty');
+    const original = cards.map((c) => c.querySelector('h3').textContent);
+    let cat = 'all', lg = 'all', items = null;
+
+    fetch('/trivia/data/season-recap.json').then((r) => r.json()).then((d) => { items = d.map((x) => ({ q: x.q, a: x.a.join(' ') })); apply(); }).catch(() => {});
+
+    function apply() {
+      const q = input.value.trim();
+      wrap.classList.toggle('has-value', !!q);
+      let order = null;
+      if (q && items) { order = new Map(rank(items, q, 999).map((it, n) => [items.indexOf(it), n])); }
+      let n = 0;
+      cards.forEach((card, i) => {
+        const ok = (cat === 'all' || card.dataset.cat === cat) && (lg === 'all' || card.dataset.lg === lg) && (!q || !items || order.has(i));
+        card.hidden = !ok;
+        card.style.order = ok && order ? order.get(i) : i;
+        card.querySelector('h3').innerHTML = q && ok && items ? highlight(original[i], q) : original[i];
+        if (ok) n++;
+      });
+      shown.textContent = n;
+      empty.hidden = n > 0;
+      const url = new URL(location.href);
+      q ? url.searchParams.set('q', q) : url.searchParams.delete('q');
+      history.replaceState(null, '', url);
+    }
+    new IntersectionObserver(([e]) => document.getElementById('toolbar').classList.toggle('stuck', !e.isIntersecting && e.boundingClientRect.top < 0), { rootMargin: '-80px 0px 0px 0px' }).observe(document.getElementById('sentinel'));
+    input.addEventListener('input', apply);
+    document.getElementById('fx').addEventListener('click', () => { input.value = ''; apply(); input.focus(); });
+    const bind = (rowId, key, set) => document.getElementById(rowId).addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      set(b.dataset[key]);
+      document.querySelectorAll(`#${rowId} .tv-chip`).forEach((c) => { const on = c === b; c.classList.toggle('on', on); c.setAttribute('aria-pressed', String(on)); });
+      apply();
+    });
+    bind('cat-row', 'cat', (v) => (cat = v));
+    bind('lg-row', 'lg', (v) => (lg = v));
+
+    // "Show all N" for long answer lists
+    list.addEventListener('click', (e) => {
+      const more = e.target.closest('[data-more]');
+      if (more) { more.previousElementSibling.classList.remove('more'); more.remove(); return; }
+      if (list.classList.contains('covered')) { const card = e.target.closest('.tv-q'); if (card) card.classList.add('shown'); }
+    });
+    const cover = document.getElementById('cover');
+    cover.addEventListener('click', () => {
+      const on = list.classList.toggle('covered');
+      cover.setAttribute('aria-pressed', String(on)); cover.classList.toggle('on', on);
+      if (!on) cards.forEach((c) => c.classList.remove('shown'));
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && !/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) { e.preventDefault(); input.focus(); input.select(); }
+    });
+    const start = new URLSearchParams(location.search).get('q');
+    if (start) input.value = start;
+    if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'center' });
+  </script>
+</TriviaLayout>

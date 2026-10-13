@@ -1,0 +1,47 @@
+---
+import TriviaLayout from '../../../layouts/TriviaLayout.astro';
+import Crumbs from '../../../components/trivia/Crumbs.astro';
+import SearchBox from '../../../components/trivia/SearchBox.astro';
+import { ICONS } from '../../../lib/triviaIcons.js';
+import { NATIONS_STORY } from '../../../data/aNationsStory.js';
+import { buildNationQuestions, nationImage, nationUrl, NATION_STYLE } from '../../../lib/triviaNations.js';
+import { breadcrumbLd } from '../../../lib/triviaCore.js';
+import { NATIONS_ROUTE } from '../../../lib/triviaRoutes.js';
+
+const all = buildNationQuestions();
+const counts = Object.fromEntries(NATIONS_STORY.map((n) => [n.slug, all.filter((q) => q.nation === n.slug).length]));
+const title = "FC Mobile A Nation's Story Trivia Answers: Every Question & Option";
+const description = `All ${all.length} FC Mobile A Nation's Story trivia questions with the correct answer and all four options, for ${NATIONS_STORY.map((n) => n.name).join(', ')}. Every question has its own page.`;
+const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story", href: NATIONS_ROUTE }])];
+---
+<TriviaLayout title={title} description={description} image={nationImage('japan')} jsonLd={jsonLd}>
+  <div class="tv-wrap">
+    <Crumbs trail={[{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story" }]} />
+    <span class="tv-eyebrow">🌍 A Nation's Story</span>
+    <h1 class="tv-h1">Every nation. <span class="tv-grad">Every answer.</span></h1>
+    <p class="tv-lede">Day-by-day football history with four options per question. Each of the {all.length} questions has its own page, so searching the exact wording lands you on the answer.</p>
+    <SearchBox scope="ans" placeholder="Search a question, player or year…" />
+    <div class="tv-actions"><button class="tv-btn" data-arena="nations-story" data-mode="quiz">Practice a nation</button><a class="tv-btn ghost" href="/trivia/#how-it-works">How it works</a></div>
+  </div>
+
+  <section class="tv-wrap tv-section" style="padding-top:56px">
+    <div class="tv-nations">
+      {NATIONS_STORY.map((n, i) => {
+        const st = NATION_STYLE[n.slug];
+        return (
+          <a class="tv-card tv-nation tv-edge tv-spot tv-reveal" href={nationUrl(n.slug)} style={`--g:${st.glow};--d:${i % 2}`}>
+            <div class="tv-art" data-label={n.name}>
+              <img src={nationImage(n.slug, 1280)} srcset={`${nationImage(n.slug, 640)} 640w, ${nationImage(n.slug, 1280)} 1280w`} sizes="(max-width: 920px) 100vw, 590px" width="1280" height="720" alt={`${n.name} A Nation's Story trivia answers`} loading={i < 2 ? 'eager' : 'lazy'} decoding="async" />
+            </div>
+            <div class="tv-nation-foot">
+              <span class="tv-nation-flag">{n.flag}</span>
+              <div><h3>{n.name}</h3><p>{counts[n.slug]} questions · {n.days.length} days · {st.blurb}</p></div>
+              <span class="go" set:html={ICONS.arrow} />
+            </div>
+          </a>
+        );
+      })}
+    </div>
+    <p class="tv-note" style="margin-top:22px">More nations are added as the game releases them.</p>
+  </section>
+</TriviaLayout>

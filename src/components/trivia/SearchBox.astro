@@ -1,0 +1,14 @@
+---
+import { ICONS } from '../../lib/triviaIcons.js';
+interface Props { scope?: 'all' | 'ans' | 'et'; placeholder?: string; label?: string }
+const { scope = 'all', placeholder = 'Search any question, player, club or nation…', label = 'Search trivia questions' } = Astro.props;
+---
+<div class="tv-search" data-tv-search data-scope={scope} data-src="/trivia/data/search-index.json">
+  <label class="tv-search-box">
+    <span set:html={ICONS.search} style="display:contents" />
+    <input type="search" name="q" placeholder={placeholder} aria-label={label} autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="tv-results" />
+    <kbd class="tv-kbd" aria-hidden="true">/</kbd>
+    <button type="button" class="tv-x" aria-label="Clear search">×</button>
+  </label>
+  <div class="tv-results" id="tv-results" role="listbox" hidden></div>
+</div>
