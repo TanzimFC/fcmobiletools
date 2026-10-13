@@ -34,16 +34,6 @@ export const FCMTV_CONTENT = {
       "sortOrder": 20
     },
     {
-      "id": "japan-nations-story-answers",
-      "title": "A Nation’s Story: Japan - All Questions & Answers",
-      "description": "A full walkthrough of the Japan trivia questions to help you find the answers and understand the football history behind them.",
-      "youtubeId": "xu-ZpRrr1wM",
-      "category": "Event Guides",
-      "featured": false,
-      "published": true,
-      "sortOrder": 30
-    },
-    {
       "id": "manager-mode-24-hour-challenge",
       "title": "How I Became the Best Manager in Just One Day",
       "description": "Follow a 24-hour Manager Mode challenge and see the decisions, match moments and team choices along the way.",
