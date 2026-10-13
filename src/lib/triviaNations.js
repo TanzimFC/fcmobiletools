@@ -1,5 +1,4 @@
-// A Nation's Story: builds one record per question (own URL, options, neighbours,
-// related questions) from the existing answer + options data files.
+// A Nation's Story: keep each day's questions together; question links target anchors on grouped day pages.
 import { NATIONS_STORY } from '../data/aNationsStory.js';
 import { getQuestionOptions } from '../data/aNationsStoryOptions.js';
 import { slugify, tokenize, haystack, fold } from './triviaCore.js';
@@ -19,6 +18,7 @@ export const nationImage = (slug, width = 1280) => `/assets/images/anationstory/
 export const nationUrl = (slug) => `${ANS_BASE}/${slug}/`;
 export const dayUrl = (slug, dayId) => `${ANS_BASE}/${slug}/${dayId}/`;
 export const questionUrl = (slug, dayId, qSlug) => `${ANS_BASE}/${slug}/${dayId}/${qSlug}/`;
+export const groupedQuestionUrl = (slug, dayId, qSlug) => `${dayUrl(slug, dayId)}#${qSlug}`;
 
 const STOP = new Set('the a an of in to for and or at by on with was were is are did does do which who what how many from as that this their his her its into after before during over than then them they he she it be been has have had not no yes year years team player players'.split(' '));
 const keywords = (text) => tokenize(text).filter((t) => t.length > 2 && !STOP.has(t));
@@ -85,7 +85,8 @@ export function buildNationQuestions() {
           options,
           correctIndex: resolveCorrect(item.answer, options),
           slug,
-          url: questionUrl(nation.slug, day.id, slug),
+          url: groupedQuestionUrl(nation.slug, day.id, `q-${index + 1}`),
+          legacyUrl: questionUrl(nation.slug, day.id, slug),
           h: haystack(nation.name, item.question, item.answer, options.join(' '))
         });
       });
