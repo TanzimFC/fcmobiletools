@@ -1,6 +1,16 @@
 // FC Mobile redeem-code database.
 export const REDEEM_CODES = [
   {
+    "code": "PUMPKINSPICEPACK",
+    "reward": "116–119 OVR 3rd Anniversary Player Item (community-reported)",
+    "status": "active",
+    "releaseDate": "2026-10-13",
+    "expiryDate": null,
+    "region": "Global",
+    "lastVerified": "2026-10-13",
+    "notes": "Posted on EA Forums on October 13, 2026. Community trackers report a 116–119 OVR Anniversary Player Item; expiry and redemption limits may change."
+  },
+  {
     "code": "GARUDAJUARA",
     "reward": "2,000 Gems",
     "status": "active",
