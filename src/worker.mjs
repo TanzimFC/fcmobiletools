@@ -1993,6 +1993,46 @@ function validateFcmTv(content) {
   return content;
 }
 
+
+async function assertFcmTvVideosFromOfficialChannel(videos) {
+  for (const video of videos) {
+    const endpoint = new URL('https://www.youtube.com/oembed');
+    endpoint.searchParams.set('url', 'https://www.youtube.com/watch?v=' + video.youtubeId);
+    endpoint.searchParams.set('format', 'json');
+
+    let response;
+    try {
+      response = await fetch(endpoint.toString(), { headers: { accept: 'application/json' } });
+    } catch {
+      throw new Error('Could not verify "' + video.title + '" with YouTube. Only public videos from the official @TanzimFC channel are allowed.');
+    }
+    if (!response.ok) {
+      throw new Error('YouTube could not verify "' + video.title + '". Use a public video uploaded to the official @TanzimFC channel.');
+    }
+
+    let metadata;
+    try {
+      metadata = await response.json();
+    } catch {
+      throw new Error('YouTube returned invalid video details for "' + video.title + '".');
+    }
+
+    let authorUrl;
+    try {
+      authorUrl = new URL(String(metadata.author_url || ''));
+    } catch {}
+    const authorHost = String(authorUrl?.hostname || '').toLowerCase();
+    const authorPath = String(authorUrl?.pathname || '').toLowerCase().replaceAll('/', '');
+    const isOfficialChannel =
+      ['youtube.com', 'www.youtube.com'].includes(authorHost) &&
+      authorPath === '@tanzimfc';
+
+    if (!isOfficialChannel) {
+      throw new Error('"' + video.title + '" is not uploaded to the official @TanzimFC channel. Only TanzimFC videos can be added to the Academy.');
+    }
+  }
+}
+
 async function publicFcmTvApi(request,env,ctx,url) {
   if(request.method!=='GET') return json({error:'Method not allowed.'},405,{allow:'GET'});
   const cacheKey=new Request(new URL('/api/fcmtv',url.origin),{method:'GET'});
@@ -2475,6 +2515,10 @@ async function api(request,env,path) {
       const input=await request.json().catch(()=>({}));
       const updated=validateFcmTv(input.content);
       const file=await repoFile(env,'src/data/fcmtv.js');
+      const current=parseFcmTv(file.text);
+      const existingYoutubeIds=new Set(current.videos.map(video=>normalizeFcmTvYoutubeId(video.youtubeId)).filter(Boolean));
+      const newVideos=updated.videos.filter(video=>!existingYoutubeIds.has(video.youtubeId));
+      await assertFcmTvVideosFromOfficialChannel(newVideos);
       const commitSha=await writeRepoFile(env,'src/data/fcmtv.js',fcmTvText(updated),file.sha,'admin: update FCM TV library');
       try { await caches.default.delete(new Request(new URL('/api/fcmtv',new URL(request.url).origin))); } catch {}
       return json({ok:true,commitSha,content:updated});
