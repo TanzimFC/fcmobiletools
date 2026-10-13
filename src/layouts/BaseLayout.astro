@@ -16,6 +16,8 @@ export interface Props {
   author?: string;
   robots?: string;
   googlebot?: string;
+  /** Override the canonical URL (path or absolute). Used by pages that point at a moved target. */
+  canonical?: string;
 }
 
 const {
@@ -29,13 +31,14 @@ const {
   author = 'FCMOBILETOOLS',
   robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
   googlebot = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
+  canonical: canonicalOverride,
 } = Astro.props;
 
 const siteOrigin = Astro.site ?? new URL('https://fcmobiletools.online');
 const canonicalPath = Astro.url.pathname === '/' || Astro.url.pathname.endsWith('/')
   ? Astro.url.pathname
   : Astro.url.pathname + '/';
-const canonical = new URL(canonicalPath, siteOrigin);
+const canonical = new URL(canonicalOverride ?? canonicalPath, siteOrigin);
 const siteUrl = new URL('/', siteOrigin);
 const siteName = 'FCMOBILETOOLS';
 const siteDescription = description;

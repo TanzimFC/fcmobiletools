@@ -5,13 +5,19 @@ import remarkGfm from 'remark-gfm';
 import cloudflare from '@astrojs/cloudflare';
 import { optimizeMarkdownImages } from './src/lib/image-delivery.js';
 
+const NATIONS = ['japan', 'netherlands', 'mexico', 'france', 'brazil'];
+const DAYS = Array.from({ length: 9 }, (_, i) => `day-${i + 1}`);
+
+// A Nation's Story now lives at /trivia/a-nations-story/. Old URLs are 301'd page by
+// page (keeps their search ranking). /a-nations-story/ itself stays as a "we moved" landing page.
 const nationRedirects = Object.fromEntries(
-  ['japan', 'netherlands', 'mexico', 'france', 'brazil'].flatMap((country) => [
-    [`/trivia/${country}/`, `/a-nations-story/${country}/`],
-    ...Array.from({ length: 9 }, (_, index) => {
-      const day = `day-${index + 1}`;
-      return [`/trivia/${country}/${day}/`, `/a-nations-story/${country}/${day}/`];
-    })
+  NATIONS.flatMap((country) => [
+    [`/trivia/${country}/`, `/trivia/a-nations-story/${country}/`],
+    [`/a-nations-story/${country}/`, `/trivia/a-nations-story/${country}/`],
+    ...DAYS.flatMap((day) => [
+      [`/trivia/${country}/${day}/`, `/trivia/a-nations-story/${country}/${day}/`],
+      [`/a-nations-story/${country}/${day}/`, `/trivia/a-nations-story/${country}/${day}/`]
+    ])
   ])
 );
 
@@ -36,6 +42,8 @@ export default defineConfig({
     filter: (page) => {
       const pathname = new URL(page).pathname;
       return ![
+        '/a-nations-story',
+        '/a-nations-story/',
         '/admin',
         '/admin/',
         '/creator/login',
@@ -66,6 +74,7 @@ export default defineConfig({
   markdown: { remarkPlugins: [remarkGfm], rehypePlugins: [optimizeMarkdownImages] },
   redirects: {
     '/fcmtv': '/academy/',
+    '/trivia/season-recap/': '/trivia/extra-time/season-recap/',
     ...nationRedirects
   },
   experimental: {

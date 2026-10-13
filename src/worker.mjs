@@ -2152,12 +2152,6 @@ function adminAuthLog(stage, details={}) {
 
 async function api(request,env,path) {
 
-  // Player catalogue preview is temporarily disabled while image delivery is rebuilt.
-  // Keep draft card records private; do not return them through the Worker API.
-  if(path === '/player-preview' && request.method === 'GET') {
-    return json({error:'Player catalogue preview is temporarily unavailable.'},404);
-  }
-
   if(path === '/accounts' && request.method === 'GET') {
     if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
     const q=String(new URL(request.url).searchParams.get('q')||'').trim().slice(0,80);
@@ -2882,40 +2876,6 @@ export function createExports(manifest) {
         'cache-control':'public, max-age=86400'
       }
     });
-  }
-
-  // Cache the immutable Season Recap banner at Cloudflare's edge instead of
-  // requesting the Cloudinary origin for every visitor.
-  if (url.pathname === '/assets/trivia/season-recap-banner.jpg' && request.method === 'GET') {
-    const cache = caches.default;
-    const cacheKey = new Request('https://fcmobiletools.online/assets/trivia/season-recap-banner.jpg', { method: 'GET' });
-    const cached = await cache.match(cacheKey);
-    if (cached) {
-      const headers = new Headers(cached.headers);
-      headers.set('x-edge-cache', 'HIT');
-      return new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers });
-    }
-    const origin = await fetch('https://res.cloudinary.com/b0qikv7n/image/upload/v1791739595/fc-mobile-tools/tra319zimnvlfas22fj8.jpg');
-    if (!origin.ok) {
-      return new Response('Season Recap banner unavailable', {
-        status: origin.status,
-        headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=60' }
-      });
-    }
-    const contentType = origin.headers.get('content-type') || 'image/jpeg';
-    if (!contentType.startsWith('image/')) {
-      return new Response('Invalid Season Recap banner response', { status: 502 });
-    }
-    const headers = new Headers({
-      'content-type': contentType,
-      'cache-control': 'public, max-age=31536000, s-maxage=31536000, immutable',
-      'x-content-type-options': 'nosniff',
-      'x-edge-cache': 'MISS'
-    });
-    const response = new Response(origin.body, { status: 200, headers });
-    if (ctx?.waitUntil) ctx.waitUntil(cache.put(cacheKey, response.clone()));
-    else await cache.put(cacheKey, response.clone());
-    return response;
   }
 
   // Keep crawl-control files on the static asset path with explicit cache

@@ -1,0 +1,55 @@
+---
+import TriviaLayout from '../../../../layouts/TriviaLayout.astro';
+import Crumbs from '../../../../components/trivia/Crumbs.astro';
+import { NATIONS_STORY } from '../../../../data/aNationsStory.js';
+import { buildNationQuestions, nationImage, dayUrl, NATION_STYLE } from '../../../../lib/triviaNations.js';
+import { breadcrumbLd } from '../../../../lib/triviaCore.js';
+import { NATIONS_ROUTE } from '../../../../lib/triviaRoutes.js';
+
+export function getStaticPaths() {
+  return NATIONS_STORY.map((nation) => ({ params: { country: nation.slug }, props: { nation } }));
+}
+const { nation } = Astro.props;
+const st = NATION_STYLE[nation.slug];
+const qs = buildNationQuestions().filter((q) => q.nation === nation.slug);
+const title = `FC Mobile A Nation's Story ${nation.name} Trivia Answers (All ${nation.days.length} Days)`;
+const description = `All ${qs.length} FC Mobile A Nation's Story ${nation.name} trivia answers across ${nation.days.length} days, with every option and the correct answer. ${nation.description || ''}`.trim();
+const base = `/trivia/a-nations-story/${nation.slug}/`;
+const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story", href: NATIONS_ROUTE }, { name: nation.name, href: base }])];
+---
+<TriviaLayout title={title} description={description} image={nationImage(nation.slug)} accentRgb={st.glow} jsonLd={jsonLd}>
+  <div class="tv-wrap">
+    <Crumbs trail={[{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story", href: NATIONS_ROUTE }, { name: nation.name }]} />
+    <header class="tv-nhero">
+      <div>
+        <span class="tv-eyebrow">{nation.flag} {nation.name} · A Nation's Story</span>
+        <h1 class="tv-h1">{nation.name} <span class="tv-grad">trivia answers</span></h1>
+        <p class="tv-lede">{qs.length} questions across {nation.days.length} days, each with four options and the correct answer. Open a day for the full set, or any question for its own page.</p>
+        <div class="tv-actions">
+          <a class="tv-btn" href={dayUrl(nation.slug, 'day-1')}>Start at Day 1</a>
+          <button class="tv-btn ghost" data-arena="nations-story" data-nation={nation.slug} data-mode="quiz">Practice {nation.name}</button>
+        </div>
+      </div>
+      <div class="tv-art" data-label={nation.name}>
+        <img src={nationImage(nation.slug, 1280)} srcset={`${nationImage(nation.slug, 640)} 640w, ${nationImage(nation.slug, 1280)} 1280w`} sizes="(max-width: 920px) 100vw, 580px" width="1280" height="720" alt={`${nation.name} A Nation's Story trivia`} fetchpriority="high" decoding="async" />
+      </div>
+    </header>
+  </div>
+
+  <section class="tv-wrap tv-section" style="padding-top:64px">
+    <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">{nation.days.length} days</span><h2 class="tv-h2">Choose a day</h2></div></div>
+    <div class="tv-days">
+      {nation.days.map((day, i) => {
+        const dayQs = qs.filter((q) => q.dayId === day.id);
+        return (
+          <article class="tv-card tv-day tv-spot tv-reveal" style={`--d:${i % 3}`}>
+            <div class="tv-day-top"><span class="tv-day-no">{String(i + 1).padStart(2, '0')}</span>{day.level && <span class="tv-pill accent">{day.level}</span>}</div>
+            <h3>{day.title} · {dayQs.length} question{dayQs.length === 1 ? '' : 's'}</h3>
+            <ul>{dayQs.map((q) => <li><a href={q.url}>{q.question}</a></li>)}</ul>
+            <a class="tv-day-cta" href={dayUrl(nation.slug, day.id)}>All Day {i + 1} answers →</a>
+          </article>
+        );
+      })}
+    </div>
+  </section>
+</TriviaLayout>

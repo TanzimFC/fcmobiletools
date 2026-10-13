@@ -1,0 +1,73 @@
+---
+import TriviaLayout from '../../../../../layouts/TriviaLayout.astro';
+import Crumbs from '../../../../../components/trivia/Crumbs.astro';
+import { NATIONS_STORY } from '../../../../../data/aNationsStory.js';
+import { buildNationQuestions, nationImage, nationUrl, dayUrl, NATION_STYLE } from '../../../../../lib/triviaNations.js';
+import { breadcrumbLd } from '../../../../../lib/triviaCore.js';
+import { NATIONS_ROUTE } from '../../../../../lib/triviaRoutes.js';
+
+export function getStaticPaths() {
+  return NATIONS_STORY.flatMap((nation) => nation.days.map((day) => ({ params: { country: nation.slug, day: day.id }, props: { nation, day } })));
+}
+const { nation, day } = Astro.props;
+const st = NATION_STYLE[nation.slug];
+const n = Number(day.id.replace('day-', ''));
+const qs = buildNationQuestions().filter((q) => q.nation === nation.slug && q.dayId === day.id);
+const title = `FC Mobile ${nation.name} A Nation's Story Day ${n} Answers | All Questions & Options`;
+const description = `FC Mobile A Nation's Story ${nation.name} Day ${n} answers: all ${qs.length} question${qs.length === 1 ? '' : 's'} with four options and the correct answer.`;
+const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story", href: NATIONS_ROUTE }, { name: nation.name, href: nationUrl(nation.slug) }, { name: `Day ${n}`, href: dayUrl(nation.slug, day.id) }])];
+---
+<TriviaLayout title={title} description={description} image={nationImage(nation.slug)} accentRgb={st.glow} jsonLd={jsonLd}>
+  <div class="tv-wrap">
+    <Crumbs trail={[{ name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story", href: NATIONS_ROUTE }, { name: nation.name, href: nationUrl(nation.slug) }, { name: `Day ${n}` }]} />
+    <span class="tv-eyebrow">{nation.flag} {nation.name} · {day.title}</span>
+    <h1 class="tv-h1">Day {n} <span class="tv-grad">answers</span></h1>
+    <p class="tv-lede">{qs.length} question{qs.length === 1 ? '' : 's'}. The correct option is marked on each one. Switch on study mode to cover the answers and test yourself first.</p>
+    <div class="tv-actions">
+      <button class="tv-btn ghost" id="study" aria-pressed="false">Study mode: off</button>
+      <button class="tv-btn" data-arena="nations-story" data-nation={nation.slug} data-day={String(n)} data-mode="quiz">Practice this day</button>
+    </div>
+
+    <nav class="tv-tabs" style="margin-top:38px" aria-label={`${nation.name} days`}>
+      {nation.days.map((d, i) => <a href={dayUrl(nation.slug, d.id)} aria-current={d.id === day.id ? 'page' : undefined}>Day {i + 1}</a>)}
+    </nav>
+
+    <div id="qs" style="display:grid;gap:18px">
+      {qs.map((q) => (
+        <article class="tv-card tv-dq tv-reveal" id={`q-${q.index}`}>
+          <div class="tv-dq-top"><span class="tv-pill accent">Question {q.index} of {q.countInDay}</span><span class="tv-pill">Day {n}</span></div>
+          <h2><a href={q.url}>{q.question}</a></h2>
+          <div class="tv-opts" role="list">
+            {q.options.map((o, i) => (
+              <button type="button" role="listitem" class={`tv-opt${i === q.correctIndex ? ' ok shown' : ''}`} data-ok={i === q.correctIndex ? '1' : '0'}>
+                <span class="ltr">{String.fromCharCode(65 + i)}</span><span>{o}</span><span class="tick">✓</span>
+              </button>
+            ))}
+          </div>
+          <div class="tv-ans-panel"><span class="chk">✓</span><div><small>CORRECT ANSWER</small><strong>{q.answer}</strong></div></div>
+          <a class="tv-dq-link" href={q.url}>Open answer page →</a>
+        </article>
+      ))}
+    </div>
+  </div>
+  <script>
+    const root = document.getElementById('qs');
+    const btn = document.getElementById('study');
+    btn.addEventListener('click', () => {
+      const on = root.classList.toggle('tv-study');
+      btn.setAttribute('aria-pressed', String(on));
+      btn.textContent = `Study mode: ${on ? 'on' : 'off'}`;
+      root.querySelectorAll('.tv-dq').forEach((c) => c.classList.toggle('revealed', !on));
+      root.querySelectorAll('.tv-opt').forEach((o) => { o.classList.remove('bad'); o.classList.toggle('shown', !on && o.dataset.ok === '1'); });
+    });
+    root.addEventListener('click', (e) => {
+      const opt = e.target.closest('.tv-opt');
+      if (!opt || !root.classList.contains('tv-study')) return;
+      const card = opt.closest('.tv-dq');
+      if (card.classList.contains('revealed')) return;
+      card.classList.add('revealed');
+      card.querySelectorAll('.tv-opt').forEach((o) => { if (o.dataset.ok === '1') o.classList.add('shown'); });
+      if (opt.dataset.ok !== '1') opt.classList.add('bad');
+    });
+  </script>
+</TriviaLayout>

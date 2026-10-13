@@ -1,0 +1,100 @@
+---
+// One page per A Nation's Story question. The exact question wording is the H1 and
+// the title, the answer sits in the first screen, and structured data + internal
+// links (prev/next, same day, related) are generated from the data.
+import TriviaLayout from '../../../../../layouts/TriviaLayout.astro';
+import Crumbs from '../../../../../components/trivia/Crumbs.astro';
+import { ICONS } from '../../../../../lib/triviaIcons.js';
+import { NATIONS_STORY } from '../../../../../data/aNationsStory.js';
+import { buildNationQuestions, nationImage, nationUrl, dayUrl, NATION_STYLE } from '../../../../../lib/triviaNations.js';
+import { breadcrumbLd, quizLd } from '../../../../../lib/triviaCore.js';
+import { NATIONS_ROUTE } from '../../../../../lib/triviaRoutes.js';
+
+export function getStaticPaths() {
+  return buildNationQuestions().map((q) => ({ params: { country: q.nation, day: q.dayId, slug: q.slug }, props: { q } }));
+}
+const { q } = Astro.props;
+const nation = NATIONS_STORY.find((n) => n.slug === q.nation);
+const siblings = buildNationQuestions().filter((x) => x.nation === q.nation && x.dayId === q.dayId && x.id !== q.id);
+const st = NATION_STYLE[q.nation];
+const correct = q.options[q.correctIndex] ?? q.answer;
+const letters = q.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join(', ');
+
+const title = `${q.question} Answer & Options`;
+const description = `Answer: ${correct}. FC Mobile A Nation's Story ${q.nationName} Day ${q.dayNumber}${q.level ? ` (${q.level})` : ''} trivia. Options: ${letters}.`;
+const jsonLd = [
+  breadcrumbLd([
+    { name: 'Home', href: '/' }, { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story", href: NATIONS_ROUTE },
+    { name: q.nationName, href: nationUrl(q.nation) }, { name: `Day ${q.dayNumber}`, href: dayUrl(q.nation, q.dayId) }, { name: q.question, href: q.url }
+  ]),
+  quizLd({ url: q.url, name: `${q.nationName} · A Nation's Story · Day ${q.dayNumber}`, question: q.question, answer: correct, options: q.options, about: `${q.nationName} football history`, level: q.level || undefined })
+];
+---
+<TriviaLayout title={title} description={description} image={nationImage(q.nation)} accentRgb={st.glow} jsonLd={jsonLd}>
+  <div class="tv-wrap">
+    <Crumbs trail={[
+      { name: 'Trivia', href: '/trivia/' }, { name: "A Nation's Story", href: NATIONS_ROUTE },
+      { name: q.nationName, href: nationUrl(q.nation) }, { name: `Day ${q.dayNumber}`, href: dayUrl(q.nation, q.dayId) }, { name: `Question ${q.index}` }
+    ]} />
+    <div class="tv-chips" style="gap:8px">
+      <span class="tv-pill accent">{q.flag} {q.nationName}</span>
+      <span class="tv-pill">Day {q.dayNumber}</span>
+      {q.level && <span class="tv-pill">{q.level}</span>}
+      <span class="tv-pill">Question {q.index} of {q.countInDay}</span>
+    </div>
+    <h1 class="tv-qpage-h1">{q.question}</h1>
+
+    <section class="tv-answer-hero tv-spot" aria-label="Correct answer">
+      <small><i>✓</i>CORRECT ANSWER</small>
+      <strong>{correct}</strong>
+    </section>
+
+    <div class="tv-qgrid">
+      <div style="display:grid;gap:20px">
+        <section class="tv-card tv-box">
+          <h2>All four options</h2>
+          <div class="tv-opts" role="list">
+            {q.options.map((o, i) => (
+              <div role="listitem" class={`tv-opt${i === q.correctIndex ? ' ok' : ''}`}>
+                <span class="ltr">{String.fromCharCode(65 + i)}</span><span>{o}</span><span class="tick">✓</span>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section class="tv-card tv-box tv-seo">
+          <h2>About this question</h2>
+          <p>This question appears on <strong>Day {q.dayNumber}</strong>{q.level ? ` (${q.dayTitle})` : ''} of <strong>A Nation's Story: {q.nationName}</strong> in EA SPORTS FC Mobile, as question {q.index} of {q.countInDay}. It has four options and the correct one is <strong>{correct}</strong>.</p>
+          {q.hint && <p>{q.hint}</p>}
+          <p>Want the whole set? See all <a href={dayUrl(q.nation, q.dayId)} style="color:var(--tv-cyan-2);border-bottom:1px solid rgba(var(--g),.4)">Day {q.dayNumber} answers</a> or browse every <a href={nationUrl(q.nation)} style="color:var(--tv-cyan-2);border-bottom:1px solid rgba(var(--g),.4)">{q.nationName} question</a>.</p>
+        </section>
+      </div>
+      <aside style="display:grid;gap:20px">
+        <section class="tv-card tv-box">
+          <h2>Test yourself</h2>
+          <p>Practice the {q.nationName} set with quiz or flashcards. Your bests are saved on this device.</p>
+          <div class="tv-actions" style="margin-top:18px"><button class="tv-btn sm" data-arena="nations-story" data-nation={q.nation} data-day={String(q.dayNumber)} data-mode="quiz">Practice Day {q.dayNumber}</button><button class="tv-btn ghost sm" data-arena="nations-story" data-nation={q.nation} data-mode="cards">Flashcards</button></div>
+        </section>
+        {siblings.length > 0 && (
+          <section class="tv-card tv-box">
+            <h2>More from Day {q.dayNumber}</h2>
+            <ul class="tv-related">{siblings.map((s) => <li><a href={s.url}><small>Question {s.index}</small><span>{s.question}</span></a></li>)}</ul>
+          </section>
+        )}
+      </aside>
+    </div>
+
+    {(q.prev || q.next) && (
+      <nav class="tv-pn" aria-label="Previous and next question">
+        {q.prev ? <a href={q.prev.url} rel="prev"><small>← Previous</small><span>{q.prev.question}</span></a> : <span />}
+        {q.next ? <a class="next" href={q.next.url} rel="next"><small>Next →</small><span>{q.next.question}</span></a> : <span />}
+      </nav>
+    )}
+
+    {q.related.length > 0 && (
+      <section class="tv-section" style="padding-top:56px">
+        <div class="tv-sec-head"><div><span class="tv-kicker">Related</span><h2 class="tv-h2" style="font-size:clamp(24px,3vw,34px)">You may also be asked</h2></div></div>
+        <ul class="tv-related" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">{q.related.map((r) => <li><a href={r.url}><small>{r.label}</small><span>{r.question}</span></a></li>)}</ul>
+      </section>
+    )}
+  </div>
+</TriviaLayout>
