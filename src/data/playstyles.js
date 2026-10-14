@@ -134,18 +134,6 @@ export const PLAYSTYLES = [
     ]
   },
   {
-    name: 'First Timer',
-    category: 'Finishing',
-    icon: 'FIRST_TIMER',
-    summary: 'Improves shots taken immediately, without an extra touch.',
-    levels: [
-      'Improves accuracy and shot speed for first-time shots.',
-      'Further improves accuracy and shot speed for first-time shots.',
-      'Greatly improves accuracy and shot speed for first-time shots.'
-    ],
-    summaryNote: 'Plain-language summary; EA’s public PlayStyles guide does not publish a full level-by-level description for this style.'
-  },
-  {
     name: 'Bullet Pass',
     category: 'Passing',
     icon: 'BULLET_PASS',
