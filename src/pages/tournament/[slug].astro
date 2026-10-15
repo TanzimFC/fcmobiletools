@@ -6,6 +6,7 @@ import Tie from '../../components/tournament/Tie.astro';
 import Standings from '../../components/tournament/Standings.astro';
 import Fixture from '../../components/tournament/Fixture.astro';
 import { TOURNAMENT_PUBLICATIONS } from '../../data/tournaments.js';
+import { isHiddenInternalTournamentSlug, isTournamentSampleSlug } from '../../data/tournamentSamples.js';
 import {
   buildKnockout, groupByMatchday, sortStandings, progressOf, nextMatch, championOf,
   tournamentState, formatLabel, matchModeLabel, stageTypeLabel, formatDate
@@ -13,7 +14,7 @@ import {
 
 export function getStaticPaths() {
   return TOURNAMENT_PUBLICATIONS
-    .filter((t) => t.isPublic && !/^(?:format-test-|fcmobiletools-sample-championship$)/i.test(t.slug || ''))
+    .filter((t) => t.isPublic && !isHiddenInternalTournamentSlug(t.slug))
     .map((t) => ({
     params: { slug: t.slug },
     props: { tournament: t }
@@ -26,6 +27,7 @@ const state = t ? tournamentState(t) : null;
 const progress = t ? progressOf(t) : null;
 const champion = t ? championOf(t) : null;
 const next = t && !champion ? nextMatch(t) : null;
+const isSample = isTournamentSampleSlug(t?.slug);
 const kickoff = formatDate(t?.startsAt, true);
 const chunk = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));
 
@@ -40,6 +42,16 @@ function contextOf(found) {
 <BaseLayout title={t ? t.name : 'Tournament'} description={t?.description || 'FCMOBILETOOLS tournament bracket.'}>
   {t ? (
     <main class="tp">
+      {isSample ? (
+        <aside class="tournament-sample-note" role="note" data-reveal>
+          <span class="sample-note-label">SAMPLE DATA</span>
+          <div>
+            <strong>Example tournament page</strong>
+            <p>Participants, fixtures, scores and the winner are illustrative. This is not a live competition or a record of real registrations.</p>
+            <a href="/tournaments/samples/">Browse all tournament samples →</a>
+          </div>
+        </aside>
+      ) : null}
       <header class="hero" data-reveal>
         <svg class="pitch" viewBox="0 0 600 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="420" cy="200" r="150" /><circle cx="420" cy="200" r="5" fill="currentColor" /><path d="M420 -20V420" /><path d="M600 110h-95v180h95" />
@@ -322,4 +334,13 @@ function contextOf(found) {
 
   @media(max-width:960px){.hero-grid{grid-template-columns:1fr;gap:30px;align-items:start}.hero-side{max-width:460px}}
   @media(max-width:560px){.tp{--gap:26px}.facts{gap:14px 28px}.champ-id strong{font-size:24px}.stages{gap:48px}}
+
+  .tournament-sample-note{display:flex;align-items:flex-start;gap:14px;max-width:1240px;margin:18px auto 0;padding:16px clamp(16px,4vw,32px);color:var(--text)}
+  .tournament-sample-note>span{flex:none;padding:7px 9px;border:1px solid rgba(76,201,255,.35);border-radius:8px;background:rgba(76,201,255,.08);color:#8bddff;font:700 10px/1 'Inter',system-ui,sans-serif;letter-spacing:.1em}
+  .tournament-sample-note>div{min-width:0;flex:1;padding:14px 16px;border:1px solid rgba(76,201,255,.22);border-radius:14px;background:rgba(76,201,255,.045)}
+  .tournament-sample-note strong{display:block;font:700 14px/1.3 'Inter',system-ui,sans-serif}
+  .tournament-sample-note p{margin:5px 0 8px;color:#a7b4c3;font:400 13px/1.6 'Inter',system-ui,sans-serif}
+  .tournament-sample-note a{color:#7bd8ff;text-decoration:none;font:650 12px/1.5 'Inter',system-ui,sans-serif}
+  .tournament-sample-note a:hover{text-decoration:underline}
+  @media(max-width:640px){.tournament-sample-note{padding:14px 16px;gap:10px}.tournament-sample-note>div{padding:12px}}
 </style>
