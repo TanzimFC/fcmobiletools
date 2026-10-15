@@ -20,7 +20,10 @@ assert.equal(new Set(goalIds).size, goalIds.length, 'goal ids must be unique');
 assert.ok(positionCodes.includes('CB') && positionCodes.includes('GK'), 'survey needs defenders and goalkeeper');
 for (const goal of PLAYSTYLE_GOALS) {
   assert.ok(goal.label && goal.hint && goal.positionCodes.length && goal.styleNames.length, 'each goal needs copy, positions and matches');
-  for (const code of goal.positionCodes) assert.ok(positionCodes.includes(code), 'goal uses unknown position: ' + code);
+  for (const code of goal.positionCodes) {
+    assert.ok(positionCodes.includes(code), 'goal uses unknown position: ' + code);
+    assert.ok(goal.styleNames.some((name) => (PLAYSTYLE_POSITION_FIT[name] || []).includes(code)), 'goal needs a position-suitable direct match: ' + goal.id + ' / ' + code);
+  }
   for (const name of goal.styleNames) assert.ok(styleNames.has(name), 'goal points to missing PlayStyle: ' + name);
 }
 for (const [group, profiles] of Object.entries(PLAYSTYLE_PROFILES)) {
