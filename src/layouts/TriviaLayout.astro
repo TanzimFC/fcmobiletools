@@ -20,7 +20,16 @@ const { title, description, image, canonical, robots, accentRgb, jsonLd = [], am
 const style = accentRgb ? `--tv-accent-rgb:${accentRgb};--tv-accent:rgb(${accentRgb});--g:${accentRgb}` : undefined;
 ---
 <BaseLayout title={title} description={description} image={image} canonical={canonical} robots={robots}>
-  <script is:inline slot="head">document.documentElement.classList.add('tv-js')</script>
+  <script is:inline slot="head">
+    (function () {
+      var root = document.documentElement;
+      root.classList.add('tv-js', 'tv-page');
+      // Fail-safe: if the effects script has not started within 3s, show everything instead of
+      // leaving reveal-on-scroll content invisible.
+      setTimeout(function () { if (!root.classList.contains('tv-fx')) root.classList.add('tv-nofx'); }, 3000);
+    })();
+  </script>
+  <link slot="head" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" />
   {jsonLd.map((data) => <script is:inline type="application/ld+json" slot="head" set:html={JSON.stringify(data)} />)}
   <main class="tv" style={style}>
     {ambient && (
@@ -39,3 +48,18 @@ const style = accentRgb ? `--tv-accent-rgb:${accentRgb};--tv-accent:rgb(${accent
     import '../scripts/trivia-fx.js';
   </script>
 </BaseLayout>
+
+<style is:global>
+  /* ------------------------------------------------------------------
+     Trivia pages: nothing sticks, floats or blocks the screen.
+     (Scoped to html.tv-page, so the rest of the site is untouched.)
+     ------------------------------------------------------------------ */
+  /* The floating navbar island scrolls away with the page instead of following you down. */
+  html.tv-page .fcmt { position: absolute; left: 0; right: 0; top: 0; }
+  /* The fixed bottom dock used to sit on top of answer buttons on phones. */
+  html.tv-page .fcmt-dock { display: none !important; }
+  /* The splash loader blocked every click for up to ~3s. Trivia is a game; it should be playable at once. */
+  html.tv-page .site-loader { display: none !important; }
+  /* One continuous near-black canvas from navbar to footer (no colour seam). */
+  html.tv-page, html.tv-page body { background: #08090c; }
+</style>

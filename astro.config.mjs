@@ -49,6 +49,8 @@ export default defineConfig({
       return ![
         '/a-nations-story',
         '/a-nations-story/',
+        '/trivia/play',
+        '/trivia/play/',
         '/admin',
         '/admin/',
         '/creator/login',

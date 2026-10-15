@@ -4,7 +4,7 @@ import Crumbs from '../../../components/trivia/Crumbs.astro';
 import { ICONS } from '../../../lib/triviaIcons.js';
 import { SEASON_RECAP_META as SR, SEASON_RECAP_QUESTION_COUNT } from '../../../data/seasonRecapTrivia.js';
 import { breadcrumbLd, absolute } from '../../../lib/triviaCore.js';
-import { SEASON_RECAP_ROUTE, EXTRA_TIME_ROUTE } from '../../../lib/triviaRoutes.js';
+import { SEASON_RECAP_ROUTE, EXTRA_TIME_ROUTE, playUrl } from '../../../lib/triviaRoutes.js';
 
 const title = 'FC Mobile Extra Time Trivia Answers (Season Recap Challenge)';
 const description = `FC Mobile Extra Time trivia explained, with every Season Recap (Challenge) answer: ${SEASON_RECAP_QUESTION_COUNT} questions, 2 options each, rounds of up to 30. Updated ${SR.verifiedLabel}.`;
@@ -16,22 +16,23 @@ const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', hre
     <span class="tv-eyebrow"><i class="tv-live"></i>Extra Time</span>
     <h1 class="tv-h1">Extra Time <span class="tv-grad">trivia.</span></h1>
     <p class="tv-lede">Limited-time trivia events inside FC Mobile. A round is usually 10 to 30 questions drawn from a larger pool, so the full answer list is the fastest way to stay ahead.</p>
+    <div class="tv-actions"><a class="tv-btn lg pulse" href={playUrl({ set: 'season-recap' })} data-play>Start practice <span set:html={ICONS.arrow} style="display:contents" /></a><a class="tv-btn ghost lg" href={SEASON_RECAP_ROUTE}>See all answers</a></div>
   </div>
 
   <section class="tv-wrap tv-section" style="padding-top:48px">
     <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">Live now</span><h2 class="tv-h2">Current event</h2></div></div>
-    <a class="tv-card tv-event tv-edge tv-spot tv-reveal" href={SEASON_RECAP_ROUTE}>
+    <article class="tv-card tv-event tv-edge tv-spot tv-reveal">
       <div class="tv-event-copy">
         <div class="tv-coll-meta"><span class="tv-pill live"><i class="tv-live"></i>Live</span><span class="tv-pill">{SR.window.label}</span></div>
-        <h2>{SR.name}</h2>
+        <h2><a class="tv-stretch" href={SEASON_RECAP_ROUTE}>{SR.name}</a></h2>
         <p>{SR.event}. Questions look back at the 2025/26 season and ahead to 2026/27 transfers. Each round serves {SR.format.perRound} questions with {SR.format.options} options.</p>
         <div class="tv-coll-meta"><span class="tv-pill accent"><b>{SEASON_RECAP_QUESTION_COUNT}</b> answers</span><span class="tv-pill"><b>{SR.format.options}</b> options</span><span class="tv-pill"><b>{SR.format.perRound}</b> per round</span></div>
-        <div class="tv-coll-go">View all answers <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div>
+        <div class="tv-coll-actions"><a class="tv-btn sm tv-coll-play" href={playUrl({ set: 'season-recap' })} data-play>Play now</a><div class="tv-coll-go">View all answers <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div></div>
       </div>
       <div class="tv-event-art tv-art" data-label="Season Recap">
         <img data-optional src={SR.banner.webp} width={SR.banner.width} height={SR.banner.height} alt={SR.banner.alt} loading="lazy" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />
       </div>
-    </a>
+    </article>
   </section>
 
   <section class="tv-wrap tv-section">
@@ -47,7 +48,7 @@ const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', hre
         <h2>More events, same place</h2>
         <p>New Extra Time trivia events will be added here as they release, each with its own answer list. Until then, Season Recap is the one to know.</p>
         <p>Want to train? Flashcards, a quiz and a Time Attack mode are one tap away.</p>
-        <div class="tv-actions"><a class="tv-btn" href={SEASON_RECAP_ROUTE}>All Season Recap answers</a><button class="tv-btn ghost" data-arena="season-recap" data-mode="quiz">Practice Quiz</button><button class="tv-btn ghost" data-arena="season-recap" data-mode="cards">Flashcards</button><button class="tv-btn gold" data-arena="season-recap" data-mode="attack">Time Attack</button></div>
+        <div class="tv-actions"><a class="tv-btn" href={playUrl({ set: 'season-recap', mode: 'quiz' })} data-play>Practice Quiz</a><a class="tv-btn ghost" href={playUrl({ set: 'season-recap', mode: 'cards' })}>Flashcards</a><a class="tv-btn gold" href={playUrl({ set: 'season-recap', mode: 'attack' })}>Time Attack</a><a class="tv-btn ghost" href={SEASON_RECAP_ROUTE}>All answers</a></div>
       </div>
     </div>
   </section>

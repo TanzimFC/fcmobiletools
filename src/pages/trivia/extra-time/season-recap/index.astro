@@ -6,7 +6,7 @@ import { SEASON_RECAP_META as SR, SEASON_RECAP_QUESTIONS as QS } from '../../../
 import { CATEGORIES, LEAGUES, countBy } from '../../../../lib/triviaExtraTime.js';
 import { ICONS } from '../../../../lib/triviaIcons.js';
 import { breadcrumbLd, absolute } from '../../../../lib/triviaCore.js';
-import { SEASON_RECAP_ROUTE } from '../../../../lib/triviaRoutes.js';
+import { SEASON_RECAP_ROUTE, playUrl } from '../../../../lib/triviaRoutes.js';
 
 const total = QS.length;
 const cats = countBy(QS, 'category', CATEGORIES);
@@ -43,9 +43,9 @@ const MORE = 6;
         </div>
         <div class="tv-actions">
           <a class="tv-btn" href="#finder">Find an answer <span set:html={ICONS.arrow} style="display:contents" /></a>
-          <button class="tv-btn ghost" data-arena="season-recap" data-mode="quiz">Practice Quiz</button>
-          <button class="tv-btn ghost" data-arena="season-recap" data-mode="cards">Flashcards</button>
-          <button class="tv-btn gold" data-arena="season-recap" data-mode="attack">Time Attack</button>
+          <a class="tv-btn ghost" href={playUrl({ set: 'season-recap', mode: 'quiz' })} data-play>Practice Quiz</a>
+          <a class="tv-btn ghost" href={playUrl({ set: 'season-recap', mode: 'cards' })}>Flashcards</a>
+          <a class="tv-btn gold" href={playUrl({ set: 'season-recap', mode: 'attack' })}>Time Attack</a>
         </div>
       </div>
     </div>
