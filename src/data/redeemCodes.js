@@ -17,8 +17,8 @@ export const REDEEM_CODES = [
     "releaseDate": "2026-10-13",
     "expiryDate": null,
     "region": "Global",
-    "lastVerified": "2026-10-13",
-    "notes": "Posted on EA Forums on October 13, 2026. Community trackers report a 116–119 OVR Anniversary Player Item; expiry and redemption limits may change."
+    "lastVerified": "2026-10-15",
+    "notes": "Reported active by recent FC Mobile code trackers on October 15, 2026. No expiry date published; community-reported reward is a 116–119 OVR Anniversary Player Item."
   },
   {
     "code": "GARUDAJUARA",
@@ -26,9 +26,9 @@ export const REDEEM_CODES = [
     "status": "active",
     "releaseDate": "2026-10-07",
     "expiryDate": null,
-    "region": "Global",
-    "lastVerified": "2026-10-07",
-    "notes": "New redeem code added October 7, 2026."
+    "region": "Global / Indonesia promo",
+    "lastVerified": "2026-10-14",
+    "notes": "2,000 Gems. ZenithFCM listed this as active globally on October 14; some other trackers list it as expired. Status is disputed; test on EA redemption before relying on it."
   },
   {
     "code": "MULLERTIME",
@@ -37,88 +37,88 @@ export const REDEEM_CODES = [
     "releaseDate": "2026-10-11",
     "expiryDate": null,
     "region": "Global",
-    "lastVerified": "2026-10-11",
-    "notes": "New code reported October 11, 2026; redeem soon because availability may change."
+    "lastVerified": "2026-10-15",
+    "notes": "115 OVR Thomas Müller CAM Player Item. Status disputed on October 15: some trackers still list it active, while ZenithFCM lists an October 14 expiry. Treat as unconfirmed and try the official redemption portal."
   },
   {
     "code": "3RDANNIVERSARY",
     "reward": "1x Draft Voucher + 100x Rank Up Tokens",
-    "status": "active",
+    "status": "expired",
     "releaseDate": "2026-10-04",
-    "expiryDate": null,
+    "expiryDate": "2026-10-11",
     "region": "Global",
-    "lastVerified": "2026-10-06",
-    "notes": "Released starting October 4, 2026."
+    "lastVerified": "2026-10-15",
+    "notes": "Archived as expired by recent code trackers; reported expiry date October 11, 2026."
   },
   {
     "code": "27UPDATE",
     "reward": "1x Draft Voucher + 100x Rank Up Tokens",
     "status": "expired",
     "releaseDate": "2026-09-26",
-    "expiryDate": "2026-09-29",
+    "expiryDate": "2026-10-04",
     "region": "Global",
-    "lastVerified": "2026-09-30",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired. Recent code trackers report an October 4, 2026 expiry."
   },
   {
     "code": "ZLATANWORLDPREMIERE",
     "reward": "117 Zlatan Player Item",
     "status": "expired",
     "releaseDate": "2026-09-15",
-    "expiryDate": "2026-09-18",
+    "expiryDate": "2026-09-25",
     "region": "Global",
-    "lastVerified": "2026-09-27",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of September 25, 2026."
   },
   {
     "code": "ONEMOREDRAFT",
     "reward": "FC Draft Voucher",
     "status": "expired",
     "releaseDate": "2026-09-06",
-    "expiryDate": null,
+    "expiryDate": "2026-09-16",
     "region": "Global",
-    "lastVerified": "2026-09-16",
-    "notes": "Previously active; now expired."
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of September 16, 2026."
   },
   {
     "code": "BOMBAGOL",
     "reward": "114–117 OVR Super Lig Player",
     "status": "expired",
     "releaseDate": "2026-09-05",
-    "expiryDate": null,
+    "expiryDate": "2026-09-16",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of September 16, 2026."
   },
   {
     "code": "AUFGEHTS",
     "reward": "FC Draft Voucher",
     "status": "expired",
     "releaseDate": "2026-08-28",
-    "expiryDate": null,
+    "expiryDate": "2026-09-05",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of September 5, 2026."
   },
   {
     "code": "NUMEROUNO",
     "reward": "100 Rank Up Points + FC Draft Voucher",
     "status": "expired",
     "releaseDate": "2026-08-25",
-    "expiryDate": null,
+    "expiryDate": "2026-09-05",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of September 5, 2026."
   },
   {
     "code": "CLEANSLATE",
     "reward": "114–118 OVR EPL Player",
     "status": "expired",
     "releaseDate": "2026-08-20",
-    "expiryDate": null,
+    "expiryDate": "2026-09-05",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of September 5, 2026."
   },
   {
     "code": "DOMINOSFC",
@@ -135,60 +135,60 @@ export const REDEEM_CODES = [
     "reward": "FC Draft Voucher",
     "status": "expired",
     "releaseDate": "2026-08-15",
-    "expiryDate": null,
+    "expiryDate": "2026-08-21",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of August 21, 2026."
   },
   {
     "code": "MIDSEASONFINALDAY",
     "reward": "100 Rank Up Points + FC Draft Voucher",
     "status": "expired",
     "releaseDate": "2026-08-09",
-    "expiryDate": null,
+    "expiryDate": "2026-08-12",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of August 12, 2026."
   },
   {
     "code": "CHAMPIONSGO",
     "reward": "3,000 Gems",
     "status": "expired",
     "releaseDate": "2026-08-08",
-    "expiryDate": null,
+    "expiryDate": "2026-08-12",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of August 12, 2026."
   },
   {
     "code": "MIDSEASONBANGKOK",
     "reward": "1,000 Gems + 100 Rank Up Points",
     "status": "expired",
     "releaseDate": "2026-08-08",
-    "expiryDate": null,
+    "expiryDate": "2026-08-12",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of August 12, 2026."
   },
   {
     "code": "MIDSEASONKICKOFF",
     "reward": "1,000 Gems + 100 Rank Up Points",
     "status": "expired",
     "releaseDate": "2026-08-07",
-    "expiryDate": null,
+    "expiryDate": "2026-08-12",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of August 12, 2026."
   },
   {
     "code": "CHAMPSWEEKEND",
     "reward": "150 Star Shards",
     "status": "expired",
     "releaseDate": "2026-08-01",
-    "expiryDate": null,
+    "expiryDate": "2026-08-05",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of August 5, 2026."
   },
   {
     "code": "ALLSTARSLIVE",
@@ -215,60 +215,60 @@ export const REDEEM_CODES = [
     "reward": "100 Rank Up Points + FC Draft Voucher",
     "status": "expired",
     "releaseDate": "2026-07-28",
-    "expiryDate": null,
+    "expiryDate": "2026-08-05",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of August 5, 2026."
   },
   {
     "code": "FIESTAMX",
     "reward": "114–118 OVR Mexican Player",
     "status": "expired",
     "releaseDate": "2026-07-24",
-    "expiryDate": null,
+    "expiryDate": "2026-08-06",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of August 6, 2026."
   },
   {
     "code": "LAFINAL",
     "reward": "115–118 OVR TWG Player",
     "status": "expired",
     "releaseDate": "2026-07-19",
-    "expiryDate": null,
+    "expiryDate": "2026-07-28",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of July 28, 2026."
   },
   {
     "code": "NATIONALPRIDE",
     "reward": "100 Rank Up Points + FC Draft Voucher",
     "status": "expired",
     "releaseDate": "2026-07-18",
-    "expiryDate": null,
+    "expiryDate": "2026-07-28",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of July 28, 2026."
   },
   {
     "code": "CHASETHEGLORY",
     "reward": "100 Rank Up Points + FC Draft Voucher",
     "status": "expired",
     "releaseDate": "2026-07-17",
-    "expiryDate": null,
+    "expiryDate": "2026-07-27",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of July 27, 2026."
   },
   {
     "code": "ALLORNOTHING",
     "reward": "115–118 OVR TWG Player",
     "status": "expired",
     "releaseDate": "2026-07-15",
-    "expiryDate": null,
+    "expiryDate": "2026-07-24",
     "region": "Global",
-    "lastVerified": "2026-09-12",
-    "notes": ""
+    "lastVerified": "2026-10-15",
+    "notes": "Expired; code trackers report an expiry date of July 24, 2026."
   },
   {
     "code": "HIGHERSTAKES",
