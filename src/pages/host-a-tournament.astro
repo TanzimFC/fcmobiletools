@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/tournament-premium.css';
+import { DISCORD_URL, HOST_FORM_NOTE } from '../data/tournamentConfig.js';
+const perks = [
+  ['Your brand, our engine', 'Brackets, group tables and live results under your event name.'],
+  ['Player-run match days', 'Players agree times, upload proof and confirm each other. Your mods only handle disputes.'],
+  ['Screenshot verification', 'Every result ships with evidence and a clear audit trail.'],
+  ['Premium presentation', 'A tournament page your community will be proud to share.'],
+];
+---
+<BaseLayout title="Host a Tournament" description="Host an FC Mobile tournament with FCMOBILETOOLS. Premium brackets, player-verified results and Discord support.">
+  <main class="tp"><div class="tp-wrap">
+    <header class="tp-hero">
+      <span class="tp-eyebrow" data-reveal>For communities & creators</span>
+      <h1 class="tp-title" data-reveal>Host a tournament <span class="tp-shine">with us</span></h1>
+      <p class="tp-lede" data-reveal>{HOST_FORM_NOTE}</p>
+      <div style="margin-top:32px" data-reveal><a class="tp-btn discord" href={DISCORD_URL} rel="noopener">Contact us on Discord</a></div>
+    </header>
+    <div class="tp-grid">{perks.map(([t, d]) => <div class="tp-glass" data-tilt data-reveal><div class="in-c"><h3 style="font-size:22px;margin-bottom:10px">{t}</h3><p style="color:#9bacbd;line-height:1.65;margin:0">{d}</p></div></div>)}</div>
+    <section class="tp-sec"><h2>How hosting starts</h2>
+      <ol class="tp-steps"><li data-reveal><b>Say hello</b><p>Open a ticket in our Discord with your idea and audience size.</p></li><li data-reveal><b>We shape it</b><p>Format, dates, rules and prizes agreed together.</p></li><li data-reveal><b>You launch</b><p>Players register, we publish the arena, your event goes live.</p></li></ol></section>
+  </div></main>
+</BaseLayout>
+<script>import { initFx } from '../lib/tournamentFx.js'; initFx();</script>
