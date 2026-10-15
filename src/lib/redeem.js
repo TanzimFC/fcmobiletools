@@ -83,87 +83,118 @@ export function ensureRedeemSchema(db) {
 
       // One-time migrations keep the live D1 database in sync with new codes
       // without replaying the full seed or overwriting admin edits.
-      const migrationVersion = '2026-10-15-bancapnhatsn1tuoi';
+      const migrationVersion = '2026-10-15-code-status-refresh';
       const migration = await db.prepare("SELECT value FROM redeem_meta WHERE key='seed-migrations'").first();
       if (migration?.value !== migrationVersion) {
-        const c = {
-          code: 'GARUDAJUARA',
-          reward: '2,000 Gems',
-          status: 'active',
-          releaseDate: '2026-10-07',
-          expiryDate: null,
-          region: 'Global',
-          lastVerified: '2026-10-07',
-          notes: 'New redeem code added October 7, 2026.',
-        };
-        await db.prepare([
-          "INSERT OR IGNORE INTO redeem_codes",
-          "  (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)",
-          "  VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')",
-        ].join("\n")).bind(
-          c.code,
-          c.reward,
-          c.status,
-          c.releaseDate,
-          c.expiryDate,
-          c.region,
-          c.lastVerified,
-          c.notes,
-          c.releaseDate + 'T00:00:00.000Z',
-          new Date().toISOString(),
-        ).run();
-        const muller = {
-          code: 'MULLERTIME',
-          reward: '115 OVR Thomas Müller CAM Player Item',
-          status: 'active',
-          releaseDate: '2026-10-11',
-          expiryDate: null,
-          region: 'Global',
-          lastVerified: '2026-10-11',
-          notes: 'New code reported October 11, 2026; redeem soon because availability may change.',
-        };
-        await db.prepare([
-          "INSERT OR IGNORE INTO redeem_codes",
-          "  (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)",
-          "  VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')",
-        ].join("\n")).bind(
-          muller.code,
-          muller.reward,
-          muller.status,
-          muller.releaseDate,
-          muller.expiryDate,
-          muller.region,
-          muller.lastVerified,
-          muller.notes,
-          muller.releaseDate + 'T00:00:00.000Z',
-          new Date().toISOString(),
-        ).run();
-        const vietnam = {
-          code: 'BANCAPNHATSN1TUOI',
-          reward: '2 FC Draft Vouchers + 100M Coins + 300 Rank Up Points',
-          status: 'active',
-          releaseDate: '2026-10-15',
-          expiryDate: '2026-10-19',
-          region: 'Vietnam only',
-          lastVerified: '2026-10-15',
-          notes: 'Official EA SPORTS FC Mobile Vietnam post: available Oct 15–19, 2026. Vietnam version only; not for the global game.',
-        };
-        await db.prepare([
-          "INSERT OR IGNORE INTO redeem_codes",
-          "  (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)",
-          "  VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')",
-        ].join("\n")).bind(
-          vietnam.code,
-          vietnam.reward,
-          vietnam.status,
-          vietnam.releaseDate,
-          vietnam.expiryDate,
-          vietnam.region,
-          vietnam.lastVerified,
-          vietnam.notes,
-          vietnam.releaseDate + 'T00:00:00.000Z',
-          new Date().toISOString(),
-        ).run();
+        const now = new Date().toISOString();
+        const refreshedCodes = [
+          {
+            code: 'PUMPKINSPICEPACK',
+            reward: '116–119 OVR 3rd Anniversary Player Item (community-reported)',
+            status: 'active',
+            releaseDate: '2026-10-13',
+            expiryDate: null,
+            region: 'Global',
+            lastVerified: '2026-10-15',
+            notes: 'Reported active by recent FC Mobile code trackers on October 15, 2026. No expiry date published; community-reported reward is a 116–119 OVR Anniversary Player Item.',
+          },
+          {
+            code: 'GARUDAJUARA',
+            reward: '2,000 Gems',
+            status: 'active',
+            releaseDate: '2026-10-07',
+            expiryDate: null,
+            region: 'Global / Indonesia promo',
+            lastVerified: '2026-10-14',
+            notes: '2,000 Gems. ZenithFCM listed this as active globally on October 14; some other trackers list it as expired. Status is disputed; test on EA redemption before relying on it.',
+          },
+          {
+            code: 'MULLERTIME',
+            reward: '115 OVR Thomas Müller CAM Player Item',
+            status: 'active',
+            releaseDate: '2026-10-11',
+            expiryDate: null,
+            region: 'Global',
+            lastVerified: '2026-10-15',
+            notes: '115 OVR Thomas Müller CAM Player Item. Status disputed on October 15: some trackers still list it active, while ZenithFCM lists an October 14 expiry. Treat as unconfirmed and try the official redemption portal.',
+          },
+          {
+            code: '3RDANNIVERSARY',
+            reward: '1x Draft Voucher + 100x Rank Up Tokens',
+            status: 'expired',
+            releaseDate: '2026-10-04',
+            expiryDate: '2026-10-11',
+            region: 'Global',
+            lastVerified: '2026-10-15',
+            notes: 'Archived as expired by recent code trackers; reported expiry date October 11, 2026.',
+          },
+          {
+            code: 'BANCAPNHATSN1TUOI',
+            reward: '2 FC Draft Vouchers + 100M Coins + 300 Rank Up Points',
+            status: 'active',
+            releaseDate: '2026-10-15',
+            expiryDate: '2026-10-19',
+            region: 'Vietnam only',
+            lastVerified: '2026-10-15',
+            notes: 'Official EA SPORTS FC Mobile Vietnam post: available Oct 15–19, 2026. Vietnam version only; not for the global game.',
+          },
+        ];
+
+        // Insert missing rows, then refresh only these explicitly rechecked records.
+        // This leaves unrelated codes and admin-maintained records untouched.
+        for (const c of refreshedCodes) {
+          await db.prepare([
+            "INSERT OR IGNORE INTO redeem_codes",
+            "  (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)",
+            "  VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')",
+          ].join("\n")).bind(
+            c.code, c.reward, c.status, c.releaseDate, c.expiryDate,
+            c.region, c.lastVerified, c.notes,
+            c.releaseDate + 'T00:00:00.000Z', now,
+          ).run();
+
+          await db.prepare([
+            "UPDATE redeem_codes",
+            "SET reward=?, status=?, release_date=?, expiry_date=?, region=?,",
+            "    last_verified=?, notes=?, updated_at=?, updated_by='seed-migration'",
+            "WHERE code=?",
+          ].join("\n")).bind(
+            c.reward, c.status, c.releaseDate, c.expiryDate, c.region,
+            c.lastVerified, c.notes, now, c.code,
+          ).run();
+        }
+
+        // Add explicit expiry dates for older codes that trackers have archived.
+        const knownExpired = [
+          ['27UPDATE', '2026-10-04', 'Expired. Recent code trackers report an October 4, 2026 expiry.'],
+          ['ZLATANWORLDPREMIERE', '2026-09-25', 'Expired; code trackers report an expiry date of September 25, 2026.'],
+          ['ONEMOREDRAFT', '2026-09-16', 'Expired; code trackers report an expiry date of September 16, 2026.'],
+          ['BOMBAGOL', '2026-09-16', 'Expired; code trackers report an expiry date of September 16, 2026.'],
+          ['AUFGEHTS', '2026-09-05', 'Expired; code trackers report an expiry date of September 5, 2026.'],
+          ['NUMEROUNO', '2026-09-05', 'Expired; code trackers report an expiry date of September 5, 2026.'],
+          ['CLEANSLATE', '2026-09-05', 'Expired; code trackers report an expiry date of September 5, 2026.'],
+          ['POWEROFFOOTBALL', '2026-08-21', 'Expired; code trackers report an expiry date of August 21, 2026.'],
+          ['MIDSEASONFINALDAY', '2026-08-12', 'Expired; code trackers report an expiry date of August 12, 2026.'],
+          ['CHAMPIONSGO', '2026-08-12', 'Expired; code trackers report an expiry date of August 12, 2026.'],
+          ['MIDSEASONBANGKOK', '2026-08-12', 'Expired; code trackers report an expiry date of August 12, 2026.'],
+          ['MIDSEASONKICKOFF', '2026-08-12', 'Expired; code trackers report an expiry date of August 12, 2026.'],
+          ['FIESTAMX', '2026-08-06', 'Expired; code trackers report an expiry date of August 6, 2026.'],
+          ['GOLDENERA', '2026-08-05', 'Expired; code trackers report an expiry date of August 5, 2026.'],
+          ['CHAMPSWEEKEND', '2026-08-05', 'Expired; code trackers report an expiry date of August 5, 2026.'],
+          ['NATIONALPRIDE', '2026-07-28', 'Expired; code trackers report an expiry date of July 28, 2026.'],
+          ['LAFINAL', '2026-07-28', 'Expired; code trackers report an expiry date of July 28, 2026.'],
+          ['CHASETHEGLORY', '2026-07-27', 'Expired; code trackers report an expiry date of July 27, 2026.'],
+          ['ALLORNOTHING', '2026-07-24', 'Expired; code trackers report an expiry date of July 24, 2026.'],
+        ];
+        for (const [code, expiryDate, notes] of knownExpired) {
+          await db.prepare([
+            "UPDATE redeem_codes",
+            "SET status='expired', expiry_date=?, last_verified='2026-10-15', notes=?,",
+            "    updated_at=?, updated_by='seed-migration'",
+            "WHERE code=?",
+          ].join("\n")).bind(expiryDate, notes, now, code).run();
+        }
+
         await db.prepare("INSERT OR REPLACE INTO redeem_meta (key,value) VALUES ('seed-migrations',?)")
           .bind(migrationVersion)
           .run();
