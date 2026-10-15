@@ -5,7 +5,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
 
 <BaseLayout
   title="FC Mobile PlayStyle Finder | FCMOBILETOOLS"
-  description="Answer three short questions to find two FC Mobile PlayStyles matched to your position, on-pitch job and preferred player type."
+  description="Answer a short position-aware survey to find the best FC Mobile PlayStyle match for your player's role."
   canonical="/player/playstyle-finder/"
 >
   <main class="psf-page">
@@ -16,10 +16,10 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
         </nav>
         <p class="psf-kicker"><span></span> FC MOBILE / PLAYSTYLE BUILDER</p>
         <h1>Find your two.<br /><em>Build for the role.</em></h1>
-        <p class="psf-lede">Tell us where the player plays, what you need them to do, and what kind of player you want. Get two ranked PlayStyles that fit your answers.</p>
+        <p class="psf-lede">Tell us where the player plays, how you use them, and what they need to do better. Get role-aware recommendations built from the actual PlayStyle guide.</p>
         <div class="psf-hero-links">
           <a href="/player/playstyle/">Browse every PlayStyle <span aria-hidden="true">↗</span></a>
-          <span>3 questions <i></i> 2 recommendations</span>
+          <span>3 questions <i></i> UP TO 2 MATCHES</span>
         </div>
       </div>
     </section>
@@ -102,7 +102,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
         <div>
           <span class="psf-question-number">YOUR TWO MATCHES</span>
           <h2 id="psfResultsTitle">Two PlayStyles for your build.</h2>
-          <p>Ranked from your position, main job and player type. Compare each level before you decide.</p>
+          <p id="psfResultsIntroText">Ranked from your position, main job and player type. Compare each level before you decide.</p>
         </div>
         <button class="psf-edit-button" id="psfEditAnswers" type="button">Edit answers <span aria-hidden="true">↗</span></button>
       </div>
@@ -302,8 +302,14 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
         });
         resultGrid.replaceChildren();
         recommendations.forEach((style, index) => resultGrid.append(buildRecommendationCard(style, index)));
-        results.hidden = recommendations.length !== 2;
-        if (recommendations.length !== 2) {
+        const expectedCount = state.position === 'GK' ? 1 : 2;
+        resultGrid.classList.toggle('is-single', recommendations.length === 1);
+        results.hidden = recommendations.length !== expectedCount;
+        root.querySelector('#psfResultsTitle').textContent = state.position === 'GK' ? 'One PlayStyle for your goalkeeper.' : 'Two PlayStyles for your build.';
+        root.querySelector('#psfResultsIntroText').textContent = state.position === 'GK'
+          ? 'Goalkeepers have one PlayStyle slot in this finder. Here is the best fit for how you use your keeper.'
+          : 'Ranked from your position, main job and player type. Compare each level before you decide.';
+        if (recommendations.length !== expectedCount) {
           status.textContent = 'We could not build a complete match. Go back and choose another answer.';
           return;
         }
@@ -409,7 +415,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
     })();
   </script>
 
-  <style>
+  <style is:global>
     .psf-page {
       --psf-bg: #071018;
       --psf-panel: #0f1a26;
@@ -523,7 +529,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
     .psf-guide-link span { color:var(--psf-blue); }
     .psf-clear-button { width:100%; min-height:35px; border:1px solid var(--psf-line); color:#9fb0bc; background:rgba(255,255,255,.02); }
     .psf-clear-button:hover { border-color:rgba(76,201,255,.28); color:#eaf8ff; }
-    .psf-results { padding-top:43px; padding-bottom:58px; scroll-margin-top:20px; }
+    .psf-results { padding-top:43px; padding-bottom:58px; scroll-margin-top:20px; animation:psf-section-enter .48s cubic-bezier(.2,.75,.25,1) both; }
     .psf-results-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:17px; }
     .psf-results-heading h2 { font-size:clamp(27px,3vw,36px); }
     .psf-edit-button { flex:0 0 auto; min-height:36px; padding:0 12px; border:1px solid var(--psf-line); color:#d7e6ef; background:rgba(255,255,255,.025); }
@@ -555,6 +561,27 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
     .psf-level-copy { min-height:55px; margin:11px 0 0; color:#cedbe4; font:400 11px/1.75 var(--font-body,Inter,sans-serif); }
     .psf-results-note { margin:15px 0 0; color:#718797; font:400 10px/1.7 var(--font-body,Inter,sans-serif); }
     .psf-page button:focus-visible,.psf-page a:focus-visible { outline:2px solid var(--psf-blue); outline-offset:3px; }
+    @keyframes psf-section-enter {
+      from { opacity:0; transform:translateY(12px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+    @keyframes psf-card-enter {
+      from { opacity:0; transform:translateY(10px) scale(.992); }
+      to { opacity:1; transform:translateY(0) scale(1); }
+    }
+    .psf-hero .psf-shell { animation:psf-section-enter .55s cubic-bezier(.2,.75,.25,1) both; }
+    .psf-progress-card { animation:psf-section-enter .45s .05s cubic-bezier(.2,.75,.25,1) both; }
+    .psf-survey-card { animation:psf-section-enter .5s .1s cubic-bezier(.2,.75,.25,1) both; }
+    .psf-summary-card { animation:psf-section-enter .52s .14s cubic-bezier(.2,.75,.25,1) both; }
+    .psf-result-card { animation:psf-card-enter .42s cubic-bezier(.2,.75,.25,1) both; }
+    .psf-result-card:nth-child(2) { animation-delay:.08s; }
+    .psf-result-grid.is-single { grid-template-columns:minmax(0,680px); }
+    .psf-result-grid.is-single .psf-result-card { width:100%; }
+    .psf-position-card::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.07),transparent 72%); transform:translateX(-35%); transition:opacity .2s,transform .35s; }
+    .psf-position-card:hover::after { opacity:1; transform:translateX(35%); }
+    .psf-choice:hover { transform:translateY(-1px); }
+    .psf-result-card { transition:border-color .2s,transform .2s,box-shadow .2s; }
+    .psf-result-card:hover { transform:translateY(-2px); border-color:rgba(76,201,255,.19); box-shadow:0 16px 42px rgba(0,0,0,.16); }
     @media (max-width: 930px) {
       .psf-builder { grid-template-columns:minmax(0,1fr) 260px; gap:12px; }
       .psf-survey-card { padding:18px; }
@@ -600,8 +627,9 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
       .psf-result-card { padding:15px; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .psf-progress-track span,.psf-position-card,.psf-choice,.psf-back-button,.psf-next-button,.psf-edit-button,.psf-clear-button { transition:none; }
-      .psf-position-card:hover { transform:none; }
+      .psf-hero .psf-shell,.psf-progress-card,.psf-survey-card,.psf-summary-card,.psf-results,.psf-result-card { animation:none !important; }
+      .psf-progress-track span,.psf-position-card,.psf-position-card::after,.psf-choice,.psf-back-button,.psf-next-button,.psf-edit-button,.psf-clear-button,.psf-result-card { transition:none !important; }
+      .psf-position-card:hover,.psf-choice:hover,.psf-result-card:hover { transform:none; box-shadow:none; }
     }
   </style>
 </BaseLayout>
