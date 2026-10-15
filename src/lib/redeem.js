@@ -83,7 +83,7 @@ export function ensureRedeemSchema(db) {
 
       // One-time migrations keep the live D1 database in sync with new codes
       // without replaying the full seed or overwriting admin edits.
-      const migrationVersion = '2026-10-11-mullertime';
+      const migrationVersion = '2026-10-15-bancapnhatsn1tuoi';
       const migration = await db.prepare("SELECT value FROM redeem_meta WHERE key='seed-migrations'").first();
       if (migration?.value !== migrationVersion) {
         const c = {
@@ -136,6 +136,32 @@ export function ensureRedeemSchema(db) {
           muller.lastVerified,
           muller.notes,
           muller.releaseDate + 'T00:00:00.000Z',
+          new Date().toISOString(),
+        ).run();
+        const vietnam = {
+          code: 'BANCAPNHATSN1TUOI',
+          reward: '2 FC Draft Vouchers + 100M Coins + 300 Rank Up Points',
+          status: 'active',
+          releaseDate: '2026-10-15',
+          expiryDate: '2026-10-19',
+          region: 'Vietnam only',
+          lastVerified: '2026-10-15',
+          notes: 'Official EA SPORTS FC Mobile Vietnam post: available Oct 15–19, 2026. Vietnam version only; not for the global game.',
+        };
+        await db.prepare([
+          "INSERT OR IGNORE INTO redeem_codes",
+          "  (code,reward,status,release_date,expiry_date,region,last_verified,notes,created_at,updated_at,updated_by)",
+          "  VALUES (?,?,?,?,?,?,?,?,?,?,'seed-migration')",
+        ].join("\n")).bind(
+          vietnam.code,
+          vietnam.reward,
+          vietnam.status,
+          vietnam.releaseDate,
+          vietnam.expiryDate,
+          vietnam.region,
+          vietnam.lastVerified,
+          vietnam.notes,
+          vietnam.releaseDate + 'T00:00:00.000Z',
           new Date().toISOString(),
         ).run();
         await db.prepare("INSERT OR REPLACE INTO redeem_meta (key,value) VALUES ('seed-migrations',?)")
