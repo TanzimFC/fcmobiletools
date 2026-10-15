@@ -1,5 +1,6 @@
 import { TOURNAMENT_FORMATS, getTournamentFormat } from './tournaments/formats.js';
 import { buildTournamentStructure } from './tournaments/engine.js';
+import { isHiddenInternalTournamentSlug } from './data/tournamentSamples.js';
 
 const TOURNAMENT_COOKIE='fcm_tournament_session';
 const SESSION_MAX_AGE=60*60*8;
@@ -206,7 +207,6 @@ async function getTournament(env,id) {
   return normalized;
 }
 
-function isDemoTournamentSlug(slug){return /^(?:format-test-|fcmobiletools-sample-championship$)/i.test(String(slug||''));}
 async function getTournamentBySlug(env,slug){
   const rows=await sb(env,'tournaments?slug=eq.'+encodeURIComponent(slug)+'&select=*&limit=1');
   if(!rows?.[0])return null;
@@ -214,7 +214,7 @@ async function getTournamentBySlug(env,slug){
 }
 async function publicSnapshot(env){
   const rows=await sb(env,"tournaments?is_public=eq.true&status=in.(published,in_progress,completed)&select=*&order=updated_at.desc");
-  const out=[]; for(const row of rows||[]){if(isDemoTournamentSlug(row.slug))continue;out.push(await getTournament(env,row.id));}
+  const out=[]; for(const row of rows||[]){if(isHiddenInternalTournamentSlug(row.slug))continue;out.push(await getTournament(env,row.id));}
   return out;
 }
 async function github(env,path,options={}){
@@ -272,7 +272,7 @@ export async function tournamentWorkerRoute(request,env,url){
     const publicTournaments=await publicSnapshot(env).catch(()=>[]);
     if(!publicTournaments.length) return json({error:'Tournaments are not open yet.'},404);
     const t=await getTournamentBySlug(env,url.searchParams.get('slug')||'');
-    return t&&t.isPublic&&!isDemoTournamentSlug(t.slug)?json(t):json({error:'Tournament not found.'},404);
+    return t&&t.isPublic&&!isHiddenInternalTournamentSlug(t.slug)?json(t):json({error:'Tournament not found.'},404);
   }
   if(path.startsWith('/api/tournament/')){
     const me=await identity(request,env);
@@ -348,7 +348,7 @@ export async function tournamentWorkerRoute(request,env,url){
         if(action==='publish'){
           if(me.role!=='admin'&&me.role!=='organizer')return json({error:'Not authorized to publish.'},403);
           const current=await getTournament(env,id);if(!current)return json({error:'Tournament not found.'},404);
-          if(isDemoTournamentSlug(current.slug))return json({error:'Test tournaments cannot be published to the public site.'},409);
+          if(isHiddenInternalTournamentSlug(current.slug))return json({error:'Test tournaments cannot be published to the public site.'},409);
           await sb(env,'tournaments?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({is_public:true,status:current.status==='completed'?'completed':'published',updated_at:new Date().toISOString()})});
           const published=await publishSnapshot(env);
           await sb(env,'tournament_audit_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{tournament_id:id,actor_key:me.actorKey,actor_role:me.role,action:'publish',payload:{gitCommitSha:published.commitSha}}])});
