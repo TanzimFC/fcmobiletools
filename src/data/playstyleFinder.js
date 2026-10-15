@@ -26,7 +26,7 @@ export const PLAYSTYLE_POSITION_FIT = {
   'Slide Tackle': ['CB', 'LB', 'RB', 'CDM'],
   'Precision Header': ['ST', 'CF', 'CB'],
   'Chip Shot': ['ST', 'CF', 'CAM', 'LW', 'RW'],
-  'Clinical Finisher': ['ST', 'CF', 'LW', 'RW', 'CAM'],
+  'Clinical Finisher': ['ST', 'CF', 'LW', 'RW', 'CAM', 'CM'],
   'Dead Ball': ['ST', 'CF', 'LW', 'RW', 'CAM', 'CM', 'CDM', 'LM', 'RM', 'LB', 'RB', 'CB'],
   'Finesse Shot': ['ST', 'CF', 'LW', 'RW', 'CAM', 'CM'],
   'Penalty Expert': ['ST', 'CF', 'CAM'],
