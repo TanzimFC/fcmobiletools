@@ -12,48 +12,62 @@ function makeMockD1() {
   const statements = [];
   const key = (account, window, bucket) => [account, window, bucket].join('|');
 
+  async function runStatement(sql, args = []) {
+    statements.push({ kind: 'run', sql, args });
+    if (sql.includes('CREATE TABLE') || sql.includes('CREATE INDEX')) {
+      return { success: true, meta: { changes: 0 } };
+    }
+    if (sql.startsWith('DELETE FROM fcm_image_upload_rate_limits')) {
+      let changes = 0;
+      for (const [rowKey, value] of rows) {
+        if (value.expires_at_ms <= args[0]) {
+          rows.delete(rowKey);
+          changes += 1;
+        }
+      }
+      return { success: true, meta: { changes } };
+    }
+    throw new Error('Unexpected D1 run statement');
+  }
+
+  async function allStatement(sql, args) {
+    statements.push({ kind: 'all', sql, args });
+    assert.match(sql, /WITH usage AS/);
+    assert.match(sql, /ON CONFLICT \(account_id, window_name, bucket\)/);
+    assert.match(sql, /RETURNING window_name, upload_count/);
+    const [burstAccount, burstBucket, dailyAccount, dailyBucket, nextBurstBucket, burstExpiry, nextDailyBucket, dailyExpiry, account] = args;
+    assert.equal(burstAccount, dailyAccount);
+    assert.equal(burstAccount, account);
+    const burstKey = key(account, 'burst', burstBucket);
+    const dailyKey = key(account, 'daily', dailyBucket);
+    const burstCount = rows.get(burstKey)?.upload_count || 0;
+    const dailyCount = rows.get(dailyKey)?.upload_count || 0;
+    if (burstCount >= 10 || dailyCount >= 50) return { results: [] };
+
+    rows.set(burstKey, { upload_count: burstCount + 1, expires_at_ms: burstExpiry });
+    rows.set(dailyKey, { upload_count: dailyCount + 1, expires_at_ms: dailyExpiry });
+    assert.equal(nextBurstBucket, burstBucket);
+    assert.equal(nextDailyBucket, dailyBucket);
+    return {
+      results: [
+        { window_name: 'burst', upload_count: burstCount + 1 },
+        { window_name: 'daily', upload_count: dailyCount + 1 }
+      ]
+    };
+  }
+
   return {
     rows,
     statements,
     prepare(sql) {
+      // D1 permits parameter-free statements to be executed directly with
+      // preparedStatement.run(). Bound statements use bind(...).run()/all().
       return {
+        run: () => runStatement(sql),
         bind(...args) {
           return {
-            run: async () => {
-              statements.push({ kind: 'run', sql, args });
-              if (sql.includes('CREATE TABLE') || sql.includes('CREATE INDEX')) return { success: true, meta: { changes: 0 } };
-              if (sql.startsWith('DELETE FROM fcm_image_upload_rate_limits')) {
-                let changes = 0;
-                for (const [rowKey, value] of rows) {
-                  if (value.expires_at_ms <= args[0]) { rows.delete(rowKey); changes += 1; }
-                }
-                return { success: true, meta: { changes } };
-              }
-              throw new Error('Unexpected D1 run statement');
-            },
-            all: async () => {
-              statements.push({ kind: 'all', sql, args });
-              assert.match(sql, /WITH usage AS/);
-              assert.match(sql, /ON CONFLICT \(account_id, window_name, bucket\)/);
-              assert.match(sql, /RETURNING window_name, upload_count/);
-              const [burstAccount, burstBucket, dailyAccount, dailyBucket, nextBurstBucket, burstExpiry, nextDailyBucket, dailyExpiry, account] = args;
-              assert.equal(burstAccount, dailyAccount);
-              assert.equal(burstAccount, account);
-              const burstKey = key(account, 'burst', burstBucket);
-              const dailyKey = key(account, 'daily', dailyBucket);
-              const burstCount = rows.get(burstKey)?.upload_count || 0;
-              const dailyCount = rows.get(dailyKey)?.upload_count || 0;
-              if (burstCount >= 10 || dailyCount >= 50) return { results: [] };
-
-              rows.set(burstKey, { upload_count: burstCount + 1, expires_at_ms: burstExpiry });
-              rows.set(dailyKey, { upload_count: dailyCount + 1, expires_at_ms: dailyExpiry });
-              assert.equal(nextBurstBucket, burstBucket);
-              assert.equal(nextDailyBucket, dailyBucket);
-              return { results: [
-                { window_name: 'burst', upload_count: burstCount + 1 },
-                { window_name: 'daily', upload_count: dailyCount + 1 }
-              ] };
-            }
+            run: () => runStatement(sql, args),
+            all: () => allStatement(sql, args)
           };
         }
       };
