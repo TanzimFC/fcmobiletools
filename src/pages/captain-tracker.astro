@@ -164,16 +164,16 @@ const barPoints = (values, width = 220, height = 64) => {
       </div>
     </section>
 
-    <section class="ct-votes" aria-label="Community captain picks including estimated cross-platform support">
+    <section class="ct-votes" aria-label="Verified community captain votes">
       <header class="ct-vote-head">
         <div>
           <span class="ct-section-kicker">Community support</span>
           <h2>Who are you backing?</h2>
-          <p>Pick one of the six captains. You can change your choice until the first fixture begins.</p>
+          <p>Pick one of the six captains. Your account gets one vote, and you can change it until the first fixture begins.</p>
         </div>
         <div class="ct-vote-total">
           <strong data-vote-total>—</strong>
-          <span>combined support</span>
+          <span>verified votes</span>
         </div>
       </header>
 
@@ -191,7 +191,7 @@ const barPoints = (values, width = 220, height = 64) => {
             <span class="ct-vote-info">
               <strong>{player.fullName || player.name}</strong>
               <span class="ct-vote-count-row">
-                <span data-vote-count>Loading combined support…</span>
+                <span data-vote-count>Loading votes…</span>
                 <em data-vote-share>—%</em>
               </span>
               <i
@@ -739,7 +739,7 @@ const barPoints = (values, width = 220, height = 64) => {
     const animateCount = (node, value) => {
       if (!node) return;
       const previous = Number(node.dataset.lastCount ?? -1);
-      node.textContent = value + (value === 1 ? ' support point' : ' support points');
+      node.textContent = value + (value === 1 ? ' vote' : ' votes');
       node.dataset.lastCount = String(value);
       if (previous !== value) {
         node.classList.remove('is-bump');
@@ -832,7 +832,7 @@ const barPoints = (values, width = 220, height = 64) => {
           const track = node.querySelector('.ct-vote-track');
           if (track) {
             track.setAttribute('aria-valuenow', String(roundedShare));
-            track.setAttribute('aria-valuetext', count + ' of ' + total + ' combined support points (' + formattedShare + '%)');
+            track.setAttribute('aria-valuetext', count + ' of ' + total + ' votes (' + formattedShare + '%)');
           }
           const selectedLabel = node.querySelector('[data-vote-selected]');
           if (selectedLabel) selectedLabel.hidden = !isSelected;
@@ -840,7 +840,7 @@ const barPoints = (values, width = 220, height = 64) => {
           const label = node.querySelector('[data-pick-label]');
           if (label) label.textContent = isSelected ? 'Your pick' : 'Pick as captain';
           const countNode = node.querySelector('[data-pick-count]');
-          if (countNode) countNode.textContent = count + ' pts';
+          if (countNode) countNode.textContent = count + (count === 1 ? ' vote' : ' votes');
         }
       });
 
@@ -955,20 +955,56 @@ const barPoints = (values, width = 220, height = 64) => {
       }
     };
 
+    const PENDING_VOTE_KEY = 'fcmt:captain-tracker:pending-vote:v1';
     let voteSaveInProgress = false;
+    let pendingVoteResumeInProgress = false;
+
+    const rememberPendingVote = (playerId) => {
+      const savedAt = Date.now();
+      try {
+        sessionStorage.setItem(PENDING_VOTE_KEY, JSON.stringify({ playerId, savedAt }));
+        // Keep a backup return path in case the auth provider drops the next query.
+        sessionStorage.setItem('fcmt:account:return:v1', JSON.stringify({
+          path: location.pathname + location.search + location.hash,
+          savedAt
+        }));
+      } catch {}
+    };
+
+    const clearPendingVote = () => {
+      try { sessionStorage.removeItem(PENDING_VOTE_KEY); } catch {}
+    };
+
+    const readPendingVote = () => {
+      try {
+        const pending = JSON.parse(sessionStorage.getItem(PENDING_VOTE_KEY) || 'null');
+        const age = Date.now() - Number(pending?.savedAt || 0);
+        const isValidPlayer = (voteSource.players || []).some((player) => player.id === pending?.playerId);
+        if (!pending || !isValidPlayer || !Number.isFinite(age) || age < 0 || age > 15 * 60 * 1000) {
+          clearPendingVote();
+          return null;
+        }
+        return pending;
+      } catch {
+        clearPendingVote();
+        return null;
+      }
+    };
+
     const saveVote = async (playerId, trigger) => {
       if (voteSaveInProgress || voteLocked) return;
+      voteSaveInProgress = true;
       try {
         const session = await accountAuth.auth.getSession();
         if (!session.data?.session) {
+          rememberPendingVote(playerId);
           gateOpen(
             'Pick your captain',
-            'Create a free FCMobiletools account to save your captain pick and return to the tracker whenever you want.'
+            'Sign in or create a free account and your selected captain will be saved automatically when you return.'
           );
           return;
         }
 
-        voteSaveInProgress = true;
         voteRoot?.querySelectorAll('[data-vote-player]').forEach((node) => {
           node.disabled = true;
         });
@@ -982,13 +1018,15 @@ const barPoints = (values, width = 220, height = 64) => {
         const payload = await response.json().catch(() => ({}));
 
         if (response.status === 401) {
+          rememberPendingVote(playerId);
           gateOpen(
             'Sign in to save your pick',
-            'Your session is not active. Sign in to keep your captain pick attached to your account.'
+            'Your session expired. Sign in again and your selected captain will be saved when you return.'
           );
           return;
         }
         if (response.status === 409 && payload.locked) {
+          clearPendingVote();
           voteLocked = true;
           voteLockAtUtc = payload.lockAtUtc || voteLockAtUtc;
           applyVoteLockState();
@@ -1000,6 +1038,7 @@ const barPoints = (values, width = 220, height = 64) => {
           throw new Error('Your pick could not be confirmed. Please refresh and check your selection.');
         }
 
+        clearPendingVote();
         updateVoteUI(payload);
       } catch (error) {
         setVoteStatus(error?.message || 'Could not save your captain pick.', 'error');
@@ -1010,6 +1049,24 @@ const barPoints = (values, width = 220, height = 64) => {
       }
     };
 
+    const resumePendingVote = async () => {
+      if (pendingVoteResumeInProgress || voteSaveInProgress || voteLocked) return;
+      const pending = readPendingVote();
+      if (!pending) return;
+
+      pendingVoteResumeInProgress = true;
+      try {
+        const session = await accountAuth.auth.getSession();
+        if (!session.data?.session) return;
+        const trigger = [...(voteRoot?.querySelectorAll('[data-vote-player]') || [])]
+          .find((node) => node.dataset.votePlayer === pending.playerId) || null;
+        await saveVote(pending.playerId, trigger);
+      } catch {
+        // Keep the queued pick for a retry if the account session is still being restored.
+      } finally {
+        pendingVoteResumeInProgress = false;
+      }
+    };
     voteRoot?.querySelectorAll('[data-vote-player]').forEach((button) => {
       button.addEventListener('click', () => {
         const playerId = button.dataset.votePlayer;
@@ -1018,7 +1075,7 @@ const barPoints = (values, width = 220, height = 64) => {
     });
 
     accountAuth.auth.onAuthStateChange(() => {
-      loadVotes({ quiet: true, includeSelected: true });
+      loadVotes({ quiet: true, includeSelected: true }).then(resumePendingVote);
     });
 
     // Keep public totals fresh for visitors who already have the page open.
@@ -1029,7 +1086,7 @@ const barPoints = (values, width = 220, height = 64) => {
     window.addEventListener('focus', refreshVisibleVotes);
     document.addEventListener('visibilitychange', refreshVisibleVotes);
 
-    loadVotes({ includeSelected: true });
+    loadVotes({ includeSelected: true }).then(resumePendingVote);
   </script>
 
   <AccountGateModal feature="your captain pick" title="Create an account to pick your captain" message="Your pick is saved to your profile so you can return and change it later." />
