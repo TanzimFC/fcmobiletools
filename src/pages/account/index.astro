@@ -662,6 +662,13 @@ import '../../styles/premium-auth.css';
       const user = userResult.data?.user || session.user;
 
       if (!accountResult.ok || !body?.account) {
+        // A successful sign-in should not strand someone on the account page when
+        // account details fail to load. Explicit return targets can still continue;
+        // signup onboarding remains here so new users can finish setting up.
+        if ((requestedNextPath || storedNextPath) && params.get('mode') !== 'signup') {
+          location.replace(nextPath);
+          return;
+        }
         showMessage(loginMessage, body?.error || 'Could not load your account. Please try again.', true);
         return;
       }
