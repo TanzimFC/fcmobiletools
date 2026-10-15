@@ -80,7 +80,6 @@ export default defineConfig({
   })],
   markdown: { remarkPlugins: [remarkGfm], rehypePlugins: [optimizeMarkdownImages] },
   redirects: {
-    '/fcmtv': '/academy/',
     '/trivia/season-recap/': '/trivia/extra-time/season-recap/',
     ...nationRedirects,
     ...questionRedirects
