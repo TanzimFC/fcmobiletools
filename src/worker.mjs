@@ -419,33 +419,6 @@ const CAPTAIN_VOTE_CONFIG = Object.freeze({
   ])
 });
 
-const CAPTAIN_CROSS_PLATFORM_ESTIMATE = 757;
-
-// Fixed cross-platform support estimate, totaling exactly 757 points.
-// Modeled cross-platform support estimate; kept separate from verified votes.
-const CAPTAIN_CROSS_PLATFORM_ESTIMATED_COUNTS = Object.freeze({
-  'reece-james': 14,
-  'bruno-fernandes': 515,
-  'virgil-van-dijk': 205,
-  'lewis-dunk': 12,
-  'john-mcginn': 5,
-  'ethan-ampadu': 6
-});
-
-function allocateCaptainCrossPlatformEstimate() {
-  const estimates = Object.fromEntries(
-    [...CAPTAIN_VOTE_CONFIG.playerIds].map((playerId) => [
-      playerId,
-      Math.max(0, Math.floor(Number(CAPTAIN_CROSS_PLATFORM_ESTIMATED_COUNTS[playerId] || 0)))
-    ])
-  );
-  const total = Object.values(estimates).reduce((sum, count) => sum + count, 0);
-  if (total !== CAPTAIN_CROSS_PLATFORM_ESTIMATE) {
-    throw new Error('Cross-platform captain estimate does not match the configured total.');
-  }
-  return estimates;
-}
-
 async function captainVotesApi(request, env, url) {
   if (!['GET', 'POST'].includes(request.method)) {
     return json({ error: 'Method not allowed.' }, 405);
@@ -584,24 +557,15 @@ async function captainVotesApi(request, env, url) {
     }
 
     const verifiedTotal = Object.values(counts).reduce((sum, count) => sum + count, 0);
-    const estimatedCounts = allocateCaptainCrossPlatformEstimate();
-    const combinedCounts = Object.fromEntries(
-      [...CAPTAIN_VOTE_CONFIG.playerIds].map((playerId) => [
-        playerId,
-        counts[playerId] + estimatedCounts[playerId]
-      ])
-    );
     return json({
       trackerKey,
-      total: verifiedTotal + CAPTAIN_CROSS_PLATFORM_ESTIMATE,
-      counts: combinedCounts,
+      total: verifiedTotal,
+      counts,
       selected,
       locked,
       lockAtUtc: CAPTAIN_VOTE_CONFIG.lockAtUtc,
       verifiedTotal,
-      verifiedCounts: counts,
-      estimatedTotal: CAPTAIN_CROSS_PLATFORM_ESTIMATE,
-      estimatedCounts
+      verifiedCounts: counts
     });
   } catch (error) {
     console.error('[CAPTAIN_VOTES]', error?.message);
@@ -3102,7 +3066,7 @@ export function createExports(manifest) {
             const roundedShare = Math.round(share);
             let rendered = button.replace(
               /(<span\b[^>]*\bdata-vote-count\b[^>]*>)[\s\S]*?(<\/span>)/,
-              (_, opening, closing) => opening + count + ' support points' + closing
+              (_, opening, closing) => opening + count + (count === 1 ? ' vote' : ' votes') + closing
             );
             rendered = rendered.replace(
               /(<em\b[^>]*\bdata-vote-share\b[^>]*>)[\s\S]*?(<\/em>)/,
@@ -3123,7 +3087,7 @@ export function createExports(manifest) {
           /<article\b(?=[^>]*\bdata-player="([^"]+)")[^>]*>[\s\S]*?<\/article>/g,
           (card, playerId) => card.replace(
             /(<b\b[^>]*\bdata-pick-count\b[^>]*>)[\s\S]*?(<\/b>)/,
-            (_, opening, closing) => opening + countFor(playerId) + closing
+            (_, opening, closing) => opening + countFor(playerId) + ' votes' + closing
           )
         );
 
