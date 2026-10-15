@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { PLAYSTYLES } from '../src/data/playstyles.js';
 import {
   PLAYSTYLE_POSITIONS,
@@ -10,6 +10,11 @@ import {
   getPlaystyleProfileChoices,
   getPlaystyleRecommendations
 } from '../src/data/playstyleFinder.js';
+
+const pageSource = await readFile(new URL('../src/pages/player/playstyle-finder.astro', import.meta.url), 'utf8');
+assert.ok(pageSource.includes('<style is:global>'), 'dynamic survey controls and results need global component styles');
+assert.ok(pageSource.includes('@keyframes psf-section-enter'), 'survey should retain its entry animation');
+assert.ok(pageSource.includes('prefers-reduced-motion: reduce'), 'survey should respect reduced-motion preferences');
 
 const styleNames = new Set(PLAYSTYLES.map((style) => style.name));
 const positionCodes = PLAYSTYLE_POSITIONS.map((position) => position.code);
