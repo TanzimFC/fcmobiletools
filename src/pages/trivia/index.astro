@@ -5,11 +5,16 @@ import { SEASON_RECAP_META as SR, SEASON_RECAP_QUESTION_COUNT } from '../../data
 import { buildNationQuestions, nationImage, NATION_STYLE } from '../../lib/triviaNations.js';
 import { NATIONS_STORY } from '../../data/aNationsStory.js';
 import { breadcrumbLd, absolute } from '../../lib/triviaCore.js';
-import { EXTRA_TIME_ROUTE, NATIONS_ROUTE, SEASON_RECAP_ROUTE } from '../../lib/triviaRoutes.js';
+import { EXTRA_TIME_ROUTE, NATIONS_ROUTE, SEASON_RECAP_ROUTE, playUrl } from '../../lib/triviaRoutes.js';
 
 const ansCount = buildNationQuestions().length;
 const nationCount = NATIONS_STORY.length;
 const fan = ['japan', 'france', 'brazil'];
+const modes = [
+  { key: 'quiz', name: 'Quiz', icon: ICONS.quiz, text: 'Untimed questions with instant feedback. The next question appears automatically.', hot: false },
+  { key: 'attack', name: 'Time Attack', icon: ICONS.bolt, text: 'Race the clock. Faster answers and streaks score bonus points, just like the real event.', hot: true },
+  { key: 'cards', name: 'Flashcards', icon: ICONS.cards, text: 'Flip a card, grade yourself, and re-drill only what you missed.', hot: false }
+];
 
 const title = 'FC Mobile Trivia Answers: Season Recap & A Nation\'s Story';
 const description = `Choose between two FC Mobile trivia collections: ${SEASON_RECAP_QUESTION_COUNT} Season Recap (Challenge) answers in Extra Time, or ${ansCount} A Nation's Story questions grouped by nation and day.`;
@@ -37,10 +42,16 @@ const jsonLd = [
       <h1 class="tv-h1">Know every answer.<br /><span class="tv-grad">Win every round.</span></h1>
       <p class="tv-lede">Choose the format you need: searchable answers and practice for Extra Time, or football-history challenges organised by nation and day.</p>
       <div class="tv-actions" style="margin-top:18px">
-        <a class="tv-btn" href={EXTRA_TIME_ROUTE}>Explore Extra Time</a>
-        <a class="tv-btn ghost" href={NATIONS_ROUTE}>Explore A Nation&apos;s Story</a>
+        <a class="tv-btn lg pulse" href={playUrl()} data-play>Start playing <span set:html={ICONS.arrow} style="display:contents" /></a>
+        <a class="tv-btn ghost lg" href="#collections">Browse answers</a>
       </div>
-      <p class="tv-note">Each collection has its own search, answer list and practice modes.</p>
+      <div class="tv-quick" aria-label="Jump straight into a mode">
+        <span>Jump in:</span>
+        <a href={playUrl({ mode: 'quiz' })}><span set:html={ICONS.quiz} style="display:contents" />Quiz</a>
+        <a href={playUrl({ mode: 'attack' })}><span set:html={ICONS.bolt} style="display:contents" />Time Attack</a>
+        <a href={playUrl({ mode: 'cards' })}><span set:html={ICONS.cards} style="display:contents" />Flashcards</a>
+      </div>
+      <p class="tv-note">Free, no account needed. Every collection also has a searchable answer list.</p>
     </div>
     <div class="tv-hero-visual" aria-hidden="true">
       <div class="tv-float f1">
@@ -68,32 +79,46 @@ const jsonLd = [
     </div>
   </div>
 
+  <section class="tv-wrap tv-section" id="modes">
+    <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">Practice</span><h2 class="tv-h2">Three ways to play.</h2></div></div>
+    <div class="tv-modes">
+      {modes.map((m, i) => (
+        <a class={`tv-card tv-mode tv-spot tv-reveal${m.hot ? ' hot' : ''}`} href={playUrl({ mode: m.key })} style={`--d:${i}`}>
+          <span class="tv-mode-ico" set:html={m.icon} />
+          <h3>{m.name}</h3>
+          <p>{m.text}</p>
+          <span class="tv-mode-go">Play {m.name} <span set:html={ICONS.arrow} style="display:contents" /></span>
+        </a>
+      ))}
+    </div>
+  </section>
+
   <section class="tv-wrap tv-section" id="collections">
     <div class="tv-sec-head tv-reveal"><div><span class="tv-kicker">Two collections</span><h2 class="tv-h2">Pick your trivia.</h2></div></div>
     <div class="tv-colls">
-      <a class="tv-card tv-coll tv-edge tv-spot tv-reveal" href={EXTRA_TIME_ROUTE} style="--d:1">
+      <article class="tv-card tv-coll tv-edge tv-spot tv-reveal" style="--d:1">
         <div class="tv-coll-art tv-art" data-label="Season Recap">
           <img data-optional src={SR.banner.webp} width={SR.banner.width} height={SR.banner.height} alt={SR.banner.alt} loading="lazy" decoding="async" />
           <div class="tv-coll-badges"><span class="tv-pill live"><i class="tv-live"></i>Live now</span><span class="tv-pill gold">Season Recap</span></div>
         </div>
         <div class="tv-coll-body">
-          <h2>Extra Time</h2>
+          <h2><a class="tv-stretch" href={EXTRA_TIME_ROUTE}>Extra Time</a></h2>
           <p>Limited-time trivia events with rounds of up to 30 questions. Season Recap (Challenge) is on right now, with every answer listed and searchable.</p>
           <div class="tv-coll-meta"><span class="tv-pill accent"><b>{SEASON_RECAP_QUESTION_COUNT}</b> answers</span><span class="tv-pill"><b>2</b> options</span><span class="tv-pill"><b>30</b> per round</span></div>
-          <div class="tv-coll-go">Open Extra Time <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div>
+          <div class="tv-coll-actions"><a class="tv-btn sm tv-coll-play" href={playUrl({ set: 'season-recap' })} data-play>Play Season Recap</a><div class="tv-coll-go">Open Extra Time <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div></div>
         </div>
-      </a>
-      <a class="tv-card tv-coll tv-edge tv-spot tv-reveal" href={NATIONS_ROUTE} style="--d:2">
+      </article>
+      <article class="tv-card tv-coll tv-edge tv-spot tv-reveal" style="--d:2">
         <div class="tv-fan">
           {fan.map((n) => <img src={nationImage(n, 640)} width="640" height="360" alt="" loading="lazy" decoding="async" />)}
         </div>
         <div class="tv-coll-body">
-          <h2>A Nation's Story</h2>
+          <h2><a class="tv-stretch" href={NATIONS_ROUTE}>A Nation's Story</a></h2>
           <p>Day-by-day football history for each nation, with four options per question. Each day has one page containing its complete question set and answers.</p>
           <div class="tv-coll-meta"><span class="tv-pill accent"><b>{ansCount}</b> questions</span><span class="tv-pill"><b>{nationCount}</b> nations</span><span class="tv-pill"><b>4</b> options</span></div>
-          <div class="tv-coll-go">Open A Nation's Story <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div>
+          <div class="tv-coll-actions"><a class="tv-btn sm tv-coll-play" href={playUrl({ set: 'nations-story' })} data-play>Play a Nation</a><div class="tv-coll-go">Open A Nation's Story <span set:html={ICONS.arrow} style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%" /></div></div>
         </div>
-      </a>
+      </article>
     </div>
   </section>
 
@@ -154,7 +179,8 @@ const jsonLd = [
       <h2 class="tv-h2">Answers and practice stay free.</h2>
       <p class="tv-sub">Browse either collection and practise without an account. Sign in only for your profile, Quests, achievements and Tokens.</p>
       <div class="tv-actions">
-        <a class="tv-btn" href="/account/">Sign in or create a free account</a>
+        <a class="tv-btn" href={playUrl()} data-play>Start playing</a>
+        <a class="tv-btn ghost" href="/account/">Sign in for a free account</a>
         <a class="tv-btn ghost" href={EXTRA_TIME_ROUTE}>Season Recap</a>
         <a class="tv-btn ghost" href={NATIONS_ROUTE}>A Nation&apos;s Story</a>
       </div>

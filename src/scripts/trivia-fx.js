@@ -1,7 +1,7 @@
-import { openArena } from './trivia-arena.js';
-
 // Small, dependency-free polish for Trivia pages. Everything degrades cleanly:
 // without JS the content is simply visible.
+// Tell the layout's fail-safe that effects are alive (otherwise it reveals everything after 3s).
+document.documentElement.classList.add('tv-fx');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
@@ -102,51 +102,31 @@ document.querySelectorAll('img[data-optional]').forEach((img) => {
   else img.addEventListener('error', hide, { once: true });
 });
 
-// 6. Lazy search; use a statically bundled practice launcher so the arena
-// is available reliably in both development and the production static build.
+// 6. Lazy search
 if (document.querySelector('[data-tv-search]')) import('./trivia-search.js');
 
-async function launchPractice(btn, opts = {}) {
-  if (btn?.dataset.arenaBusy === 'true') return;
-  if (btn) {
-    btn.dataset.arenaBusy = 'true';
-    btn.setAttribute('aria-busy', 'true');
-    if ('disabled' in btn) btn.disabled = true;
-  }
-  try {
-    await openArena({ ...(btn?.dataset || {}), ...opts, set: btn?.dataset.arena || opts.set || 'season-recap' });
-  } catch (error) {
-    console.error('[Trivia] Practice mode failed to open:', error);
-    const host = btn?.closest('.tv-mode, .tv-banner-copy, .tv-event-copy, .tv-box') || document.querySelector('.tv-wrap');
-    if (host) {
-      let note = host.querySelector('.tv-practice-feedback');
-      if (!note) {
-        note = document.createElement('p');
-        note.className = 'tv-practice-feedback';
-        note.setAttribute('role', 'alert');
-        host.append(note);
-      }
-      note.textContent = 'Practice could not open. Refresh the page and try again.';
-    }
-  } finally {
-    if (btn) {
-      delete btn.dataset.arenaBusy;
-      btn.removeAttribute('aria-busy');
-      if ('disabled' in btn) btn.disabled = false;
-    }
-  }
+// 7. Press ripple on buttons and answer options
+if (!reduce) {
+  document.addEventListener('pointerdown', (e) => {
+    const el = e.target instanceof Element ? e.target.closest('.tv-btn, .tp-opt, .tp-chip-btn, .tp-mode') : null;
+    if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true') return;
+    const r = el.getBoundingClientRect();
+    const size = Math.max(r.width, r.height) * 2;
+    const dot = document.createElement('span');
+    dot.className = 'tv-rip';
+    dot.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - r.left - size / 2}px;top:${e.clientY - r.top - size / 2}px`;
+    el.appendChild(dot);
+    setTimeout(() => dot.remove(), 720);
+  }, { passive: true });
 }
 
-document.addEventListener('click', (e) => {
-  const btn = e.target instanceof Element ? e.target.closest('[data-arena]') : null;
-  if (!btn) return;
-  e.preventDefault();
-  void launchPractice(btn);
-});
-
-// Deep-link: ?practice=quiz opens the arena for the first launcher on the page.
+// 8. Old deep link: ?practice=quiz used to open the modal. Send it to the Play page instead.
 {
   const mode = new URLSearchParams(location.search).get('practice');
-  const first = mode && document.querySelector('[data-arena]');
-  if (first) void launchPractice(first, { mode });
+  const link = mode && document.querySelector('a[data-play]');
+  if (link) {
+    const url = new URL(link.getAttribute('href'), location.origin);
+    url.searchParams.set('mode', ['quiz', 'attack', 'cards'].includes(mode) ? mode : 'quiz');
+    location.replace(url.toString());
+  }
 }

@@ -4,7 +4,8 @@ import Crumbs from '../../../../components/trivia/Crumbs.astro';
 import { NATIONS_STORY } from '../../../../data/aNationsStory.js';
 import { buildNationQuestions, nationImage, dayUrl, NATION_STYLE } from '../../../../lib/triviaNations.js';
 import { breadcrumbLd } from '../../../../lib/triviaCore.js';
-import { NATIONS_ROUTE } from '../../../../lib/triviaRoutes.js';
+import { NATIONS_ROUTE, playUrl } from '../../../../lib/triviaRoutes.js';
+import { ICONS } from '../../../../lib/triviaIcons.js';
 
 export function getStaticPaths() {
   return NATIONS_STORY.map((nation) => ({ params: { country: nation.slug }, props: { nation } }));
@@ -26,8 +27,8 @@ const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', hre
         <h1 class="tv-h1">{nation.name} <span class="tv-grad">trivia answers</span></h1>
         <p class="tv-lede">{qs.length} questions across {nation.days.length} days. Each day page contains the complete set with four options and correct answers. Use the question links below to jump to a specific question within its group.</p>
         <div class="tv-actions">
-          <a class="tv-btn" href={dayUrl(nation.slug, 'day-1')}>Start at Day 1</a>
-          <button class="tv-btn ghost" data-arena="nations-story" data-nation={nation.slug} data-mode="quiz">Practice {nation.name}</button>
+          <a class="tv-btn lg pulse" href={playUrl({ set: 'nations-story', nation: nation.slug })} data-play>Practice {nation.name} <span set:html={ICONS.arrow} style="display:contents" /></a>
+          <a class="tv-btn ghost lg" href={dayUrl(nation.slug, 'day-1')}>Read Day 1</a>
         </div>
       </div>
       <div class="tv-art" data-label={nation.name}>
@@ -46,7 +47,10 @@ const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', hre
             <div class="tv-day-top"><span class="tv-day-no">{String(i + 1).padStart(2, '0')}</span>{day.level && <span class="tv-pill accent">{day.level}</span>}</div>
             <h3>{day.title} · {dayQs.length} question{dayQs.length === 1 ? '' : 's'}</h3>
             <ul>{dayQs.map((q) => <li><a href={q.url}>{q.question}</a></li>)}</ul>
-            <a class="tv-day-cta" href={dayUrl(nation.slug, day.id)}>All Day {i + 1} answers →</a>
+            <div class="tv-day-actions">
+              <a class="tv-day-cta" href={dayUrl(nation.slug, day.id)}>Day {i + 1} answers →</a>
+              <a class="tv-day-play" href={playUrl({ set: 'nations-story', nation: nation.slug, day: i + 1 })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.8v14.4a.8.8 0 0 0 1.2.7l11.5-7.2a.8.8 0 0 0 0-1.4L8.2 4.1A.8.8 0 0 0 7 4.8Z" fill="currentColor"/></svg>Play</a>
+            </div>
           </article>
         );
       })}

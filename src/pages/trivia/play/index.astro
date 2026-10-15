@@ -1,0 +1,55 @@
+---
+// The Play page. Every "Start" / "Practice" link on the Trivia pages is a plain <a href> to here,
+// so entering practice never depends on a script having attached a click handler first.
+import TriviaLayout from '../../../layouts/TriviaLayout.astro';
+import Crumbs from '../../../components/trivia/Crumbs.astro';
+import '../../../styles/trivia-play.css';
+import { NATIONS_STORY } from '../../../data/aNationsStory.js';
+import { SEASON_RECAP_QUESTION_COUNT } from '../../../data/seasonRecapTrivia.js';
+import { NATION_STYLE, buildNationQuestions } from '../../../lib/triviaNations.js';
+import { breadcrumbLd } from '../../../lib/triviaCore.js';
+import { EXTRA_TIME_ROUTE, NATIONS_ROUTE, SEASON_RECAP_ROUTE, TRIVIA_ROUTE, PLAY_ROUTE } from '../../../lib/triviaRoutes.js';
+
+const config = {
+  nations: NATIONS_STORY.map((n) => ({ slug: n.slug, name: n.name, flag: n.flag, glow: NATION_STYLE[n.slug]?.glow || '233,196,106', blurb: NATION_STYLE[n.slug]?.blurb || '' })),
+  counts: { 'season-recap': SEASON_RECAP_QUESTION_COUNT, 'nations-story': buildNationQuestions().length }
+};
+const title = 'Play FC Mobile Trivia: Quiz, Time Attack & Flashcards';
+const description = 'Practise FC Mobile Extra Time and A Nation\'s Story trivia with a quiz, a Time Attack mode or flashcards. Free, no account needed.';
+const jsonLd = [breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Trivia', href: TRIVIA_ROUTE }, { name: 'Play', href: PLAY_ROUTE }])];
+---
+<TriviaLayout title={title} description={description} robots="noindex,follow" jsonLd={jsonLd}>
+  <div class="tv-wrap tp-wrap">
+    <Crumbs trail={[{ name: 'Home', href: '/' }, { name: 'Trivia', href: TRIVIA_ROUTE }, { name: 'Play' }]} />
+
+    <section class="tp" id="tp" data-state="boot" aria-label="Trivia practice">
+      <!-- Server-rendered first paint: visible immediately, replaced as soon as the game script is ready. -->
+      <div class="tp-boot" id="tp-boot">
+        <div class="tp-spinner" aria-hidden="true"></div>
+        <h1 class="tv-h1 tp-boot-title">Loading your <span class="tv-grad">game</span></h1>
+        <p class="tv-lede">Getting the questions ready…</p>
+        <div class="tp-boot-help" id="tp-boot-help" hidden>
+          <p>This is taking longer than it should. Reload the page, or browse the answers while it catches up.</p>
+          <div class="tv-actions">
+            <a class="tv-btn" href={PLAY_ROUTE}>Reload practice</a>
+            <a class="tv-btn ghost" href={SEASON_RECAP_ROUTE}>Season Recap answers</a>
+            <a class="tv-btn ghost" href={NATIONS_ROUTE}>A Nation's Story answers</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <noscript>
+      <div class="tv-card tv-box" style="margin-top:24px">
+        <h2>Practice needs JavaScript</h2>
+        <p>Turn on JavaScript to play the quiz, Time Attack and flashcards. You can still read every answer without it.</p>
+        <div class="tv-actions"><a class="tv-btn" href={EXTRA_TIME_ROUTE}>Extra Time answers</a><a class="tv-btn ghost" href={NATIONS_ROUTE}>A Nation's Story answers</a></div>
+      </div>
+    </noscript>
+  </div>
+
+  <script type="application/json" id="tp-config" set:html={JSON.stringify(config)} />
+  <script>
+    import '../../../scripts/trivia-play.js';
+  </script>
+</TriviaLayout>
