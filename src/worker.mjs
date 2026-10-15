@@ -1008,7 +1008,7 @@ async function accountApi(request, env, url) {
           '&entity_id=eq.'+encodeURIComponent(entityId)+'&created_at=gte.'+
           encodeURIComponent(new Date(Date.now()-21600000).toISOString())+'&select=id&limit=1');
         if(!rows?.length) return json({error:eventType==='page_dwell'
-          ?'Open '+entityId+' and spend a few seconds there, then come back and check this quest.'
+          ?'Use '+entityId+' to explore the page.'
           :'Use the '+entityId+' first, then come back and check this quest.'},409);
       }
 
