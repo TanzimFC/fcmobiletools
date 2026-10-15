@@ -50,7 +50,7 @@ for (const position of PLAYSTYLE_POSITIONS) {
       });
       const expectedCount = position.code === 'GK' ? 1 : 2;
       assert.equal(recommendations.length, expectedCount, position.code + ' should return the correct number of recommendations');
-      assert.notEqual(recommendations[0].name, recommendations[1].name, 'recommendations must be distinct');
+      if (expectedCount === 2) assert.notEqual(recommendations[0].name, recommendations[1].name, 'recommendations must be distinct');
       assert.ok(recommendations.every((style) => styleNames.has(style.name)), 'recommendations must use guide data');
       assert.ok(recommendations.some((style) => goal.styleNames.includes(style.name)), position.code + ' should honour the selected main job');
       if (position.code === 'GK') {
