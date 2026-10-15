@@ -1,19 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { PLAYSTYLES } from '../../data/playstyles.js';
-import { PLAYSTYLE_GOALS, PLAYSTYLE_GOAL_GROUPS } from '../../data/playstyleFinder.js';
-
-const iconPath = (name, tier) => '/assets/images/playstyle/playstyle_64_PLAYSTYLE_' + name + '_' + tier + '.png';
-const styles = PLAYSTYLES.map((style) => ({
-  ...style,
-  icons: (style.noBaseIcon ? [1, 1, 2] : [0, 1, 2]).map((tier) => iconPath(style.icon, tier)),
-  goalIds: PLAYSTYLE_GOALS.filter((goal) => goal.styleNames.includes(style.name)).map((goal) => goal.id)
-}));
+import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
 ---
 
 <BaseLayout
   title="FC Mobile PlayStyle Finder | FCMOBILETOOLS"
-  description="Find FC Mobile PlayStyles by the action you want to improve. Compare the actual effects at levels 1, 2 and 3."
+  description="Answer three short questions to find two FC Mobile PlayStyles matched to your position, on-pitch job and preferred player type."
   canonical="/player/playstyle-finder/"
 >
   <main class="psf-page">
@@ -22,255 +14,594 @@ const styles = PLAYSTYLES.map((style) => ({
         <nav class="psf-crumbs" aria-label="Breadcrumb">
           <a href="/">Home</a><span aria-hidden="true">/</span><a href="/player/playstyle/">PlayStyle Guide</a><span aria-hidden="true">/</span><strong>Finder</strong>
         </nav>
-        <p class="psf-kicker"><span></span> FC MOBILE · PLAYSTYLES</p>
-        <h1>Find a PlayStyle<br /><em>for the job.</em></h1>
-        <p class="psf-lede">Choose what you want the player to do better. The finder shows the PlayStyles that match, with their effects at each level.</p>
-        <a class="psf-back-link" href="/player/playstyle/">Read all PlayStyles <span aria-hidden="true">↗</span></a>
+        <p class="psf-kicker"><span></span> FC MOBILE / PLAYSTYLE BUILDER</p>
+        <h1>Find your two.<br /><em>Build for the role.</em></h1>
+        <p class="psf-lede">Tell us where the player plays, what you need them to do, and what kind of player you want. Get two ranked PlayStyles that fit your answers.</p>
+        <div class="psf-hero-links">
+          <a href="/player/playstyle/">Browse every PlayStyle <span aria-hidden="true">↗</span></a>
+          <span>3 questions <i></i> 2 recommendations</span>
+        </div>
       </div>
     </section>
 
-    <section class="psf-shell psf-workspace">
-      <div class="psf-panel">
-        <div class="psf-panel-head">
-          <div><span class="psf-step">YOUR PICK</span><h2>What do you want to improve?</h2></div>
-          <span class="psf-pick-count" id="psfPickCount">0 of 3 picked</span>
-        </div>
-        <p class="psf-help">Pick up to three. For example, choose crossing and headers if you're working on wide attacks.</p>
-
-        <div class="psf-goal-groups">
-          {PLAYSTYLE_GOAL_GROUPS.map((group) => (
-            <section class="psf-goal-group" aria-label={group}>
-              <h3>{group}</h3>
-              <div class="psf-goal-list">
-                {PLAYSTYLE_GOALS.filter((goal) => goal.group === group).map((goal) => (
-                  <button class="psf-goal" type="button" data-goal={goal.id} aria-pressed="false">
-                    <span class="psf-goal-check" aria-hidden="true">✓</span>
-                    <span class="psf-goal-copy"><strong>{goal.label}</strong><small>{goal.hint}</small></span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
+    <section class="psf-shell psf-builder" aria-label="PlayStyle survey">
+      <div class="psf-builder-main">
+        <div class="psf-progress-card">
+          <div class="psf-progress-meta"><span id="psfStepMeta">STEP 01 OF 03</span><span>POSITION / JOB / PLAYER TYPE</span></div>
+          <div class="psf-progress-track" aria-hidden="true"><span id="psfProgressFill"></span></div>
+          <div class="psf-stepper" aria-label="Survey progress">
+            <span class="psf-step-chip is-active" data-step-chip="1"><b>01</b> Position</span>
+            <span class="psf-step-chip" data-step-chip="2"><b>02</b> Main job</span>
+            <span class="psf-step-chip" data-step-chip="3"><b>03</b> Player type</span>
+          </div>
         </div>
 
-        <div class="psf-actions">
-          <p class="psf-limit-note" id="psfLimitNote" role="status" aria-live="polite">Pick one goal to see matching PlayStyles.</p>
-          <button class="psf-reset" id="psfReset" type="button">Clear picks</button>
-        </div>
+        <section class="psf-survey-card">
+          <div class="psf-question" data-step-panel="1">
+            <div class="psf-question-head">
+              <span class="psf-question-number">QUESTION 01</span>
+              <h2>Where does this player play?</h2>
+              <p>Choose the position you are building for. We’ll use it to weigh the recommendations.</p>
+            </div>
+            <div class="psf-position-grid" id="psfPositionGrid">
+              {PLAYSTYLE_POSITIONS.map((position) => (
+                <button type="button" class="psf-position-card" data-position={position.code} aria-pressed="false">
+                  <span class="psf-position-code">{position.code}</span>
+                  <span class="psf-position-name">{position.label}</span>
+                  <span class="psf-position-mark" aria-hidden="true">↗</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div class="psf-question" data-step-panel="2" hidden>
+            <div class="psf-question-head">
+              <span class="psf-question-number">QUESTION 02</span>
+              <h2 id="psfGoalTitle">What job should this player do better?</h2>
+              <p>Pick the action that would make the biggest difference in your matches.</p>
+            </div>
+            <div class="psf-choice-grid" id="psfGoalOptions" aria-label="Main job choices"></div>
+            <p class="psf-question-foot">Choose one main job. The second recommendation can complement it.</p>
+          </div>
+
+          <div class="psf-question" data-step-panel="3" hidden>
+            <div class="psf-question-head">
+              <span class="psf-question-number">QUESTION 03</span>
+              <h2>What kind of player do you want?</h2>
+              <p>Choose the approach that best describes how you use this position.</p>
+            </div>
+            <div class="psf-choice-grid" id="psfProfileOptions" aria-label="Player type choices"></div>
+            <p class="psf-question-foot">This preference helps separate a direct match from a useful alternative.</p>
+          </div>
+
+          <div class="psf-survey-footer">
+            <button class="psf-back-button" id="psfBack" type="button" hidden><span aria-hidden="true">←</span> Back</button>
+            <p class="psf-survey-status" id="psfSurveyStatus" role="status" aria-live="polite">Choose a position to start.</p>
+            <button class="psf-next-button" id="psfNext" type="button" disabled>Continue <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
       </div>
 
-      <section class="psf-results" aria-labelledby="psfResultsTitle">
-        <div class="psf-results-head">
-          <div><span class="psf-step">MATCHING STYLES</span><h2 id="psfResultsTitle">What fits your pick</h2></div>
-          <span class="psf-result-count" id="psfResultCount" aria-live="polite">Choose a goal</span>
+      <aside class="psf-summary-card" aria-label="Your survey answers">
+        <div class="psf-summary-heading">
+          <span class="psf-summary-mark" aria-hidden="true">FC</span>
+          <div><span class="psf-overline">YOUR BUILD</span><h2>Match profile</h2></div>
         </div>
-        <p class="psf-results-intro" id="psfResultsIntro">Choose an action above. You'll see the matching styles and what each one changes.</p>
+        <div class="psf-summary-line"><span>Position</span><strong id="psfSummaryPosition">Not selected</strong></div>
+        <div class="psf-summary-line"><span>Main job</span><strong id="psfSummaryGoal">Not selected</strong></div>
+        <div class="psf-summary-line"><span>Player type</span><strong id="psfSummaryProfile">Not selected</strong></div>
+        <div class="psf-summary-rule"></div>
+        <p class="psf-summary-copy" id="psfSummaryCopy">Your answers will shape the two results. A defensive role can favour tackling styles; a forward role can favour movement and finishing.</p>
+        <a class="psf-guide-link" href="/player/playstyle/">Read the PlayStyle guide <span aria-hidden="true">↗</span></a>
+        <button class="psf-clear-button" id="psfReset" type="button">Start over</button>
+      </aside>
+    </section>
 
-        <div class="psf-result-grid" id="psfResultGrid">
-          {styles.map((style) => (
-            <article class="psf-style-card" data-style-card data-goal-ids={style.goalIds.join(' ')} data-levels={JSON.stringify(style.levels)} data-icons={JSON.stringify(style.icons)} hidden>
-              <div class="psf-style-head">
-                <img class="psf-style-icon" src={style.icons[0]} width="58" height="58" alt={style.name + ' PlayStyle icon'} loading="lazy" decoding="async" />
-                <div class="psf-style-title"><span>{style.category}</span><h3>{style.name}</h3></div>
-              </div>
-              <p class="psf-style-summary">{style.summary}</p>
-              <div class="psf-match-wrap"><span class="psf-match-label">Fits your pick</span><div class="psf-match-tags" data-goal-tags></div></div>
-              <div class="psf-level-row"><span>Effect</span><strong data-tier-label>Level 1</strong></div>
-              <div class="psf-level-tabs" role="group" aria-label={'Choose ' + style.name + ' level'}>
-                <button type="button" class="psf-level is-active" data-level="1" aria-pressed="true">Level 1</button>
-                <button type="button" class="psf-level" data-level="2" aria-pressed="false">Level 2</button>
-                <button type="button" class="psf-level" data-level="3" aria-pressed="false">★ Level 3</button>
-              </div>
-              <p class="psf-level-copy" data-level-copy>{style.levels[0]}</p>
-            </article>
-          ))}
+    <section class="psf-shell psf-results" id="psfResults" aria-labelledby="psfResultsTitle" hidden>
+      <div class="psf-results-heading">
+        <div>
+          <span class="psf-question-number">YOUR TWO MATCHES</span>
+          <h2 id="psfResultsTitle">Two PlayStyles for your build.</h2>
+          <p>Ranked from your position, main job and player type. Compare each level before you decide.</p>
         </div>
-
-        <noscript><p class="psf-no-script">The finder needs JavaScript to filter your picks. You can still read the full <a href="/player/playstyle/">PlayStyle guide</a>.</p></noscript>
-        <p class="psf-footnote">These matches use the descriptions in the guide. They don't promise a certain result in every match.</p>
-      </section>
+        <button class="psf-edit-button" id="psfEditAnswers" type="button">Edit answers <span aria-hidden="true">↗</span></button>
+      </div>
+      <div class="psf-result-grid" id="psfResultGrid"></div>
+      <p class="psf-results-note">The order reflects your answers and the PlayStyle descriptions in the guide. It is a role-based recommendation, not a promise of match results.</p>
     </section>
   </main>
 
   <script>
+    import { PLAYSTYLES } from '../../data/playstyles.js';
+    import {
+      PLAYSTYLE_GOALS,
+      PLAYSTYLE_POSITIONS,
+      getPlaystyleGoalsForPosition,
+      getPlaystyleProfileChoices,
+      getPlaystyleRecommendations
+    } from '../../data/playstyleFinder.js';
+
     (() => {
       const root = document.querySelector('.psf-page');
       if (!root) return;
 
-      const goals = Array.from(root.querySelectorAll('[data-goal]'));
-      const cards = Array.from(root.querySelectorAll('[data-style-card]'));
-      const count = root.querySelector('#psfPickCount');
-      const note = root.querySelector('#psfLimitNote');
-      const resultCount = root.querySelector('#psfResultCount');
-      const intro = root.querySelector('#psfResultsIntro');
-      const reset = root.querySelector('#psfReset');
-      const selected = new Set();
+      const state = { step: 1, position: '', goalId: '', profileId: '' };
+      const panels = Array.from(root.querySelectorAll('[data-step-panel]'));
+      const nextButton = root.querySelector('#psfNext');
+      const backButton = root.querySelector('#psfBack');
+      const status = root.querySelector('#psfSurveyStatus');
+      const progressFill = root.querySelector('#psfProgressFill');
+      const stepMeta = root.querySelector('#psfStepMeta');
+      const results = root.querySelector('#psfResults');
+      const resultGrid = root.querySelector('#psfResultGrid');
 
-      function render() {
-        count.textContent = selected.size + ' of 3 picked';
-        const labels = goals.filter((button) => selected.has(button.dataset.goal)).map((button) => button.querySelector('strong').textContent);
-        note.textContent = selected.size ? 'Showing styles for: ' + labels.join(', ') : 'Pick one goal to see matching PlayStyles.';
-        intro.hidden = selected.size > 0;
+      const positionInfo = () => PLAYSTYLE_POSITIONS.find((item) => item.code === state.position);
+      const goalInfo = () => PLAYSTYLE_GOALS.find((item) => item.id === state.goalId);
+      const profileInfo = () => getPlaystyleProfileChoices(state.position).find((item) => item.id === state.profileId);
 
-        let shown = 0;
-        cards.forEach((card) => {
-          const cardGoals = (card.dataset.goalIds || '').split(' ').filter(Boolean);
-          const matches = cardGoals.filter((id) => selected.has(id));
-          const visible = matches.length > 0;
-          card.hidden = !visible;
-          if (visible) {
-            shown += 1;
-            const tagBox = card.querySelector('[data-goal-tags]');
-            tagBox.replaceChildren();
-            matches.forEach((id) => {
-              const button = goals.find((goalButton) => goalButton.dataset.goal === id);
-              if (!button) return;
-              const tag = document.createElement('span');
-              tag.className = 'psf-match-tag';
-              tag.textContent = button.querySelector('strong').textContent;
-              tagBox.append(tag);
-            });
-          }
-        });
-
-        resultCount.textContent = selected.size ? shown + (shown === 1 ? ' style' : ' styles') : 'Choose a goal';
+      function makeElement(tag, className, text) {
+        const element = document.createElement(tag);
+        if (className) element.className = className;
+        if (text !== undefined) element.textContent = text;
+        return element;
       }
 
-      goals.forEach((button) => {
-        button.addEventListener('click', () => {
-          const id = button.dataset.goal;
-          if (selected.has(id)) {
-            selected.delete(id);
-            button.setAttribute('aria-pressed', 'false');
-            button.classList.remove('is-active');
-          } else {
-            if (selected.size >= 3) {
-              note.textContent = 'Choose up to three goals. Clear one first.';
-              return;
-            }
-            selected.add(id);
-            button.setAttribute('aria-pressed', 'true');
-            button.classList.add('is-active');
-          }
-          render();
-        });
-      });
+      function renderChoices(container, choices, type, selectedId) {
+        container.replaceChildren();
+        choices.forEach((choice, index) => {
+          const button = makeElement('button', 'psf-choice' + (choice.id === selectedId ? ' is-active' : ''));
+          button.type = 'button';
+          button.dataset.choiceType = type;
+          button.dataset.choiceValue = choice.id;
+          button.setAttribute('aria-pressed', String(choice.id === selectedId));
 
-      reset.addEventListener('click', () => {
-        selected.clear();
-        goals.forEach((button) => {
-          button.setAttribute('aria-pressed', 'false');
-          button.classList.remove('is-active');
+          const number = makeElement('span', 'psf-choice-index', String(index + 1).padStart(2, '0'));
+          const copy = makeElement('span', 'psf-choice-copy');
+          copy.append(makeElement('strong', '', choice.label));
+          copy.append(makeElement('small', '', choice.hint));
+          const mark = makeElement('span', 'psf-choice-mark', '↗');
+          mark.setAttribute('aria-hidden', 'true');
+          button.append(number, copy, mark);
+          container.append(button);
         });
-        render();
-      });
+      }
+
+      function renderOptions() {
+        if (!state.position) return;
+        const goalTitle = root.querySelector('#psfGoalTitle');
+        const selectedPosition = positionInfo();
+        goalTitle.textContent = 'What should your ' + selectedPosition.label.toLowerCase() + ' do better?';
+        renderChoices(
+          root.querySelector('#psfGoalOptions'),
+          getPlaystyleGoalsForPosition(state.position),
+          'goal',
+          state.goalId
+        );
+        renderChoices(
+          root.querySelector('#psfProfileOptions'),
+          getPlaystyleProfileChoices(state.position),
+          'profile',
+          state.profileId
+        );
+      }
+
+      function renderSummary() {
+        const position = positionInfo();
+        const goal = goalInfo();
+        const profile = profileInfo();
+        root.querySelector('#psfSummaryPosition').textContent = position ? position.label + ' (' + position.code + ')' : 'Not selected';
+        root.querySelector('#psfSummaryGoal').textContent = goal ? goal.label : 'Not selected';
+        root.querySelector('#psfSummaryProfile').textContent = profile ? profile.label : 'Not selected';
+
+        let summary = 'Your answers will shape the two results. A defensive role can favour tackling styles; a forward role can favour movement and finishing.';
+        if (position && !goal) summary = position.label + ' selected. Next, choose the job you need from this player.';
+        if (position && goal && !profile) summary = 'Main job saved. Pick the player type that fits the way you use this position.';
+        if (position && goal && profile) summary = 'Profile ready. The results will balance your chosen job, preferred player type and position fit.';
+        root.querySelector('#psfSummaryCopy').textContent = summary;
+
+        if (state.step === 1) {
+          status.textContent = position ? 'Position selected. Continue to choose the main job.' : 'Choose a position to start.';
+        } else if (state.step === 2) {
+          status.textContent = goal ? 'Main job selected. Continue to choose a player type.' : 'Choose the main job for this position.';
+        } else {
+          status.textContent = profile ? 'Ready. Find your two PlayStyles.' : 'Choose the player type that fits your game.';
+        }
+      }
+
+      function renderStep() {
+        panels.forEach((panel) => { panel.hidden = Number(panel.dataset.stepPanel) !== state.step; });
+        root.querySelectorAll('[data-step-chip]').forEach((chip) => {
+          const number = Number(chip.dataset.stepChip);
+          chip.classList.toggle('is-active', number === state.step);
+          chip.classList.toggle('is-complete', number < state.step);
+          if (number === state.step) chip.setAttribute('aria-current', 'step');
+          else chip.removeAttribute('aria-current');
+        });
+        stepMeta.textContent = 'STEP ' + String(state.step).padStart(2, '0') + ' OF 03';
+        progressFill.style.width = (state.step / 3 * 100) + '%';
+        backButton.hidden = state.step === 1;
+        nextButton.replaceChildren(
+          makeElement('span', '', state.step === 3 ? 'Find my two matches' : 'Continue'),
+          makeElement('span', '', state.step === 3 ? '↗' : '→')
+        );
+        nextButton.disabled = state.step === 1 ? !state.position : state.step === 2 ? !state.goalId : !state.profileId;
+        if (state.position) renderOptions();
+        renderSummary();
+      }
+
+      function iconForLevel(style, level) {
+        const tier = style.noBaseIcon ? (level === 3 ? 2 : 1) : level - 1;
+        return '/assets/images/playstyle/playstyle_64_PLAYSTYLE_' + style.icon + '_' + tier + '.png';
+      }
+
+      function buildRecommendationCard(style, index) {
+        const card = makeElement('article', 'psf-result-card');
+        card.dataset.styleName = style.name;
+
+        const top = makeElement('div', 'psf-result-top');
+        top.append(makeElement('span', 'psf-result-index', 'MATCH 0' + (index + 1)));
+        top.append(makeElement('span', 'psf-result-rank', index === 0 ? 'BEST FIT' : 'ALTERNATIVE'));
+        card.append(top);
+
+        const head = makeElement('div', 'psf-result-head');
+        const icon = makeElement('img', 'psf-result-icon');
+        icon.src = iconForLevel(style, 1);
+        icon.width = 64;
+        icon.height = 64;
+        icon.alt = style.name + ' PlayStyle icon';
+        icon.loading = 'lazy';
+        icon.decoding = 'async';
+        const title = makeElement('div', 'psf-result-title');
+        title.append(makeElement('span', 'psf-result-category', style.category));
+        title.append(makeElement('h3', '', style.name));
+        head.append(icon, title);
+        card.append(head);
+
+        card.append(makeElement('p', 'psf-result-summary', style.summary));
+
+        const why = makeElement('div', 'psf-result-why');
+        why.append(makeElement('span', 'psf-overline', 'WHY IT FITS'));
+        why.append(makeElement('p', '', style.reason));
+        card.append(why);
+
+        const tags = makeElement('div', 'psf-result-tags');
+        style.matchTags.forEach((tagText) => tags.append(makeElement('span', 'psf-result-tag', tagText)));
+        card.append(tags);
+
+        const levelHeader = makeElement('div', 'psf-level-header');
+        levelHeader.append(makeElement('span', '', 'PLAYSTYLE LEVEL'));
+        const activeLevelLabel = makeElement('strong', '', 'Level 1');
+        levelHeader.append(activeLevelLabel);
+        card.append(levelHeader);
+
+        const levelTabs = makeElement('div', 'psf-level-tabs');
+        levelTabs.setAttribute('role', 'group');
+        levelTabs.setAttribute('aria-label', 'Choose ' + style.name + ' level');
+        [1, 2, 3].forEach((level) => {
+          const button = makeElement('button', 'psf-level-button' + (level === 1 ? ' is-active' : ''), level === 3 ? '★ Level 3' : 'Level ' + level);
+          button.type = 'button';
+          button.dataset.level = String(level);
+          button.setAttribute('aria-pressed', String(level === 1));
+          levelTabs.append(button);
+        });
+        card.append(levelTabs);
+
+        const levelCopy = makeElement('p', 'psf-level-copy', style.levels[0]);
+        card.append(levelCopy);
+        card._playstyleData = style;
+        card._activeLevelLabel = activeLevelLabel;
+        card._levelCopy = levelCopy;
+        return card;
+      }
+
+      function renderResults() {
+        const recommendations = getPlaystyleRecommendations({
+          position: state.position,
+          goalId: state.goalId,
+          profileId: state.profileId
+        });
+        resultGrid.replaceChildren();
+        recommendations.forEach((style, index) => resultGrid.append(buildRecommendationCard(style, index)));
+        results.hidden = recommendations.length !== 2;
+        if (recommendations.length !== 2) {
+          status.textContent = 'We could not build a complete match. Go back and choose another answer.';
+          return;
+        }
+        results.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start'
+        });
+      }
 
       root.addEventListener('click', (event) => {
-        const button = event.target.closest('.psf-level');
-        if (!button) return;
-        const card = button.closest('[data-style-card]');
-        if (!card) return;
-        const level = Number(button.dataset.level);
-        card.querySelectorAll('.psf-level').forEach((tab) => {
-          const active = tab === button;
-          tab.classList.toggle('is-active', active);
-          tab.setAttribute('aria-pressed', String(active));
-        });
-        const levels = JSON.parse(card.dataset.levels);
-        const icons = JSON.parse(card.dataset.icons);
-        card.querySelector('[data-level-copy]').textContent = levels[level - 1];
-        card.querySelector('.psf-style-icon').src = icons[level - 1];
-        card.querySelector('[data-tier-label]').textContent = level === 3 ? '★ Level 3' : 'Level ' + level;
+        const positionButton = event.target.closest('[data-position]');
+        if (positionButton) {
+          const nextPosition = positionButton.dataset.position;
+          if (nextPosition !== state.position) {
+            state.position = nextPosition;
+            state.goalId = '';
+            state.profileId = '';
+            results.hidden = true;
+          }
+          root.querySelectorAll('[data-position]').forEach((button) => {
+            const active = button.dataset.position === state.position;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+          });
+          renderStep();
+          return;
+        }
+
+        const choiceButton = event.target.closest('[data-choice-type]');
+        if (choiceButton) {
+          if (choiceButton.dataset.choiceType === 'goal') {
+            state.goalId = choiceButton.dataset.choiceValue;
+            state.profileId = '';
+            results.hidden = true;
+          } else {
+            state.profileId = choiceButton.dataset.choiceValue;
+            results.hidden = true;
+          }
+          renderOptions();
+          renderSummary();
+          renderStep();
+          return;
+        }
+
+        const levelButton = event.target.closest('.psf-level-button');
+        if (levelButton) {
+          const card = levelButton.closest('.psf-result-card');
+          const style = card && card._playstyleData;
+          if (!style) return;
+          const level = Number(levelButton.dataset.level);
+          card.querySelectorAll('.psf-level-button').forEach((button) => {
+            const active = button === levelButton;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+          });
+          card.querySelector('.psf-result-icon').src = iconForLevel(style, level);
+          card._activeLevelLabel.textContent = level === 3 ? '★ Level 3' : 'Level ' + level;
+          card._levelCopy.textContent = style.levels[level - 1];
+          return;
+        }
+
+        if (event.target.closest('#psfNext')) {
+          if (state.step === 1 && state.position) {
+            state.step = 2;
+            renderStep();
+          } else if (state.step === 2 && state.goalId) {
+            state.step = 3;
+            renderStep();
+          } else if (state.step === 3 && state.profileId) {
+            renderResults();
+          }
+          return;
+        }
+
+        if (event.target.closest('#psfBack')) {
+          state.step = Math.max(1, state.step - 1);
+          renderStep();
+          return;
+        }
+
+        if (event.target.closest('#psfReset')) {
+          state.step = 1;
+          state.position = '';
+          state.goalId = '';
+          state.profileId = '';
+          results.hidden = true;
+          root.querySelectorAll('[data-position]').forEach((button) => {
+            button.classList.remove('is-active');
+            button.setAttribute('aria-pressed', 'false');
+          });
+          renderStep();
+          return;
+        }
+
+        if (event.target.closest('#psfEditAnswers')) {
+          results.hidden = true;
+          state.step = 1;
+          renderStep();
+        }
       });
 
-      render();
+      renderStep();
     })();
   </script>
 
   <style>
     .psf-page {
-      --psf-bg: #071018; --psf-panel: #0f1a26; --psf-raised: #132536;
-      --psf-line: rgba(255,255,255,.09); --psf-text: #f5f8fb;
-      --psf-muted: #a7b4c3; --psf-blue: #4cc9ff; --psf-gold: #f2c977;
-      color: var(--psf-text); background: var(--psf-bg); overflow: clip;
+      --psf-bg: #071018;
+      --psf-panel: #0f1a26;
+      --psf-raised: #142536;
+      --psf-line: rgba(255,255,255,.09);
+      --psf-text: #f5f8fb;
+      --psf-muted: #a7b4c3;
+      --psf-blue: #4cc9ff;
+      --psf-green: #47d16c;
+      color: var(--psf-text);
+      background: var(--psf-bg);
       min-height: 70vh;
+      overflow: clip;
     }
     .psf-shell { width: min(1160px, calc(100% - 40px)); margin-inline: auto; }
-    .psf-hero { padding: 25px 0 38px; border-bottom: 1px solid var(--psf-line); background: radial-gradient(ellipse at 70% 0%, rgba(76,201,255,.11), transparent 44%), linear-gradient(180deg,#0a1622,#071018); }
+    .psf-hero {
+      padding: 24px 0 34px;
+      border-bottom: 1px solid var(--psf-line);
+      background: radial-gradient(ellipse at 74% 0%, rgba(76,201,255,.13), transparent 43%), linear-gradient(180deg,#0b1723,#071018);
+    }
     .psf-crumbs { display:flex; flex-wrap:wrap; align-items:center; gap:9px; color:#718697; font:600 11px/1.5 var(--font-body,Inter,sans-serif); }
     .psf-crumbs a { color:#a7b8c6; text-decoration:none; }
     .psf-crumbs a:hover { color:var(--psf-blue); }
     .psf-crumbs strong { color:#eef7fb; font-weight:600; }
-    .psf-kicker,.psf-step { display:flex; align-items:center; gap:8px; color:var(--psf-blue); font:800 10px/1.4 var(--font-body,Inter,sans-serif); letter-spacing:.13em; }
-    .psf-kicker { margin:31px 0 10px; }
-    .psf-kicker span { width:6px; height:6px; border-radius:50%; background:var(--psf-blue); box-shadow:0 0 10px rgba(76,201,255,.5); }
-    .psf-hero h1 { margin:0; font:700 clamp(39px,5.5vw,62px)/1.02 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.055em; }
+    .psf-kicker,.psf-question-number,.psf-overline { display:flex; align-items:center; gap:8px; color:var(--psf-blue); font:800 10px/1.4 var(--font-body,Inter,sans-serif); letter-spacing:.13em; text-transform:uppercase; }
+    .psf-kicker { margin:30px 0 11px; }
+    .psf-kicker span { width:6px; height:6px; border-radius:50%; background:var(--psf-blue); box-shadow:0 0 11px rgba(76,201,255,.5); }
+    .psf-hero h1 { margin:0; font:700 clamp(40px,5.4vw,64px)/1.02 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.055em; }
     .psf-hero h1 em { color:var(--psf-blue); font-style:normal; }
-    .psf-lede { max-width:600px; margin:15px 0 0; color:var(--psf-muted); font:400 14px/1.8 var(--font-body,Inter,sans-serif); }
-    .psf-back-link { display:inline-flex; gap:12px; align-items:center; margin-top:18px; color:#d9e8f1; text-decoration:none; font:700 12px/1.5 var(--font-body,Inter,sans-serif); }
-    .psf-back-link span { color:var(--psf-blue); }
-    .psf-workspace { display:grid; grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr); align-items:start; gap:18px; padding-top:23px; padding-bottom:58px; }
-    .psf-panel,.psf-results { min-width:0; border:1px solid var(--psf-line); border-radius:13px; background:linear-gradient(155deg,rgba(16,30,43,.98),rgba(9,19,29,.98)); }
-    .psf-panel { padding:20px; }
-    .psf-panel-head,.psf-results-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
-    .psf-panel h2,.psf-results h2 { margin:8px 0 0; font:700 clamp(20px,2.1vw,26px)/1.15 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.04em; }
-    .psf-pick-count,.psf-result-count { flex:0 0 auto; padding:7px 9px; border:1px solid var(--psf-line); border-radius:6px; color:#b8c9d5; background:rgba(255,255,255,.025); font:700 10px/1.1 var(--font-body,Inter,sans-serif); }
-    .psf-help { margin:10px 0 19px; color:var(--psf-muted); font:400 12px/1.7 var(--font-body,Inter,sans-serif); }
-    .psf-goal-group + .psf-goal-group { margin-top:17px; padding-top:15px; border-top:1px solid rgba(255,255,255,.06); }
-    .psf-goal-group h3 { margin:0 0 9px; color:#8fa3b2; font:800 9px/1.4 var(--font-body,Inter,sans-serif); text-transform:uppercase; letter-spacing:.13em; }
-    .psf-goal-list { display:grid; gap:7px; }
-    .psf-goal { display:flex; align-items:center; gap:10px; width:100%; padding:10px 11px; border:1px solid rgba(255,255,255,.075); border-radius:8px; color:var(--psf-text); text-align:left; background:rgba(255,255,255,.02); cursor:pointer; transition:border-color .18s,background .18s; }
-    .psf-goal:hover { border-color:rgba(76,201,255,.26); background:rgba(76,201,255,.035); }
-    .psf-goal.is-active { border-color:rgba(76,201,255,.45); background:rgba(76,201,255,.09); }
-    .psf-goal-check { display:grid; place-items:center; width:22px; height:22px; flex:0 0 22px; border:1px solid rgba(255,255,255,.13); border-radius:6px; color:transparent; background:rgba(0,0,0,.12); font:800 12px/1 var(--font-body,Inter,sans-serif); }
-    .psf-goal.is-active .psf-goal-check { color:#06131c; border-color:var(--psf-blue); background:var(--psf-blue); }
-    .psf-goal-copy { display:grid; gap:3px; min-width:0; }
-    .psf-goal-copy strong { font:700 11px/1.4 var(--font-body,Inter,sans-serif); }
-    .psf-goal-copy small { color:#94a7b6; font:400 10px/1.5 var(--font-body,Inter,sans-serif); }
-    .psf-actions { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:17px; padding-top:14px; border-top:1px solid rgba(255,255,255,.06); }
-    .psf-limit-note { margin:0; color:#9aafbd; font:500 10px/1.6 var(--font-body,Inter,sans-serif); }
-    .psf-reset { flex:0 0 auto; padding:8px 10px; border:1px solid var(--psf-line); border-radius:6px; color:#d8e5ed; background:rgba(255,255,255,.025); font:700 10px/1 var(--font-body,Inter,sans-serif); cursor:pointer; }
-    .psf-reset:hover { border-color:rgba(76,201,255,.3); }
-    .psf-results { padding:20px; }
-    .psf-results-intro { margin:16px 0 0; padding:16px; border:1px dashed rgba(255,255,255,.1); border-radius:8px; color:var(--psf-muted); font:400 12px/1.7 var(--font-body,Inter,sans-serif); }
-    .psf-results-intro[hidden] { display:none; }
-    .psf-result-grid { display:grid; grid-template-columns:1fr; gap:11px; margin-top:15px; }
-    .psf-style-card { padding:15px; border:1px solid var(--psf-line); border-radius:10px; background:rgba(255,255,255,.018); }
-    .psf-style-card[hidden] { display:none; }
-    .psf-style-head { display:flex; align-items:center; gap:12px; }
-    .psf-style-icon { width:58px; height:58px; flex:0 0 58px; object-fit:contain; border:1px solid rgba(76,201,255,.13); border-radius:9px; background:#0a1722; }
-    .psf-style-title { min-width:0; }
-    .psf-style-title span { color:#7e95a5; font:800 8px/1.5 var(--font-body,Inter,sans-serif); text-transform:uppercase; letter-spacing:.12em; }
-    .psf-style-title h3 { margin:2px 0 0; font:700 18px/1.2 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.025em; }
-    .psf-style-summary { margin:11px 0 0; color:#b6c4cf; font:400 11px/1.7 var(--font-body,Inter,sans-serif); }
-    .psf-match-wrap { margin-top:11px; }
-    .psf-match-label { color:#6f8798; font:800 8px/1.4 var(--font-body,Inter,sans-serif); letter-spacing:.12em; text-transform:uppercase; }
-    .psf-match-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
-    .psf-match-tag { padding:5px 7px; border:1px solid rgba(76,201,255,.17); border-radius:5px; color:#bfeeff; background:rgba(76,201,255,.055); font:600 9px/1.2 var(--font-body,Inter,sans-serif); }
-    .psf-level-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:13px; padding-top:11px; border-top:1px solid rgba(255,255,255,.07); color:#8499a8; font:800 8px/1.3 var(--font-body,Inter,sans-serif); letter-spacing:.1em; text-transform:uppercase; }
-    .psf-level-row strong { color:var(--psf-blue); font-size:9px; letter-spacing:0; }
-    .psf-level-tabs { display:grid; grid-template-columns:1fr 1fr 1.15fr; gap:5px; margin-top:8px; }
-    .psf-level { min-height:31px; padding:0 5px; border:1px solid rgba(255,255,255,.08); border-radius:5px; color:#91a3b1; background:rgba(255,255,255,.02); font:700 9px/1 var(--font-body,Inter,sans-serif); cursor:pointer; }
-    .psf-level.is-active { border-color:rgba(76,201,255,.42); color:#eaf8ff; background:rgba(76,201,255,.09); }
-    .psf-level[data-level="3"].is-active { border-color:rgba(242,201,119,.4); background:rgba(242,201,119,.08); }
-    .psf-level-copy { margin:10px 0 0; min-height:40px; color:#d0dce5; font:400 11px/1.7 var(--font-body,Inter,sans-serif); }
-    .psf-footnote { margin:15px 0 0; color:#758b9a; font:400 10px/1.7 var(--font-body,Inter,sans-serif); }
-    .psf-no-script { color:var(--psf-muted); font-size:12px; }
-    .psf-no-script a { color:var(--psf-blue); }
-    @media (max-width: 900px) { .psf-workspace { grid-template-columns:1fr; } .psf-panel,.psf-results { padding:17px; } }
+    .psf-lede { max-width:620px; margin:15px 0 0; color:var(--psf-muted); font:400 14px/1.8 var(--font-body,Inter,sans-serif); }
+    .psf-hero-links { display:flex; flex-wrap:wrap; align-items:center; gap:17px; margin-top:19px; font:700 11px/1.5 var(--font-body,Inter,sans-serif); }
+    .psf-hero-links a { display:inline-flex; gap:10px; align-items:center; color:#e5f1f8; text-decoration:none; }
+    .psf-hero-links a span { color:var(--psf-blue); }
+    .psf-hero-links > span { display:inline-flex; align-items:center; gap:8px; color:#7f94a3; font-size:10px; font-weight:600; }
+    .psf-hero-links i { width:3px; height:3px; border-radius:50%; background:var(--psf-blue); }
+    .psf-builder { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(260px,.75fr); gap:17px; align-items:start; padding-top:24px; }
+    .psf-builder-main { min-width:0; }
+    .psf-progress-card,.psf-survey-card,.psf-summary-card,.psf-result-card {
+      border:1px solid var(--psf-line);
+      border-radius:13px;
+      background:linear-gradient(155deg,rgba(16,30,43,.98),rgba(9,19,29,.98));
+    }
+    .psf-progress-card { padding:15px 19px 13px; }
+    .psf-progress-meta { display:flex; justify-content:space-between; gap:12px; color:#718697; font:800 9px/1.4 var(--font-body,Inter,sans-serif); letter-spacing:.11em; }
+    .psf-progress-meta span:first-child { color:var(--psf-blue); }
+    .psf-progress-track { height:3px; margin-top:12px; border-radius:99px; background:rgba(255,255,255,.07); overflow:hidden; }
+    .psf-progress-track span { display:block; width:33.333%; height:100%; border-radius:inherit; background:var(--psf-blue); transition:width .22s ease; }
+    .psf-stepper { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; }
+    .psf-step-chip { display:flex; align-items:center; gap:7px; color:#6f8494; font:700 10px/1.4 var(--font-body,Inter,sans-serif); }
+    .psf-step-chip b { display:grid; place-items:center; width:22px; height:22px; border:1px solid rgba(255,255,255,.1); border-radius:6px; color:#95a8b5; font-size:9px; }
+    .psf-step-chip.is-active { color:#eef8ff; }
+    .psf-step-chip.is-active b { border-color:rgba(76,201,255,.42); color:#06131c; background:var(--psf-blue); }
+    .psf-step-chip.is-complete b { border-color:rgba(71,209,108,.4); color:#07150b; background:var(--psf-green); }
+    .psf-survey-card { margin-top:12px; padding:23px; }
+    .psf-question[hidden],.psf-results[hidden] { display:none; }
+    .psf-question-head { margin-bottom:20px; }
+    .psf-question-number { font-size:9px; }
+    .psf-question-head h2,.psf-summary-card h2,.psf-results-heading h2 { margin:9px 0 0; font:700 clamp(22px,2.6vw,29px)/1.13 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.04em; }
+    .psf-question-head p,.psf-results-heading p { max-width:600px; margin:9px 0 0; color:var(--psf-muted); font:400 12px/1.7 var(--font-body,Inter,sans-serif); }
+    .psf-position-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .psf-position-card {
+      position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:6px;
+      min-height:94px; padding:12px; border:1px solid rgba(255,255,255,.08); border-radius:9px;
+      color:var(--psf-text); text-align:left; background:rgba(255,255,255,.018); cursor:pointer;
+      transition:border-color .18s,background .18s,transform .18s;
+    }
+    .psf-position-card:hover { transform:translateY(-1px); border-color:rgba(76,201,255,.28); }
+    .psf-position-card.is-active { border-color:rgba(76,201,255,.58); background:linear-gradient(145deg,rgba(76,201,255,.13),rgba(76,201,255,.035)); box-shadow:inset 0 0 0 1px rgba(76,201,255,.07); }
+    .psf-position-code { color:var(--psf-blue); font:800 17px/1.1 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.03em; }
+    .psf-position-name { max-width:100%; color:#b9c7d1; font:600 9px/1.35 var(--font-body,Inter,sans-serif); }
+    .psf-position-mark { position:absolute; top:10px; right:10px; color:#526a7b; font:700 10px/1 var(--font-body,Inter,sans-serif); }
+    .psf-position-card.is-active .psf-position-mark { color:var(--psf-blue); }
+    .psf-choice-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .psf-choice {
+      display:flex; align-items:center; gap:11px; width:100%; min-height:75px; padding:12px;
+      border:1px solid rgba(255,255,255,.08); border-radius:9px; color:var(--psf-text);
+      text-align:left; background:rgba(255,255,255,.018); cursor:pointer; transition:border-color .18s,background .18s;
+    }
+    .psf-choice:hover { border-color:rgba(76,201,255,.28); background:rgba(76,201,255,.035); }
+    .psf-choice.is-active { border-color:rgba(76,201,255,.52); background:rgba(76,201,255,.085); }
+    .psf-choice-index { display:grid; place-items:center; flex:0 0 27px; width:27px; height:27px; border:1px solid rgba(255,255,255,.1); border-radius:7px; color:#8fa4b3; font:800 9px/1 var(--font-body,Inter,sans-serif); }
+    .psf-choice.is-active .psf-choice-index { border-color:var(--psf-blue); color:#07131c; background:var(--psf-blue); }
+    .psf-choice-copy { display:grid; gap:4px; min-width:0; }
+    .psf-choice-copy strong { font:700 11px/1.4 var(--font-body,Inter,sans-serif); }
+    .psf-choice-copy small { color:#8fa2b1; font:400 10px/1.5 var(--font-body,Inter,sans-serif); }
+    .psf-choice-mark { flex:0 0 auto; margin-left:auto; color:#647b8c; font:700 10px/1 var(--font-body,Inter,sans-serif); }
+    .psf-choice.is-active .psf-choice-mark { color:var(--psf-blue); }
+    .psf-question-foot { margin:13px 0 0; color:#718797; font:500 10px/1.6 var(--font-body,Inter,sans-serif); }
+    .psf-survey-footer { display:flex; align-items:center; gap:12px; margin-top:22px; padding-top:16px; border-top:1px solid rgba(255,255,255,.07); }
+    .psf-survey-status { flex:1; margin:0; color:#91a6b5; font:500 10px/1.6 var(--font-body,Inter,sans-serif); }
+    .psf-back-button,.psf-next-button,.psf-edit-button,.psf-clear-button {
+      display:inline-flex; justify-content:center; align-items:center; gap:9px; border-radius:7px; cursor:pointer;
+      font:800 10px/1 var(--font-body,Inter,sans-serif); transition:background .18s,border-color .18s,color .18s;
+    }
+    .psf-back-button { min-height:37px; padding:0 12px; border:1px solid var(--psf-line); color:#c2d0d9; background:rgba(255,255,255,.025); }
+    .psf-back-button[hidden] { display:none; }
+    .psf-next-button { min-height:39px; padding:0 15px; border:1px solid var(--psf-blue); color:#06121b; background:var(--psf-blue); white-space:nowrap; }
+    .psf-next-button:hover:not(:disabled) { background:#63d4ff; }
+    .psf-next-button:disabled { border-color:rgba(255,255,255,.08); color:#647888; background:rgba(255,255,255,.045); cursor:not-allowed; }
+    .psf-summary-card { position:sticky; top:18px; padding:20px; }
+    .psf-summary-heading { display:flex; align-items:center; gap:11px; margin-bottom:20px; }
+    .psf-summary-mark { display:grid; place-items:center; width:43px; height:43px; border:1px solid rgba(76,201,255,.25); border-radius:9px; color:var(--psf-blue); background:rgba(76,201,255,.06); font:800 15px/1 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.06em; }
+    .psf-summary-card .psf-overline { color:#7c93a3; font-size:8px; }
+    .psf-summary-card h2 { margin-top:4px; font-size:20px; }
+    .psf-summary-line { display:grid; gap:5px; padding:12px 0; border-top:1px solid rgba(255,255,255,.06); }
+    .psf-summary-line > span { color:#718797; font:700 9px/1.3 var(--font-body,Inter,sans-serif); text-transform:uppercase; letter-spacing:.08em; }
+    .psf-summary-line strong { color:#e3edf3; font:600 11px/1.5 var(--font-body,Inter,sans-serif); overflow-wrap:anywhere; }
+    .psf-summary-rule { height:1px; margin-top:7px; background:rgba(255,255,255,.07); }
+    .psf-summary-copy { margin:13px 0 0; color:#92a7b6; font:400 11px/1.8 var(--font-body,Inter,sans-serif); }
+    .psf-guide-link { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:19px; padding:12px 0; border-top:1px solid rgba(255,255,255,.06); color:#d7e7f0; text-decoration:none; font:700 10px/1.4 var(--font-body,Inter,sans-serif); }
+    .psf-guide-link span { color:var(--psf-blue); }
+    .psf-clear-button { width:100%; min-height:35px; border:1px solid var(--psf-line); color:#9fb0bc; background:rgba(255,255,255,.02); }
+    .psf-clear-button:hover { border-color:rgba(76,201,255,.28); color:#eaf8ff; }
+    .psf-results { padding-top:43px; padding-bottom:58px; scroll-margin-top:20px; }
+    .psf-results-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:17px; }
+    .psf-results-heading h2 { font-size:clamp(27px,3vw,36px); }
+    .psf-edit-button { flex:0 0 auto; min-height:36px; padding:0 12px; border:1px solid var(--psf-line); color:#d7e6ef; background:rgba(255,255,255,.025); }
+    .psf-edit-button:hover { border-color:rgba(76,201,255,.3); }
+    .psf-edit-button span { color:var(--psf-blue); }
+    .psf-result-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; gap:13px; }
+    .psf-result-card { min-width:0; padding:18px; background:linear-gradient(155deg,rgba(18,34,48,.98),rgba(9,19,29,.98)); }
+    .psf-result-top { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:17px; }
+    .psf-result-index { color:#7690a2; font:800 9px/1.3 var(--font-body,Inter,sans-serif); letter-spacing:.12em; }
+    .psf-result-rank { padding:6px 8px; border:1px solid rgba(76,201,255,.2); border-radius:5px; color:#bfeeff; background:rgba(76,201,255,.055); font:800 8px/1 var(--font-body,Inter,sans-serif); letter-spacing:.08em; }
+    .psf-result-card:nth-child(2) .psf-result-rank { border-color:rgba(255,255,255,.1); color:#b7c4cd; background:rgba(255,255,255,.025); }
+    .psf-result-head { display:flex; align-items:center; gap:13px; }
+    .psf-result-icon { flex:0 0 64px; width:64px; height:64px; object-fit:contain; border:1px solid rgba(76,201,255,.16); border-radius:10px; background:#091721; }
+    .psf-result-title { min-width:0; }
+    .psf-result-category { color:#7c93a3; font:800 8px/1.4 var(--font-body,Inter,sans-serif); text-transform:uppercase; letter-spacing:.12em; }
+    .psf-result-title h3 { margin:4px 0 0; font:700 clamp(19px,2vw,24px)/1.15 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.035em; overflow-wrap:anywhere; }
+    .psf-result-summary { min-height:43px; margin:13px 0 0; color:#b4c3ce; font:400 11px/1.75 var(--font-body,Inter,sans-serif); }
+    .psf-result-why { margin-top:15px; padding:12px; border:1px solid rgba(255,255,255,.065); border-radius:8px; background:rgba(255,255,255,.02); }
+    .psf-result-why .psf-overline { color:#7e96a6; font-size:8px; }
+    .psf-result-why p { margin:6px 0 0; color:#d1e1ea; font:500 10px/1.65 var(--font-body,Inter,sans-serif); }
+    .psf-result-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; min-height:22px; }
+    .psf-result-tag { padding:5px 7px; border:1px solid rgba(76,201,255,.15); border-radius:5px; color:#9edfff; background:rgba(76,201,255,.04); font:600 8px/1.2 var(--font-body,Inter,sans-serif); }
+    .psf-level-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:15px; padding-top:12px; border-top:1px solid rgba(255,255,255,.07); color:#7890a0; font:800 8px/1.4 var(--font-body,Inter,sans-serif); letter-spacing:.1em; }
+    .psf-level-header strong { color:var(--psf-blue); font-size:9px; letter-spacing:0; }
+    .psf-level-tabs { display:grid; grid-template-columns:1fr 1fr 1.15fr; gap:6px; margin-top:9px; }
+    .psf-level-button { min-height:32px; padding:0 5px; border:1px solid rgba(255,255,255,.08); border-radius:6px; color:#91a5b3; background:rgba(255,255,255,.02); font:700 9px/1 var(--font-body,Inter,sans-serif); cursor:pointer; }
+    .psf-level-button.is-active { border-color:rgba(76,201,255,.42); color:#e8f7ff; background:rgba(76,201,255,.09); }
+    .psf-level-button[data-level="3"].is-active { border-color:rgba(242,201,119,.4); background:rgba(242,201,119,.08); }
+    .psf-level-copy { min-height:55px; margin:11px 0 0; color:#cedbe4; font:400 11px/1.75 var(--font-body,Inter,sans-serif); }
+    .psf-results-note { margin:15px 0 0; color:#718797; font:400 10px/1.7 var(--font-body,Inter,sans-serif); }
+    .psf-page button:focus-visible,.psf-page a:focus-visible { outline:2px solid var(--psf-blue); outline-offset:3px; }
+    @media (max-width: 930px) {
+      .psf-builder { grid-template-columns:minmax(0,1fr) 260px; gap:12px; }
+      .psf-survey-card { padding:18px; }
+      .psf-position-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .psf-choice-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width: 760px) {
+      .psf-builder { grid-template-columns:1fr; }
+      .psf-summary-card { position:static; }
+      .psf-summary-heading { margin-bottom:12px; }
+      .psf-summary-line { grid-template-columns:100px minmax(0,1fr); align-items:center; }
+      .psf-summary-copy { margin-top:9px; }
+      .psf-result-grid { grid-template-columns:1fr; }
+      .psf-result-summary { min-height:0; }
+      .psf-level-copy { min-height:0; }
+    }
     @media (max-width: 520px) {
       .psf-shell { width:calc(100% - 28px); }
-      .psf-hero { padding-top:19px; }
+      .psf-hero { padding-top:18px; }
       .psf-kicker { margin-top:25px; }
       .psf-hero h1 { font-size:clamp(37px,11vw,50px); }
-      .psf-panel-head,.psf-results-head { align-items:flex-start; }
-      .psf-panel h2,.psf-results h2 { font-size:21px; }
-      .psf-help { margin-bottom:16px; }
-      .psf-actions { align-items:flex-start; }
-      .psf-pick-count,.psf-result-count { font-size:9px; }
+      .psf-hero-links { gap:13px; }
+      .psf-progress-card { padding:13px; }
+      .psf-progress-meta { font-size:8px; }
+      .psf-stepper { gap:4px; }
+      .psf-step-chip { gap:5px; font-size:9px; }
+      .psf-step-chip b { flex:0 0 20px; width:20px; height:20px; }
+      .psf-survey-card { padding:15px; }
+      .psf-question-head h2 { font-size:24px; }
+      .psf-position-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+      .psf-position-card { min-height:80px; padding:9px; }
+      .psf-position-code { font-size:16px; }
+      .psf-position-name { font-size:8px; }
+      .psf-choice { gap:8px; padding:10px; }
+      .psf-choice-copy strong { font-size:10px; }
+      .psf-choice-copy small { font-size:9px; }
+      .psf-survey-footer { align-items:flex-end; gap:8px; }
+      .psf-survey-status { font-size:9px; }
+      .psf-back-button,.psf-next-button { min-height:37px; padding-inline:10px; }
+      .psf-summary-card { padding:16px; }
+      .psf-results-heading { align-items:flex-start; flex-direction:column; }
+      .psf-results { padding-top:32px; }
+      .psf-result-card { padding:15px; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .psf-goal { transition:none; }
+      .psf-progress-track span,.psf-position-card,.psf-choice,.psf-back-button,.psf-next-button,.psf-edit-button,.psf-clear-button { transition:none; }
+      .psf-position-card:hover { transform:none; }
     }
   </style>
 </BaseLayout>
