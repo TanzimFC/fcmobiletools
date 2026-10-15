@@ -2,26 +2,65 @@ import assert from 'node:assert/strict';
 import { access } from 'node:fs/promises';
 import { PLAYSTYLES } from '../src/data/playstyles.js';
 import {
+  PLAYSTYLE_POSITIONS,
+  PLAYSTYLE_POSITION_FIT,
   PLAYSTYLE_GOALS,
-  PLAYSTYLE_GOAL_GROUPS,
+  PLAYSTYLE_PROFILES,
+  getPlaystyleGoalsForPosition,
+  getPlaystyleProfileChoices,
   getPlaystyleRecommendations
 } from '../src/data/playstyleFinder.js';
 
-const names = new Set(PLAYSTYLES.map((style) => style.name));
+const styleNames = new Set(PLAYSTYLES.map((style) => style.name));
+const positionCodes = PLAYSTYLE_POSITIONS.map((position) => position.code);
 const goalIds = PLAYSTYLE_GOALS.map((goal) => goal.id);
+
+assert.equal(new Set(positionCodes).size, positionCodes.length, 'position codes must be unique');
 assert.equal(new Set(goalIds).size, goalIds.length, 'goal ids must be unique');
-assert.equal(PLAYSTYLE_GOAL_GROUPS.length >= 5, true, 'goals should be grouped by player action');
+assert.ok(positionCodes.includes('CB') && positionCodes.includes('GK'), 'survey needs defenders and goalkeeper');
 for (const goal of PLAYSTYLE_GOALS) {
-  assert.ok(goal.label && goal.hint && goal.styleNames.length, 'each goal needs a clear label, hint and match');
-  for (const name of goal.styleNames) assert.ok(names.has(name), 'goal points to missing PlayStyle: ' + name);
+  assert.ok(goal.label && goal.hint && goal.positionCodes.length && goal.styleNames.length, 'each goal needs copy, positions and matches');
+  for (const code of goal.positionCodes) assert.ok(positionCodes.includes(code), 'goal uses unknown position: ' + code);
+  for (const name of goal.styleNames) assert.ok(styleNames.has(name), 'goal points to missing PlayStyle: ' + name);
 }
-assert.equal(getPlaystyleRecommendations([]).length, 0);
-assert.equal(getPlaystyleRecommendations(['not-a-goal']).length, 0);
-assert.deepEqual(getPlaystyleRecommendations(['sprint-dribble']).map((style) => style.name), ['Rapid']);
-assert.deepEqual(getPlaystyleRecommendations(['quick-passes']).map((style) => style.name), ['Bullet Pass', 'Tiki Taka']);
-assert.deepEqual(getPlaystyleRecommendations(['crosses', 'headers']).map((style) => style.name), ['Precision Header', 'Whipped Crosser']);
+for (const [group, profiles] of Object.entries(PLAYSTYLE_PROFILES)) {
+  assert.ok(profiles.length >= 2, group + ' needs at least two player profiles');
+  assert.equal(new Set(profiles.map((profile) => profile.id)).size, profiles.length, group + ' profile ids must be unique');
+  for (const profile of profiles) {
+    assert.ok(profile.label && profile.hint && profile.styleNames.length, 'each profile needs clear copy and style matches');
+    for (const name of profile.styleNames) assert.ok(styleNames.has(name), 'profile points to missing PlayStyle: ' + name);
+  }
+}
+
+for (const position of PLAYSTYLE_POSITIONS) {
+  const goals = getPlaystyleGoalsForPosition(position.code);
+  const profiles = getPlaystyleProfileChoices(position.code);
+  assert.ok(goals.length >= 2, position.code + ' needs enough relevant job choices');
+  assert.ok(profiles.length >= 2, position.code + ' needs enough player-type choices');
+  for (const goal of goals) {
+    for (const profile of profiles) {
+      const recommendations = getPlaystyleRecommendations({
+        position: position.code,
+        goalId: goal.id,
+        profileId: profile.id
+      });
+      assert.equal(recommendations.length, 2, position.code + ' should always return exactly two recommendations');
+      assert.notEqual(recommendations[0].name, recommendations[1].name, 'recommendations must be distinct');
+      assert.ok(recommendations.every((style) => styleNames.has(style.name)), 'recommendations must use guide data');
+      assert.ok(recommendations.some((style) => goal.styleNames.includes(style.name)), position.code + ' should honour the selected main job');
+      if (position.code === 'GK') {
+        assert.ok(recommendations.every((style) => style.category === 'Goalkeeper'), 'goalkeeper results must stay in the goalkeeper category');
+      }
+      if (goal.id === 'standing-tackles' && position.code === 'CB') {
+        assert.equal(recommendations[0].name, 'Anticipate', 'standing tackles at centre-back should favour Anticipate');
+      }
+    }
+  }
+}
+
 for (const style of PLAYSTYLES) {
-  assert.ok(PLAYSTYLE_GOALS.some((goal) => goal.styleNames.includes(style.name)), style.name + ' needs at least one finder goal');
+  assert.ok(PLAYSTYLE_GOALS.some((goal) => goal.styleNames.includes(style.name)), style.name + ' needs at least one survey goal');
+  assert.ok(PLAYSTYLE_POSITION_FIT[style.name]?.length, style.name + ' needs position-fit guidance');
   assert.equal(style.levels.length, 3, style.name + ' should describe all 3 levels');
   const tierFiles = style.noBaseIcon ? [1, 2] : [0, 1, 2];
   for (const tier of tierFiles) {
@@ -29,4 +68,7 @@ for (const style of PLAYSTYLES) {
     await access(icon);
   }
 }
-console.log('PlayStyle Finder checks passed: goals, matches, level descriptions and local icons.');
+
+assert.deepEqual(getPlaystyleRecommendations({ position: 'INVALID', goalId: 'standing-tackles', profileId: 'read-defend' }), []);
+assert.deepEqual(getPlaystyleRecommendations({ position: 'CB', goalId: 'not-a-goal', profileId: 'read-defend' }), []);
+console.log('PlayStyle Finder checks passed: position survey, job choices, profile scoring, two results, levels and local icons.');
