@@ -1,6 +1,16 @@
 // FC Mobile redeem-code database.
 export const REDEEM_CODES = [
   {
+    "code": "BANCAPNHATSN1TUOI",
+    "reward": "2 FC Draft Vouchers + 100M Coins + 300 Rank Up Points",
+    "status": "active",
+    "releaseDate": "2026-10-15",
+    "expiryDate": "2026-10-19",
+    "region": "Vietnam only",
+    "lastVerified": "2026-10-15",
+    "notes": "Official EA SPORTS FC Mobile Vietnam post: available Oct 15–19, 2026. Vietnam version only; not for the global game."
+  },
+  {
     "code": "PUMPKINSPICEPACK",
     "reward": "116–119 OVR 3rd Anniversary Player Item (community-reported)",
     "status": "active",
