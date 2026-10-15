@@ -15,7 +15,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
           <a href="/">Home</a><span aria-hidden="true">/</span><a href="/player/playstyle/">PlayStyle Guide</a><span aria-hidden="true">/</span><strong>Finder</strong>
         </nav>
         <p class="psf-kicker"><span></span> FC MOBILE / PLAYSTYLE BUILDER</p>
-        <h1>Find your two.<br /><em>Build for the role.</em></h1>
+        <h1>Find your fit.<br /><em>Build for the role.</em></h1>
         <p class="psf-lede">Tell us where the player plays, how you use them, and what they need to do better. Get role-aware recommendations built from the actual PlayStyle guide.</p>
         <div class="psf-hero-links">
           <a href="/player/playstyle/">Browse every PlayStyle <span aria-hidden="true">↗</span></a>
@@ -100,7 +100,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
     <section class="psf-shell psf-results" id="psfResults" aria-labelledby="psfResultsTitle" hidden>
       <div class="psf-results-heading">
         <div>
-          <span class="psf-question-number">YOUR TWO MATCHES</span>
+          <span class="psf-question-number" id="psfResultsKicker">YOUR MATCHES</span>
           <h2 id="psfResultsTitle">Two PlayStyles for your build.</h2>
           <p id="psfResultsIntroText">Ranked from your position, main job and player type. Compare each level before you decide.</p>
         </div>
@@ -305,6 +305,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
         const expectedCount = state.position === 'GK' ? 1 : 2;
         resultGrid.classList.toggle('is-single', recommendations.length === 1);
         results.hidden = recommendations.length !== expectedCount;
+        root.querySelector('#psfResultsKicker').textContent = state.position === 'GK' ? 'YOUR GOALKEEPER MATCH' : 'YOUR TWO MATCHES';
         root.querySelector('#psfResultsTitle').textContent = state.position === 'GK' ? 'One PlayStyle for your goalkeeper.' : 'Two PlayStyles for your build.';
         root.querySelector('#psfResultsIntroText').textContent = state.position === 'GK'
           ? 'Goalkeepers have one PlayStyle slot in this finder. Here is the best fit for how you use your keeper.'
@@ -575,7 +576,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
     .psf-summary-card { animation:psf-section-enter .52s .14s cubic-bezier(.2,.75,.25,1) both; }
     .psf-result-card { animation:psf-card-enter .42s cubic-bezier(.2,.75,.25,1) both; }
     .psf-result-card:nth-child(2) { animation-delay:.08s; }
-    .psf-result-grid.is-single { grid-template-columns:minmax(0,680px); }
+    .psf-result-grid.is-single { grid-template-columns:minmax(0,680px); justify-content:center; }
     .psf-result-grid.is-single .psf-result-card { width:100%; }
     .psf-position-card::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.07),transparent 72%); transform:translateX(-35%); transition:opacity .2s,transform .35s; }
     .psf-position-card:hover::after { opacity:1; transform:translateX(35%); }
