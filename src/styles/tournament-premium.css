@@ -64,3 +64,85 @@
 .tp-input{width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.3);color:var(--ink);font:500 15px Inter;outline:0;transition:.25s}
 .tp-input:focus{border-color:var(--cy);box-shadow:0 0 0 4px rgba(76,201,255,.15)}
 @media (prefers-reduced-motion:reduce){.tp *,.tp::before{animation:none!important;transition:none!important}[data-reveal]{opacity:1;transform:none;filter:none}}
+
+/* ======================================================================
+   v2 LUXE LAYER: obsidian + champagne gold, glass depth, light & motion.
+   Appended on top of the base system; also restyles the scoped bracket,
+   standings and fixture components via the `main.tp` prefix.
+   ====================================================================== */
+.tp{--bg:#04060a;--gold:#f2c14e;--gold2:#ffe7a8;--line:rgba(255,255,255,.09);--glow:rgba(76,201,255,.38);background:radial-gradient(120% 55% at 50% -8%,#0c1522,transparent 62%),var(--bg)}
+::selection{background:rgba(242,193,78,.35);color:#fff}
+.tp ::-webkit-scrollbar{height:8px;width:8px}.tp ::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#26455a,#4a3f1f);border-radius:9px}
+.tp-spot{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(520px circle at var(--cx,50%) var(--cy,25%),rgba(76,201,255,.09),rgba(242,193,78,.04) 45%,transparent 70%)}
+.tp-grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.06;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.tp-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;transform-origin:left;transform:scaleX(var(--sp,0));background:linear-gradient(90deg,var(--cy),var(--gold2),var(--gold));box-shadow:0 0 14px var(--gold)}
+/* hero + shared */
+.tp-title{background:linear-gradient(180deg,#fff 30%,#b8c6d8);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.tp-title .tp-shine{filter:drop-shadow(0 0 28px rgba(242,193,78,.35))}
+.tp-eyebrow{box-shadow:0 0 30px -8px rgba(242,193,78,.5),inset 0 1px 0 rgba(255,255,255,.12)}
+.tp-stats>div{min-width:140px;padding:20px 26px;border-radius:22px;background:linear-gradient(165deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid var(--line);backdrop-filter:blur(14px);box-shadow:0 20px 50px -28px #000,inset 0 1px 0 rgba(255,255,255,.08);transition:transform .5s var(--ease),border-color .4s}
+.tp-stats>div:hover{transform:translateY(-5px);border-color:rgba(242,193,78,.4)}
+.tp-stats b{background:linear-gradient(180deg,#fff,var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tp-glass{box-shadow:0 30px 70px -40px #000;background:linear-gradient(165deg,rgba(255,255,255,.2),rgba(255,255,255,.03) 40%,rgba(242,193,78,.12))}
+.tp-glass:hover{box-shadow:0 50px 90px -36px var(--glow),0 0 0 1px rgba(255,255,255,.06)}
+.tp-glass>.in-c{background:radial-gradient(120% 80% at 0 0,rgba(76,201,255,.07),transparent 55%),linear-gradient(165deg,rgba(20,32,48,.94),rgba(7,12,20,.97))}
+.tp-btn{letter-spacing:.01em;will-change:transform}
+.tp-btn.ghost{backdrop-filter:blur(10px);transition:transform .35s var(--ease),background .3s,box-shadow .3s}
+.tp-btn.ghost:hover{background:rgba(255,255,255,.11);box-shadow:inset 0 0 0 1px rgba(242,193,78,.5)}
+.tp-pill.live{box-shadow:0 0 22px -6px var(--ok)}
+.tp-steps li{backdrop-filter:blur(8px);transition:transform .5s var(--ease),border-color .4s,background .4s}
+.tp-steps li:hover{transform:translateY(-6px);border-color:rgba(242,193,78,.35);background:rgba(255,255,255,.055)}
+[data-reveal]{filter:blur(4px)}
+.stage[data-reveal]{filter:none}
+/* tournament detail page */
+main.tp .hero{background:radial-gradient(70% 90% at 85% 0,rgba(242,193,78,.1),transparent 60%),radial-gradient(60% 80% at 0 100%,rgba(76,201,255,.1),transparent 60%)}
+main.tp .pitch{opacity:.11;stroke-dasharray:6 10;animation:dash 40s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-800}}
+main.tp .hero h1{background:linear-gradient(100deg,#fff 25%,var(--gold2) 48%,#fff 72%);background-size:230% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 9s linear infinite}
+main.tp .facts div{padding:14px 20px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line);backdrop-filter:blur(10px)}
+main.tp .card{backdrop-filter:blur(20px);background:linear-gradient(165deg,rgba(26,40,58,.82),rgba(8,14,22,.92));border-color:rgba(255,255,255,.13);box-shadow:0 40px 80px -36px #000,inset 0 1px 0 rgba(255,255,255,.1);overflow:hidden}
+main.tp .card::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.07) 50%,transparent 65%);transform:translateX(-120%);animation:sheen 6s ease-in-out infinite;pointer-events:none}
+@keyframes sheen{55%,100%{transform:translateX(120%)}}
+main.tp .meter span{background:linear-gradient(90deg,var(--cy),var(--gold));box-shadow:0 0 14px var(--cy);animation:grow 1.6s var(--ease) both}
+main.tp .champion{border-color:transparent;background:radial-gradient(120% 90% at 100% 0,rgba(242,193,78,.24),transparent 60%),linear-gradient(160deg,#1b2230,#090f18)}
+main.tp .champion::before{content:"";position:absolute;inset:0;border-radius:22px;padding:1.5px;background:conic-gradient(from var(--a),transparent 0 62%,var(--gold) 82%,var(--gold2) 90%,transparent);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:spin 4.5s linear infinite}
+main.tp .cup{filter:drop-shadow(0 0 12px rgba(242,193,78,.7));animation:float 4s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-6px) rotate(4deg)}}
+main.tp .stage-nav{background:rgba(5,8,13,.72);backdrop-filter:blur(22px) saturate(1.4);border-bottom-color:var(--line)}
+main.tp .stage-nav .wrap{align-items:center}
+main.tp .stage-nav a{transition:.3s var(--ease)}
+main.tp .stage-nav a.on{color:#1a1204;background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 8px 22px -8px var(--gold)}
+.find{margin-left:auto;position:relative;flex:none}
+.find input{width:min(240px,48vw);padding:9px 14px 9px 36px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238b9bad' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 3.5 3.5'/%3E%3C/svg%3E") 13px 50%/15px no-repeat;color:var(--ink);font:500 13.5px Inter,system-ui,sans-serif;outline:0;transition:.3s var(--ease)}
+.find input:focus{width:min(300px,60vw);border-color:var(--gold);box-shadow:0 0 0 4px rgba(242,193,78,.14)}
+.find small{position:absolute;right:14px;top:50%;transform:translateY(-50%);font:600 11px Inter;color:var(--gold);pointer-events:none}
+.tie.hit,.fx.hit,tr.hit{box-shadow:0 0 0 2px var(--gold),0 0 36px -4px rgba(242,193,78,.65)!important;animation:hit 1.2s var(--ease) 2}
+@keyframes hit{50%{transform:scale(1.03)}}
+body.finding .tie:not(.hit),body.finding .fx:not(.hit){opacity:.28;filter:saturate(.4)}
+/* bracket */
+main.tp .bracket-wrap{scroll-behavior:smooth;mask:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 40px),transparent)}
+main.tp .round-title{text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--gold2)}
+main.tp .tie{background:linear-gradient(160deg,rgba(21,35,52,.92),rgba(8,15,24,.96));border-color:rgba(255,255,255,.1);box-shadow:0 14px 30px -20px #000;transition:transform .4s var(--ease),box-shadow .4s,border-color .4s}
+main.tp .tie:hover{transform:translateY(-4px) scale(1.015);border-color:rgba(76,201,255,.5);box-shadow:0 24px 50px -22px var(--glow)}
+main.tp .tie.ready{animation:ready 2.6s ease-in-out infinite}
+@keyframes ready{50%{border-color:rgba(76,201,255,.7);box-shadow:0 0 28px -6px var(--glow)}}
+main.tp .side.win{background:linear-gradient(90deg,rgba(76,201,255,.2),transparent 75%)}
+main.tp .side.win::before{box-shadow:0 0 12px var(--cy)}
+main.tp .tie.final.decided{animation:goldpulse 3.2s ease-in-out infinite}
+@keyframes goldpulse{50%{box-shadow:0 0 0 1px rgba(242,193,78,.3),0 24px 70px -14px rgba(242,193,78,.6)}}
+main.tp .bracket[data-paired="true"] .round .slot::after,main.tp .bracket[data-paired="true"] .round .slot::before,main.tp .bracket[data-paired="true"] .round .pair::after{background:rgba(255,255,255,.13)}
+main.tp .bracket[data-paired="true"] .round .slot.won::after{background:linear-gradient(90deg,var(--cy),var(--gold));box-shadow:0 0 10px var(--cy)}
+main.tp .throne.crowned{animation:goldpulse 3.2s ease-in-out infinite;background:radial-gradient(110% 90% at 50% 0,rgba(242,193,78,.26),transparent 70%)}
+main.tp .throne.crowned svg{filter:drop-shadow(0 0 10px var(--gold));animation:float 4s ease-in-out infinite}
+/* tables + fixtures */
+main.tp .group,main.tp .league,main.tp .day-box{background:linear-gradient(165deg,rgba(18,30,45,.8),rgba(7,13,21,.92));border-color:var(--line);backdrop-filter:blur(12px);box-shadow:0 30px 60px -40px #000;transition:transform .5s var(--ease),border-color .4s}
+main.tp .group:hover{transform:translateY(-4px);border-color:rgba(76,201,255,.3)}
+main.tp .standings tbody tr{transition:background .25s}
+main.tp .standings tbody tr:hover td{background:rgba(255,255,255,.045)}
+main.tp .standings tr.adv td{background:linear-gradient(90deg,rgba(76,201,255,.08),transparent)}
+main.tp .standings tbody tr:first-child .pos{color:var(--gold);text-shadow:0 0 12px var(--gold)}
+main.tp .fx{border-radius:10px;transition:background .25s,transform .3s var(--ease)}
+main.tp .fx:hover{background:rgba(255,255,255,.04);transform:translateX(3px)}
+main.tp .fx .res{background:linear-gradient(180deg,#12202e,#0a1621);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+main.tp .crest{transition:transform .35s var(--ease)}main.tp .tie:hover .crest,main.tp .fx:hover .crest{transform:scale(1.12) rotate(-4deg)}
+@media (prefers-reduced-motion:reduce){.tp-spot,.tp-progress{display:none}main.tp *{animation:none!important}}

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/tournament-premium.css';
 import Crest from '../../components/tournament/Crest.astro';
 import Tie from '../../components/tournament/Tie.astro';
 import Standings from '../../components/tournament/Standings.astro';
@@ -39,7 +40,7 @@ function contextOf(found) {
 <BaseLayout title={t ? t.name : 'Tournament'} description={t?.description || 'FCMOBILETOOLS tournament bracket.'}>
   {t ? (
     <main class="tp">
-      <header class="hero">
+      <header class="hero" data-reveal>
         <svg class="pitch" viewBox="0 0 600 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="420" cy="200" r="150" /><circle cx="420" cy="200" r="5" fill="currentColor" /><path d="M420 -20V420" /><path d="M600 110h-95v180h95" />
         </svg>
@@ -91,13 +92,12 @@ function contextOf(found) {
         </div>
       </header>
 
-      {stages.length > 1 ? (
-        <nav class="stage-nav" aria-label="Tournament stages">
-          <div class="wrap">
-            {stages.map((s) => <a href={`#stage-${s.order}`}>{s.name}</a>)}
-          </div>
-        </nav>
-      ) : null}
+      <nav class="stage-nav" aria-label="Tournament stages">
+        <div class="wrap">
+          {stages.length > 1 ? stages.map((s) => <a href={`#stage-${s.order}`}>{s.name}</a>) : null}
+          <label class="find"><input type="search" data-find placeholder="Find a player…" aria-label="Find a player" autocomplete="off" /><small></small></label>
+        </div>
+      </nav>
 
       <div class="wrap stages">
         {stages.map((stage) => {
@@ -107,7 +107,7 @@ function contextOf(found) {
           const days = !ko && !isGroup ? groupByMatchday(stage.matches || []) : [];
           const firstOpen = days.findIndex((d) => d.pending);
           return (
-            <section class="stage" id={`stage-${stage.order}`}>
+            <section class="stage" data-reveal id={`stage-${stage.order}`}>
               <header class="stage-head">
                 <h2>{stage.name}</h2>
                 <p>{stageTypeLabel(stage.type)}, {matchModeLabel(stage.matchMode)}</p>
@@ -205,6 +205,11 @@ function contextOf(found) {
     <main class="tp missing"><div class="wrap"><h1>Tournament not found</h1><p>This tournament is not published right now.</p><a href="/tournaments/">See all tournaments</a></div></main>
   )}
 </BaseLayout>
+
+<script>
+  import { initFx } from '../../lib/tournamentFx.js';
+  initFx();
+</script>
 
 <style>
   .tp{--ink:#071018;--panel:#0c1824;--line:rgba(255,255,255,.08);--cyan:#4cc9ff;--gold:#e9c46a;--live:#47d16c;--text:#f5f8fb;--muted:#8fa1b1;--gap:32px;color:var(--text);padding:0 0 72px}
