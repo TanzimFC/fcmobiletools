@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/tournament-premium.css';
+import { isHiddenInternalTournamentSlug, isTournamentSampleSlug } from '../data/tournamentSamples.js';
 import { DISCORD_URL } from '../data/tournamentConfig.js';
 import Crest from '../components/tournament/Crest.astro';
 import { TOURNAMENT_PUBLICATIONS } from '../data/tournaments.js';
@@ -8,7 +9,7 @@ import { progressOf, tournamentState, championOf, nextMatch, formatLabel, format
 
 const rank = { live: 0, upcoming: 1, finished: 2 };
 const list = TOURNAMENT_PUBLICATIONS
-  .filter((t) => t.isPublic && !/^(?:format-test-|fcmobiletools-sample-championship$)/i.test(t.slug || '') && ['published', 'in_progress', 'completed'].includes(t.status))
+  .filter((t) => t.isPublic && !isTournamentSampleSlug(t.slug) && !isHiddenInternalTournamentSlug(t.slug) && ['published', 'in_progress', 'completed'].includes(t.status))
   .map((t) => ({ t, state: tournamentState(t), progress: progressOf(t), champion: championOf(t), next: nextMatch(t) }))
   .sort((a, b) => rank[a.state.key] - rank[b.state.key] || String(b.t.startsAt || '').localeCompare(String(a.t.startsAt || '')));
 
