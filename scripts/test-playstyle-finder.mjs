@@ -21,6 +21,7 @@ assert.deepEqual(getPlaystyleRecommendations(['sprint-dribble']).map((style) => 
 assert.deepEqual(getPlaystyleRecommendations(['quick-passes']).map((style) => style.name), ['Bullet Pass', 'Tiki Taka']);
 assert.deepEqual(getPlaystyleRecommendations(['crosses', 'headers']).map((style) => style.name), ['Precision Header', 'Whipped Crosser']);
 for (const style of PLAYSTYLES) {
+  assert.ok(PLAYSTYLE_GOALS.some((goal) => goal.styleNames.includes(style.name)), style.name + ' needs at least one finder goal');
   assert.equal(style.levels.length, 3, style.name + ' should describe all 3 levels');
   const tierFiles = style.noBaseIcon ? [1, 2] : [0, 1, 2];
   for (const tier of tierFiles) {
