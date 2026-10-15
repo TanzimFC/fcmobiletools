@@ -1,0 +1,276 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { PLAYSTYLES } from '../../data/playstyles.js';
+import { PLAYSTYLE_GOALS, PLAYSTYLE_GOAL_GROUPS } from '../../data/playstyleFinder.js';
+
+const iconPath = (name, tier) => '/assets/images/playstyle/playstyle_64_PLAYSTYLE_' + name + '_' + tier + '.png';
+const styles = PLAYSTYLES.map((style) => ({
+  ...style,
+  icons: (style.noBaseIcon ? [1, 1, 2] : [0, 1, 2]).map((tier) => iconPath(style.icon, tier)),
+  goalIds: PLAYSTYLE_GOALS.filter((goal) => goal.styleNames.includes(style.name)).map((goal) => goal.id)
+}));
+---
+
+<BaseLayout
+  title="FC Mobile PlayStyle Finder | FCMOBILETOOLS"
+  description="Find FC Mobile PlayStyles by the action you want to improve. Compare the actual effects at levels 1, 2 and 3."
+  canonical="/player/playstyle-finder/"
+>
+  <main class="psf-page">
+    <section class="psf-hero">
+      <div class="psf-shell">
+        <nav class="psf-crumbs" aria-label="Breadcrumb">
+          <a href="/">Home</a><span aria-hidden="true">/</span><a href="/player/playstyle/">PlayStyle Guide</a><span aria-hidden="true">/</span><strong>Finder</strong>
+        </nav>
+        <p class="psf-kicker"><span></span> FC MOBILE · PLAYSTYLES</p>
+        <h1>Find a PlayStyle<br /><em>for the job.</em></h1>
+        <p class="psf-lede">Choose what you want the player to do better. The finder shows the PlayStyles that match, with their effects at each level.</p>
+        <a class="psf-back-link" href="/player/playstyle/">Read all PlayStyles <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+
+    <section class="psf-shell psf-workspace">
+      <div class="psf-panel">
+        <div class="psf-panel-head">
+          <div><span class="psf-step">YOUR PICK</span><h2>What do you want to improve?</h2></div>
+          <span class="psf-pick-count" id="psfPickCount">0 of 3 picked</span>
+        </div>
+        <p class="psf-help">Pick up to three. For example, choose crossing and headers if you're working on wide attacks.</p>
+
+        <div class="psf-goal-groups">
+          {PLAYSTYLE_GOAL_GROUPS.map((group) => (
+            <section class="psf-goal-group" aria-label={group}>
+              <h3>{group}</h3>
+              <div class="psf-goal-list">
+                {PLAYSTYLE_GOALS.filter((goal) => goal.group === group).map((goal) => (
+                  <button class="psf-goal" type="button" data-goal={goal.id} aria-pressed="false">
+                    <span class="psf-goal-check" aria-hidden="true">✓</span>
+                    <span class="psf-goal-copy"><strong>{goal.label}</strong><small>{goal.hint}</small></span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+
+        <div class="psf-actions">
+          <p class="psf-limit-note" id="psfLimitNote" role="status" aria-live="polite">Pick one goal to see matching PlayStyles.</p>
+          <button class="psf-reset" id="psfReset" type="button">Clear picks</button>
+        </div>
+      </div>
+
+      <section class="psf-results" aria-labelledby="psfResultsTitle">
+        <div class="psf-results-head">
+          <div><span class="psf-step">MATCHING STYLES</span><h2 id="psfResultsTitle">What fits your pick</h2></div>
+          <span class="psf-result-count" id="psfResultCount" aria-live="polite">Choose a goal</span>
+        </div>
+        <p class="psf-results-intro" id="psfResultsIntro">Choose an action above. You'll see the matching styles and what each one changes.</p>
+
+        <div class="psf-result-grid" id="psfResultGrid">
+          {styles.map((style) => (
+            <article class="psf-style-card" data-style-card data-goal-ids={style.goalIds.join(' ')} data-levels={JSON.stringify(style.levels)} data-icons={JSON.stringify(style.icons)} hidden>
+              <div class="psf-style-head">
+                <img class="psf-style-icon" src={style.icons[0]} width="58" height="58" alt={style.name + ' PlayStyle icon'} loading="lazy" decoding="async" />
+                <div class="psf-style-title"><span>{style.category}</span><h3>{style.name}</h3></div>
+              </div>
+              <p class="psf-style-summary">{style.summary}</p>
+              <div class="psf-match-wrap"><span class="psf-match-label">Fits your pick</span><div class="psf-match-tags" data-goal-tags></div></div>
+              <div class="psf-level-row"><span>Effect</span><strong data-tier-label>Level 1</strong></div>
+              <div class="psf-level-tabs" role="group" aria-label={'Choose ' + style.name + ' level'}>
+                <button type="button" class="psf-level is-active" data-level="1" aria-pressed="true">Level 1</button>
+                <button type="button" class="psf-level" data-level="2" aria-pressed="false">Level 2</button>
+                <button type="button" class="psf-level" data-level="3" aria-pressed="false">★ Level 3</button>
+              </div>
+              <p class="psf-level-copy" data-level-copy>{style.levels[0]}</p>
+            </article>
+          ))}
+        </div>
+
+        <noscript><p class="psf-no-script">The finder needs JavaScript to filter your picks. You can still read the full <a href="/player/playstyle/">PlayStyle guide</a>.</p></noscript>
+        <p class="psf-footnote">These matches use the descriptions in the guide. They don't promise a certain result in every match.</p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const root = document.querySelector('.psf-page');
+      if (!root) return;
+
+      const goals = Array.from(root.querySelectorAll('[data-goal]'));
+      const cards = Array.from(root.querySelectorAll('[data-style-card]'));
+      const count = root.querySelector('#psfPickCount');
+      const note = root.querySelector('#psfLimitNote');
+      const resultCount = root.querySelector('#psfResultCount');
+      const intro = root.querySelector('#psfResultsIntro');
+      const reset = root.querySelector('#psfReset');
+      const selected = new Set();
+
+      function render() {
+        count.textContent = selected.size + ' of 3 picked';
+        const labels = goals.filter((button) => selected.has(button.dataset.goal)).map((button) => button.querySelector('strong').textContent);
+        note.textContent = selected.size ? 'Showing styles for: ' + labels.join(', ') : 'Pick one goal to see matching PlayStyles.';
+        intro.hidden = selected.size > 0;
+
+        let shown = 0;
+        cards.forEach((card) => {
+          const cardGoals = (card.dataset.goalIds || '').split(' ').filter(Boolean);
+          const matches = cardGoals.filter((id) => selected.has(id));
+          const visible = matches.length > 0;
+          card.hidden = !visible;
+          if (visible) {
+            shown += 1;
+            const tagBox = card.querySelector('[data-goal-tags]');
+            tagBox.replaceChildren();
+            matches.forEach((id) => {
+              const button = goals.find((goalButton) => goalButton.dataset.goal === id);
+              if (!button) return;
+              const tag = document.createElement('span');
+              tag.className = 'psf-match-tag';
+              tag.textContent = button.querySelector('strong').textContent;
+              tagBox.append(tag);
+            });
+          }
+        });
+
+        resultCount.textContent = selected.size ? shown + (shown === 1 ? ' style' : ' styles') : 'Choose a goal';
+      }
+
+      goals.forEach((button) => {
+        button.addEventListener('click', () => {
+          const id = button.dataset.goal;
+          if (selected.has(id)) {
+            selected.delete(id);
+            button.setAttribute('aria-pressed', 'false');
+            button.classList.remove('is-active');
+          } else {
+            if (selected.size >= 3) {
+              note.textContent = 'Choose up to three goals. Clear one first.';
+              return;
+            }
+            selected.add(id);
+            button.setAttribute('aria-pressed', 'true');
+            button.classList.add('is-active');
+          }
+          render();
+        });
+      });
+
+      reset.addEventListener('click', () => {
+        selected.clear();
+        goals.forEach((button) => {
+          button.setAttribute('aria-pressed', 'false');
+          button.classList.remove('is-active');
+        });
+        render();
+      });
+
+      root.addEventListener('click', (event) => {
+        const button = event.target.closest('.psf-level');
+        if (!button) return;
+        const card = button.closest('[data-style-card]');
+        if (!card) return;
+        const level = Number(button.dataset.level);
+        card.querySelectorAll('.psf-level').forEach((tab) => {
+          const active = tab === button;
+          tab.classList.toggle('is-active', active);
+          tab.setAttribute('aria-pressed', String(active));
+        });
+        const levels = JSON.parse(card.dataset.levels);
+        const icons = JSON.parse(card.dataset.icons);
+        card.querySelector('[data-level-copy]').textContent = levels[level - 1];
+        card.querySelector('.psf-style-icon').src = icons[level - 1];
+        card.querySelector('[data-tier-label]').textContent = level === 3 ? '★ Level 3' : 'Level ' + level;
+      });
+
+      render();
+    })();
+  </script>
+
+  <style>
+    .psf-page {
+      --psf-bg: #071018; --psf-panel: #0f1a26; --psf-raised: #132536;
+      --psf-line: rgba(255,255,255,.09); --psf-text: #f5f8fb;
+      --psf-muted: #a7b4c3; --psf-blue: #4cc9ff; --psf-gold: #f2c977;
+      color: var(--psf-text); background: var(--psf-bg); overflow: clip;
+      min-height: 70vh;
+    }
+    .psf-shell { width: min(1160px, calc(100% - 40px)); margin-inline: auto; }
+    .psf-hero { padding: 25px 0 38px; border-bottom: 1px solid var(--psf-line); background: radial-gradient(ellipse at 70% 0%, rgba(76,201,255,.11), transparent 44%), linear-gradient(180deg,#0a1622,#071018); }
+    .psf-crumbs { display:flex; flex-wrap:wrap; align-items:center; gap:9px; color:#718697; font:600 11px/1.5 var(--font-body,Inter,sans-serif); }
+    .psf-crumbs a { color:#a7b8c6; text-decoration:none; }
+    .psf-crumbs a:hover { color:var(--psf-blue); }
+    .psf-crumbs strong { color:#eef7fb; font-weight:600; }
+    .psf-kicker,.psf-step { display:flex; align-items:center; gap:8px; color:var(--psf-blue); font:800 10px/1.4 var(--font-body,Inter,sans-serif); letter-spacing:.13em; }
+    .psf-kicker { margin:31px 0 10px; }
+    .psf-kicker span { width:6px; height:6px; border-radius:50%; background:var(--psf-blue); box-shadow:0 0 10px rgba(76,201,255,.5); }
+    .psf-hero h1 { margin:0; font:700 clamp(39px,5.5vw,62px)/1.02 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.055em; }
+    .psf-hero h1 em { color:var(--psf-blue); font-style:normal; }
+    .psf-lede { max-width:600px; margin:15px 0 0; color:var(--psf-muted); font:400 14px/1.8 var(--font-body,Inter,sans-serif); }
+    .psf-back-link { display:inline-flex; gap:12px; align-items:center; margin-top:18px; color:#d9e8f1; text-decoration:none; font:700 12px/1.5 var(--font-body,Inter,sans-serif); }
+    .psf-back-link span { color:var(--psf-blue); }
+    .psf-workspace { display:grid; grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr); align-items:start; gap:18px; padding-top:23px; padding-bottom:58px; }
+    .psf-panel,.psf-results { min-width:0; border:1px solid var(--psf-line); border-radius:13px; background:linear-gradient(155deg,rgba(16,30,43,.98),rgba(9,19,29,.98)); }
+    .psf-panel { padding:20px; }
+    .psf-panel-head,.psf-results-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+    .psf-panel h2,.psf-results h2 { margin:8px 0 0; font:700 clamp(20px,2.1vw,26px)/1.15 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.04em; }
+    .psf-pick-count,.psf-result-count { flex:0 0 auto; padding:7px 9px; border:1px solid var(--psf-line); border-radius:6px; color:#b8c9d5; background:rgba(255,255,255,.025); font:700 10px/1.1 var(--font-body,Inter,sans-serif); }
+    .psf-help { margin:10px 0 19px; color:var(--psf-muted); font:400 12px/1.7 var(--font-body,Inter,sans-serif); }
+    .psf-goal-group + .psf-goal-group { margin-top:17px; padding-top:15px; border-top:1px solid rgba(255,255,255,.06); }
+    .psf-goal-group h3 { margin:0 0 9px; color:#8fa3b2; font:800 9px/1.4 var(--font-body,Inter,sans-serif); text-transform:uppercase; letter-spacing:.13em; }
+    .psf-goal-list { display:grid; gap:7px; }
+    .psf-goal { display:flex; align-items:center; gap:10px; width:100%; padding:10px 11px; border:1px solid rgba(255,255,255,.075); border-radius:8px; color:var(--psf-text); text-align:left; background:rgba(255,255,255,.02); cursor:pointer; transition:border-color .18s,background .18s; }
+    .psf-goal:hover { border-color:rgba(76,201,255,.26); background:rgba(76,201,255,.035); }
+    .psf-goal.is-active { border-color:rgba(76,201,255,.45); background:rgba(76,201,255,.09); }
+    .psf-goal-check { display:grid; place-items:center; width:22px; height:22px; flex:0 0 22px; border:1px solid rgba(255,255,255,.13); border-radius:6px; color:transparent; background:rgba(0,0,0,.12); font:800 12px/1 var(--font-body,Inter,sans-serif); }
+    .psf-goal.is-active .psf-goal-check { color:#06131c; border-color:var(--psf-blue); background:var(--psf-blue); }
+    .psf-goal-copy { display:grid; gap:3px; min-width:0; }
+    .psf-goal-copy strong { font:700 11px/1.4 var(--font-body,Inter,sans-serif); }
+    .psf-goal-copy small { color:#94a7b6; font:400 10px/1.5 var(--font-body,Inter,sans-serif); }
+    .psf-actions { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:17px; padding-top:14px; border-top:1px solid rgba(255,255,255,.06); }
+    .psf-limit-note { margin:0; color:#9aafbd; font:500 10px/1.6 var(--font-body,Inter,sans-serif); }
+    .psf-reset { flex:0 0 auto; padding:8px 10px; border:1px solid var(--psf-line); border-radius:6px; color:#d8e5ed; background:rgba(255,255,255,.025); font:700 10px/1 var(--font-body,Inter,sans-serif); cursor:pointer; }
+    .psf-reset:hover { border-color:rgba(76,201,255,.3); }
+    .psf-results { padding:20px; }
+    .psf-results-intro { margin:16px 0 0; padding:16px; border:1px dashed rgba(255,255,255,.1); border-radius:8px; color:var(--psf-muted); font:400 12px/1.7 var(--font-body,Inter,sans-serif); }
+    .psf-results-intro[hidden] { display:none; }
+    .psf-result-grid { display:grid; grid-template-columns:1fr; gap:11px; margin-top:15px; }
+    .psf-style-card { padding:15px; border:1px solid var(--psf-line); border-radius:10px; background:rgba(255,255,255,.018); }
+    .psf-style-card[hidden] { display:none; }
+    .psf-style-head { display:flex; align-items:center; gap:12px; }
+    .psf-style-icon { width:58px; height:58px; flex:0 0 58px; object-fit:contain; border:1px solid rgba(76,201,255,.13); border-radius:9px; background:#0a1722; }
+    .psf-style-title { min-width:0; }
+    .psf-style-title span { color:#7e95a5; font:800 8px/1.5 var(--font-body,Inter,sans-serif); text-transform:uppercase; letter-spacing:.12em; }
+    .psf-style-title h3 { margin:2px 0 0; font:700 18px/1.2 var(--font-heading,"Space Grotesk",sans-serif); letter-spacing:-.025em; }
+    .psf-style-summary { margin:11px 0 0; color:#b6c4cf; font:400 11px/1.7 var(--font-body,Inter,sans-serif); }
+    .psf-match-wrap { margin-top:11px; }
+    .psf-match-label { color:#6f8798; font:800 8px/1.4 var(--font-body,Inter,sans-serif); letter-spacing:.12em; text-transform:uppercase; }
+    .psf-match-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+    .psf-match-tag { padding:5px 7px; border:1px solid rgba(76,201,255,.17); border-radius:5px; color:#bfeeff; background:rgba(76,201,255,.055); font:600 9px/1.2 var(--font-body,Inter,sans-serif); }
+    .psf-level-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:13px; padding-top:11px; border-top:1px solid rgba(255,255,255,.07); color:#8499a8; font:800 8px/1.3 var(--font-body,Inter,sans-serif); letter-spacing:.1em; text-transform:uppercase; }
+    .psf-level-row strong { color:var(--psf-blue); font-size:9px; letter-spacing:0; }
+    .psf-level-tabs { display:grid; grid-template-columns:1fr 1fr 1.15fr; gap:5px; margin-top:8px; }
+    .psf-level { min-height:31px; padding:0 5px; border:1px solid rgba(255,255,255,.08); border-radius:5px; color:#91a3b1; background:rgba(255,255,255,.02); font:700 9px/1 var(--font-body,Inter,sans-serif); cursor:pointer; }
+    .psf-level.is-active { border-color:rgba(76,201,255,.42); color:#eaf8ff; background:rgba(76,201,255,.09); }
+    .psf-level[data-level="3"].is-active { border-color:rgba(242,201,119,.4); background:rgba(242,201,119,.08); }
+    .psf-level-copy { margin:10px 0 0; min-height:40px; color:#d0dce5; font:400 11px/1.7 var(--font-body,Inter,sans-serif); }
+    .psf-footnote { margin:15px 0 0; color:#758b9a; font:400 10px/1.7 var(--font-body,Inter,sans-serif); }
+    .psf-no-script { color:var(--psf-muted); font-size:12px; }
+    .psf-no-script a { color:var(--psf-blue); }
+    @media (max-width: 900px) { .psf-workspace { grid-template-columns:1fr; } .psf-panel,.psf-results { padding:17px; } }
+    @media (max-width: 520px) {
+      .psf-shell { width:calc(100% - 28px); }
+      .psf-hero { padding-top:19px; }
+      .psf-kicker { margin-top:25px; }
+      .psf-hero h1 { font-size:clamp(37px,11vw,50px); }
+      .psf-panel-head,.psf-results-head { align-items:flex-start; }
+      .psf-panel h2,.psf-results h2 { font-size:21px; }
+      .psf-help { margin-bottom:16px; }
+      .psf-actions { align-items:flex-start; }
+      .psf-pick-count,.psf-result-count { font-size:9px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .psf-goal { transition:none; }
+    }
+  </style>
+</BaseLayout>
