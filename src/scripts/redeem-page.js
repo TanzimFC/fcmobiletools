@@ -136,7 +136,9 @@ function boot() {
   };
 
   const isNew = (c) => dayNumber(state.serverDate) - dayNumber(c.releaseDate) <= 2;
-  const eaLink = (code) => `${EA_URL}?redeemCode=${encodeURIComponent(code)}`;
+  const eaLink = (code, region) => /vietnam/i.test(String(region || ''))
+    ? 'https://redeem.fcmobile.garena.vn/'
+    : `${EA_URL}?redeemCode=${encodeURIComponent(code)}`;
 
   /* ------------------------------ renderers ------------------------------ */
 
@@ -218,7 +220,7 @@ function boot() {
         </div>
         <div class="rx-card-actions">
           <button type="button" class="rx-btn rx-btn-soft" data-copy="${esc(c.code)}">${icon(I.copy, 16)}<span>Copy code</span></button>
-          <a class="rx-btn rx-btn-primary" href="${esc(eaLink(c.code))}" target="_blank" rel="noopener noreferrer" data-redeem="${esc(c.code)}"><span>Redeem</span>${icon(I.out, 16)}</a>
+          <a class="rx-btn rx-btn-primary" href="${esc(eaLink(c.code, c.region))}" target="_blank" rel="noopener noreferrer" data-redeem="${esc(c.code)}"><span>Redeem</span>${icon(I.out, 16)}</a>
         </div>
       </article>`;
   }
@@ -304,7 +306,7 @@ function boot() {
         <div class="rx-row-date"><small>Added</small><span>${esc(fmtDate(c.releaseDate))}</span></div>
         <div class="rx-row-status">${pill(c.status)}</div>
         <div class="rx-row-act">${c.status === 'active'
-          ? `<a class="rx-link" href="${esc(eaLink(c.code))}" target="_blank" rel="noopener noreferrer" data-redeem="${esc(c.code)}">Redeem ${icon(I.out, 14)}</a>`
+          ? `<a class="rx-link" href="${esc(eaLink(c.code, c.region))}" target="_blank" rel="noopener noreferrer" data-redeem="${esc(c.code)}">Redeem ${icon(I.out, 14)}</a>`
           : ''}</div>
       </article>`;
   }
