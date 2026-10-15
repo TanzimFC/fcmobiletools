@@ -18,6 +18,7 @@ const goalIds = PLAYSTYLE_GOALS.map((goal) => goal.id);
 assert.equal(new Set(positionCodes).size, positionCodes.length, 'position codes must be unique');
 assert.equal(new Set(goalIds).size, goalIds.length, 'goal ids must be unique');
 assert.ok(positionCodes.includes('CB') && positionCodes.includes('GK'), 'survey needs defenders and goalkeeper');
+assert.ok(!positionCodes.includes('CF'), 'CF is no longer an available in-game position');
 for (const goal of PLAYSTYLE_GOALS) {
   assert.ok(goal.label && goal.hint && goal.positionCodes.length && goal.styleNames.length, 'each goal needs copy, positions and matches');
   for (const code of goal.positionCodes) {
@@ -47,7 +48,8 @@ for (const position of PLAYSTYLE_POSITIONS) {
         goalId: goal.id,
         profileId: profile.id
       });
-      assert.equal(recommendations.length, 2, position.code + ' should always return exactly two recommendations');
+      const expectedCount = position.code === 'GK' ? 1 : 2;
+      assert.equal(recommendations.length, expectedCount, position.code + ' should return the correct number of recommendations');
       assert.notEqual(recommendations[0].name, recommendations[1].name, 'recommendations must be distinct');
       assert.ok(recommendations.every((style) => styleNames.has(style.name)), 'recommendations must use guide data');
       assert.ok(recommendations.some((style) => goal.styleNames.includes(style.name)), position.code + ' should honour the selected main job');
@@ -73,5 +75,6 @@ for (const style of PLAYSTYLES) {
 }
 
 assert.deepEqual(getPlaystyleRecommendations({ position: 'INVALID', goalId: 'standing-tackles', profileId: 'read-defend' }), []);
+assert.equal(getPlaystyleRecommendations({ position: 'GK', goalId: 'keeper-rush', profileId: 'sweeper' }).length, 1, 'goalkeepers should get one PlayStyle only');
 assert.deepEqual(getPlaystyleRecommendations({ position: 'CB', goalId: 'not-a-goal', profileId: 'read-defend' }), []);
-console.log('PlayStyle Finder checks passed: position survey, job choices, profile scoring, two results, levels and local icons.');
+console.log('PlayStyle Finder checks passed: current positions, role survey, goalkeeper single-style rule, scoring, levels and local icons.');
