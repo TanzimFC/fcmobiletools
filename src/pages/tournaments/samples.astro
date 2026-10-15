@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import '../../styles/tournament-premium.css';
 import { DISCORD_URL } from '../../data/tournamentConfig.js';
+import { TOURNAMENT_SAMPLES } from '../../data/tournamentSamples.js';
 ---
 
 <BaseLayout
@@ -32,6 +33,33 @@ import { DISCORD_URL } from '../../data/tournamentConfig.js';
         <span class="notice-mark" aria-hidden="true">i</span>
         <p><strong>These are previews, not live tournaments.</strong> Player names, scores and tables on this page are fictional examples. They demonstrate the presentation and structure hosts can expect; they are not real registrations or recorded match results.</p>
       </div>
+
+
+      <section class="sample-page-index tp-sec" aria-labelledby="sample-pages-title" data-reveal>
+        <header class="sample-page-index-heading">
+          <div>
+            <span class="sample-kicker">Full tournament pages</span>
+            <h2 id="sample-pages-title">Open a complete format example.</h2>
+            <p>These demos use simulated participants and results. Open a page to inspect the full bracket, standings, fixtures and stage layout.</p>
+          </div>
+          <span class="sample-tag">14 demo pages</span>
+        </header>
+        <div class="tp-grid sample-page-grid">
+          {TOURNAMENT_SAMPLES.map((sample) => (
+            <a class="tp-glass sample-page-card" href={`/tournament/${sample.slug}/`} data-reveal>
+              <div class="in-c">
+                <div class="sample-page-meta">
+                  <span class="sample-page-format">{sample.format}</span>
+                  <span class="sample-tag">{sample.entrants} entrants</span>
+                </div>
+                <h3>{sample.name}</h3>
+                <p>{sample.summary}</p>
+                <span class="sample-page-link">Open demo page <span aria-hidden="true">→</span></span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
 
       <nav class="sample-jump" aria-label="Jump to a sample format" data-reveal>
         <a href="#knockout"><span>01</span> Knockout bracket <span aria-hidden="true">↘</span></a>
@@ -328,4 +356,20 @@ import { DISCORD_URL } from '../../data/tournamentConfig.js';
     .tsamp .sample-jump a { transition:none; }
     .tsamp .sample-jump a:hover { transform:none; }
   }
+
+  .tsamp .sample-page-index{margin-top:clamp(44px,6vw,68px)}
+  .tsamp .sample-page-index-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:20px}
+  .tsamp .sample-page-index-heading h2{max-width:24ch;font-size:clamp(28px,4vw,42px);line-height:1.05}
+  .tsamp .sample-page-index-heading p{max-width:60ch;margin:12px 0 0;color:#97a8b9;font-size:14px;line-height:1.7}
+  .tsamp .sample-page-grid{align-items:stretch;gap:12px}
+  .tsamp .sample-page-card{display:flex;min-width:0;min-height:218px;color:inherit;text-decoration:none;transition:transform .2s,border-color .2s,background .2s}
+  .tsamp .sample-page-card:hover{transform:translateY(-3px);border-color:rgba(76,201,255,.32);background:rgba(17,34,49,.96)}
+  .tsamp .sample-page-card .in-c{display:flex;flex-direction:column;align-items:stretch;width:100%;min-width:0}
+  .tsamp .sample-page-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:17px}
+  .tsamp .sample-page-format{color:#88dfff;font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}
+  .tsamp .sample-page-card h3{margin:0 0 10px;font-size:clamp(19px,2vw,22px);line-height:1.13;letter-spacing:-.025em}
+  .tsamp .sample-page-card p{margin:0 0 20px;color:#9bacbd;font-size:13px;line-height:1.7}
+  .tsamp .sample-page-link{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);color:#e4edf6;font-size:12px;font-weight:700}
+  .tsamp .sample-page-link span{color:#4cc9ff;font-size:17px}
+  @media(max-width:640px){.tsamp .sample-page-index-heading{align-items:flex-start;flex-direction:column}.tsamp .sample-page-card{min-height:0}}
 </style>
