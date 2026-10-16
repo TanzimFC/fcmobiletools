@@ -202,9 +202,11 @@ async function main() {
     }
   }
 
-  if (!options.discover) {
+  if (!options.discover && exitCode === 0) {
     const exportStatus = runChild([EXPORT_FILE], {}, "Export combined event cards, Icon/Hero subset, and coverage report");
-    if (exportStatus !== 0 && exitCode === 0) exitCode = exportStatus;
+    if (exportStatus !== 0) exitCode = exportStatus;
+  } else if (!options.discover) {
+    console.warn("\\nSkipping combined export because collection stopped early. Existing exports were left untouched; run programs:export after collection completes.");
   }
 
   process.exitCode = exitCode;
