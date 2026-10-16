@@ -134,6 +134,7 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
       const stepMeta = root.querySelector('#psfStepMeta');
       const results = root.querySelector('#psfResults');
       const resultGrid = root.querySelector('#psfResultGrid');
+      let finderActivitySent = false;
 
       const positionInfo = () => PLAYSTYLE_POSITIONS.find((item) => item.code === state.position);
       const goalInfo = () => PLAYSTYLE_GOALS.find((item) => item.id === state.goalId);
@@ -313,6 +314,12 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
         if (recommendations.length !== expectedCount) {
           status.textContent = 'We could not build a complete match. Go back and choose another answer.';
           return;
+        }
+        if (!finderActivitySent) {
+          finderActivitySent = true;
+          window.dispatchEvent(new CustomEvent('fcmobiletools:tool-activity', {
+            detail: { entityId: 'playstyle-finder', durationMs: 3000 }
+          }));
         }
         results.scrollIntoView({
           behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
