@@ -300,7 +300,18 @@ async function getNextButtonIndex(page) {
       const disabled = element.disabled === true
         || element.hasAttribute("disabled")
         || element.getAttribute("aria-disabled") === "true";
-      return !disabled && /\bnext\b/i.test(label);
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      const visible = element.getClientRects().length > 0
+        && style.display !== "none"
+        && style.visibility !== "hidden"
+        && style.visibility !== "collapse"
+        && Number(style.opacity) !== 0
+        && rect.width > 0
+        && rect.height > 0;
+      // RenderZ renders responsive desktop/mobile pagination controls together.
+      // Ignore hidden mobile/desktop duplicates instead of choosing by DOM index alone.
+      return visible && !disabled && /\bnext\b/i.test(label);
     });
   });
 }
@@ -386,7 +397,9 @@ async function discoverListing(browser, delayMs) {
       }
 
       await sleep(delayMs);
-      await page.locator('button, [role="button"]').nth(nextButtonIndex).click({ timeout: 5000 });
+      const nextButton = page.locator('button, [role="button"]').nth(nextButtonIndex);
+      await nextButton.scrollIntoViewIfNeeded({ timeout: 5000 });
+      await nextButton.click({ timeout: 10000 });
       await page.waitForFunction((previousSignature) => {
         const paths = Array.from(document.querySelectorAll('a[href*="/player/"]'))
           .map((anchor) => {
