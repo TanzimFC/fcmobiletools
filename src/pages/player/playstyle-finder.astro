@@ -314,6 +314,9 @@ import { PLAYSTYLE_POSITIONS } from '../../data/playstyleFinder.js';
           status.textContent = 'We could not build a complete match. Go back and choose another answer.';
           return;
         }
+        window.dispatchEvent(new CustomEvent('fcmobiletools:tool-activity', {
+          detail: { entityId: 'playstyle-finder', durationMs: 3000 }
+        }));
         results.scrollIntoView({
           behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
           block: 'start'

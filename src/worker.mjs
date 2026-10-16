@@ -964,17 +964,19 @@ async function accountApi(request, env, url) {
       }
 
       const conditions=task.conditions&&typeof task.conditions==='object'?task.conditions:{};
-      if(conditions.event==='page_dwell'||conditions.event==='calculator_use') {
-        const eventType=conditions.event;
-        const entityType=eventType==='page_dwell'?'page':'calculator';
-        const entityId=String(conditions.page||conditions.tool||'');
+      if(conditions.event==='calculator_use') {
+        const entityId=String(conditions.tool||'');
         const rows=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
-          '&event_type=eq.'+encodeURIComponent(eventType)+'&entity_type=eq.'+encodeURIComponent(entityType)+
+          '&event_type=eq.calculator_use&entity_type=eq.calculator'+
           '&entity_id=eq.'+encodeURIComponent(entityId)+'&created_at=gte.'+
           encodeURIComponent(new Date(Date.now()-21600000).toISOString())+'&select=id&limit=1');
-        if(!rows?.length) return json({error:eventType==='page_dwell'
-          ?'Use '+entityId+' to explore the page.'
-          :'Use the '+entityId+' first, then come back and check this quest.'},409);
+        if(!rows?.length) return json({error:'Use the '+entityId+' first, then come back and check this quest.'},409);
+      }
+      if(conditions.event==='redeem_code_copy') {
+        const rows=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
+          '&event_type=eq.redeem_code_copy&entity_type=eq.redeem_code&source=eq.server&created_at=gte.'+
+          encodeURIComponent(new Date(Date.now()-21600000).toISOString())+'&select=id&limit=1');
+        if(!rows?.length) return json({error:'Copy an active redeem code from the Redeem Codes page first.'},409);
       }
 
       if(task.slug==='first-tournament-match') {
@@ -1073,19 +1075,33 @@ async function accountApi(request, env, url) {
     const progress=Math.max(0,Math.min(100,Number(input.progress||0)));
     let key=input.idempotencyKey; try { if(!key) key=crypto.randomUUID(); } catch { key=null; }
     if(!key||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) return json({error:'Invalid activity request.'},400);
-    const validPage=eventType==='page_dwell'&&entityType==='page'&&['/events','/redeem-codes'].includes(entityId)&&durationMs>=8000;
-    const validCalc=eventType==='calculator_use'&&entityType==='calculator'&&['rank-up-calculator','team-ovr','training-calculator','investment-calculator'].includes(entityId)&&durationMs>=3000;
-    const validArticle=eventType==='article_read'&&entityType==='article'&&/^[a-z0-9][a-z0-9-]{2,159}$/.test(entityId)&&durationMs>=10000&&progress>=65;
-    if(!validPage&&!validCalc&&!validArticle) return json({error:'That activity cannot be used for a quest.'},400);
+    const activityEntityId=eventType==='redeem_code_copy'?entityId.toUpperCase():entityId;
+    const validCalc=eventType==='calculator_use'&&entityType==='calculator'&&['rank-up-calculator','team-ovr','training-calculator','investment-calculator','playstyle-finder'].includes(activityEntityId)&&durationMs>=3000;
+    const validArticle=eventType==='article_read'&&entityType==='article'&&/^[a-z0-9][a-z0-9-]{2,159}$/.test(activityEntityId)&&durationMs>=10000&&progress>=65;
+    const validCodeCopy=eventType==='redeem_code_copy'&&entityType==='redeem_code'&&/^[A-Z0-9_-]{2,40}$/.test(activityEntityId);
+    if(validCodeCopy){
+      try{
+        const snapshot=await publicRedeemSnapshot(env,undefined,url.origin);
+        const visibleCode=(snapshot.payload?.codes||[]).some(code=>
+          String(code?.code||'').toUpperCase()===activityEntityId&&
+          String(code?.status||'').toLowerCase()==='active'&&!code?.masked
+        );
+        if(!visibleCode) return json({error:'Copy an active redeem code shown on FCMobiletools first.'},400);
+      }catch(error){
+        console.error('[REDEEM_CODE_ACTIVITY]',error?.message);
+        return json({error:'Redeem codes could not be verified right now. Try again shortly.'},503);
+      }
+    }
+    if(!validCalc&&!validArticle&&!validCodeCopy) return json({error:'That activity cannot be used for a quest.'},400);
     try {
       const recent=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
         '&event_type=eq.'+encodeURIComponent(eventType)+'&entity_type=eq.'+encodeURIComponent(entityType)+
-        '&entity_id=eq.'+encodeURIComponent(entityId)+'&created_at=gte.'+
+        '&entity_id=eq.'+encodeURIComponent(activityEntityId)+'&created_at=gte.'+
         encodeURIComponent(new Date(Date.now()-21600000).toISOString())+'&select=id&limit=1');
       if(recent?.length) return json({ok:false,code:'cooldown',message:'That activity was already counted recently.'},409);
 
       const dailyActivity=await supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+
-        '&event_type=in.(page_dwell,calculator_use,article_read)&created_at=gte.'+
+        '&event_type=in.(calculator_use,article_read,redeem_code_copy)&created_at=gte.'+
         encodeURIComponent(new Date(new Date().toISOString().slice(0,10)+'T00:00:00.000Z').toISOString())+
         '&select=id&limit=21');
       if((dailyActivity||[]).length>=20) {
@@ -1105,8 +1121,8 @@ async function accountApi(request, env, url) {
           account_id:account.id,
           event_type:eventType,
           entity_type:entityType,
-          entity_id:entityId,
-          metadata:{duration_ms:durationMs,progress,first_read:validArticle},
+          entity_id:activityEntityId,
+          metadata:{duration_ms:durationMs,progress,first_read:validArticle,redeem_code_copy:validCodeCopy},
           source:'server',
           idempotency_key:key
         }])
@@ -1137,7 +1153,8 @@ async function accountApi(request, env, url) {
             const conditions=t.conditions&&typeof t.conditions==='object'?t.conditions:{};
             if(conditions.event!==eventType) return false;
             if(eventType==='article_read') return conditions.anyArticle===true;
-            return String(conditions.page||conditions.tool||'')===entityId;
+            if(eventType==='redeem_code_copy') return conditions.anyCode===true&&conditions.entityType==='redeem_code';
+            return String(conditions.page||conditions.tool||'')===activityEntityId;
           });
           if(match){
             const start=await supabaseRest(env,'rpc/start_task',{

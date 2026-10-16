@@ -111,23 +111,6 @@
   if(accountCta && getAccountToken()) accountCta.textContent='Your Account';
 
   const route=path;
-  if(route==='/events' || route==='/redeem-codes'){
-    let visibleMs=0;
-    let lastTick=performance.now();
-    let done=false;
-    const timer=window.setInterval(()=>{
-      if(done){window.clearInterval(timer);return;}
-      const now=performance.now();
-      if(!document.hidden) visibleMs+=Math.max(0,now-lastTick);
-      lastTick=now;
-      if(visibleMs>=8000){
-        done=true;
-        window.clearInterval(timer);
-        trackActivity('page_dwell','page',route,8000);
-      }
-    },250);
-    document.addEventListener('visibilitychange',()=>{lastTick=performance.now();},{passive:true});
-  }
   const calculatorRoutes={
     '/training-calculator':'training-calculator',
     '/investment-calculator':'investment-calculator'
