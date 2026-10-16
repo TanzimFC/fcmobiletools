@@ -124,6 +124,30 @@ import ImageUpload from '../../components/ImageUpload.astro';
     `;
   }
 
+  function renderAuthenticatedUnavailable(message = '') {
+    root.innerHTML = `
+      <section class="guest-card acc-anim">
+        <div class="guest-main">
+          <span class="sec-kicker"><i class="kicker-dot"></i> ACCOUNT SESSION DETECTED</span>
+          <h1>Your sign-in worked.</h1>
+          <p class="guest-lede">${esc(message || 'Your account details could not be loaded right now. Your session is still present; retry the profile request instead of signing in again.')}</p>
+          <div class="guest-actions">
+            <button class="btn-primary" type="button" id="retryAccountData">Retry profile loading →</button>
+            <a class="btn-secondary" href="/">Back to FCMOBILETOOLS</a>
+          </div>
+        </div>
+        <div class="guest-features">
+          <article>
+            <span>SESSION</span>
+            <strong>Authentication is separate from profile data</strong>
+            <p>Your login can succeed while the account API is delayed. Retrying does not create a second account.</p>
+          </article>
+        </div>
+      </section>
+    `;
+    root.querySelector('#retryAccountData')?.addEventListener('click', () => location.reload());
+  }
+
   async function loadPublicFallback(username) {
     const response = await fetch('/api/public/profile/' + encodeURIComponent(username), { cache: 'no-store' });
     const body = await response.json().catch(() => ({}));
@@ -216,11 +240,24 @@ import ImageUpload from '../../components/ImageUpload.astro';
       return;
     }
 
-    const response = await accountApi('/api/account/me');
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 10000);
+    let response;
+    try {
+      response = await accountApi('/api/account/me', { signal: controller.signal });
+    } catch (error) {
+      const message = error?.name === 'AbortError'
+        ? 'Your session is present, but the account service took too long to respond. Retry profile loading in a moment.'
+        : 'Your session is present, but the account service could not be reached. Check your connection and retry.';
+      renderAuthenticatedUnavailable(message);
+      return;
+    } finally {
+      window.clearTimeout(timeout);
+    }
     const body = await response.json().catch(() => ({}));
     if (!response.ok || !body?.account) {
       if (response.status === 401) clearCachedIdentity();
-      renderGuestState(body?.error || 'Session expired', 'Please sign in again to access your profile hub.');
+      renderAuthenticatedUnavailable(body?.error || 'Your session is present, but FCMobiletools could not load the account record. Retry profile loading in a moment.');
       return;
     }
 
