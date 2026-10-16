@@ -23,6 +23,7 @@ function parseArgs(argv) {
     downloadImages: false,
     captureProgression: false,
     keepSourceText: false,
+    resume: true,
     limit: DEFAULT_LIMIT,
     delayMs: DEFAULT_DELAY_MS,
     programs: [],
@@ -37,6 +38,7 @@ function parseArgs(argv) {
     else if (arg === "--discover") options.discover = true;
     else if (arg === "--all") options.all = true;
     else if (arg === "--fresh") options.fresh = true;
+    else if (arg === "--refresh-existing") options.resume = false;
     else if (arg === "--refresh-listing") options.refreshListing = true;
     else if (arg === "--download-images") options.downloadImages = true;
     else if (arg === "--capture-progression") options.captureProgression = true;
@@ -111,6 +113,7 @@ Options:
   --keep-source-text    Include filtered source text in records for parser debugging.
   --delay-ms <n>        Delay between navigations; minimum ${MIN_DELAY_MS} ms (default: ${DEFAULT_DELAY_MS}).
   --fresh               Reset records/checkpoints for one selected program before a full run.
+  --refresh-existing    Revisit saved cards instead of skipping verified records (use sparingly).
   --help                Show this help.
 
 The runner is sequential. It stops when a child run fails, including HTTP 403/429 or a challenge page,
@@ -184,6 +187,7 @@ async function main() {
     if (options.captureProgression) childArgs.push("--capture-progression");
     if (options.keepSourceText) childArgs.push("--keep-source-text");
     if (options.fresh) childArgs.push("--fresh");
+    else if (options.resume) childArgs.push("--resume");
     childArgs.push("--delay-ms", String(options.delayMs));
 
     const status = runChild(childArgs, env, "[" + program.key + "] " + program.name);
