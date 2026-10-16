@@ -6,13 +6,25 @@ import process from "node:process";
 import { createHash } from "node:crypto";
 import { chromium } from "playwright";
 
-const PROGRAM_NAME = "3rd Anniversary";
-const PROGRAM_URL = "https://renderz.app/programs/PROGRAM_ANN27-3rd-anniversary";
-const OUTPUT_DIR = path.resolve("data");
-const LISTING_FILE = path.join(OUTPUT_DIR, "anniversary-listing.json");
-const RECORDS_FILE = path.join(OUTPUT_DIR, "anniversary-3rd-2026.json");
-const CHECKPOINT_FILE = path.join(OUTPUT_DIR, "checkpoint.json");
+const LEGACY_PROGRAM_KEY = "anniversary-3rd-2026";
+const PROGRAM_KEY = process.env.FCMT_PROGRAM_KEY || LEGACY_PROGRAM_KEY;
+if (!/^[a-z0-9][a-z0-9-]{1,70}$/.test(PROGRAM_KEY)) {
+  throw new Error("FCMT_PROGRAM_KEY must use lowercase letters, digits, and hyphens.");
+}
+const PROGRAM_NAME = process.env.FCMT_PROGRAM_NAME || "3rd Anniversary";
+const PROGRAM_URL = process.env.FCMT_PROGRAM_URL || "https://renderz.app/programs/PROGRAM_ANN27-3rd-anniversary";
+const OUTPUT_DIR = path.resolve(process.env.FCMT_OUTPUT_DIR || "data");
+const IS_LEGACY_PROGRAM = PROGRAM_KEY === LEGACY_PROGRAM_KEY;
+const LISTING_FILE = path.join(OUTPUT_DIR, IS_LEGACY_PROGRAM ? "anniversary-listing.json" : `${PROGRAM_KEY}-listing.json`);
+const RECORDS_FILE = path.join(OUTPUT_DIR, IS_LEGACY_PROGRAM ? "anniversary-3rd-2026.json" : `${PROGRAM_KEY}-records.json`);
+const CHECKPOINT_FILE = path.join(OUTPUT_DIR, IS_LEGACY_PROGRAM ? "checkpoint.json" : `${PROGRAM_KEY}-checkpoint.json`);
+const PROGRAM_REPORT_FILE = path.join(OUTPUT_DIR, IS_LEGACY_PROGRAM ? "pilot-report.json" : `${PROGRAM_KEY}-report.json`);
+const VALIDATION_REPORT_FILE = path.join(OUTPUT_DIR, IS_LEGACY_PROGRAM ? "validation-report.json" : `${PROGRAM_KEY}-validation-report.json`);
 const ASSET_LIBRARY_FILE = path.join(OUTPUT_DIR, "asset-library.json");
+const validatedProgramUrl = new URL(PROGRAM_URL);
+if (validatedProgramUrl.hostname !== "renderz.app" || !validatedProgramUrl.pathname.startsWith("/programs/")) {
+  throw new Error("FCMT_PROGRAM_URL must point to a RenderZ program listing.");
+}
 const DEFAULT_DELAY_MS = 900;
 const MIN_DELAY_MS = 600;
 
@@ -81,7 +93,7 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log(`
-FCMobiletools local Anniversary collector
+FCMobiletools local RenderZ program collector
 
 Usage:
   node collector.mjs --discover
@@ -650,6 +662,15 @@ function parsePlayStyles(sourceText) {
   }
 
   return styles.filter((style, index, all) => all.findIndex((candidate) => candidate.name === style.name && candidate.level === style.level) === index);
+}
+
+function classifyCardCategory(sourceText) {
+  const opening = String(sourceText || "").replace(/\r/g, "").split("\n").slice(0, 100).join("\n");
+  if (/\bHero\s+Player\b/i.test(opening)) return "hero";
+  if (/\bIcon\s+Player\b/i.test(opening)) return "icon";
+  if (/\bBase\s+Player\b/i.test(opening)) return "base";
+  if (/\bPlayer\b/i.test(opening)) return "player";
+  return "unknown";
 }
 
 function parseSkillPointsToSpend(sourceText) {
@@ -1314,7 +1335,7 @@ async function downloadImage(asset, playerUrl, outputDir, requestCache, captured
       timeout: 30000,
       headers: {
         "Referer": playerUrl,
-        "User-Agent": "FCMobiletools-Anniversary-Collector/0.1 (local authorized collection)",
+        "User-Agent": "FCMobiletools-Program-Collector/0.2 (local authorized collection)",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
       }
     });
@@ -1448,6 +1469,9 @@ async function collectPlayer(context, card, options, imageCache, assetLibrary) {
       ovr: Number(pickMatch(title, /[—–-]\s+(\d{2,3})\s+OVR/i)) || card.ovrFromListing,
       position: parsedPosition,
       program: PROGRAM_NAME,
+      cardCategory: classifyCardCategory(sourceText),
+      isIconCard: classifyCardCategory(sourceText) === "icon",
+      isHeroCard: classifyCardCategory(sourceText) === "hero",
       sourceUrl: new URL(card.detailUrl).origin + new URL(card.detailUrl).pathname,
       requestedViewUrl: options.playerUrlInput || null,
       sourceProgramUrl: PROGRAM_URL,
@@ -1590,7 +1614,7 @@ async function run() {
         console.log("Using cached complete listing: " + LISTING_FILE + " (" + listing.cards.length + " cards; run with --refresh-listing to rescan)");
       }
       if (listing.complete !== true) {
-        throw new Error("The Anniversary listing is incomplete. Fix pagination before collecting player details; partial collections are blocked.");
+        throw new Error(`The ${PROGRAM_NAME} listing is incomplete. Fix pagination before collecting player details; partial collections are blocked.`);
       }
     }
 
@@ -1621,8 +1645,8 @@ async function run() {
       for (const filePath of [
         RECORDS_FILE,
         CHECKPOINT_FILE,
-        path.join(OUTPUT_DIR, "pilot-report.json"),
-        path.join(OUTPUT_DIR, "validation-report.json")
+        PROGRAM_REPORT_FILE,
+        VALIDATION_REPORT_FILE
       ]) {
         try {
           await fs.unlink(filePath);
@@ -1735,7 +1759,7 @@ async function run() {
       assetLibraryFile: path.relative(process.cwd(), ASSET_LIBRARY_FILE).replaceAll(path.sep, "/"),
       failuresThisRun: errors
     };
-    await writeJsonAtomic(path.join(OUTPUT_DIR, "pilot-report.json"), report);
+    await writeJsonAtomic(PROGRAM_REPORT_FILE, report);
     if (errors.length || assetFailuresThisRun.length) {
       console.error(
         "\nRun finished with " + errors.length + " failed player page(s) and "
@@ -1753,9 +1777,9 @@ async function run() {
       savedRecordCount: report.savedRecordCount,
       recordsWithCompleteStats: report.recordsWithCompleteStats,
       uniqueAssetsInLibrary: report.uniqueAssetsInLibrary,
-      reportFile: "data/pilot-report.json"
+      reportFile: path.relative(process.cwd(), PROGRAM_REPORT_FILE).replaceAll(path.sep, "/")
     }, null, 2));
-    console.log("\nFull per-player details are saved to data/pilot-report.json.");
+    console.log("\nFull per-player details are saved to " + path.relative(process.cwd(), PROGRAM_REPORT_FILE).replaceAll(path.sep, "/") + ".");
   } finally {
     await context.close().catch(() => {});
     await browser.close();
