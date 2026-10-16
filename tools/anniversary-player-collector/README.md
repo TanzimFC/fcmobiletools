@@ -29,7 +29,12 @@ npm run programs:collect -- --from tots-26 --to anniversary-3rd-2026
 # Rebuild combined outputs and inspect per-event coverage
 npm run programs:export
 npm run programs:coverage
+
+# Force a refresh of previously verified detail records (use sparingly)
+npm run programs:collect -- --refresh-existing
 ```
+
+The multi-program runner resumes by default: it skips an existing card only when its stats are complete, its Icon/Hero category is recognized, and (when image downloads are enabled) every referenced image has a saved local file. Partially parsed records are retried. Use `--refresh-existing` to re-visit verified records, or `--fresh` for a deliberate single-program reset before a full run.
 
 The runner processes one program at a time and retains checkpoints. A full sweep requires the explicit `--all` option (included in the `programs:collect` npm script). It stops on an HTTP 403/429 or challenge page and does not try to bypass restrictions. Use it only within RenderZ's permission and request limits.
 
