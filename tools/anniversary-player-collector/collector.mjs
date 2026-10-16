@@ -38,6 +38,7 @@ function parseArgs(argv) {
     captureProgression: false,
     keepSourceText: false,
     fresh: false,
+    resume: false,
     playerUrl: null,
     playerUrlInput: null,
     delayMs: DEFAULT_DELAY_MS,
@@ -54,6 +55,7 @@ function parseArgs(argv) {
     else if (arg === "--capture-progression") options.captureProgression = true;
     else if (arg === "--keep-source-text") options.keepSourceText = true;
     else if (arg === "--fresh") options.fresh = true;
+    else if (arg === "--resume") options.resume = true;
     else if (arg === "--player-url") {
       const value = argv[++i];
       if (!value) throw new Error("--player-url requires a RenderZ player URL.");
@@ -111,6 +113,7 @@ Options:
   --download-images   Download card background, player image, and detected club/league/nation images.
   --capture-progression Capture rank/training snapshots (experimental; not needed for base collection).
   --fresh             Clear existing player records/checkpoints/reports before a full --all collection; keep listing and asset cache.
+  --resume            Skip cards with complete stats, a known card category, and saved images when image downloads are requested.
   --keep-source-text  Retain filtered page text for parser debugging (off by default).
   --player-url <url>  Collect one specific RenderZ player page (useful for testing a card that displays stats).
   --delay-ms <n>      Delay between player pages; minimum 600 ms (default: 900).
@@ -1526,6 +1529,16 @@ async function collectPlayer(context, card, options, imageCache, assetLibrary) {
   }
 }
 
+function isSafeResumeRecord(record, options) {
+  if (!record || record.statExtraction?.status !== "complete") return false;
+  if (!record.cardCategory || record.cardCategory === "unknown") return false;
+  if (options.downloadImages) {
+    const assets = Array.isArray(record.assets) ? record.assets : [];
+    if (!assets.length || assets.some((asset) => !asset.localPath || asset.downloadError)) return false;
+  }
+  return true;
+}
+
 async function preservePreviouslyVerifiedData(currentRecord, previousRecord) {
   if (!previousRecord) return currentRecord;
 
@@ -1671,10 +1684,19 @@ async function run() {
     const errors = [];
     const completedThisRun = [];
     const failedThisRun = [];
+    const skippedThisRun = [];
     const assetFailuresThisRun = [];
 
     for (let index = 0; index < targetCards.length; index += 1) {
       const card = targetCards[index];
+      const parsedCardUrl = new URL(card.detailUrl);
+      const canonicalCardUrl = parsedCardUrl.origin + parsedCardUrl.pathname;
+      const previousCardRecord = byUrl.get(canonicalCardUrl);
+      if (options.resume && isSafeResumeRecord(previousCardRecord, options)) {
+        skippedThisRun.push({ sourceUrl: canonicalCardUrl, name: previousCardRecord.name, reason: "complete-record-already-saved" });
+        console.log(`[resume ${index + 1}/${targetCards.length}] skipped saved card: ${previousCardRecord.name || canonicalCardUrl}`);
+        continue;
+      }
       console.log(`[player ${index + 1}/${targetCards.length}] ${card.nameFromListing} — ${card.detailUrl}`);
       if (index > 0) await sleep(options.delayMs);
 
@@ -1736,6 +1758,8 @@ async function run() {
       listingCount: listing?.count ?? null,
       requestedDetailCount: targetCards.length,
       succeededThisRun: completedThisRun.length,
+      skippedExistingThisRun: skippedThisRun.length,
+      skippedExistingCards: skippedThisRun,
       failedThisRun: failedThisRun.length,
       failedAssetDownloadsThisRun: assetFailuresThisRun.length,
       failedAssets: assetFailuresThisRun,
@@ -1772,6 +1796,7 @@ async function run() {
     console.log(JSON.stringify({
       requestedDetailCount: report.requestedDetailCount,
       succeededThisRun: report.succeededThisRun,
+      skippedExistingThisRun: report.skippedExistingThisRun,
       failedThisRun: report.failedThisRun,
       failedAssetDownloadsThisRun: report.failedAssetDownloadsThisRun,
       savedRecordCount: report.savedRecordCount,
