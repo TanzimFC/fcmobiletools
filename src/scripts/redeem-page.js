@@ -487,6 +487,36 @@ function boot() {
     }
   }
 
+
+  function trackRedeemCodeCopy(code) {
+    let accessToken = '';
+    try {
+      const raw = localStorage.getItem('fcmobiletools-auth-v1');
+      const auth = raw ? JSON.parse(raw) : null;
+      accessToken = auth?.access_token || auth?.session?.access_token || auth?.currentSession?.access_token || '';
+    } catch {}
+    if (!accessToken) return;
+
+    fetch('/api/account/activity', {
+      method: 'POST',
+      headers: { authorization: 'Bearer ' + accessToken, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        eventType: 'redeem_code_copy',
+        entityType: 'redeem_code',
+        entityId: String(code || '').trim().toUpperCase(),
+        durationMs: 0,
+        idempotencyKey: crypto.randomUUID()
+      })
+    }).then(async (response) => {
+      if (!response.ok) return;
+      const result = await response.json().catch(() => ({}));
+      if (result.questCompleted) {
+        toast('Redeem Code Quest completed · +' + Number(result.tokenReward || 0) + ' Tokens', 'good');
+        window.dispatchEvent(new CustomEvent('fcmobiletools:quest-status-changed'));
+      }
+    }).catch(() => {});
+  }
+
   function flashCopied(button) {
     button.classList.add('is-copied');
     const label = button.matches('.rx-btn') ? button.querySelector('span') : null;
@@ -506,6 +536,7 @@ function boot() {
       const ok = await copyText(copyBtn.dataset.copy);
       if (ok) {
         flashCopied(copyBtn);
+        trackRedeemCodeCopy(copyBtn.dataset.copy);
         toast(`${copyBtn.dataset.copy} copied`, 'good');
         navigator.vibrate?.(12);
       } else {
@@ -517,7 +548,11 @@ function boot() {
     // Redeem opens EA in a new tab; copy first so the code is ready to paste.
     const redeem = event.target.closest('[data-redeem]');
     if (redeem) {
-      copyText(redeem.dataset.redeem).then((ok) => ok && toast(`${redeem.dataset.redeem} copied — paste it on the EA page if it isn't filled in`, 'good'));
+      copyText(redeem.dataset.redeem).then((ok) => {
+        if (!ok) return;
+        trackRedeemCodeCopy(redeem.dataset.redeem);
+        toast(`${redeem.dataset.redeem} copied — paste it on the EA page if it isn't filled in`, 'good');
+      });
       return;
     }
 
