@@ -204,7 +204,7 @@ function buildCardRow(record, associationList, existing) {
     play_styles: Array.isArray(record.playStyles) ? record.playStyles : [],
     skill_points_to_spend: Number.isInteger(record.skillPointsToSpend) ? record.skillPointsToSpend : null,
     skill_points_to_spend_label: String(record.skillPointsToSpendLabel || "Skill Points to Spend"),
-    card_category: categoryOf(record),
+    card_category: categoryOf(record) !== "unknown" ? categoryOf(record) : (existing?.card_category || "unknown"),
     collected_at: record.collectedAt || null,
     stats_collected_at: record.statsCollectedAt || null,
     updated_at: new Date().toISOString()
