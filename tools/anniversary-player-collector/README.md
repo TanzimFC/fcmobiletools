@@ -1,6 +1,45 @@
-# FCMobiletools — Anniversary Player Collector
+# FCMobiletools — Multi-program Player Collector
 
 This is an **independent local tool**. It does not run in Cloudflare Workers and has no GitHub Actions workflow. Collection output is intentionally ignored by Git and stays on the computer running the script.
+
+## Multi-program event coverage
+
+The original Anniversary collector now supports a chronological event sweep covering **TOTS 26 through 3rd Anniversary**: TOTS 26, Pitch Perfect, UECL 26, UEL 26, The World's Game 26, Record Holders, Summer Special, Champions, Road to AFC, Game Changer, Numero, and 3rd Anniversary. Program URLs and collection order live in `programs.json`.
+
+Icon and Hero cards are identified from their player detail labels and exported as a separate **subset** of those event records. The pipeline does not crawl a separate full-site Icons or Heroes page. Each program gets its own listing cache, records file, checkpoint, and report; the shared asset library remains deduplicated.
+
+### Multi-program commands
+
+```powershell
+# Verify program listing pagination only; no player details are collected
+npm run programs:discover
+
+# Small pilot for one event
+npm run programs:pilot -- --program tots-26
+
+# Full collection across the catalog, in order
+npm run programs:collect
+
+# Full collection for one event
+npm run programs:collect -- --program anniversary-3rd-2026
+
+# Full collection from TOTS 26 through 3rd Anniversary
+npm run programs:collect -- --from tots-26 --to anniversary-3rd-2026
+
+# Rebuild combined outputs and inspect per-event coverage
+npm run programs:export
+npm run programs:coverage
+```
+
+The runner processes one program at a time and retains checkpoints. A full sweep requires the explicit `--all` option (included in the `programs:collect` npm script). It stops on an HTTP 403/429 or challenge page and does not try to bypass restrictions. Use it only within RenderZ's permission and request limits.
+
+Combined outputs are written locally under `data/` and remain git-ignored:
+- `player-cards-all-events.json` — deduplicated cards with all source-program associations.
+- `icons-and-heroes.json` — cards classified as Icons or Heroes within the selected event window.
+- `coverage-report.json` — listing completeness, missing detail URLs, stat coverage, and Icon/Hero counts.
+
+These commands only collect and export local JSON. They do not import or publish the combined dataset to Supabase or to the website.
+
 
 ## Scope
 
