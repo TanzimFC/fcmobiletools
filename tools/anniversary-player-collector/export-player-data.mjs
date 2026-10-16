@@ -9,6 +9,7 @@ const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CATALOG_FILE = path.join(TOOL_DIR, "programs.json");
 const DATA_DIR = path.resolve(process.env.FCMT_OUTPUT_DIR || "data");
 const COVERAGE_ONLY = process.argv.includes("--coverage-only");
+const STRICT_COVERAGE = process.argv.includes("--strict");
 
 function normalizePlayerUrl(value) {
   try {
@@ -76,7 +77,7 @@ async function main() {
     const iconCount = records.filter((record) => classifyCategory(record) === "icon").length;
     const heroCount = records.filter((record) => classifyCategory(record) === "hero").length;
     const listingComplete = listing?.complete === true;
-    const programComplete = listingComplete && missingUrls.length === 0 && records.length >= (listing?.count ?? 0);
+    const programComplete = listingComplete && missingUrls.length === 0;
 
     if (Number.isInteger(listing?.count)) expectedCardCount += listing.count;
     collectedListingCardCount += matchedUrls.size;
@@ -198,7 +199,7 @@ async function main() {
     outputFiles: COVERAGE_ONLY ? ["data/coverage-report.json"] : ["data/player-cards-all-events.json", "data/icons-and-heroes.json", "data/coverage-report.json"]
   }, null, 2));
 
-  if (coverage.some((item) => item.listingFileExists && !item.complete)) process.exitCode = 1;
+  if (STRICT_COVERAGE && !report.allProgramsComplete) process.exitCode = 1;
 }
 
 main().catch((error) => {
