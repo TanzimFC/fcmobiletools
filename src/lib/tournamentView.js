@@ -215,3 +215,70 @@ export function tournamentState(t) {
   if (progressOf(t).done > 0 || t.status === 'in_progress') return { key: 'live', label: 'Live' };
   return { key: 'upcoming', label: 'Upcoming' };
 }
+
+/* ======================================================================
+   v3 additions: stats, form guide, latest results, start countdown.
+   Pure build-time helpers, same as everything above.
+   ====================================================================== */
+
+const hasScore = (m) => m?.player1Score != null && m?.player2Score != null;
+const isPlayed = (m) => m?.status === 'completed' && hasBothPlayers(m) && hasScore(m);
+
+/** Headline numbers for a tournament: goals, average, biggest win. */
+export function statsOf(t) {
+  const played = allMatches(t).filter(isPlayed);
+  if (!played.length) return null;
+  let goals = 0;
+  let biggest = null;
+  for (const m of played) {
+    goals += m.player1Score + m.player2Score;
+    const margin = Math.abs(m.player1Score - m.player2Score);
+    if (margin > 0 && (!biggest || margin > biggest.margin)) biggest = { match: m, margin };
+  }
+  return {
+    played: played.length,
+    goals,
+    avg: Math.round((goals / played.length) * 10) / 10,
+    biggest
+  };
+}
+
+/** The most recently completed fixtures (match id is the best ordering signal we have). */
+export function recentResults(t, limit = 8) {
+  const out = [];
+  for (const stage of t?.stages || []) {
+    for (const match of stage.matches || []) if (isPlayed(match)) out.push({ match, stage });
+  }
+  return out.sort((a, b) => b.match.id - a.match.id).slice(0, limit);
+}
+
+/** Last five results per player id for a stage: { [playerId]: ['W','D','L', ...] } oldest to newest. */
+export function formOf(matches, size = 5) {
+  const order = [...(matches || [])]
+    .filter(isPlayed)
+    .sort((a, b) => (a.matchday ?? a.roundNumber ?? 0) - (b.matchday ?? b.roundNumber ?? 0) || a.matchNumber - b.matchNumber);
+  const form = {};
+  const push = (id, r) => { (form[id] ||= []).push(r); };
+  for (const m of order) {
+    const a = m.player1Score, b = m.player2Score;
+    push(m.player1.id, a > b ? 'W' : a < b ? 'L' : 'D');
+    push(m.player2.id, b > a ? 'W' : b < a ? 'L' : 'D');
+  }
+  for (const id of Object.keys(form)) form[id] = form[id].slice(-size);
+  return form;
+}
+
+/** Context label for any match: round name, group name or matchday. */
+export function contextOf(found) {
+  if (!found) return '';
+  const { match, stage } = found;
+  if (stage.type === 'knockout') return buildKnockout(stage).rounds.find((r) => r.number === match.roundNumber)?.label || stage.name;
+  if (stage.type === 'group') return stage.groups?.find((g) => g.id === match.groupId)?.name || stage.name;
+  return `Matchday ${match.matchday ?? match.roundNumber}`;
+}
+
+/** ISO start time if it is still in the future (build-time snapshot; the client re-checks). */
+export const startsInFuture = (t) => {
+  const d = t?.startsAt ? new Date(t.startsAt) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toISOString() : null;
+};

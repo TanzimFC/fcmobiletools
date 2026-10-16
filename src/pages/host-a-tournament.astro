@@ -10,16 +10,25 @@ const perks = [
 ];
 ---
 <BaseLayout title="Host a Tournament" description="Host an FC Mobile tournament with FCMOBILETOOLS. Premium brackets, player-verified results and Discord support.">
-  <main class="tp"><div class="tp-wrap">
-    <header class="tp-hero">
-      <span class="tp-eyebrow" data-reveal>For communities & creators</span>
-      <h1 class="tp-title" data-reveal>Host a tournament <span class="tp-shine">with us</span></h1>
-      <p class="tp-lede" data-reveal>{HOST_FORM_NOTE}</p>
-      <div class="host-actions" style="margin-top:32px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap" data-reveal><a class="tp-btn discord" href={DISCORD_URL} rel="noopener">Contact us on Discord</a><a class="tp-btn ghost" href="/tournaments/samples/">View tournament samples</a></div>
-    </header>
-    <div class="tp-grid">{perks.map(([t, d]) => <div class="tp-glass" data-tilt data-reveal><div class="in-c"><h3 style="font-size:22px;margin-bottom:10px">{t}</h3><p style="color:#9bacbd;line-height:1.65;margin:0">{d}</p></div></div>)}</div>
-    <section class="tp-sec"><h2>How hosting starts</h2>
-      <ol class="tp-steps"><li data-reveal><b>Say hello</b><p>Open a ticket in our Discord with your idea and audience size.</p></li><li data-reveal><b>We shape it</b><p>Format, dates, rules and prizes agreed together.</p></li><li data-reveal><b>You launch</b><p>Players register, we publish the arena, your event goes live.</p></li></ol></section>
-  </div></main>
+  <main class="tp">
+    <div class="tp-pitch" aria-hidden="true"><svg viewBox="0 0 600 400" fill="none" stroke="currentColor" stroke-width="2"><circle cx="420" cy="200" r="150" /><circle cx="420" cy="200" r="5" fill="currentColor" /><path d="M420 -20V420" /><path d="M600 110h-95v180h95" /></svg></div>
+    <div class="tp-wrap">
+      <header class="tp-hero center">
+        <span class="tp-eyebrow" data-in style="--i:0">For communities and creators</span>
+        <h1 class="tp-title" data-in style="--i:1">Host a tournament<br />under your own name</h1>
+        <p class="tp-lede" data-in style="--i:2">{HOST_FORM_NOTE}</p>
+        <div class="tp-actions" data-in style="--i:3"><a class="tp-btn discord" href={DISCORD_URL} rel="noopener">Contact us on Discord</a><a class="tp-btn ghost" href="/tournaments/samples/">View tournament samples</a></div>
+      </header>
+      <div class="tp-grid perks">{perks.map(([t, d]) => <div class="tp-glass" data-reveal><div class="in-c"><h3>{t}</h3><p>{d}</p></div></div>)}</div>
+      <section class="tp-sec" data-reveal><div class="tp-sec-head"><h2>How hosting starts</h2></div>
+        <ol class="tp-steps"><li><b>Say hello</b><p>Open a ticket in our Discord with your idea and audience size.</p></li><li><b>We shape it</b><p>Format, dates, rules and prizes agreed together.</p></li><li><b>You launch</b><p>Players register, we publish the arena, your event goes live.</p></li></ol></section>
+    </div>
+  </main>
 </BaseLayout>
 <script>import { initFx } from '../lib/tournamentFx.js'; initFx();</script>
+<style is:global>
+  .tp .perks{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+  .tp .perks h3{font-size:21px;margin-bottom:10px}
+  .tp .perks p{margin:0;color:var(--mut);line-height:1.65;font-size:15px}
+  .tp .perks .tp-glass::before{content:"";position:absolute;left:26px;top:-1px;width:36px;height:2px;background:var(--cyan);border-radius:0 0 2px 2px}
+</style>

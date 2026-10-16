@@ -9,16 +9,14 @@ import { TOURNAMENT_PUBLICATIONS } from '../../data/tournaments.js';
 import { isHiddenInternalTournamentSlug, isTournamentSampleSlug } from '../../data/tournamentSamples.js';
 import {
   buildKnockout, groupByMatchday, sortStandings, progressOf, nextMatch, championOf,
-  tournamentState, formatLabel, matchModeLabel, stageTypeLabel, formatDate
+  tournamentState, formatLabel, matchModeLabel, stageTypeLabel, formatDate,
+  statsOf, recentResults, formOf, contextOf, startsInFuture
 } from '../../lib/tournamentView.js';
 
 export function getStaticPaths() {
   return TOURNAMENT_PUBLICATIONS
     .filter((t) => t.isPublic && !isHiddenInternalTournamentSlug(t.slug))
-    .map((t) => ({
-    params: { slug: t.slug },
-    props: { tournament: t }
-  }));
+    .map((t) => ({ params: { slug: t.slug }, props: { tournament: t } }));
 }
 
 const { tournament: t } = Astro.props;
@@ -29,63 +27,62 @@ const champion = t ? championOf(t) : null;
 const next = t && !champion ? nextMatch(t) : null;
 const isSample = isTournamentSampleSlug(t?.slug);
 const kickoff = formatDate(t?.startsAt, true);
+const countdownIso = t && state?.key === 'upcoming' ? startsInFuture(t) : null;
+const stats = t ? statsOf(t) : null;
+const latest = t ? recentResults(t, 8) : [];
 const chunk = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));
-
-function contextOf(found) {
-  if (!found) return '';
-  const { match, stage } = found;
-  if (stage.type === 'knockout') return buildKnockout(stage).rounds.find((r) => r.number === match.roundNumber)?.label || stage.name;
-  if (stage.type === 'group') return stage.groups.find((g) => g.id === match.groupId)?.name || stage.name;
-  return `Matchday ${match.matchday ?? match.roundNumber}`;
-}
+const TROPHY = 'M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3M12 13v4M10 17h4v3h-4zM8.5 20h7';
 ---
-<BaseLayout title={t ? t.name : 'Tournament'} description={t?.description || 'FCMOBILETOOLS tournament bracket.'}>
+<BaseLayout title={t ? t.name : 'Tournament'} description={t?.description || 'FCMOBILETOOLS tournament bracket, tables and results.'}>
   {t ? (
     <main class="tp">
+      <div class="tp-pitch" aria-hidden="true">
+        <svg viewBox="0 0 600 400" fill="none" stroke="currentColor" stroke-width="2"><circle cx="420" cy="200" r="150" /><circle cx="420" cy="200" r="5" fill="currentColor" /><path d="M420 -20V420" /><path d="M600 110h-95v180h95" /></svg>
+      </div>
+
       {isSample ? (
-        <aside class="tournament-sample-note" role="note" data-reveal>
-          <span class="sample-note-label">SAMPLE DATA</span>
+        <aside class="sample-note" role="note">
+          <span>Sample data</span>
           <div>
             <strong>Example tournament page</strong>
             <p>Participants, fixtures, scores and the winner are illustrative. This is not a live competition or a record of real registrations.</p>
-            <a href="/tournaments/samples/">Browse all tournament samples →</a>
+            <a href="/tournaments/samples/">Browse all tournament samples</a>
           </div>
         </aside>
       ) : null}
-      <header class="hero" data-reveal>
-        <svg class="pitch" viewBox="0 0 600 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="420" cy="200" r="150" /><circle cx="420" cy="200" r="5" fill="currentColor" /><path d="M420 -20V420" /><path d="M600 110h-95v180h95" />
-        </svg>
-        <div class="wrap hero-grid">
+
+      <header class="hero">
+        <div class="tp-wrap hero-grid">
           <div class="hero-main">
-            <div class="crumbs">
-              <a href="/tournaments/">All tournaments</a>
-              <span class={`state ${state.key}`}><i></i>{state.label}</span>
+            <div class="crumbs" data-in style="--i:0">
+              <a href="/tournaments/"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg>All tournaments</a>
+              <span class={`tp-pill ${state.key}`}><i></i>{state.label}</span>
             </div>
-            <h1>{t.name}</h1>
-            {t.description ? <p class="lede">{t.description}</p> : null}
-            <dl class="facts">
+            <h1 data-in style="--i:1">{t.name}</h1>
+            {t.description ? <p class="lede" data-in style="--i:2">{t.description}</p> : null}
+            <dl class="facts" data-in style="--i:3">
               <div><dt>Format</dt><dd>{formatLabel(t.formatKey)}</dd></div>
               <div><dt>Players</dt><dd>{t.participantCount}</dd></div>
-              {kickoff ? <div><dt>Kick-off</dt><dd>{kickoff}</dd></div> : null}
-              {progress.total ? <div><dt>Matches played</dt><dd>{progress.done} of {progress.total}</dd></div> : null}
+              {countdownIso ? <div><dt>Starts in</dt><dd data-countdown={countdownIso}>soon</dd></div> : kickoff ? <div><dt>Kick-off</dt><dd>{kickoff}</dd></div> : null}
+              {progress.total && !stats ? <div><dt>Matches played</dt><dd>{progress.done} of {progress.total}</dd></div> : null}
             </dl>
           </div>
 
-          <aside class="hero-side" aria-label={champion ? 'Champion' : 'Tournament status'}>
+          <aside class="hero-side" aria-label={champion ? 'Champion' : 'Tournament status'} data-in style="--i:3">
             {champion ? (
               <div class="card champion">
-                <svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M10 17h4v3h-4zM8.5 20h7"/></svg>
+                <svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={TROPHY}/></svg>
                 <p class="card-label">Champion</p>
-                <div class="champ-id"><Crest player={champion} size={56} ring /><div><strong>{champion.displayName}</strong>{champion.playerTag ? <small>{champion.playerTag}</small> : null}</div></div>
+                <div class="champ-id"><Crest player={champion} size={60} ring /><div><strong>{champion.displayName}</strong>{champion.playerTag ? <small>{champion.playerTag}</small> : null}</div></div>
+                {progress.total ? <p class="meter-copy">Won it across {progress.done} matches played.</p> : null}
               </div>
             ) : next ? (
               <div class="card upnext">
                 <p class="card-label">Next match <span>{contextOf(next)}</span></p>
                 <div class="vs">
-                  <div class="vs-p"><Crest player={next.match.player1} size={48} /><b>{next.match.player1.displayName}</b></div>
+                  <div class="vs-p"><Crest player={next.match.player1} size={52} /><b>{next.match.player1.displayName}</b></div>
                   <span class="vs-x">vs</span>
-                  <div class="vs-p"><Crest player={next.match.player2} size={48} /><b>{next.match.player2.displayName}</b></div>
+                  <div class="vs-p"><Crest player={next.match.player2} size={52} /><b>{next.match.player2.displayName}</b></div>
                 </div>
                 <div class="meter" style={`--p:${progress.pct}%`}><span></span></div>
                 <p class="meter-copy">{progress.done} of {progress.total} matches played</p>
@@ -94,7 +91,7 @@ function contextOf(found) {
               <div class="card upnext">
                 <p class="card-label">Bracket is set</p>
                 <div class="roster">
-                  {t.players.slice(0, 8).map((p) => <Crest player={p} size={38} />)}
+                  {t.players.slice(0, 8).map((p) => <Crest player={p} size={40} />)}
                   {t.players.length > 8 ? <span class="more">+{t.players.length - 8}</span> : null}
                 </div>
                 <p class="meter-copy">{t.participantCount} players are in. Results appear here as soon as matches are played.</p>
@@ -104,25 +101,63 @@ function contextOf(found) {
         </div>
       </header>
 
+      {stats ? (
+        <section class="tp-wrap strip" aria-label="Tournament numbers" data-reveal>
+          <dl class="tp-stats">
+            <div><b>{stats.played}</b><span>Matches played</span></div>
+            <div><b>{stats.goals}</b><span>Goals scored</span></div>
+            <div><b>{stats.avg}</b><span>Goals per match</span></div>
+            {stats.biggest ? (
+              <div><b>{stats.biggest.match.player1Score}–{stats.biggest.match.player2Score}</b><span>Biggest win: {stats.biggest.match.player1Score > stats.biggest.match.player2Score ? stats.biggest.match.player1.displayName : stats.biggest.match.player2.displayName}</span></div>
+            ) : null}
+          </dl>
+        </section>
+      ) : null}
+
+      {latest.length ? (
+        <section class="tp-wrap latest-sec" data-reveal aria-labelledby="latest-h">
+          <h2 id="latest-h">Latest results</h2>
+          <ol class="latest" tabindex="0" aria-label="Most recent results">
+            {latest.map((f) => {
+              const { match: m } = f;
+              const w1 = m.player1Score > m.player2Score, w2 = m.player2Score > m.player1Score;
+              return (
+                <li>
+                  <small>{contextOf(f)}</small>
+                  <div class="lr"><span class:list={{ w: w1 }}>{m.player1.displayName}</span><b>{m.player1Score}<u>–</u>{m.player2Score}</b><span class:list={{ w: w2 }}>{m.player2.displayName}</span></div>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ) : null}
+
       <nav class="stage-nav" aria-label="Tournament stages">
-        <div class="wrap">
-          {stages.length > 1 ? stages.map((s) => <a href={`#stage-${s.order}`}>{s.name}</a>) : null}
-          <label class="find"><input type="search" data-find placeholder="Find a player…" aria-label="Find a player" autocomplete="off" /><small></small></label>
+        <div class="tp-wrap nav-in">
+          <div class="tabs">{stages.length > 1 ? stages.map((s) => <a href={`#stage-${s.order}`}>{s.name}</a>) : <strong class="nav-title">{t.name}</strong>}</div>
+          <label class="find"><input type="search" data-find placeholder="Find a player" aria-label="Find a player" autocomplete="off" /><small></small></label>
+          <button type="button" class="share" data-share aria-label="Copy link to this tournament"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 12l4-4M7.5 9.5l-2 2a3 3 0 0 0 4.2 4.2l2-2M12.5 10.5l2-2a3 3 0 0 0-4.2-4.2l-2 2"/></svg><span>Share</span></button>
         </div>
       </nav>
 
-      <div class="wrap stages">
+      <div class="tp-wrap stages">
         {stages.map((stage) => {
           const ko = stage.type === 'knockout' ? buildKnockout(stage) : null;
           const isGroup = stage.type === 'group';
           const standings = sortStandings(stage.standings || []);
           const days = !ko && !isGroup ? groupByMatchday(stage.matches || []) : [];
           const firstOpen = days.findIndex((d) => d.pending);
+          const stageForm = !ko && !isGroup ? formOf(stage.matches) : null;
           return (
             <section class="stage" data-reveal id={`stage-${stage.order}`}>
               <header class="stage-head">
-                <h2>{stage.name}</h2>
-                <p>{stageTypeLabel(stage.type)}, {matchModeLabel(stage.matchMode)}</p>
+                <div><h2>{stage.name}</h2><p>{stageTypeLabel(stage.type)}, {matchModeLabel(stage.matchMode)}</p></div>
+                {ko && ko.rounds.length > 2 ? (
+                  <div class="b-nav" role="group" aria-label="Scroll bracket">
+                    <button type="button" data-bracket-nav="prev" aria-label="Previous round"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg></button>
+                    <button type="button" data-bracket-nav="next" aria-label="Next round"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
+                  </div>
+                ) : null}
               </header>
 
               {ko ? (
@@ -150,8 +185,8 @@ function contextOf(found) {
                         <div class="round-body">
                           <div class="pair solo"><div class="slot">
                             <div class:list={['throne', { crowned: Boolean(ko.champion) }]}>
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M10 17h4v3h-4zM8.5 20h7"/></svg>
-                              {ko.champion ? <><Crest player={ko.champion} size={44} ring /><b>{ko.champion.displayName}</b></> : <span>Decided in the final</span>}
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={TROPHY}/></svg>
+                              {ko.champion ? <><Crest player={ko.champion} size={46} ring /><b>{ko.champion.displayName}</b></> : <span>Decided in the final</span>}
                             </div>
                           </div></div>
                         </div>
@@ -178,7 +213,7 @@ function contextOf(found) {
                       return (
                         <article class="group">
                           <header><h3>{g.name}</h3><small>{played} of {gm.length} played</small></header>
-                          <Standings rows={rows} advance={stage.advancePerGroup || 0} caption={`${g.name} standings`} />
+                          <Standings rows={rows} advance={stage.advancePerGroup || 0} caption={`${g.name} standings`} form={formOf(gm)} />
                           <details>
                             <summary>Fixtures and results</summary>
                             {groupByMatchday(gm).map((d) => (
@@ -195,7 +230,7 @@ function contextOf(found) {
               {!ko && !isGroup ? (
                 <>
                   <div class="league">
-                    <Standings rows={standings.slice(0, 200)} advance={Number(stage.config?.qualifiers || 0)} caption={`${stage.name} table`} />
+                    <Standings rows={standings.slice(0, 200)} advance={Number(stage.config?.qualifiers || 0)} caption={`${stage.name} table`} form={stageForm} />
                     {standings.length > 200 ? <p class="cap-note">Showing the top 200 of {standings.length} players.</p> : null}
                   </div>
                   <div class="days">
@@ -214,7 +249,7 @@ function contextOf(found) {
       </div>
     </main>
   ) : (
-    <main class="tp missing"><div class="wrap"><h1>Tournament not found</h1><p>This tournament is not published right now.</p><a href="/tournaments/">See all tournaments</a></div></main>
+    <main class="tp missing"><div class="tp-wrap"><h1>Tournament not found</h1><p>This tournament is not published right now.</p><a href="/tournaments/">See all tournaments</a></div></main>
   )}
 </BaseLayout>
 
@@ -224,123 +259,156 @@ function contextOf(found) {
 </script>
 
 <style>
-  .tp{--ink:#071018;--panel:#0c1824;--line:rgba(255,255,255,.08);--cyan:#4cc9ff;--gold:#e9c46a;--live:#47d16c;--text:#f5f8fb;--muted:#8fa1b1;--gap:32px;color:var(--text);padding:0 0 72px}
-  .wrap{max-width:1240px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+  /* ---- hero ---- */
+  .hero{position:relative;padding:clamp(112px,14vw,148px) 0 36px}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:clamp(28px,5vw,56px);align-items:end}
+  .crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:22px;font:500 13.5px var(--body)}
+  .crumbs a{display:inline-flex;align-items:center;gap:6px;color:var(--mut);text-decoration:none;transition:color .2s}
+  .crumbs a:hover{color:var(--ink)}
+  h1{font:700 clamp(38px,6vw,68px)/.98 var(--display);letter-spacing:-.05em;text-wrap:balance}
+  .lede{max-width:56ch;margin:18px 0 0;color:var(--mut);font:400 16.5px/1.65 var(--body)}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,max-content));gap:18px clamp(24px,4vw,48px);margin:30px 0 0;padding:20px 0 0;border-top:1px solid var(--line)}
+  .facts div{display:grid;gap:6px}
+  .facts dt{font:500 13px/1 var(--body);color:var(--dim)}
+  .facts dd{margin:0;font:600 17px/1.2 var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
 
-  /* hero */
-  .hero{position:relative;overflow:hidden;padding:clamp(104px,14vw,138px) 0 44px;border-bottom:1px solid var(--line)}
-  .pitch{position:absolute;right:-60px;top:20px;width:min(760px,95vw);color:var(--cyan);opacity:.07;pointer-events:none}
-  .hero-grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:44px;align-items:end}
-  .crumbs{display:flex;align-items:center;gap:16px;margin-bottom:22px;font:500 13.5px 'Inter',system-ui,sans-serif}
-  .crumbs a{color:var(--muted);text-decoration:none}
-  .crumbs a:hover{color:var(--text)}
-  .state{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 10px;border-radius:999px;font:600 12.5px/1 'Inter',system-ui,sans-serif;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.03)}
-  .state i{width:7px;height:7px;border-radius:50%;background:currentColor}
-  .state.live{color:var(--live);border-color:rgba(71,209,108,.35);background:rgba(71,209,108,.08)}
-  .state.live i{box-shadow:0 0 0 0 rgba(71,209,108,.6);animation:ping 1.8s infinite}
-  .state.finished{color:var(--gold);border-color:rgba(233,196,106,.35);background:rgba(233,196,106,.07)}
-  .state.upcoming{color:var(--cyan);border-color:rgba(76,201,255,.3);background:rgba(76,201,255,.07)}
-  h1{margin:0;font:700 clamp(40px,6.4vw,72px)/.96 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.05em;text-wrap:balance}
-  .lede{max-width:56ch;margin:18px 0 0;color:#a7b4c3;font:400 16.5px/1.65 'Inter',system-ui,sans-serif}
-  .facts{display:flex;flex-wrap:wrap;gap:12px 38px;margin:32px 0 0}
-  .facts div{display:grid;gap:5px}
-  .facts dt{font:500 12.5px/1 'Inter',system-ui,sans-serif;color:#6f8294}
-  .facts dd{margin:0;font:600 16px/1.2 'Space Grotesk',system-ui,sans-serif;color:var(--text)}
-
-  .card{position:relative;padding:22px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(160deg,#0f1d2b,#09131c);box-shadow:0 30px 70px -30px #000}
-  .card-label{display:flex;justify-content:space-between;gap:10px;margin:0 0 18px;font:600 13px/1 'Inter',system-ui,sans-serif;color:var(--muted)}
+  .card{position:relative;padding:24px;border:1px solid var(--line);border-radius:var(--r-l);background:linear-gradient(180deg,var(--s2),var(--s1));box-shadow:0 30px 60px -36px #000,inset 0 1px 0 rgba(255,255,255,.05)}
+  .card-label{display:flex;justify-content:space-between;gap:10px;margin:0 0 20px;font:600 13px/1 var(--body);color:var(--mut)}
   .card-label span{color:var(--cyan)}
   .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
   .vs-p{display:grid;justify-items:center;gap:10px;text-align:center;min-width:0}
-  .vs-p b{font:600 14.5px/1.2 'Inter',system-ui,sans-serif;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .vs-x{font:500 13px 'Inter',system-ui,sans-serif;color:#566a7c}
-  .meter{height:4px;margin-top:22px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden}
-  .meter span{display:block;width:var(--p);height:100%;border-radius:4px;background:linear-gradient(90deg,#2aa8e8,var(--cyan))}
-  .meter-copy{margin:10px 0 0;font:400 13px/1.5 'Inter',system-ui,sans-serif;color:var(--muted)}
+  .vs-p b{font:600 14.5px/1.2 var(--body);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vs-x{font:500 13px var(--body);color:var(--dim)}
+  .meter{height:5px;margin-top:24px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
+  .meter span{display:block;width:var(--p);height:100%;border-radius:5px;background:linear-gradient(90deg,#2aa8e8,var(--cyan))}
+  .meter-copy{margin:12px 0 0;font:400 13px/1.5 var(--body);color:var(--mut)}
   .roster{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  .roster .more{display:inline-grid;place-items:center;height:38px;padding:0 12px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line);font:600 13px 'Inter',system-ui,sans-serif;color:var(--muted)}
-  .champion{border-color:rgba(233,196,106,.4);background:radial-gradient(120% 90% at 100% 0,rgba(233,196,106,.16),transparent 60%),linear-gradient(160deg,#17202a,#0a131c);box-shadow:0 30px 80px -30px rgba(233,196,106,.35)}
+  .roster .more{display:inline-grid;place-items:center;height:40px;padding:0 12px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line2);font:600 13px var(--body);color:var(--mut)}
+  /* champion: the one place gold is used. Static, no looping border. */
+  .champion{border-color:rgba(246,196,83,.4);background:radial-gradient(110% 90% at 100% 0,rgba(246,196,83,.15),transparent 60%),linear-gradient(180deg,#14202c,#0b1520);box-shadow:0 30px 70px -34px rgba(246,196,83,.35),inset 0 1px 0 rgba(255,255,255,.05)}
   .champion .card-label{color:var(--gold)}
-  .cup{position:absolute;right:20px;top:18px;width:34px;height:34px;color:var(--gold);opacity:.9}
+  .cup{position:absolute;right:22px;top:20px;width:34px;height:34px;color:var(--gold)}
   .champ-id{display:flex;align-items:center;gap:16px}
-  .champ-id strong{display:block;font:700 30px/1.05 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.03em}
-  .champ-id small{display:block;margin-top:6px;font:500 13px 'Inter',system-ui,sans-serif;color:var(--muted)}
+  .champ-id strong{display:block;font:700 30px/1.05 var(--display);letter-spacing:-.03em}
+  .champ-id small{display:block;margin-top:6px;font:500 13px var(--body);color:var(--mut)}
 
-  /* stage nav */
-  .stage-nav{position:sticky;top:64px;z-index:20;border-bottom:1px solid var(--line);background:rgba(7,16,24,.86);backdrop-filter:blur(14px)}
-  .stage-nav .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px;scrollbar-width:none}
-  .stage-nav a{flex:none;padding:8px 14px;border-radius:999px;font:600 13.5px/1 'Inter',system-ui,sans-serif;color:var(--muted);text-decoration:none}
-  .stage-nav a:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  /* ---- numbers + latest ---- */
+  .strip{padding-bottom:4px}
+  .strip .tp-stats{margin-top:6px}
+  .latest-sec{margin-top:36px}
+  .latest-sec h2{font-size:20px;margin-bottom:14px}
+  .latest{display:flex;gap:10px;margin:0;padding:2px 2px 14px;list-style:none;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#27465a transparent;scroll-snap-type:x proximity}
+  .latest li{flex:0 0 auto;min-width:240px;max-width:300px;scroll-snap-align:start;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--s1);transition:border-color .2s}
+  .latest li:hover{border-color:rgba(76,201,255,.35)}
+  .latest small{display:block;margin-bottom:10px;font:500 12px var(--body);color:var(--dim)}
+  .lr{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;font:500 13.5px var(--body);color:var(--mut)}
+  .lr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lr span:first-child{text-align:right}
+  .lr .w{color:#fff;font-weight:700}
+  .lr b{font:700 15px var(--display);color:#fff;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.06);font-variant-numeric:tabular-nums}
+  .lr u{text-decoration:none;color:var(--dim);margin:0 2px}
 
-  /* stages */
-  .stages{display:grid;gap:64px;padding-top:44px}
-  .stage{scroll-margin-top:130px}
-  .stage-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:22px}
-  .stage-head h2{margin:0;font:700 clamp(26px,3.4vw,34px)/1.1 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.035em}
-  .stage-head p{margin:0;font:400 14px 'Inter',system-ui,sans-serif;color:var(--muted)}
+  /* ---- sticky nav ---- */
+  .stage-nav{position:sticky;top:76px;z-index:20;margin-top:28px;border-block:1px solid var(--line);background:rgba(7,16,24,.82);backdrop-filter:blur(16px) saturate(1.3)}
+  .nav-in{display:flex;align-items:center;gap:12px;padding-top:10px;padding-bottom:10px}
+  .tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:1}
+  .tabs a{flex:none;padding:8px 14px;border-radius:999px;font:600 13.5px/1 var(--body);color:var(--mut);text-decoration:none;transition:background .2s,color .2s}
+  .tabs a:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+  .tabs a.on{color:var(--ink);background:rgba(76,201,255,.14);box-shadow:inset 0 0 0 1px rgba(76,201,255,.35)}
+  .nav-title{padding:0 4px;font:600 14px var(--display);color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .find{position:relative;flex:none;margin-left:auto}
+  .find input{width:min(230px,46vw);height:38px;padding:0 38px 0 36px;border-radius:999px;border:1px solid var(--line);background:var(--s1) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236f8294' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 3.5 3.5'/%3E%3C/svg%3E") 13px 50%/15px no-repeat;color:var(--ink);font:500 13.5px var(--body);outline:0;transition:width .3s var(--ease),border-color .2s,box-shadow .2s}
+  .find input::placeholder{color:var(--dim)}
+  .find input:focus{width:min(300px,60vw);border-color:var(--cyan);box-shadow:0 0 0 4px rgba(76,201,255,.12)}
+  .find small{position:absolute;right:14px;top:50%;transform:translateY(-50%);font:600 11.5px var(--body);color:var(--cyan);pointer-events:none}
+  .share{display:inline-flex;align-items:center;gap:8px;flex:none;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--ink);font:600 13.5px var(--body);cursor:pointer;transition:border-color .2s,background .2s}
+  .share:hover{border-color:rgba(76,201,255,.5);background:rgba(76,201,255,.08)}
 
-  /* bracket */
-  .bracket-wrap{overflow-x:auto;margin:0 calc(clamp(16px,4vw,32px)*-1);padding:6px clamp(16px,4vw,32px) 22px;scroll-snap-type:x proximity;scrollbar-color:#27465a transparent;outline-offset:-2px}
+  /* ---- stages ---- */
+  .stages{display:grid;grid-template-columns:minmax(0,1fr);gap:72px;padding-top:44px}
+  .stage{scroll-margin-top:150px;min-width:0}
+  .stage-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:24px}
+  .stage-head h2{font:700 clamp(26px,3.4vw,36px)/1.1 var(--display);letter-spacing:-.035em}
+  .stage-head p{margin:8px 0 0;font:400 14px var(--body);color:var(--mut)}
+  .b-nav{display:flex;gap:6px}
+  .b-nav button{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--ink);cursor:pointer;transition:border-color .2s,background .2s,opacity .2s}
+  .b-nav button:hover:not(:disabled){border-color:rgba(76,201,255,.5);background:rgba(76,201,255,.08)}
+  .b-nav button:disabled{opacity:.3;cursor:default}
+
+  /* ---- bracket ---- */
+  .bracket-wrap{--gap:32px;overflow-x:auto;margin:0 calc(clamp(16px,4vw,28px)*-1);padding:6px clamp(16px,4vw,28px) 24px;scroll-snap-type:x proximity;scrollbar-color:#27465a transparent;cursor:grab;mask:linear-gradient(90deg,transparent,#000 20px,#000 calc(100% - 28px),transparent)}
   .bracket{display:flex;align-items:stretch;gap:var(--gap);width:max-content;min-width:100%}
-  .round{display:flex;flex-direction:column;width:min(264px,78vw);scroll-snap-align:start}
-  .round.last{width:min(220px,70vw)}
-  .round-title{display:flex;align-items:baseline;justify-content:space-between;height:34px;margin:0;padding:0 2px 12px;font:700 15px/1 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.01em}
-  .round-title small{font:500 12.5px 'Inter',system-ui,sans-serif;color:#6f8294;font-variant-numeric:tabular-nums}
+  .round{display:flex;flex-direction:column;width:min(268px,78vw);scroll-snap-align:start}
+  .round.last{width:min(224px,70vw)}
+  .round-title{display:flex;align-items:baseline;justify-content:space-between;height:34px;margin:0;padding:0 2px 12px;font:700 15px/1 var(--display);letter-spacing:-.01em}
+  .round-title small{font:500 12.5px var(--body);color:var(--dim);font-variant-numeric:tabular-nums}
   .round-body{display:flex;flex-direction:column;flex:1}
   .pair{position:relative;flex:1;display:flex;flex-direction:column}
   .slot{position:relative;flex:1;display:flex;align-items:center;padding:7px 0}
-  .bracket[data-paired="true"] .round:not(.last) .slot::after{content:'';position:absolute;left:100%;top:50%;width:calc(var(--gap)/2);height:2px;margin-top:-1px;background:#1f3445}
+  .bracket[data-paired="true"] .round:not(.last) .slot::after{content:'';position:absolute;left:100%;top:50%;width:calc(var(--gap)/2);height:2px;margin-top:-1px;background:#1f3445;transform-origin:left}
   .bracket[data-paired="true"] .round:not(.last) .slot.won::after{background:var(--cyan)}
   .bracket[data-paired="true"] .round:not(.first) .slot::before{content:'';position:absolute;right:100%;top:50%;width:calc(var(--gap)/2);height:2px;margin-top:-1px;background:#1f3445}
   .bracket[data-paired="true"] .round:not(.last) .pair:not(.solo)::after{content:'';position:absolute;left:calc(100% + var(--gap)/2 - 1px);top:25%;bottom:25%;width:2px;background:#1f3445}
-  .throne{width:100%;display:grid;justify-items:center;gap:10px;padding:22px 14px;border:1px dashed rgba(233,196,106,.28);border-radius:16px;text-align:center;color:rgba(233,196,106,.55);font:500 13px 'Inter',system-ui,sans-serif}
+  .throne{width:100%;display:grid;justify-items:center;gap:10px;padding:24px 14px;border:1px dashed var(--line2);border-radius:16px;text-align:center;color:var(--dim);font:500 13px var(--body)}
   .throne svg{width:28px;height:28px}
-  .throne.crowned{border-style:solid;border-color:rgba(233,196,106,.55);background:radial-gradient(110% 90% at 50% 0,rgba(233,196,106,.16),transparent 70%);color:var(--gold);box-shadow:0 20px 50px -20px rgba(233,196,106,.4)}
-  .throne b{font:700 18px/1.2 'Space Grotesk',system-ui,sans-serif;color:var(--text)}
-  .third{margin-top:8px;display:grid;gap:12px;max-width:264px}
-  .third h3{margin:0;font:700 15px 'Space Grotesk',system-ui,sans-serif}
+  .throne.crowned{border-style:solid;border-color:rgba(246,196,83,.5);background:radial-gradient(110% 90% at 50% 0,rgba(246,196,83,.15),transparent 70%);color:var(--gold);box-shadow:0 20px 50px -24px rgba(246,196,83,.45)}
+  .throne b{font:700 18px/1.2 var(--display);color:var(--ink)}
+  .third{margin-top:8px;display:grid;gap:12px;max-width:268px}
+  .third h3{margin:0;font:700 15px var(--display)}
 
-  /* groups + leagues */
-  .legend{display:flex;align-items:center;gap:10px;margin:-6px 0 18px;font:400 13.5px 'Inter',system-ui,sans-serif;color:var(--muted)}
+  /* ---- groups + leagues ---- */
+  .legend{display:flex;align-items:center;gap:10px;margin:-6px 0 18px;font:400 13.5px var(--body);color:var(--mut)}
   .legend i{width:3px;height:16px;border-radius:2px;background:var(--cyan)}
-  .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:18px}
+  .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:16px}
   @media(min-width:800px){.groups.even{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  .group,.league{padding:6px 18px 8px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(160deg,#0d1925,#09131c)}
-  .group header{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 6px}
-  .group h3{margin:0;font:700 19px 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.02em}
-  .group header small{font:400 12.5px 'Inter',system-ui,sans-serif;color:#6f8294}
+  .group,.league{padding:6px 20px 10px;border:1px solid var(--line);border-radius:var(--r-l);background:linear-gradient(180deg,var(--s2),var(--s1))}
+  .group header{display:flex;justify-content:space-between;align-items:baseline;padding:16px 0 8px}
+  .group h3{margin:0;font:700 19px var(--display);letter-spacing:-.02em}
+  .group header small{font:400 12.5px var(--body);color:var(--dim)}
   .group details{border-top:1px solid var(--line);margin-top:6px}
-  summary{cursor:pointer;list-style:none;padding:14px 0;font:600 14px 'Inter',system-ui,sans-serif;color:#cfdae4;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  summary{cursor:pointer;list-style:none;padding:14px 0;font:600 14px var(--body);color:#cfdae4;display:flex;justify-content:space-between;align-items:center;gap:12px}
   summary::-webkit-details-marker{display:none}
-  summary::after{content:'';width:8px;height:8px;border-right:2px solid #6f8294;border-bottom:2px solid #6f8294;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+  summary::after{content:'';width:8px;height:8px;border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);transform:rotate(45deg) translateY(-2px);transition:transform .2s}
   details[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
-  summary small{margin-left:auto;margin-right:10px;font:400 12.5px 'Inter',system-ui,sans-serif;color:#6f8294}
-  .day h4{margin:14px 0 4px;font:600 12.5px 'Inter',system-ui,sans-serif;color:#6f8294}
+  summary small{margin-left:auto;margin-right:10px;font:400 12.5px var(--body);color:var(--dim)}
+  .day h4{margin:14px 0 4px;font:600 12.5px var(--body);color:var(--dim)}
   .day{padding-bottom:10px}
   .league{padding-bottom:14px}
-  .cap-note{margin:10px 0 0;font:400 13px 'Inter',system-ui,sans-serif;color:#6f8294}
-  .days{display:grid;gap:10px;margin-top:18px}
-  .day-box{border:1px solid var(--line);border-radius:16px;background:#0a141e;padding:0 18px}
+  .cap-note{margin:10px 0 0;font:400 13px var(--body);color:var(--dim)}
+  .days{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:18px}
+  .day-box{border:1px solid var(--line);border-radius:16px;background:var(--s1);padding:0 20px}
   .fx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));column-gap:28px;padding-bottom:10px}
 
   .missing{padding-top:150px}
   .missing a{color:var(--cyan)}
 
-  @keyframes ping{70%{box-shadow:0 0 0 8px rgba(71,209,108,0)}100%{box-shadow:0 0 0 0 rgba(71,209,108,0)}}
-  @keyframes draw{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
-  @media(prefers-reduced-motion:no-preference){.bracket .round{animation:draw .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i)*110ms)}}
-  @media(prefers-reduced-motion:reduce){.state.live i{animation:none}}
-  a:focus-visible,summary:focus-visible,.bracket-wrap:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:8px}
+  /* ---- the one detail-page entrance: rounds slide in, winning paths draw once ---- */
+  @keyframes round-in{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+  @keyframes line-draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @media(prefers-reduced-motion:no-preference){
+    .bracket .round{animation:round-in .6s var(--ease) both;animation-delay:calc(var(--i)*110ms + 250ms)}
+    .bracket .slot.won::after{animation:line-draw .5s var(--ease) both;animation-delay:calc(var(--i)*110ms + 650ms)}
+  }
 
-  @media(max-width:960px){.hero-grid{grid-template-columns:1fr;gap:30px;align-items:start}.hero-side{max-width:460px}}
-  @media(max-width:560px){.tp{--gap:26px}.facts{gap:14px 28px}.champ-id strong{font-size:24px}.stages{gap:48px}}
+  /* ---- sample note ---- */
+  .sample-note{display:flex;align-items:flex-start;gap:14px;max-width:1180px;margin:96px auto -64px;padding:0 clamp(16px,4vw,28px)}
+  .sample-note>span{flex:none;padding:7px 10px;border:1px solid rgba(76,201,255,.35);border-radius:8px;background:rgba(76,201,255,.08);color:#8bddff;font:600 12px/1 var(--body)}
+  .sample-note>div{min-width:0;flex:1;padding:14px 16px;border:1px solid rgba(76,201,255,.22);border-radius:14px;background:rgba(76,201,255,.045)}
+  .sample-note strong{display:block;font:700 14px/1.3 var(--body)}
+  .sample-note p{margin:5px 0 8px;color:var(--mut);font:400 13px/1.6 var(--body)}
+  .sample-note a{color:#7bd8ff;text-decoration:none;font:600 12.5px/1.5 var(--body)}
+  .sample-note a:hover{text-decoration:underline}
 
-  .tournament-sample-note{display:flex;align-items:flex-start;gap:14px;max-width:1240px;margin:18px auto 0;padding:16px clamp(16px,4vw,32px);color:var(--text)}
-  .tournament-sample-note>span{flex:none;padding:7px 9px;border:1px solid rgba(76,201,255,.35);border-radius:8px;background:rgba(76,201,255,.08);color:#8bddff;font:700 10px/1 'Inter',system-ui,sans-serif;letter-spacing:.1em}
-  .tournament-sample-note>div{min-width:0;flex:1;padding:14px 16px;border:1px solid rgba(76,201,255,.22);border-radius:14px;background:rgba(76,201,255,.045)}
-  .tournament-sample-note strong{display:block;font:700 14px/1.3 'Inter',system-ui,sans-serif}
-  .tournament-sample-note p{margin:5px 0 8px;color:#a7b4c3;font:400 13px/1.6 'Inter',system-ui,sans-serif}
-  .tournament-sample-note a{color:#7bd8ff;text-decoration:none;font:650 12px/1.5 'Inter',system-ui,sans-serif}
-  .tournament-sample-note a:hover{text-decoration:underline}
-  @media(max-width:640px){.tournament-sample-note{padding:14px 16px;gap:10px}.tournament-sample-note>div{padding:12px}}
+  @media(max-width:960px){.hero-grid{grid-template-columns:1fr;align-items:start}.hero-side{max-width:480px}}
+  @media(max-width:640px){
+    .bracket-wrap{--gap:26px}
+    .stages{gap:52px}
+    .champ-id strong{font-size:24px}
+    .facts{gap:18px 0}
+    .share span{display:none}.share{width:38px;padding:0;justify-content:center}
+    .nav-in{gap:8px}
+    .nav-title{display:none}.find{flex:1}.find input,.find input:focus{width:100%}
+    .sample-note{flex-direction:column;margin-top:88px}
+  }
+  @media(max-width:560px){.b-nav{display:none}}
 </style>

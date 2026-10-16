@@ -4,10 +4,10 @@ import '../styles/tournament-premium.css';
 import { DISCORD_URL } from '../data/tournamentConfig.js';
 ---
 <BaseLayout title="Match Center" description="Your FC Mobile tournament match room: chat, schedule, upload proof and confirm results." robots="noindex,follow">
-  <main class="tp"><div class="tp-wrap">
-    <header class="tp-hero" style="padding-bottom:20px">
-      <span class="tp-eyebrow"><i></i>Match Center</span>
-      <h1 class="tp-title" style="font-size:clamp(40px,7vw,80px)!important">Your <span class="tp-shine">match day</span></h1>
+  <main class="tp"><div class="tp-pitch" aria-hidden="true"><svg viewBox="0 0 600 400" fill="none" stroke="currentColor" stroke-width="2"><circle cx="420" cy="200" r="150" /><path d="M420 -20V420" /></svg></div><div class="tp-wrap">
+    <header class="tp-hero center" style="padding-bottom:20px">
+      <span class="tp-eyebrow" data-in><i></i>Match Center</span>
+      <h1 class="tp-title" style="font-size:clamp(40px,7vw,80px)!important">Your match day</h1>
       <p class="tp-lede">Agree a time, play, upload proof. Your opponent confirms and the bracket moves.</p>
     </header>
     <section class="tp-glass" style="max-width:560px;margin:0 auto 40px"><div class="in-c">
@@ -16,7 +16,7 @@ import { DISCORD_URL } from '../data/tournamentConfig.js';
       <div style="display:grid;gap:10px"><input class="tp-input" id="tag" placeholder="Registered player tag"><input class="tp-input" id="dc" placeholder="Discord username"><input class="tp-input" id="uid" placeholder="In-game UID">
       <button class="tp-btn sm" id="claim">Claim seat</button><small id="claimMsg" style="color:#8b9bad"></small></div></div></section>
     <div id="list" class="tp-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))"></div>
-    <p style="text-align:center;margin-top:36px;color:#8b9bad">Stuck? <a href={DISCORD_URL} style="color:#9aa7ff">Ask an admin on Discord</a></p>
+    <p style="text-align:center;margin-top:36px;color:#8b9bad">Stuck? <a href={DISCORD_URL} style="color:var(--cyan)">Ask an admin on Discord</a></p>
   </div></main>
 </BaseLayout>
 <script>
@@ -33,7 +33,7 @@ import { DISCORD_URL } from '../data/tournamentConfig.js';
     let action = `<details><summary class="tp-btn sm">Report result</summary><div class="rep"><div class="sc"><input class="tp-input" type="number" min="0" placeholder="You" data-me><b>–</b><input class="tp-input" type="number" min="0" placeholder="Opp." data-opp></div><input type="file" accept="image/*" data-file><button class="tp-btn sm" data-send>Submit with screenshot</button></div></details>`;
     if (r?.status === 'pending') action = mine ? `<span class="tp-pill upcoming"><i></i>Waiting for ${esc(m.opponent.name)} to confirm</span>` : `<div class="rep"><a href="${esc(r.screenshot_url)}" target="_blank" rel="noopener"><img src="${esc(r.screenshot_url)}" alt="Match proof" loading="lazy"></a><p>Reported score: <b>${r.player1_score}–${r.player2_score}</b></p><div style="display:flex;gap:8px"><button class="tp-btn sm" data-confirm>Confirm</button><button class="tp-btn sm ghost" data-dispute>Dispute</button></div></div>`;
     if (r && ['disputed', 'escalated'].includes(r.status)) action = `<span class="tp-pill warn"><i></i>Admin reviewing the evidence</span>`;
-    return `<article class="tp-glass" data-tilt data-reveal data-match="${m.id}" data-report="${r?.id || ''}"><div class="in-c">
+    return `<article class="tp-glass" data-match="${m.id}" data-report="${r?.id || ''}"><div class="in-c">
       <small style="color:#8b9bad">${esc(m.tournament?.name)} · Round ${m.round_number}</small>
       <h3 style="font-size:26px;margin:8px 0 14px">vs ${esc(m.opponent.name)}</h3>
       <div class="chips2">${m.opponent.discord ? `<button data-copy="${esc(m.opponent.discord)}">Discord ${esc(m.opponent.discord)}</button>` : ''}${m.opponent.uid ? `<button data-copy="${esc(m.opponent.uid)}">UID ${esc(m.opponent.uid)}</button>` : '<span class="hint">Opponent has not shared Discord/UID yet.</span>'}</div>
@@ -73,7 +73,7 @@ import { DISCORD_URL } from '../data/tournamentConfig.js';
   .tp .rail::before{content:"";position:absolute;left:8px;right:8px;top:6px;height:2px;background:rgba(255,255,255,.1)}
   .tp .rail li{position:relative;display:grid;justify-items:center;gap:8px;font-size:11.5px;color:#6f8294;letter-spacing:.04em}
   .tp .rail li i{width:14px;height:14px;border-radius:50%;background:#0b1320;border:2px solid #2a3a4d;transition:.5s}
-  .tp .rail li.on{color:#f4f7fb}.tp .rail li.on i{background:var(--gold);border-color:var(--gold);box-shadow:0 0 14px var(--gold)}
+  .tp .rail li.on{color:#f4f7fb}.tp .rail li.on i{background:var(--cyan);border-color:var(--cyan)}
   .tp .chat{max-height:150px;overflow:auto;display:grid;gap:6px;padding:12px;border-radius:14px;background:rgba(0,0,0,.25);font-size:14px}
   .tp .chat p{margin:0;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.06);max-width:85%}.tp .chat p.me{justify-self:end;background:rgba(76,201,255,.16)}
   .tp .hint{color:#6f8294;font-size:13px}.tp .send{display:flex;gap:8px;margin-top:10px}

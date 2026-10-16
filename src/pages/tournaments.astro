@@ -4,8 +4,9 @@ import '../styles/tournament-premium.css';
 import { isHiddenInternalTournamentSlug, isTournamentSampleSlug } from '../data/tournamentSamples.js';
 import { DISCORD_URL } from '../data/tournamentConfig.js';
 import Crest from '../components/tournament/Crest.astro';
+import BracketPreview from '../components/tournament/BracketPreview.astro';
 import { TOURNAMENT_PUBLICATIONS } from '../data/tournaments.js';
-import { progressOf, tournamentState, championOf, nextMatch, formatLabel, formatDate } from '../lib/tournamentView.js';
+import { progressOf, tournamentState, championOf, nextMatch, formatLabel, formatDate, startsInFuture } from '../lib/tournamentView.js';
 
 const rank = { live: 0, upcoming: 1, finished: 2 };
 const list = TOURNAMENT_PUBLICATIONS
@@ -14,103 +15,178 @@ const list = TOURNAMENT_PUBLICATIONS
   .sort((a, b) => rank[a.state.key] - rank[b.state.key] || String(b.t.startsAt || '').localeCompare(String(a.t.startsAt || '')));
 
 const [featured, ...rest] = list;
+const sample = TOURNAMENT_PUBLICATIONS.find((t) => t.slug === 'fcmobiletools-sample-championship') || null;
 const liveCount = list.filter((x) => x.state.key === 'live').length;
 const totalPlayers = list.reduce((n, x) => n + Number(x.t.participantCount || 0), 0);
 const totalPlayed = list.reduce((n, x) => n + x.progress.done, 0);
+const count = (k) => rest.filter((x) => x.state.key === k).length;
+const searchText = (t) => [t.name, formatLabel(t.formatKey), ...(t.players || []).flatMap((p) => [p.displayName, p.playerTag])].filter(Boolean).join(' ').toLowerCase();
 ---
 <BaseLayout title="Tournaments" description="Official FC Mobile tournaments by FCMOBILETOOLS. Play your match, upload proof, advance. Live brackets, tables and results.">
   <main class="tp">
+    <div class="tp-pitch" aria-hidden="true">
+      <svg viewBox="0 0 600 400" fill="none" stroke="currentColor" stroke-width="2"><circle cx="420" cy="200" r="150" /><circle cx="420" cy="200" r="5" fill="currentColor" /><path d="M420 -20V420" /><path d="M600 110h-95v180h95" /><path d="M600 40h-170v320h170" /></svg>
+    </div>
+
     <header class="tp-hero"><div class="tp-wrap">
-      <span class="tp-eyebrow" data-reveal><i></i>{liveCount ? `${liveCount} live now` : 'Season open'}</span>
-      <h1 class="tp-title" data-reveal>Compete. <span class="tp-shine">Be remembered.</span></h1>
-      <p class="tp-lede" data-reveal>Official FC Mobile tournaments where you run your own match day: agree a time, play, upload proof, move on. Admins step in only when needed.</p>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px" data-reveal>
-        <a class="tp-btn" href="/match-center/">Open my Match Center</a>
-        <a class="tp-btn ghost" href="/tournaments/samples/">View tournament samples</a>
-        <a class="tp-btn ghost" href="/host-a-tournament/">Host with us</a>
+      <div class="tp-hero-grid">
+        <div>
+          <span class:list={['tp-eyebrow', { live: liveCount > 0 }]} data-in style="--i:0"><i></i>{liveCount ? `${liveCount} live now` : 'Season open'}</span>
+          <h1 class="tp-title" data-in style="--i:1">Play the match.<br />Move the bracket.</h1>
+          <p class="tp-lede" data-in style="--i:2">Official FC Mobile tournaments where you run your own match day: agree a time, play, upload proof and move on. Admins step in only when something is disputed.</p>
+          <div class="tp-actions" data-in style="--i:3">
+            <a class="tp-btn" href="/match-center/">Open my Match Center</a>
+            <a class="tp-btn ghost" href="/tournaments/samples/">See sample tournaments</a>
+            <a class="tp-btn ghost" href="/host-a-tournament/">Host with us</a>
+          </div>
+        </div>
+
+        <div data-in style="--i:2">
+          {featured ? (
+            <a class="tp-glass board" href={`/tournament/${featured.t.slug}/`}><div class="in-c">
+              <div class="board-top"><span class={`tp-pill ${featured.state.key}`}><i></i>{featured.state.label}</span><small>{formatLabel(featured.t.formatKey)}</small></div>
+              <h2>{featured.t.name}</h2>
+              <div class="board-mid">
+                {featured.champion ? (
+                  <div class="champ-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M10 17h4v3h-4zM8.5 20h7"/></svg><Crest player={featured.champion} size={52} ring /><div><small>Champion</small><strong>{featured.champion.displayName}</strong></div></div>
+                ) : featured.next ? (
+                  <div class="vs"><div><Crest player={featured.next.match.player1} size={52} /><b>{featured.next.match.player1.displayName}</b></div><em>vs</em><div><Crest player={featured.next.match.player2} size={52} /><b>{featured.next.match.player2.displayName}</b></div></div>
+                ) : (
+                  <div class="field">{featured.t.players.slice(0, 10).map((p) => <Crest player={p} size={38} />)}{featured.t.players.length > 10 ? <span class="more">+{featured.t.players.length - 10}</span> : null}</div>
+                )}
+              </div>
+              <div class="tp-meter" style={`--p:${featured.progress.pct}%`}><span></span></div>
+              <div class="board-foot"><span>{featured.progress.total ? `${featured.progress.done} of ${featured.progress.total} matches played` : `${featured.t.participantCount} players`}</span><span class="go">Open bracket<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></span></div>
+            </div></a>
+          ) : sample ? (
+            <a class="tp-glass board" href="/tournaments/samples/"><div class="in-c">
+              <div class="board-top"><span class="tp-pill upcoming"><i></i>Sample preview</span><small>8-player knockout</small></div>
+              <BracketPreview tournament={sample} />
+              <div class="board-foot"><span>Illustrative data. Real events appear here when they open.</span><span class="go">Browse samples<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></span></div>
+            </div></a>
+          ) : null}
+        </div>
       </div>
-      <dl class="tp-stats" data-reveal>
-        <div><b data-count={list.length}>0</b><span>Tournaments</span></div>
-        <div><b data-count={liveCount}>0</b><span>Live now</span></div>
-        <div><b data-count={totalPlayers}>0</b><span>Players</span></div>
-        <div><b data-count={totalPlayed}>0</b><span>Matches played</span></div>
-      </dl>
+
+      {list.length ? (
+        <dl class="tp-stats" data-in style="--i:4">
+          <div><b data-count={list.length}>0</b><span>Tournaments</span></div>
+          <div><b data-count={liveCount}>0</b><span>Live now</span></div>
+          <div><b data-count={totalPlayers}>0</b><span>Players</span></div>
+          <div><b data-count={totalPlayed}>0</b><span>Matches played</span></div>
+        </dl>
+      ) : (
+        <dl class="tp-stats" data-in style="--i:4">
+          <div><b>24h</b><span>For your opponent to confirm a result</span></div>
+          <div><b>1</b><span>Screenshot of the full-time scoreboard as proof</span></div>
+          <div><b>4</b><span>Steps from kick-off to the next round</span></div>
+        </dl>
+      )}
     </div></header>
 
     <div class="tp-wrap">
-      {featured ? (
-        <a class="tp-glass gold" data-tilt data-reveal href={`/tournament/${featured.t.slug}/`} style="display:block;text-decoration:none;color:inherit">
-          <div class="in-c f-grid">
-            <div>
-              <span class={`tp-pill ${featured.state.key}`}><i></i>{featured.state.label}</span>
-              <h2 style="font-size:clamp(34px,5vw,60px);margin:20px 0 12px">{featured.t.name}</h2>
-              {featured.t.description ? <p class="muted">{featured.t.description}</p> : null}
-              <p class="muted">{formatLabel(featured.t.formatKey)} · {featured.t.participantCount} players{featured.t.startsAt ? ` · ${formatDate(featured.t.startsAt)}` : ''}</p>
-              <span class="tp-btn sm" style="margin-top:14px">Enter the arena →</span>
-            </div>
-            <div class="spot">
-              {featured.champion ? (<><small>Champion</small><Crest player={featured.champion} size={72} ring /><strong>{featured.champion.displayName}</strong></>)
-              : featured.next ? (<><small>Next match</small>
-                <div class="duel"><Crest player={featured.next.match.player1} size={52} /><em>VS</em><Crest player={featured.next.match.player2} size={52} /></div>
-                <b>{featured.next.match.player1.displayName} <i>vs</i> {featured.next.match.player2.displayName}</b></>)
-              : (<><small>The field</small><div class="stack">{featured.t.players.slice(0, 8).map((p) => <Crest player={p} size={40} />)}</div></>)}
-              <div class="tp-meter" style={`--p:${featured.progress.pct}%;width:100%`}><span></span></div>
-              <small>{featured.progress.done} of {featured.progress.total} matches played</small>
-            </div>
+      {!featured ? (
+        <section class="tp-glass gold tp-sec" data-reveal><div class="in-c empty-band">
+          <div>
+            <h2>The next arena is being built</h2>
+            <p>Join our Discord to get first access when registration opens. Until then, explore a full sample tournament to see brackets, group tables and results.</p>
           </div>
-        </a>
-      ) : (
-        <section class="tp-glass" data-reveal><div class="in-c" style="text-align:center;padding:60px 24px">
-          <h2>The next arena is being built</h2><p class="muted">Join our Discord to get first access when registration opens.</p>
-          <a class="tp-btn discord" style="margin-top:18px" href={DISCORD_URL}>Join Discord</a>
-          <a class="tp-btn ghost" style="margin-top:18px" href="/tournaments/samples/">View tournament samples</a></div></section>
-      )}
-
-      {rest.length ? (
-        <section class="tp-sec"><div style="display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap"><h2>More tournaments</h2>
-          <div class="tp-chips" role="group" aria-label="Filter">{['all','live','upcoming','finished'].map((k, i) => <button type="button" data-f={k} aria-pressed={String(i === 0)}>{k[0].toUpperCase() + k.slice(1)}</button>)}</div></div>
-          <div class="tp-grid" style="margin-top:22px">
-            {rest.map(({ t, state, progress, champion }) => (
-              <a class="tp-glass cardx" data-tilt data-reveal data-state={state.key} href={`/tournament/${t.slug}/`} style="text-decoration:none;color:inherit"><div class="in-c">
-                <span class={`tp-pill ${state.key}`}><i></i>{state.label}</span>
-                <h3 style="font-size:24px;margin:16px 0 6px">{t.name}</h3>
-                <p class="muted">{formatLabel(t.formatKey)} · {t.participantCount} players</p>
-                <div class="tp-meter" style={`--p:${progress.pct}%;margin:18px 0 10px`}><span></span></div>
-                <small class="muted">{champion ? `Champion: ${champion.displayName}` : progress.total ? `${progress.done}/${progress.total} played` : (formatDate(t.startsAt) || 'Date to be announced')}</small>
-              </div></a>
-            ))}
-          </div></section>
+          <div class="tp-actions">
+            <a class="tp-btn discord" href={DISCORD_URL} rel="noopener">Join Discord</a>
+            <a class="tp-btn ghost" href="/tournaments/samples/">View samples</a>
+          </div>
+        </div></section>
       ) : null}
 
-      <section class="tp-sec"><h2>How a match day works</h2>
-        <ol class="tp-steps">
-          <li data-reveal><b>Meet your opponent</b><p>Share Discord and in-game UID inside the match room. Propose a time that suits you both.</p></li>
-          <li data-reveal><b>Play it</b><p>Kick off in FC Mobile. Take a screenshot of the full-time scoreboard.</p></li>
-          <li data-reveal><b>Report with proof</b><p>Upload the screenshot and score. Your opponent gets 24 hours to confirm.</p></li>
-          <li data-reveal><b>Advance</b><p>Both agree and the bracket updates. Disagree and an admin reviews the evidence.</p></li>
-        </ol></section>
+      {rest.length ? (
+        <section class="tp-sec">
+          <div class="tp-sec-head"><h2>More tournaments</h2></div>
+          <div class="tp-toolbar">
+            <label class="tp-search"><input type="search" data-list-search placeholder="Search by tournament or player" aria-label="Search tournaments" autocomplete="off" /></label>
+            <div class="tp-chips" role="group" aria-label="Filter by status">
+              <button type="button" data-f="all" aria-pressed="true">All<small>{rest.length}</small></button>
+              <button type="button" data-f="live" aria-pressed="false">Live<small>{count('live')}</small></button>
+              <button type="button" data-f="upcoming" aria-pressed="false">Upcoming<small>{count('upcoming')}</small></button>
+              <button type="button" data-f="finished" aria-pressed="false">Finished<small>{count('finished')}</small></button>
+            </div>
+          </div>
+          <div class="tp-grid">
+            {rest.map(({ t, state, progress, champion }) => {
+              const iso = state.key === 'upcoming' ? startsInFuture(t) : null;
+              return (
+                <a class="tp-glass tp-tcard cardx" data-reveal data-state={state.key} data-name={searchText(t)} href={`/tournament/${t.slug}/`}><div class="in-c">
+                  <div class="top"><span class={`tp-pill ${state.key}`}><i></i>{state.label}</span><span class="fmt">{formatLabel(t.formatKey)}</span></div>
+                  <h3>{t.name}</h3>
+                  <p class="sub">{t.participantCount} players{t.startsAt ? `, ${formatDate(t.startsAt)}` : ''}</p>
+                  {progress.total ? <div class="tp-meter" style={`--p:${progress.pct}%`}><span></span></div> : null}
+                  <div class="foot">
+                    {champion ? (
+                      <span class="champ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M10 17h4v3h-4zM8.5 20h7"/></svg><span>{champion.displayName}</span></span>
+                    ) : iso ? (
+                      <span>Starts in <b data-countdown={iso}>soon</b></span>
+                    ) : (
+                      <span>{progress.total ? `${progress.done}/${progress.total} played` : (formatDate(t.startsAt) || 'Date to be announced')}</span>
+                    )}
+                    <span class="go">Open</span>
+                  </div>
+                </div></a>
+              );
+            })}
+            <div class="tp-empty" data-empty hidden><b>No tournaments match</b>Try a different name or clear the filter.</div>
+          </div>
+        </section>
+      ) : null}
 
-      <section class="tp-glass gold tp-sec" data-reveal><div class="in-c" style="text-align:center;padding:clamp(36px,6vw,64px)">
-        <h2 style="font-size:clamp(28px,4.4vw,48px)">Want to host a tournament with us?</h2>
-        <p class="muted" style="max-width:50ch;margin:14px auto 24px">Bring your community. We bring the brackets, verification and the premium experience.</p>
-        <a class="tp-btn discord" href={DISCORD_URL}>Talk to us on Discord</a> <a class="tp-btn ghost" href="/host-a-tournament/">See what hosts get</a></div></section>
+      <section class="tp-sec" data-reveal>
+        <div class="tp-sec-head"><div><h2>How a match day works</h2><p>Everything happens in your Match Center. No back-and-forth with admins unless a score is disputed.</p></div></div>
+        <ol class="tp-steps">
+          <li><b>Meet your opponent</b><p>Share Discord and in-game UID inside the match room, then propose a time that suits you both.</p></li>
+          <li><b>Play it</b><p>Kick off in FC Mobile and take a screenshot of the full-time scoreboard.</p></li>
+          <li><b>Report with proof</b><p>Upload the screenshot and score. Your opponent has 24 hours to confirm.</p></li>
+          <li><b>Advance</b><p>Both agree and the bracket updates. If you disagree, an admin reviews the evidence.</p></li>
+        </ol>
+      </section>
+
+      <section class="tp-glass gold tp-sec" data-reveal><div class="in-c host-band">
+        <div><h2>Want to host a tournament with us?</h2><p>Bring your community. We bring the brackets, result verification and a tournament page your players will want to share.</p></div>
+        <div class="tp-actions"><a class="tp-btn discord" href={DISCORD_URL} rel="noopener">Talk to us on Discord</a><a class="tp-btn ghost" href="/host-a-tournament/">See what hosts get</a></div>
+      </div></section>
     </div>
   </main>
 </BaseLayout>
 
 <script>
-  import { initFx } from '../lib/tournamentFx.js';
+  import { initFx, initListing } from '../lib/tournamentFx.js';
   initFx();
-  const b = document.querySelectorAll<HTMLButtonElement>('.tp-chips button'), c = document.querySelectorAll<HTMLElement>('.cardx');
-  b.forEach((x) => x.addEventListener('click', () => { b.forEach((y) => y.setAttribute('aria-pressed', String(y === x))); c.forEach((e) => { e.hidden = x.dataset.f !== 'all' && e.dataset.state !== x.dataset.f; }); }));
+  initListing();
 </script>
 
 <style is:global>
-  .tp .muted{color:#9bacbd;font-size:15.5px;line-height:1.65;margin:0 0 6px}
-  .tp .f-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:30px}
-  .tp .spot{display:grid;gap:14px;align-content:center;justify-items:center;text-align:center;padding:24px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
-  .tp .duel{display:flex;align-items:center;gap:14px}.tp .duel em{font:700 13px 'Space Grotesk';color:var(--gold)}
-  .tp .stack{display:flex}.tp .stack .crest{margin-left:-8px}
-  .tp .spot i{color:var(--gold);font-style:normal}
-  @media(max-width:820px){.tp .f-grid{grid-template-columns:1fr}}
+  /* featured / sample board in the hero */
+  .tp .board > .in-c { display: grid; gap: 18px; padding: clamp(20px, 2.6vw, 28px); }
+  .tp .board-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .tp .board-top small { color: var(--dim); font-size: 12.5px; }
+  .tp .board h2 { font-size: clamp(24px, 3vw, 34px); line-height: 1.08; }
+  .tp .board-mid { display: grid; place-items: center; padding: 20px 12px; border-radius: 14px; background: rgba(7,16,24,.55); border: 1px solid var(--line); }
+  .tp .board-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--mut); }
+  .tp .board .go { display: inline-flex; align-items: center; gap: 4px; color: var(--cyan); font-weight: 600; white-space: nowrap; transition: gap .25s var(--ease); }
+  .tp .board:hover .go { gap: 8px; }
+  .tp .board .vs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; width: 100%; text-align: center; }
+  .tp .board .vs > div { display: grid; justify-items: center; gap: 10px; min-width: 0; }
+  .tp .board .vs b { font: 600 14.5px var(--body); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tp .board .vs em { font: 600 13px var(--body); font-style: normal; color: var(--dim); }
+  .tp .board .field { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .tp .board .more { display: inline-grid; place-items: center; height: 38px; padding: 0 12px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line2); font: 600 13px var(--body); color: var(--mut); }
+  .tp .board .champ-row { position: relative; display: flex; align-items: center; gap: 16px; }
+  .tp .board .champ-row svg { position: absolute; right: -44px; top: -4px; width: 28px; height: 28px; color: var(--gold); }
+  .tp .board .champ-row small { display: block; font-size: 12.5px; color: var(--gold); margin-bottom: 4px; }
+  .tp .board .champ-row strong { font: 700 26px/1.1 var(--display); letter-spacing: -.03em; }
+  .tp .board > .in-c > .mb { margin: 2px 0; }
+  /* content bands */
+  .tp .empty-band, .tp .host-band { display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap; padding: clamp(28px, 4.5vw, 52px); }
+  .tp .empty-band h2, .tp .host-band h2 { font-size: clamp(26px, 3.6vw, 40px); }
+  .tp .empty-band p, .tp .host-band p { margin: 12px 0 0; max-width: 52ch; color: var(--mut); line-height: 1.65; }
+  .tp .empty-band .tp-actions, .tp .host-band .tp-actions { margin-top: 0; }
+  @media (max-width: 560px) { .tp .board .champ-row svg { display: none; } }
+  .tp .tp-hero-grid .tp-title { font-size: clamp(38px, 5.4vw, 70px); }
 </style>
