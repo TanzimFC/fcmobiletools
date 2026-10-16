@@ -653,23 +653,33 @@ import '../../styles/premium-auth.css';
     const session = result.data?.session;
     if (!session) return;
 
+    // A valid Supabase session completes sign-in. Do not block normal login on
+    // the optional profile-summary endpoint, which can time out independently.
+    if (params.get('mode') !== 'signup') {
+      location.replace(nextPath);
+      return;
+    }
+
     try {
-      const [accountResult, userResult] = await Promise.all([
-        accountApi('/api/account/me'),
-        accountAuth.auth.getUser()
-      ]);
+      const accountController = new AbortController();
+      const accountTimeout = window.setTimeout(() => accountController.abort(), 8000);
+      let accountResult;
+      let userResult;
+      try {
+        [accountResult, userResult] = await Promise.all([
+          accountApi('/api/account/me', { signal: accountController.signal }),
+          accountAuth.auth.getUser()
+        ]);
+      } finally {
+        window.clearTimeout(accountTimeout);
+      }
       const body = await accountResult.json().catch(() => ({}));
       const user = userResult.data?.user || session.user;
 
       if (!accountResult.ok || !body?.account) {
-        // A successful sign-in should not strand someone on the account page when
-        // account details fail to load. Explicit return targets can still continue;
-        // signup onboarding remains here so new users can finish setting up.
-        if ((requestedNextPath || storedNextPath) && params.get('mode') !== 'signup') {
-          location.replace(nextPath);
-          return;
-        }
-        showMessage(loginMessage, body?.error || 'Could not load your account. Please try again.', true);
+        // Auth already succeeded. If signup's profile lookup is unavailable, send
+        // the user to the profile hub instead of leaving them in a login-looking loop.
+        location.replace('/profile/');
         return;
       }
 
@@ -687,6 +697,12 @@ import '../../styles/premium-auth.css';
 
       location.replace(nextPath);
     } catch (error) {
+      // Signup has a valid Supabase session even if account metadata is temporarily
+      // unavailable. Let the profile hub show/retry account setup rather than looping.
+      if (params.get('mode') === 'signup') {
+        location.replace('/profile/');
+        return;
+      }
       showMessage(loginMessage, friendlyAuthError(error, 'Could not load your account. Please refresh and try again.'), true);
     }
   });
