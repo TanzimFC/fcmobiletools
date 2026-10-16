@@ -19,8 +19,8 @@ npm run programs:discover
 # Small pilot for one event
 npm run programs:pilot -- --program tots-26
 
-# Full collection across the catalog, in order
-npm run programs:collect
+# Full collection across the catalog, in order; correct old generic category labels once
+npm run programs:collect -- --refresh-categories
 
 # Full collection for one event
 npm run programs:collect -- --program anniversary-3rd-2026
