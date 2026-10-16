@@ -6,7 +6,7 @@ For importing the combined multi-event export, follow [MULTI_EVENT_IMPORT.md](./
 
 ## Multi-program event coverage
 
-The original Anniversary collector now supports a chronological event sweep covering **TOTS 26 through 3rd Anniversary**: TOTS 26, Pitch Perfect, UECL 26, UEL 26, The World's Game 26, Record Holders, Summer Special, Champions, Road to AFC, Game Changer, Numero, Stellar, and 3rd Anniversary. Program URLs and collection order live in `programs.json`.
+The original Anniversary collector now supports a curated sweep covering **TOTS 26 through 3rd Anniversary**, plus the newly released Unbreakable, Classics, and CONMEBOL Libertadores programs. Program URLs and collection order live in `programs.json`.
 
 Icon and Hero cards are identified from their player detail labels and exported as a separate **subset** of those event records. The pipeline does not crawl a separate full-site Icons or Heroes page. Each program gets its own listing cache, records file, checkpoint, and report; the shared asset library remains deduplicated.
 
