@@ -1,0 +1,446 @@
+/* ==========================================================================
+   FCMOBILETOOLS — LUXE account layer
+   Loaded by AccountNav (profile, quests, rewards, achievements, leaderboard,
+   settings, public profiles). Sits on top of premium.css; no markup changes.
+   ========================================================================== */
+
+/* ---------- Account navigation: floating glass dock ---------- */
+html body .acc-nav-shell .acc-tabs {
+  position: relative;
+  border: 1px solid var(--lx-line);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(18, 31, 46, 0.72), rgba(8, 14, 22, 0.8));
+  backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: 0 24px 50px -30px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+html body .acc-nav-shell .acc-tab {
+  position: relative;
+  transition: color 0.25s, background 0.3s, transform 0.3s var(--lx-ease);
+}
+html body .acc-nav-shell .acc-tab:hover { transform: translateY(-1px); }
+html body .acc-nav-shell .acc-tab[aria-current='page'],
+html body .acc-nav-shell .acc-tab.active {
+  box-shadow: 0 0 0 1px rgba(76, 201, 255, 0.4), 0 12px 30px -12px rgba(76, 201, 255, 0.6);
+}
+html body .acc-mini-user {
+  transition: transform 0.3s var(--lx-ease), box-shadow 0.3s, border-color 0.3s;
+}
+html body .acc-mini-user:hover {
+  transform: translateY(-2px);
+  border-color: rgba(246, 196, 83, 0.5);
+  box-shadow: 0 14px 34px -14px rgba(246, 196, 83, 0.55);
+}
+
+/* ==========================================================================
+   PROFILE HERO — "player card"
+   ========================================================================== */
+html body .hero-card {
+  --lx-angle: 0deg;
+  isolation: isolate;
+  border: 1px solid transparent;
+  border-radius: 32px;
+  background:
+    radial-gradient(640px 280px at 0% 0%, rgba(76, 201, 255, 0.2), transparent 62%),
+    radial-gradient(560px 300px at 100% 0%, rgba(154, 140, 255, 0.18), transparent 64%),
+    radial-gradient(500px 260px at 50% 120%, rgba(246, 196, 83, 0.1), transparent 66%),
+    linear-gradient(165deg, #10202f 0%, #070f17 100%) padding-box,
+    conic-gradient(from var(--lx-angle), rgba(76, 201, 255, 0.85), rgba(154, 140, 255, 0.15) 22%, rgba(246, 196, 83, 0.8) 44%, rgba(255, 255, 255, 0.05) 60%, rgba(92, 240, 180, 0.7) 80%, rgba(76, 201, 255, 0.85)) border-box;
+  box-shadow: 0 50px 100px -40px rgba(0, 0, 0, 0.9), 0 0 120px -50px rgba(76, 201, 255, 0.5);
+  animation: lx-spin-border 9s linear infinite;
+}
+@keyframes lx-spin-border { to { --lx-angle: 360deg; } }
+
+/* holographic sheen that follows the pointer */
+html body .hero-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+  background:
+    radial-gradient(420px circle at var(--mx, 70%) var(--my, 20%), rgba(255, 255, 255, 0.09), transparent 60%),
+    linear-gradient(115deg, transparent 30%, rgba(154, 240, 255, 0.07) 42%, rgba(246, 196, 83, 0.07) 50%, rgba(190, 150, 255, 0.07) 58%, transparent 70%);
+  mix-blend-mode: screen;
+}
+html body .hero-card:hover::after { opacity: 1; }
+
+/* drifting orbs injected by luxe.js */
+html body .hero-card > .lx-orbs { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.lx-orbs i {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.55;
+  animation: lx-drift 16s ease-in-out infinite alternate;
+}
+.lx-orbs i:nth-child(1) { width: 220px; height: 220px; left: -40px; top: -60px; background: rgba(76, 201, 255, 0.35); }
+.lx-orbs i:nth-child(2) { width: 260px; height: 260px; right: -60px; top: 20px; background: rgba(154, 140, 255, 0.3); animation-delay: -5s; }
+.lx-orbs i:nth-child(3) { width: 200px; height: 200px; left: 38%; bottom: -90px; background: rgba(246, 196, 83, 0.22); animation-delay: -9s; }
+@keyframes lx-drift { to { transform: translate3d(40px, 28px, 0) scale(1.18); } }
+
+/* avatar */
+html body .hero-avatar { width: 132px; height: 132px; flex: 0 0 132px; }
+html body .hero-avatar::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(76, 201, 255, 0.45), transparent 66%);
+  filter: blur(8px);
+  animation: lx-halo 3.6s ease-in-out infinite;
+}
+@keyframes lx-halo { 50% { transform: scale(1.14); opacity: 0.7; } }
+html body .hero-avatar > img,
+html body .hero-avatar > span {
+  inset: 11px;
+  width: calc(100% - 22px);
+  height: calc(100% - 22px);
+  font-size: 38px;
+  background: linear-gradient(145deg, #d6f6ff, #4cc9ff 55%, #7a8cff);
+  box-shadow: 0 0 0 5px #08121b, 0 22px 46px -8px rgba(76, 201, 255, 0.7);
+}
+html body .hero-avatar .ring-track { stroke-width: 3.5; }
+html body .hero-avatar .ring-fill { stroke-width: 5; filter: drop-shadow(0 0 8px rgba(76, 201, 255, 0.9)); }
+html body .avatar-lvl { animation: lx-badge-shine 4s ease-in-out infinite; background-size: 200% 100%; }
+@keyframes lx-badge-shine {
+  0%, 70%, 100% { filter: brightness(1); }
+  85% { filter: brightness(1.25) saturate(1.2); }
+}
+
+/* name + pills */
+html body .hero-copy h1 {
+  background: linear-gradient(100deg, #ffffff 0%, #bfeeff 40%, #ffffff 55%, #c9bfff 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: lx-name-shimmer 7s ease-in-out infinite;
+}
+@keyframes lx-name-shimmer { 0%, 100% { background-position: 0 0; } 50% { background-position: 100% 0; } }
+html body .pill {
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.04em;
+}
+html body .pill-gold {
+  background: linear-gradient(135deg, rgba(255, 231, 166, 0.22), rgba(246, 196, 83, 0.1));
+  border-color: rgba(246, 196, 83, 0.55);
+  color: #ffe7a6;
+  box-shadow: 0 0 22px -6px rgba(246, 196, 83, 0.6);
+}
+
+/* XP strip */
+html body .xp-strip {
+  margin: 0;
+  border-radius: 0 0 31px 31px;
+  border-top: 1px solid var(--lx-line);
+  background: linear-gradient(180deg, rgba(3, 9, 15, 0.35), rgba(3, 9, 15, 0.65));
+  backdrop-filter: blur(10px);
+}
+html body .xp-bar-track {
+  position: relative;
+  height: 14px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+  overflow: visible;
+}
+html body .xp-bar-track::after {
+  background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(255, 255, 255, 0.14) calc(25% - 1px) 25%);
+  z-index: 2;
+}
+html body .xp-bar-fill {
+  position: relative;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #38bdf8, #5cf0b4 70%, #f6c453);
+  box-shadow: 0 0 22px rgba(76, 201, 255, 0.65);
+  overflow: visible;
+  transform-origin: 0 50%;
+  animation: lx-fill-in 1.4s var(--lx-ease) both 0.3s;
+}
+html body .xp-bar-fill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.55) 50%, transparent 80%);
+  background-size: 220% 100%;
+  animation: lx-sheen 2.6s linear infinite;
+}
+html body .xp-bar-fill::after {
+  /* glowing knob */
+  content: '';
+  position: absolute;
+  left: auto;
+  bottom: auto;
+  animation: none;
+  right: -6px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 18%, #ffe7a6 45%, rgba(246, 196, 83, 0) 72%);
+  box-shadow: 0 0 18px 4px rgba(246, 196, 83, 0.7);
+  z-index: 3;
+}
+@keyframes lx-fill-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes lx-sheen { from { background-position: 220% 0; } to { background-position: -120% 0; } }
+html body .xp-strip-numbers b {
+  background: linear-gradient(100deg, #ffe7a6, #f6c453);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- Rank ladder (injected by luxe.js) ---------- */
+.lx-ladder {
+  grid-column: 1 / -1;
+  padding: 20px 30px 26px;
+  border-top: 1px solid var(--lx-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+}
+.lx-ladder-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.lx-ladder-head strong { font: 700 14px/1 var(--font-display, system-ui); letter-spacing: 0.02em; color: #eaf6ff; }
+.lx-ladder-head span { font-size: 12.5px; color: #8fa6b8; }
+.lx-ladder-head b { color: var(--lx-gold-2); }
+.lx-rungs { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.lx-rungs::before {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 19px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(76, 201, 255, 0.6) var(--lx-prog, 0%), rgba(255, 255, 255, 0.09) var(--lx-prog, 0%));
+}
+.lx-rung { position: relative; display: grid; justify-items: center; gap: 8px; text-align: center; }
+.lx-rung i {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  font-style: normal;
+  font-size: 16px;
+  color: #6f879a;
+  background: #0b1621;
+  border: 1px solid var(--lx-line);
+  transition: transform 0.4s var(--lx-spring), box-shadow 0.4s, border-color 0.4s;
+}
+.lx-rung small { font: 700 11px/1.2 var(--font-body, Inter, system-ui); color: #6f879a; letter-spacing: 0.04em; text-transform: uppercase; }
+.lx-rung em { font-style: normal; font-size: 10.5px; color: #54697b; }
+.lx-rung.done i { color: #03141d; background: linear-gradient(145deg, #a8ecff, #4cc9ff); border-color: transparent; }
+.lx-rung.done small { color: #b9d6e6; }
+.lx-rung.now i {
+  transform: scale(1.22) translateY(-3px);
+  color: #3b2a00;
+  background: linear-gradient(145deg, #ffe9a8, #f2b93b);
+  border-color: transparent;
+  box-shadow: 0 0 0 4px rgba(246, 196, 83, 0.18), 0 14px 30px -8px rgba(246, 196, 83, 0.75);
+  animation: lx-float 3.2s ease-in-out infinite;
+}
+.lx-rung.now small { color: var(--lx-gold-2); }
+@keyframes lx-float { 50% { transform: scale(1.22) translateY(-7px); } }
+
+/* ---------- Hero actions: share button ---------- */
+html body .hero-card .hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: 400px;
+}
+html body .hero-card .hero-identity { padding-bottom: 26px; }
+html body .hero-card .hero-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.lx-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(246, 196, 83, 0.5);
+  background: linear-gradient(135deg, rgba(246, 196, 83, 0.2), rgba(246, 196, 83, 0.06));
+  color: #ffe7a6;
+}
+html body .hero-actions .lx-share-btn:hover {
+  border-color: rgba(246, 196, 83, 0.85);
+  background: linear-gradient(135deg, rgba(246, 196, 83, 0.32), rgba(246, 196, 83, 0.1));
+  box-shadow: 0 16px 34px -14px rgba(246, 196, 83, 0.7);
+}
+
+/* ==========================================================================
+   KPI CARDS
+   ========================================================================== */
+html body .kpi-card {
+  --k: 76, 201, 255;
+  overflow: hidden;
+  border-radius: 24px;
+  transition: transform 0.45s var(--lx-ease), border-color 0.3s, box-shadow 0.45s var(--lx-ease);
+}
+html body .kpi-card { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; }
+html body .kpi-card > .kpi-link { margin-top: auto; padding-top: 14px; }
+html body .kpi-card--tokens { --k: 246, 196, 83; }
+html body .kpi-card--streak { --k: 255, 138, 76; }
+html body .kpi-card--checkin { --k: 92, 240, 180; }
+html body .kpi-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgb(var(--k)), transparent);
+  opacity: 0.8;
+}
+html body .kpi-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(var(--k), 0.45);
+  box-shadow: 0 40px 70px -30px rgba(0, 0, 0, 0.95), 0 0 70px -26px rgba(var(--k), 0.7);
+}
+html body .kpi-card::before {
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 0%), rgba(var(--k), 0.16), transparent 60%);
+}
+html body .kpi-ico {
+  color: rgb(var(--k));
+  background: linear-gradient(145deg, rgba(var(--k), 0.22), rgba(var(--k), 0.05));
+  border: 1px solid rgba(var(--k), 0.35);
+  box-shadow: 0 10px 26px -10px rgba(var(--k), 0.7);
+}
+html body .kpi-card strong { text-shadow: 0 0 40px rgba(var(--k), 0.35); }
+html body .kpi-card--streak .kpi-ico svg { animation: lx-flicker 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes lx-flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 4px rgba(255, 138, 76, 0.7)); }
+  30% { transform: scale(1.1, 1.16) rotate(-3deg); filter: drop-shadow(0 0 10px rgba(255, 170, 76, 0.95)); }
+  60% { transform: scale(0.96, 1.05) rotate(3deg); }
+}
+html body .kpi-link { transition: letter-spacing 0.3s var(--lx-ease), color 0.2s; }
+html body .kpi-link:hover { letter-spacing: 0.02em; }
+
+/* streak milestone meter (injected by luxe.js) */
+.lx-meter { margin-top: 14px; display: grid; gap: 7px; }
+.lx-meter-bar { height: 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+.lx-meter-bar i {
+  display: block;
+  height: 100%;
+  width: var(--w, 0%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff8a4c, #f6c453);
+  box-shadow: 0 0 14px rgba(255, 138, 76, 0.7);
+  animation: lx-fill-in 1.2s var(--lx-ease) both 0.5s;
+  transform-origin: 0 50%;
+}
+.lx-meter small { font-size: 11.5px; color: #93a9ba; }
+.lx-meter small b { color: #ffd9b3; }
+
+/* ==========================================================================
+   Sections, ledger, side cards
+   ========================================================================== */
+html body .dash-section-head h2,
+html body .sec-kicker + h2 {
+  background: linear-gradient(100deg, #fff 30%, #a8ecff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+html body .sec-kicker .kicker-dot {
+  box-shadow: 0 0 0 0 rgba(76, 201, 255, 0.6);
+  animation: lx-ping 2.2s ease-out infinite;
+}
+@keyframes lx-ping { to { box-shadow: 0 0 0 10px rgba(76, 201, 255, 0); } }
+
+html body .ledger-panel,
+html body .side-card,
+html body .public-game-card,
+html body .profile-quest-card { border-radius: 26px; box-shadow: var(--lx-shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+html body .ledger-tab { transition: color 0.25s, background 0.3s, box-shadow 0.3s, transform 0.3s var(--lx-ease); }
+html body .ledger-tab.active { box-shadow: 0 0 0 1px rgba(76, 201, 255, 0.4), 0 10px 26px -12px rgba(76, 201, 255, 0.6); }
+html body .feed-row {
+  transition: transform 0.35s var(--lx-ease), border-color 0.3s, background 0.3s;
+}
+html body .feed-row:hover {
+  transform: translateX(6px);
+  border-color: rgba(76, 201, 255, 0.35);
+  background: linear-gradient(90deg, rgba(76, 201, 255, 0.08), transparent);
+}
+html body .feed-ico { box-shadow: 0 8px 22px -10px currentColor; }
+
+html body .public-game-grid > div { transition: transform 0.35s var(--lx-ease), border-color 0.3s; }
+html body .public-game-grid > div:hover { transform: translateY(-3px); border-color: rgba(246, 196, 83, 0.4); }
+html body .public-tags span { transition: transform 0.3s var(--lx-spring), background 0.2s; }
+html body .public-tags span:hover { transform: translateY(-2px) scale(1.06); background: rgba(76, 201, 255, 0.16); }
+
+/* Leaderboard / mission / reward surfaces share the lift */
+html body :is(.mission-card, .rw-card, .pub-stat, .lb-row, .ach-card):hover {
+  transform: translateY(-4px);
+  box-shadow: 0 34px 60px -28px rgba(0, 0, 0, 0.9), 0 0 60px -28px rgba(76, 201, 255, 0.5);
+}
+html body :is(.mission-card, .rw-card, .pub-stat, .lb-row, .ach-card) {
+  transition: transform 0.4s var(--lx-ease), box-shadow 0.4s var(--lx-ease), border-color 0.3s;
+}
+
+/* Skeleton shimmer upgrade */
+html body .acc-skel {
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.03) 30%, rgba(255, 255, 255, 0.09) 50%, rgba(255, 255, 255, 0.03) 70%);
+  background-size: 250% 100%;
+  animation: lx-skel 1.4s linear infinite;
+}
+@keyframes lx-skel { to { background-position: -150% 0; } }
+
+/* ==========================================================================
+   SIGN-IN / CREATE ACCOUNT
+   ========================================================================== */
+html body main.auth-page .auth-shell { animation: lx-auth-in 0.9s var(--lx-ease) both; }
+@keyframes lx-auth-in { from { opacity: 0; transform: translateY(24px) scale(0.985); } to { opacity: 1; transform: none; } }
+html body main.auth-page .preview-card {
+  animation: lx-float-card 7s ease-in-out infinite;
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.9), 0 0 80px -30px rgba(246, 196, 83, 0.35);
+}
+@keyframes lx-float-card { 50% { transform: translateY(-8px) rotate(-0.6deg); } }
+html body main.auth-page .preview-bar i {
+  background: linear-gradient(90deg, #38bdf8, #5cf0b4 70%, #f6c453);
+  box-shadow: 0 0 16px rgba(76, 201, 255, 0.7);
+}
+html body main.auth-page .stage-pillars article { transition: transform 0.4s var(--lx-ease), border-color 0.3s, background 0.3s; }
+html body main.auth-page .stage-pillars article:hover {
+  transform: translateX(6px);
+  border-color: rgba(76, 201, 255, 0.4);
+  background: rgba(76, 201, 255, 0.06);
+}
+html body main.auth-page .google-btn { transition: transform 0.3s var(--lx-ease), box-shadow 0.3s; }
+html body main.auth-page .google-btn:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -14px rgba(255, 255, 255, 0.4); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  html body .hero-card .hero-actions { justify-content: flex-start; max-width: none; }
+}
+@media (max-width: 760px) {
+  html body .hero-avatar { width: 112px; height: 112px; flex-basis: 112px; }
+  html body .hero-card { border-radius: 26px; }
+  .lx-ladder { padding: 18px 16px 22px; }
+  .lx-rung small { font-size: 9.5px; letter-spacing: 0.02em; }
+  .lx-rung em { display: none; }
+  .lx-rung i { width: 32px; height: 32px; font-size: 14px; }
+  .lx-rungs::before { top: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .hero-card,
+  html body .hero-copy h1,
+  html body .hero-avatar::before,
+  html body .xp-bar-fill,
+  html body .xp-bar-fill::before,
+  html body .kpi-card--streak .kpi-ico svg,
+  html body main.auth-page .preview-card,
+  .lx-rung.now i,
+  .lx-orbs i { animation: none; }
+}
