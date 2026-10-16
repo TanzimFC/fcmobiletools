@@ -34,6 +34,7 @@ function parseArgs(argv) {
     all: false,
     discover: false,
     refreshListing: false,
+    refreshCategories: false,
     downloadImages: false,
     captureProgression: false,
     keepSourceText: false,
@@ -51,6 +52,7 @@ function parseArgs(argv) {
     else if (arg === "--all") options.all = true;
     else if (arg === "--discover") options.discover = true;
     else if (arg === "--refresh-listing") options.refreshListing = true;
+    else if (arg === "--refresh-categories") options.refreshCategories = true;
     else if (arg === "--download-images") options.downloadImages = true;
     else if (arg === "--capture-progression") options.captureProgression = true;
     else if (arg === "--keep-source-text") options.keepSourceText = true;
@@ -108,6 +110,7 @@ Usage:
 Options:
   --discover          Refresh and save listing pages only; don't visit player details.
   --refresh-listing   Force a fresh listing crawl before collecting player details.
+  --refresh-categories Revisit saved generic "player" records to correct Icon/Hero/Base labels without deleting their stats.
   --limit <number>    Number of player detail pages to collect (default: 5).
   --all               Explicitly collect all player cards discovered in the listing.
   --download-images   Download card background, player image, and detected club/league/nation images.
@@ -669,8 +672,8 @@ function parsePlayStyles(sourceText) {
 
 function classifyCardCategory(sourceText) {
   const opening = String(sourceText || "").replace(/\r/g, "").split("\n").slice(0, 100).join("\n");
-  if (/\bHero\s+Player\b/i.test(opening)) return "hero";
-  if (/\bIcon\s+Player\b/i.test(opening)) return "icon";
+  if (/\bHeroes?\s+Player\b/i.test(opening)) return "hero";
+  if (/\bIcons?\s+Player\b/i.test(opening)) return "icon";
   if (/\bBase\s+Player\b/i.test(opening)) return "base";
   if (/\bPlayer\b/i.test(opening)) return "player";
   return "unknown";
@@ -1532,6 +1535,7 @@ async function collectPlayer(context, card, options, imageCache, assetLibrary) {
 function isSafeResumeRecord(record, options) {
   if (!record || record.statExtraction?.status !== "complete") return false;
   if (!record.cardCategory || record.cardCategory === "unknown") return false;
+  if (options.refreshCategories && record.cardCategory === "player") return false;
   if (options.downloadImages) {
     const assets = Array.isArray(record.assets) ? record.assets : [];
     if (!assets.length || assets.some((asset) => !asset.localPath || asset.downloadError)) return false;
