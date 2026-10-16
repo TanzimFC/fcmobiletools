@@ -4,7 +4,7 @@ This is an **independent local tool**. It does not run in Cloudflare Workers and
 
 ## Multi-program event coverage
 
-The original Anniversary collector now supports a chronological event sweep covering **TOTS 26 through 3rd Anniversary**: TOTS 26, Pitch Perfect, UECL 26, UEL 26, The World's Game 26, Record Holders, Summer Special, Champions, Road to AFC, Game Changer, Numero, and 3rd Anniversary. Program URLs and collection order live in `programs.json`.
+The original Anniversary collector now supports a chronological event sweep covering **TOTS 26 through 3rd Anniversary**: TOTS 26, Pitch Perfect, UECL 26, UEL 26, The World's Game 26, Record Holders, Summer Special, Champions, Road to AFC, Game Changer, Numero, Stellar, and 3rd Anniversary. Program URLs and collection order live in `programs.json`.
 
 Icon and Hero cards are identified from their player detail labels and exported as a separate **subset** of those event records. The pipeline does not crawl a separate full-site Icons or Heroes page. Each program gets its own listing cache, records file, checkpoint, and report; the shared asset library remains deduplicated.
 
@@ -34,7 +34,7 @@ npm run programs:coverage
 npm run programs:collect -- --refresh-existing
 ```
 
-The multi-program runner resumes by default: it skips an existing card only when its stats are complete, its Icon/Hero category is recognized, and (when image downloads are enabled) every referenced image has a saved local file. Partially parsed records are retried. Use `--refresh-existing` to re-visit verified records, or `--fresh` for a deliberate single-program reset before a full run.
+The pilot and full-collection npm commands refresh source listings before collecting details, so a cached older Anniversary listing cannot silently limit a new full run. The multi-program runner resumes detail records by default: it skips an existing card only when its stats are complete, its Icon/Hero category is recognized, and (when image downloads are enabled) every referenced image has a saved local file. Partially parsed records are retried. Use `--refresh-existing` to re-visit verified records, or `--fresh` for a deliberate single-program reset before a full run.
 
 The runner processes one program at a time and retains checkpoints. A full sweep requires the explicit `--all` option (included in the `programs:collect` npm script). It stops on an HTTP 403/429 or challenge page and does not try to bypass restrictions. Use it only within RenderZ's permission and request limits.
 
