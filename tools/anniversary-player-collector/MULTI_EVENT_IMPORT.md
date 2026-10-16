@@ -15,7 +15,7 @@ git checkout feature/anniversary-player-pipeline
 git pull
 cd tools/anniversary-player-collector
 npm install
-npm run programs:collect
+npm run programs:collect -- --refresh-categories
 npm run programs:export
 npm run programs:coverage
 ```
