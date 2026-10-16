@@ -77,12 +77,12 @@ where slug='weekly-events-watch';
 
 update public.reward_tasks
 set slug='weekly-code-copy',
-    title='Copy 3 different redeem codes',
-    description='Copy three different available redeem codes during the weekly cycle.',
-    reward_points=8, xp_reward=35, token_reward=8,
+    title='Copy 2 different redeem codes',
+    description='Copy two different available redeem codes during the weekly cycle.',
+    reward_points=6, xp_reward=25, token_reward=6,
     task_type='repeatable', mission_type='weekly', daily_limit=null, weekly_limit=1,
     cooldown_seconds=0, verification_method='server_event',
-    conditions='{"event":"distinct_redeem_codes","target":3}'::jsonb,
+    conditions='{"event":"distinct_redeem_codes","target":2}'::jsonb,
     priority=40, display_order=40,
     metadata='{"weight":3,"quest_group":"weekly-codes"}'::jsonb,
     updated_at=clock_timestamp()
@@ -176,7 +176,7 @@ begin
     end if;
 
   elsif v_event = 'distinct_redeem_codes' then
-    v_target := greatest(1, coalesce((v_conditions->>'target')::integer, 3));
+    v_target := greatest(1, coalesce((v_conditions->>'target')::integer, 2));
     select count(distinct ae.entity_id)::integer
     into v_progress
     from public.activity_events ae
