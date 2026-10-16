@@ -2,6 +2,8 @@
 
 This is an **independent local tool**. It does not run in Cloudflare Workers and has no GitHub Actions workflow. Collection output is intentionally ignored by Git and stays on the computer running the script.
 
+For importing the combined multi-event export, follow [MULTI_EVENT_IMPORT.md](./MULTI_EVENT_IMPORT.md) and use `npm run import:events:dry` before `npm run import:events -- --commit`. The older `import:catalog` command is Anniversary-only and must not be pointed at `player-cards-all-events.json`.
+
 ## Multi-program event coverage
 
 The original Anniversary collector now supports a chronological event sweep covering **TOTS 26 through 3rd Anniversary**: TOTS 26, Pitch Perfect, UECL 26, UEL 26, The World's Game 26, Record Holders, Summer Special, Champions, Road to AFC, Game Changer, Numero, Stellar, and 3rd Anniversary. Program URLs and collection order live in `programs.json`.
@@ -166,7 +168,10 @@ data/
 
 No records, images, cookies or session credentials are committed. Raw page text is omitted from records by default so the output stays focused on usable fields; use `--keep-source-text` only when debugging a specific extraction problem. Review the output before publication.
 
-## Step 6 — Import into Backblaze B2 and Supabase
+## Step 6 — Legacy Anniversary-only import into Backblaze B2 and Supabase
+
+> **Important:** the `import:catalog` flow below targets the old single-program Anniversary preview and requires the Anniversary-specific image templates. Do not use it to import the combined multi-event export. For the new event catalog, use `MULTI_EVENT_IMPORT.md` and the `import:events` commands, which import complete-stat card records as unpublished and do not upload or rewrite image assets.
+
 
 The card renderer uses a split storage model:
 
