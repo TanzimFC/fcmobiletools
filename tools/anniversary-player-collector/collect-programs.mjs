@@ -20,6 +20,7 @@ function parseArgs(argv) {
     all: false,
     fresh: false,
     refreshListing: false,
+    refreshCategories: false,
     downloadImages: false,
     captureProgression: false,
     keepSourceText: false,
@@ -40,6 +41,7 @@ function parseArgs(argv) {
     else if (arg === "--fresh") options.fresh = true;
     else if (arg === "--refresh-existing") options.resume = false;
     else if (arg === "--refresh-listing") options.refreshListing = true;
+    else if (arg === "--refresh-categories") options.refreshCategories = true;
     else if (arg === "--download-images") options.downloadImages = true;
     else if (arg === "--capture-progression") options.captureProgression = true;
     else if (arg === "--keep-source-text") options.keepSourceText = true;
@@ -109,6 +111,7 @@ Options:
   --all                 Collect every discovered card for each selected program.
   --download-images     Download detected images into the deduplicated shared asset library.
   --refresh-listing     Re-scan listing pages before collecting details.
+  --refresh-categories  Revisit saved generic "player" records to correct Icon/Hero/Base labels without deleting stats.
   --capture-progression Sample rank/training states (slow and experimental).
   --keep-source-text    Include filtered source text in records for parser debugging.
   --delay-ms <n>        Delay between navigations; minimum ${MIN_DELAY_MS} ms (default: ${DEFAULT_DELAY_MS}).
@@ -183,6 +186,7 @@ async function main() {
     else if (options.all) childArgs.push("--all");
     else childArgs.push("--limit", String(options.limit));
     if (options.refreshListing) childArgs.push("--refresh-listing");
+    if (options.refreshCategories) childArgs.push("--refresh-categories");
     if (options.downloadImages) childArgs.push("--download-images");
     if (options.captureProgression) childArgs.push("--capture-progression");
     if (options.keepSourceText) childArgs.push("--keep-source-text");
