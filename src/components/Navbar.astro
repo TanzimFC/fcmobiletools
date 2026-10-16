@@ -141,7 +141,6 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
       </button>
     </div>
   </div>
-  <div class="fcmt-progress" id="fcmtProgress" aria-hidden="true"><i></i></div>
 </header>
 
 <!-- Mobile bottom tab bar -->
@@ -238,7 +237,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 (() => {
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
-  const header = $('fcmt'), bar = $('fcmtBar'), progress = $('fcmtProgress').firstElementChild;
+  const header = $('fcmt');
   const nav = $('fcmtNav'), glide = $('fcmtGlide');
   const sheet = $('fcmtSheet'), burger = $('fcmtBurger'), sheetClose = $('fcmtSheetClose'), dockMore = $('fcmtDockMore'), sheetSearch = $('fcmtSheetSearch');
   const pal = $('fcmtPal'), palInput = $('fcmtPalInput'), palList = $('fcmtPalList'), palEmpty = $('fcmtPalEmpty'), palBackdrop = $('fcmtPalBackdrop'), searchBtn = $('fcmtSearchBtn');
@@ -306,7 +305,6 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
   const onScroll = () => {
     const y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
     header.dataset.scrolled = String(y > 12);
-    progress.style.transform = `scaleX(${max > 0 ? Math.min(y / max, 1) : 0})`;
     ticking = false;
   };
   addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
@@ -532,11 +530,6 @@ kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 
 .fcmt-burger,.fcmt-x{display:none;place-items:center;width:44px;height:44px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.045);color:var(--text);cursor:pointer;transition:.2s;-webkit-tap-highlight-color:transparent}
 .fcmt-burger:active,.fcmt-x:active{transform:scale(.93)}
 
-/* Reading progress along the island's bottom edge */
-.fcmt-progress{position:absolute;left:0;right:0;top:0;height:0;pointer-events:none}
-.fcmt-progress i{position:absolute;left:calc(50% - min(620px,(100% - 32px)/2) + 26px);right:calc(50% - min(620px,(100% - 32px)/2) + 26px);top:calc(14px + 63px);height:2px;border-radius:99px;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,transparent,var(--primary) 25%,#a6ecff);box-shadow:0 0 14px rgba(76,201,255,.6);opacity:.85}
-.fcmt[data-scrolled="true"] .fcmt-progress i{top:calc(10px + 57px)}
-
 /* ================= Mobile dock ================= */
 .fcmt-dock{display:none}
 
@@ -620,7 +613,6 @@ kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 
   }
   .fcmt-search-txt,.fcmt-search kbd{display:none}
   .fcmt-search-icon{color:var(--muted-strong)}
-  .fcmt-progress{display:none}
 
   /* Thumb-reach dock */
   .fcmt-dock{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0));z-index:1250;transform:translateX(-50%);display:flex;align-items:center;gap:2px;width:min(420px,calc(100% - 24px));height:66px;padding:0 8px;border-radius:24px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(20,34,49,.82),rgba(9,18,27,.86));backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 20px 50px -8px rgba(0,0,0,.7)}
