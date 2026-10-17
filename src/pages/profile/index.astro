@@ -837,9 +837,24 @@ import ImageUpload from '../../components/ImageUpload.astro';
     });
   }
 
-  loadAuthenticatedProfile().catch(() =>
-    renderGuestState('Unable to load profile right now', 'Please refresh the page or check your connection.')
-  );
+  loadAuthenticatedProfile().catch(async (error) => {
+    // A profile render/data failure is not proof that the visitor is signed out.
+    let session = null;
+    try {
+      const result = await accountAuth.auth.getSession();
+      session = result.data?.session || null;
+    } catch {}
+    if (session) {
+      renderAuthenticatedUnavailable(
+        error?.message || 'You are signed in, but your profile could not finish loading. Retry the account data instead of signing in again.'
+      );
+      return;
+    }
+    renderGuestState(
+      'Unable to load profile right now',
+      'We could not confirm your session. Refresh the page or sign in again if needed.'
+    );
+  });
 </script>
 
 <style is:global>
