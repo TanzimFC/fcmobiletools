@@ -306,6 +306,8 @@ import '../../styles/premium-auth.css';
 <script>
   import { accountAuth, accountApi } from '../../lib/account-client.js';
 
+  const OAUTH_PENDING_KEY = 'fcmt:account:oauth-pending:v1';
+
   const loginTab = document.getElementById('loginTab');
   const signupTab = document.getElementById('signupTab');
   const tabPillBg = document.getElementById('tabPillBg');
@@ -434,6 +436,10 @@ import '../../styles/premium-auth.css';
     showMessage(messageEl, '');
     if (button) button.disabled = true;
     try {
+      // Persist the intended return destination across Google's cross-origin round trip.
+      sessionStorage.setItem(OAUTH_PENDING_KEY, JSON.stringify({ mode: authMode, nextPath, startedAt: Date.now() }));
+    } catch {}
+    try {
       const callback = new URL('https://fcmobiletools.online/account/');
       callback.searchParams.set('next', nextPath);
       if (authMode === 'signup') callback.searchParams.set('mode', 'signup');
@@ -443,6 +449,7 @@ import '../../styles/premium-auth.css';
       });
       if (result.error) throw result.error;
     } catch (error) {
+      try { sessionStorage.removeItem(OAUTH_PENDING_KEY); } catch {}
       showMessage(messageEl, friendlyAuthError(error, 'Google sign-in could not be started. Please try again.'), true);
       if (button) button.disabled = false;
     }
@@ -611,6 +618,7 @@ import '../../styles/premium-auth.css';
   });
 
   const params = new URLSearchParams(location.search);
+  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
 
   function safeLocalReturnPath(value) {
     const raw = String(value || '').trim();
@@ -627,12 +635,35 @@ import '../../styles/premium-auth.css';
     }
   }
 
+  // A previously stored Supabase session must not send visitors away from the
+  // login form. Only process automatic navigation when a real Google callback
+  // (or an in-progress Google attempt returning to this tab) is present.
+  let pendingOAuth = null;
+  try {
+    const savedOAuth = JSON.parse(sessionStorage.getItem(OAUTH_PENDING_KEY) || 'null');
+    const startedAt = Number(savedOAuth?.startedAt);
+    if (
+      savedOAuth &&
+      (savedOAuth.mode === 'login' || savedOAuth.mode === 'signup') &&
+      Number.isFinite(startedAt) &&
+      startedAt <= Date.now() &&
+      Date.now() - startedAt < 10 * 60 * 1000
+    ) {
+      pendingOAuth = {
+        mode: savedOAuth.mode,
+        nextPath: safeLocalReturnPath(savedOAuth.nextPath),
+        startedAt
+      };
+    }
+    sessionStorage.removeItem(OAUTH_PENDING_KEY);
+  } catch {}
+
   const requestedNextPath = safeLocalReturnPath(params.get('next'));
   let storedNextPath = '';
   try {
     const stored = JSON.parse(sessionStorage.getItem('fcmt:account:return:v1') || 'null');
     sessionStorage.removeItem('fcmt:account:return:v1');
-    if (stored && Number.isFinite(Number(stored.savedAt)) && Date.now() - Number(stored.savedAt) < 15 * 60 * 1000) {
+    if (stored && Number.isFinite(Number(stored.savedAt)) && Date.now() - Number(stored.savedAt) >= 0 && Date.now() - Number(stored.savedAt) < 15 * 60 * 1000) {
       storedNextPath = safeLocalReturnPath(stored.path);
     }
   } catch {}
@@ -645,67 +676,95 @@ import '../../styles/premium-auth.css';
       }
     }
   } catch {}
-  const nextPath = requestedNextPath || storedNextPath || referrerNextPath || '/profile/';
+  const nextPath = requestedNextPath || pendingOAuth?.nextPath || storedNextPath || referrerNextPath || '/profile/';
+  const callbackMode = params.get('mode') === 'signup' || pendingOAuth?.mode === 'signup' ? 'signup' : 'login';
 
-  if (params.get('mode') === 'signup' || location.hash === '#signup') showTab('signup');
+  if (params.get('mode') === 'signup' || pendingOAuth?.mode === 'signup' || location.hash === '#signup') {
+    showTab('signup');
+  }
 
-  accountAuth.auth.getSession().then(async (result) => {
-    const session = result.data?.session;
-    if (!session) return;
+  const providerError = params.get('error_description') || params.get('error') || hashParams.get('error_description') || hashParams.get('error');
+  const hasAuthCallback = params.has('code') ||
+    params.has('token_hash') ||
+    hashParams.has('access_token') ||
+    hashParams.has('refresh_token') ||
+    Boolean(pendingOAuth);
 
-    // A valid Supabase session completes sign-in. Do not block normal login on
-    // the optional profile-summary endpoint, which can time out independently.
-    if (params.get('mode') !== 'signup') {
-      location.replace(nextPath);
-      return;
-    }
+  if (providerError) {
+    const messageEl = callbackMode === 'signup' ? signupMessage : loginMessage;
+    const cancelled = /access_denied|cancel/i.test(providerError);
+    showMessage(
+      messageEl,
+      cancelled
+        ? 'Google sign-in was cancelled. You can try again.'
+        : 'Google sign-in could not be completed. Please try again.',
+      true
+    );
+  } else if (hasAuthCallback) {
+    accountAuth.auth.getSession().then(async (result) => {
+      if (result.error) {
+        const messageEl = callbackMode === 'signup' ? signupMessage : loginMessage;
+        showMessage(messageEl, friendlyAuthError(result.error, 'Google sign-in could not be verified. Please try again.'), true);
+        return;
+      }
 
-    try {
-      const accountController = new AbortController();
-      const accountTimeout = window.setTimeout(() => accountController.abort(), 8000);
-      let accountResult;
-      let userResult;
+      const session = result.data?.session;
+      if (!session) {
+        const messageEl = callbackMode === 'signup' ? signupMessage : loginMessage;
+        showMessage(messageEl, 'Google sign-in did not finish. Your login form is still available; please try again.', true);
+        return;
+      }
+
+      // Redirect only after Supabase has established a real session.
+      if (callbackMode !== 'signup') {
+        location.replace(nextPath);
+        return;
+      }
+
       try {
-        [accountResult, userResult] = await Promise.all([
-          accountApi('/api/account/me', { signal: accountController.signal }),
-          accountAuth.auth.getUser()
-        ]);
-      } finally {
-        window.clearTimeout(accountTimeout);
-      }
-      const body = await accountResult.json().catch(() => ({}));
-      const user = userResult.data?.user || session.user;
+        const accountController = new AbortController();
+        const accountTimeout = window.setTimeout(() => accountController.abort(), 8000);
+        let accountResult;
+        let userResult;
+        try {
+          [accountResult, userResult] = await Promise.all([
+            accountApi('/api/account/me', { signal: accountController.signal }),
+            accountAuth.auth.getUser()
+          ]);
+        } finally {
+          window.clearTimeout(accountTimeout);
+        }
+        const body = await accountResult.json().catch(() => ({}));
+        const user = userResult.data?.user || session.user;
 
-      if (!accountResult.ok || !body?.account) {
-        // Auth already succeeded. If signup's profile lookup is unavailable, send
-        // the user to the profile hub instead of leaving them in a login-looking loop.
-        location.replace('/profile/');
-        return;
-      }
+        if (!accountResult.ok || !body?.account) {
+          // Authentication succeeded. Let the profile hub retry account setup.
+          location.replace('/profile/');
+          return;
+        }
 
-      // Google account creation returns through this same route. Keep its intent
-      // in the callback URL and show onboarding only for signup flows whose
-      // required FC Mobile profile fields are not complete yet.
-      const account = {
-        ...body.account,
-        gameProfile: body.gameProfile || body.account.gameProfile || {}
-      };
-      if (params.get('mode') === 'signup' && !account.gameProfile.complete) {
-        showOnboarding(account, user);
-        return;
-      }
+        const account = {
+          ...body.account,
+          gameProfile: body.gameProfile || body.account.gameProfile || {}
+        };
+        if (!account.gameProfile.complete) {
+          showOnboarding(account, user);
+          return;
+        }
 
-      location.replace(nextPath);
-    } catch (error) {
-      // Signup has a valid Supabase session even if account metadata is temporarily
-      // unavailable. Let the profile hub show/retry account setup rather than looping.
-      if (params.get('mode') === 'signup') {
-        location.replace('/profile/');
-        return;
+        location.replace(nextPath);
+      } catch (error) {
+        if (callbackMode === 'signup') {
+          location.replace('/profile/');
+          return;
+        }
+        showMessage(loginMessage, friendlyAuthError(error, 'Could not load your account. Please refresh and try again.'), true);
       }
-      showMessage(loginMessage, friendlyAuthError(error, 'Could not load your account. Please refresh and try again.'), true);
-    }
-  });
+    }).catch((error) => {
+      const messageEl = callbackMode === 'signup' ? signupMessage : loginMessage;
+      showMessage(messageEl, friendlyAuthError(error, 'Google sign-in could not be verified. Please try again.'), true);
+    });
+  }
 </script>
 
 <style is:global>
