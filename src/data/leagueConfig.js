@@ -36,7 +36,9 @@ export const JOIN_KEYS = Object.keys(JOIN_METHODS);
 export const FREQ = { daily: 'Daily', most_days: 'Most days', several_weekly: '3–4 days a week', weekly: 'Weekly', occasional: 'Occasional' };
 export const COMMIT = { casual: 'Casual', regular: 'Regular', competitive: 'Competitive' };
 
-export const RULES_VERSION = '2026-10-11';
+export const RULES_VERSION = '2026-10-17';
+export const LISTING_EXPIRY_DAYS = 30;
+export const EXPIRY_WARNING_DAYS = 5;
 // Short, plain rules. Shown before a league can be listed.
 export const LISTING_RULES = [
   'Only list a league you really run. One listing per account.',
@@ -45,6 +47,7 @@ export const LISTING_RULES = [
   'Never post other players\u2019 UIDs, Discord names or screenshots without their consent.',
   'Be respectful. No hate, harassment, scams or adult content.',
   'Keep open spots up to date. Close recruiting when you are full.',
+  'Press Kickoff at least once every 30 days. A listing with no kickoff in 30 days is removed automatically; you can list again any time.',
   'Listings that break these rules are removed without notice.'
 ];
 

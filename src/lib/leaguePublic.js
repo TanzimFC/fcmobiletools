@@ -2,7 +2,7 @@
 // server-rendered pages (/leagues and /leagues/[slug]).
 // Every function takes `supabaseRest(env, path, options)` so each caller keeps its own transport.
 
-import { divisionByKey, ACCENT_KEYS, JOIN_KEYS } from '../data/leagueConfig.js';
+import { divisionByKey, ACCENT_KEYS, JOIN_KEYS, LISTING_EXPIRY_DAYS, EXPIRY_WARNING_DAYS } from '../data/leagueConfig.js';
 
 export const BASE_LISTING_COLUMNS = [
   'id', 'owner_account_id', 'slug', 'name', 'description', 'logo_url', 'league_game_id',
@@ -85,6 +85,9 @@ export function decorateListings(listings, ownerMap, { admin = false, includeNot
       lastKickoffAt: row.last_kickoff_at || null,
       kickoffActive: kickoffAt > now - KICKOFF_MS,
       nextKickoffAt: kickoffAt ? new Date(kickoffAt + KICKOFF_MS).toISOString() : null,
+      expiresAt: new Date((kickoffAt || Date.parse(row.reviewed_at || row.created_at) || now) + LISTING_EXPIRY_DAYS * 86400000).toISOString(),
+      expiresInDays: Math.max(0, Math.ceil(((kickoffAt || Date.parse(row.reviewed_at || row.created_at) || now) + LISTING_EXPIRY_DAYS * 86400000 - now) / 86400000)),
+      expiringSoon: ((kickoffAt || Date.parse(row.reviewed_at || row.created_at) || now) + (LISTING_EXPIRY_DAYS - EXPIRY_WARNING_DAYS) * 86400000) < now,
       lastActiveAt: row.last_active_at || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

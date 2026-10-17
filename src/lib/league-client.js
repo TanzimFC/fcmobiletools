@@ -177,6 +177,7 @@ export async function uploadImage(file, { onProgress, signal, permanent = false,
 }
 
 // Drop-in uploader: idle → preparing/uploading (bar + %) → "Uploaded" tick with preview.
+// Applicant screenshots expire after 7 days. League crests and avatars pass permanent: true.
 export function mountUploader(root, { label, hint, value = '', onChange, round = false, permanent = false, expirationDays = 7 } = {}) {
   root.classList.add('lg-up');
   root.innerHTML =
@@ -339,4 +340,15 @@ export function openRulesSheet() {
     ok.addEventListener('change', () => { go.disabled = !ok.checked; });
     go.addEventListener('click', () => sheet.close(true));
   });
+}
+
+// Premium touch: cards follow the cursor with a soft light. Pure CSS variables, no layout cost.
+if (typeof document !== 'undefined' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.addEventListener('pointermove', (e) => {
+    const card = e.target.closest?.('.lg-card');
+    if (!card) return;
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  }, { passive: true });
 }
