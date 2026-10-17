@@ -364,9 +364,13 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
     const navLevel = $('fcmtNavLevel');
     const sheetName = $('fcmtSheetName');
     const sheetMeta = $('fcmtSheetMeta');
+    const sheetAccount = $('fcmtSheetAccount');
+    const sheetAvatar = $('fcmtSheetAvatar');
     if (!navBtn || !navName) return;
     try {
-      const hasAuth = Boolean(localStorage.getItem('fcmobiletools-auth-v1'));
+      // This flag reflects Supabase's validated session, not merely the presence
+      // of a possibly stale localStorage entry.
+      const hasAuth = window.__FCMT_AUTHENTICATED === true;
       const raw = localStorage.getItem('fcmobiletools-identity-cache-v1');
       const identity = raw ? JSON.parse(raw) : null;
       if (hasAuth && identity && identity.username) {
@@ -409,11 +413,32 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         }
         if (sheetName) sheetName.textContent = display + ' · Level ' + lv;
         if (sheetMeta) sheetMeta.textContent = '@' + identity.username + ' · ' + Number(identity.xp || 0).toLocaleString() + ' XP';
+        if (sheetAccount) sheetAccount.href = '/profile/';
+        if (sheetAvatar) sheetAvatar.textContent = initials;
+      } else if (hasAuth) {
+        // A user can have a valid session while profile details are still loading.
+        // Never show a sign-in CTA for that authenticated state.
+        navBtn.classList.add('is-authenticated');
+        navBtn.href = '/profile/';
+        navName.textContent = 'My Profile';
+        if (navLevel) navLevel.hidden = true;
+        if (navAvatar) navAvatar.textContent = 'FC';
+        if (ctaBtn) {
+          ctaBtn.href = '/profile/';
+          ctaBtn.setAttribute('aria-label', 'Open your FCMobiletools profile');
+        }
+        if (ctaText) ctaText.textContent = 'My Profile';
+        if (ctaAvatar) ctaAvatar.textContent = 'FC';
+        if (sheetAccount) sheetAccount.href = '/profile/';
+        if (sheetAvatar) sheetAvatar.textContent = 'FC';
+        if (sheetName) sheetName.textContent = 'My Account';
+        if (sheetMeta) sheetMeta.textContent = 'Profile, progression and rewards';
       } else {
         navBtn.classList.remove('is-authenticated');
-        navBtn.href = hasAuth ? '/profile/' : '/account/';
+        navBtn.href = '/account/';
         navName.textContent = 'Account';
         if (navLevel) navLevel.hidden = true;
+        if (navAvatar) navAvatar.textContent = 'FC';
         if (ctaBtn) {
           ctaBtn.href = '/account/';
           ctaBtn.setAttribute('aria-label', 'Sign in to your FCMobiletools account');
@@ -422,13 +447,81 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         if (ctaAvatar) {
           ctaAvatar.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>';
         }
+        if (sheetAccount) sheetAccount.href = '/account/';
+        if (sheetAvatar) sheetAvatar.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>';
+        if (sheetName) sheetName.textContent = 'Account & Profile';
+        if (sheetMeta) sheetMeta.textContent = 'Identity, XP progression & community';
       }
     } catch {}
   };
   syncNavIdentity();
   window.addEventListener('fcmt:account-updated', syncNavIdentity);
+  window.addEventListener('fcmt:nav-auth-state', syncNavIdentity);
   window.addEventListener('storage', syncNavIdentity);
 })();
+</script>
+
+<script>
+  import { accountAuth, accountApi, getCachedIdentity, setCachedIdentity, clearCachedIdentity } from '../lib/account-client.js';
+
+  let authSyncVersion = 0;
+
+  function publishAuthState(isAuthenticated) {
+    window.__FCMT_AUTHENTICATED = Boolean(isAuthenticated);
+    window.dispatchEvent(new Event('fcmt:nav-auth-state'));
+  }
+
+  async function hydrateIdentity(session, version) {
+    if (!session?.user?.id || version !== authSyncVersion) return;
+    try {
+      const response = await accountApi('/api/account/me');
+      const body = await response.json().catch(() => ({}));
+      if (version !== authSyncVersion) return;
+      if (response.ok && body?.account?.username) {
+        setCachedIdentity(body.account);
+      } else {
+        // Keep the nav truthful even if profile details are temporarily unavailable.
+        publishAuthState(true);
+        console.warn('[FCMobiletools account] Session is active, but profile details could not be loaded.', response.status);
+      }
+    } catch (error) {
+      if (version !== authSyncVersion) return;
+      publishAuthState(true);
+      console.warn('[FCMobiletools account] Could not refresh profile details.', error);
+    }
+  }
+
+  function acceptAuthState(session, event = 'INITIAL_SESSION') {
+    const version = ++authSyncVersion;
+    const signedIn = Boolean(session?.user?.id);
+    publishAuthState(signedIn);
+
+    if (!signedIn) {
+      clearCachedIdentity();
+      return;
+    }
+
+    // Avoid showing the previous account's identity during an account switch.
+    if (event === 'SIGNED_IN') clearCachedIdentity();
+
+    // Do not call Supabase auth methods inside its own auth callback stack.
+    queueMicrotask(() => { void hydrateIdentity(session, version); });
+  }
+
+  accountAuth.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION' || event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+      acceptAuthState(session, event);
+    }
+  });
+
+  accountAuth.auth.getSession().then(({ data, error }) => {
+    if (error) {
+      publishAuthState(false);
+      return;
+    }
+    acceptAuthState(data?.session || null, 'SESSION_CHECK');
+  }).catch(() => publishAuthState(false));
 </script>
 
 <style is:global>
