@@ -2845,6 +2845,12 @@ export function createExports(manifest) {
         })().catch(error => {
           console.error('[LEAGUE_INBOX_RETENTION]', error?.message || 'Scheduled cleanup failed.');
         });
+        const listingExpiry = (async () => {
+          const out = await supabaseRest(env, 'rpc/expire_inactive_league_listings', { method: 'POST', body: '{}' });
+          console.info('[LEAGUE_EXPIRY] Removed ' + (Number(out) || 0) + ' listings with no kickoff in 30 days.');
+        })().catch(error => {
+          console.error('[LEAGUE_EXPIRY]', error?.message || 'Listing expiry failed.');
+        });
         const quotaCleanup = (async () => {
           const database = await d1(env);
           await ensureImageUploadQuotaSchema(database);
@@ -2853,8 +2859,8 @@ export function createExports(manifest) {
         })().catch(error => {
           console.error('[IMAGE_UPLOAD_QUOTA_CLEANUP]', error?.message || 'Quota cleanup failed.');
         });
-        if (ctx?.waitUntil) ctx.waitUntil(Promise.all([cleanup, quotaCleanup]));
-        else await Promise.all([cleanup, quotaCleanup]);
+        if (ctx?.waitUntil) ctx.waitUntil(Promise.all([cleanup, listingExpiry, quotaCleanup]));
+        else await Promise.all([cleanup, listingExpiry, quotaCleanup]);
       },
       async fetch(request,env,ctx) {
   const url=new URL(request.url);

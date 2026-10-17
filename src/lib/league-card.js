@@ -77,6 +77,7 @@ export function leagueCard(r, opts = {}) {
   const href = preview ? '#' : leagueHref(r);
   const below = m && !m.qualifies;
   const badges = [trustBadge(r)];
+  if (r.expiringSoon && r.expiresInDays != null) badges.push('<span class="lg-badge lg-expiry" title="Press Kickoff to keep this listing live">Expires in ' + r.expiresInDays + 'd</span>');
   if (r.kickoffActive) badges.push('<span class="lg-badge cyan"><i class="lg-pulse"></i>Kickoff</span>');
   if (r.isMine) badges.push('<span class="lg-badge mint">Your league</span>');
   if (opts.spotlight) badges.push('<span class="lg-badge gold">Spotlight</span>');
