@@ -580,20 +580,24 @@ async function accountApi(request, env, url) {
 
   const {account,user}=context;
   if(request.method==='GET' && url.pathname==='/api/account/me') {
+    // Core identity must not disappear because one optional progression table is
+    // temporarily unavailable. Treat stats/ledgers as independently recoverable.
     const [progress,settings,rewards,activity,gameProfile,dailyStreak,tournamentStats]=await Promise.all([
-      supabaseRest(env,'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&limit=1'),
-      supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(account.id)+'&select=*&limit=1'),
-      supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance,lifetime_earned,lifetime_spent,lifetime_reversed&limit=1'),
-      supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=12'),
-      supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id)+'&select=fc_mobile_uid,in_game_username,region_server,discord_handle,player_tags,updated_at&limit=1'),
+      supabaseRest(env,'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&limit=1').catch(()=>[]),
+      supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(account.id)+'&select=*&limit=1').catch(()=>[]),
+      supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance,lifetime_earned,lifetime_spent,lifetime_reversed&limit=1').catch(()=>[]),
+      supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=12').catch(()=>[]),
+      supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id)+'&select=fc_mobile_uid,in_game_username,region_server,discord_handle,player_tags,updated_at&limit=1').catch(()=>[]),
       (async()=>{
-        const defs=await supabaseRest(env,'streak_definitions?slug=eq.daily-check-in&select=id&limit=1');
-        const id=defs?.[0]?.id;
-        if(!id) return null;
-        const rows=await supabaseRest(env,'user_streaks?account_id=eq.'+encodeURIComponent(account.id)+'&streak_definition_id=eq.'+encodeURIComponent(id)+'&select=current_count,longest_count,last_qualified_at,last_checkin_utc_date,streak_freezes&limit=1');
-        return rows?.[0]||null;
+        try {
+          const defs=await supabaseRest(env,'streak_definitions?slug=eq.daily-check-in&select=id&limit=1');
+          const id=defs?.[0]?.id;
+          if(!id) return null;
+          const rows=await supabaseRest(env,'user_streaks?account_id=eq.'+encodeURIComponent(account.id)+'&streak_definition_id=eq.'+encodeURIComponent(id)+'&select=current_count,longest_count,last_qualified_at,last_checkin_utc_date,streak_freezes&limit=1');
+          return rows?.[0]||null;
+        } catch { return null; }
       })(),
-      fetchTournamentStatsForAccount(env,account.id)
+      fetchTournamentStatsForAccount(env,account.id).catch(()=>null)
     ]);
     const p=progress?.[0]||{}, st=settings?.[0]||{}, rw=rewards?.[0]||{}, gp=gameProfile?.[0]||{}, ds=dailyStreak||{};
     const gameProfileComplete=Boolean(String(gp.fc_mobile_uid||'').trim()&&String(gp.in_game_username||'').trim()&&String(gp.region_server||'').trim());
