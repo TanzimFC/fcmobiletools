@@ -237,9 +237,9 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "matchday": 7,
     "label": "PREMIER LEAGUE · MATCHDAY 7",
     "title": "Captain OVR Tracker",
-    "subtitle": "Five performance tasks stand between each captain and a potential 121 OVR card. Track the route, compare the risk and update each result as the matches are played.",
+    "subtitle": "Five performance objectives stand between each captain and a potential 121 OVR card. Track the route, compare the risk and follow confirmed results as the matches are played.",
     "baseOvr": 116,
-    "updatedLabel": "Analysis baseline · 8 Oct 2026",
+    "updatedLabel": "Results updated · 17 Oct 2026",
     "tasks": [
       {
         "id": "minutes",
@@ -276,7 +276,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "fixture": "Everton vs Chelsea",
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/James_256_fc_25_download_1.png",
         "baseOvr": 116,
-        "currentOvr": 116,
+        "currentOvr": 118,
         "availability": "Monitor",
         "probability": {
           "minutes": 72,
@@ -294,25 +294,25 @@ export const FOOTBALL_CENTRE_CONTENT = {
         },
         "completed": {
           "minutes": false,
-          "win": false,
-          "cleanSheet": false,
+          "win": true,
+          "cleanSheet": true,
           "setPiece": false,
           "threeContrib": false
         },
-        "note": "292 Premier League minutes from four appearances. The 60-minute route is realistic, but the Chelsea away trip and 3 G/A condition make 121 difficult.",
+        "note": "Did not feature in the matchday squad. Chelsea won 2-0 and kept a clean sheet; individual objectives remain failed where the match requirement was not met.",
         "result": {
-          "minutes": "pending",
-          "win": "pending",
-          "cleanSheet": "pending",
-          "setPiece": "pending",
-          "threeContrib": "pending"
+          "minutes": "failed",
+          "win": "complete",
+          "cleanSheet": "complete",
+          "setPiece": "failed",
+          "threeContrib": "failed"
         },
         "failed": {
-          "minutes": false,
+          "minutes": true,
           "win": false,
           "cleanSheet": false,
-          "setPiece": false,
-          "threeContrib": false
+          "setPiece": true,
+          "threeContrib": true
         }
       },
       {
@@ -370,7 +370,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "fixture": "Brentford vs Liverpool",
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/van_Dijk_256_fc_25_download.png",
         "baseOvr": 116,
-        "currentOvr": 116,
+        "currentOvr": 118,
         "availability": "Available",
         "probability": {
           "minutes": 86,
@@ -387,26 +387,26 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "threeContrib": "very-low"
         },
         "completed": {
-          "minutes": false,
-          "win": false,
+          "minutes": true,
+          "win": true,
           "cleanSheet": false,
           "setPiece": false,
           "threeContrib": false
         },
-        "note": "Safest defensive captain. He has started all five league matches, played every minute and already has three clean sheets. He also scored from a corner for the Netherlands.",
+        "note": "Started and played the Liverpool 2-1 win. The win and 60-minute objectives are complete; Brentford scored, and no set-piece goal or three goal contributions were recorded.",
         "result": {
-          "minutes": "pending",
-          "win": "pending",
-          "cleanSheet": "pending",
-          "setPiece": "pending",
-          "threeContrib": "pending"
+          "minutes": "complete",
+          "win": "complete",
+          "cleanSheet": "failed",
+          "setPiece": "failed",
+          "threeContrib": "failed"
         },
         "failed": {
           "minutes": false,
           "win": false,
-          "cleanSheet": false,
-          "setPiece": false,
-          "threeContrib": false
+          "cleanSheet": true,
+          "setPiece": true,
+          "threeContrib": true
         }
       },
       {
@@ -464,7 +464,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "fixture": "Newcastle United vs Aston Villa",
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/McGinn_256_fc_25_download.png",
         "baseOvr": 116,
-        "currentOvr": 116,
+        "currentOvr": 118,
         "availability": "Available",
         "probability": {
           "minutes": 74,
@@ -482,25 +482,25 @@ export const FOOTBALL_CENTRE_CONTENT = {
         },
         "completed": {
           "minutes": false,
-          "win": false,
-          "cleanSheet": false,
+          "win": true,
+          "cleanSheet": true,
           "setPiece": false,
           "threeContrib": false
         },
-        "note": "Two league assists and set-piece responsibility give him a better attacking route than his role suggests, but Newcastle away is a rough win and clean-sheet combination.",
+        "note": "Aston Villa won 1-0 and kept a clean sheet. McGinn came on too late to reach 60 minutes; no set-piece goal or three goal contributions.",
         "result": {
-          "minutes": "pending",
-          "win": "pending",
-          "cleanSheet": "pending",
-          "setPiece": "pending",
-          "threeContrib": "pending"
+          "minutes": "failed",
+          "win": "complete",
+          "cleanSheet": "complete",
+          "setPiece": "failed",
+          "threeContrib": "failed"
         },
         "failed": {
-          "minutes": false,
+          "minutes": true,
           "win": false,
           "cleanSheet": false,
-          "setPiece": false,
-          "threeContrib": false
+          "setPiece": true,
+          "threeContrib": true
         }
       },
       {
@@ -557,36 +557,36 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "home": "Everton",
         "away": "Chelsea",
         "kickoffUtc": "2026-10-17T11:30:00.000Z",
-        "status": "scheduled",
+        "status": "final",
         "score": {
-          "home": null,
-          "away": null
+          "home": 0,
+          "away": 2
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-17T23:59:00.000Z"
       },
       {
         "id": "brentford-liverpool",
         "home": "Brentford",
         "away": "Liverpool",
         "kickoffUtc": "2026-10-17T14:00:00.000Z",
-        "status": "scheduled",
+        "status": "final",
         "score": {
-          "home": null,
-          "away": null
+          "home": 1,
+          "away": 2
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-17T23:59:00.000Z"
       },
       {
         "id": "newcastle-villa",
         "home": "Newcastle United",
         "away": "Aston Villa",
         "kickoffUtc": "2026-10-17T16:30:00.000Z",
-        "status": "scheduled",
+        "status": "final",
         "score": {
-          "home": null,
-          "away": null
+          "home": 0,
+          "away": 1
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-17T23:59:00.000Z"
       },
       {
         "id": "leeds-united",
@@ -613,6 +613,6 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "updatedAt": null
       }
     ],
-    "lastUpdated": null
+    "lastUpdated": "2026-10-17T23:59:00.000Z"
   }
 };
