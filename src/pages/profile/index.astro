@@ -145,7 +145,25 @@ import ImageUpload from '../../components/ImageUpload.astro';
         </div>
       </section>
     `;
-    root.querySelector('#retryAccountData')?.addEventListener('click', () => location.reload());
+    root.querySelector('#retryAccountData')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = 'Loading your profile…';
+      try {
+        await loadAuthenticatedProfile();
+      } catch (error) {
+        let session = null;
+        try {
+          const result = await accountAuth.auth.getSession();
+          session = result.data?.session || null;
+        } catch {}
+        if (session) {
+          renderAuthenticatedUnavailable(error?.message || 'Your session is active, but profile data is still unavailable. Please retry in a moment.');
+        } else {
+          renderGuestState('Your session needs attention', 'Please sign in again, then return to your profile.');
+        }
+      }
+    });
   }
 
   async function loadPublicFallback(username) {
