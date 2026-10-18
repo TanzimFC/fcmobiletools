@@ -9,7 +9,7 @@
  *     ...
  *
  * Behaviour
- * - Enabled by default; shows once per browser session, so page-to-page navigation stays quick.
+ * - Runs on every full page navigation, not just the first visit in a browser session.
  * - Runs about 2.4 seconds, then opens like an eye from the centre (about 1.2s with the exit).
  * - Hard cap of 4.5 seconds, so a slow connection can never trap anyone behind it.
  * - Fires a "halloween-loader:done" event on document when it finishes.
@@ -25,16 +25,8 @@ const bats = [
 ---
 
 <script is:inline>
-  (function () {
-    var d = document.documentElement;
-    try {
-      if (sessionStorage.getItem('fcmt_hl_default_v1')) return;
-      sessionStorage.setItem('fcmt_hl_default_v1', '1');
-    } catch (e) {
-      // Storage can be blocked by privacy settings; still show the loader on this page.
-    }
-    d.classList.add('hl-on');
-  })();
+  // No session gate: visitors should see the loader on every full page load.
+  document.documentElement.classList.add('hl-on');
 </script>
 
 <div id="hl" role="status" aria-label="Loading FCMOBILETOOLS">
