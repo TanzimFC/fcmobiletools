@@ -1,0 +1,600 @@
+---
+/**
+ * HalloweenLoader.astro
+ *
+ * Drop it right after <body> in your BaseLayout:
+ *   import HalloweenLoader from '../components/HalloweenLoader.astro';
+ *   <body>
+ *     <HalloweenLoader />
+ *     ...
+ *
+ * Behaviour
+ * - Shows once per browser session, so people moving between pages never see it twice.
+ * - Runs about 2.4 seconds, then opens like an eye from the centre (about 1.2s with the exit).
+ * - Hard cap of 4.5 seconds, so a slow connection can never trap anyone behind it.
+ * - Switches itself off after 2 Nov 2026 (change END_DATE in the first script).
+ * - Add ?hl=1 to any URL to force it for testing.
+ * - Fires a "halloween-loader:done" event on document when it finishes.
+ * - Respects prefers-reduced-motion and works with JavaScript off.
+ */
+const brand = 'FCMOBILETOOLS'.split('');
+const bats = [
+  { y: '12vh', s: '38px', d: '8.5s', dl: '0.2s' },
+  { y: '24vh', s: '26px', d: '10.5s', dl: '1.1s' },
+  { y: '8vh', s: '22px', d: '12s', dl: '2.4s' },
+  { y: '34vh', s: '30px', d: '9.5s', dl: '3.2s' },
+  { y: '18vh', s: '18px', d: '13s', dl: '0.8s' },
+];
+---
+
+<script is:inline>
+  (function () {
+    try {
+      var END_DATE = '2026-11-03T00:00:00Z';
+      var d = document.documentElement;
+      var force = /[?&]hl=1(&|$)/.test(location.search);
+      if (!force && Date.now() > Date.parse(END_DATE)) return;
+      if (!force && sessionStorage.getItem('fcmt_hl')) return;
+      sessionStorage.setItem('fcmt_hl', '1');
+      d.classList.add('hl-on');
+    } catch (e) {}
+  })();
+</script>
+
+<div id="hl" role="status" aria-label="Loading FCMOBILETOOLS">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="hl-bat" viewBox="0 0 60 30">
+        <path d="M30 24C28 24 27 20 26 17C22 14 17 13 9 16C11 13 11 9 9 4C15 7 20 8 25 9C26 8 27 6 28 3L30 6L32 3C33 6 34 8 35 9C40 8 45 7 51 4C49 9 49 13 51 16C43 13 38 14 34 17C33 20 32 24 30 24Z"></path>
+      </symbol>
+    </defs>
+  </svg>
+
+  <canvas class="hl-embers" aria-hidden="true"></canvas>
+
+  <div class="hl-moon" aria-hidden="true"></div>
+  <div class="hl-fog" aria-hidden="true"></div>
+  <div class="hl-fog b" aria-hidden="true"></div>
+
+  <svg class="hl-yard" viewBox="0 0 1440 240" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <g fill="#07080f">
+      <path d="M0 240V170C120 150 220 175 340 160C470 144 560 178 700 166C840 154 930 180 1060 164C1190 148 1310 172 1440 158V240Z"></path>
+      <path d="M150 192v-44a18 18 0 0 1 36 0v44z"></path>
+      <path d="M300 182v-30a14 14 0 0 1 28 0v30z"></path>
+      <path d="M1010 188v-46a20 20 0 0 1 40 0v46z"></path>
+      <path d="M1180 180v-34a15 15 0 0 1 30 0v34z"></path>
+      <path d="M1330 178v-28a13 13 0 0 1 26 0v28z"></path>
+    </g>
+    <g stroke="#07080f" fill="none" stroke-linecap="round">
+      <path d="M520 180v-52M504 148h32" stroke-width="7"></path>
+      <path d="M860 176C858 140 866 110 860 80M862 120C880 108 892 96 908 92M861 100C846 88 832 84 818 70M863 140C878 134 892 132 904 124M860 90C866 70 862 56 868 44" stroke-width="6"></path>
+    </g>
+  </svg>
+
+  <div class="hl-bats" aria-hidden="true">
+    {bats.map((b) => (
+      <span class="hl-bat" style={`--y:${b.y};--s:${b.s};--d:${b.d};--dl:${b.dl}`}>
+        <svg viewBox="0 0 60 30"><use href="#hl-bat"></use></svg>
+      </span>
+    ))}
+  </div>
+
+  <div class="hl-spider" aria-hidden="true">
+    <i></i>
+    <svg viewBox="0 0 40 36" width="30" height="27">
+      <g stroke="#1a1030" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 22L7 15L3 20"></path><path d="M16 24L6 24L3 30"></path><path d="M17 26L9 31L8 35"></path><path d="M17 20L10 9L5 9"></path>
+        <path d="M24 22L33 15L37 20"></path><path d="M24 24L34 24L37 30"></path><path d="M23 26L31 31L32 35"></path><path d="M23 20L30 9L35 9"></path>
+      </g>
+      <ellipse cx="20" cy="25" rx="7" ry="8" fill="#1a1030"></ellipse>
+      <circle cx="20" cy="15" r="4.6" fill="#1a1030"></circle>
+      <circle cx="18" cy="14.4" r="1.1" fill="#ff7a18"></circle>
+      <circle cx="22" cy="14.4" r="1.1" fill="#ff7a18"></circle>
+    </svg>
+  </div>
+
+  <div class="hl-stage">
+    <div class="hl-badge"><b></b>Halloween special</div>
+
+    <div class="hl-pumpkin-wrap">
+      <div class="hl-halo" aria-hidden="true"></div>
+      <svg class="hl-pumpkin" viewBox="0 0 200 180" aria-hidden="true">
+        <defs>
+          <radialGradient id="hl-pg" cx="50%" cy="38%" r="70%">
+            <stop offset="0" stop-color="#ffb347"></stop>
+            <stop offset=".55" stop-color="#ff7a18"></stop>
+            <stop offset="1" stop-color="#b93a07"></stop>
+          </radialGradient>
+          <linearGradient id="hl-fg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff4b8"></stop>
+            <stop offset="1" stop-color="#ffb020"></stop>
+          </linearGradient>
+        </defs>
+        <path d="M92 44Q93 24 103 15Q112 10 117 17Q110 25 111 44Z" fill="#3a2a14"></path>
+        <path d="M112 28q17-9 21 5q4 13-9 13" stroke="#5fd68a" stroke-width="2.6" fill="none" stroke-linecap="round"></path>
+        <g fill="url(#hl-pg)">
+          <ellipse cx="55" cy="104" rx="38" ry="56"></ellipse>
+          <ellipse cx="145" cy="104" rx="38" ry="56"></ellipse>
+          <ellipse cx="78" cy="102" rx="40" ry="62"></ellipse>
+          <ellipse cx="122" cy="102" rx="40" ry="62"></ellipse>
+          <ellipse cx="100" cy="102" rx="34" ry="64"></ellipse>
+        </g>
+        <g stroke="rgba(110,28,0,.4)" stroke-width="2.4" fill="none" stroke-linecap="round">
+          <path d="M78 42Q60 102 78 164"></path>
+          <path d="M122 42Q140 102 122 164"></path>
+          <path d="M54 54Q34 104 54 154"></path>
+          <path d="M146 54Q166 104 146 154"></path>
+        </g>
+        <ellipse cx="72" cy="62" rx="22" ry="10" fill="rgba(255,255,255,.16)" transform="rotate(-24 72 62)"></ellipse>
+        <g class="hl-face" fill="url(#hl-fg)" stroke="url(#hl-fg)" stroke-width="3" stroke-linejoin="round">
+          <path d="M62 102L76 78L90 102Z"></path>
+          <path d="M110 102L124 78L138 102Z"></path>
+          <path d="M100 110L92 124H108Z"></path>
+          <path d="M54 126Q100 188 146 126L136 133L127 126L117 139L107 130L100 142L93 130L83 139L73 126L64 133Z"></path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="hl-brand" aria-hidden="true">
+      {brand.map((c, i) => <span style={`--i:${i}`}>{c}</span>)}
+    </div>
+
+    <div class="hl-meter" aria-hidden="true">
+      <div class="hl-row">
+        <span class="hl-msg">Carving the pumpkins</span>
+        <span class="hl-pct">0%</span>
+      </div>
+      <div class="hl-track"><div class="hl-fill"></div></div>
+    </div>
+  </div>
+
+  <button type="button" class="hl-skip">Skip</button>
+  <div class="hl-flash" aria-hidden="true"></div>
+  <div class="hl-grain" aria-hidden="true"></div>
+  <div class="hl-vig" aria-hidden="true"></div>
+</div>
+
+<noscript><style>#hl{display:none!important}</style></noscript>
+
+<style is:global>
+  @property --hl-r {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 0%;
+  }
+
+  html.hl-on { overflow: hidden; }
+
+  #hl {
+    --hl-orange: #ff7a18;
+    --hl-amber: #ffb347;
+    --hl-purple: #8b5cf6;
+    --hl-cyan: #22d3ee;
+    --hl-bg: #05060d;
+    --p: 0;
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    overflow: hidden;
+    color: #fff;
+    background:
+      radial-gradient(70vmax 26vmax at 50% 100%, rgba(255, 122, 24, 0.2), transparent 70%),
+      radial-gradient(60vmax 50vmax at 50% 40%, rgba(255, 122, 24, 0.13), transparent 62%),
+      radial-gradient(50vmax 40vmax at 88% 6%, rgba(139, 92, 246, 0.24), transparent 62%),
+      radial-gradient(46vmax 36vmax at 6% 96%, rgba(34, 211, 238, 0.1), transparent 62%),
+      var(--hl-bg);
+  }
+  html.hl-on #hl { display: block; }
+
+  #hl .hl-embers { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* Moon */
+  #hl .hl-moon {
+    position: absolute;
+    top: 7vh;
+    right: 9vw;
+    width: clamp(72px, 14vmin, 150px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 62% 30%, rgba(190, 170, 120, 0.5) 0 7%, transparent 8%),
+      radial-gradient(circle at 34% 62%, rgba(190, 170, 120, 0.45) 0 10%, transparent 11%),
+      radial-gradient(circle at 70% 70%, rgba(190, 170, 120, 0.4) 0 5%, transparent 6%),
+      radial-gradient(circle at 35% 32%, #fffaf0, #f4e4b8 55%, #cbb689);
+    box-shadow: 0 0 50px 14px rgba(255, 231, 170, 0.22), 0 0 150px 56px rgba(255, 190, 110, 0.12);
+    animation: hl-moon 7s ease-in-out infinite alternate;
+  }
+  @keyframes hl-moon { to { transform: translateY(8px) scale(1.03); } }
+
+  /* Fog */
+  #hl .hl-fog {
+    position: absolute;
+    left: -20%;
+    right: -20%;
+    bottom: -6%;
+    height: 40vh;
+    filter: blur(18px);
+    background:
+      radial-gradient(40% 60% at 30% 70%, rgba(190, 180, 255, 0.15), transparent 70%),
+      radial-gradient(35% 55% at 72% 78%, rgba(255, 160, 90, 0.11), transparent 70%);
+    animation: hl-drift 15s ease-in-out infinite alternate;
+  }
+  #hl .hl-fog.b { bottom: -10%; opacity: 0.8; animation-duration: 19s; animation-direction: alternate-reverse; }
+  @keyframes hl-drift { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
+
+  /* Graveyard */
+  #hl .hl-yard { position: absolute; left: 0; bottom: 0; width: 100%; height: clamp(120px, 27vh, 270px); }
+
+  /* Bats */
+  #hl .hl-bats { position: absolute; inset: 0; pointer-events: none; }
+  #hl .hl-bat {
+    position: absolute;
+    top: var(--y);
+    left: 0;
+    width: var(--s);
+    animation: hl-fly var(--d) linear var(--dl) infinite;
+    transform: translate3d(-15vw, 0, 0);
+    will-change: transform;
+  }
+  #hl .hl-bat svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    fill: #1a1030;
+    filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.7));
+    transform-origin: 50% 60%;
+    animation: hl-flap 0.26s ease-in-out infinite alternate;
+  }
+  @keyframes hl-fly {
+    0% { transform: translate3d(-15vw, 0, 0); }
+    25% { transform: translate3d(22vw, -4vh, 0); }
+    50% { transform: translate3d(52vw, 3vh, 0); }
+    75% { transform: translate3d(80vw, -3vh, 0); }
+    100% { transform: translate3d(112vw, 1vh, 0); }
+  }
+  @keyframes hl-flap { from { transform: scaleY(1); } to { transform: scaleY(0.5); } }
+
+  /* Spider */
+  #hl .hl-spider {
+    position: absolute;
+    top: 0;
+    left: clamp(14px, 11vw, 160px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(-110%);
+    animation:
+      hl-drop 1.5s cubic-bezier(0.2, 0.85, 0.2, 1) 0.4s forwards,
+      hl-bob 3.4s ease-in-out 1.9s infinite;
+  }
+  #hl .hl-spider i { display: block; width: 1px; height: clamp(70px, 20vh, 190px); background: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.5)); }
+  @keyframes hl-drop { to { transform: translateY(0); } }
+  @keyframes hl-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(14px); } }
+
+  /* Stage */
+  #hl .hl-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(14px, 3vmin, 26px);
+    padding: 24px;
+  }
+
+  #hl .hl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 15px;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: #ffd3a3;
+    border: 1px solid rgba(255, 122, 24, 0.35);
+    background: rgba(255, 122, 24, 0.09);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    transform: translateY(-8px);
+    animation: hl-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s forwards;
+  }
+  #hl .hl-badge b {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--hl-orange);
+    box-shadow: 0 0 10px 2px rgba(255, 122, 24, 0.8);
+    animation: hl-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes hl-pulse { 50% { opacity: 0.35; transform: scale(0.8); } }
+
+  /* Pumpkin, the one memorable thing */
+  #hl .hl-pumpkin-wrap {
+    position: relative;
+    width: clamp(130px, 25vmin, 220px);
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transform: scale(0.8) translateY(14px);
+    animation: hl-pop 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.15) 0.25s forwards;
+  }
+  @keyframes hl-pop { to { opacity: 1; transform: scale(1) translateY(0); } }
+  #hl .hl-halo {
+    position: absolute;
+    width: 270%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 140, 30, 0.5), rgba(255, 100, 20, 0.14) 40%, transparent 68%);
+    opacity: calc(0.3 + var(--p) * 0.007);
+    transform: scale(calc(0.7 + var(--p) * 0.0035));
+    pointer-events: none;
+  }
+  #hl .hl-pumpkin {
+    position: relative;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    filter: drop-shadow(0 0 calc(8px + var(--p) * 0.28px) rgba(255, 140, 30, 0.65));
+    animation: hl-float 3.2s ease-in-out infinite alternate;
+    transition: filter 0.4s ease;
+  }
+  @keyframes hl-float { to { transform: translateY(-7px) rotate(-1.2deg); } }
+  #hl .hl-face { filter: drop-shadow(0 0 7px rgba(255, 215, 110, 0.95)); animation: hl-flicker 2.6s linear infinite; }
+  @keyframes hl-flicker {
+    0%, 100% { opacity: 1; }
+    8% { opacity: 0.82; }
+    14% { opacity: 1; }
+    37% { opacity: 0.9; }
+    41% { opacity: 0.76; }
+    46% { opacity: 1; }
+    72% { opacity: 0.88; }
+    80% { opacity: 1; }
+  }
+
+  /* Wordmark */
+  #hl .hl-brand {
+    display: flex;
+    font-size: clamp(22px, 4.6vmin, 42px);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    padding-left: 0.12em;
+    text-shadow: 0 0 28px rgba(255, 140, 40, 0.35);
+  }
+  #hl .hl-brand span {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+    animation: hl-letter 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    animation-delay: calc(0.55s + var(--i) * 42ms);
+  }
+  @keyframes hl-letter { to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
+  /* Meter */
+  #hl .hl-meter {
+    width: min(310px, 74vw);
+    opacity: 0;
+    animation: hl-in 0.7s ease 0.9s forwards;
+  }
+  #hl .hl-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; font-size: 13px; }
+  #hl .hl-msg { color: rgba(255, 255, 255, 0.72); animation: hl-in 0.45s ease both; }
+  #hl .hl-pct { font-variant-numeric: tabular-nums; color: var(--hl-amber); font-weight: 600; }
+  #hl .hl-track { height: 4px; border-radius: 99px; background: rgba(255, 255, 255, 0.09); }
+  #hl .hl-fill {
+    position: relative;
+    height: 100%;
+    width: calc(var(--p) * 1%);
+    border-radius: inherit;
+    background: linear-gradient(90deg, #ff4d1a, #ff9a1f 60%, #ffd27a);
+    box-shadow: 0 0 14px rgba(255, 122, 24, 0.7);
+  }
+  #hl .hl-fill::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: #fff4c8;
+    box-shadow: 0 0 12px 4px rgba(255, 190, 90, 0.9);
+  }
+  @keyframes hl-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Skip */
+  #hl .hl-skip {
+    position: absolute;
+    left: 50%;
+    bottom: max(22px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 3;
+    padding: 8px 18px;
+    font: inherit;
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    cursor: pointer;
+    opacity: 0;
+    animation: hl-skip-in 0.6s ease 1.4s forwards;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  #hl .hl-skip:hover, #hl .hl-skip:focus-visible { color: #fff; border-color: rgba(255, 122, 24, 0.6); outline: none; }
+  @keyframes hl-skip-in { to { opacity: 1; } }
+  #hl.hl-done .hl-skip { display: none; }
+
+  /* Overlays */
+  #hl .hl-grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  #hl .hl-vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.68)); }
+  #hl .hl-flash {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 40vmax;
+    aspect-ratio: 1;
+    margin: -20vmax 0 0 -20vmax;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 190, 90, 0.85), rgba(255, 110, 20, 0.35) 40%, transparent 68%);
+    opacity: 0;
+    transform: scale(0.2);
+    pointer-events: none;
+  }
+
+  /* Finish */
+  #hl.hl-done .hl-pumpkin { filter: drop-shadow(0 0 38px rgba(255, 170, 50, 0.95)) brightness(1.18); }
+  #hl.hl-done .hl-flash { animation: hl-flash 0.9s ease-out forwards; }
+  @keyframes hl-flash { 0% { opacity: 0.9; transform: scale(0.2); } 100% { opacity: 0; transform: scale(1.6); } }
+
+  #hl.hl-exit {
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(circle at 50% 46%, transparent var(--hl-r), #000 calc(var(--hl-r) + 7%));
+    mask-image: radial-gradient(circle at 50% 46%, transparent var(--hl-r), #000 calc(var(--hl-r) + 7%));
+    animation:
+      hl-open 0.95s cubic-bezier(0.65, 0, 0.25, 1) forwards,
+      hl-fade 0.3s linear 0.65s forwards;
+  }
+  #hl.hl-exit .hl-stage { animation: hl-stage-out 0.55s ease forwards; }
+  @keyframes hl-open { from { --hl-r: -7%; } to { --hl-r: 100%; } }
+  @keyframes hl-fade { to { opacity: 0; } }
+  @keyframes hl-stage-out { to { opacity: 0; transform: scale(1.12); filter: blur(8px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    #hl *, #hl { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+    #hl .hl-bat { display: none; }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var root = document.documentElement;
+    var el = document.getElementById('hl');
+    if (!el) return;
+    if (!root.classList.contains('hl-on')) { el.remove(); return; }
+
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var MIN = reduce ? 600 : 2000;   // time the bar needs to fill
+    var MAX = 4500;                  // hard cap, never trap a visitor
+    var EXIT = reduce ? 180 : 950;
+    var PRE = reduce ? 0 : 260;      // pause on a full bar before opening
+
+    var MSG = [[0, 'Carving the pumpkins'], [30, 'Dusting off the cobwebs'], [62, 'Waking up the tools'], [90, 'Almost ready']];
+    var pctEl = el.querySelector('.hl-pct');
+    var msgEl = el.querySelector('.hl-msg');
+    var cv = el.querySelector('.hl-embers');
+    var ctx = reduce ? null : cv.getContext('2d');
+    var skip = el.querySelector('.hl-skip');
+
+    var loaded = document.readyState === 'complete';
+    window.addEventListener('load', function () { loaded = true; });
+
+    var t0 = performance.now(), last = t0, p = 0, shown = -1, ending = false, over = false;
+
+    function setMsg(text) {
+      msgEl.textContent = text;
+      msgEl.style.animation = 'none';
+      void msgEl.offsetWidth;
+      msgEl.style.animation = '';
+    }
+
+    function render(v) {
+      el.style.setProperty('--p', v.toFixed(1));
+      pctEl.textContent = Math.round(v) + '%';
+      var i = 0;
+      for (var k = 0; k < MSG.length; k++) if (v >= MSG[k][0]) i = k;
+      if (i !== shown) { shown = i; setMsg(MSG[i][1]); }
+    }
+
+    /* Embers */
+    var COL = ['255,140,40', '255,190,80', '255,100,30', '255,215,140', '34,211,238'];
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5), W = 0, H = 0, P = [];
+    function spawn(init) {
+      return {
+        x: Math.random() * W,
+        y: init ? Math.random() * H : H + 12 * dpr,
+        r: (Math.random() * 1.6 + 0.5) * dpr,
+        v: (18 + Math.random() * 42) * dpr,
+        ph: Math.random() * 6.28,
+        sw: Math.random() * 0.6 + 0.2,
+        c: COL[Math.random() < 0.9 ? (Math.random() * 4) | 0 : 4],
+        a: Math.random() * 0.5 + 0.35
+      };
+    }
+    function resize() {
+      W = cv.width = Math.floor(innerWidth * dpr);
+      H = cv.height = Math.floor(innerHeight * dpr);
+    }
+    if (ctx) {
+      resize();
+      window.addEventListener('resize', resize);
+      var n = innerWidth < 640 ? 26 : 46;
+      for (var i = 0; i < n; i++) P.push(spawn(true));
+    }
+    function embers(now, dt) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+      for (var i = 0; i < P.length; i++) {
+        var q = P[i];
+        q.y -= q.v * dt / 1000;
+        q.x += Math.sin(now / 900 + q.ph) * q.sw * dpr * dt / 16;
+        if (q.y < -12 * dpr) { P[i] = spawn(false); continue; }
+        var fade = Math.max(0, Math.min(1, q.y / (H * 0.45)));
+        var a = q.a * fade * (0.7 + 0.3 * Math.sin(now / 220 + q.ph));
+        ctx.fillStyle = 'rgba(' + q.c + ',' + (a * 0.16).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(q.x, q.y, q.r * 4, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = 'rgba(' + q.c + ',' + a.toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 6.2832); ctx.fill();
+      }
+    }
+
+    function cleanup() {
+      over = true;
+      window.removeEventListener('resize', resize);
+      el.remove();
+      root.classList.remove('hl-on');
+      document.dispatchEvent(new CustomEvent('halloween-loader:done'));
+    }
+
+    function finish() {
+      ending = true;
+      setMsg('Happy Halloween');
+      el.classList.add('hl-done');
+      setTimeout(function () { el.classList.add('hl-exit'); }, PRE);
+      setTimeout(cleanup, PRE + EXIT + 60);
+    }
+
+    skip.addEventListener('click', function () {
+      t0 = performance.now() - MIN;
+      loaded = true;
+    });
+
+    function frame(now) {
+      if (over) return;
+      var dt = Math.max(0, Math.min(now - last, 64));
+      last = now;
+      if (!ending) {
+        var t = Math.max(0, now - t0);
+        var x = Math.min(t / MIN, 1);
+        var cap = (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2) * 100;
+        var goal = Math.min(cap, (loaded || t > MAX) ? 100 : 90);
+        p += (goal - p) * (1 - Math.exp(-dt / 140));
+        if (p > 99.6) p = 100;
+        render(p);
+        if (p >= 100) finish();
+      }
+      if (ctx) embers(now, dt);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+</script>
