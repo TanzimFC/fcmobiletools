@@ -234,12 +234,14 @@ export const FOOTBALL_CENTRE_CONTENT = {
   },
   "captainTracker": {
     "enabled": true,
+    "status": "complete",
+    "votingOpen": false,
     "matchday": 7,
-    "label": "PREMIER LEAGUE · MATCHDAY 7",
-    "title": "Captain OVR Tracker",
-    "subtitle": "Five performance objectives stand between each captain and a potential 121 OVR card. Track the route, compare the risk and follow confirmed results as the matches are played.",
+    "label": "CAPTAIN TRACKER · MATCHDAY 7 COMPLETE",
+    "title": "Capped Legends · Final Results",
+    "subtitle": "Matchday 7 is complete. All five tracked fixtures are final and every objective is settled. Lewis Dunk leads the finished tracker at 119 OVR after Brighton’s 5–0 win over Crystal Palace.",
     "baseOvr": 116,
-    "updatedLabel": "Results updated · 18 Oct 2026",
+    "updatedLabel": "Final results · 18 Oct 2026",
     "tasks": [
       {
         "id": "minutes",
@@ -277,7 +279,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/James_256_fc_25_download_1.png",
         "baseOvr": 116,
         "currentOvr": 118,
-        "availability": "Monitor",
+        "availability": "Did not play · match complete",
         "probability": {
           "minutes": 72,
           "win": 44,
@@ -324,7 +326,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441774/Bruno_Fernandes_256_fc_25_download.png",
         "baseOvr": 116,
         "currentOvr": 116,
-        "availability": "Played",
+        "availability": "Played · final",
         "probability": {
           "minutes": 82,
           "win": 30,
@@ -371,7 +373,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/van_Dijk_256_fc_25_download.png",
         "baseOvr": 116,
         "currentOvr": 118,
-        "availability": "Available",
+        "availability": "Played · final",
         "probability": {
           "minutes": 86,
           "win": 38,
@@ -418,7 +420,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/Dunk_256_fc_25_download_1.png",
         "baseOvr": 116,
         "currentOvr": 119,
-        "availability": "Played",
+        "availability": "Played · final",
         "probability": {
           "minutes": 70,
           "win": 54,
@@ -465,7 +467,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/McGinn_256_fc_25_download.png",
         "baseOvr": 116,
         "currentOvr": 118,
-        "availability": "Available",
+        "availability": "Played · final",
         "probability": {
           "minutes": 74,
           "win": 30,
@@ -512,7 +514,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441774/Ampadu_256_fc_25_download.png",
         "baseOvr": 116,
         "currentOvr": 116,
-        "availability": "Played",
+        "availability": "Played · final",
         "probability": {
           "minutes": 88,
           "win": 48,
