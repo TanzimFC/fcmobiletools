@@ -239,7 +239,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "title": "Captain OVR Tracker",
     "subtitle": "Five performance objectives stand between each captain and a potential 121 OVR card. Track the route, compare the risk and follow confirmed results as the matches are played.",
     "baseOvr": 116,
-    "updatedLabel": "Results updated · 17 Oct 2026",
+    "updatedLabel": "Results updated · 18 Oct 2026",
     "tasks": [
       {
         "id": "minutes",
@@ -324,7 +324,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441774/Bruno_Fernandes_256_fc_25_download.png",
         "baseOvr": 116,
         "currentOvr": 116,
-        "availability": "Watch fitness",
+        "availability": "Played",
         "probability": {
           "minutes": 82,
           "win": 30,
@@ -346,20 +346,20 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "setPiece": false,
           "threeContrib": false
         },
-        "note": "Best attacking route. Bruno has 3 goals and 1 assist in five Premier League starts, plus a free-kick goal and 23 corners taken. Fitness is the main watch.",
+        "note": "Played 90 minutes but was booked in the 17th minute, so the minutes objective failed. Manchester United drew 1-1 with Leeds; no win, clean sheet, set-piece goal contribution or three goal contributions.",
         "result": {
-          "minutes": "pending",
-          "win": "pending",
-          "cleanSheet": "pending",
-          "setPiece": "pending",
-          "threeContrib": "pending"
+          "minutes": "failed",
+          "win": "failed",
+          "cleanSheet": "failed",
+          "setPiece": "failed",
+          "threeContrib": "failed"
         },
         "failed": {
-          "minutes": false,
-          "win": false,
-          "cleanSheet": false,
-          "setPiece": false,
-          "threeContrib": false
+          "minutes": true,
+          "win": true,
+          "cleanSheet": true,
+          "setPiece": true,
+          "threeContrib": true
         }
       },
       {
@@ -417,8 +417,8 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "fixture": "Brighton vs Crystal Palace",
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441775/Dunk_256_fc_25_download_1.png",
         "baseOvr": 116,
-        "currentOvr": 116,
-        "availability": "Doubtful",
+        "currentOvr": 119,
+        "availability": "Played",
         "probability": {
           "minutes": 70,
           "win": 54,
@@ -434,26 +434,26 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "threeContrib": "very-low"
         },
         "completed": {
-          "minutes": false,
-          "win": false,
-          "cleanSheet": false,
+          "minutes": true,
+          "win": true,
+          "cleanSheet": true,
           "setPiece": false,
           "threeContrib": false
         },
-        "note": "Brighton's defensive profile makes the win and clean-sheet tasks attractive, and Dunk already has a league goal. His neck injury is the big problem.",
+        "note": "Started and played about 90 minutes without a booking. Brighton beat Crystal Palace 5-0 and kept a clean sheet. No set-piece goal contribution or three goal contributions were recorded.",
         "result": {
-          "minutes": "pending",
-          "win": "pending",
-          "cleanSheet": "pending",
-          "setPiece": "pending",
-          "threeContrib": "pending"
+          "minutes": "complete",
+          "win": "complete",
+          "cleanSheet": "complete",
+          "setPiece": "failed",
+          "threeContrib": "failed"
         },
         "failed": {
           "minutes": false,
           "win": false,
           "cleanSheet": false,
-          "setPiece": false,
-          "threeContrib": false
+          "setPiece": true,
+          "threeContrib": true
         }
       },
       {
@@ -512,7 +512,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "image": "https://res.cloudinary.com/b0qikv7n/image/upload/v1791441774/Ampadu_256_fc_25_download.png",
         "baseOvr": 116,
         "currentOvr": 116,
-        "availability": "Available",
+        "availability": "Played",
         "probability": {
           "minutes": 88,
           "win": 48,
@@ -534,20 +534,20 @@ export const FOOTBALL_CENTRE_CONTENT = {
           "setPiece": false,
           "threeContrib": false
         },
-        "note": "Excellent 60-minute candidate: he has played every available Premier League minute for Leeds. The set-piece and 3 G/A tasks are the real wall.",
+        "note": "Played over 90 minutes but was booked late, so the minutes objective failed. Leeds drew 1-1 with Manchester United; no win, clean sheet, set-piece goal contribution or three goal contributions.",
         "result": {
-          "minutes": "pending",
-          "win": "pending",
-          "cleanSheet": "pending",
-          "setPiece": "pending",
-          "threeContrib": "pending"
+          "minutes": "failed",
+          "win": "failed",
+          "cleanSheet": "failed",
+          "setPiece": "failed",
+          "threeContrib": "failed"
         },
         "failed": {
-          "minutes": false,
-          "win": false,
-          "cleanSheet": false,
-          "setPiece": false,
-          "threeContrib": false
+          "minutes": true,
+          "win": true,
+          "cleanSheet": true,
+          "setPiece": true,
+          "threeContrib": true
         }
       }
     ],
@@ -593,26 +593,26 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "home": "Leeds United",
         "away": "Manchester United",
         "kickoffUtc": "2026-10-18T13:00:00.000Z",
-        "status": "scheduled",
+        "status": "final",
         "score": {
-          "home": null,
-          "away": null
+          "home": 1,
+          "away": 1
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-18T17:15:00.000Z"
       },
       {
         "id": "brighton-palace",
         "home": "Brighton",
         "away": "Crystal Palace",
         "kickoffUtc": "2026-10-18T13:00:00.000Z",
-        "status": "scheduled",
+        "status": "final",
         "score": {
-          "home": null,
-          "away": null
+          "home": 5,
+          "away": 0
         },
-        "updatedAt": null
+        "updatedAt": "2026-10-18T17:15:00.000Z"
       }
     ],
-    "lastUpdated": "2026-10-17T23:59:00.000Z"
+    "lastUpdated": "2026-10-18T17:15:00.000Z"
   }
 };
