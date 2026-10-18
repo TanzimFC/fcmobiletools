@@ -81,11 +81,7 @@ const matchStatus = (match) => {
   return 'RESULT PENDING';
 };
 
-const ranked = [...players].sort((a, b) =>
-  Number(b.currentOvr) - Number(a.currentOvr) ||
-  b.confirmed - a.confirmed ||
-  String(a.name).localeCompare(String(b.name))
-);
+const ranked = [...players].sort((a, b) => Number(b.projected) - Number(a.projected) || b.confirmed - a.confirmed || String(a.name).localeCompare(String(b.name)));
 const pick = ranked[0] || players.find((p) => p.id === 'bruno-fernandes') || players[0];
 const max121 = Math.max(0.5, ...ranked.map((p) => p.chance121));
 const maxTask = Math.max(
@@ -128,7 +124,7 @@ const barPoints = (values, width = 220, height = 64) => {
 
 <BaseLayout
   title="Capped Legends · Final Matchday 7 Results"
-  description="Final Capped Legends captain OVR results for Premier League Matchday 7. All tracked fixtures are complete, with objective-by-objective outcomes for six captains."
+  description="Final Matchday 7 Capped Legends results, captain OVR ratings and completed objectives for all six tracked captains."
 >
   <main class="ct" data-captain-tracker>
     <div class="ct-ambient" aria-hidden="true"><i></i><i></i></div>
@@ -140,12 +136,12 @@ const barPoints = (values, width = 220, height = 64) => {
       <span class="ct-hero-numeral" aria-hidden="true">{ceiling}</span>
       <div class="ct-hero-copy">
         <span class="ct-kicker"><i></i>{tracker.label || 'Premier League · Matchday 7'}</span>
-        <h1>Captain OVR Tracker</h1>
+        <h1>Capped Legends: Final Results</h1>
         <p>
-          {tracker.subtitle || "Six captains. Five objectives. All tracked fixtures finished. Every result is in, and the final OVR table is settled."}
+          {tracker.subtitle || 'Matchday 7 is complete. All tracked fixtures are final and every captain objective is settled.'}
         </p>
         <div class="ct-hero-meta">
-          <span>{tracker.updatedLabel || ('Analysis baseline · ' + analysis.updatedLabel)}</span>
+          <span>Updated {analysis.updatedLabel}</span>
           <span>Final objective results</span>
           <span>Matchday complete</span>
           <span>Ranked by final OVR</span>
@@ -170,14 +166,14 @@ const barPoints = (values, width = 220, height = 64) => {
     {pick && (
       <section class="ct-verdict" aria-label="Matchday standout">
         <div class="ct-verdict-copy">
-          <span>Matchday standout · +{pick.currentOvr - baseOvr} OVR</span>
-          <h2>{pick.name}</h2>
-          <p>{pick.note}</p>
+          <span>Matchday standout · +{pick.projected - baseOvr} OVR</span>
+          <h2>{pick.fullName || pick.name}</h2>
+          <p>{tracker.subtitle || "The final objectives are confirmed for all six captains."}</p>
         </div>
         <div class="ct-verdict-stat">
           <small>Final tracker rating</small>
-          <strong>{pick.currentOvr} OVR</strong>
-          <em>{pick.confirmed} of {tasks.length} objectives completed</em>
+          <strong>{pick.projected} OVR</strong>
+          <em>{pick.confirmed} of {tasks.length} objectives complete</em>
         </div>
       </section>
     )}
@@ -185,21 +181,21 @@ const barPoints = (values, width = 220, height = 64) => {
     <section class="ct-board" aria-label="Final OVR ranking">
       <header>
         <h2>Final OVR table</h2>
-        <p>All six captain ratings are locked for Matchday 7. Each completed objective adds +1 OVR to the 116 base card.</p>
+        <p>Every result is settled. Each completed objective adds one OVR to the 116 base card.</p>
       </header>
       <ol class="ct-rank">
         {ranked.map((player, rank) => (
-          <li class:list={[rank === 0 ? 'is-lead' : '']} style={"--delay:" + rank * 70 + "ms"} data-rank-player={player.id}>
+          <li class:list={[rank === 0 ? 'is-lead' : '']} style={"--delay:" + rank * 70 + "ms"}>
             <b>#{String(rank + 1).padStart(2, '0')}</b>
             <img src={player.image} alt="" />
             <div>
-              <strong>{player.name}</strong>
+              <strong>{player.fullName || player.name}</strong>
               <span>{player.club} · {player.confirmed}/{tasks.length} objectives complete</span>
             </div>
             <div class="ct-rank-bar" aria-hidden="true">
               <i style={"width:" + (player.confirmed / tasks.length * 100) + "%"}></i>
             </div>
-            <em data-rank-ovr>{player.currentOvr} OVR</em>
+            <em>{player.projected} OVR</em>
           </li>
         ))}
       </ol>
@@ -293,8 +289,7 @@ const barPoints = (values, width = 220, height = 64) => {
                 <span>{player.flag} {player.club}</span>
                 <h2>{player.fullName || player.name}</h2>
                 <p>{player.fixture}</p>
-                <em data-current-ovr>{player.currentOvr} OVR · {player.confirmed}/{tasks.length} objectives complete</em>
-                <p class="ct-player-note">{player.note}</p>
+                <em>{player.projected} OVR · {player.confirmed}/{tasks.length} objectives complete</em>
                 <div class="ct-progress-chip">
                   <span class="ct-pips" aria-hidden="true">
                     {tasks.map((task) => (
@@ -306,13 +301,15 @@ const barPoints = (values, width = 220, height = 64) => {
                   </span>
                   <small data-confirmed><b>{player.confirmed}</b> of {tasks.length} objectives confirmed</small>
                 </div>
+                </button>
               </div>
 
-              <div class="ct-tasks" aria-label="Captain objectives">
+              <div class="ct-tasks" aria-label="Captain conditions">
                 {tasks.map((task, taskIndex) => {
                   const result = player.result[task.id];
                   const done = result === 'complete';
                   const miss = result === 'failed';
+                  const chance = Number(player.probability[task.id] || 0);
                   return (
                     <div class:list={['ct-task', done ? 'is-complete' : '', miss ? 'is-failed' : '']} data-task={task.id}>
                       <div class="ct-task-top">
@@ -326,7 +323,7 @@ const barPoints = (values, width = 220, height = 64) => {
                 })}
               </div>
 
-
+              )}
             </div>
           </article>
         );
@@ -452,7 +449,7 @@ const barPoints = (values, width = 220, height = 64) => {
       (source.players || []).forEach(updateCard);
       (source.matches || []).forEach(updateMatch);
 
-      const revealTargets = '.ct-card, .ct-rank li, .ct-verdict, .ct-heat, .ct-board, .ct-fixtures article';
+      const revealTargets = '.ct-card, .ct-rank li, .ct-verdict, .ct-votes, .ct-heat, .ct-board, .ct-fixtures article, .ct-reads article, .ct-note';
 
       const countUp = (el) => {
         if (!el || el.dataset.counted) return;
@@ -509,7 +506,7 @@ const barPoints = (values, width = 220, height = 64) => {
       const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
       if (finePointer) {
         // Cursor spotlight on panels
-        const spotSelector = '.ct-hero, .ct-verdict, .ct-board, .ct-heat, .ct-card, .ct-fixtures article';
+        const spotSelector = '.ct-hero, .ct-votes, .ct-verdict, .ct-board, .ct-heat, .ct-card, .ct-fixtures article, .ct-reads article, .ct-vote-tile';
         root.addEventListener('pointermove', (event) => {
           const panel = event.target instanceof Element ? event.target.closest(spotSelector) : null;
           if (!panel) return;
@@ -661,8 +658,8 @@ html, body { background:#050d14; }
 }
 
 /* ---------- Shared panel surface --------------------------------------- */
-.ct-hero, .ct-verdict, .ct-board, .ct-heat, .ct-card,
-.ct-fixtures article article {
+.ct-hero, .ct-votes, .ct-verdict, .ct-board, .ct-heat, .ct-card,
+.ct-fixtures article, .ct-reads article {
   position:relative;
   overflow:hidden;
   border-radius:26px;
@@ -670,8 +667,8 @@ html, body { background:#050d14; }
   box-shadow:var(--lift);
 }
 /* gradient hairline border */
-.ct-hero::after, .ct-verdict::after, .ct-board::after, .ct-heat::after,
-.ct-card::after, .ct-fixtures article::after article::after {
+.ct-hero::after, .ct-votes::after, .ct-verdict::after, .ct-board::after, .ct-heat::after,
+.ct-card::after, .ct-fixtures article::after, .ct-reads article::after {
   content:'';
   position:absolute; inset:0;
   border-radius:inherit;
@@ -685,8 +682,8 @@ html, body { background:#050d14; }
   transition:opacity .3s ease;
 }
 /* cursor spotlight */
-.ct-hero::before, .ct-verdict::before, .ct-board::before, .ct-heat::before,
-.ct-card::before, .ct-fixtures article::before article::before {
+.ct-hero::before, .ct-votes::before, .ct-verdict::before, .ct-board::before, .ct-heat::before,
+.ct-card::before, .ct-fixtures article::before, .ct-reads article::before {
   content:'';
   position:absolute; inset:0;
   border-radius:inherit;
@@ -696,26 +693,26 @@ html, body { background:#050d14; }
   pointer-events:none;
   z-index:1;
 }
-.ct-hero:hover::before, .ct-verdict:hover::before, .ct-board:hover::before,
+.ct-hero:hover::before, .ct-votes:hover::before, .ct-verdict:hover::before, .ct-board:hover::before,
 .ct-heat:hover::before, .ct-card:hover::before, .ct-fixtures article:hover::before,
- article:hover::before { opacity:1; }
-.ct-verdict > *, .ct-board > *, .ct-heat > * article > *,
+.ct-reads article:hover::before { opacity:1; }
+.ct-votes > *, .ct-verdict > *, .ct-board > *, .ct-heat > *, .ct-reads article > *,
 .ct-fixtures article > * { position:relative; z-index:2; }
 
 /* ---------- Reveal on scroll (only armed once JS is running) ----------- */
-.ct.is-ready .ct-verdict, .ct.is-ready .ct-board, .ct.is-ready .ct-heat,
-.ct.is-ready .ct-card, .ct.is-ready .ct-fixtures article, .ct.is-ready  article,
-.ct.is-ready  {
+.ct.is-ready .ct-votes, .ct.is-ready .ct-verdict, .ct.is-ready .ct-board, .ct.is-ready .ct-heat,
+.ct.is-ready .ct-card, .ct.is-ready .ct-fixtures article, .ct.is-ready .ct-reads article,
+.ct.is-ready .ct-note {
   opacity:0;
   transform:translateY(18px) scale(.995);
   transition:opacity .8s var(--ease),transform .8s var(--ease);
 }
-.ct.is-ready .ct-verdict.is-visible, .ct.is-ready .ct-board.is-visible,
+.ct.is-ready .ct-votes.is-visible, .ct.is-ready .ct-verdict.is-visible, .ct.is-ready .ct-board.is-visible,
 .ct.is-ready .ct-heat.is-visible, .ct.is-ready .ct-card.is-visible, .ct.is-ready .ct-fixtures article.is-visible,
-.ct.is-ready  article.is-visible, .ct.is-ready .is-visible { opacity:1; transform:none; }
+.ct.is-ready .ct-reads article.is-visible, .ct.is-ready .ct-note.is-visible { opacity:1; transform:none; }
 .ct.is-ready .ct-card.is-visible { transition-delay:calc(var(--delay,0ms) * .35); }
-.ct-fixtures article:nth-child(2) article:nth-child(2) { transition-delay:.07s !important; }
-.ct-fixtures article:nth-child(3) article:nth-child(3) { transition-delay:.14s !important; }
+.ct-fixtures article:nth-child(2), .ct-reads article:nth-child(2) { transition-delay:.07s !important; }
+.ct-fixtures article:nth-child(3), .ct-reads article:nth-child(3) { transition-delay:.14s !important; }
 .ct-fixtures article:nth-child(4) { transition-delay:.21s !important; }
 .ct-fixtures article:nth-child(5) { transition-delay:.28s !important; }
 
@@ -731,12 +728,12 @@ html, body { background:#050d14; }
   content:''; width:18px; height:1px;
   background:linear-gradient(90deg,transparent,var(--cyan));
 }
-.ct-board h2, .ct-heat h2 {
+.ct-votes h2, .ct-board h2, .ct-heat h2 {
   margin:0 0 8px;
   font:700 clamp(24px,2.6vw,30px)/1.05 "Space Grotesk",Inter,sans-serif;
   letter-spacing:-.045em;
 }
-.ct-board p, .ct-heat p {
+.ct-board p, .ct-heat p, .ct-vote-head p {
   margin:0; max-width:68ch;
   color:var(--muted);
   font:500 14px/1.6 Inter,sans-serif;
@@ -1034,6 +1031,7 @@ html, body { background:#050d14; }
 .ct-result-cell.is-pending { border:1px dashed rgba(255,255,255,.09); background:transparent; color:transparent; }
 .ct-result-cell.is-done { box-shadow:0 0 22px -6px rgba(78,224,160,.55); animation:ctPop .5s var(--ease) both; }
 .ct-result-cell.is-miss { animation:ctPop .5s var(--ease) both; }
+.ct-model-board { margin-top:18px; }
 
 /* ==========================================================================
    Fixtures
@@ -1215,13 +1213,13 @@ html, body { background:#050d14; }
 /* ==========================================================================
    Reads + footer
    ========================================================================== */
- { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:20px; }
- article { padding:26px; border-radius:24px; }
- h3 { margin:0 0 10px; font:700 20px/1.15 "Space Grotesk",Inter,sans-serif; letter-spacing:-.04em; }
- p { margin:0; color:#98aebb; font:500 14px/1.7 Inter,sans-serif; }
- { margin-top:26px; padding:24px 4px 0; border-top:1px solid var(--line); color:#6f8898; font:500 13px/1.7 Inter,sans-serif; }
- p { max-width:90ch; margin:0 0 8px; }
- strong { color:#a5b9c6; }
+.ct-reads { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:20px; }
+.ct-reads article { padding:26px; border-radius:24px; }
+.ct-reads h3 { margin:0 0 10px; font:700 20px/1.15 "Space Grotesk",Inter,sans-serif; letter-spacing:-.04em; }
+.ct-reads p { margin:0; color:#98aebb; font:500 14px/1.7 Inter,sans-serif; }
+.ct-note { margin-top:26px; padding:24px 4px 0; border-top:1px solid var(--line); color:#6f8898; font:500 13px/1.7 Inter,sans-serif; }
+.ct-note p { max-width:90ch; margin:0 0 8px; }
+.ct-note strong { color:#a5b9c6; }
 
 /* ==========================================================================
    Keyframes
@@ -1266,13 +1264,14 @@ html, body { background:#050d14; }
   .ct-verdict, .ct-card { grid-template-columns:1fr; }
   .ct-verdict-stat { text-align:left; }
   .ct-fixtures { grid-template-columns:repeat(2,minmax(0,1fr)); }
-   { grid-template-columns:1fr 1fr; }
-    .ct-tasks { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .ct-reads { grid-template-columns:1fr 1fr; }
+  .ct-vote-grid { grid-template-columns:1fr 1fr; }
+  .ct-tasks { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .ct-art { min-height:400px; border-right:0; border-bottom:1px solid var(--line); }
 }
 @media (max-width:720px) {
   .ct { width:min(100% - 20px,1180px); padding-bottom:110px; }
-  .ct-hero, .ct-board, .ct-heat { border-radius:24px; }
+  .ct-hero, .ct-votes, .ct-board, .ct-heat { border-radius:24px; }
   .ct-hero { padding:24px 20px; }
   .ct-ladder li span { display:none; }
   .ct-ladder-title { margin-bottom:12px; }
@@ -1280,7 +1279,7 @@ html, body { background:#050d14; }
   .ct-vote-total { text-align:left; }
   .ct-rank li { grid-template-columns:34px 40px minmax(0,1fr) 62px; gap:10px; padding:10px 12px; }
   .ct-rank-bar { display:none; }
-  .ct-fixtures, .ct-tasks, .ct-stats { grid-template-columns:1fr; }
+  .ct-fixtures, .ct-reads, .ct-tasks, .ct-stats, .ct-vote-grid { grid-template-columns:1fr; }
   .ct-bar { grid-template-columns:1fr auto; }
   .ct-bar > div { grid-column:1 / -1; order:3; }
   .ct-art { min-height:360px; }
@@ -1289,9 +1288,9 @@ html, body { background:#050d14; }
 
 @media (prefers-reduced-motion:reduce) {
   .ct *, .ct *::before, .ct *::after { animation:none !important; transition:none !important; }
-  .ct.is-ready .ct-verdict, .ct.is-ready .ct-board, .ct.is-ready .ct-heat,
-  .ct.is-ready .ct-card, .ct.is-ready .ct-fixtures article, .ct.is-ready  article,
-  .ct.is-ready .ct.is-ready .ct-rank li { opacity:1; transform:none; }
+  .ct.is-ready .ct-votes, .ct.is-ready .ct-verdict, .ct.is-ready .ct-board, .ct.is-ready .ct-heat,
+  .ct.is-ready .ct-card, .ct.is-ready .ct-fixtures article, .ct.is-ready .ct-reads article,
+  .ct.is-ready .ct-note, .ct.is-ready .ct-rank li { opacity:1; transform:none; }
   .ct.is-ready .ct-card:not(.is-visible) .ct-bar i, .ct.is-ready .ct-rank li:not(.is-visible) .ct-rank-bar i { transform:none; }
   .ct-slab { transform:none !important; }
 }
