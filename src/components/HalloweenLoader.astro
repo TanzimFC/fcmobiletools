@@ -9,15 +9,12 @@
  *     ...
  *
  * Behaviour
- * - Shows once per browser session, so people moving between pages never see it twice.
+ * - Enabled by default; shows once per browser session, so page-to-page navigation stays quick.
  * - Runs about 2.4 seconds, then opens like an eye from the centre (about 1.2s with the exit).
  * - Hard cap of 4.5 seconds, so a slow connection can never trap anyone behind it.
- * - Switches itself off after 2 Nov 2026 (change END_DATE in the first script).
- * - Add ?hl=1 to any URL to force it for testing.
  * - Fires a "halloween-loader:done" event on document when it finishes.
  * - Respects prefers-reduced-motion and works with JavaScript off.
  */
-const brand = 'FCMOBILETOOLS'.split('');
 const bats = [
   { y: '12vh', s: '38px', d: '8.5s', dl: '0.2s' },
   { y: '24vh', s: '26px', d: '10.5s', dl: '1.1s' },
@@ -29,15 +26,14 @@ const bats = [
 
 <script is:inline>
   (function () {
+    var d = document.documentElement;
     try {
-      var END_DATE = '2026-11-03T00:00:00Z';
-      var d = document.documentElement;
-      var force = /[?&]hl=1(&|$)/.test(location.search);
-      if (!force && Date.now() > Date.parse(END_DATE)) return;
-      if (!force && sessionStorage.getItem('fcmt_hl')) return;
+      if (sessionStorage.getItem('fcmt_hl')) return;
       sessionStorage.setItem('fcmt_hl', '1');
-      d.classList.add('hl-on');
-    } catch (e) {}
+    } catch (e) {
+      // Storage can be blocked by privacy settings; still show the loader on this page.
+    }
+    d.classList.add('hl-on');
   })();
 </script>
 
@@ -135,8 +131,8 @@ const bats = [
       </svg>
     </div>
 
-    <div class="hl-brand" aria-hidden="true">
-      {brand.map((c, i) => <span style={`--i:${i}`}>{c}</span>)}
+    <div class="hl-brand">
+      <img src="/assets/images/logo.png" alt="FCMOBILETOOLS" width="1774" height="887" decoding="async" />
     </div>
 
     <div class="hl-meter" aria-hidden="true">
@@ -353,24 +349,27 @@ const bats = [
     80% { opacity: 1; }
   }
 
-  /* Wordmark */
+  /* Official site logo */
   #hl .hl-brand {
     display: flex;
-    font-size: clamp(22px, 4.6vmin, 42px);
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    line-height: 1;
-    padding-left: 0.12em;
-    text-shadow: 0 0 28px rgba(255, 140, 40, 0.35);
+    align-items: center;
+    justify-content: center;
+    width: min(300px, 76vw);
+    min-height: 54px;
   }
-  #hl .hl-brand span {
+  #hl .hl-brand img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
     opacity: 0;
-    transform: translateY(14px);
-    filter: blur(6px);
-    animation: hl-letter 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    animation-delay: calc(0.55s + var(--i) * 42ms);
+    transform: translateY(10px);
+    filter: drop-shadow(0 0 24px rgba(255, 140, 40, 0.28));
+    animation: hl-brand-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.55s forwards;
   }
-  @keyframes hl-letter { to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+  @keyframes hl-brand-in {
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   /* Meter */
   #hl .hl-meter {
