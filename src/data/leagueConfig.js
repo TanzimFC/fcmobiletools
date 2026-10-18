@@ -36,6 +36,14 @@ export const JOIN_KEYS = Object.keys(JOIN_METHODS);
 export const FREQ = { daily: 'Daily', most_days: 'Most days', several_weekly: '3–4 days a week', weekly: 'Weekly', occasional: 'Occasional' };
 export const COMMIT = { casual: 'Casual', regular: 'Regular', competitive: 'Competitive' };
 
+// Image retention. The Worker decides this from the upload "purpose", never from the browser.
+//   application → applicant team screenshots, deleted by the image host after 7 days
+//   crest / gallery / avatar → kept for the life of the listing or account
+export const APPLICATION_SHOT_DAYS = 7;
+export const GALLERY_MAX = 4;
+export const TAGLINE_MAX = 100;
+export const NOTE_MAX = 200;
+
 export const RULES_VERSION = '2026-10-17';
 export const LISTING_EXPIRY_DAYS = 30;
 export const EXPIRY_WARNING_DAYS = 5;

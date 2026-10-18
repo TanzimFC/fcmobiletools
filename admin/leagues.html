@@ -187,7 +187,17 @@ html body .toast{border-radius:16px;font-size:13.5px}
   html body .top{height:72px}
 }
 @media(prefers-reduced-motion:reduce){html body *{animation-duration:.001ms!important;transition-duration:.001ms!important}}
-</style><!--premium-admin:end--></head>
+</style><!--premium-admin:end-->
+<style id="ax-media-css">
+.ax-media{margin:4px 0 14px;padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015))}
+.ax-media.empty{padding:10px 14px;color:#8fa3b3}
+.ax-media-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}.ax-media-head b{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#cfe0ec}.ax-media-head small{color:#8fa3b3;flex:1}.ax-warn{color:#ffd09a;font-weight:700}
+.ax-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.ax-tile{margin:0;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:#07101a;transition:transform .25s,border-color .25s}.ax-tile:hover{transform:translateY(-2px);border-color:rgba(76,201,255,.5)}
+.ax-tile a{display:block;aspect-ratio:16/10;background:#050b12}.ax-tile img{width:100%;height:100%;object-fit:cover;display:block}
+.ax-tile figcaption{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;font-size:12px;color:#b9cddb}
+</style>
+</head>
 <body class="fl">
 <div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <header class="top"><div class="top-in"><a class="logo" href="/"><span class="mark">FC</span><span>Leagues Admin</span></a>
@@ -451,6 +461,7 @@ function listingCard(listing) {
     actions += '<button class="btn sm" data-f="featured" data-id="' + esc(listing.id) + '" data-value="' + String(!listing.featured) + '">' + (listing.featured ? 'Unfeature' : 'Feature 7 days') + '</button>';
     actions += '<button class="btn sm" data-note="' + esc(listing.id) + '" data-current-note="' + esc(listing.adminNote || '') + '">Internal note</button>';
   }
+  const media = mediaHtml(listing);
   return '<article class="glass acard">' +
     '<div class="r1">' + mono(listing.name, listing.logoUrl) +
       '<div class="grow"><b style="font-size:17px">' + esc(listing.name || 'Untitled league') + '</b>' +
@@ -469,6 +480,7 @@ function listingCard(listing) {
       '<div><small>Listing flags</small><b>' + (listing.verified ? 'Verified club' : 'Not verified') + ' · ' + (listing.reviewedAt ? 'Reviewed' : 'Not reviewed') + (listing.isSample ? ' · SAMPLE' : '') + (listing.division ? ' · ' + esc(listing.division) : '') + '</b></div>' +
       '<div><small>Moderation</small><b>' + esc(reportText) + '</b></div>' +
     '</div>' +
+    media +
     (listing.description ? '<p style="font-size:14px;color:#c9d2e0">' + esc(listing.description) + '</p>' : '') +
     (listing.moderationNote ? '<p class="hint">Latest moderation note: ' + esc(listing.moderationNote) + '</p>' : '') +
     '<div class="acts">' + actions + '</div></article>';
@@ -522,8 +534,42 @@ async function list() {
     $$('[data-a]', box).forEach((button) => button.addEventListener('click', () => act(button)));
     $$('[data-f]', box).forEach((button) => button.addEventListener('click', () => flagAct(button)));
     $$('[data-note]', box).forEach((button) => button.addEventListener('click', () => internalNoteAct(button)));
+    $$('[data-media]', box).forEach((button) => button.addEventListener('click', () => mediaAct(button)));
   } catch (error) {
     box.innerHTML = '<div class="empty"><h3>Could not load listings</h3>' + esc(error.message) + '</div>';
+  }
+}
+
+// Images a league owner uploaded. Admins can see them and remove anything inappropriate.
+// Removal is logged in the listing's moderation history by the server.
+function imgOk(url) { return /^https:\/\/i\.ibb\.co(?:\.com)?\//i.test(String(url || '')) ? url : ''; }
+function mediaHtml(listing) {
+  const crest = imgOk(listing.logoUrl);
+  const shots = (Array.isArray(listing.galleryUrls) ? listing.galleryUrls : []).map(imgOk).filter(Boolean);
+  if (!crest && !shots.length) return '<div class="ax-media empty"><small>No images uploaded.</small></div>';
+  const tile = (url, label, attrs) => '<figure class="ax-tile"><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" title="Open full size"><img src="' + esc(url) + '" alt="' + esc(label) + '" loading="lazy" referrerpolicy="no-referrer"></a>' +
+    '<figcaption><span>' + esc(label) + '</span><button class="btn danger sm" type="button" ' + attrs + '>Remove</button></figcaption></figure>';
+  const id = esc(listing.id);
+  return '<div class="ax-media"><div class="ax-media-head"><b>Images</b><small>' + (crest ? 'crest' : 'no crest') + ' · ' + shots.length + ' screenshot' + (shots.length === 1 ? '' : 's') +
+    (listing.reviewedAt ? '' : ' · <span class="ax-warn">not reviewed yet</span>') + '</small>' +
+    (shots.length > 1 ? '<button class="btn sm" type="button" data-media="gallery" data-index="all" data-id="' + id + '">Remove all screenshots</button>' : '') + '</div>' +
+    '<div class="ax-tiles">' + (crest ? tile(crest, 'Crest', 'data-media="crest" data-id="' + id + '"') : '') +
+    shots.map((u, i) => tile(u, 'Screenshot ' + (i + 1), 'data-media="gallery" data-index="' + i + '" data-id="' + id + '"')).join('') + '</div></div>';
+}
+
+async function mediaAct(button) {
+  const what = button.dataset.media === 'crest' ? 'the crest' : button.dataset.index === 'all' ? 'all league screenshots' : 'this screenshot';
+  if (!confirm('Remove ' + what + '? The league stays listed. The owner can upload a new one.')) return;
+  button.disabled = true;
+  try {
+    const body = { target: button.dataset.media };
+    if (button.dataset.media === 'gallery') body.index = button.dataset.index === 'all' ? 'all' : Number(button.dataset.index);
+    const result = await api('/api/admin/leagues/' + encodeURIComponent(button.dataset.id) + '/media', { method: 'POST', body: JSON.stringify(body) });
+    toast('Removed ' + (result.removed || 'image') + '.');
+    await list();
+  } catch (error) {
+    toast(error.message, 'bad');
+    button.disabled = false;
   }
 }
 
