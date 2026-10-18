@@ -8,7 +8,7 @@ import {
   decorateListings, loadPublicDirectory, loadSitemapSlugs, pickSpotlight as pickSpotlightIds, SLUG_RE
 } from './lib/leaguePublic.js';
 import {
-  DIVISION_KEYS, ACCENT_KEYS, JOIN_KEYS, RULES_VERSION, divisionOriginUrl, SITE_ORIGIN
+  DIVISION_KEYS, ACCENT_KEYS, JOIN_KEYS, RULES_VERSION, divisionOriginUrl, SITE_ORIGIN, GALLERY_MAX, APPLICATION_SHOT_DAYS
 } from './data/leagueConfig.js';
 
 const PROFILE_COLUMNS = [
@@ -49,6 +49,20 @@ function imageUrl(value) {
   } catch {
     return undefined;
   }
+}
+
+// League screenshots: permanent images from our own uploader, up to GALLERY_MAX.
+// undefined = "not provided, leave as is", null = invalid, array = the cleaned list.
+function galleryList(value) {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.length > GALLERY_MAX) return null;
+  const urls = [];
+  for (const raw of value) {
+    const u = imageUrl(raw);
+    if (!u) return null;
+    if (!urls.includes(u)) urls.push(u);
+  }
+  return urls;
 }
 
 function inviteUrl(value) {
@@ -151,7 +165,7 @@ function validateProfile(input) {
   };
 }
 
-function validateListing(input, premium) {
+function validateListing(input, premium, gallery = false) {
   const name = oneLine(input.name, 70);
   const pitch = oneLine(input.tagline ?? input.description, 100);
   const logo = imageUrl(input.logoUrl || '');
@@ -209,6 +223,11 @@ function validateListing(input, premium) {
     row.division = division;
     row.accent = accent;
     row.join_methods = joinMethods;
+  }
+  if (gallery) {
+    const shots = galleryList(input.galleryUrls);
+    if (shots === null) throw new Error('Upload your league screenshots again (up to ' + GALLERY_MAX + ').');
+    if (shots !== undefined) row.gallery_urls = shots;
   }
   return row;
 }
@@ -340,9 +359,10 @@ async function bootstrap(request, env, accountContext, supabaseRest, json) {
     ownListings,
     savedCount: savedIds.size,
     crewReady: Boolean(crewPack),
+    galleryReady: await supportsGallery(env, supabaseRest).catch(() => false),
     myCrew,
     ownerCrew,
-    myApplications: (myApps || []).map(a => ({ id: a.id, listingId: a.listing_id, status: a.status, createdAt: a.created_at })),
+    myApplications: (myApps || []).map(a => ({ id: a.id, listingId: a.listing_id, status: a.status, createdAt: a.created_at, statusChangedAt: a.status_changed_at || a.created_at })),
     newApplications,
     approvedOwner,
     canFindPlayers: approvedOwner,
@@ -389,6 +409,23 @@ async function supportsPremiumColumns(env, supabaseRest) {
   }
 }
 
+// Whether the database has the league screenshot column yet. Remembered per runtime for a minute.
+const galleryProbes = new WeakMap();
+async function supportsGallery(env, supabaseRest) {
+  const key = env && typeof env === 'object' ? env : galleryProbes;
+  const hit = galleryProbes.get(key);
+  if (hit && Date.now() - hit.at < 60000) return hit.ok;
+  let ok = false;
+  try {
+    await supabaseRest(env, 'league_listings?select=gallery_urls&limit=1');
+    ok = true;
+  } catch (error) {
+    if (!isMissingSchema(error)) throw error;
+  }
+  galleryProbes.set(key, { at: Date.now(), ok });
+  return ok;
+}
+
 async function createListing(request, env, authContext, supabaseRest, json, purge) {
   const blocked = requireVerified(authContext, json);
   if (blocked) return blocked;
@@ -403,9 +440,10 @@ async function createListing(request, env, authContext, supabaseRest, json, purg
   if (!premium) return json({ error: 'League listings are being upgraded. Please try again shortly.' }, 503);
   const input = await request.json().catch(() => ({}));
   if (input.acceptRules !== true) return json({ error: 'Agree to the league rules to list your league.' }, 400);
+  const gallery = await supportsGallery(env, supabaseRest).catch(() => false);
   let fields;
   try {
-    fields = validateListing(input, premium);
+    fields = validateListing(input, premium, gallery);
   } catch (error) {
     return json({ error: error?.message || 'Check your league listing.' }, 400);
   }
@@ -438,9 +476,9 @@ async function createListing(request, env, authContext, supabaseRest, json, purg
 }
 
 async function loadOwnListing(env, supabaseRest, id, accountId) {
-  const { rows, premium } = await readListings(env, supabaseRest,
+  const { rows, premium, gallery } = await readListings(env, supabaseRest,
     '&id=eq.' + encodeURIComponent(id) + '&owner_account_id=eq.' + encodeURIComponent(accountId) + '&limit=1');
-  return { listing: rows[0] || null, premium };
+  return { listing: rows[0] || null, premium, gallery: Boolean(gallery) };
 }
 
 async function updateListing(request, env, authContext, match, supabaseRest, json, purge) {
@@ -448,7 +486,7 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
   if (blocked) return blocked;
   const { account } = authContext;
   const id = match[1];
-  const { listing: old, premium } = await loadOwnListing(env, supabaseRest, id, account.id);
+  const { listing: old, premium, gallery } = await loadOwnListing(env, supabaseRest, id, account.id);
   if (!old) return json({ error: 'League listing not found.' }, 404);
   if (old.status === 'removed') return json({ error: 'This listing was removed. Create a new listing instead.' }, 403);
   const resubmitting = old.status === 'rejected';
@@ -476,8 +514,9 @@ async function updateListing(request, env, authContext, match, supabaseRest, jso
       activeHours: input.activeHours ?? old.active_hours,
       division: input.division ?? old.division,
       accent: input.accent ?? old.accent,
-      joinMethods: input.joinMethods ?? old.join_methods
-    }, premium);
+      joinMethods: input.joinMethods ?? old.join_methods,
+      galleryUrls: input.galleryUrls ?? old.gallery_urls
+    }, premium, gallery);
   } catch (error) {
     return json({ error: error?.message || 'Check your league listing.' }, 400);
   }
@@ -799,17 +838,27 @@ async function listApplications(request, env, authContext, match, supabaseRest, 
   const { account } = authContext;
   const { listing } = await loadOwnListing(env, supabaseRest, match[1], account.id);
   if (!listing) return json({ error: 'League listing not found.' }, 404);
-  const rows = await supabaseRest(env,
-    'league_applications?listing_id=eq.' + encodeURIComponent(listing.id) +
-    '&status=neq.withdrawn&select=id,applicant_account_id,status,message,screenshot_url,ovr,in_game_username,region_server,shared_uid,shared_discord,owner_note,created_at,status_changed_at' +
-    '&order=created_at.desc&limit=100').catch(() => []);
+  const base = 'id,applicant_account_id,status,message,screenshot_url,ovr,in_game_username,region_server,shared_uid,shared_discord,owner_note,created_at,status_changed_at';
+  const tail = '&order=created_at.desc&limit=100';
+  const where = 'league_applications?listing_id=eq.' + encodeURIComponent(listing.id) + '&status=neq.withdrawn&select=';
+  let rows;
+  try { rows = await supabaseRest(env, where + base + ',screenshot_at' + tail); }
+  catch (error) {
+    if (!isMissingSchema(error)) rows = [];
+    else rows = await supabaseRest(env, where + base + tail).catch(() => []);
+  }
   const ids = [...new Set((rows || []).map(r => r.applicant_account_id))];
   const accounts = ids.length ? await supabaseRest(env, 'accounts?select=id,username,display_name,avatar_url&id=in.' + inList(ids)).catch(() => []) : [];
   const accMap = new Map((accounts || []).map(a => [a.id, a]));
-  return json({ applications: (rows || []).map(r => {
+  const keepMs = APPLICATION_SHOT_DAYS * 864e5, now = Date.now();
+  return json({ screenshotDays: APPLICATION_SHOT_DAYS, applications: (rows || []).map(r => {
     const a = accMap.get(r.applicant_account_id) || {};
+    // Applicant screenshots are temporary. A link past its retention window is reported as gone instead of shown broken.
+    const uploaded = Date.parse(r.screenshot_at || r.created_at || '') || 0;
+    const expired = Boolean(r.screenshot_url) && Boolean(uploaded) && now >= uploaded + keepMs;
     return {
-      id: r.id, accountId: r.applicant_account_id, status: r.status, message: r.message || '', screenshotUrl: r.screenshot_url || null,
+      id: r.id, accountId: r.applicant_account_id, status: r.status, message: r.message || '', screenshotUrl: r.screenshot_url && !expired ? r.screenshot_url : null,
+      screenshotExpired: expired, screenshotAt: r.screenshot_at || r.created_at || null,
       ovr: Number(r.ovr || 0), inGameUsername: r.in_game_username || '', regionServer: r.region_server || '',
       uid: r.shared_uid || '', discord: r.shared_discord || '', ownerNote: r.owner_note || '',
       username: a.username || '', displayName: a.display_name || a.username || 'FC Mobile player', avatarUrl: a.avatar_url || null,
@@ -1368,6 +1417,42 @@ async function adminApi(request, env, url, authenticated, supabaseRest, json) {
       const result = await rpc(env, supabaseRest, 'server_league_admin_set_flags', args);
       if (!result?.ok) return adminRpcFailure(result, json, 'Listing flags could not be updated.');
       return json(result);
+    }
+
+    // Remove an inappropriate crest or league screenshot without touching the rest of the listing.
+    const media = path.match(new RegExp('^/api/admin/leagues/' + UUID_RE + '/media$', 'i'));
+    if (media && request.method === 'POST') {
+      const input = await request.json().catch(() => ({}));
+      const target = clean(input.target, 12);
+      if (!['crest', 'gallery'].includes(target)) return json({ error: 'Choose the crest or a league screenshot.' }, 400);
+      const { rows, gallery } = await readListings(env, supabaseRest, '&id=eq.' + encodeURIComponent(media[1]) + '&limit=1', { admin: true });
+      const row = rows[0];
+      if (!row) return json({ error: 'League listing not found.' }, 404);
+      const patch = { updated_at: nowIso() };
+      let what;
+      if (target === 'crest') {
+        if (!row.logo_url) return json({ error: 'This league has no crest.' }, 409);
+        patch.logo_url = null; what = 'crest';
+      } else {
+        if (!gallery) return json({ error: 'League screenshots are not enabled yet.' }, 409);
+        const list = Array.isArray(row.gallery_urls) ? row.gallery_urls : [];
+        if (!list.length) return json({ error: 'This league has no screenshots.' }, 409);
+        if (input.index === 'all') { patch.gallery_urls = []; what = 'all ' + list.length + ' screenshots'; }
+        else {
+          const i = intInRange(input.index, 0, list.length - 1);
+          if (i === null) return json({ error: 'Choose a valid screenshot.' }, 400);
+          patch.gallery_urls = list.filter((_, n) => n !== i); what = 'screenshot ' + (i + 1);
+        }
+      }
+      const saved = await supabaseRest(env, 'league_listings?id=eq.' + encodeURIComponent(media[1]), {
+        method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(patch)
+      });
+      if (!saved?.length) return json({ error: 'The image could not be removed.' }, 500);
+      await supabaseRest(env, 'league_moderation_log', {
+        method: 'POST', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify([{ listing_id: media[1], action: 'media_removed', note: clean('Removed ' + what + (input.note ? ': ' + input.note : ''), 500), actor: 'site-admin', created_at: nowIso() }])
+      }).catch(() => {});
+      return json({ ok: true, removed: what });
     }
 
     const log = path.match(new RegExp('^/api/admin/leagues/' + UUID_RE + '/log$', 'i'));

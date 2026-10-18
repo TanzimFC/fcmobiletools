@@ -580,24 +580,20 @@ async function accountApi(request, env, url) {
 
   const {account,user}=context;
   if(request.method==='GET' && url.pathname==='/api/account/me') {
-    // Core identity must not disappear because one optional progression table is
-    // temporarily unavailable. Treat stats/ledgers as independently recoverable.
     const [progress,settings,rewards,activity,gameProfile,dailyStreak,tournamentStats]=await Promise.all([
-      supabaseRest(env,'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&limit=1').catch(()=>[]),
-      supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(account.id)+'&select=*&limit=1').catch(()=>[]),
-      supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance,lifetime_earned,lifetime_spent,lifetime_reversed&limit=1').catch(()=>[]),
-      supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=12').catch(()=>[]),
-      supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id)+'&select=fc_mobile_uid,in_game_username,region_server,discord_handle,player_tags,updated_at&limit=1').catch(()=>[]),
+      supabaseRest(env,'account_progress?account_id=eq.'+encodeURIComponent(account.id)+'&select=xp_balance,level,current_streak,longest_streak,last_qualifying_activity_at&limit=1'),
+      supabaseRest(env,'profile_settings?account_id=eq.'+encodeURIComponent(account.id)+'&select=*&limit=1'),
+      supabaseRest(env,'reward_accounts?account_id=eq.'+encodeURIComponent(account.id)+'&select=balance,lifetime_earned,lifetime_spent,lifetime_reversed&limit=1'),
+      supabaseRest(env,'activity_events?account_id=eq.'+encodeURIComponent(account.id)+'&select=id,event_type,entity_type,entity_id,created_at&order=created_at.desc&limit=12'),
+      supabaseRest(env,'account_game_profiles?account_id=eq.'+encodeURIComponent(account.id)+'&select=fc_mobile_uid,in_game_username,region_server,discord_handle,player_tags,updated_at&limit=1'),
       (async()=>{
-        try {
-          const defs=await supabaseRest(env,'streak_definitions?slug=eq.daily-check-in&select=id&limit=1');
-          const id=defs?.[0]?.id;
-          if(!id) return null;
-          const rows=await supabaseRest(env,'user_streaks?account_id=eq.'+encodeURIComponent(account.id)+'&streak_definition_id=eq.'+encodeURIComponent(id)+'&select=current_count,longest_count,last_qualified_at,last_checkin_utc_date,streak_freezes&limit=1');
-          return rows?.[0]||null;
-        } catch { return null; }
+        const defs=await supabaseRest(env,'streak_definitions?slug=eq.daily-check-in&select=id&limit=1');
+        const id=defs?.[0]?.id;
+        if(!id) return null;
+        const rows=await supabaseRest(env,'user_streaks?account_id=eq.'+encodeURIComponent(account.id)+'&streak_definition_id=eq.'+encodeURIComponent(id)+'&select=current_count,longest_count,last_qualified_at,last_checkin_utc_date,streak_freezes&limit=1');
+        return rows?.[0]||null;
       })(),
-      fetchTournamentStatsForAccount(env,account.id).catch(()=>null)
+      fetchTournamentStatsForAccount(env,account.id)
     ]);
     const p=progress?.[0]||{}, st=settings?.[0]||{}, rw=rewards?.[0]||{}, gp=gameProfile?.[0]||{}, ds=dailyStreak||{};
     const gameProfileComplete=Boolean(String(gp.fc_mobile_uid||'').trim()&&String(gp.in_game_username||'').trim()&&String(gp.region_server||'').trim());
@@ -2680,6 +2676,12 @@ async function redeemPage(request, env, ctx, url) {
 
 const IMAGE_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
 const IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS = 7;
+const IMAGE_UPLOAD_PURPOSES = Object.freeze({
+  application: Object.freeze({ permanent: false, days: 7 }),
+  crest: Object.freeze({ permanent: true }),
+  gallery: Object.freeze({ permanent: true }),
+  avatar: Object.freeze({ permanent: true })
+});
 const IMAGE_UPLOAD_HOST = /^i\.ibb\.co(?:\.com)?$/i;
 
 async function detectUploadedImageType(file) {
@@ -2761,11 +2763,17 @@ async function imageUploadApi(request, env, url) {
     return json({ error: 'The selected file does not appear to be a valid image.' }, 415);
   }
 
-  // League crests and player avatars need to stay available for the life of a listing.
-  // Other upload callers keep the existing temporary-expiry default.
-  const permanent = fields.get('permanent') === 'true';
+  // Retention is decided here from the upload's purpose, never from the browser:
+  //   application → applicant team screenshots, deleted by the image host after 7 days
+  //   crest / gallery / avatar → permanent, they belong to the league or the account
+  // Callers that send no purpose keep the older behaviour (explicit flags, 7-day default).
+  const purpose = String(fields.get('purpose') || '').trim().toLowerCase();
+  const policy = IMAGE_UPLOAD_PURPOSES[purpose];
+  if (purpose && !policy) return json({ error: 'Unknown image type.' }, 400);
+  const permanent = policy ? policy.permanent : fields.get('permanent') === 'true';
   let expirationDays = Number.parseInt(String(fields.get('expirationDays') || ''), 10);
   if (!Number.isInteger(expirationDays)) expirationDays = IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS;
+  if (policy && !policy.permanent) expirationDays = policy.days;
   expirationDays = Math.max(1, Math.min(180, expirationDays));
   const expirationSeconds = expirationDays * 24 * 60 * 60;
 
@@ -2827,6 +2835,7 @@ async function imageUploadApi(request, env, url) {
       height: Math.max(0, Number(image.height) || 0),
       size: Math.max(0, Number(image.size) || file.size),
       permanent,
+      purpose: purpose || null,
       expirationDays: permanent ? null : Math.max(1, Math.ceil(appliedExpiration / (24 * 60 * 60))),
       expiresAt: permanent ? null : new Date(Date.now() + appliedExpiration * 1000).toISOString()
     }
@@ -2855,6 +2864,13 @@ export function createExports(manifest) {
         })().catch(error => {
           console.error('[LEAGUE_EXPIRY]', error?.message || 'Listing expiry failed.');
         });
+        // Applicant screenshots live for 7 days. The image host deletes the file; this clears the dead link.
+        const screenshotPurge = (async () => {
+          const out = await supabaseRest(env, 'rpc/purge_expired_application_screenshots', { method: 'POST', body: '{}' });
+          console.info('[LEAGUE_SCREENSHOTS] Cleared ' + (Number(out) || 0) + ' expired applicant screenshots.');
+        })().catch(error => {
+          console.error('[LEAGUE_SCREENSHOTS]', error?.message || 'Screenshot cleanup failed.');
+        });
         const quotaCleanup = (async () => {
           const database = await d1(env);
           await ensureImageUploadQuotaSchema(database);
@@ -2863,8 +2879,8 @@ export function createExports(manifest) {
         })().catch(error => {
           console.error('[IMAGE_UPLOAD_QUOTA_CLEANUP]', error?.message || 'Quota cleanup failed.');
         });
-        if (ctx?.waitUntil) ctx.waitUntil(Promise.all([cleanup, listingExpiry, quotaCleanup]));
-        else await Promise.all([cleanup, listingExpiry, quotaCleanup]);
+        if (ctx?.waitUntil) ctx.waitUntil(Promise.all([cleanup, listingExpiry, screenshotPurge, quotaCleanup]));
+        else await Promise.all([cleanup, listingExpiry, screenshotPurge, quotaCleanup]);
       },
       async fetch(request,env,ctx) {
   const url=new URL(request.url);

@@ -2,7 +2,7 @@
 // server-rendered pages (/leagues and /leagues/[slug]).
 // Every function takes `supabaseRest(env, path, options)` so each caller keeps its own transport.
 
-import { divisionByKey, ACCENT_KEYS, JOIN_KEYS, LISTING_EXPIRY_DAYS, EXPIRY_WARNING_DAYS } from '../data/leagueConfig.js';
+import { divisionByKey, ACCENT_KEYS, JOIN_KEYS, LISTING_EXPIRY_DAYS, EXPIRY_WARNING_DAYS, GALLERY_MAX } from '../data/leagueConfig.js';
 
 export const BASE_LISTING_COLUMNS = [
   'id', 'owner_account_id', 'slug', 'name', 'description', 'logo_url', 'league_game_id',
@@ -15,6 +15,9 @@ export const PREMIUM_LISTING_COLUMNS = [
   'tagline', 'active_hours', 'is_verified', 'is_featured', 'featured_until', 'reviewed_at',
   'division', 'join_methods', 'accent', 'is_sample'
 ];
+// League screenshots. Needs supabase/migrations/20261017150000_league_gallery_and_screenshot_expiry.sql.
+// Until then every read falls back to the previous column set, so nothing else changes.
+export const GALLERY_COLUMNS = ['gallery_urls'];
 export const ADMIN_LISTING_COLUMNS = ['admin_note', 'reviewed_by', 'rules_accepted_at', 'rules_version'];
 
 export const KICKOFF_MS = 6 * 60 * 60 * 1000;
@@ -22,16 +25,44 @@ export const inList = (ids) => encodeURIComponent('(' + ids.join(',') + ')');
 export const isMissingSchema = (error) =>
   /column|does not exist|schema cache|could not find the function|undefined_function/i.test(String(error?.message || ''));
 
+// Tries the richest column set first and steps down if the database has not been upgraded yet.
+const gallerySkip = new WeakMap();
 export async function readListings(env, supabaseRest, queryTail, { admin = false } = {}) {
-  const cols = [...BASE_LISTING_COLUMNS, ...PREMIUM_LISTING_COLUMNS, ...(admin ? ADMIN_LISTING_COLUMNS : [])];
-  try {
-    const rows = await supabaseRest(env, 'league_listings?select=' + encodeURIComponent(cols.join(',')) + queryTail);
-    return { rows: rows || [], premium: true };
-  } catch (error) {
-    if (!isMissingSchema(error)) throw error;
-    const rows = await supabaseRest(env, 'league_listings?select=' + encodeURIComponent(BASE_LISTING_COLUMNS.join(',')) + queryTail);
-    return { rows: rows || [], premium: false };
+  const adminCols = admin ? ADMIN_LISTING_COLUMNS : [];
+  const tiers = [
+    { cols: [...BASE_LISTING_COLUMNS, ...PREMIUM_LISTING_COLUMNS, ...GALLERY_COLUMNS, ...adminCols], premium: true, gallery: true },
+    { cols: [...BASE_LISTING_COLUMNS, ...PREMIUM_LISTING_COLUMNS, ...adminCols], premium: true, gallery: false },
+    { cols: BASE_LISTING_COLUMNS, premium: false, gallery: false }
+  ];
+  let failure;
+  for (const tier of tiers) {
+    const skipKey = env && typeof env === 'object' ? env : gallerySkip;
+    if (tier.gallery && Date.now() < (gallerySkip.get(skipKey) || 0)) continue;
+    try {
+      const rows = await supabaseRest(env, 'league_listings?select=' + encodeURIComponent(tier.cols.join(',')) + queryTail);
+      return { rows: rows || [], premium: tier.premium, gallery: tier.gallery };
+    } catch (error) {
+      if (!isMissingSchema(error)) throw error;
+      if (tier.gallery) gallerySkip.set(env && typeof env === 'object' ? env : gallerySkip, Date.now() + 60000);
+      failure = error;
+    }
   }
+  throw failure;
+}
+
+// Only images our own uploader produced are ever shown.
+const IMG_HOST = /^i\.ibb\.co(?:\.com)?$/i;
+export function cleanGallery(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  for (const raw of value) {
+    try {
+      const u = new URL(String(raw || ''));
+      if (u.protocol === 'https:' && IMG_HOST.test(u.hostname) && !u.search && !u.hash && !out.includes(u.toString())) out.push(u.toString());
+    } catch { /* skip anything that is not a clean https image link */ }
+    if (out.length >= GALLERY_MAX) break;
+  }
+  return out;
 }
 
 export async function rpc(env, supabaseRest, name, args) {
@@ -60,6 +91,7 @@ export function decorateListings(listings, ownerMap, { admin = false, includeNot
       name: row.name,
       tagline: row.tagline || row.description || '',
       logoUrl: row.logo_url || null,
+      galleryUrls: cleanGallery(row.gallery_urls),
       regionServer: row.region_server,
       preferredLanguages: row.preferred_languages || [],
       minOvr: Number(row.min_ovr || 0),
@@ -192,8 +224,9 @@ export async function loadSitemapSlugs(env, supabaseRest) {
 
 // Transport for server-rendered pages (the Worker API passes its own supabaseRest instead).
 export async function ssrSupabaseRest(env, path, options = {}) {
-  const base = String(env?.SUPABASE_URL || 'https://moczgrwxtfexdbjthxpd.supabase.co').replace(/\/$/, '');
-  const key = String(env?.SUPABASE_SECRET_KEY || '').trim();
+  const proc = globalThis.process?.env || {};
+  const base = String(env?.SUPABASE_URL || proc.SUPABASE_URL || 'https://moczgrwxtfexdbjthxpd.supabase.co').replace(/\/$/, '');
+  const key = String(env?.SUPABASE_SECRET_KEY || proc.SUPABASE_SECRET_KEY || '').trim();
   if (!key) throw new Error('Supabase is not configured.');
   const response = await fetch(base + '/rest/v1/' + path, {
     method: options.method || 'GET',
