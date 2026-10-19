@@ -911,9 +911,9 @@ async function winnerAction(db, env, g, wid, body) {
   } else if (action === 'verify') {
     if (w.status !== 'awaiting_claim') throw new Fail('Only a winner who is awaiting claim can be verified.', 409);
     const handle = clean(body.handle, 64).replace(/^@/, '');
-    const fcUid = clean(body.fcUid, 32).replace(/\\s+/g, '');
+    const fcUid = clean(body.fcUid, 32).replace(/\s+/g, '');
     if (!handle) throw new Fail('Enter the Discord username the code was sent from.');
-    if (!/^\\d{6,20}$/.test(fcUid)) throw new Fail('Enter the winner FC Mobile UID to complete verification.');
+    if (!/^\d{6,20}$/.test(fcUid)) throw new Fail('Enter the winner FC Mobile UID to complete verification.');
     const handleMatch = w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
     const uidMatch = w.fc_uid ? fcUid === String(w.fc_uid) : null;
     const matched = handleMatch === true && uidMatch === true;
