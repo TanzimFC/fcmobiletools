@@ -27,15 +27,15 @@ export async function initHub() {
   const shown = [...live, ...past];
   grid.innerHTML = shown.length ? shown.map((g, i) => cardHtml(g, i)).join('') : '<div class="gw-empty" style="grid-column:1/-1"><strong>No giveaways right now</strong>The next one is coming soon. Join our Discord so you do not miss it.</div>';
   const entries = list.reduce((n, g) => n + g.stats.entries, 0);
-  const pool = live.filter((g) => g.status === 'live').reduce((n, g) => n + g.prize.cents * g.winners.total, 0);
+  const rewardsAvailable = live.filter((g) => g.status === 'live').reduce((n, g) => n + g.winners.total, 0);
   countUp($('#gwStatLive'), live.filter((g) => g.status === 'live').length);
   countUp($('#gwStatEntries'), entries);
-  countUp($('#gwStatPool'), Math.round(pool / 100), { prefix: '$' });
-  countUp($('#gwStatPaid'), Math.round((wall.totalPaidCents || 0) / 100), { prefix: '$' });
+  countUp($('#gwStatPool'), rewardsAvailable);
+  countUp($('#gwStatPaid'), wall.totalDelivered || wall.winners?.length || 0);
   const w = $('#gwWall');
   if (w) {
     if (wall.winners?.length) { w.innerHTML = winnersHtml(wall.winners.map((x) => ({ ...x, status: 'paid', giveaway: x.giveaway }))); }
-    else w.innerHTML = '<div class="gw-empty"><strong>Be our first paid winner</strong>Winners appear here, with a masked name, once they have been paid.</div>';
+    else w.innerHTML = '<div class="gw-empty"><strong>Be our first winner</strong>Winners appear here with a masked name once reward delivery is confirmed.</div>';
   }
   fillOfficial(data.official);
   if (await signedIn()) myBanner();
@@ -341,16 +341,16 @@ export async function initClaim() {
 
   const prizeCard = (p) => {
     const ctr = p.contact_handle ? esc(p.contact_channel) + ': ' + esc(p.contact_handle) : '';
-    const steps = [['Add your contact handle', Boolean(p.contact_handle)], ['Reveal your secret claim code', p.code_reveals > 0], ['Send the code to our official handle', ['code_verified', 'paid'].includes(p.status)], ['We verify, then pay you outside this site', p.status === 'paid']];
+    const steps = [['Add your contact handle', Boolean(p.contact_handle)], ['Reveal your secret claim code', p.code_reveals > 0], ['Send the code to our official handle', ['code_verified', 'paid'].includes(p.status)], ['We verify and confirm reward delivery', p.status === 'paid']];
     const left = p.claim_deadline ? Date.parse(p.claim_deadline) - Date.now() : null;
-    return '<div class="gw-panel" data-prize="' + esc(p.id) + '" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><span class="gw-note">' + esc(p.giveaway?.title || '') + '</span><h3 style="font-size:26px;margin:4px 0 0">You won ' + esc(p.prize) + '</h3></div><span class="gw-tag ' + (p.status === 'paid' ? 'paid' : '') + '">' + ({ awaiting_claim: 'Awaiting your claim', code_verified: 'Verified, payment in progress', paid: 'Paid', forfeited: 'Forfeited' }[p.status] || p.status) + '</span></div>' +
+    return '<div class="gw-panel" data-prize="' + esc(p.id) + '" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><span class="gw-note">' + esc(p.giveaway?.title || '') + '</span><h3 style="font-size:26px;margin:4px 0 0">You won ' + esc(p.prize) + '</h3></div><span class="gw-tag ' + (p.status === 'paid' ? 'paid' : '') + '">' + ({ awaiting_claim: 'Awaiting your claim', code_verified: 'Claim verified, delivery pending', paid: 'Reward delivered', forfeited: 'Forfeited' }[p.status] || p.status) + '</span></div>' +
       (p.status === 'awaiting_claim' && left !== null ? '<div class="gw-callout ' + (left < 0 ? 'bad' : '') + '" style="margin-top:14px"><div>' + (left < 0 ? '<strong>Your claim window has ended.</strong> Message the official handle right away.' : 'You have <strong>' + short(left) + '</strong> left to claim. Deadline: ' + esc(when(p.claim_deadline))) + '</div></div>' : '') +
       '<ol class="gw-tl" style="margin-top:20px">' + steps.map(([t, d]) => '<li class="' + (d ? 'admin' : '') + '"><b style="text-transform:none">' + (d ? '✓ ' : '') + esc(t) + '</b></li>').join('') + '</ol>' +
       (p.status === 'awaiting_claim' ? '<div class="gw-field"><label>1. Your contact handle</label><div style="display:grid;grid-template-columns:130px 1fr auto;gap:8px"><select class="gw-input" data-ch><option value="discord"' + (p.contact_channel !== 'instagram' ? ' selected' : '') + '>Discord</option><option value="instagram"' + (p.contact_channel === 'instagram' ? ' selected' : '') + '>Instagram</option></select><input class="gw-input" data-hd placeholder="your handle, no @" value="' + esc(p.contact_handle || '') + '" maxlength="40"><button class="gw-btn" data-save>Save</button></div><span class="gw-hint">We only accept a claim from this exact handle. ' + (ctr ? 'Saved: ' + ctr : '') + '</span></div>' : '') +
       (['awaiting_claim', 'code_verified'].includes(p.status) ? '<div class="gw-vault"><strong>2. Your secret claim code</strong><div class="gw-code hidden" data-code>FCM-XXXX-XXXX-XXXX</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="gw-btn gw-btn-gold" data-reveal>Reveal my code</button><button class="gw-btn" data-copy hidden>Copy code</button></div>' +
         '<p class="gw-note" style="margin:12px 0 0">The code is hidden again after 30 seconds. Make sure nobody is watching your screen.</p></div>' +
         '<div class="gw-callout" style="margin-top:14px"><div><strong>3. Send the code only here:</strong> ' + (handles || 'our official handles (listed on the Safety page)') + '.<br>Message it from the same handle you saved above. Never send it to anyone else, and never post it publicly.</div></div>' : '') +
-      (p.status === 'paid' ? '<div class="gw-callout ok" style="margin-top:14px"><div>Your prize was paid on ' + esc(when(p.paid_at)) + (p.payout_method ? ' via ' + esc(p.payout_method) : '') + '. Congratulations!</div></div>' : '') + '</div>';
+      (p.status === 'paid' ? '<div class="gw-callout ok" style="margin-top:14px"><div>Your reward was marked delivered on ' + esc(when(p.paid_at)) + (p.payout_method ? ' via ' + esc(p.payout_method) : '') + '. Congratulations!</div></div>' : '') + '</div>';
   };
 
   const entryCard = (e) => {
