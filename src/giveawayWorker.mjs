@@ -659,7 +659,7 @@ async function setStatus(db, env, g, to) {
   }
   if (to === 'completed') {
     const open = await db.rest('giveaway_winners?giveaway_id=eq.' + g.id + '&status=in.(selected,awaiting_claim,code_verified)&select=id&limit=1');
-    if (open.length) throw new Fail('Some winners are not paid or resolved yet.', 409);
+    if (open.length) throw new Fail('Some winners still have rewards pending delivery or unresolved claims.', 409);
   }
   const row = (await db.patch('giveaways', 'id=eq.' + g.id + '&status=eq.' + from, values))?.[0];
   if (!row) throw new Fail('The giveaway changed while you were working. Reload and try again.', 409);
@@ -887,14 +887,14 @@ async function winnerAction(db, env, g, wid, body) {
     if (!handle) throw new Fail('Enter the handle the code was sent from.');
     const matched = w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
     if (matched !== true && body.force !== true) throw new Fail(matched === false
-      ? 'The code was sent from "' + handle + '" but the winner registered "' + w.contact_handle + '". This may be someone else. Do not pay unless you can confirm the person.'
+      ? 'The code was sent from "' + handle + '" but the winner registered "' + w.contact_handle + '". This may be someone else. Do not mark the reward delivered unless you can confirm the person.'
       : 'This winner has not registered a contact handle yet. Confirm to continue.', 409, { mismatch: matched === false, confirmable: true });
     await db.patch('giveaway_winners', 'id=eq.' + w.id, { status: 'code_verified', verified_at: nowIso(), verified_by: 'admin', verified_handle: handle, handle_matched: matched });
     await audit(db, g.id, 'claim_verified', { winner: w.id, matched });
   } else if (action === 'paid') {
-    if (w.status !== 'code_verified') throw new Fail('Verify the claim code before marking a prize as paid.', 409);
+    if (w.status !== 'code_verified') throw new Fail('Verify the claim code before marking the reward as delivered.', 409);
     const method = clean(body.method, 60);
-    if (!method) throw new Fail('Enter how the prize was paid.');
+    if (!method) throw new Fail('Enter how the in-game reward was delivered.');
     await db.patch('giveaway_winners', 'id=eq.' + w.id, {
       status: 'paid', paid_at: nowIso(), paid_by: 'admin', payout_method: method, payout_reference: clean(body.reference, 200),
       payout_proof_url: httpsOrEmpty(body.proofUrl) || null
