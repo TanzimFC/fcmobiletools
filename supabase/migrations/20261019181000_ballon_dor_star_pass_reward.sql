@@ -5,6 +5,17 @@
 
 alter table public.giveaways alter column prize_label set default 'In-game reward';
 
+insert into public.giveaway_settings (key, value, updated_at)
+values ('official', jsonb_build_object('discord_invite', 'https://discord.com/invite/B4a7AxuU69'), now())
+on conflict (key) do update
+set value = jsonb_set(
+  coalesce(public.giveaway_settings.value, '{}'::jsonb),
+  '{discord_invite}',
+  to_jsonb('https://discord.com/invite/B4a7AxuU69'::text),
+  true
+),
+updated_at = now();
+
 update public.giveaways g
 set slug = 'ballon-dor-star-pass-giveaway',
     kind = 'ballon_dor',
