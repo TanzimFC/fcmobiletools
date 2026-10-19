@@ -109,13 +109,29 @@ export async function loadWinners(env, rest, giveawayId, currency, prizeLabel = 
   return winnerRows((rows || []).map((r) => ({ ...r, currency })), names, prizeLabel);
 }
 
+const PREVIEW_SLUG = 'ballon-dor-star-pass-giveaway';
+
+function publicPreview(row, g) {
+  if (row.status === 'draft' && row.slug === PREVIEW_SLUG) {
+    g.status = 'upcoming';
+    g.rawStatus = 'upcoming';
+    g.previewOnly = true;
+    g.tagline = 'Entry opens soon. The Ballon d’Or Star Pass is an in-game reward with no real cash value.';
+  }
+  return g;
+}
+
 export async function loadPublicList(env, rest) {
-  const [rows, official] = await Promise.all([
+  const [visibleRows, previewRows, official] = await Promise.all([
     rest(env, 'giveaways?status=in.' + VISIBLE + '&select=' + PUBLIC_COLUMNS + '&order=created_at.desc&limit=30'),
+    rest(env, 'giveaways?slug=eq.' + PREVIEW_SLUG + '&status=eq.draft&select=' + PUBLIC_COLUMNS + '&limit=1').catch(() => []),
     loadOfficial(env, rest)
   ]);
-  const list = await Promise.all((rows || []).map(async (row) => {
-    const g = shapeGiveaway(row, await entryCount(env, rest, row.id), official);
+  // Only this explicitly named campaign can appear while draft. Other drafts remain private.
+  // The entry API still checks the stored status and rejects all entries until the admin opens it.
+  const rows = [...(visibleRows || []), ...(previewRows || [])];
+  const list = await Promise.all(rows.map(async (row) => {
+    const g = publicPreview(row, shapeGiveaway(row, await entryCount(env, rest, row.id), official));
     if (row.results_published_at) {
       try { g.results = { winners: await loadWinners(env, rest, row.id, row.currency, row.prize_label) }; } catch { g.results = { winners: [] }; }
     }
@@ -125,13 +141,17 @@ export async function loadPublicList(env, rest) {
 }
 
 export async function loadPublicOne(env, rest, slug) {
-  const rows = await rest(env, 'giveaways?slug=eq.' + encodeURIComponent(slug) + '&status=in.' + VISIBLE + '&select=' + PUBLIC_COLUMNS + '&limit=1');
-  const row = rows?.[0];
+  let rows = await rest(env, 'giveaways?slug=eq.' + encodeURIComponent(slug) + '&status=in.' + VISIBLE + '&select=' + PUBLIC_COLUMNS + '&limit=1');
+  let row = rows?.[0];
+  if (!row && slug === PREVIEW_SLUG) {
+    rows = await rest(env, 'giveaways?slug=eq.' + PREVIEW_SLUG + '&status=eq.draft&select=' + PUBLIC_COLUMNS + '&limit=1').catch(() => []);
+    row = rows?.[0];
+  }
   if (!row) return null;
   const [entries, official] = await Promise.all([entryCount(env, rest, row.id), loadOfficial(env, rest)]);
-  const g = shapeGiveaway(row, entries, official);
+  const g = publicPreview(row, shapeGiveaway(row, entries, official));
   if (row.results_published_at) {
-    g.results = { winners: await loadWinners(env, rest, row.id, row.currency) };
+    g.results = { winners: await loadWinners(env, rest, row.id, row.currency, row.prize_label) };
   }
   return g;
 }
