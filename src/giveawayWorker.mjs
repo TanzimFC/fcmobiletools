@@ -4,9 +4,9 @@
 // Member:  /api/giveaways/:slug/me|proof|enter|entry|boost|track, /api/giveaways/mine, /api/giveaways/claims/*
 // Admin:   /api/admin/giveaways/*   (Worker admin session, checked by worker.mjs before it gets here)
 //
-// Needs supabase/migrations/20261018120000_giveaway_system.sql and one Worker secret,
-// GIVEAWAY_CODE_KEY (32 or more random characters). Without the key nothing can go live,
-// so claim codes can never be created in a weak state.
+// Needs the giveaway-system and winner-claim migrations.
+// Claim-code cryptography uses a server-generated key in the private giveaway_settings table;
+// no separate GIVEAWAY_CODE_KEY Worker secret is required. IMAGEBB_API_KEY remains required for proof uploads.
 
 import {
   sha256Hex, randomSeed, entriesHash, rankEntries, generateClaimCode, canonicalClaimCode, isValidClaimCodeShape
