@@ -3,6 +3,8 @@
 -- Safe for the current empty draft records and fresh installs using the updated seed migration.
 
 
+alter table public.giveaways alter column prize_label set default 'In-game reward';
+
 update public.giveaways g
 set slug = 'ballon-dor-star-pass-giveaway',
     kind = 'ballon_dor',
