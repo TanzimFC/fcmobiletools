@@ -145,15 +145,27 @@ function paintResults(g) {
 }
 
 function paintMe(g, me) {
-  // requirement states
-  for (const r of me.eligibility.results) {
-    const li = $('[data-req="' + r.id + '"]'); if (!li) continue;
-    li.classList.toggle('ok', r.ok); li.classList.toggle('bad', !r.ok);
-    $('.ic', li).innerHTML = r.ok ? IC.check : '!';
-    $('.st', li).textContent = r.ok ? 'Done' : r.detail;
-  }
   const host = $('#gwMe');
   const e = me.entry;
+  const rejected = Boolean(e && ['rejected', 'disqualified', 'withdrawn'].includes(e.status));
+  // Automatic requirements are green as soon as the site's records confirm them.
+  // Discord membership and subscription screenshots require a human, so a valid
+  // submitted proof stays yellow until approved and turns red if rejected.
+  for (const r of me.eligibility.results) {
+    const li = $('[data-req="' + r.id + '"]'); if (!li) continue;
+    const config = (g.requirements || []).find((item) => item.id === r.id);
+    const manual = Boolean(config && ['text', 'image'].includes(config.input));
+    const pending = manual && Boolean(e) && ['provisional', 'needs_proof'].includes(e.status) && r.ok;
+    const verified = r.ok && (!manual || Boolean(e && e.status === 'approved'));
+    const rejectedManual = manual && rejected;
+    li.classList.toggle('ok', verified);
+    li.classList.toggle('pending', pending);
+    li.classList.toggle('bad', !r.ok || rejectedManual);
+    $('.ic', li).innerHTML = verified || pending ? IC.check : manual && !e ? '•' : '!';
+    $('.st', li).textContent = pending
+      ? (e.status === 'needs_proof' ? 'Correction requested' : 'Awaiting manual review')
+      : verified ? 'Verified' : rejectedManual ? 'Entry rejected' : manual && !e ? 'Complete in entry form' : r.detail;
+  }
   if (me.ban) { host.innerHTML = '<div class="gw-callout bad"><div><strong>Your account is paused from giveaways' + (me.ban.permanent ? '' : ' until ' + esc(when(me.ban.endsAt))) + '.</strong><br>' + esc(me.ban.reason) + '</div></div>'; return; }
   if (!e) {
     host.innerHTML = g.status === 'live'
@@ -256,8 +268,15 @@ export async function initEnter() {
           '<span class="gw-hint">' + (st.uploading.has(r.id) ? 'Uploading...' : st.proofs[r.id] ? '✓ Uploaded securely. Tap the image to replace it.' : 'Must show your account and the Subscribed button.') + '</span></div>').join('');
     } else {
       body = '<h3>Review and submit</h3><p>You are about to enter <strong>' + esc(g.title) + '</strong>.</p><ul class="gw-reqs" style="margin-bottom:16px">' +
-        reqs.map((r) => '<li class="gw-req ok"><span class="ic">' + IC.check + '</span><div><h4>' + esc(r.label) + '</h4></div></li>').join('') + '</ul>' +
-        '<div class="gw-callout cyan"><div>An admin reviews every entry. Fake, edited or reused proof, duplicate accounts and bots lead to removal and a pause from all giveaways.</div></div>' +
+        reqs.map((r) => {
+          const check = st.eligibility.results.find((x) => x.id === r.id) || {};
+          if (r.input === 'auto') return '<li class="gw-req ' + (check.ok ? 'ok' : 'bad') + '"><span class="ic">' + (check.ok ? IC.check : '!') + '</span><div><h4>' + esc(r.label) + '</h4><p>' + esc(check.ok ? 'Verified from your account records' : (check.detail || 'Not completed yet')) + '</p></div></li>';
+          const proofReady = r.input === 'text'
+            ? Boolean(st.discord.trim())
+            : Boolean(st.proofs[r.id] || me.entry?.proof.some((p) => p.slot === r.id && p.state === 'ok' && Date.parse(p.expiresAt) > Date.now()));
+          return '<li class="gw-req ' + (proofReady ? 'pending' : 'bad') + '"><span class="ic">' + (proofReady ? IC.check : '!') + '</span><div><h4>' + esc(r.label) + '</h4><p>' + esc(proofReady ? 'Human review after submission' : (r.input === 'text' ? 'Enter your Discord username' : 'Upload the required screenshot')) + '</p></div></li>';
+        }).join('') + '</ul>' +
+        '<div class="gw-callout cyan"><div>Your account checks are automatic. Discord membership and subscription screenshots enter the human review queue. Your entry can be drawn while review is pending, but rejection removes it from the draw. Selected winners must be approved before results can be published.</div></div>' +
         '<label class="gw-check"><input type="checkbox" id="gwAck" ' + (st.ack ? 'checked' : '') + '><span>I am 18 or older (or my parent or guardian agrees for me) and I accept the <a href="/giveaways/rules/" target="_blank" style="color:var(--gw-cyan)">Giveaway Rules</a>.</span></label>';
     }
     const last = st.i === steps.length - 1;
