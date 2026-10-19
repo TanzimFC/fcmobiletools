@@ -522,14 +522,14 @@ async function mineApi(db, ctx) {
   const winners = (await db.rest('giveaway_winners?account_id=eq.' + ctx.account.id + '&status=in.(selected,awaiting_claim,code_verified,paid,forfeited)&select=' + winnerPublicFields() + '&order=created_at.desc&limit=20')) || [];
   const ids = [...new Set([...entries.map((e) => e.giveaway_id), ...winners.map((w) => w.giveaway_id)])];
   const gmap = new Map();
-  if (ids.length) for (const g of (await db.rest('giveaways?id=in.(' + ids.join(',') + ')&select=id,slug,title,kind,accent,status,results_published_at,currency')) || []) gmap.set(g.id, g);
+  if (ids.length) for (const g of (await db.rest('giveaways?id=in.(' + ids.join(',') + ')&select=id,slug,title,kind,accent,status,results_published_at,currency,prize_cents,prize_label')) || []) gmap.set(g.id, g);
   const events = entries.length ? (await db.rest('giveaway_entry_events?entry_id=in.(' + entries.map((e) => e.id).join(',') + ')&select=entry_id,actor,action,reason,created_at&order=created_at.desc&limit=120')) || [] : [];
   const ban = await activeBan(db, ctx.account.id, null);
   return {
     entries: entries.map((e) => ({ ...e, giveaway: gmap.get(e.giveaway_id) || null, events: events.filter((ev) => ev.entry_id === e.id).slice(0, 8) })),
     // A selected winner stays hidden until an admin has reviewed the entry and announced results.
     prizes: winners.filter((w) => ['awaiting_claim', 'code_verified', 'paid'].includes(w.status) && gmap.get(w.giveaway_id)?.results_published_at)
-      .map((w) => ({ ...w, giveaway: gmap.get(w.giveaway_id), prize: money(w.prize_cents, gmap.get(w.giveaway_id)?.currency) })),
+      .map((w) => ({ ...w, giveaway: gmap.get(w.giveaway_id), prize: Number(w.prize_cents || 0) > 0 ? money(w.prize_cents, gmap.get(w.giveaway_id)?.currency) : (gmap.get(w.giveaway_id)?.prize_label || 'In-game reward') })),
     ban: ban ? { reason: ban.reason, endsAt: ban.ends_at, permanent: !ban.ends_at } : null
   };
 }
@@ -575,7 +575,7 @@ function cleanGiveawayInput(body, existing) {
   if (body.title !== undefined) { const t = clean(body.title, 120); if (t.length < 3) throw new Fail('Title needs at least 3 characters.'); set('title', t); }
   if (body.tagline !== undefined) set('tagline', clean(body.tagline, 200));
   if (body.description !== undefined) set('description', clean(body.description, 4000));
-  if (body.prizeLabel !== undefined) set('prize_label', clean(body.prizeLabel, 80) || 'Cash prize');
+  if (body.prizeLabel !== undefined) set('prize_label', clean(body.prizeLabel, 80) || 'In-game reward');
   if (body.bonusPrizeCents !== undefined) set('bonus_prize_cents', intIn(body.bonusPrizeCents, 0, 100000000, 0));
   if (body.alternateCount !== undefined) set('alternate_count', intIn(body.alternateCount, 0, 50, 3));
   if (body.coverUrl !== undefined) set('cover_url', httpsOrEmpty(body.coverUrl) || null);
@@ -937,7 +937,7 @@ async function verifyCode(env, db, body) {
   const h = await codeHash(env, body.code);
   const w = (await db.rest('giveaway_winners?claim_code_hash=eq.' + h + '&select=' + winnerPublicFields() + '&limit=1'))?.[0];
   if (!w) { await audit(db, null, 'claim_code_no_match', {}); return { found: false }; }
-  const [g, accounts] = await Promise.all([getGiveawayById(db, w.giveaway_id, 'id,title,slug,currency'), accountMap(db, [w.account_id])]);
+  const [g, accounts] = await Promise.all([getGiveawayById(db, w.giveaway_id, 'id,title,slug,currency,prize_cents,prize_label'), accountMap(db, [w.account_id])]);
   const handle = clean(body.handle, 64).replace(/^@/, '');
   const matched = handle && w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
   if (matched === false) await db.patch('giveaway_winners', 'id=eq.' + w.id, { claim_attempts: w.claim_attempts + 1 });
@@ -945,7 +945,7 @@ async function verifyCode(env, db, body) {
     found: true, handleMatch: matched,
     winner: {
       id: w.id, giveawayId: g?.id, giveaway: g?.title, username: accounts.get(w.account_id)?.username, slot: w.slot,
-      prize: money(w.prize_cents, g?.currency), status: w.status, contactChannel: w.contact_channel, contactHandle: w.contact_handle,
+      prize: Number(w.prize_cents || 0) > 0 ? money(w.prize_cents, g?.currency) : (g?.prize_label || 'In-game reward'), status: w.status, contactChannel: w.contact_channel, contactHandle: w.contact_handle,
       deadline: w.claim_deadline, overdue: w.claim_deadline ? Date.parse(w.claim_deadline) < Date.now() : false
     }
   };
