@@ -899,7 +899,7 @@ async function winnerAction(db, env, g, wid, body) {
       status: 'paid', paid_at: nowIso(), paid_by: 'admin', payout_method: method, payout_reference: clean(body.reference, 200),
       payout_proof_url: httpsOrEmpty(body.proofUrl) || null
     });
-    await audit(db, g.id, 'prize_paid', { winner: w.id, method });
+    await audit(db, g.id, 'reward_delivered', { winner: w.id, method });
   } else if (action === 'extend') {
     if (!['awaiting_claim', 'code_verified'].includes(w.status)) throw new Fail('Nothing to extend.', 409);
     const base = Math.max(Date.now(), w.claim_deadline ? Date.parse(w.claim_deadline) : Date.now());
