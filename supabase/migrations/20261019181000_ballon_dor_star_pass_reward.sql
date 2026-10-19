@@ -2,7 +2,6 @@
 -- This reward is an in-game item and has no real cash value.
 -- Safe for the current empty draft records and fresh installs using the updated seed migration.
 
-begin;
 
 update public.giveaways g
 set slug = 'ballon-dor-star-pass-giveaway',
@@ -58,4 +57,3 @@ where not exists (
   select 1 from public.giveaways where slug = 'ballon-dor-star-pass-giveaway'
 );
 
-commit;
