@@ -924,8 +924,9 @@ async function winnerAction(db, env, g, wid, body) {
       throw new Fail(reason + ' Do not verify this claim unless you independently confirm the winner.', 409,
         { mismatch: handleMatch === false || uidMatch === false, confirmable: true, handleMatch, uidMatch });
     }
+    if (!matched && body.force === true) need(5);
     await db.patch('giveaway_winners', 'id=eq.' + w.id, { status: 'code_verified', verified_at: nowIso(), verified_by: 'admin', verified_handle: handle, handle_matched: matched });
-    await audit(db, g.id, 'claim_verified', { winner: w.id, matched, handleMatch, uidMatch });
+    await audit(db, g.id, 'claim_verified', { winner: w.id, matched, handleMatch, uidMatch, overrideReason: matched ? '' : reason });
   } else if (action === 'paid') {
     if (w.status !== 'code_verified') throw new Fail('Verify the claim code before marking the reward as delivered.', 409);
     const method = clean(body.method, 60);
