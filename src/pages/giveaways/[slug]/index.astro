@@ -42,13 +42,18 @@ const schema = g ? [
       )}
       {g && (<>
         <nav aria-label="Breadcrumb" class="gw-note" style="margin-bottom:18px"><a href="/giveaways/" style="color:var(--gw-cyan)">Giveaways</a> / {g.title}</nav>
-        <header class="gw-dh">
+        <header class="gw-dh gw-hero-detail">
           <div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="gw-pill" id="gwStatus">{g.status}</span><span class="gw-eyebrow">{g.kindLabel}</span></div>
             <h1 class="gw-h1" style="font-size:clamp(32px,5vw,54px)">{g.title}</h1>
             <p class="gw-lede">{g.tagline}</p>
+            <div class="gw-detail-ribbon">
+              <span class="gw-detail-chip"><span class="gw-status-dot"></span> Free entry</span>
+              <span class="gw-detail-chip neutral">Human-reviewed</span>
+              <span class="gw-detail-chip neutral">No real cash value</span>
+            </div>
             <div class="gw-bignum">{g.prize.display}</div>
-            <div class="gw-note" style="font-size:14px">{g.prize.label} · <span id="gwWinnersN">{g.winners.total} {g.winners.total === 1 ? 'winner' : 'winners'}</span> · <b id="gwEntries" style="color:#fff">{g.stats.entries}</b> entries so far</div>
+            <div class="gw-note" style="font-size:13px;line-height:1.8">{g.prize.label} · <span id="gwWinnersN">{g.winners.total} {g.winners.total === 1 ? 'winner' : 'winners'}</span> · <b id="gwEntries" style="color:#fff">{g.stats.entries}</b> entries so far</div>
             <div class="gw-count" id="gwCount" aria-live="off">
               {g.previewOnly && <div style="min-width:0;padding:12px 18px"><strong style="font-size:18px">Entry opens soon</strong><div class="gw-note" style="margin-top:4px">Preview only · in-game reward · no real cash value</div></div>}
             </div>
@@ -63,10 +68,16 @@ const schema = g ? [
         <div id="gwDyn">
           <section class="gw-sec" id="gwMe" aria-live="polite"></section>
 
+          <div class="gw-trust-rail" aria-label="Giveaway assurances" style="margin-top:22px">
+            <article class="gw-trust-mini"><div class="gw-side-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4L19 6"/></svg></div><div><strong>Free to enter</strong><span>No purchase or ad interaction is required.</span></div></article>
+            <article class="gw-trust-mini"><div class="gw-side-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 4-3 7-8 9-5-2-8-5-8-9V7z"/></svg></div><div><strong>Human review</strong><span>An administrator checks each submitted entry.</span></div></article>
+            <article class="gw-trust-mini"><div class="gw-side-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div><div><strong>Private claims</strong><span>Only the winner and authorised admins can view the code.</span></div></article>
+          </div>
+
           {g.description && <section class="gw-sec"><div class="gw-panel"><h3>About this giveaway</h3><p style="margin:0;white-space:pre-line">{g.description}</p></div></section>}
 
           <section class="gw-sec" aria-labelledby="reqH">
-            <h2 class="gw-h2" id="reqH">What you need to do</h2>
+            <div class="gw-eyebrow">ENTRY CHECKLIST</div><h2 class="gw-h2" id="reqH" style="margin-top:9px">What you need to do</h2>
             <p class="gw-sub">Every step is free. You never need to watch, click or interact with an advertisement.</p>
             <ol class="gw-reqs" id="gwReqs">
               {g.requirements.map((r, i) => <li class="gw-req" data-req={r.id}><span class="ic">{i + 1}</span><div><h4>{r.label}</h4><p>{r.help}</p></div><span class="st"></span></li>)}
@@ -74,7 +85,7 @@ const schema = g ? [
           </section>
 
           <section class="gw-sec" id="gwTrackWrap" aria-labelledby="trH">
-            <h2 class="gw-h2" id="trH">Community milestones</h2>
+            <div class="gw-eyebrow">COMMUNITY PROGRESS</div><h2 class="gw-h2" id="trH" style="margin-top:9px">Community milestones</h2>
             <p class="gw-sub" id="gwTrackNote">More entries unlock more winners.</p>
             <div class="gw-panel" id="gwTrack"></div>
           </section>
@@ -87,7 +98,7 @@ const schema = g ? [
 
           <section class="gw-sec" id="gwFair" aria-labelledby="fairH">
             <div class="gw-panel">
-              <h3 id="fairH">Provably fair draw</h3>
+              <div class="gw-eyebrow">DRAW TRANSPARENCY</div><h3 id="fairH" style="margin-top:9px">Provably fair draw</h3>
               <p>Before entries opened we locked the draw by publishing a fingerprint of a secret seed. When the draw is done we reveal the seed and the frozen entry list, and you can re-run the whole draw in your browser. An entry with more tickets simply has more chances. Nothing is picked by hand.</p>
               <div class="gw-note">Seed fingerprint (published before entries opened)</div>
               <div class="gw-mono" id="gwCommit"></div>
