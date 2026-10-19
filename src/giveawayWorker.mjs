@@ -1124,7 +1124,7 @@ export async function giveawayWorkerRoute({ request, env, url, ctx, authenticate
       /^\/api\/giveaways\/[a-z0-9-]+\/draw-proof$/.test(path)
     );
     if (isAdmin && !(await authenticated(request, env))) return json({ error: 'Authentication required.' }, 401);
-    if (!publicRead && !(isAdmin && m === 'GET' && path.endsWith('/health'))) {
+    if (!publicRead) {
       env = { ...env, GIVEAWAY_CODE_KEY: await ensureInternalSecurityKey(db) };
     }
     if (isAdmin) return await adminRoute(request, env, url, ctx, db, json);
