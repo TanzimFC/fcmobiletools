@@ -1,0 +1,113 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import '../../../styles/giveaway.css';
+import { loadPublicOne } from '../../../lib/giveawayPublic.js';
+import { ssrSupabaseRest } from '../../../lib/leaguePublic.js';
+import { emblem } from '../../../lib/giveawayArt.js';
+import { FAQ, SITE_ORIGIN } from '../../../data/giveawayConfig.js';
+
+// Rendered on demand so the title, prize and rules text are in the HTML for search engines.
+// Live numbers, countdowns and your own entry status are filled in by the browser.
+export const prerender = false;
+
+const env = Astro.locals.runtime?.env || {};
+const slug = String(Astro.params.slug || '').toLowerCase();
+let g = null;
+let failed = false;
+try { g = await loadPublicOne(env, ssrSupabaseRest, slug); } catch (e) { failed = true; console.error('[GIVEAWAY_PAGE]', e?.message); }
+if (!g) { Astro.response.status = failed ? 503 : 404; Astro.response.headers.set('cache-control', 'no-store'); }
+
+const title = g ? g.title + ': ' + g.prize.display + ' Giveaway' : 'Giveaway not found';
+const description = g
+  ? g.title + ' on FCMobiletools. ' + g.prize.display + ' ' + g.prize.label.toLowerCase() + ', free to enter. See the requirements, the fair-draw method and how winners claim safely.'
+  : 'This giveaway is not available. Browse current FC Mobile giveaways.';
+const schema = g ? [
+  { '@context': 'https://schema.org', '@type': 'WebPage', name: title, url: SITE_ORIGIN + '/giveaways/' + g.slug + '/', description },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN + '/' },
+    { '@type': 'ListItem', position: 2, name: 'Giveaways', item: SITE_ORIGIN + '/giveaways/' },
+    { '@type': 'ListItem', position: 3, name: g.title, item: SITE_ORIGIN + '/giveaways/' + g.slug + '/' } ] },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }
+] : [];
+---
+
+<BaseLayout title={title} description={description} robots={g ? undefined : 'noindex,follow'} googlebot={g ? undefined : 'noindex,follow'}>
+  {schema.map((s) => <script slot="head" type="application/ld+json" set:html={JSON.stringify(s).replace(/</g, '\\u003c')}></script>)}
+
+  <main class="gw-root" id="app" data-slug={slug} style={g ? '--gw-accent:' + g.accent : ''}>
+    <div class="gw-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="gw-wrap">
+      {!g && (
+        <div class="gw-empty" style="margin-top:40px"><strong>{failed ? 'Giveaways are temporarily unavailable' : 'Giveaway not found'}</strong>{failed ? 'Please try again in a moment.' : 'It may have been removed or the link is wrong.'}<br /><a class="gw-btn gw-btn-gold" style="margin-top:16px" href="/giveaways/">See all giveaways</a></div>
+      )}
+      {g && (<>
+        <nav aria-label="Breadcrumb" class="gw-note" style="margin-bottom:18px"><a href="/giveaways/" style="color:var(--gw-cyan)">Giveaways</a> / {g.title}</nav>
+        <header class="gw-dh">
+          <div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="gw-pill" id="gwStatus">{g.status}</span><span class="gw-eyebrow">{g.kindLabel}</span></div>
+            <h1 class="gw-h1" style="font-size:clamp(32px,5vw,54px)">{g.title}</h1>
+            <p class="gw-lede">{g.tagline}</p>
+            <div class="gw-bignum">{g.prize.display}</div>
+            <div class="gw-note" style="font-size:14px">{g.prize.label} · <span id="gwWinnersN">{g.winners.total} {g.winners.total === 1 ? 'winner' : 'winners'}</span> · <b id="gwEntries" style="color:#fff">{g.stats.entries}</b> entries so far</div>
+            <div class="gw-count" id="gwCount" aria-live="off"></div>
+            <div class="gw-cta" id="gwCta"></div>
+          </div>
+          <div class="gw-trophy" aria-hidden="true" style={'--c:' + g.accent}>
+            <span class="gw-spark" style="left:12%;top:18%"></span><span class="gw-spark" style="right:14%;top:30%;animation-delay:-1s"></span>
+            {g.coverUrl ? <img src={g.coverUrl} alt="" style="width:min(380px,90%);border-radius:24px;position:relative;box-shadow:0 30px 60px -24px #000" loading="eager" /> : <Fragment set:html={emblem(g.kind)} />}
+          </div>
+        </header>
+
+        <div id="gwDyn">
+          <section class="gw-sec" id="gwMe" aria-live="polite"></section>
+
+          {g.description && <section class="gw-sec"><div class="gw-panel"><h3>About this giveaway</h3><p style="margin:0;white-space:pre-line">{g.description}</p></div></section>}
+
+          <section class="gw-sec" aria-labelledby="reqH">
+            <h2 class="gw-h2" id="reqH">What you need to do</h2>
+            <p class="gw-sub">Every step is free. You never need to watch, click or interact with an advertisement.</p>
+            <ol class="gw-reqs" id="gwReqs">
+              {g.requirements.map((r, i) => <li class="gw-req" data-req={r.id}><span class="ic">{i + 1}</span><div><h4>{r.label}</h4><p>{r.help}</p></div><span class="st"></span></li>)}
+            </ol>
+          </section>
+
+          <section class="gw-sec" id="gwTrackWrap" aria-labelledby="trH">
+            <h2 class="gw-h2" id="trH">Community milestones</h2>
+            <p class="gw-sub" id="gwTrackNote">More entries unlock more winners.</p>
+            <div class="gw-panel" id="gwTrack"></div>
+          </section>
+
+          <section class="gw-sec" id="gwResultsWrap" hidden aria-labelledby="resH">
+            <h2 class="gw-h2" id="resH">Winners</h2>
+            <p class="gw-sub">Confirmed by an admin and announced publicly.</p>
+            <div id="gwResults"></div>
+          </section>
+
+          <section class="gw-sec" id="gwFair" aria-labelledby="fairH">
+            <div class="gw-panel">
+              <h3 id="fairH">Provably fair draw</h3>
+              <p>Before entries opened we locked the draw by publishing a fingerprint of a secret seed. When the draw is done we reveal the seed and the frozen entry list, and you can re-run the whole draw in your browser. An entry with more tickets simply has more chances. Nothing is picked by hand.</p>
+              <div class="gw-note">Seed fingerprint (published before entries opened)</div>
+              <div class="gw-mono" id="gwCommit"></div>
+              <div id="gwHashRow" hidden><div class="gw-note" style="margin-top:12px">Entry list fingerprint (frozen at the draw)</div><div class="gw-mono" id="gwHash"></div></div>
+              {g.fairness.seedRevealed && <div style="margin-top:16px"><button class="gw-btn gw-btn-gold" id="gwVerify">Verify this draw yourself</button><div id="gwVerifyOut"></div></div>}
+            </div>
+          </section>
+
+          <section class="gw-sec gw-faq" aria-labelledby="faqH">
+            <h2 class="gw-h2" id="faqH">Questions, answered</h2>
+            {FAQ.map(([q, a]) => <details><summary>{q}</summary><p>{a}</p></details>)}
+            <p class="gw-note" style="margin-top:16px">Read the full <a href="/giveaways/rules/" style="color:var(--gw-cyan)">Giveaway Rules</a> and the <a href="/giveaways/safety/" style="color:var(--gw-cyan)">Claim Safety guide</a>. Official claim handles: <span data-gw-handles></span></p>
+          </section>
+        </div>
+        <div class="gw-sticky" id="gwSticky"></div>
+      </>)}
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { initDetail, initVerify } from '../../../scripts/giveaway-pages.js';
+  initDetail();
+  initVerify();
+</script>

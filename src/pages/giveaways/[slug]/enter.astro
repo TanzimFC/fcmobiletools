@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import '../../../styles/giveaway.css';
+
+// The entry wizard. No ads here (people upload screenshots and type handles), and it is not indexed.
+export const prerender = false;
+const slug = String(Astro.params.slug || '').toLowerCase();
+---
+
+<BaseLayout title="Enter giveaway" description="Complete the steps to enter this FCMobiletools giveaway." robots="noindex,nofollow" googlebot="noindex,nofollow" noAds>
+  <main class="gw-root" id="app" data-slug={slug}>
+    <div class="gw-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="gw-wrap gw-narrow">
+      <nav aria-label="Breadcrumb" class="gw-note" style="margin-bottom:18px"><a href="/giveaways/" style="color:var(--gw-cyan)">Giveaways</a> / <a href={'/giveaways/' + slug + '/'} style="color:var(--gw-cyan)">Details</a> / Enter</nav>
+      <div class="gw-eyebrow"><i></i> Entry</div>
+      <h1 class="gw-h1" style="font-size:clamp(28px,5vw,44px)" id="gwTitle">Enter this giveaway</h1>
+      <p class="gw-lede" style="margin-bottom:26px">Four quick steps. Your progress is checked for you, and nothing is shared publicly.</p>
+      <div id="gwFlow"><div class="gw-skel" style="min-height:260px"></div></div>
+      <p class="gw-note" style="margin-top:22px">We never ask for your password, card details or one-time codes. Official handles: <span data-gw-handles></span></p>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { initEnter } from '../../../scripts/giveaway-pages.js';
+  initEnter();
+</script>

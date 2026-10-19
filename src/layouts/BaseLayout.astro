@@ -20,6 +20,8 @@ export interface Props {
   googlebot?: string;
   /** Override the canonical URL (path or absolute). Used by pages that point at a moved target. */
   canonical?: string;
+  /** Skip the AdSense loader. Used on pages where people submit data or claim prizes. */
+  noAds?: boolean;
 }
 
 const {
@@ -34,6 +36,7 @@ const {
   robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
   googlebot = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
   canonical: canonicalOverride,
+  noAds = false,
 } = Astro.props;
 
 const siteOrigin = Astro.site ?? new URL('https://fcmobiletools.online');
@@ -135,7 +138,7 @@ const pageSchema = {
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta name="googlebot" content={googlebot} />
   <meta name="google-adsense-account" content="ca-pub-2527295119501596" />
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2527295119501596" crossorigin="anonymous"></script>
+  {!noAds && <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2527295119501596" crossorigin="anonymous"></script>}
   <link rel="canonical" href={canonical} />
   <link rel="icon" type="image/png" href="/assets/images/favicon.png" />
   <link rel="apple-touch-icon" href="/assets/images/favicon.png" />
