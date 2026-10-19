@@ -46,7 +46,7 @@ const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/
 
 function keyConfigured(env) { return String(env.GIVEAWAY_CODE_KEY || '').trim().length >= 32; }
 function requireKey(env) {
-  if (!keyConfigured(env)) throw new Fail('Giveaways are not fully configured yet (missing GIVEAWAY_CODE_KEY).', 503);
+  if (!keyConfigured(env)) throw new Fail('The private giveaway security key is unavailable. Try again shortly.', 503);
 }
 async function hmacHex(env, label, data) {
   requireKey(env);
@@ -88,9 +88,32 @@ function makeDb(env, supabaseRest) {
     method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(values)
   });
   const rpc = (name, args) => rest('rpc/' + name, { method: 'POST', body: JSON.stringify(args || {}) });
-  // Same transport in the (env, path, options) shape the shared public loaders expect.
   const rest3 = (_env, path, options) => rest(path, options);
   return { rest, rest3, insert, patch, rpc };
+}
+
+// The encryption and signing key is generated with crypto.getRandomValues() and stored
+// in the private giveaway_settings table. It is never returned by the settings API.
+// This removes the need to configure a separate GIVEAWAY_CODE_KEY Worker secret.
+async function ensureInternalSecurityKey(db) {
+  const read = async () => (await db.rest('giveaway_settings?key=eq.internal_security&select=value&limit=1'))?.[0] || null;
+  let row = await read();
+  let key = String(row?.value?.claim_key || '');
+  if (/^[a-f0-9]{64}$/.test(key)) return key;
+  const candidate = randomSeed();
+  if (row) {
+    await db.patch('giveaway_settings', 'key=eq.internal_security', { value: { claim_key: candidate }, updated_at: nowIso() });
+  } else {
+    await db.rest('giveaway_settings?on_conflict=key', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      body: JSON.stringify({ key: 'internal_security', value: { claim_key: candidate }, updated_at: nowIso() })
+    });
+  }
+  row = await read();
+  key = String(row?.value?.claim_key || '');
+  if (!/^[a-f0-9]{64}$/.test(key)) throw new Fail('The private giveaway security key could not be initialized.', 503);
+  return key;
 }
 
 async function audit(db, giveawayId, action, detail = {}, actor = 'admin') {
@@ -212,8 +235,9 @@ async function duplicateFlags(db, giveawayId, accountId, entry, ipHash) {
 
 // ───────────── winners ─────────────
 function winnerPublicFields() {
-  // Never select claim_code_hash or claim_code_enc into a response.
-  return 'id,giveaway_id,entry_id,account_id,slot,rank_position,status,prize_cents,code_reveals,claim_attempts,last_revealed_at,contact_channel,contact_handle,' +
+  // Public and member payloads omit claim_code_hash and claim_code_enc.
+  // fc_uid is visible only in authenticated member/admin responses using this selector.
+  return 'id,giveaway_id,entry_id,account_id,slot,rank_position,status,prize_cents,code_reveals,claim_attempts,last_revealed_at,contact_channel,contact_handle,fc_uid,' +
     'contact_set_at,announced_at,claim_deadline,overdue_flagged,verified_at,verified_by,verified_handle,handle_matched,paid_at,paid_by,' +
     'payout_method,payout_proof_url,notes,created_at,updated_at';
 }
@@ -543,21 +567,24 @@ async function ownWinner(db, ctx, id) {
 
 async function claimContact(request, db, ctx, id) {
   const w = await ownWinner(db, ctx, id);
-  if (!['awaiting_claim'].includes(w.status)) throw new Fail('Your contact details are locked for this prize.', 409);
+  if (w.status !== 'awaiting_claim') throw new Fail('Your claim details are locked for this prize.', 409);
   const body = await request.json().catch(() => ({}));
-  const channel = clean(body.channel, 12);
-  if (!['discord', 'instagram'].includes(channel)) throw new Fail('Choose Discord or Instagram.', 400);
   const handle = clean(body.handle, 64).replace(/^@/, '');
-  if (!/^[A-Za-z0-9_.]{2,32}$/.test(handle)) throw new Fail('Enter your handle exactly as it appears on ' + (channel === 'discord' ? 'Discord' : 'Instagram') + '.', 400);
-  await db.patch('giveaway_winners', 'id=eq.' + w.id, { contact_channel: channel, contact_handle: handle, contact_set_at: nowIso() });
-  await audit(db, w.giveaway_id, 'winner_contact_set', { winner: w.id, channel }, 'user');
-  return { ok: true };
+  const fcUid = clean(body.fcUid, 32).replace(/\s+/g, '');
+  if (!/^[A-Za-z0-9_.]{2,32}$/.test(handle)) throw new Fail('Enter your Discord username exactly as it appears on Discord.', 422);
+  if (!/^\d{6,20}$/.test(fcUid)) throw new Fail('Enter a valid FC Mobile UID using 6 to 20 digits.', 422);
+  await db.patch('giveaway_winners', 'id=eq.' + w.id, { contact_channel: 'discord', contact_handle: handle, fc_uid: fcUid, contact_set_at: nowIso() });
+  await audit(db, w.giveaway_id, 'winner_claim_details_saved', { winner: w.id, channel: 'discord' }, 'user');
+  return { ok: true, saved: true };
 }
 
 async function claimReveal(env, db, ctx, id) {
   const w = await ownWinner(db, ctx, id);
   if (!['awaiting_claim', 'code_verified'].includes(w.status)) throw new Fail('There is no claim code to show for this prize.', 409);
-  if (w.code_reveals >= 30) throw new Fail('Too many reveals. Contact an admin on the official handles.', 429);
+  if (!w.contact_handle || !/^\d{6,20}$/.test(String(w.fc_uid || ''))) {
+    throw new Fail('Complete the Discord username and FC Mobile UID form before revealing your code.', 409);
+  }
+  if (w.code_reveals >= 30) throw new Fail('Too many reveals. Contact an admin through the official Discord.', 429);
   const code = await openCode(env, w.claim_code_enc);
   await db.patch('giveaway_winners', 'id=eq.' + w.id, { code_reveals: w.code_reveals + 1, last_revealed_at: nowIso() });
   return { ok: true, code };
@@ -884,13 +911,22 @@ async function winnerAction(db, env, g, wid, body) {
   } else if (action === 'verify') {
     if (w.status !== 'awaiting_claim') throw new Fail('Only a winner who is awaiting claim can be verified.', 409);
     const handle = clean(body.handle, 64).replace(/^@/, '');
-    if (!handle) throw new Fail('Enter the handle the code was sent from.');
-    const matched = w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
-    if (matched !== true && body.force !== true) throw new Fail(matched === false
-      ? 'The code was sent from "' + handle + '" but the winner registered "' + w.contact_handle + '". This may be someone else. Do not mark the reward delivered unless you can confirm the person.'
-      : 'This winner has not registered a contact handle yet. Confirm to continue.', 409, { mismatch: matched === false, confirmable: true });
+    const fcUid = clean(body.fcUid, 32).replace(/\s+/g, '');
+    if (!handle) throw new Fail('Enter the Discord username the code was sent from.');
+    if (!/^\d{6,20}$/.test(fcUid)) throw new Fail('Enter the winner FC Mobile UID to complete verification.');
+    const handleMatch = w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
+    const uidMatch = w.fc_uid ? fcUid === String(w.fc_uid) : null;
+    const matched = handleMatch === true && uidMatch === true;
+    if (!matched && body.force !== true) {
+      const reason = handleMatch === false ? 'The Discord username does not match the winner record.'
+        : uidMatch === false ? 'The FC Mobile UID does not match the winner record.'
+        : 'The winner has not saved all required claim details.';
+      throw new Fail(reason + ' Do not verify this claim unless you independently confirm the winner.', 409,
+        { mismatch: handleMatch === false || uidMatch === false, confirmable: true, handleMatch, uidMatch });
+    }
+    if (!matched && body.force === true) need(5);
     await db.patch('giveaway_winners', 'id=eq.' + w.id, { status: 'code_verified', verified_at: nowIso(), verified_by: 'admin', verified_handle: handle, handle_matched: matched });
-    await audit(db, g.id, 'claim_verified', { winner: w.id, matched });
+    await audit(db, g.id, 'claim_verified', { winner: w.id, matched, handleMatch, uidMatch, overrideReason: matched ? '' : reason });
   } else if (action === 'paid') {
     if (w.status !== 'code_verified') throw new Fail('Verify the claim code before marking the reward as delivered.', 409);
     const method = clean(body.method, 60);
@@ -939,13 +975,15 @@ async function verifyCode(env, db, body) {
   if (!w) { await audit(db, null, 'claim_code_no_match', {}); return { found: false }; }
   const [g, accounts] = await Promise.all([getGiveawayById(db, w.giveaway_id, 'id,title,slug,currency,prize_cents,prize_label'), accountMap(db, [w.account_id])]);
   const handle = clean(body.handle, 64).replace(/^@/, '');
+  const uid = clean(body.fcUid, 32).replace(/\s+/g, '');
   const matched = handle && w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
-  if (matched === false) await db.patch('giveaway_winners', 'id=eq.' + w.id, { claim_attempts: w.claim_attempts + 1 });
+  const uidMatched = uid && w.fc_uid ? uid === String(w.fc_uid) : null;
+  if (matched === false || uidMatched === false) await db.patch('giveaway_winners', 'id=eq.' + w.id, { claim_attempts: w.claim_attempts + 1 });
   return {
-    found: true, handleMatch: matched,
+    found: true, handleMatch: matched, uidMatch: uidMatched,
     winner: {
       id: w.id, giveawayId: g?.id, giveaway: g?.title, username: accounts.get(w.account_id)?.username, slot: w.slot,
-      prize: Number(w.prize_cents || 0) > 0 ? money(w.prize_cents, g?.currency) : (g?.prize_label || 'In-game reward'), status: w.status, contactChannel: w.contact_channel, contactHandle: w.contact_handle,
+      prize: Number(w.prize_cents || 0) > 0 ? money(w.prize_cents, g?.currency) : (g?.prize_label || 'In-game reward'), status: w.status, contactChannel: w.contact_channel, contactHandle: w.contact_handle, fcUid: w.fc_uid,
       deadline: w.claim_deadline, overdue: w.claim_deadline ? Date.parse(w.claim_deadline) < Date.now() : false
     }
   };
@@ -955,7 +993,10 @@ async function verifyCode(env, db, body) {
 async function getSettings(db) {
   const rows = (await db.rest('giveaway_settings?select=key,value')) || [];
   const out = { official: {}, roi: {} };
-  for (const r of rows) out[r.key] = r.value;
+  for (const r of rows) {
+    if (r.key === 'internal_security') continue;
+    out[r.key] = r.value;
+  }
   return out;
 }
 async function saveSettings(db, body) {
@@ -1009,7 +1050,7 @@ async function roiFor(db, g) {
 async function healthFor(env, db) {
   const checks = [];
   const add = (id, label, ok, fix) => checks.push({ id, label, ok, fix: ok ? '' : fix });
-  add('key', 'Claim code secret (GIVEAWAY_CODE_KEY)', keyConfigured(env), 'Add a Worker secret named GIVEAWAY_CODE_KEY with 32 or more random characters. Without it nothing can go live.');
+  add('key', 'Server-managed cryptographic key', keyConfigured(env), 'The key is generated automatically in the private giveaway settings table. No GIVEAWAY_CODE_KEY Worker secret is required.');
   add('images', 'Image host key (IMAGEBB_API_KEY)', Boolean(String(env.IMAGEBB_API_KEY || '').trim()), 'Add the IMAGEBB_API_KEY Worker secret. Proof uploads depend on it.');
   let dbOk = false;
   try { await db.rest('giveaways?select=id&limit=1'); dbOk = true; } catch { /* reported below */ }
@@ -1077,10 +1118,17 @@ export async function giveawayWorkerRoute({ request, env, url, ctx, authenticate
   const db = makeDb(env, supabaseRest);
   const m = request.method;
   try {
-    if (isAdmin) {
-      if (!(await authenticated(request, env))) return json({ error: 'Authentication required.' }, 401);
-      return await adminRoute(request, env, url, ctx, db, json);
+    const slugOnly = /^\/api\/giveaways\/([a-z0-9-]+)$/.exec(path);
+    const publicRead = m === 'GET' && (
+      path === '/api/giveaways/public' || path === '/api/giveaways/winners' ||
+      (slugOnly && !RESERVED_SLUGS.has(slugOnly[1])) ||
+      /^\/api\/giveaways\/[a-z0-9-]+\/draw-proof$/.test(path)
+    );
+    if (isAdmin && !(await authenticated(request, env))) return json({ error: 'Authentication required.' }, 401);
+    if (!publicRead) {
+      env = { ...env, GIVEAWAY_CODE_KEY: await ensureInternalSecurityKey(db) };
     }
+    if (isAdmin) return await adminRoute(request, env, url, ctx, db, json);
     const rest = path.replace(/^\/api\/giveaways\/?/, '');
     const seg = rest.split('/').filter(Boolean);
 

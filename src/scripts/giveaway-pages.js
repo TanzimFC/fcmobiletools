@@ -330,59 +330,127 @@ export async function initEnter() {
 // ═══════════════════════════ CLAIM CENTRE ═══════════════════════════
 export async function initClaim() {
   const host = $('#gwClaim');
-  if (!(await signedIn())) { host.innerHTML = '<div class="gw-panel"><h3>Sign in</h3><p>Sign in to see your entries and any prizes you have won.</p><a class="gw-btn gw-btn-gold" href="' + signInUrl() + '">Sign in</a></div>'; return; }
+  if (!(await signedIn())) {
+    host.innerHTML = '<div class="gw-panel"><h3>Sign in to see your prizes</h3><p>Your entries, review notes and winner claim forms live in this private area.</p><a class="gw-btn gw-btn-gold" href="' + signInUrl() + '">Sign in or create account</a></div>';
+    return;
+  }
   let mine, pub;
-  try { [mine, pub] = await Promise.all([api('/api/giveaways/mine'), api('/api/giveaways/public', { cache: 'default' }).catch(() => ({ official: {} }))]); }
-  catch (e) { return unavailable(host, e.message); }
-  const o = pub.official || {};
-  fillOfficial(o);
-  const handles = [o.discordHandle && 'Discord: <strong>' + esc(o.discordHandle) + '</strong>', o.instagramHandle && 'Instagram: <strong>@' + esc(o.instagramHandle) + '</strong>'].filter(Boolean).join(' &nbsp;·&nbsp; ');
+  try {
+    [mine, pub] = await Promise.all([
+      api('/api/giveaways/mine'),
+      api('/api/giveaways/public', { cache: 'default' }).catch(() => ({ official: {} }))
+    ]);
+  } catch (e) { return unavailable(host, e.message); }
+  const official = pub.official || {};
+  fillOfficial(official);
+  const handles = [
+    official.discordHandle && 'Discord: <strong>' + esc(official.discordHandle) + '</strong>',
+    official.instagramHandle && 'Instagram: <strong>@' + esc(official.instagramHandle) + '</strong>'
+  ].filter(Boolean).join(' &nbsp;·&nbsp; ');
   let tab = mine.prizes.length ? 'prizes' : 'entries';
 
   const prizeCard = (p) => {
-    const ctr = p.contact_handle ? esc(p.contact_channel) + ': ' + esc(p.contact_handle) : '';
-    const steps = [['Add your contact handle', Boolean(p.contact_handle)], ['Reveal your secret claim code', p.code_reveals > 0], ['Send the code to our official handle', ['code_verified', 'paid'].includes(p.status)], ['We verify and confirm reward delivery', p.status === 'paid']];
+    const isClaimable = ['awaiting_claim', 'code_verified'].includes(p.status);
+    const hasDetails = Boolean(p.contact_handle && /^\d{6,20}$/.test(String(p.fc_uid || '')));
+    const steps = [
+      ['Winner selected and checked', ['awaiting_claim', 'code_verified', 'paid'].includes(p.status)],
+      ['Discord username and FC Mobile UID saved', hasDetails],
+      ['Private claim code viewed', Number(p.code_reveals || 0) > 0],
+      ['Reward delivery confirmed', p.status === 'paid']
+    ];
     const left = p.claim_deadline ? Date.parse(p.claim_deadline) - Date.now() : null;
-    return '<div class="gw-panel" data-prize="' + esc(p.id) + '" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><span class="gw-note">' + esc(p.giveaway?.title || '') + '</span><h3 style="font-size:26px;margin:4px 0 0">You won ' + esc(p.prize) + '</h3><p class="gw-note" style="margin:4px 0 0">In-game reward · no real cash value</p></div><span class="gw-tag ' + (p.status === 'paid' ? 'paid' : '') + '">' + ({ awaiting_claim: 'Awaiting your claim', code_verified: 'Claim verified, delivery pending', paid: 'Reward delivered', forfeited: 'Forfeited' }[p.status] || p.status) + '</span></div>' +
-      (p.status === 'awaiting_claim' && left !== null ? '<div class="gw-callout ' + (left < 0 ? 'bad' : '') + '" style="margin-top:14px"><div>' + (left < 0 ? '<strong>Your claim window has ended.</strong> Message the official handle right away.' : 'You have <strong>' + short(left) + '</strong> left to claim. Deadline: ' + esc(when(p.claim_deadline))) + '</div></div>' : '') +
-      '<ol class="gw-tl" style="margin-top:20px">' + steps.map(([t, d]) => '<li class="' + (d ? 'admin' : '') + '"><b style="text-transform:none">' + (d ? '✓ ' : '') + esc(t) + '</b></li>').join('') + '</ol>' +
-      (p.status === 'awaiting_claim' ? '<div class="gw-field"><label>1. Your contact handle</label><div style="display:grid;grid-template-columns:130px 1fr auto;gap:8px"><select class="gw-input" data-ch><option value="discord"' + (p.contact_channel !== 'instagram' ? ' selected' : '') + '>Discord</option><option value="instagram"' + (p.contact_channel === 'instagram' ? ' selected' : '') + '>Instagram</option></select><input class="gw-input" data-hd placeholder="your handle, no @" value="' + esc(p.contact_handle || '') + '" maxlength="40"><button class="gw-btn" data-save>Save</button></div><span class="gw-hint">We only accept a claim from this exact handle. ' + (ctr ? 'Saved: ' + ctr : '') + '</span></div>' : '') +
-      (['awaiting_claim', 'code_verified'].includes(p.status) ? '<div class="gw-vault"><strong>2. Your secret claim code</strong><div class="gw-code hidden" data-code>FCM-XXXX-XXXX-XXXX</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="gw-btn gw-btn-gold" data-reveal>Reveal my code</button><button class="gw-btn" data-copy hidden>Copy code</button></div>' +
-        '<p class="gw-note" style="margin:12px 0 0">The code is hidden again after 30 seconds. Make sure nobody is watching your screen.</p></div>' +
-        '<div class="gw-callout" style="margin-top:14px"><div><strong>3. Send the code only here:</strong> ' + (handles || 'our official handles (listed on the Safety page)') + '.<br>Message it from the same handle you saved above. Never send it to anyone else, and never post it publicly.</div></div>' : '') +
-      (p.status === 'paid' ? '<div class="gw-callout ok" style="margin-top:14px"><div>Your reward was marked delivered on ' + esc(when(p.paid_at)) + (p.payout_method ? ' via ' + esc(p.payout_method) : '') + '. Congratulations!</div></div>' : '') + '</div>';
+    const readOnly = p.status !== 'awaiting_claim';
+    return '<article class="gw-panel" data-prize="' + esc(p.id) + '" style="margin-bottom:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
+        '<div><span class="gw-eyebrow">YOUR REWARD</span><h3 style="font-size:clamp(24px,4vw,32px);margin:8px 0 4px">You won ' + esc(p.prize) + '</h3>' +
+          '<p class="gw-note" style="margin:0">' + esc(p.giveaway?.title || 'FCMobiletools giveaway') + ' · In-game reward · No real cash value</p></div>' +
+        '<span class="gw-tag ' + (p.status === 'paid' ? 'paid' : '') + '">' + esc(({ awaiting_claim:'Claim details needed', code_verified:'Claim verified', paid:'Reward delivered', forfeited:'Forfeited' })[p.status] || p.status) + '</span>' +
+      '</div>' +
+      (p.status === 'awaiting_claim' && left !== null ? '<div class="gw-callout ' + (left < 0 ? 'bad' : 'cyan') + '" style="margin-top:16px"><div>' +
+        (left < 0 ? '<strong>Your displayed claim deadline has passed.</strong> Contact the official Discord through the link below as soon as possible.' :
+          'Claim deadline: <strong>' + esc(when(p.claim_deadline)) + '</strong> <span style="white-space:nowrap">(' + esc(short(left)) + ' remaining)</span>') +
+      '</div></div>' : '') +
+      '<div class="gw-stepper" aria-label="Claim progress" style="margin-top:20px">' +
+        steps.map((s) => '<i class="' + (s[1] ? 'on' : '') + '"></i>').join('') +
+      '</div>' +
+      '<ol class="gw-tl" style="margin:0 0 20px">' + steps.map(([label, done], i) =>
+        '<li class="' + (done ? 'admin' : '') + '"><b style="text-transform:none">' + (done ? '✓ ' : (i + 1) + '. ') + esc(label) + '</b></li>'
+      ).join('') + '</ol>' +
+      (isClaimable ? '<section class="gw-vault" style="padding:18px;border:1px solid rgba(76,201,255,.2);border-radius:16px;background:rgba(76,201,255,.035)">' +
+        '<div class="gw-eyebrow">SECURE WINNER VERIFICATION</div><h3 style="margin:7px 0 6px">Confirm your game and Discord details</h3>' +
+        '<p class="gw-note" style="line-height:1.7;margin-bottom:16px">We use these details to check that the person contacting the official team is the selected winner. Never enter your game password or verification codes.</p>' +
+        (readOnly ? '<div class="gw-cols" style="margin-bottom:10px"><div class="gw-field"><label>Discord username</label><input class="gw-input" readonly value="' + esc(p.contact_handle || '') + '"></div><div class="gw-field"><label>FC Mobile UID</label><input class="gw-input" readonly value="' + esc(p.fc_uid || '') + '"></div></div>' :
+          '<div class="gw-cols" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px">' +
+            '<div class="gw-field"><label for="gwClaimDiscord">Discord username</label><input class="gw-input" id="gwClaimDiscord" autocomplete="off" spellcheck="false" maxlength="32" placeholder="Your exact Discord username" value="' + esc(p.contact_handle || '') + '" required><span class="gw-hint">Use the username you will message us from, not a server nickname.</span></div>' +
+            '<div class="gw-field"><label for="gwClaimUid">FC Mobile UID</label><input class="gw-input" id="gwClaimUid" inputmode="numeric" autocomplete="off" maxlength="20" pattern="[0-9]{6,20}" placeholder="6 to 20 digits" value="' + esc(p.fc_uid || '') + '" required><span class="gw-hint">Your in-game UID only. Never send your password.</span></div>' +
+          '</div>' +
+          '<button class="gw-btn gw-btn-gold" data-save-claim type="button">Save details securely</button> <span class="gw-hint" data-save-hint>Required before your claim code can be shown.</span>') +
+        '<div class="gw-callout cyan" style="margin-top:16px"><div><strong>Continue through official Discord only.</strong> ' +
+          (official.discordInvite ? '<a href="' + esc(official.discordInvite) + '" target="_blank" rel="noopener noreferrer" style="color:var(--gw-cyan);font-weight:750">Open the official server ↗</a>' : 'Use the official Discord invite shown on the Giveaway Safety page.') +
+          (handles ? '<div class="gw-note" style="margin-top:6px">Published claim contacts: ' + handles + '</div>' : '') +
+        '</div></div>' +
+        '<div class="gw-vault" style="margin-top:16px;padding:16px;background:rgba(5,14,23,.55)"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><div class="gw-eyebrow">PRIVATE CLAIM CODE</div><strong style="display:block;margin-top:6px">Keep this code to yourself</strong></div>' +
+          (hasDetails ? '<span class="gw-tag paid">Details saved</span>' : '<span class="gw-tag">Form required</span>') +
+        '</div>' +
+        '<div class="gw-code hidden" data-code style="margin-top:14px">FCM-XXXX-XXXX-XXXX</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">' +
+          '<button class="gw-btn gw-btn-gold" data-reveal ' + (hasDetails ? '' : 'disabled') + ' type="button">' + (hasDetails ? 'Reveal my claim code' : 'Save details to unlock code') + '</button>' +
+          '<button class="gw-btn" data-copy hidden type="button">Copy code</button>' +
+        '</div>' +
+        '<p class="gw-note" style="line-height:1.7;margin:12px 0 0">Only your signed-in claim centre and authorised admins can access this code. It hides again after 30 seconds. Send it only through the official contact route, never post it publicly.</p></div>' +
+      '</section>' : '') +
+      (p.status === 'paid' ? '<div class="gw-callout ok" style="margin-top:14px"><div><strong>Reward delivered.</strong> Confirmed on ' + esc(when(p.paid_at)) + (p.payout_method ? ' via ' + esc(p.payout_method) : '') + '.</div></div>' : '') +
+    '</article>';
   };
 
   const entryCard = (e) => {
     const [label, tone] = ENTRY_LABEL[e.status] || [e.status, ''];
-    return '<div class="gw-panel" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h3 style="margin:0">' + esc(e.giveaway?.title || 'Giveaway') + '</h3><span class="gw-tag ' + (tone === 'paid' ? 'paid' : '') + '">' + esc(label) + '</span></div>' +
+    return '<article class="gw-panel" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h3 style="margin:0">' + esc(e.giveaway?.title || 'Giveaway') + '</h3><span class="gw-tag ' + (tone === 'paid' ? 'paid' : '') + '">' + esc(label) + '</span></div>' +
       (e.review_reason ? '<p style="margin:10px 0 0;color:var(--gw-mut)"><strong style="color:#fff">Reviewer note:</strong> ' + esc(e.review_reason) + '</p>' : '') +
       (e.status === 'needs_proof' ? '<a class="gw-btn gw-btn-gold gw-btn-sm" style="margin-top:12px" href="/giveaways/' + esc(e.giveaway?.slug) + '/enter/">Upload corrected proof</a>' + (e.fix_deadline ? ' <span class="gw-note">by ' + esc(when(e.fix_deadline)) + '</span>' : '') : '') +
-      (e.events.length ? '<ul class="gw-tl" style="margin-top:16px">' + e.events.map((ev) => '<li class="' + esc(ev.actor) + '"><b>' + esc(ev.action.replace(/_/g, ' ')) + '</b>' + (ev.reason ? '<p>' + esc(ev.reason) + '</p>' : '') + '<time>' + esc(when(ev.created_at)) + '</time></li>').join('') + '</ul>' : '') + '</div>';
+      (e.events.length ? '<ul class="gw-tl" style="margin-top:16px">' + e.events.map((ev) => '<li class="' + esc(ev.actor) + '"><b>' + esc(ev.action.replace(/_/g, ' ')) + '</b>' + (ev.reason ? '<p>' + esc(ev.reason) + '</p>' : '') + '<time>' + esc(when(ev.created_at)) + '</time></li>').join('') + '</ul>' : '') + '</article>';
   };
 
   const paint = () => {
     const ban = mine.ban ? '<div class="gw-callout bad" style="margin-bottom:18px"><div><strong>Your account is paused from giveaways' + (mine.ban.permanent ? '' : ' until ' + esc(when(mine.ban.endsAt))) + '.</strong><br>' + esc(mine.ban.reason) + '</div></div>' : '';
     host.innerHTML = ban + '<div class="gw-tabs" role="tablist"><button class="' + (tab === 'prizes' ? 'on' : '') + '" data-tab="prizes">My prizes' + (mine.prizes.length ? ' (' + mine.prizes.length + ')' : '') + '</button><button class="' + (tab === 'entries' ? 'on' : '') + '" data-tab="entries">My entries (' + mine.entries.length + ')</button></div>' +
-      (tab === 'prizes' ? (mine.prizes.length ? mine.prizes.map(prizeCard).join('') : '<div class="gw-empty"><strong>No prizes yet</strong>If you win, it shows up here with your secret claim code.</div>')
-        : (mine.entries.length ? mine.entries.map(entryCard).join('') : '<div class="gw-empty"><strong>No entries yet</strong><a class="gw-btn gw-btn-gold" style="margin-top:12px" href="/giveaways/">Browse giveaways</a></div>'));
+      (tab === 'prizes' ? (mine.prizes.length ? mine.prizes.map(prizeCard).join('') : '<div class="gw-empty"><strong>No prizes yet</strong>Your winner claim form will appear here if your entry is selected and results are published.</div>') :
+        (mine.entries.length ? mine.entries.map(entryCard).join('') : '<div class="gw-empty"><strong>No entries yet</strong><p>Browse active giveaways and enter with your free account.</p><a class="gw-btn gw-btn-gold" style="margin-top:12px" href="/giveaways/">Browse giveaways</a></div>'));
     $$('[data-tab]', host).forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; paint(); }));
     $$('[data-prize]', host).forEach(bindPrize);
   };
 
   function bindPrize(card) {
     const id = card.dataset.prize;
-    $('[data-save]', card)?.addEventListener('click', (e) => busy(e.currentTarget, async () => {
-      try { await api('/api/giveaways/claims/' + id + '/contact', { method: 'POST', body: JSON.stringify({ channel: $('[data-ch]', card).value, handle: $('[data-hd]', card).value }) }); toast('Contact handle saved.'); mine = await api('/api/giveaways/mine'); paint(); }
-      catch (err) { toast(err.message, true); }
+    const save = $('[data-save-claim]', card);
+    save?.addEventListener('click', (e) => busy(e.currentTarget, async () => {
+      const discord = $('#gwClaimDiscord', card)?.value.trim() || '';
+      const uid = $('#gwClaimUid', card)?.value.replace(/\s+/g, '') || '';
+      if (!/^[A-Za-z0-9_.]{2,32}$/.test(discord)) return toast('Enter a valid Discord username (2 to 32 letters, numbers, dots or underscores).', true);
+      if (!/^\d{6,20}$/.test(uid)) return toast('FC Mobile UID must be 6 to 20 digits.', true);
+      try {
+        await api('/api/giveaways/claims/' + id + '/contact', { method: 'POST', body: JSON.stringify({ handle: discord, fcUid: uid }) });
+        toast('Winner details saved. Your claim code is now unlocked.');
+        mine = await api('/api/giveaways/mine');
+        paint();
+      } catch (err) { toast(err.message, true); }
     }));
-    const codeEl = $('[data-code]', card); let timer;
+    const codeEl = $('[data-code]', card);
+    let timer;
     $('[data-reveal]', card)?.addEventListener('click', (e) => busy(e.currentTarget, async () => {
       try {
         const r = await api('/api/giveaways/claims/' + id + '/reveal', { method: 'POST' });
-        codeEl.textContent = r.code; codeEl.classList.remove('hidden');
-        const cp = $('[data-copy]', card); cp.hidden = false; cp.onclick = () => copyText(r.code);
-        clearTimeout(timer); timer = setTimeout(() => { codeEl.classList.add('hidden'); codeEl.textContent = 'FCM-XXXX-XXXX-XXXX'; cp.hidden = true; }, 30000);
+        codeEl.textContent = r.code;
+        codeEl.classList.remove('hidden');
+        const cp = $('[data-copy]', card);
+        cp.hidden = false;
+        cp.onclick = () => copyText(r.code);
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          codeEl.classList.add('hidden');
+          codeEl.textContent = 'FCM-XXXX-XXXX-XXXX';
+          cp.hidden = true;
+        }, 30000);
       } catch (err) { toast(err.message, true); }
     }));
   }

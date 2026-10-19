@@ -5,113 +5,130 @@ import { emblem } from '../../lib/giveawayArt.js';
 import { FAQ, SITE_ORIGIN, OFFICIAL_YOUTUBE } from '../../data/giveawayConfig.js';
 
 const schema = [
-  { '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'FC Mobile giveaways', url: SITE_ORIGIN + '/giveaways/',
-    description: 'Free-to-enter FC Mobile giveaways with verified winners, a provably fair draw and safe prize claiming.' },
+  { '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'FC Mobile Giveaways', url: SITE_ORIGIN + '/giveaways/',
+    description: 'Free FC Mobile in-game reward giveaways with reviewed entries, a fair draw and private winner claims.' },
   { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) },
   { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN + '/' },
     { '@type': 'ListItem', position: 2, name: 'Giveaways', item: SITE_ORIGIN + '/giveaways/' } ] }
 ];
 const steps = [
-  ['Complete the steps', 'Finish your profile, one survey and one quest. We check these automatically, so there is nothing to upload.'],
-  ['Join and subscribe', 'Join our Discord and subscribe to two channels. Upload a screenshot for each subscription.'],
-  ['Get reviewed', 'Automated checks run instantly and an admin reviews every entry. Every decision has a reason and a timestamp.'],
-  ['Win and claim safely', 'Winners are selected by a verifiable draw. A private claim code helps confirm the winner before the in-game reward is delivered.']
+  ['Get eligible', 'Complete your profile, finish one survey and one quest. Your account records do the checking.'],
+  ['Show your proof', 'Join the official Discord and upload a screenshot for each YouTube subscription requirement.'],
+  ['Pass review', 'Automated checks catch missing items and duplicates. A person reviews the entry and can explain any correction needed.'],
+  ['Claim privately', 'Winners submit their Discord username and FC Mobile UID before revealing a personal claim code.']
 ];
 const trust = [
-  ['Provably fair draw', 'We publish a fingerprint of the draw seed before entries open. After the draw you can re-run it yourself on the giveaway page.'],
-  ['Secret claim code', 'Winners get a private code. Nobody can claim a prize without it, so impersonators cannot take your reward.'],
-  ['Official handles only', 'Use only the official contact details listed here. We never ask for a fee, password or account login to deliver an in-game reward.'],
-  ['Visible decisions', 'Approved, rejected or asked to fix a screenshot? You always see the reason and the time on your entry timeline.']
+  ['No purchase. No ad tasks.', 'Entry requirements are free. Ads never decide eligibility or improve your odds.'],
+  ['Reviewed, not auto-approved', 'Proof is checked by a person. Decisions include a reason and timestamp.'],
+  ['Codes stay private', 'Only the authenticated winner and authorised admins can access a claim code.'],
 ];
 ---
 
 <BaseLayout
-  title="FC Mobile Giveaways: Free to Enter, Verified Winners"
-  description="Win prizes in free FC Mobile giveaways on FCMobiletools. Fair public draws, verified winners, and a secret claim code that keeps your prize safe."
+  title="FC Mobile Giveaways | FCMobiletools"
+  description="Enter free FCMobiletools giveaways for in-game rewards. Complete the requirements, submit proof, follow your review and claim safely."
 >
-  {schema.map((s) => <script slot="head" type="application/ld+json" set:html={JSON.stringify(s)}></script>)}
+  {schema.map((s) => <script slot="head" type="application/ld+json" set:html={JSON.stringify(s).replace(/</g, '\\u003c')}></script>)}
 
   <main class="gw-root" id="app">
     <div class="gw-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="gw-wrap">
-      <header class="gw-hero">
-        <div>
-          <div class="gw-eyebrow"><i></i> FCMobiletools Giveaways · Free to enter</div>
-          <h1 class="gw-h1">Win in-game rewards. <em>Drawn fairly.</em> Claimed safely.</h1>
-          <p class="gw-lede">Complete the entry steps, upload your proof and you are in the draw. Every entry is reviewed by a person, and every winner is picked by a draw you can verify yourself.</p>
-          <div class="gw-cta">
-            <a class="gw-btn gw-btn-gold gw-btn-lg" href="#live">See live giveaways</a>
-            <a class="gw-btn gw-btn-lg" href="/giveaways/safety/">How claiming stays safe</a>
+      <header class="gw-hero gw-hero-premium">
+        <div class="gw-hero-copy">
+          <div class="gw-eyebrow"><i></i> FCMOBILETOOLS / COMMUNITY REWARDS</div>
+          <h1 class="gw-h1 gw-hero-title">Earn your shot at the next <span>FC Mobile reward.</span></h1>
+          <p class="gw-lede">Real community giveaways, clear entry steps, human-reviewed proof and private winner claims. Browse freely. Sign in only when you are ready to enter.</p>
+          <div class="gw-hero-cta">
+            <a class="gw-btn gw-btn-gold gw-btn-lg" href="#live">Explore giveaways <span aria-hidden="true">↗</span></a>
+            <a class="gw-btn gw-btn-lg" href="/giveaways/rules/">Read the rules</a>
           </div>
+          <div class="gw-hero-trust" aria-label="Giveaway standards">
+            <span class="gw-trust-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4L19 6"/></svg> Free to enter</span>
+            <span class="gw-trust-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 4-3 7-8 9-5-2-8-5-8-9V7z"/></svg> Human review</span>
+            <span class="gw-trust-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg> Private claims</span>
+          </div>
+          <div class="gw-proofline">One account per person. No paid entries, no ad-click tasks and no fee to claim a reward.</div>
         </div>
-        <div class="gw-trophy" aria-hidden="true">
-          <span class="gw-spark" style="left:12%;top:18%"></span><span class="gw-spark" style="right:14%;top:30%;animation-delay:-1s"></span><span class="gw-spark" style="left:24%;bottom:16%;animation-delay:-2s"></span>
-          <Fragment set:html={emblem('ballon_dor')} />
+
+        <div class="gw-hero-stage" aria-label="Ballon d'Or Star Pass giveaway artwork">
+          <div class="gw-hero-orbit" aria-hidden="true"></div>
+          <div class="gw-floating-note one"><span aria-hidden="true">✦</span> Community drop</div>
+          <div class="gw-feature-splash">
+            <div class="gw-feature-top"><span class="gw-feature-kicker">FCMOBILETOOLS / DROP 001</span><span class="gw-feature-seal">In-game reward</span></div>
+            <div class="gw-feature-emblem"><Fragment set:html={emblem('ballon_dor')} /></div>
+            <div class="gw-feature-bottom">
+              <div><p class="gw-feature-name">Star Pass</p><div class="gw-feature-label">Ballon d'Or event</div></div>
+              <div class="gw-feature-number">NO CASH<br />VALUE</div>
+            </div>
+          </div>
+          <div class="gw-floating-note two">Verified entries <span aria-hidden="true">↗</span></div>
         </div>
       </header>
 
-      <div class="gw-stats" aria-label="Giveaway statistics">
-        <div class="gw-stat"><small>Live now</small><strong id="gwStatLive">0</strong></div>
-        <div class="gw-stat" style="--c:var(--gw-cyan)"><small>Total entries</small><strong id="gwStatEntries">0</strong></div>
-        <div class="gw-stat" style="--c:var(--gw-vi)"><small>Rewards available</small><strong id="gwStatPool">0</strong></div>
+      <div class="gw-stats" aria-label="Giveaway overview">
+        <div class="gw-stat"><small>Live giveaways</small><strong id="gwStatLive">0</strong></div>
+        <div class="gw-stat" style="--c:var(--gw-cyan)"><small>Community entries</small><strong id="gwStatEntries">0</strong></div>
+        <div class="gw-stat" style="--c:#91aaff"><small>Rewards available</small><strong id="gwStatPool">0</strong></div>
         <div class="gw-stat" style="--c:var(--gw-ok)"><small>Rewards delivered</small><strong id="gwStatPaid">0</strong></div>
       </div>
 
-      <div id="gwBanner" style="margin-top:28px"></div>
+      <div id="gwBanner" style="margin-top:24px"></div>
 
       <section class="gw-sec" id="live" aria-labelledby="liveH">
-        <h2 class="gw-h2" id="liveH">Giveaways</h2>
-        <p class="gw-sub">Browse freely. You need a free account to enter, so we can check your profile, survey and quest and keep prizes safe.</p>
-        <div class="gw-grid" id="gwGrid"></div>
+        <div class="gw-section-head">
+          <div><div class="gw-eyebrow">THE DROP BOARD</div><h2 class="gw-h2" id="liveH" style="margin-top:9px">Find your next reward</h2></div>
+          <p class="gw-sub">All the details are on each giveaway page, including the entry window, requirements, review status and draw record.</p>
+        </div>
+        <div class="gw-discover-layout">
+          <div class="gw-discover-main"><div class="gw-grid" id="gwGrid"><div class="gw-skel"></div><div class="gw-skel"></div></div></div>
+          <aside class="gw-side-rail" aria-label="Giveaway information">
+            <div class="gw-side-card"><div class="gw-side-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4v5c0 4-3 7-8 9-5-2-8-5-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Fair draw record</h3><p>Where a draw is completed, the seed and frozen entry list can be independently checked on its giveaway page.</p></div>
+            <div class="gw-side-card"><div class="gw-side-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div><h3>Claims stay private</h3><p>A code is never published in the public giveaway page. Submit your winner details while signed in.</p></div>
+            <div class="gw-side-card"><div class="gw-side-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></div><h3>Need a quick answer?</h3><p>Rules and claim safety are written for this system, not hidden behind fine print.</p><p style="margin-top:10px"><a href="/giveaways/rules/" style="color:#8bdfff;font-weight:700">Official rules ↗</a><br /><a href="/giveaways/safety/" style="color:#8bdfff;font-weight:700">Claim safety ↗</a></p></div>
+          </aside>
+        </div>
       </section>
 
       <section class="gw-sec" aria-labelledby="howH">
-        <h2 class="gw-h2" id="howH">How it works</h2>
-        <p class="gw-sub">Four steps from sign in to prize. It takes about ten minutes.</p>
+        <div class="gw-eyebrow">FROM ENTRY TO DELIVERY</div>
+        <h2 class="gw-h2" id="howH" style="margin-top:9px">A clear process, start to finish.</h2>
+        <p class="gw-sub">You can see where your entry stands instead of wondering whether it went through.</p>
         <div class="gw-cols">
-          {steps.map(([t, p], i) => <div class="gw-step"><b>{i + 1}</b><h4>{t}</h4><p>{p}</p></div>)}
+          {steps.map(([t, p], i) => <article class="gw-step"><b>{String(i + 1).padStart(2, '0')}</b><h4>{t}</h4><p>{p}</p></article>)}
         </div>
       </section>
 
       <section class="gw-sec" aria-labelledby="trustH">
-        <h2 class="gw-h2" id="trustH">Built so nobody can steal your prize</h2>
-        <p class="gw-sub">Each entry has a review trail, and each reward claim follows the same verification steps.</p>
-        <div class="gw-cols">
-          {trust.map(([t, p]) => (
-            <div class="gw-trust">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
-              <div><h4>{t}</h4><p>{p}</p></div>
-            </div>
-          ))}
+        <div class="gw-section-head"><div><div class="gw-eyebrow">BUILT AROUND TRUST</div><h2 class="gw-h2" id="trustH" style="margin-top:9px">No grey areas.</h2></div></div>
+        <div class="gw-trust-rail">
+          {trust.map(([t, p]) => <article class="gw-trust-mini"><div class="gw-side-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4L19 6"/></svg></div><div><strong>{t}</strong><span>{p}</span></div></article>)}
         </div>
       </section>
 
       <section class="gw-sec" aria-labelledby="winH">
-        <h2 class="gw-h2" id="winH">Winners hall</h2>
-        <p class="gw-sub">Confirmed winners appear here with masked names and their reward details.</p>
+        <div class="gw-section-head"><div><div class="gw-eyebrow">COMMUNITY HALL</div><h2 class="gw-h2" id="winH" style="margin-top:9px">Recent rewards delivered</h2></div><p class="gw-sub">Winner names stay masked. Private claim information never appears here.</p></div>
         <div id="gwWall"></div>
       </section>
 
       <section class="gw-sec" aria-labelledby="supH">
-        <div class="gw-panel">
-          <h3 id="supH">Support the channels behind the giveaways</h3>
-          <p>Subscribing is one of the entry steps, and it is also how you hear about the next giveaway first.</p>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            {OFFICIAL_YOUTUBE.map((c) => <a class="gw-btn" href={c.url} target="_blank" rel="noopener noreferrer">{c.name} on YouTube</a>)}
-            <a class="gw-btn" data-gw-discord hidden target="_blank" rel="noopener noreferrer">Join our Discord</a>
+        <div class="gw-panel" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:center">
+          <div><div class="gw-eyebrow">OFFICIAL COMMUNITY</div><h3 id="supH" style="font-size:22px;margin-top:9px">Join the FCMobiletools circle.</h3><p>Get giveaway announcements and updates from the official community, and check the listed channels before responding to any prize message.</p></div>
+          <div style="display:flex;gap:9px;flex-wrap:wrap">
+            {OFFICIAL_YOUTUBE.map((c) => <a class="gw-btn" href={c.url} target="_blank" rel="noopener noreferrer">{c.name} ↗</a>)}
+            <a class="gw-btn gw-btn-gold" data-gw-discord hidden target="_blank" rel="noopener noreferrer">Join Discord ↗</a>
           </div>
-          <p class="gw-note" style="margin-top:14px">Official claim handles: <span data-gw-handles></span></p>
+          <p class="gw-note" style="grid-column:1/-1;margin:0">Official claim handles: <span data-gw-handles></span></p>
         </div>
       </section>
 
       <section class="gw-sec gw-faq" aria-labelledby="faqH">
-        <h2 class="gw-h2" id="faqH">Questions, answered</h2>
-        <p class="gw-sub">Read the full <a href="/giveaways/rules/" style="color:var(--gw-cyan)">Giveaway Rules</a> for every detail.</p>
+        <div class="gw-eyebrow">HELP CENTRE</div><h2 class="gw-h2" id="faqH" style="margin-top:9px">Questions, answered.</h2>
+        <p class="gw-sub">Read the full <a href="/giveaways/rules/" style="color:var(--gw-cyan)">Giveaway Official Rules</a> before entering.</p>
         {FAQ.map(([q, a]) => <details><summary>{q}</summary><p>{a}</p></details>)}
       </section>
 
-      <p class="gw-note" style="margin-top:40px">FCMobiletools giveaways are run independently. They are not sponsored, endorsed or administered by EA, Apple, Google, YouTube, Discord or Instagram.</p>
+      <div class="gw-note" style="margin-top:36px;line-height:1.8">FCMobiletools giveaways are independent community promotions. They are not sponsored, endorsed or administered by EA, EA SPORTS FC Mobile, Apple, Google, YouTube, Discord or Instagram. In-game rewards, including the Ballon d'Or Star Pass, have no real cash value unless a specific page says otherwise.</div>
     </div>
   </main>
 </BaseLayout>
