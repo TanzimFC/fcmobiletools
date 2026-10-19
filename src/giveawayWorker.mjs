@@ -46,7 +46,7 @@ const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/
 
 function keyConfigured(env) { return String(env.GIVEAWAY_CODE_KEY || '').trim().length >= 32; }
 function requireKey(env) {
-  if (!keyConfigured(env)) throw new Fail('Giveaways are not fully configured yet (missing GIVEAWAY_CODE_KEY).', 503);
+  if (!keyConfigured(env)) throw new Fail('The private giveaway security key is unavailable. Try again shortly.', 503);
 }
 async function hmacHex(env, label, data) {
   requireKey(env);
@@ -1123,11 +1123,11 @@ export async function giveawayWorkerRoute({ request, env, url, ctx, authenticate
       (slugOnly && !RESERVED_SLUGS.has(slugOnly[1])) ||
       /^\/api\/giveaways\/[a-z0-9-]+\/draw-proof$/.test(path)
     );
-    if (!publicRead) env = { ...env, GIVEAWAY_CODE_KEY: await ensureInternalSecurityKey(db) };
-    if (isAdmin) {
-      if (!(await authenticated(request, env))) return json({ error: 'Authentication required.' }, 401);
-      return await adminRoute(request, env, url, ctx, db, json);
+    if (isAdmin && !(await authenticated(request, env))) return json({ error: 'Authentication required.' }, 401);
+    if (!publicRead && !(isAdmin && m === 'GET' && path.endsWith('/health'))) {
+      env = { ...env, GIVEAWAY_CODE_KEY: await ensureInternalSecurityKey(db) };
     }
+    if (isAdmin) return await adminRoute(request, env, url, ctx, db, json);
     const rest = path.replace(/^\/api\/giveaways\/?/, '');
     const seg = rest.split('/').filter(Boolean);
 
