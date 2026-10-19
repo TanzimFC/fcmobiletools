@@ -2,7 +2,7 @@
 // Nothing here is secret.
 
 export const SITE_ORIGIN = 'https://fcmobiletools.online';
-export const RULES_VERSION = '2026-10-19';
+export const RULES_VERSION = '2026-10-20';
 
 export const KINDS = Object.freeze({
   ballon_dor: { label: "Ballon d'Or Event", short: "Ballon d'Or", accent: '#f6c453' },
@@ -106,7 +106,7 @@ export const WINNER_STATUS = Object.freeze({
 export const FAQ = Object.freeze([
   ['Is it really free to enter?', 'Yes. You never pay to enter, and you never need to watch, click or interact with any advertisement. Every requirement is a free action: complete your profile, finish a survey and a quest, join our Discord and subscribe to two channels.'],
   ['How are winners chosen?', 'By a provably fair draw. Before entries open we publish a fingerprint of a secret seed. After the draw we reveal the seed, and anyone can re-run the draw on the giveaway page to confirm the result. Extra tickets from daily boosts and referrals improve your odds but never guarantee a win.'],
-  ['What is the secret claim code?', 'When you win, your account shows a private claim code. You send that code to our official Discord or Instagram account, and only our admins can check it. Nobody can claim your prize without it, so never share it with anyone else.'],
+  ['How do I claim a prize safely?', 'After your win is published, sign in to the claim centre and submit your exact Discord username and FC Mobile UID. Your private claim code is generated securely and shown only inside your signed-in claim centre and to authorised admins. Send it only through the official Discord route. Never share your password, one-time codes or the claim code publicly.'],
   ['Does the Star Pass have cash value?', 'No. The reward is the in-game Star Pass associated with the Ballon d’Or event. It has no real cash value, cannot be redeemed for cash and has no cash alternative. FCMobiletools will never ask you to pay a fee to claim it.'],
   ['Why are my screenshots deleted after 24 hours?', 'Proof screenshots are uploaded as temporary images that delete themselves, so we keep as little of your data as possible. If a proof expires before review, we ask you to upload it again.'],
   ['What happens if I cheat?', 'Fake or reused proof, duplicate accounts and bots lead to removal and a pause from all giveaways, longer each time. Read the full Rules for the exact penalties.']
