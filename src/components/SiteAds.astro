@@ -2,7 +2,11 @@
 import { SITE_ADS } from '../config/siteAds.js';
 
 const pathname = Astro.url.pathname;
-const isExcluded = SITE_ADS.excludedPathPrefixes.some((prefix) =>
+// Giveaway pages never run pop-under, push or slider ads. People type handles, upload proof and
+// claim prizes there, so third-party pop-ups would be a scam risk and a policy risk. This list is
+// fixed in code on purpose, so saving Ad Settings in the admin can never remove it.
+const ALWAYS_EXCLUDED = ['/giveaways'];
+const isExcluded = [...SITE_ADS.excludedPathPrefixes, ...ALWAYS_EXCLUDED].some((prefix) =>
   pathname === prefix || pathname.startsWith(prefix + '/')
 );
 ---

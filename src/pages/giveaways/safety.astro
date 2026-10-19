@@ -1,0 +1,85 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/giveaway.css';
+import { SITE_ORIGIN } from '../../data/giveawayConfig.js';
+
+const steps = [
+  ['Win and see the notice', 'Winners are announced on the giveaway page with a masked name, and a prize notice appears in your account. You never need to wait for a private message.'],
+  ['Save your own handle', 'On the claim page, save the Discord or Instagram handle you will contact us from. We only accept a claim from that exact handle.'],
+  ['Reveal your secret claim code', 'Your code looks like FCM-XXXX-XXXX-XXXX. It is shown only to you, only while you are signed in.'],
+  ['Send it to our official handle', 'Message the code to the official handle listed on this page, from the handle you saved. Nobody else should ever see it.'],
+  ['We verify, then pay', 'An administrator checks the code and your handle. Payment is arranged privately, outside the website, and then marked as paid.']
+];
+const never = [
+  'Ask for your password, bank or card login, one-time codes, recovery codes or game account details.',
+  'Ask you to pay a fee, tax, deposit or "verification payment" to get a prize.',
+  'Ask you to click a link to win, other than the claim page on fcmobiletools.online.',
+  'Ask for your claim code on a public channel, in a group chat or by email.',
+  'Pressure you to hurry. A real claim window is stated on your claim page.'
+];
+const schema = { '@context': 'https://schema.org', '@type': 'WebPage', name: 'Giveaway Claim Safety', url: SITE_ORIGIN + '/giveaways/safety/' };
+---
+
+<BaseLayout title="Giveaway Claim Safety: Avoid Scams" description="How to claim an FCMobiletools giveaway prize safely, what we will never ask you for, and how to spot fake giveaway messages.">
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(schema)}></script>
+  <main class="gw-root" id="app">
+    <div class="gw-aurora" aria-hidden="true"><i></i><i></i></div>
+    <div class="gw-wrap gw-narrow">
+      <nav aria-label="Breadcrumb" class="gw-note" style="margin-bottom:18px"><a href="/giveaways/" style="color:var(--gw-cyan)">Giveaways</a> / Claim safety</nav>
+      <div class="gw-eyebrow"><i></i> Safety</div>
+      <h1 class="gw-h1" style="font-size:clamp(30px,5vw,48px)">Claim your prize <em>safely</em></h1>
+      <p class="gw-lede">Prizes are paid outside this website, so scammers like to pretend to be us. Everything below is designed so that only the real winner can claim, and so you can tell us apart from an impersonator.</p>
+
+      <section class="gw-sec" aria-labelledby="offH">
+        <div class="gw-panel" style="border-color:rgba(246,196,83,.45)">
+          <h3 id="offH">Our only official handles</h3>
+          <p>If a message about a giveaway does not come from one of these, it is not us.</p>
+          <div class="gw-callout"><div data-gw-handles>Loading...</div></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+            <a class="gw-btn" data-gw-discord hidden target="_blank" rel="noopener noreferrer">Official Discord server</a>
+            <a class="gw-btn" href="https://youtube.com/@tanzimfc" target="_blank" rel="noopener noreferrer">TanzimFC on YouTube</a>
+            <a class="gw-btn" href="https://youtube.com/@ashverseunited" target="_blank" rel="noopener noreferrer">Ashverse United on YouTube</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="gw-sec" aria-labelledby="stH">
+        <h2 class="gw-h2" id="stH">How a safe claim works</h2>
+        <p class="gw-sub">Five steps. The secret claim code is the key.</p>
+        <ol class="gw-reqs">
+          {steps.map(([t, p], i) => <li class="gw-req ok"><span class="ic">{i + 1}</span><div><h4>{t}</h4><p>{p}</p></div></li>)}
+        </ol>
+      </section>
+
+      <section class="gw-sec" aria-labelledby="nvH">
+        <h2 class="gw-h2" id="nvH">We will never</h2>
+        <div class="gw-callout bad" style="display:block">
+          <ul style="margin:0;padding-left:20px;display:grid;gap:8px">{never.map((n) => <li>{n}</li>)}</ul>
+        </div>
+      </section>
+
+      <section class="gw-sec" aria-labelledby="spH">
+        <h2 class="gw-h2" id="spH">How to spot a fake</h2>
+        <div class="gw-cols">
+          <div class="gw-trust"><div><h4>The handle is wrong</h4><p>Look-alike names with extra letters, underscores or a different number are common. Compare it character by character with the list above.</p></div></div>
+          <div class="gw-trust"><div><h4>They message you first</h4><p>We announce winners on the website. Treat a surprise direct message with a prize claim or a link as a scam until you have checked the winners list on the giveaway page.</p></div></div>
+          <div class="gw-trust"><div><h4>They want money or a login</h4><p>A real prize never costs you anything. Stop and report anyone who asks for a payment or credentials.</p></div></div>
+        </div>
+      </section>
+
+      <section class="gw-sec" aria-labelledby="lostH">
+        <div class="gw-panel">
+          <h3 id="lostH">If your code may have been seen</h3>
+          <p>Message the official handle straight away, from the handle you saved on the claim page, and say that your code may be exposed. An administrator can replace it. The old code then stops working for everyone.</p>
+          <a class="gw-btn gw-btn-gold" href="/giveaways/claim/">Open my claim page</a>
+          <p class="gw-note" style="margin-top:16px">To report an impersonator, use the <a href="/legal/contact" style="color:var(--gw-cyan)">contact page</a> and include the handle and a screenshot. Read the full <a href="/giveaways/rules/" style="color:var(--gw-cyan)">Giveaway Rules</a>.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { initOfficial } from '../../scripts/giveaway-pages.js';
+  initOfficial();
+</script>

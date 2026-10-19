@@ -23,6 +23,7 @@ export const SITE_ADS = {
     "/admin",
     "/api",
     "/creator/login",
-    "/fc-mobile-27"
+    "/fc-mobile-27",
+    "/giveaways"
   ]
 };

@@ -53,6 +53,8 @@ export default defineConfig({
         '/trivia/play/',
         '/admin',
         '/admin/',
+        '/giveaways/claim',
+        '/giveaways/claim/',
         '/creator/login',
         '/creator/login/',
         '/reset-center',
