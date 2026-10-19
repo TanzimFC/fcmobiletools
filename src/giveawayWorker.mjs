@@ -1248,6 +1248,16 @@ async function adminRoute(request, env, url, ctx, db, json) {
     if (body.confirm !== true) throw new Fail('Confirm the draw.');
     return done(await runDraw(db, env, g), g.slug);
   }
+  if (sub === 'winners' && seg[2] && seg[3] === 'code' && m === 'GET') {
+    if (!UUID_RE.test(seg[2])) throw new Fail('Winner not found.', 404);
+    const winner = (await db.rest('giveaway_winners?id=eq.' + seg[2] + '&giveaway_id=eq.' + g.id + '&select=id,status,claim_code_enc&limit=1'))?.[0];
+    if (!winner || !['awaiting_claim', 'code_verified', 'paid'].includes(winner.status) || !winner.claim_code_enc) {
+      throw new Fail('No active claim code exists for this winner.', 404);
+    }
+    const code = await openCode(env, winner.claim_code_enc);
+    await audit(db, g.id, 'claim_code_revealed_to_admin', { winner: winner.id, status: winner.status });
+    return json({ ok: true, code }, 200, { 'cache-control': 'no-store, private' });
+  }
   if (sub === 'winners' && seg[2] && seg[3] === 'action' && m === 'POST') {
     const out = await winnerAction(db, env, { ...g, draw_seed, draw_snapshot }, seg[2], body);
     return done(out, g.slug);
