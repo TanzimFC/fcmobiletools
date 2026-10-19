@@ -522,14 +522,14 @@ async function mineApi(db, ctx) {
   const winners = (await db.rest('giveaway_winners?account_id=eq.' + ctx.account.id + '&status=in.(selected,awaiting_claim,code_verified,paid,forfeited)&select=' + winnerPublicFields() + '&order=created_at.desc&limit=20')) || [];
   const ids = [...new Set([...entries.map((e) => e.giveaway_id), ...winners.map((w) => w.giveaway_id)])];
   const gmap = new Map();
-  if (ids.length) for (const g of (await db.rest('giveaways?id=in.(' + ids.join(',') + ')&select=id,slug,title,kind,accent,status,results_published_at,currency')) || []) gmap.set(g.id, g);
+  if (ids.length) for (const g of (await db.rest('giveaways?id=in.(' + ids.join(',') + ')&select=id,slug,title,kind,accent,status,results_published_at,currency,prize_cents,prize_label')) || []) gmap.set(g.id, g);
   const events = entries.length ? (await db.rest('giveaway_entry_events?entry_id=in.(' + entries.map((e) => e.id).join(',') + ')&select=entry_id,actor,action,reason,created_at&order=created_at.desc&limit=120')) || [] : [];
   const ban = await activeBan(db, ctx.account.id, null);
   return {
     entries: entries.map((e) => ({ ...e, giveaway: gmap.get(e.giveaway_id) || null, events: events.filter((ev) => ev.entry_id === e.id).slice(0, 8) })),
     // A selected winner stays hidden until an admin has reviewed the entry and announced results.
     prizes: winners.filter((w) => ['awaiting_claim', 'code_verified', 'paid'].includes(w.status) && gmap.get(w.giveaway_id)?.results_published_at)
-      .map((w) => ({ ...w, giveaway: gmap.get(w.giveaway_id), prize: money(w.prize_cents, gmap.get(w.giveaway_id)?.currency) })),
+      .map((w) => ({ ...w, giveaway: gmap.get(w.giveaway_id), prize: Number(w.prize_cents || 0) > 0 ? money(w.prize_cents, gmap.get(w.giveaway_id)?.currency) : (gmap.get(w.giveaway_id)?.prize_label || 'In-game reward') })),
     ban: ban ? { reason: ban.reason, endsAt: ban.ends_at, permanent: !ban.ends_at } : null
   };
 }
@@ -575,7 +575,7 @@ function cleanGiveawayInput(body, existing) {
   if (body.title !== undefined) { const t = clean(body.title, 120); if (t.length < 3) throw new Fail('Title needs at least 3 characters.'); set('title', t); }
   if (body.tagline !== undefined) set('tagline', clean(body.tagline, 200));
   if (body.description !== undefined) set('description', clean(body.description, 4000));
-  if (body.prizeLabel !== undefined) set('prize_label', clean(body.prizeLabel, 80) || 'Cash prize');
+  if (body.prizeLabel !== undefined) set('prize_label', clean(body.prizeLabel, 80) || 'In-game reward');
   if (body.bonusPrizeCents !== undefined) set('bonus_prize_cents', intIn(body.bonusPrizeCents, 0, 100000000, 0));
   if (body.alternateCount !== undefined) set('alternate_count', intIn(body.alternateCount, 0, 50, 3));
   if (body.coverUrl !== undefined) set('cover_url', httpsOrEmpty(body.coverUrl) || null);
@@ -659,7 +659,7 @@ async function setStatus(db, env, g, to) {
   }
   if (to === 'completed') {
     const open = await db.rest('giveaway_winners?giveaway_id=eq.' + g.id + '&status=in.(selected,awaiting_claim,code_verified)&select=id&limit=1');
-    if (open.length) throw new Fail('Some winners are not paid or resolved yet.', 409);
+    if (open.length) throw new Fail('Some winners still have rewards pending delivery or unresolved claims.', 409);
   }
   const row = (await db.patch('giveaways', 'id=eq.' + g.id + '&status=eq.' + from, values))?.[0];
   if (!row) throw new Fail('The giveaway changed while you were working. Reload and try again.', 409);
@@ -887,19 +887,19 @@ async function winnerAction(db, env, g, wid, body) {
     if (!handle) throw new Fail('Enter the handle the code was sent from.');
     const matched = w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
     if (matched !== true && body.force !== true) throw new Fail(matched === false
-      ? 'The code was sent from "' + handle + '" but the winner registered "' + w.contact_handle + '". This may be someone else. Do not pay unless you can confirm the person.'
+      ? 'The code was sent from "' + handle + '" but the winner registered "' + w.contact_handle + '". This may be someone else. Do not mark the reward delivered unless you can confirm the person.'
       : 'This winner has not registered a contact handle yet. Confirm to continue.', 409, { mismatch: matched === false, confirmable: true });
     await db.patch('giveaway_winners', 'id=eq.' + w.id, { status: 'code_verified', verified_at: nowIso(), verified_by: 'admin', verified_handle: handle, handle_matched: matched });
     await audit(db, g.id, 'claim_verified', { winner: w.id, matched });
   } else if (action === 'paid') {
-    if (w.status !== 'code_verified') throw new Fail('Verify the claim code before marking a prize as paid.', 409);
+    if (w.status !== 'code_verified') throw new Fail('Verify the claim code before marking the reward as delivered.', 409);
     const method = clean(body.method, 60);
-    if (!method) throw new Fail('Enter how the prize was paid.');
+    if (!method) throw new Fail('Enter how the in-game reward was delivered.');
     await db.patch('giveaway_winners', 'id=eq.' + w.id, {
       status: 'paid', paid_at: nowIso(), paid_by: 'admin', payout_method: method, payout_reference: clean(body.reference, 200),
       payout_proof_url: httpsOrEmpty(body.proofUrl) || null
     });
-    await audit(db, g.id, 'prize_paid', { winner: w.id, method });
+    await audit(db, g.id, 'reward_delivered', { winner: w.id, method });
   } else if (action === 'extend') {
     if (!['awaiting_claim', 'code_verified'].includes(w.status)) throw new Fail('Nothing to extend.', 409);
     const base = Math.max(Date.now(), w.claim_deadline ? Date.parse(w.claim_deadline) : Date.now());
@@ -937,7 +937,7 @@ async function verifyCode(env, db, body) {
   const h = await codeHash(env, body.code);
   const w = (await db.rest('giveaway_winners?claim_code_hash=eq.' + h + '&select=' + winnerPublicFields() + '&limit=1'))?.[0];
   if (!w) { await audit(db, null, 'claim_code_no_match', {}); return { found: false }; }
-  const [g, accounts] = await Promise.all([getGiveawayById(db, w.giveaway_id, 'id,title,slug,currency'), accountMap(db, [w.account_id])]);
+  const [g, accounts] = await Promise.all([getGiveawayById(db, w.giveaway_id, 'id,title,slug,currency,prize_cents,prize_label'), accountMap(db, [w.account_id])]);
   const handle = clean(body.handle, 64).replace(/^@/, '');
   const matched = handle && w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
   if (matched === false) await db.patch('giveaway_winners', 'id=eq.' + w.id, { claim_attempts: w.claim_attempts + 1 });
@@ -945,7 +945,7 @@ async function verifyCode(env, db, body) {
     found: true, handleMatch: matched,
     winner: {
       id: w.id, giveawayId: g?.id, giveaway: g?.title, username: accounts.get(w.account_id)?.username, slot: w.slot,
-      prize: money(w.prize_cents, g?.currency), status: w.status, contactChannel: w.contact_channel, contactHandle: w.contact_handle,
+      prize: Number(w.prize_cents || 0) > 0 ? money(w.prize_cents, g?.currency) : (g?.prize_label || 'In-game reward'), status: w.status, contactChannel: w.contact_channel, contactHandle: w.contact_handle,
       deadline: w.claim_deadline, overdue: w.claim_deadline ? Date.parse(w.claim_deadline) < Date.now() : false
     }
   };
@@ -1247,6 +1247,16 @@ async function adminRoute(request, env, url, ctx, db, json) {
   if (sub === 'draw' && m === 'POST') {
     if (body.confirm !== true) throw new Fail('Confirm the draw.');
     return done(await runDraw(db, env, g), g.slug);
+  }
+  if (sub === 'winners' && seg[2] && seg[3] === 'code' && m === 'GET') {
+    if (!UUID_RE.test(seg[2])) throw new Fail('Winner not found.', 404);
+    const winner = (await db.rest('giveaway_winners?id=eq.' + seg[2] + '&giveaway_id=eq.' + g.id + '&select=id,status,claim_code_enc&limit=1'))?.[0];
+    if (!winner || !['awaiting_claim', 'code_verified', 'paid'].includes(winner.status) || !winner.claim_code_enc) {
+      throw new Fail('No active claim code exists for this winner.', 404);
+    }
+    const code = await openCode(env, winner.claim_code_enc);
+    await audit(db, g.id, 'claim_code_revealed_to_admin', { winner: winner.id, status: winner.status });
+    return json({ ok: true, code }, 200, { 'cache-control': 'no-store, private' });
   }
   if (sub === 'winners' && seg[2] && seg[3] === 'action' && m === 'POST') {
     const out = await winnerAction(db, env, { ...g, draw_seed, draw_snapshot }, seg[2], body);

@@ -56,9 +56,10 @@ export function shapeGiveaway(row, entries, official, now = Date.now()) {
     id: row.id, slug: row.slug, kind: row.kind, kindLabel: kind.label, title: row.title, tagline: row.tagline,
     description: row.description, status, rawStatus: row.status,
     prize: {
-      label: row.prize_label, cents: row.prize_cents, bonusCents: row.bonus_prize_cents, currency: row.currency,
-      display: money(row.prize_cents, row.currency),
-      bonusDisplay: row.bonus_prize_cents ? money(row.bonus_prize_cents, row.currency) : ''
+      label: Number(row.prize_cents || 0) > 0 ? row.prize_label : 'In-game reward · no real cash value',
+      cents: row.prize_cents, bonusCents: row.bonus_prize_cents, currency: row.currency,
+      display: Number(row.prize_cents || 0) > 0 ? money(row.prize_cents, row.currency) : String(row.prize_label || 'In-game reward').split(' · ')[0],
+      bonusDisplay: Number(row.bonus_prize_cents || 0) > 0 ? money(row.bonus_prize_cents, row.currency) : ''
     },
     winners: { base: baseWinners, bonus: bonusWinners, total: baseWinners + bonusWinners, alternates: Number(row.alternate_count || 0) },
     coverUrl: row.cover_url || '', accent: row.accent || kind.accent,
@@ -80,13 +81,13 @@ export function shapeGiveaway(row, entries, official, now = Date.now()) {
   };
 }
 
-function winnerRows(rows, nameById) {
+function winnerRows(rows, nameById, prizeLabel = 'In-game reward') {
   return rows
     .filter((w) => OPEN_WINNER.includes(w.status))
     .sort((a, b) => (a.slot || 0) - (b.slot || 0))
     .map((w) => ({
       slot: w.slot, rank: w.rank_position, name: maskName(nameById.get(w.account_id) || 'player'),
-      prize: money(w.prize_cents, w.currency || 'USD'),
+      prize: Number(w.prize_cents || 0) > 0 ? money(w.prize_cents, w.currency || 'USD') : prizeLabel,
       status: w.status === 'paid' ? 'paid' : w.status === 'code_verified' ? 'verified' : 'awaiting',
       paidAt: w.paid_at || null, proofUrl: w.payout_proof_url || ''
     }));
@@ -101,11 +102,11 @@ async function namesFor(env, rest, ids) {
   return map;
 }
 
-export async function loadWinners(env, rest, giveawayId, currency) {
+export async function loadWinners(env, rest, giveawayId, currency, prizeLabel = 'In-game reward') {
   const rows = await rest(env, 'giveaway_winners?giveaway_id=eq.' + giveawayId +
     '&status=in.(awaiting_claim,code_verified,paid)&select=slot,rank_position,status,prize_cents,paid_at,payout_proof_url,account_id&order=slot.asc');
   const names = await namesFor(env, rest, (rows || []).map((r) => r.account_id));
-  return winnerRows((rows || []).map((r) => ({ ...r, currency })), names);
+  return winnerRows((rows || []).map((r) => ({ ...r, currency })), names, prizeLabel);
 }
 
 export async function loadPublicList(env, rest) {
@@ -116,7 +117,7 @@ export async function loadPublicList(env, rest) {
   const list = await Promise.all((rows || []).map(async (row) => {
     const g = shapeGiveaway(row, await entryCount(env, rest, row.id), official);
     if (row.results_published_at) {
-      try { g.results = { winners: await loadWinners(env, rest, row.id, row.currency) }; } catch { g.results = { winners: [] }; }
+      try { g.results = { winners: await loadWinners(env, rest, row.id, row.currency, row.prize_label) }; } catch { g.results = { winners: [] }; }
     }
     return g;
   }));
@@ -141,14 +142,15 @@ export async function loadWinnersWall(env, rest, limit = 12) {
   const ids = [...new Set((rows || []).map((r) => r.giveaway_id))];
   const gmap = new Map();
   if (ids.length) {
-    for (const g of (await rest(env, 'giveaways?id=in.(' + ids.join(',') + ')&results_published_at=not.is.null&select=id,title,slug,currency')) || []) gmap.set(g.id, g);
+    for (const g of (await rest(env, 'giveaways?id=in.(' + ids.join(',') + ')&results_published_at=not.is.null&select=id,title,slug,currency,prize_label')) || []) gmap.set(g.id, g);
   }
   const names = await namesFor(env, rest, (rows || []).map((r) => r.account_id));
   const totalPaid = (rows || []).reduce((n, r) => n + (r.prize_cents || 0), 0);
+  const totalDelivered = (rows || []).filter((r) => gmap.has(r.giveaway_id)).length;
   return {
-    totalPaidCents: totalPaid,
+    totalPaidCents: totalPaid, totalDelivered,
     winners: (rows || []).filter((r) => gmap.has(r.giveaway_id)).map((r) => ({
-      name: maskName(names.get(r.account_id) || 'player'), prize: money(r.prize_cents, gmap.get(r.giveaway_id).currency),
+      name: maskName(names.get(r.account_id) || 'player'), prize: Number(r.prize_cents || 0) > 0 ? money(r.prize_cents, gmap.get(r.giveaway_id).currency) : (gmap.get(r.giveaway_id).prize_label || 'In-game reward'),
       giveaway: gmap.get(r.giveaway_id).title, slug: gmap.get(r.giveaway_id).slug, paidAt: r.paid_at, proofUrl: r.payout_proof_url || ''
     }))
   };

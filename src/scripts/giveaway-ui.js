@@ -155,6 +155,6 @@ export function cardHtml(g, i = 0) {
 export function winnersHtml(list) {
   if (!list?.length) return '';
   return '<div class="gw-wins">' + list.map((w, i) => '<div class="gw-win" style="--i:' + i + '"><span class="crown">' + (w.slot ? '#' + w.slot : '★') + '</span><div><strong>' + esc(w.name) + '</strong><small>' +
-    (w.giveaway ? esc(w.giveaway) + ' · ' : '') + (w.status === 'paid' ? 'Paid' : w.status === 'verified' ? 'Verified, payment in progress' : 'Claim in progress') + '</small></div>' +
-    '<span class="gw-tag ' + (w.status === 'paid' ? 'paid' : '') + '">' + (w.status === 'paid' ? 'Paid' : 'Pending') + '</span><span class="amt">' + esc(w.prize) + '</span></div>').join('') + '</div>';
+    (w.giveaway ? esc(w.giveaway) + ' · ' : '') + (w.status === 'paid' ? 'Reward delivered' : w.status === 'verified' ? 'Claim verified, delivery pending' : 'Claim in progress') + '</small></div>' +
+    '<span class="gw-tag ' + (w.status === 'paid' ? 'paid' : '') + '">' + (w.status === 'paid' ? 'Delivered' : 'Pending') + '</span><span class="amt">' + esc(w.prize) + '</span></div>').join('') + '</div>';
 }
