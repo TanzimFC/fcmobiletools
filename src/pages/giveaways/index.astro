@@ -13,14 +13,14 @@ const schema = [
     { '@type': 'ListItem', position: 2, name: 'Giveaways', item: SITE_ORIGIN + '/giveaways/' } ] }
 ];
 const steps = [
-  ['Complete the steps', 'Finish your profile, one survey and one quest. We check these automatically, so there is nothing to upload.'],
-  ['Join and subscribe', 'Join our Discord and subscribe to two channels. Upload a screenshot for each subscription.'],
-  ['Get reviewed', 'Automated checks run instantly and an admin reviews every entry. Every decision has a reason and a timestamp.'],
-  ['Win and claim safely', 'Winners are drawn publicly. You receive a secret claim code that only you and our admins can use.']
+  ['Unlock entry', 'Complete your profile, one survey and one quest. FCMobiletools checks your records automatically.'],
+  ['Add your proof', 'Join the official Discord, enter your Discord username, and add a screenshot for each YouTube subscription.'],
+  ['Pass review', 'Automated checks flag missing records, duplicate proof and expired images. An admin reviews every entry.'],
+  ['Claim your prize', 'Winning claim codes are generated automatically. Your account shows your code, and the admin panel can verify it.']
 ];
 const trust = [
   ['Provably fair draw', 'We publish a fingerprint of the draw seed before entries open. After the draw you can re-run it yourself on the giveaway page.'],
-  ['Secret claim code', 'Winners get a private code. Nobody can claim a prize without it, so impersonators cannot take your reward.'],
+  ['Auto-generated claim code', 'Each winner receives a unique code automatically. The winner sees it in their account; admins verify it in the control room.'],
   ['Official handles only', 'Prizes are paid outside the website, but only after you message our official Discord or Instagram. We never DM first asking for money.'],
   ['Visible decisions', 'Approved, rejected or asked to fix a screenshot? You always see the reason and the time on your entry timeline.']
 ];
@@ -28,7 +28,7 @@ const trust = [
 
 <BaseLayout
   title="FC Mobile Giveaways: Free to Enter, Verified Winners"
-  description="Win prizes in free FC Mobile giveaways on FCMobiletools. Fair public draws, verified winners, and a secret claim code that keeps your prize safe."
+  description="Enter free FC Mobile giveaways on FCMobiletools. Review the requirements, track your entry and verify public draws."
 >
   {schema.map((s) => <script slot="head" type="application/ld+json" set:html={JSON.stringify(s)}></script>)}
 
@@ -37,12 +37,12 @@ const trust = [
     <div class="gw-wrap">
       <header class="gw-hero">
         <div>
-          <div class="gw-eyebrow"><i></i> FCMobiletools Giveaways · Free to enter</div>
-          <h1 class="gw-h1">Win real prizes. <em>Drawn in public.</em> Paid safely.</h1>
-          <p class="gw-lede">Complete a few simple steps, upload your proof and you are in the draw. Every entry is reviewed by a person, every winner is picked by a draw you can verify yourself, and every prize is protected by a secret claim code.</p>
+          <div class="gw-eyebrow"><i></i> FCMOBILETOOLS · COMMUNITY REWARDS</div>
+          <h1 class="gw-h1">Your next FC Mobile reward. <em>Starts here.</em></h1>
+          <p class="gw-lede">Enter free. Complete the requirements, send your proof and track the review from your account. Approved entries are eligible for the public draw.</p>
           <div class="gw-cta">
-            <a class="gw-btn gw-btn-gold gw-btn-lg" href="#live">See live giveaways</a>
-            <a class="gw-btn gw-btn-lg" href="/giveaways/safety/">How claiming stays safe</a>
+            <a class="gw-btn gw-btn-gold gw-btn-lg" href="#live">Explore giveaways</a>
+            <a class="gw-btn gw-btn-lg" href="/giveaways/safety/">Claiming & safety</a>
           </div>
         </div>
         <div class="gw-trophy" aria-hidden="true">
@@ -62,21 +62,21 @@ const trust = [
 
       <section class="gw-sec" id="live" aria-labelledby="liveH">
         <h2 class="gw-h2" id="liveH">Giveaways</h2>
-        <p class="gw-sub">Browse freely. You need a free account to enter, so we can check your profile, survey and quest and keep prizes safe.</p>
+        <p class="gw-sub">Find a prize, check the closing time and review the requirements before you enter. Browsing is open; participation requires a free account.</p>
         <div class="gw-grid" id="gwGrid"></div>
       </section>
 
       <section class="gw-sec" aria-labelledby="howH">
-        <h2 class="gw-h2" id="howH">How it works</h2>
-        <p class="gw-sub">Four steps from sign in to prize. It takes about ten minutes.</p>
+        <h2 class="gw-h2" id="howH">Entry, without the guesswork</h2>
+        <p class="gw-sub">Know what is checked, what needs proof and what happens next.</p>
         <div class="gw-cols">
           {steps.map(([t, p], i) => <div class="gw-step"><b>{i + 1}</b><h4>{t}</h4><p>{p}</p></div>)}
         </div>
       </section>
 
       <section class="gw-sec" aria-labelledby="trustH">
-        <h2 class="gw-h2" id="trustH">Built so nobody can steal your prize</h2>
-        <p class="gw-sub">Giveaway scams are common. These protections are built into every giveaway we run.</p>
+        <h2 class="gw-h2" id="trustH">Fair rules. Clear status.</h2>
+        <p class="gw-sub">Every entry has a review trail. Every draw has a verification path.</p>
         <div class="gw-cols">
           {trust.map(([t, p]) => (
             <div class="gw-trust">
@@ -88,15 +88,15 @@ const trust = [
       </section>
 
       <section class="gw-sec" aria-labelledby="winH">
-        <h2 class="gw-h2" id="winH">Winners hall</h2>
-        <p class="gw-sub">Paid winners appear here with a masked name. Real people, real payouts.</p>
+        <h2 class="gw-h2" id="winH">Recent winners</h2>
+        <p class="gw-sub">Confirmed payouts appear here with names masked for privacy.</p>
         <div id="gwWall"></div>
       </section>
 
       <section class="gw-sec" aria-labelledby="supH">
         <div class="gw-panel">
-          <h3 id="supH">Support the channels behind the giveaways</h3>
-          <p>Subscribing is one of the entry steps, and it is also how you hear about the next giveaway first.</p>
+          <h3 id="supH">Follow the official channels</h3>
+          <p>Use these links for the required subscriptions and future giveaway announcements.</p>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             {OFFICIAL_YOUTUBE.map((c) => <a class="gw-btn" href={c.url} target="_blank" rel="noopener noreferrer">{c.name} on YouTube</a>)}
             <a class="gw-btn" data-gw-discord hidden target="_blank" rel="noopener noreferrer">Join our Discord</a>
