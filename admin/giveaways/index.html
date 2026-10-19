@@ -312,11 +312,24 @@ function winRow(x){
   if(['selected','awaiting_claim','code_verified'].includes(x.status))act_.push(['reroll','Reroll','']);
   if(x.status==='awaiting_claim'){act_.push(['verify','Mark claim verified','pri']);act_.push(['extend','Extend','']);act_.push(['rotate_code','New code','']);act_.push(['forfeit','Forfeit','bad'])}
   if(x.status==='code_verified'){act_.push(['paid','Mark paid','pri']);act_.push(['rotate_code','New code','']);act_.push(['forfeit','Forfeit','bad'])}
+  if(['awaiting_claim','code_verified','paid'].includes(x.status))act_.push(['show_code','Show claim code','']);
   return '<tr><td>#'+(x.slot||'-')+'<div class="hint">rank '+x.rank_position+'</div></td><td><b>'+esc(x.account&&x.account.username)+'</b><div class="hint">Discord: '+esc(en.discord_username||'?')+' · entry '+esc(en.status||'?')+'</div></td><td>'+money(x.prize_cents)+'</td><td><span class="tag '+s[1]+'">'+s[0]+'</span>'+(x.overdue?'<br><span class="tag bad">Claim overdue</span>':'')+(x.handle_matched===false?'<br><span class="tag bad">Handle mismatch</span>':'')+'</td>'+
    '<td class="hint">'+(x.contact_handle?esc(x.contact_channel)+': <b style="color:#fff">'+esc(x.contact_handle)+'</b>':'No handle saved')+(x.claim_deadline?'<br>Deadline '+when(x.claim_deadline):'')+(x.verified_handle?'<br>Code came from '+esc(x.verified_handle):'')+(x.payout_method?'<br>Paid via '+esc(x.payout_method):'')+'</td><td><div class="row">'+act_.map(a=>'<button class="btn sm '+a[2]+'" data-w="'+a[0]+'" data-id="'+x.id+'">'+a[1]+'</button>').join('')+'</div></td></tr>';
 }
 async function winnerAct(b){
   const g=state.sel,a=b.dataset.w,id=b.dataset.id;const post=body=>api('/'+g.id+'/winners/'+id+'/action',{method:'POST',body:Object.assign({action:a},body)});
+  if(a==='show_code'){
+    await act(b,async()=>{
+      const r=await api('/'+g.id+'/winners/'+id+'/code');
+      const old=b.closest('tr').nextElementSibling;
+      if(old&&old.dataset.claimCodeRow==='1')old.remove();
+      b.closest('tr').insertAdjacentHTML('afterend','<tr data-claim-code-row="1"><td colspan="6"><div class="note" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><small class="hint">Private claim code · admin-only · reveal logged</small><div class="mono" style="font-size:18px;color:#fff;letter-spacing:.08em;margin-top:4px">'+esc(r.code)+'</div></div><button class="btn sm" data-copy-claim>Copy code</button></div></td></tr>');
+      const row=b.closest('tr').nextElementSibling, copy=row.querySelector('[data-copy-claim]');
+      copy.onclick=()=>navigator.clipboard.writeText(r.code).then(()=>toast('Claim code copied.')).catch(()=>toast('Clipboard unavailable. Copy the code manually.',false));
+      toast('Claim code revealed. This access was recorded.');
+    });
+    return;
+  }
   await act(b,async()=>{let r;
     if(a==='approve'){try{r=await post({})}catch(e){if(e.body&&e.body.needsOverride){const v=await ask({title:'Entry not approved yet',text:'Check the proof first if you can. Only continue if you have verified this entrant another way, for example earlier review whose images have since expired.',fields:[{k:'reason',label:'Why are you approving?',type:'area'}],ok:'Approve anyway',cls:'bad'});if(!v)return;r=await post({override:true,reason:v.reason})}else throw e}toast('Winner approved. A secret claim code was created.')}
     else if(a==='reject'||a==='reroll'||a==='forfeit'){const v=await ask({title:a==='reroll'?'Reroll this slot':a==='forfeit'?'Forfeit this prize':'Reject this winner',text:'The next eligible entry in the fixed ranking takes the slot. The old claim code stops working.',fields:[{k:'reason',label:'Reason (saved in the audit log)',type:'area'}].concat(a==='reject'?[{k:'ban',label:'Penalty',type:'select',options:[['none','No pause'],['ladder','Pause from all giveaways (ladder)'],['perm','Permanent pause']]}]:[]),ok:'Confirm',cls:'bad'});if(!v)return;r=await post({reason:v.reason,ban:v.ban&&v.ban!=='none'?(v.ban==='perm'?{permanent:true}:{}):undefined});toast(r.replacement?'Replaced by rank '+r.replacement.rank+'.':'No eligible entries left to replace this winner.',!r.replacement)}
