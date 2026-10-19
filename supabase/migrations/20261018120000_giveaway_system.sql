@@ -37,7 +37,7 @@ create table if not exists public.giveaways (
   description text not null default '' check (char_length(description) <= 4000),
   status text not null default 'draft'
     check (status in ('draft','live','closed','drawn','completed','cancelled')),
-  prize_label text not null default 'Cash prize' check (char_length(prize_label) <= 80),
+  prize_label text not null default 'In-game reward' check (char_length(prize_label) <= 80),
   prize_cents integer not null default 0 check (prize_cents between 0 and 100000000),
   bonus_prize_cents integer not null default 0 check (bonus_prize_cents between 0 and 100000000),
   currency text not null default 'USD' check (currency ~ '^[A-Z]{3}$'),
@@ -354,14 +354,8 @@ on conflict (key) do nothing;
 insert into public.giveaways
   (slug, kind, title, tagline, description, prize_label, prize_cents, bonus_prize_cents, accent, requirements, milestones)
 values
-  ('ballon-dor-giveaway', 'ballon_dor', 'Ballon d''Or Giveaway',
-   'Win a $20 prize. Free to enter, drawn in public.',
-   'Complete the steps, upload your proof and you are in the draw. Winners are picked by a provably fair draw you can verify yourself.',
-   'Cash prize', 2000, 500, '#f6c453', '[]'::jsonb,
-   '[{"entries":300,"label":"Second winner unlocked","bonus_winners":1},{"entries":1000,"label":"Two more winners unlocked","bonus_winners":2}]'::jsonb),
-  ('star-pass-giveaway', 'star_pass', 'Star Pass Giveaway',
-   'Win a $20 prize. Free to enter, drawn in public.',
-   'Complete the steps, upload your proof and you are in the draw. Winners are picked by a provably fair draw you can verify yourself.',
-   'Cash prize', 2000, 500, '#4cc9ff', '[]'::jsonb,
-   '[{"entries":300,"label":"Second winner unlocked","bonus_winners":1},{"entries":1000,"label":"Two more winners unlocked","bonus_winners":2}]'::jsonb)
+  ('ballon-dor-star-pass-giveaway', 'ballon_dor', 'Ballon d''Or Star Pass Giveaway',
+   'Win the in-game Star Pass from the Ballon d''Or event. Free to enter.',
+   'The reward is the in-game Star Pass associated with the Ballon d''Or event. It has no real cash value, cannot be redeemed for cash and has no cash alternative.',
+   'Star Pass', 0, 0, '#f6c453', '[]'::jsonb, '[]'::jsonb)
 on conflict (slug) do nothing;
