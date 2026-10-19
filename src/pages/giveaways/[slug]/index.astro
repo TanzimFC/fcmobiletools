@@ -17,7 +17,7 @@ let failed = false;
 try { g = await loadPublicOne(env, ssrSupabaseRest, slug); } catch (e) { failed = true; console.error('[GIVEAWAY_PAGE]', e?.message); }
 if (!g) { Astro.response.status = failed ? 503 : 404; Astro.response.headers.set('cache-control', 'no-store'); }
 
-const title = g ? g.title + ': ' + g.prize.display + ' Giveaway' : 'Giveaway not found';
+const title = g ? g.title + ' | FCMobiletools' : 'Giveaway not found';
 const description = g
   ? g.title + ' on FCMobiletools. Reward: ' + g.prize.display + '. ' + g.prize.label + '. Free to enter with account-based verification and a public draw.'
   : 'This giveaway is not available. Browse current FC Mobile giveaways.';
