@@ -324,9 +324,10 @@ async function winnerAct(b){
       const r=await api('/'+g.id+'/winners/'+id+'/code');
       const old=b.closest('tr').nextElementSibling;
       if(old&&old.dataset.claimCodeRow==='1')old.remove();
-      b.closest('tr').insertAdjacentHTML('afterend','<tr data-claim-code-row="1"><td colspan="6"><div class="note" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><small class="hint">Private claim code · admin-only · reveal logged</small><div class="mono" style="font-size:18px;color:#fff;letter-spacing:.08em;margin-top:4px">'+esc(r.code)+'</div></div><button class="btn sm" data-copy-claim>Copy code</button></div></td></tr>');
+      b.closest('tr').insertAdjacentHTML('afterend','<tr data-claim-code-row="1"><td colspan="6"><div class="note" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><small class="hint">Private claim code · admin-only · reveal logged · hidden after 30 seconds</small><div class="mono" data-claim-code style="font-size:18px;color:#fff;letter-spacing:.08em;margin-top:4px">'+esc(r.code)+'</div></div><button class="btn sm" data-copy-claim>Copy code</button></div></td></tr>');
       const row=b.closest('tr').nextElementSibling, copy=row.querySelector('[data-copy-claim]');
       copy.onclick=()=>navigator.clipboard.writeText(r.code).then(()=>toast('Claim code copied.')).catch(()=>toast('Clipboard unavailable. Copy the code manually.',false));
+      window.setTimeout(()=>{if(row.isConnected)row.remove()},30000);
       toast('Claim code revealed. This access was recorded.');
     });
     return;
@@ -366,7 +367,7 @@ function renderVerify(){
     '<div class="sub">Saved Discord: '+(w.contactHandle?esc(w.contactHandle):'none')+'<br>Saved FC Mobile UID: '+(w.fcUid?esc(w.fcUid):'none')+'</div>'+
     (!allMatch?'<div class="note bad">Do not verify or deliver the reward while either detail is missing or mismatched. Confirm the winner through the official community before overriding.</div>':'<div class="note ok">Both submitted details match the saved winner record.</div>')+
     (w.status==='awaiting_claim'?'<button class="btn pri" id="v_mark" '+(allMatch?'':'')+'>Mark claim verified</button>':'')+'</div>';
-    const mk=$('#v_mark');if(mk)mk.onclick=ev=>act(ev.currentTarget,async()=>{const body={action:'verify',handle:$('#v_handle').value,fcUid:$('#v_uid').value};try{await api('/'+w.giveawayId+'/winners/'+w.id+'/action',{method:'POST',body})}catch(er){if(er.body&&er.body.confirmable){const c=await ask({title:'Claim details mismatch',text:er.message,ok:'I independently verified the winner',cls:'bad'});if(!c)return;body.force=true;await api('/'+w.giveawayId+'/winners/'+w.id+'/action',{method:'POST',body})}else throw er}toast('Claim verification recorded. You can now mark delivery in the winners tab.');$('#v_go').click()})});
+    const mk=$('#v_mark');if(mk)mk.onclick=ev=>act(ev.currentTarget,async()=>{const body={action:'verify',handle:$('#v_handle').value,fcUid:$('#v_uid').value};try{await api('/'+w.giveawayId+'/winners/'+w.id+'/action',{method:'POST',body})}catch(er){if(er.body&&er.body.confirmable){const c=await ask({title:'Claim details mismatch',text:er.message,fields:[{k:'reason',label:'Override reason (required)',type:'area',ph:'Explain how you independently confirmed the winner'}],ok:'I verified the winner',cls:'bad'});if(!c)return;if(!c.reason||c.reason.trim().length<5){toast('Add an override reason of at least five characters.',true);return}body.force=true;body.reason=c.reason;await api('/'+w.giveawayId+'/winners/'+w.id+'/action',{method:'POST',body})}else throw er}toast('Claim verification recorded. You can now mark delivery in the winners tab.');$('#v_go').click()})});
 }
 
 // ───────────── penalties ─────────────
