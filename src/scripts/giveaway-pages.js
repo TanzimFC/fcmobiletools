@@ -155,19 +155,18 @@ function paintMe(g, me) {
     const li = $('[data-req="' + r.id + '"]'); if (!li) continue;
     const config = (g.requirements || []).find((item) => item.id === r.id);
     const manual = Boolean(config && ['text', 'image'].includes(config.input));
-    const pending = manual && Boolean(e) && ['provisional', 'needs_proof'].includes(e.status) && r.ok;
+    const pending = manual && Boolean(e) && e.status === 'provisional' && r.ok;
     // Approval records that a human has accepted the proof. Keep that green
     // status even if temporary screenshot links expire later.
     const verified = manual ? Boolean(e && e.status === 'approved') : r.ok;
     const rejectedManual = manual && rejected;
     const needsFix = manual && Boolean(e && e.status === 'needs_proof');
-    const failed = manual ? (!e ? false : (!r.ok && !needsFix) || rejectedManual) : !r.ok;
+    const failed = manual ? (!e ? false : (!r.ok || rejectedManual || needsFix)) : !r.ok;
     li.classList.toggle('ok', verified);
-    li.classList.toggle('pending', pending || (needsFix && !rejectedManual));
+    li.classList.toggle('pending', pending);
     li.classList.toggle('bad', failed);
     $('.ic', li).innerHTML = verified || pending ? IC.check : manual && !e ? '•' : '!';
-    $('.st', li).textContent = pending
-      ? (e.status === 'needs_proof' ? 'Correction requested' : 'Awaiting manual review')
+    $('.st', li).textContent = pending ? 'Awaiting manual review'
       : verified ? 'Approved' : rejectedManual ? 'Entry rejected' : manual && !e ? 'Complete in entry form' : needsFix ? 'Correction requested' : r.detail;
   }
   if (me.ban) { host.innerHTML = '<div class="gw-callout bad"><div><strong>Your account is paused from giveaways' + (me.ban.permanent ? '' : ' until ' + esc(when(me.ban.endsAt))) + '.</strong><br>' + esc(me.ban.reason) + '</div></div>'; return; }
