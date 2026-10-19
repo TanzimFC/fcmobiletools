@@ -911,13 +911,21 @@ async function winnerAction(db, env, g, wid, body) {
   } else if (action === 'verify') {
     if (w.status !== 'awaiting_claim') throw new Fail('Only a winner who is awaiting claim can be verified.', 409);
     const handle = clean(body.handle, 64).replace(/^@/, '');
-    if (!handle) throw new Fail('Enter the handle the code was sent from.');
-    const matched = w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
-    if (matched !== true && body.force !== true) throw new Fail(matched === false
-      ? 'The code was sent from "' + handle + '" but the winner registered "' + w.contact_handle + '". This may be someone else. Do not mark the reward delivered unless you can confirm the person.'
-      : 'This winner has not registered a contact handle yet. Confirm to continue.', 409, { mismatch: matched === false, confirmable: true });
+    const fcUid = clean(body.fcUid, 32).replace(/\\s+/g, '');
+    if (!handle) throw new Fail('Enter the Discord username the code was sent from.');
+    if (!/^\\d{6,20}$/.test(fcUid)) throw new Fail('Enter the winner FC Mobile UID to complete verification.');
+    const handleMatch = w.contact_handle ? handle.toLowerCase() === w.contact_handle.toLowerCase() : null;
+    const uidMatch = w.fc_uid ? fcUid === String(w.fc_uid) : null;
+    const matched = handleMatch === true && uidMatch === true;
+    if (!matched && body.force !== true) {
+      const reason = handleMatch === false ? 'The Discord username does not match the winner record.'
+        : uidMatch === false ? 'The FC Mobile UID does not match the winner record.'
+        : 'The winner has not saved all required claim details.';
+      throw new Fail(reason + ' Do not verify this claim unless you independently confirm the winner.', 409,
+        { mismatch: handleMatch === false || uidMatch === false, confirmable: true, handleMatch, uidMatch });
+    }
     await db.patch('giveaway_winners', 'id=eq.' + w.id, { status: 'code_verified', verified_at: nowIso(), verified_by: 'admin', verified_handle: handle, handle_matched: matched });
-    await audit(db, g.id, 'claim_verified', { winner: w.id, matched });
+    await audit(db, g.id, 'claim_verified', { winner: w.id, matched, handleMatch, uidMatch });
   } else if (action === 'paid') {
     if (w.status !== 'code_verified') throw new Fail('Verify the claim code before marking the reward as delivered.', 409);
     const method = clean(body.method, 60);
