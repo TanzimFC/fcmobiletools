@@ -1,7 +1,7 @@
 // Public (signed-out safe) giveaway data. Used by the Worker API and by the server-rendered pages,
 // so both always show the same thing. Nothing here returns a secret: the draw seed is only
 // included after an admin publishes the results, and claim codes never leave the Worker.
-import { requirementsFor, cleanMilestones, unlockedMilestones, BONUS_DEFAULTS, money, KINDS } from '../data/giveawayConfig.js';
+import { requirementsFor, cleanMilestones, unlockedMilestones, money, KINDS } from '../data/giveawayConfig.js';
 import { maskName } from './giveawayDraw.js';
 
 export const PUBLIC_COLUMNS = [
@@ -70,7 +70,7 @@ export function shapeGiveaway(row, entries, official, now = Date.now()) {
       list: cleanMilestones(row.milestones).map((m) => ({ ...m, unlocked: entries >= m.entries })),
       next: ms.next
     },
-    bonus: { ...BONUS_DEFAULTS, ...(row.bonus && typeof row.bonus === 'object' ? row.bonus : {}) },
+    bonus: { daily: false, dailyCap: 0, referral: false, referralCap: 0 },
     stats: { entries },
     rulesVersion: row.rules_version,
     fairness: {
