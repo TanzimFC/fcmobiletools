@@ -48,10 +48,6 @@ const isExcluded = !eligibleGiveawayPage || permanentlyExcluded;
         } else if (format.key === 'inPagePush') {
           script.dataset.zone = config.inPagePush.zone;
           script.src = config.inPagePush.src;
-        } else if (format.key === 'videoSlider') {
-          script.settings = {};
-          script.src = config.videoSlider.src;
-          script.referrerPolicy = 'no-referrer-when-downgrade';
         } else {
           return;
         }
@@ -67,8 +63,7 @@ const isExcluded = !eligibleGiveawayPage || permanentlyExcluded;
         const formats = [
           { key: 'inPagePush', settings: config.inPagePush },
           { key: 'vignette', settings: config.vignette },
-          { key: 'push', settings: config.push },
-          { key: 'videoSlider', settings: config.videoSlider }
+          { key: 'push', settings: config.push }
         ].filter((format) => format.settings?.enabled && format.settings?.src && format.settings?.zone);
         if (!formats.length) return;
 

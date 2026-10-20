@@ -1760,28 +1760,13 @@ function validateSiteAds(content) {
   normalizeFormat('push','Monetag push notifications','12079218','5gvci.com','/act/files/tag.min.js',20000);
   normalizeFormat('inPagePush','Monetag In-Page Push','12079223','nap5k.com','/tag.min.js',25000);
 
-  const slider=content.videoSlider;
-  if(!slider || typeof slider!=='object') throw new Error('HilltopAds Video Slider configuration is missing.');
-  slider.enabled=Boolean(slider.enabled);
-  slider.zone=String(slider.zone||'').trim();
-  slider.src=String(slider.src||'').trim();
-  slider.delayMs=Number(slider.delayMs ?? 35000);
-  let sliderUrl;
-  try { sliderUrl=new URL(slider.src); } catch {}
-  if(!/^\d{4,12}$/.test(slider.zone) || !sliderUrl || sliderUrl.protocol!=='https:' ||
-     sliderUrl.hostname!=='conventionalresponse.com' || !sliderUrl.pathname.startsWith('/') || sliderUrl.search || sliderUrl.hash) {
-    throw new Error('HilltopAds Video Slider settings are invalid.');
-  }
-  if(!Number.isInteger(slider.delayMs) || slider.delayMs<5000 || slider.delayMs>300000) {
-    throw new Error('HilltopAds Video Slider delay must be between 5 and 300 seconds.');
-  }
-
   if(!Number.isInteger(content.frequencyCapMinutes) || content.frequencyCapMinutes<20 || content.frequencyCapMinutes>240) {
     throw new Error('The visitor frequency cap must be between 20 and 240 minutes.');
   }
 
   // Legacy clients may submit old fields; never save a popunder configuration.
   delete content.popunder;
+  delete content.videoSlider;
   content.excludedPathPrefixes=['/admin','/api','/creator/login','/fc-mobile-27','/account'];
   return content;
 }
@@ -2412,7 +2397,6 @@ async function api(request,env,path) {
         vignette:{...current.vignette,...(input.vignette||{})},
         push:{...current.push,...(input.push||{})},
         inPagePush:{...current.inPagePush,...(input.inPagePush||{})},
-        videoSlider:{...current.videoSlider,...(input.videoSlider||{})},
         frequencyCapMinutes:input.frequencyCapMinutes===undefined?current.frequencyCapMinutes:Number(input.frequencyCapMinutes)
       });
       const file=await repoFile(env,'src/config/siteAds.js');
