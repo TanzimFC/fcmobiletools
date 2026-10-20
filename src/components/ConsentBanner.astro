@@ -14,14 +14,14 @@
 
     <div class="fcmt-consent-copy">
       <h2 id="fcmtConsentTitle" class="fcmt-r" style="--i:1">Your privacy matters</h2>
-      <p id="fcmtConsentText" class="fcmt-r" style="--i:2">We use cookies to keep FCMOBILETOOLS running, understand how the site is used, and support advertising. Accept all, reject the optional ones, or choose what you allow.</p>
+      <p id="fcmtConsentText" class="fcmt-r" style="--i:2">Essential cookies keep FCMOBILETOOLS running. Optional advertising scripts only load if you allow advertising. Google Analytics is disabled.</p>
       <a class="fcmt-consent-policy fcmt-r" style="--i:3" href="/legal/privacy-policy#privacy-choices">Read our privacy policy</a>
     </div>
 
     <div class="fcmt-consent-actions fcmt-r" style="--i:3">
       <button type="button" class="fcmt-consent-btn ghost" data-consent="reject">Reject non-essential</button>
       <button type="button" class="fcmt-consent-btn secondary" data-consent="manage">Manage choices</button>
-      <button type="button" class="fcmt-consent-btn primary" data-consent="accept"><span>Accept all</span></button>
+      <button type="button" class="fcmt-consent-btn primary" data-consent="accept"><span>Allow advertising</span></button>
     </div>
   </div>
 </div>
@@ -51,13 +51,9 @@
       <section class="fcmt-setting fcmt-r" style="--i:1">
         <div>
           <strong>Analytics</strong>
-          <p>Aggregate usage data that helps us improve pages, tools, and performance.</p>
+          <p>Google Analytics is disabled. No Google Analytics tag is loaded.</p>
         </div>
-        <label class="fcmt-toggle">
-          <input id="fcmtAnalytics" type="checkbox" />
-          <span class="fcmt-track"></span>
-          <em></em>
-        </label>
+        <span class="fcmt-setting-status">Disabled</span>
       </section>
 
       <section class="fcmt-setting fcmt-r" style="--i:2">
@@ -271,7 +267,6 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
 
   const openModal = () => {
     const current = readCookie() || { analytics: false, advertising: false };
-    document.getElementById('fcmtAnalytics').checked = !!current.analytics;
     document.getElementById('fcmtAdvertising').checked = !!current.advertising;
     lastFocus = document.activeElement;
     modal.hidden = false;
@@ -293,11 +288,13 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
   };
 
   const apply = (choice) => {
-    writeCookie(choice);
-    updateGoogleConsent(choice);
+    // Analytics is permanently disabled; advertising consent remains visitor-controlled.
+    const safeChoice = { analytics: false, advertising: !!choice.advertising };
+    writeCookie(safeChoice);
+    updateGoogleConsent(safeChoice);
     hideBanner();
     closeModal(false);
-    window.dispatchEvent(new CustomEvent('fcmobiletools:consent-updated', { detail: choice }));
+    window.dispatchEvent(new CustomEvent('fcmobiletools:consent-updated', { detail: safeChoice }));
   };
 
   banner.querySelector('[data-consent="accept"]')?.addEventListener('click', () => apply({ analytics: true, advertising: true }));
@@ -307,7 +304,7 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
   modal.querySelectorAll('[data-consent-close]').forEach((el) => el.addEventListener('click', () => closeModal()));
   modal.querySelector('[data-consent="reject"]')?.addEventListener('click', () => apply({ analytics: false, advertising: false }));
   modal.querySelector('[data-consent="save"]')?.addEventListener('click', () => apply({
-    analytics: document.getElementById('fcmtAnalytics').checked,
+    analytics: false,
     advertising: document.getElementById('fcmtAdvertising').checked
   }));
 
