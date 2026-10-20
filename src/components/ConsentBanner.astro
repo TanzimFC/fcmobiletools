@@ -243,16 +243,6 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
     })) + '; Max-Age=' + maxAge + '; Path=/; SameSite=Lax';
   };
 
-  const updateGoogleConsent = ({ analytics, advertising }) => {
-    if (typeof window.gtag !== 'function') return;
-    window.gtag('consent', 'update', {
-      analytics_storage: analytics ? 'granted' : 'denied',
-      ad_storage: advertising ? 'granted' : 'denied',
-      ad_user_data: advertising ? 'granted' : 'denied',
-      ad_personalization: advertising ? 'granted' : 'denied'
-    });
-  };
-
   const showBanner = () => {
     if (readCookie()?.version === VERSION) return;
     banner.hidden = false;
@@ -291,7 +281,6 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
     // Analytics is permanently disabled; advertising consent remains visitor-controlled.
     const safeChoice = { analytics: false, advertising: !!choice.advertising };
     writeCookie(safeChoice);
-    updateGoogleConsent(safeChoice);
     hideBanner();
     closeModal(false);
     window.dispatchEvent(new CustomEvent('fcmobiletools:consent-updated', { detail: safeChoice }));
