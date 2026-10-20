@@ -1735,7 +1735,7 @@ function validateSiteAds(content) {
   if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
   content.enabled=Boolean(content.enabled);
   content.provider='Monetag';
-  content.placementMode='public_content_except_sensitive';
+  content.placementMode='giveaways_only';
   content.frequencyCapMinutes=Number(content.frequencyCapMinutes ?? 30);
 
   const normalizeFormat=(key,label,expectedZone,expectedHost,expectedPath,defaultDelay)=>{
@@ -1771,7 +1771,7 @@ function validateSiteAds(content) {
   return content;
 }
 function siteAdsText(content) {
-  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// Monetag formats run on eligible public pages after advertising consent. The homepage, admin, account and sensitive giveaway flows are excluded. No popunder format is configured.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
+  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// Monetag formats run on every /giveaways route after advertising consent. Homepage, admin, accounts, and every other tool are excluded. No popunder format is configured.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
 }
 
 function parseFcMobile27(text) {
