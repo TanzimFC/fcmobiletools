@@ -144,6 +144,57 @@ function ask(o){
   });
 }
 
+// ───────────── draw stage (full-screen show for screen recording) ─────────────
+const maskName=n=>{n=String(n||'player');return n.length<=2?'**':n.length<=4?n[0]+'*'.repeat(n.length-1):n.slice(0,2)+'*'.repeat(Math.min(6,n.length-4))+n.slice(-2)};
+const prizeText=g=>Number(g.prize_cents||0)>0?money(g.prize_cents):String(g.prize_label||'In-game reward').split(' \u00b7 ')[0];
+const loadStage=()=>import('/giveaway-stage/stage.js');
+const stageFields=[
+  {k:'speed',label:'Show length',type:'select',options:[['standard','Standard, about 1.5 minutes'],['epic','Epic, about 3 minutes (best for video)'],['quick','Quick, about 30 seconds']],hint:'The draw itself is instant. The show only controls how long the on-screen build-up lasts.'},
+  {k:'sound',label:'Sound effects',type:'select',options:[['off','Off'],['on','On']],hint:'Turn on to record the sound with your screen capture. You can toggle it any time with S.'}
+];
+const entryEstimate=g=>{const c=g.entryCounts||{};return(Number(c.provisional)||0)+(Number(c.approved)||0)};
+function stageRows(g,rows){
+  const pz=prizeText(g);
+  return rows.filter(x=>x.slot&&['selected','awaiting_claim','code_verified','paid'].includes(x.status)).sort((a,b)=>a.slot-b.slot).map(x=>({slot:x.slot,name:maskName(x.account&&x.account.username),prize:Number(x.prize_cents||0)>0?money(x.prize_cents):pz}));
+}
+function stageAlts(rows){return rows.filter(x=>x.status==='alternate').sort((a,b)=>a.rank_position-b.rank_position).map(x=>maskName(x.account&&x.account.username))}
+async function drawFacts(g){
+  try{const d=await api('/audit?giveaway='+g.id);const r=(d.audit||[]).find(a=>a.action==='draw_completed');if(r&&r.detail)return{entries:Number(r.detail.entries)||0,entriesHash:String(r.detail.entriesHash||g.entries_hash||'')}}catch(e){}
+  return{entries:entryEstimate(g),entriesHash:g.entries_hash||''};
+}
+async function openStage(g,mode,v,extra){
+  const S=await loadStage();
+  return S.openDrawStage(Object.assign({mode:mode,title:g.title,prize:prizeText(g),speed:(v&&v.speed)||'standard',sound:Boolean(v&&v.sound==='on'),seedCommit:g.seed_commit||'',entries:entryEstimate(g),winnersTotal:Math.max(1,Number(g.winner_count)||1),
+    verifyUrl:g.results_published_at?'/giveaways/'+g.slug+'/':''},extra||{}));
+}
+function runLiveDraw(g,v){
+  let drawn=false;
+  return openStage(g,'live',v,{
+    finalNote:'Next: review each winner\u2019s proof, then publish the results.',
+    prepare:async()=>{
+      const r=await api('/'+g.id+'/draw',{method:'POST',body:{confirm:true}});drawn=true;
+      let w;try{w=await api('/'+g.id+'/winners')}catch(e){const er=new Error('The draw ran and is saved, but the winners list could not load. Close this and open Draw and winners.');er.title='The draw ran, but the show stopped';throw er}
+      state.winners=w.winners;
+      return{entries:r.eligible,entriesHash:r.entriesHash,winners:stageRows(g,w.winners),alternates:stageAlts(w.winners)};
+    },
+    onClose:async()=>{if(drawn){toast('Draw complete.');try{await refreshSel();renderDetail()}catch(e){}}}
+  });
+}
+async function runReplay(g){
+  const[w,f]=await Promise.all([api('/'+g.id+'/winners'),drawFacts(g)]);
+  const rows=stageRows(g,w.winners);if(!rows.length)throw new Error('There are no winners to replay yet.');
+  const v=await ask({title:'Replay the draw show',text:'Plays the same show again with the saved winners. Nothing is drawn or changed.',ok:'Start the show',fields:stageFields});
+  if(!v)return;
+  return openStage(g,'replay',v,{entries:f.entries,winnersTotal:rows.length,prepare:async()=>({entries:f.entries,entriesHash:f.entriesHash,winners:rows,alternates:stageAlts(w.winners)})});
+}
+async function runRehearsal(g){
+  const v=await ask({title:'Rehearse the draw show',text:'Plays the full show with sample names so you can test your recording setup. It never touches real entries and is labelled as a rehearsal on screen.',ok:'Start rehearsal',fields:stageFields});
+  if(!v)return;
+  const n=Math.max(1,Math.min(8,Number(g.winner_count)||3));const pz=prizeText(g);const total=Math.max(entryEstimate(g),120);
+  const names=['ta****fc','jo****hn','ma****rt','sa****ra','ni****ck','ka****ri','ra****ul','em****ly'];
+  return openStage(g,'rehearsal',v,{entries:total,winnersTotal:n,prepare:async()=>({entries:total,entriesHash:'',winners:Array.from({length:n},(_,i)=>({slot:i+1,name:names[i],prize:pz})),alternates:['a','b']})});
+}
+
 // ───────────── health ─────────────
 async function loadHealth(){
   try{state.health=await api('/health');$('#health').innerHTML=state.health.checks.map(c=>'<div class="hc '+(c.ok?'ok':'bad')+'">'+(c.ok?'✓ ':'✗ ')+esc(c.label)+(c.ok?'':'<br><span class="hint">'+esc(c.fix)+'</span>')+'</div>').join('')}
@@ -292,13 +343,16 @@ function bindEntry(el){
 async function subWinners(){
   const g=state.sel;$('#sub').innerHTML='<div class="skel"></div>';
   let w;try{w=await api('/'+g.id+'/winners');state.winners=w.winners;if(!state.settings)state.settings=await api('/settings')}catch(e){$('#sub').innerHTML='<div class="note bad">'+esc(e.message)+'</div>';return}
-  const head='<div class="card"><h3>Draw</h3>'+(g.status==='live'?'<div class="note">Close entries first, then draw.</div>':g.status==='closed'?'<p>Review the queue before drawing. Entries still awaiting review are included in the draw, but a winner must be approved before they are announced.</p><button class="btn pri" id="doDraw">Run the draw now</button>':g.status==='drawn'?'<div class="note ok">Draw complete'+(g.entries_hash?'. Entry list fingerprint: <span class="mono">'+esc(g.entries_hash)+'</span>':'')+'</div>':g.status==='draft'?'<div class="note">Go live first.</div>':'')+
+  const head='<div class="card"><h3>Draw</h3>'+(g.status==='live'?'<div class="note">Close entries first, then draw.</div>':g.status==='closed'?'<p>Review the queue before drawing. Entries still awaiting review are included in the draw, but a winner must be approved before they are announced.</p><div class="row"><button class="btn pri" id="doDraw">Run the draw on stage</button><button class="btn" id="doRehearse">Rehearse the show</button></div><div class="hint" style="margin-top:8px">The draw opens a full-screen show you can screen-record. The result is decided by the server and never by the animation.</div>':g.status==='drawn'?'<div class="note ok">Draw complete'+(g.entries_hash?'. Entry list fingerprint: <span class="mono">'+esc(g.entries_hash)+'</span>':'')+'</div>':g.status==='draft'?'<div class="note">Go live first.</div>':'')+
+   (g.status==='drawn'||g.status==='completed'?'<div class="row" style="margin-top:10px"><button class="btn" id="doReplay">Replay the draw show</button><button class="btn" id="doRehearse">Rehearse the show</button>'+(g.results_published_at?'<a class="btn" target="_blank" rel="noopener" href="/giveaways/'+esc(g.slug)+'/draw/">Open public draw page</a>':'')+'</div>':'')+
    (g.status==='drawn'?'<div class="row" style="margin-top:10px">'+(g.results_published_at?'<span class="tag ok">Results are public. Seed revealed.</span>':'<button class="btn pri" id="doPub">Publish results and reveal the seed</button>')+'</div><div class="hint" style="margin-top:8px">Publishing needs every selected winner approved first, so nobody is announced before their proof is checked. It also starts each winner\'s claim window.</div>':'')+'</div>';
   const rows=w.winners.filter(x=>x.status!=='alternate'),alts=w.winners.filter(x=>x.status==='alternate');
   $('#sub').innerHTML=head+(rows.length?'<div class="card"><h3>Winners</h3><div class="wrapx"><table class="tbl"><thead><tr><th>Slot</th><th>Winner</th><th>Prize</th><th>Status</th><th>Claim</th><th>Actions</th></tr></thead><tbody>'+rows.map(winRow).join('')+'</tbody></table></div></div>':'')+
    (alts.length?'<div class="card"><h3>Alternates, in order</h3><p>The next alternate is promoted automatically when a winner is rerolled, forfeits or is rejected.</p>'+alts.map(a=>'<span class="tag" style="margin:3px">#'+a.rank_position+' '+esc(a.account&&a.account.username)+'</span>').join('')+'</div>':'')+
    (g.results_published_at&&rows.length?'<div class="card"><h3>Announcement text</h3><p>Copy this into Discord or Instagram. Names are masked.</p><textarea class="in" id="ann" readonly style="min-height:150px"></textarea><button class="btn sm" id="annCopy" style="margin-top:8px">Copy</button></div>':'');
-  if($('#doDraw'))$('#doDraw').onclick=e=>act(e.currentTarget,async()=>{const v=await ask({title:'Run the draw?',text:'This freezes the entry list and cannot be repeated. Winners and alternates are selected from the fixed ranking.',ok:'Run the draw'});if(!v)return;const r=await api('/'+g.id+'/draw',{method:'POST',body:{confirm:true}});toast('Drawn: '+r.winners+' winner(s), '+r.alternates+' alternate(s) from '+r.eligible+' entries.');await refreshSel();renderDetail()});
+  if($('#doDraw'))$('#doDraw').onclick=e=>act(e.currentTarget,async()=>{const v=await ask({title:'Run the draw on stage?',text:'This freezes the entry list and cannot be repeated. A full-screen show plays while the server runs the draw. Winners and alternates are selected from the fixed ranking.',ok:'Start the show',fields:stageFields});if(!v)return;await runLiveDraw(g,v)});
+  if($('#doRehearse'))$('#doRehearse').onclick=e=>act(e.currentTarget,()=>runRehearsal(g));
+  if($('#doReplay'))$('#doReplay').onclick=e=>act(e.currentTarget,()=>runReplay(g));
   if($('#doPub'))$('#doPub').onclick=e=>act(e.currentTarget,async()=>{const v=await ask({title:'Publish results?',text:'Winners become public with masked names, the seed is revealed so anyone can verify the draw, and claim windows start.',ok:'Publish'});if(!v)return;await api('/'+g.id+'/publish-results',{method:'POST',body:{}});toast('Results are public.');await refreshSel();renderDetail()});
   $$('#sub [data-w]').forEach(b=>b.onclick=()=>winnerAct(b));
   if($('#ann')){const mask=n=>n.length<=2?'**':n.length<=4?n[0]+'*'.repeat(n.length-1):n.slice(0,2)+'*'.repeat(Math.min(6,n.length-4))+n.slice(-2);const o=(state.settings&&state.settings.official)||{};

@@ -106,28 +106,89 @@ export function countUp(el, to, { duration = 1100, prefix = '', suffix = '' } = 
 // Reveal animation helper: fades children in with a stagger.
 export function stagger(host) { $$(':scope > *', host).forEach((el, i) => el.style.setProperty('--i', i)); }
 
-export function confetti() {
+export function confetti({ power = 1 } = {}) {
   if (reduced()) return;
   const c = document.createElement('canvas');
   c.className = 'gw-confetti'; c.width = innerWidth; c.height = innerHeight;
   document.body.appendChild(c);
   const g = c.getContext('2d');
-  const colors = ['#f6c453', '#ffe7a6', '#4cc9ff', '#9a8cff', '#5cf0b4', '#ff7a9c'];
-  const bits = Array.from({ length: 140 }, () => ({
-    x: innerWidth / 2 + (Math.random() - .5) * 180, y: innerHeight * .55, vx: (Math.random() - .5) * 16, vy: -Math.random() * 17 - 5,
-    r: Math.random() * 6 + 3, a: Math.random() * 6.28, va: (Math.random() - .5) * .4, col: colors[(Math.random() * colors.length) | 0]
-  }));
-  const t0 = performance.now();
+  const colors = ['#f6c453', '#ffe7a6', '#4cc9ff', '#9a8cff', '#5cf0b4', '#ff7a9c', '#ffffff'];
+  const bits = [];
+  const shoot = (x, y, dir, n) => {
+    for (let i = 0; i < n; i += 1) {
+      const a = (dir === 0 ? -Math.PI / 2 : dir < 0 ? -Math.PI / 2 - 0.45 : -Math.PI / 2 + 0.45) + (Math.random() - .5) * .9;
+      const v = (9 + Math.random() * 13) * power;
+      bits.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: Math.random() * 5 + 3, a: Math.random() * 6.28, va: (Math.random() - .5) * .45, col: colors[(Math.random() * colors.length) | 0], round: Math.random() < .28 });
+    }
+  };
+  shoot(innerWidth * .08, innerHeight * .9, 1, Math.round(70 * power));
+  shoot(innerWidth * .92, innerHeight * .9, -1, Math.round(70 * power));
+  shoot(innerWidth * .5, innerHeight * .62, 0, Math.round(90 * power));
+  const t0 = performance.now(); const life = 3400;
   const frame = (t) => {
     g.clearRect(0, 0, c.width, c.height);
     for (const b of bits) {
-      b.vy += .45; b.x += b.vx; b.y += b.vy; b.a += b.va; b.vx *= .99;
-      g.save(); g.translate(b.x, b.y); g.rotate(b.a); g.fillStyle = b.col; g.globalAlpha = Math.max(0, 1 - (t - t0) / 2600);
-      g.fillRect(-b.r, -b.r / 2, b.r * 2, b.r); g.restore();
+      b.vy += .42; b.x += b.vx; b.y += b.vy; b.a += b.va; b.vx *= .985;
+      g.save(); g.translate(b.x, b.y); g.rotate(b.a); g.fillStyle = b.col; g.globalAlpha = Math.max(0, 1 - Math.pow((t - t0) / life, 2));
+      if (b.round) { g.beginPath(); g.arc(0, 0, b.r * .6, 0, 6.28); g.fill(); } else g.fillRect(-b.r, -b.r / 2, b.r * 2, b.r);
+      g.restore();
     }
-    if (t - t0 < 2600) requestAnimationFrame(frame); else c.remove();
+    if (t - t0 < life) requestAnimationFrame(frame); else c.remove();
   };
   requestAnimationFrame(frame);
+}
+
+// Soft light that follows the pointer across cards and panels (hover devices only).
+export function spotlight() {
+  if (reduced() || !matchMedia('(hover:hover)').matches || document.documentElement.dataset.gwSpot) return;
+  document.documentElement.dataset.gwSpot = '1';
+  let raf = 0;
+  document.addEventListener('pointermove', (e) => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      const el = e.target.closest?.('.gw-card, .gw-panel, .gw-stat, .gw-trust-mini, .gw-th-ticket');
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  }, { passive: true });
+}
+
+// Types a value out of random symbols, locking left to right. Used for the claim code reveal.
+export function scramble(el, finalText, ms = 900) {
+  if (!el) return Promise.resolve();
+  if (reduced()) { el.textContent = finalText; return Promise.resolve(); }
+  const pool = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+  const t0 = performance.now();
+  return new Promise((resolve) => {
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / ms); const lock = Math.floor(k * finalText.length);
+      el.textContent = finalText.split('').map((ch, i) => (i < lock || ch === '-' ? ch : pool[(Math.random() * pool.length) | 0])).join('');
+      if (k < 1) requestAnimationFrame(step); else { el.textContent = finalText; resolve(); }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+// Calendar helpers: a Google Calendar link and a downloadable .ics file.
+const icsStamp = (iso) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+export function calendarUrl({ title, start, end, details, url }) {
+  const e = end || new Date(Date.parse(start) + 30 * 60000).toISOString();
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(title) + '&dates=' + icsStamp(start) + '/' + icsStamp(e) +
+    '&details=' + encodeURIComponent((details || '') + (url ? '\n' + url : ''));
+}
+export function downloadIcs({ title, start, end, details, url }) {
+  const e = end || new Date(Date.parse(start) + 30 * 60000).toISOString();
+  const esc2 = (v) => String(v || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+  const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//FCMobiletools//Giveaways//EN', 'BEGIN:VEVENT', 'UID:' + icsStamp(start) + '-' + (url || title).length + '@fcmobiletools.online',
+    'DTSTAMP:' + icsStamp(new Date().toISOString()), 'DTSTART:' + icsStamp(start), 'DTEND:' + icsStamp(e), 'SUMMARY:' + esc2(title), 'DESCRIPTION:' + esc2((details || '') + (url ? '\n' + url : '')),
+    url ? 'URL:' + url : '', 'END:VEVENT', 'END:VCALENDAR'].filter(Boolean).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([body], { type: 'text/calendar;charset=utf-8' }));
+  a.download = (title || 'giveaway').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.ics';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
 export const STATUS_LABEL = { upcoming: 'Opens soon', live: 'Live now', closed: 'Entries closed', drawn: 'Drawing', completed: 'Winners announced' };
