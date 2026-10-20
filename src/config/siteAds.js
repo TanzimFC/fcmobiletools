@@ -1,9 +1,9 @@
 // Central ad configuration managed by the FC Mobile Tools admin panel.
-// Third-party formats are allowed only on the public giveaway hub and public giveaway detail pages. Home, admin, entry, draw, claim, rules, and other routes are excluded. No popunder format is configured.
+// Monetag formats run on eligible public pages after advertising consent. The homepage, admin, account and sensitive giveaway flows are excluded. No popunder format is configured.
 export const SITE_ADS = {
   "enabled": true,
   "provider": "Monetag",
-  "placementMode": "public_giveaway_pages",
+  "placementMode": "public_content_except_sensitive",
   "frequencyCapMinutes": 30,
   "vignette": {
     "enabled": true,
@@ -21,7 +21,7 @@ export const SITE_ADS = {
     "enabled": true,
     "zone": "12079223",
     "src": "https://nap5k.com/tag.min.js",
-    "delayMs": 10000
+    "delayMs": 7000
   },
   "excludedPathPrefixes": [
     "/admin",
