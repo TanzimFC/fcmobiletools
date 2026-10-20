@@ -1,6 +1,6 @@
 import {
   $, $$, api, esc, money, emblem, toast, busy, copyText, countdown, countUp, confetti, stagger, store, signedIn, signInUrl,
-  fmtDate, short, reduced, cardHtml, winnersHtml, STATUS_LABEL, ENTRY_LABEL
+  fmtDate, short, reduced, cardHtml, winnersHtml, STATUS_LABEL, ENTRY_LABEL, spotlight, scramble, calendarUrl, downloadIcs
 } from './giveaway-ui.js';
 import { sha256Hex, entriesHash, rankEntries } from '../lib/giveawayDraw.js';
 
@@ -25,7 +25,29 @@ export async function initHub() {
   const live = list.filter((g) => g.status === 'live' || g.status === 'upcoming');
   const past = list.filter((g) => !live.includes(g));
   const shown = [...live, ...past];
-  grid.innerHTML = shown.length ? shown.map((g, i) => cardHtml(g, i)).join('') : '<div class="gw-empty" style="grid-column:1/-1"><strong>No giveaways right now</strong>The next one is coming soon. Join our Discord so you do not miss it.</div>';
+  const paintGrid = (kind) => {
+    const pick = kind === 'live' ? shown.filter((g) => g.status === 'live') : kind === 'upcoming' ? shown.filter((g) => g.status === 'upcoming') : kind === 'past' ? past : shown;
+    grid.innerHTML = pick.length ? pick.map((g, i) => cardHtml(g, i)).join('') : '<div class="gw-empty" style="grid-column:1/-1"><strong>' + (shown.length ? 'Nothing in this view' : 'No giveaways right now') + '</strong>' + (shown.length ? 'Try another filter.' : 'The next one is coming soon. Join our Discord so you do not miss it.') + '</div>';
+  };
+  paintGrid('all');
+  const chips = $('#gwFilters');
+  if (chips && shown.length > 1) {
+    const counts = { all: shown.length, live: shown.filter((g) => g.status === 'live').length, upcoming: shown.filter((g) => g.status === 'upcoming').length, past: past.length };
+    chips.hidden = false;
+    chips.innerHTML = [['all', 'All'], ['live', 'Live now'], ['upcoming', 'Opening soon'], ['past', 'Past draws']].filter(([k]) => k === 'all' || counts[k]).map(([k, l], i) => '<button type="button" role="tab" aria-selected="' + (i === 0) + '" data-f="' + k + '">' + l + '<b>' + counts[k] + '</b></button>').join('');
+    chips.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-f]'); if (!b) return;
+      $$('[data-f]', chips).forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      paintGrid(b.dataset.f);
+    });
+  }
+  const lastDraw = list.find((g) => g.results?.winners?.length);
+  const theatre = $('#gwLastDraw');
+  if (theatre && lastDraw) {
+    theatre.hidden = false;
+    theatre.innerHTML = '<span class="gw-ld-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v14l11-7z"/></svg></span><div><strong>Watch the last draw</strong><span>' + esc(lastDraw.title) + ' · ' + lastDraw.results.winners.length + (lastDraw.results.winners.length === 1 ? ' winner' : ' winners') + ' · verified in your browser</span></div><a class="gw-btn gw-btn-gold gw-btn-sm" href="/giveaways/' + esc(lastDraw.slug) + '/draw/">Watch the draw</a>';
+  }
+  spotlight();
   const entries = list.reduce((n, g) => n + g.stats.entries, 0);
   const rewardsAvailable = live.filter((g) => g.status === 'live').reduce((n, g) => n + g.winners.total, 0);
   countUp($('#gwStatLive'), live.filter((g) => g.status === 'live').length);
@@ -94,7 +116,15 @@ function paintPublic(g) {
   else cd.innerHTML = '<div style="min-width:0;padding:12px 18px"><strong style="font-size:18px">' + esc(STATUS_LABEL[g.status]) + '</strong></div>';
   const href = '/giveaways/' + g.slug + '/enter/';
   const ctaHtml = live ? '<a class="gw-btn gw-btn-gold gw-btn-lg" href="' + href + '">Enter this giveaway</a>' : '';
-  $('#gwCta').innerHTML = ctaHtml + '<a class="gw-btn gw-btn-lg" href="#gwFair">How the draw works</a>';
+  const drawn = g.status === 'drawn' || g.status === 'completed';
+  const calAt = live ? g.endsAt : g.status === 'upcoming' ? g.startsAt : '';
+  $('#gwCta').innerHTML = ctaHtml + (drawn ? '<a class="gw-btn gw-btn-gold gw-btn-lg" href="/giveaways/' + esc(g.slug) + '/draw/">Watch the draw</a>' : '') + '<a class="gw-btn gw-btn-lg" href="#gwFair">How the draw works</a>' +
+    (calAt && Date.parse(calAt) > Date.now() ? '<button class="gw-btn gw-btn-lg gw-btn-cal" type="button" id="gwCal" aria-haspopup="true">Add to calendar</button>' : '');
+  $('#gwCal')?.addEventListener('click', () => {
+    const ev = { title: g.title + (live ? ': entries close' : ': entries open'), start: calAt, details: 'Free FC Mobile giveaway on FCMobiletools. ' + g.prize.display + ' up for grabs.', url: location.origin + '/giveaways/' + g.slug + '/' };
+    downloadIcs(ev); toast('Calendar file downloaded. Google Calendar link opens in a new tab.'); window.open(calendarUrl(ev), '_blank', 'noopener');
+  });
+  spotlight();
   const sticky = $('#gwSticky'); if (sticky) sticky.innerHTML = live ? '<a class="gw-btn gw-btn-gold" href="' + href + '">Enter this giveaway</a>' : '';
 
   $('#gwReqs').innerHTML = g.requirements.map((r) => '<li class="gw-req" data-req="' + esc(r.id) + '"><span class="ic">' + (g.requirements.indexOf(r) + 1) + '</span><div><h4>' + esc(r.label) + '</h4><p>' + esc(r.help) + '</p>' +
@@ -198,7 +228,18 @@ function paintMe(g, me) {
   });
 }
 
-// "Verify this draw": re-runs the draw in the browser from the revealed seed.
+// Re-runs the draw in the browser from the revealed seed. Returns [{ ok, text }].
+export async function verifyChecks(p) {
+  const checks = [];
+  checks.push({ ok: await sha256Hex(p.seed) === p.seedCommit, text: 'Seed matches the fingerprint published before entries opened' });
+  checks.push({ ok: await entriesHash(p.giveawayId, p.entries) === p.entriesHash, text: 'Frozen entry list (' + p.entries.length.toLocaleString() + ' entries) matches its fingerprint' });
+  const ranking = await rankEntries(p.seed, p.entriesHash, p.entries);
+  const bad = p.winners.filter((w) => ranking.indexOf(w.entryId) + 1 !== w.rank);
+  checks.push({ ok: bad.length === 0, text: 'Every winner and alternate sits where the re-run ranking puts them' });
+  return checks;
+}
+
+// "Verify this draw" button on the detail page.
 export function initVerify() {
   const btn = $('#gwVerify'); if (!btn) return;
   btn.addEventListener('click', () => busy(btn, async () => {
@@ -206,16 +247,78 @@ export function initVerify() {
     const slug = $('.gw-root').dataset.slug;
     let p;
     try { p = await api('/api/giveaways/' + slug + '/draw-proof', { cache: 'default' }); }
-    catch (e) { out.innerHTML = '<div class="gw-callout">' + esc(e.message) + '</div>'; return; }
-    const rows = [];
-    const row = (ok, text) => rows.push('<div class="gw-callout ' + (ok ? 'ok' : 'bad') + '" style="margin-top:8px">' + (ok ? '✓ ' : '✗ ') + esc(text) + '</div>');
-    row(await sha256Hex(p.seed) === p.seedCommit, 'The revealed seed matches the fingerprint we published before entries opened.');
-    row(await entriesHash(p.giveawayId, p.entries) === p.entriesHash, 'The frozen entry list (' + p.entries.length.toLocaleString() + ' entries) matches its published fingerprint.');
-    const ranking = await rankEntries(p.seed, p.entriesHash, p.entries);
-    const bad = p.winners.filter((w) => ranking.indexOf(w.entryId) + 1 !== w.rank);
-    row(bad.length === 0, 'Every winner and alternate sits exactly where the draw puts them in the re-run ranking.');
-    out.innerHTML = rows.join('');
+    catch (e) { out.innerHTML = '<div class=\"gw-callout\">' + esc(e.message) + '</div>'; return; }
+    const checks = await verifyChecks(p);
+    out.innerHTML = checks.map((c, i) => '<div class=\"gw-callout ' + (c.ok ? 'ok' : 'bad') + ' gw-verify-row\" style=\"margin-top:8px;--i:' + i + '\">' + (c.ok ? '✓ ' : '✗ ') + esc(c.text) + '.</div>').join('');
+    if (checks.every((c) => c.ok)) confetti({ power: .6 });
   }));
+}
+
+// ═══════════════════════════ DRAW THEATRE ═══════════════════════════
+const SAMPLE_NAMES = ['ta****fc', 'jo****hn', 'ma****rt', 'sa****ra', 'ni****ck', 'ka****ri', 'ra****ul', 'em****ly'];
+const loadStage = () => { const url = '/giveaway-stage/stage.js'; return import(/* @vite-ignore */ url); };
+
+export async function initDrawPage() {
+  const root = $('.gw-root'); if (!$('#gwTheatre')) return;
+  const slug = root.dataset.slug; const watch = $('#gwWatch'); const preview = $('#gwPreview');
+  let g;
+  try { g = await api('/api/giveaways/' + encodeURIComponent(slug), { cache: 'default' }); }
+  catch (e) { watch.textContent = 'Draw unavailable'; $('#gwThNote').textContent = e.message; return; }
+  const q = new URLSearchParams(location.search);
+  const winners = g.results?.winners || [];
+  const ready = winners.length > 0;
+  const opt = { speed: ['quick', 'standard', 'epic'].includes(q.get('speed')) ? q.get('speed') : 'standard', sound: q.get('sound') === '1', clean: q.get('clean') === '1' };
+  $('#gwThStatus').textContent = STATUS_LABEL[g.status] || g.status;
+  $('#gwThStatus').className = 'gw-pill ' + (g.status === 'live' ? 'live' : ready ? 'gold' : '');
+  $('#gwThOpts').hidden = false; preview.hidden = false;
+  $$('[data-speed]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.speed === opt.speed)));
+  $('#gwThSound').checked = opt.sound; $('#gwThClean').checked = opt.clean;
+  $('#gwThOpts').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-speed]'); if (!b) return;
+    opt.speed = b.dataset.speed; $$('[data-speed]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+  });
+  $('#gwThSound').addEventListener('change', (e) => { opt.sound = e.target.checked; });
+  $('#gwThClean').addEventListener('change', (e) => { opt.clean = e.target.checked; });
+
+  let proofP = null;
+  const proof = () => (proofP ||= api('/api/giveaways/' + encodeURIComponent(slug) + '/draw-proof', { cache: 'default' }));
+  const base = () => ({ title: g.title, prize: g.prize.display, speed: opt.speed, sound: opt.sound, clean: opt.clean, seedCommit: g.fairness.seedCommit });
+
+  async function play() {
+    const S = await loadStage();
+    S.openDrawStage({
+      ...base(), mode: 'replay', entries: g.stats.entries, winnersTotal: winners.length, verifyUrl: '/giveaways/' + g.slug + '/#gwFair',
+      prepare: async () => {
+        let p = null; try { p = await proof(); } catch { /* the show still works without the proof */ }
+        return { entries: p?.entries?.length || g.stats.entries, entriesHash: p?.entriesHash || g.fairness.entriesHash, winners: winners.map((w) => ({ slot: w.slot, name: w.name, prize: w.prize })), alternates: Array.from({ length: g.winners.alternates || 0 }, () => '') };
+      },
+      verify: g.fairness.seedRevealed ? async () => ({ checks: await verifyChecks(await proof()) }) : undefined
+    });
+  }
+  async function rehearse() {
+    const S = await loadStage(); const n = Math.max(1, Math.min(8, g.winners.total || 3)); const total = Math.max(120, g.stats.entries);
+    S.openDrawStage({
+      ...base(), mode: 'rehearsal', entries: total, winnersTotal: n, seedCommit: g.fairness.seedCommit,
+      prepare: async () => ({ entries: total, entriesHash: '', winners: Array.from({ length: n }, (_, i) => ({ slot: i + 1, name: SAMPLE_NAMES[i], prize: g.prize.display })), alternates: ['', ''] })
+    });
+  }
+  watch.addEventListener('click', () => busy(watch, play));
+  preview.addEventListener('click', () => busy(preview, rehearse));
+
+  if (ready) {
+    watch.disabled = false; watch.textContent = 'Watch the draw';
+    $('#gwThLede').textContent = 'Replay how the winners were picked, with a real check of the seed and entry list running in your browser.';
+    $('#gwThNote').textContent = 'Tip: press S for sound, H to hide controls, F for full screen and Space to pause.';
+    $('#gwThResultsWrap').hidden = false; $('#gwThResults').innerHTML = winnersHtml(winners);
+    if (q.get('autoplay') === '1') play();
+  } else {
+    const drawn = g.status === 'drawn';
+    watch.textContent = drawn ? 'Results coming soon' : g.status === 'live' ? 'Draw happens after entries close' : 'Draw not run yet';
+    $('#gwThLede').textContent = drawn ? 'The draw has run. Winners are confirmed by an admin before the show can be replayed.' : 'The draw has not happened yet. You can preview the show with sample names while you wait.';
+    if (g.status === 'live' && g.endsAt) { $('#gwThNote').innerHTML = 'Entries close ' + esc(when(g.endsAt)) + '. <a href=\"/giveaways/' + esc(g.slug) + '/\" style=\"color:var(--gw-cyan)\">Go to the giveaway</a>'; }
+    if (q.get('preview') === '1') rehearse();
+  }
+  spotlight();
 }
 
 // ═══════════════════════════ ENTER ═══════════════════════════
@@ -341,10 +444,11 @@ export async function initEnter() {
   }
 
   function done() {
-    host.innerHTML = '<div class="gw-panel" style="text-align:center"><div style="font-size:54px">🎉</div><h3 style="font-size:26px">' + (fixing ? 'Corrected proof sent' : 'You are in the draw!') + '</h3>' +
+    host.innerHTML = '<div class=\"gw-panel gw-done\"><div class=\"gw-stubcard\" style=\"--c:' + esc(g.accent) + '\"><div class=\"gw-stubcard-l\"><small>Entry</small><b>✓</b></div><div class=\"gw-stubcard-r\"><strong>' + esc(g.title) + '</strong><span>' + esc(g.prize.display) + ' · ' + (fixing ? 'corrected proof sent' : 'in the draw') + '</span></div></div>' +
+      '<h3 style=\"font-size:26px;margin:22px 0 6px\">' + (fixing ? 'Corrected proof sent' : 'You are in the draw!') + '</h3>' +
       '<p>An admin will review your entry. You can check the status and every decision, with its reason, on the giveaway page.</p>' +
-      '<div class="gw-callout ok" style="text-align:left"><div><strong>Boost your odds:</strong> come back every day for a free boost ticket, and invite friends with your personal link.</div></div>' +
-      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px"><a class="gw-btn gw-btn-gold" href="/giveaways/' + esc(slug) + '/">See my entry</a><a class="gw-btn" href="/giveaways/">More giveaways</a></div></div>';
+      '<div class=\"gw-callout ok\" style=\"text-align:left\"><div><strong>Boost your odds:</strong> come back every day for a free boost ticket, and invite friends with your personal link.</div></div>' +
+      '<div style=\"display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px\"><a class=\"gw-btn gw-btn-gold\" href=\"/giveaways/' + esc(slug) + '/\">See my entry</a><a class=\"gw-btn\" href=\"/giveaways/\">More giveaways</a></div></div>';
   }
   render();
 }
@@ -462,8 +566,8 @@ export async function initClaim() {
     $('[data-reveal]', card)?.addEventListener('click', (e) => busy(e.currentTarget, async () => {
       try {
         const r = await api('/api/giveaways/claims/' + id + '/reveal', { method: 'POST' });
-        codeEl.textContent = r.code;
-        codeEl.classList.remove('hidden');
+        codeEl.classList.remove('hidden'); codeEl.classList.add('decrypting');
+        await scramble(codeEl, r.code, 900); codeEl.classList.remove('decrypting');
         const cp = $('[data-copy]', card);
         cp.hidden = false;
         cp.onclick = () => copyText(r.code);

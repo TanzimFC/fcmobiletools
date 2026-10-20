@@ -1,0 +1,114 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import '../../../styles/giveaway.css';
+import { loadPublicOne } from '../../../lib/giveawayPublic.js';
+import { ssrSupabaseRest } from '../../../lib/leaguePublic.js';
+import { emblem } from '../../../lib/giveawayArt.js';
+
+// The draw theatre. Replays how the winners were picked, with a real in-browser check of the
+// published seed and entry list. Rendered on demand so the title and prize are in the HTML.
+export const prerender = false;
+
+const env = Astro.locals.runtime?.env || {};
+const slug = String(Astro.params.slug || '').toLowerCase();
+let g = null;
+let failed = false;
+try { g = await loadPublicOne(env, ssrSupabaseRest, slug); } catch (e) { failed = true; console.error('[GIVEAWAY_DRAW_PAGE]', e?.message); }
+if (!g) { Astro.response.status = failed ? 503 : 404; Astro.response.headers.set('cache-control', 'no-store'); }
+
+const title = g ? 'Watch the draw: ' + g.title + ' | FCMobiletools' : 'Draw not found';
+const description = g
+  ? 'Watch how the winners of ' + g.title + ' were picked: sealed seed, frozen entries, public ranking and a draw you can verify yourself.'
+  : 'This draw is not available.';
+const steps = [
+  ['Seed locked', 'A fingerprint of the secret seed was published before entries opened.'],
+  ['Entries frozen', 'When entries closed, the list was frozen and fingerprinted.'],
+  ['Ranked in public', 'Every entry gets a score from the seed. More tickets, more chances.'],
+  ['Winners revealed', 'The top of the ranking wins. The rest wait as alternates.']
+];
+---
+
+<BaseLayout title={title} description={description} robots="noindex,follow" googlebot="noindex,follow" noAds>
+  <main class="gw-root gw-theatre-page" id="app" data-slug={slug} style={g ? '--gw-accent:' + g.accent : ''}>
+    <div class="gw-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="gw-wrap">
+      {!g && (
+        <div class="gw-empty" style="margin-top:40px"><strong>{failed ? 'Draws are temporarily unavailable' : 'Draw not found'}</strong>{failed ? 'Please try again in a moment.' : 'It may have been removed or the link is wrong.'}<br /><a class="gw-btn gw-btn-gold" style="margin-top:16px" href="/giveaways/">See all giveaways</a></div>
+      )}
+      {g && (<>
+        <nav aria-label="Breadcrumb" class="gw-note" style="margin-bottom:18px"><a href="/giveaways/" style="color:var(--gw-cyan)">Giveaways</a> / <a href={'/giveaways/' + g.slug + '/'} style="color:var(--gw-cyan)">{g.title}</a> / Draw</nav>
+
+        <header class="gw-th" id="gwTheatre">
+          <div class="gw-th-beams" aria-hidden="true"><i></i><i></i></div>
+          <div class="gw-th-copy">
+            <span class="gw-pill" id="gwThStatus">{g.status}</span>
+            <h1 class="gw-h1 gw-th-title">{g.title}</h1>
+            <p class="gw-lede" id="gwThLede">See exactly how the winners are picked, step by step.</p>
+
+            <div class="gw-th-facts" aria-label="Draw facts">
+              <div><small>Entries</small><strong id="gwThEntries">{g.stats.entries.toLocaleString()}</strong></div>
+              <div><small>Winners</small><strong>{g.winners.total}</strong></div>
+              <div><small>Reward</small><strong>{g.prize.display}</strong></div>
+            </div>
+
+            <div class="gw-th-opts" id="gwThOpts" role="group" aria-label="Show options" hidden>
+              <div class="gw-seg" role="radiogroup" aria-label="Show length">
+                <button type="button" role="radio" aria-checked="false" data-speed="quick">Quick</button>
+                <button type="button" role="radio" aria-checked="true" data-speed="standard">Standard</button>
+                <button type="button" role="radio" aria-checked="false" data-speed="epic">Epic</button>
+              </div>
+              <label class="gw-toggle"><input type="checkbox" id="gwThSound"><span>Sound</span></label>
+              <label class="gw-toggle"><input type="checkbox" id="gwThClean"><span>Hide controls</span></label>
+            </div>
+
+            <div class="gw-cta" id="gwThCta">
+              <button class="gw-btn gw-btn-gold gw-btn-lg" id="gwWatch" type="button" disabled>Loading the draw</button>
+              <button class="gw-btn gw-btn-lg" id="gwPreview" type="button" hidden>Preview the show</button>
+            </div>
+            <p class="gw-note" id="gwThNote" style="margin-top:14px"></p>
+          </div>
+
+          <div class="gw-th-poster" aria-hidden="true">
+            <div class="gw-th-ticket" style={'--c:' + g.accent}>
+              <div class="gw-th-stub"><small>Slot</small><b>#1</b></div>
+              <div class="gw-th-body">
+                <div class="gw-th-emb"><Fragment set:html={emblem(g.kind)} /></div>
+                <strong>{g.prize.display}</strong>
+                <span>{g.prize.label}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <section class="gw-sec" aria-labelledby="thStepsH">
+          <h2 class="gw-h2" id="thStepsH">What the show covers</h2>
+          <p class="gw-sub">Nothing on screen is decided by the animation. It replays a draw that anyone can check.</p>
+          <ol class="gw-th-steps">
+            {steps.map(([t, d], i) => <li><span>{i + 1}</span><div><h3>{t}</h3><p>{d}</p></div></li>)}
+          </ol>
+        </section>
+
+        <section class="gw-sec" id="gwThResultsWrap" hidden aria-labelledby="thResH">
+          <h2 class="gw-h2" id="thResH">Winners</h2>
+          <p class="gw-sub">Names are masked to protect winners.</p>
+          <div id="gwThResults"></div>
+        </section>
+
+        <section class="gw-sec" aria-labelledby="thVerH">
+          <div class="gw-panel">
+            <h3 id="thVerH">Check it yourself</h3>
+            <p>The show runs a real check in your browser: it hashes the revealed seed, hashes the frozen entry list, and re-runs the ranking to confirm every winner sits where the draw put them.</p>
+            <a class="gw-btn" href={'/giveaways/' + g.slug + '/#gwFair'}>Open the verification tool</a>
+          </div>
+        </section>
+
+        <p class="gw-note" style="margin-top:26px">Read the <a href="/giveaways/rules/" style="color:var(--gw-cyan)">Giveaway Rules</a>. Rewards are in-game items with no real cash value.</p>
+      </>)}
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { initDrawPage } from '../../../scripts/giveaway-pages.js';
+  initDrawPage();
+</script>

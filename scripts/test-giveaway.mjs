@@ -73,3 +73,23 @@ assert.equal(unlockedMilestones([{ entries: 100, label: 'A', bonus_winners: 1 },
 assert.equal(requirementsFor(null).length, DEFAULT_REQUIREMENTS.length, 'missing config falls back to defaults');
 
 console.log('Giveaway engine tests passed.');
+
+// ───────────── draw stage plan ─────────────
+{
+  const { planStage, SPEEDS } = await import('../public/giveaway-stage/stage.js');
+  const std = planStage({ speed: 'standard', winners: 3 });
+  assert.deepEqual(std.steps.map((s) => s.id).slice(0, 7), ['prepare', 'seed', 'freeze', 'scan', 'shuffle', 'rank', 'countdown'], 'phases run in broadcast order');
+  assert.equal(std.steps.filter((s) => s.id === 'reveal').length, 3, 'one reveal per winner');
+  assert.equal(std.total, std.steps.reduce((n, s) => n + s.ms, 0));
+  const quick = planStage({ speed: 'quick', winners: 3 });
+  const epic = planStage({ speed: 'epic', winners: 3 });
+  assert.ok(quick.total < std.total && std.total < epic.total, 'quick < standard < epic');
+  assert.ok(epic.total > 150000 && epic.total < 260000, 'epic is about three minutes for a few winners');
+  assert.ok(quick.total < 45000, 'quick stays under about 45 seconds');
+  const many = planStage({ speed: 'standard', winners: 12 });
+  const reveals = many.steps.filter((s) => s.id === 'reveal');
+  assert.ok(reveals[11].ms < reveals[0].ms, 'late reveals are faster so big draws do not drag');
+  assert.equal(planStage({ winners: 0 }).steps.filter((s) => s.id === 'reveal').length, 1, 'always at least one reveal');
+  assert.ok(SPEEDS.quick < SPEEDS.standard && SPEEDS.standard < SPEEDS.epic);
+}
+console.log('draw stage plan ok');
