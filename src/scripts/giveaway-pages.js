@@ -22,6 +22,20 @@ export async function initHub() {
   try { [data, wall] = await Promise.all([api('/api/giveaways/public', { cache: 'default' }), api('/api/giveaways/winners', { cache: 'default' }).catch(() => wall)]); }
   catch (e) { return unavailable(grid, e.message); }
   const list = data.giveaways || [];
+  const featured = list.find((g) => g.slug === 'ballon-dor-star-pass-giveaway');
+  const featuredArt = $('#gwFeaturedArt');
+  const featuredCover = $('#gwFeatureCover');
+  if (featured?.coverUrl && featuredArt && featuredCover) {
+    featuredCover.addEventListener('load', () => {
+      featuredCover.hidden = false;
+      featuredArt.classList.add('has-cover');
+    }, { once: true });
+    featuredCover.addEventListener('error', () => {
+      featuredCover.hidden = true;
+      featuredArt.classList.remove('has-cover');
+    }, { once: true });
+    featuredCover.src = featured.coverUrl;
+  }
   const live = list.filter((g) => g.status === 'live' || g.status === 'upcoming');
   const past = list.filter((g) => !live.includes(g));
   const shown = [...live, ...past];
@@ -439,7 +453,14 @@ export async function initEnter() {
     } catch (err) {
       if (st.previews[id]?.startsWith('blob:')) URL.revokeObjectURL(st.previews[id]);
       delete st.previews[id];
-      st.errors[id] = err.message || 'The image could not be uploaded. Please choose it again.';
+      const message = err.status === 503
+        ? 'The upload service is unavailable right now. Your screenshot was not saved. Try again later; do not submit until the upload shows as complete.'
+        : err.status === 429
+          ? 'You have reached the temporary upload limit. Wait a little before trying again.'
+          : err.status === 413
+            ? 'The server rejected this file as too large. Choose a smaller image under 8 MB.'
+            : err.message || 'The image could not be uploaded. Please choose it again.';
+      st.errors[id] = message;
       toast(st.errors[id], true);
     }
     st.uploading.delete(id); render();
