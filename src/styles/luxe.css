@@ -28,37 +28,6 @@
   initial-value: 0deg;
 }
 
-/* ---------- Atmosphere: aurora + film grain ---------- */
-html body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(38vmax 30vmax at 18% 22%, rgba(76, 201, 255, 0.13), transparent 70%),
-    radial-gradient(34vmax 28vmax at 84% 14%, rgba(154, 140, 255, 0.11), transparent 70%),
-    radial-gradient(40vmax 30vmax at 70% 88%, rgba(92, 240, 180, 0.07), transparent 72%);
-  /* Static ambient light avoids perpetual full-screen blur and transform work. */
-  filter: none;
-  animation: none;
-  will-change: auto;
-}
-@keyframes lx-aurora {
-  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-  50% { transform: translate3d(3vmax, 2vmax, 0) rotate(6deg) scale(1.08); }
-  100% { transform: translate3d(-3vmax, -2vmax, 0) rotate(-5deg) scale(1.04); }
-}
-.lx-grain {
-  position: fixed;
-  inset: 0;
-  z-index: 2147482000;
-  pointer-events: none;
-  opacity: 0.045;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-}
-
 /* ---------- Scroll progress + cursor light + back to top ---------- */
 .lx-progress {
   position: fixed;
@@ -73,21 +42,6 @@ html body::after {
   box-shadow: 0 0 14px rgba(76, 201, 255, 0.7);
   pointer-events: none;
 }
-.lx-cursor {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 520px;
-  height: 520px;
-  margin: -260px 0 0 -260px;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(circle, rgba(76, 201, 255, 0.1), transparent 62%);
-  transition: opacity 0.5s ease;
-  will-change: transform;
-}
-.lx-cursor.on { opacity: 1; }
 .lx-top {
   position: fixed;
   right: 22px;
@@ -111,21 +65,6 @@ html body::after {
 }
 .lx-top.on { opacity: 1; transform: none; pointer-events: auto; }
 .lx-top:hover { border-color: rgba(76, 201, 255, 0.55); box-shadow: var(--lx-glow-cyan); }
-
-/* ---------- Page entrance + scroll reveal ---------- */
-@keyframes lx-page-in {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: none; }
-}
-html body #content { animation: lx-page-in 0.24s var(--lx-ease) both; }
-
-html.lx-ready .lx-reveal {
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.34s var(--lx-ease), transform 0.34s var(--lx-ease);
-  transition-delay: calc(var(--lx-i, 0) * 25ms);
-}
-html.lx-ready .lx-reveal.lx-in { opacity: 1; transform: none; }
 
 /* ---------- Typography polish ---------- */
 html body {
@@ -182,17 +121,6 @@ html body :is(.btn-secondary, .btn-ghost):hover {
   background: rgba(76, 201, 255, 0.08);
   box-shadow: 0 14px 30px -16px rgba(76, 201, 255, 0.6);
 }
-
-/* Ripple (injected by luxe.js) */
-.lx-ripple {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 65%);
-  transform: scale(0);
-  animation: lx-ripple 0.65s var(--lx-ease) forwards;
-}
-@keyframes lx-ripple { to { transform: scale(1); opacity: 0; } }
 
 /* ---------- Surfaces: depth, hairline gradient edge, lift ---------- */
 html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card) {
@@ -275,21 +203,9 @@ html body .fcmt-search:hover {
 html body footer a { transition: color 0.2s, transform 0.25s var(--lx-ease); }
 html body footer a:hover { color: var(--lx-cyan-2); transform: translateX(3px); }
 
-/* ---------- Motion safety ---------- */
-@media (prefers-reduced-motion: reduce) {
-  html body::after,
-  html body #content { animation: none; }
-  html.lx-ready .lx-reveal { opacity: 1; transform: none; transition: none; }
-  .lx-cursor, .lx-grain { display: none; }
-}
+/* ---------- Lightweight responsive behavior ---------- */
 @media (max-width: 760px) {
-  .lx-cursor { display: none; }
   .lx-top { right: 14px; bottom: 92px; }
-  html body::after { animation-duration: 60s; }
-}
-
-
-@media (max-width: 760px) {
   html body .lx-top {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -298,13 +214,6 @@ html body footer a:hover { color: var(--lx-cyan-2); transform: translateX(3px); 
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html body::after,
-  html body #content {
-    animation: none !important;
-  }
-  html.lx-ready .lx-reveal {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-  }
+  html body .lx-top { transition: none !important; }
+  .lx-toast { animation: none !important; }
 }

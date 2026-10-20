@@ -7,7 +7,6 @@ if (!window.__fcmtLuxe) {
   window.__fcmtLuxe = true;
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const $ = (s, r = document) => r.querySelector(s);
   const make = (tag, cls, html) => {
     const el = document.createElement(tag);
@@ -90,7 +89,6 @@ if (!window.__fcmtLuxe) {
    * Ambient chrome: grain, scroll progress, cursor light, back-to-top
    * ------------------------------------------------------------------ */
   const boot = () => {
-    document.documentElement.classList.add('lx-ready');
     const bar = make('div', 'lx-progress');
     document.body.appendChild(bar);
     const top = make('button', 'lx-top', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>');
@@ -113,65 +111,7 @@ if (!window.__fcmtLuxe) {
     addEventListener('scroll', onScroll, { passive: true });
     onScroll();
 
-    if (finePointer && !reduce) {
-      const glow = make('div', 'lx-cursor');
-      document.body.appendChild(glow);
-      let gx = 0, gy = 0, raf = 0;
-      addEventListener('pointermove', (e) => {
-        gx = e.clientX; gy = e.clientY;
-        glow.classList.add('on');
-        if (!raf) raf = requestAnimationFrame(() => {
-          glow.style.transform = `translate3d(${gx}px,${gy}px,0)`;
-          raf = 0;
-        });
-      }, { passive: true });
-      document.addEventListener('pointerleave', () => glow.classList.remove('on'));
-    }
   };
-
-  /* ------------------------------------------------------------------ *
-   * Scroll reveal (opt-in list, skips elements that already animate)
-   * ------------------------------------------------------------------ */
-  const REVEAL = '.kpi-card,.guide-card,.feature-card,.insight-card,.tv-card,.match-card,.lp-card,.rx-card,.tx-card,.third-card,.mission-card,.rw-card,.side-card,.ledger-panel,.public-game-card,.dash-section-head,.lx-ladder,.article-card,.post-card';
-  let io;
-  const revealScan = (root = document) => {
-    if (reduce || !('IntersectionObserver' in window)) return;
-    io ||= new IntersectionObserver((entries) => {
-      let i = 0;
-      entries.forEach((en) => {
-        if (!en.isIntersecting) return;
-        en.target.style.setProperty('--lx-i', String(Math.min(i++, 8)));
-        en.target.classList.add('lx-in');
-        io.unobserve(en.target);
-      });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
-    const candidates = [];
-    if (root instanceof Element && root.matches(REVEAL)) candidates.push(root);
-    root.querySelectorAll?.(REVEAL).forEach((el) => candidates.push(el));
-    candidates.forEach((el) => {
-      if (el.dataset.lxR || el.closest('.acc-anim, .lx-reveal, [hidden]')) return;
-      el.dataset.lxR = '1';
-      el.classList.add('lx-reveal');
-      io.observe(el);
-    });
-  };
-
-  /* ------------------------------------------------------------------ *
-   * Ripple on buttons
-   * ------------------------------------------------------------------ */
-  document.addEventListener('pointerdown', (e) => {
-    if (reduce) return;
-    const btn = e.target instanceof Element ? e.target.closest('.btn-primary,.btn-secondary,.submit-btn,.premium-button,.google-btn') : null;
-    if (!btn) return;
-    if (getComputedStyle(btn).position === 'static') btn.style.position = 'relative';
-    btn.style.overflow = 'hidden';
-    const r = btn.getBoundingClientRect();
-    const d = Math.max(r.width, r.height) * 2;
-    const rp = make('span', 'lx-ripple');
-    rp.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`;
-    btn.appendChild(rp);
-    setTimeout(() => rp.remove(), 700);
-  }, { passive: true });
 
   /* Copy-link feedback */
   document.addEventListener('click', (e) => {
@@ -419,12 +359,6 @@ if (!window.__fcmtLuxe) {
     if (hero.dataset.lxDone) return;
     hero.dataset.lxDone = '1';
     hero.prepend(make('div', 'lx-orbs', '<i></i><i></i><i></i>'));
-    if (finePointer) hero.addEventListener('pointermove', (e) => {
-      const r = hero.getBoundingClientRect();
-      hero.style.setProperty('--mx', e.clientX - r.left + 'px');
-      hero.style.setProperty('--my', e.clientY - r.top + 'px');
-    }, { passive: true });
-
     if ($('.xp-strip', hero)) { // signed-in profile only
       const p = readProfile(hero);
       addLadder(hero, p);
@@ -434,43 +368,12 @@ if (!window.__fcmtLuxe) {
     }
   };
 
-  const scan = (root = document) => {
-    let hero = null;
-    if (root instanceof Element) {
-      if (root.matches('.prof-page .hero-card')) hero = root;
-      else if (root.matches('.prof-page')) hero = root.querySelector('.hero-card');
-    }
-    if (!hero) hero = root.querySelector?.('.prof-page .hero-card') || null;
-    if (hero) enhanceHero(hero);
-    revealScan(root);
-  };
-
   const start = () => {
     boot();
-    scan();
-    let pending = false;
-    const pendingNodes = new Set();
-    const observer = new MutationObserver((records) => {
-      for (const record of records) {
-        for (const node of record.addedNodes) {
-          if (node.nodeType === 1) pendingNodes.add(node);
-        }
-      }
-      if (pending || !pendingNodes.size) return;
-      pending = true;
-      requestAnimationFrame(() => {
-        pending = false;
-        const nodes = Array.from(pendingNodes);
-        pendingNodes.clear();
-        const known = new Set(nodes);
-        nodes.forEach((node) => {
-          let parent = node.parentElement;
-          while (parent && !known.has(parent)) parent = parent.parentElement;
-          if (!parent) scan(node);
-        });
-      });
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Profile enhancements are applied once to server-rendered content. No
+    // permanent subtree observer is needed for the public page chrome.
+    const hero = $('.prof-page .hero-card');
+    if (hero) enhanceHero(hero);
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
