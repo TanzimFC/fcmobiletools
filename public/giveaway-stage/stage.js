@@ -337,22 +337,22 @@ export function openDrawStage(opts = {}) {
     },
 
     async scan(step) {
-      lower('Checking every ticket', 'Each ticket is checked once. More tickets mean more chances.', 'Step 4 of 8');
+      lower('Checking every entry', 'Each eligible person has one equal-weight entry.', 'Step 4 of 8');
       const total = S.result?.entries || o.entries || 0;
-      const el = show(h('div', 'ds-readout', '<div class="ds-cap">Tickets checked</div><div class="ds-big ds-big-s"><b data-n>0</b><small>of ' + fmt(total) + '</small></div>'));
-      pool.alpha = 1; pool.setMode('grid'); log('Scanning the ticket pool');
+      const el = show(h('div', 'ds-readout', '<div class="ds-cap">Entries checked</div><div class="ds-big ds-big-s"><b data-n>0</b><small>of ' + fmt(total) + '</small></div>'));
+      pool.alpha = 1; pool.setMode('grid'); log('Scanning the eligible entry pool');
       const n = $('[data-n]', el); let ticks = 0;
       await sleep(step.ms, (k) => {
         pool.scanX = k * 1.04; n.textContent = fmt(Math.round(total * Math.min(1, k * 1.04)));
         if (!rm && Math.floor(k * 18) > ticks) { ticks += 1; sound.tick(); }
         $('.ds-prog i', root).style.width = ((S.stepStart + step.ms * k) / S.plan.total * 100) + '%';
       });
-      n.textContent = fmt(total); log('Every ticket checked', 'ok'); sound.lock();
+      n.textContent = fmt(total); log('Every entry checked', 'ok'); sound.lock();
     },
 
     async shuffle(step) {
-      lower('Shuffling the pool', 'The sealed seed mixes every ticket into a fixed order.', 'Step 5 of 8');
-      const lines = ['Mixing the ticket pool', 'Blending ticket weights', 'Sealing the order'];
+      lower('Shuffling the pool', 'The sealed seed places every equal-weight entry in a fixed order.', 'Step 5 of 8');
+      const lines = ['Mixing the entry pool', 'Keeping every entry equal', 'Sealing the order'];
       const el = show(h('div', 'ds-readout', '<div class="ds-cap" data-l>' + lines[0] + '</div><div class="ds-dots"><i></i><i></i><i></i></div>'));
       pool.setMode('vortex', { vortex: 0.5 }); log('Shuffling the pool'); sound.whoosh();
       await sleep(step.ms, (k) => {
