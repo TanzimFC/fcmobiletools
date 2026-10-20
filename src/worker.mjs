@@ -1734,43 +1734,60 @@ function parseSiteAds(text) {
 function validateSiteAds(content) {
   if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
   content.enabled=Boolean(content.enabled);
-  content.provider=String(content.provider||'Monetag').trim()||'Monetag';
+  content.provider='Monetag + HilltopAds';
+  content.placementMode='public_giveaway_pages';
+  content.frequencyCapMinutes=Number(content.frequencyCapMinutes ?? 30);
 
-  if(!content.popunder || typeof content.popunder!=='object') throw new Error('Popunder configuration is missing.');
-  if(!content.push || typeof content.push!=='object') throw new Error('Push configuration is missing.');
-  if(!content.videoSlider || typeof content.videoSlider!=='object') throw new Error('HilltopAds Video Slider configuration is missing.');
+  const normalizeFormat=(key,label,expectedZone,expectedHost,expectedPath,defaultDelay)=>{
+    const item=content[key];
+    if(!item || typeof item!=='object') throw new Error(label+' configuration is missing.');
+    item.enabled=Boolean(item.enabled);
+    item.zone=String(item.zone||'').trim();
+    item.src=String(item.src||'').trim();
+    item.delayMs=Number(item.delayMs ?? defaultDelay);
+    let parsed;
+    try { parsed=new URL(item.src); } catch {}
+    if(item.zone!==expectedZone || !parsed || parsed.protocol!=='https:' ||
+       parsed.hostname!==expectedHost || parsed.pathname!==expectedPath || parsed.search || parsed.hash) {
+      throw new Error(label+' settings are invalid.');
+    }
+    if(!Number.isInteger(item.delayMs) || item.delayMs<5000 || item.delayMs>300000) {
+      throw new Error(label+' delay must be between 5 and 300 seconds.');
+    }
+  };
 
-  content.popunder.enabled=Boolean(content.popunder.enabled);
-  content.popunder.zone=String(content.popunder.zone||'').trim();
-  content.popunder.src=String(content.popunder.src||'').trim();
-  content.push.enabled=Boolean(content.push.enabled);
-  content.push.zone=String(content.push.zone||'').trim();
-  content.push.src=String(content.push.src||'').trim();
-  content.push.delayMs=Number(content.push.delayMs);
-  content.videoSlider.enabled=Boolean(content.videoSlider.enabled);
-  content.videoSlider.zone=String(content.videoSlider.zone||'').trim();
-  content.videoSlider.src=String(content.videoSlider.src||'').trim();
+  normalizeFormat('vignette','Monetag Vignette','12079211','n6wxm.com','/vignette.min.js',30000);
+  normalizeFormat('push','Monetag push notifications','12079218','5gvci.com','/act/files/tag.min.js',20000);
+  normalizeFormat('inPagePush','Monetag In-Page Push','12079223','nap5k.com','/tag.min.js',25000);
 
-  const validHttps=(value)=>{try{return new URL(value).protocol==='https:';}catch{return false;}};
-  if(!content.popunder.zone || !validHttps(content.popunder.src)) throw new Error('Popunder network settings are invalid.');
-  if(!content.push.zone || !validHttps(content.push.src)) throw new Error('Push network settings are invalid.');
-  if(!Number.isInteger(content.push.delayMs) || content.push.delayMs<5000 || content.push.delayMs>300000) throw new Error('Push delay must be between 5 and 300 seconds.');
-
-  let videoSliderUrl;
-  try { videoSliderUrl=new URL(content.videoSlider.src); } catch {}
-  if(!/^\d{4,12}$/.test(content.videoSlider.zone) || !videoSliderUrl || videoSliderUrl.protocol!=='https:' || videoSliderUrl.hostname!=='conventionalresponse.com') {
+  const slider=content.videoSlider;
+  if(!slider || typeof slider!=='object') throw new Error('HilltopAds Video Slider configuration is missing.');
+  slider.enabled=Boolean(slider.enabled);
+  slider.zone=String(slider.zone||'').trim();
+  slider.src=String(slider.src||'').trim();
+  slider.delayMs=Number(slider.delayMs ?? 35000);
+  let sliderUrl;
+  try { sliderUrl=new URL(slider.src); } catch {}
+  if(!/^\\d{4,12}$/.test(slider.zone) || !sliderUrl || sliderUrl.protocol!=='https:' ||
+     sliderUrl.hostname!=='conventionalresponse.com' || !sliderUrl.pathname.startsWith('/') || sliderUrl.search || sliderUrl.hash) {
     throw new Error('HilltopAds Video Slider settings are invalid.');
   }
+  if(!Number.isInteger(slider.delayMs) || slider.delayMs<5000 || slider.delayMs>300000) {
+    throw new Error('HilltopAds Video Slider delay must be between 5 and 300 seconds.');
+  }
 
-  // Keep the private and intentionally excluded routes out of the public ad layer.
-  content.excludedPathPrefixes=['/admin','/api','/creator/login','/fc-mobile-27','/giveaways'];
+  if(!Number.isInteger(content.frequencyCapMinutes) || content.frequencyCapMinutes<20 || content.frequencyCapMinutes>240) {
+    throw new Error('The visitor frequency cap must be between 20 and 240 minutes.');
+  }
+
+  // Legacy clients may submit old fields; never save a popunder configuration.
+  delete content.popunder;
+  content.excludedPathPrefixes=['/admin','/api','/creator/login','/fc-mobile-27','/account'];
   return content;
 }
 function siteAdsText(content) {
-  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// /admin, /api, /creator/login, /fc-mobile-27, and /giveaways remain excluded from ads server-side.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
+  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\\n// Third-party formats are allowed only on the public giveaway hub and public giveaway detail pages. Home, admin, entry, draw, claim, rules, and other routes are excluded. No popunder format is configured.\\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\\n';
 }
-
-
 
 function parseFcMobile27(text) {
   const match=text.match(/export const FC_MOBILE_27 = ([\s\S]+);\s*$/);
@@ -2392,9 +2409,11 @@ async function api(request,env,path) {
         ...current,
         enabled:input.enabled===undefined?current.enabled:Boolean(input.enabled),
         provider:current.provider,
-        popunder:{...current.popunder,...(input.popunder||{})},
+        vignette:{...current.vignette,...(input.vignette||{})},
         push:{...current.push,...(input.push||{})},
-        videoSlider:{...current.videoSlider,...(input.videoSlider||{})}
+        inPagePush:{...current.inPagePush,...(input.inPagePush||{})},
+        videoSlider:{...current.videoSlider,...(input.videoSlider||{})},
+        frequencyCapMinutes:input.frequencyCapMinutes===undefined?current.frequencyCapMinutes:Number(input.frequencyCapMinutes)
       });
       const file=await repoFile(env,'src/config/siteAds.js');
       const commitSha=await writeRepoFile(env,'src/config/siteAds.js',siteAdsText(next),file.sha,'admin: update site ad settings');
