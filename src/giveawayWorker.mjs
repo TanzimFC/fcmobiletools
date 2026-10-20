@@ -12,7 +12,7 @@ import {
   sha256Hex, randomSeed, entriesHash, rankEntries, generateClaimCode, canonicalClaimCode, isValidClaimCodeShape
 } from './lib/giveawayDraw.js';
 import {
-  RULES_VERSION, SITE_ORIGIN, requirementsFor, cleanMilestones, unlockedMilestones, BONUS_DEFAULTS,
+  RULES_VERSION, SITE_ORIGIN, requirementsFor, cleanMilestones, unlockedMilestones,
   banDaysForStrike, money, KINDS
 } from './data/giveawayConfig.js';
 import {
