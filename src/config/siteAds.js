@@ -1,5 +1,5 @@
 // Central ad configuration managed by the FC Mobile Tools admin panel.
-// Monetag formats run on every /giveaways route after advertising consent. Homepage, admin, accounts, and every other tool are excluded. No popunder format is configured.
+// All third-party advertising formats are intentionally disabled site-wide.
 export const SITE_ADS = {
   "enabled": false,
   "provider": "Monetag",
@@ -12,7 +12,7 @@ export const SITE_ADS = {
     "delayMs": 60000
   },
   "push": {
-    "enabled": true,
+    "enabled": false,
     "zone": "12079218",
     "src": "https://5gvci.com/act/files/tag.min.js",
     "delayMs": 30000
