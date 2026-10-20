@@ -1,14 +1,15 @@
 ---
 import { SITE_ADS } from '../config/siteAds.js';
 
-const pathname = Astro.url.pathname;
-// Giveaway pages never run pop-under, push or slider ads. People type handles, upload proof and
-// claim prizes there, so third-party pop-ups would be a scam risk and a policy risk. This list is
-// fixed in code on purpose, so saving Ad Settings in the admin can never remove it.
-const ALWAYS_EXCLUDED = ['/giveaways'];
-const isExcluded = [...SITE_ADS.excludedPathPrefixes, ...ALWAYS_EXCLUDED].some((prefix) =>
-  pathname === prefix || pathname.startsWith(prefix + '/')
-);
+const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
+const parts = pathname.split('/').filter(Boolean);
+const giveawayHub = pathname === '/giveaways';
+const reservedSlugs = new Set(['enter', 'claim', 'rules', 'safety', 'draw']);
+const giveawayDetail = parts.length === 2 && parts[0] === 'giveaways' && !reservedSlugs.has(parts[1]);
+const eligibleGiveawayPage = giveawayHub || giveawayDetail;
+const permanentlyExcluded = pathname === '/' ||
+  SITE_ADS.excludedPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
+const isExcluded = !eligibleGiveawayPage || permanentlyExcluded;
 ---
 
 {SITE_ADS.enabled && !isExcluded && (
@@ -32,46 +33,75 @@ const isExcluded = [...SITE_ADS.excludedPathPrefixes, ...ALWAYS_EXCLUDED].some((
       const root = document.body || document.documentElement;
       if (!root) return;
 
-      const loadConfiguredAds = () => {
-        if (!hasAdvertisingConsent()) return;
+      const appendFormat = (format) => {
+        if (!hasAdvertisingConsent() || document.visibilityState !== 'visible') return;
+        const script = document.createElement('script');
+        script.async = true;
+        script.dataset.fcmtAdFormat = format.key;
 
-        if (config.popunder?.enabled && document.documentElement.dataset.sitePopunderLoaded !== '1') {
-          document.documentElement.dataset.sitePopunderLoaded = '1';
-          const script = document.createElement('script');
-          script.dataset.zone = config.popunder.zone;
-          script.src = config.popunder.src;
-          script.async = true;
-          root.appendChild(script);
-        }
-
-        if (config.push?.enabled &&
-            document.documentElement.dataset.sitePushLoaded !== '1' &&
-            document.documentElement.dataset.sitePushScheduled !== '1') {
-          document.documentElement.dataset.sitePushScheduled = '1';
-          window.setTimeout(() => {
-            delete document.documentElement.dataset.sitePushScheduled;
-            if (!hasAdvertisingConsent() || document.visibilityState === 'prerender') return;
-            if (document.documentElement.dataset.sitePushLoaded === '1') return;
-
-            document.documentElement.dataset.sitePushLoaded = '1';
-            const script = document.createElement('script');
-            script.src = config.push.src + '?z=' + encodeURIComponent(config.push.zone);
-            script.setAttribute('data-cfasync', 'false');
-            script.async = true;
-            (document.body || root).appendChild(script);
-          }, config.push.delayMs);
-        }
-
-        if (config.videoSlider?.enabled && config.videoSlider.src &&
-            document.documentElement.dataset.siteVideoSliderLoaded !== '1') {
-          document.documentElement.dataset.siteVideoSliderLoaded = '1';
-          const script = document.createElement('script');
+        if (format.key === 'vignette') {
+          script.dataset.zone = config.vignette.zone;
+          script.src = config.vignette.src;
+        } else if (format.key === 'push') {
+          script.src = config.push.src + '?z=' + encodeURIComponent(config.push.zone);
+          script.setAttribute('data-cfasync', 'false');
+        } else if (format.key === 'inPagePush') {
+          script.dataset.zone = config.inPagePush.zone;
+          script.src = config.inPagePush.src;
+        } else if (format.key === 'videoSlider') {
           script.settings = {};
           script.src = config.videoSlider.src;
-          script.async = true;
           script.referrerPolicy = 'no-referrer-when-downgrade';
-          root.appendChild(script);
+        } else {
+          return;
         }
+
+        document.documentElement.dataset.siteAdFormatLoaded = format.key;
+        root.appendChild(script);
+      };
+
+      const loadConfiguredAds = () => {
+        if (!hasAdvertisingConsent() || document.visibilityState !== 'visible') return;
+
+        // Only one third-party format may load within the cooldown window.
+        const formats = [
+          { key: 'inPagePush', settings: config.inPagePush },
+          { key: 'vignette', settings: config.vignette },
+          { key: 'push', settings: config.push },
+          { key: 'videoSlider', settings: config.videoSlider }
+        ].filter((format) => format.settings?.enabled && format.settings?.src && format.settings?.zone);
+        if (!formats.length) return;
+
+        const lastKey = 'fcmt:ads:last-load:v1';
+        const rotationKey = 'fcmt:ads:rotation:v1';
+        const capMinutes = Math.max(20, Math.min(240, Number(config.frequencyCapMinutes) || 30));
+        const now = Date.now();
+        let lastLoad = 0;
+        let rotation = 0;
+
+        // Fail closed if browser storage is unavailable; don't bypass the frequency cap.
+        try {
+          lastLoad = Number(localStorage.getItem(lastKey) || 0);
+          rotation = Number(localStorage.getItem(rotationKey) || 0);
+        } catch {
+          return;
+        }
+        if (Number.isFinite(lastLoad) && lastLoad > 0 && now - lastLoad < capMinutes * 60 * 1000) return;
+
+        const index = Number.isFinite(rotation) ? Math.abs(Math.trunc(rotation)) % formats.length : 0;
+        const selected = formats[index];
+
+        try {
+          // Reserve the cooldown before the delay to avoid races across open tabs.
+          localStorage.setItem(lastKey, String(now));
+          localStorage.setItem(rotationKey, String((index + 1) % formats.length));
+        } catch {
+          return;
+        }
+
+        window.setTimeout(() => {
+          appendFormat(selected);
+        }, Math.max(5000, Math.min(300000, Number(selected.settings.delayMs) || 30000)));
       };
 
       window.addEventListener('fcmobiletools:consent-updated', (event) => {
@@ -79,15 +109,7 @@ const isExcluded = [...SITE_ADS.excludedPathPrefixes, ...ALWAYS_EXCLUDED].some((
           loadConfiguredAds();
           return;
         }
-
-        // Reload only when third-party ad scripts have already started, so a revoked
-        // preference removes their runtime from the current page as well.
-        const dataset = document.documentElement.dataset;
-        if (dataset.sitePopunderLoaded === '1' ||
-            dataset.sitePushLoaded === '1' ||
-            dataset.siteVideoSliderLoaded === '1') {
-          window.location.reload();
-        }
+        if (document.documentElement.dataset.siteAdFormatLoaded) window.location.reload();
       });
 
       document.addEventListener('visibilitychange', () => {
