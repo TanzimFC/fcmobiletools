@@ -243,11 +243,17 @@ function winnerPublicFields() {
 }
 
 async function eligibleList(db, g) {
-  const bonus = { ...BONUS_DEFAULTS, ...(g.bonus || {}) };
+  // The first giveaway uses a strict one-person, one-entry rule. Ignore any
+  // legacy boost/referral rows and normalise the draw pool before it is frozen.
   const rows = await db.rpc('giveaway_eligible_tickets', {
-    p_giveaway: g.id, p_daily_cap: bonus.daily ? bonus.dailyCap : 0, p_ref_cap: bonus.referral ? bonus.referralCap : 0
+    p_giveaway: g.id, p_daily_cap: 0, p_ref_cap: 0
   });
-  return (rows || []).map((r) => ({ id: r.entry_id, accountId: r.account_id, tickets: r.tickets }));
+  const byAccount = new Map();
+  for (const row of rows || []) {
+    if (!row?.entry_id || !row?.account_id || byAccount.has(String(row.account_id))) continue;
+    byAccount.set(String(row.account_id), { id: row.entry_id, accountId: row.account_id, tickets: 1 });
+  }
+  return [...byAccount.values()];
 }
 
 async function newClaimCode(env) {
@@ -334,17 +340,11 @@ function assertOpen(g) {
 }
 
 async function ticketsFor(db, g, accountId) {
-  const bonus = { ...BONUS_DEFAULTS, ...(g.bonus || {}) };
-  const [days, refs] = await Promise.all([
-    db.rest('giveaway_checkins?giveaway_id=eq.' + g.id + '&account_id=eq.' + accountId + '&select=day&order=day.desc&limit=60'),
-    db.rest('giveaway_referrals?giveaway_id=eq.' + g.id + '&referrer_account_id=eq.' + accountId + '&status=eq.counted&select=id&limit=200')
-  ]);
-  const daily = bonus.daily ? Math.min(days.length, bonus.dailyCap) : 0;
-  const referral = bonus.referral ? Math.min(refs.length, bonus.referralCap) : 0;
+  // Keep the member API explicit: one entry, no bonus tickets, and no referral odds.
   return {
-    base: 1, daily, referral, total: 1 + daily + referral,
-    dailyCap: bonus.dailyCap, referralCap: bonus.referralCap, referrals: refs.length,
-    boostedToday: days.some((d) => d.day === utcDay()), boostsEnabled: Boolean(bonus.daily), referralsEnabled: Boolean(bonus.referral)
+    base: 1, daily: 0, referral: 0, total: 1,
+    dailyCap: 0, referralCap: 0, referrals: 0,
+    boostedToday: false, boostsEnabled: false, referralsEnabled: false
   };
 }
 
@@ -366,7 +366,17 @@ async function meApi(db, env, g, ctx) {
 }
 
 async function proofUpload(request, env, url, db, g, ctx, reserveImageUploadQuota) {
-  assertOpen(g);
+  const status = effectiveStatus(g);
+  if (status !== 'live') {
+    // A closed giveaway may accept a replacement image only when a reviewer
+    // has explicitly requested a fix and the entrant's deadline is still open.
+    if (status !== 'closed') {
+      throw new Fail(status === 'upcoming' ? 'This giveaway has not opened yet.' : 'Entries are closed for this giveaway.', 409);
+    }
+    const correction = (await db.rest('giveaway_entries?giveaway_id=eq.' + g.id + '&account_id=eq.' + ctx.account.id + '&select=id,status,fix_deadline&limit=1'))?.[0];
+    if (!correction || correction.status !== 'needs_proof') throw new Fail('Entries are closed for this giveaway.', 409);
+    if (correction.fix_deadline && Date.parse(correction.fix_deadline) < Date.now()) throw new Fail('The deadline to correct this proof has passed.', 409);
+  }
   requireKey(env);
   if (!String(env.IMAGEBB_API_KEY || '').trim()) throw new Fail('Image uploads are temporarily unavailable. Please try again later.', 503);
   if (await activeBan(db, ctx.account.id, g.id)) throw new Fail('Your account is paused from giveaways.', 403);
@@ -514,22 +524,7 @@ async function fixApi(request, env, db, g, ctx) {
 }
 
 async function boostApi(db, g, ctx) {
-  assertOpen(g);
-  const bonus = { ...BONUS_DEFAULTS, ...(g.bonus || {}) };
-  if (!bonus.daily) throw new Fail('Daily boosts are not enabled for this giveaway.', 409);
-  const entry = (await db.rest('giveaway_entries?giveaway_id=eq.' + g.id + '&account_id=eq.' + ctx.account.id + '&select=id,status&limit=1'))?.[0];
-  if (!entry || !['provisional', 'approved'].includes(entry.status)) throw new Fail('Enter the giveaway first to use boosts.', 409);
-  const t = await ticketsFor(db, g, ctx.account.id);
-  if (t.boostedToday) throw new Fail('You already boosted today. Come back tomorrow.', 409);
-  if (t.daily >= bonus.dailyCap) throw new Fail('You have reached the maximum of ' + bonus.dailyCap + ' daily boosts.', 409);
-  try {
-    await db.rest('giveaway_checkins', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ giveaway_id: g.id, account_id: ctx.account.id, day: utcDay() }) });
-  } catch (error) {
-    if (/duplicate|unique/i.test(String(error?.message))) throw new Fail('You already boosted today. Come back tomorrow.', 409);
-    throw error;
-  }
-  await bump(db, g.id, 'boost');
-  return { ok: true, tickets: await ticketsFor(db, g, ctx.account.id) };
+  throw new Fail('Every person gets exactly one entry. Bonus entries are not available.', 409);
 }
 
 async function withdrawApi(db, g, ctx) {
@@ -612,8 +607,8 @@ function cleanGiveawayInput(body, existing) {
   if (body.endsAt !== undefined) { const v = isoOrNull(body.endsAt); if (v === undefined) throw new Fail('End date is not valid.'); set('ends_at', v); }
   if (body.milestones !== undefined) set('milestones', cleanMilestones(body.milestones));
   if (body.bonus !== undefined) {
-    const b = body.bonus || {};
-    set('bonus', { daily: b.daily !== false, dailyCap: intIn(b.dailyCap, 0, 30, 7), referral: b.referral !== false, referralCap: intIn(b.referralCap, 0, 50, 10) });
+    // Legacy admin clients may still send these fields; never enable extra entries.
+    set('bonus', { daily: false, dailyCap: 0, referral: false, referralCap: 0 });
   }
   const lockedFields = {
     kind: () => set('kind', KINDS[body.kind] ? body.kind : 'custom'),
