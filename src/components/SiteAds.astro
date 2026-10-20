@@ -1,22 +1,22 @@
 ---
 import { SITE_ADS } from '../config/siteAds.js';
 
-const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
-const parts = pathname.split('/').filter(Boolean);
-const reservedGiveawaySections = new Set(['enter', 'entry', 'claim', 'rules', 'safety', 'draw']);
-const isGiveawayFlow = parts[0] === 'giveaways' && parts.slice(1).some((part) => reservedGiveawaySections.has(part));
-const permanentlyExcluded = pathname === '/' ||
-  isGiveawayFlow ||
-  SITE_ADS.excludedPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
+const pathname = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const isGiveawayPage = pathname === '/giveaways' || pathname.startsWith('/giveaways/');
+const blockedByPrefix = SITE_ADS.excludedPathPrefixes.some((prefix) =>
+  pathname === prefix || pathname.startsWith(prefix + '/')
+);
+const canRunGiveawayAds = isGiveawayPage && !blockedByPrefix;
 ---
 
-{SITE_ADS.enabled && !permanentlyExcluded && (
+{SITE_ADS.enabled && canRunGiveawayAds && (
   <script define:vars={{ config: SITE_ADS }}>
     (() => {
       if (window.__FCMOBILETOOLS_SITE_ADS__) return;
       window.__FCMOBILETOOLS_SITE_ADS__ = true;
 
       const pending = new Map();
+      const loaded = new Set();
 
       const hasAdvertisingConsent = () => {
         const name = 'fcmobiletools_consent=';
@@ -30,33 +30,34 @@ const permanentlyExcluded = pathname === '/' ||
         }
       };
 
-      const reserveVignetteSlot = () => {
+      const canShowVignette = () => {
         const key = 'fcmt:ads:last-vignette:v2';
         const capMinutes = Math.max(20, Math.min(240, Number(config.frequencyCapMinutes) || 30));
-        const now = Date.now();
         try {
           const last = Number(localStorage.getItem(key) || 0);
-          if (Number.isFinite(last) && last > 0 && now - last < capMinutes * 60 * 1000) return false;
-          localStorage.setItem(key, String(now));
-          return true;
+          return !Number.isFinite(last) || last <= 0 || Date.now() - last >= capMinutes * 60 * 1000;
         } catch {
-          // Do not block the other formats when storage is disabled. Monetag's
-          // own zone frequency controls should be used in that case.
+          // Storage restrictions must not prevent In-Page Push from loading.
           return true;
         }
       };
 
-      const appendFormat = (format) => {
-        if (!hasAdvertisingConsent() || document.visibilityState !== 'visible') return;
-        if (document.querySelector('script[data-fcmt-ad-format="' + format.key + '"]')) return;
-        if (!document.head) return;
+      const markVignetteLoaded = () => {
+        try {
+          localStorage.setItem('fcmt:ads:last-vignette:v2', String(Date.now()));
+        } catch {}
+      };
 
-        if (format.key === 'vignette' && !reserveVignetteSlot()) return;
+      const appendFormat = (format, attempt = 0) => {
+        if (!hasAdvertisingConsent() || document.visibilityState !== 'visible') return;
+        if (loaded.has(format.key) || document.querySelector('script[data-fcmt-ad-format="' + format.key + '"]')) return;
+        if (!document.head) return;
+        if (format.key === 'vignette' && !canShowVignette()) return;
 
         const script = document.createElement('script');
-        script.async = true;
         script.setAttribute('data-cfasync', 'false');
         script.setAttribute('data-fcmt-ad-format', format.key);
+        script.async = true;
 
         if (format.key === 'vignette') {
           script.setAttribute('data-zone', format.settings.zone);
@@ -70,46 +71,52 @@ const permanentlyExcluded = pathname === '/' ||
           return;
         }
 
+        script.addEventListener('load', () => {
+          loaded.add(format.key);
+          document.documentElement.dataset.siteAdFormatLoaded = format.key;
+          if (format.key === 'vignette') markVignetteLoaded();
+        }, { once: true });
+
         script.addEventListener('error', () => {
           document.documentElement.dataset.siteAdFormatError = format.key;
+          script.remove();
+          if (attempt < 1 && hasAdvertisingConsent()) {
+            pending.set(format.key, window.setTimeout(() => {
+              pending.delete(format.key);
+              appendFormat(format, attempt + 1);
+            }, 5000));
+          }
         }, { once: true });
-        script.addEventListener('load', () => {
-          document.documentElement.dataset.siteAdFormatLoaded = format.key;
-        }, { once: true });
-        // Monetag recommends placing tags in the document head. data-cfasync
-        // lets the scripts bypass Cloudflare Rocket Loader.
+
+        // Keep the Monetag tag in <head> with Rocket Loader bypass enabled.
         document.head.appendChild(script);
       };
 
       const scheduleFormat = (format) => {
         if (!format.settings?.enabled || !format.settings?.src || !format.settings?.zone) return;
-        if (document.querySelector('script[data-fcmt-ad-format="' + format.key + '"]') || pending.has(format.key)) return;
-
+        if (loaded.has(format.key) || document.querySelector('script[data-fcmt-ad-format="' + format.key + '"]') || pending.has(format.key)) return;
         const delay = Math.max(5000, Math.min(300000, Number(format.settings.delayMs) || 30000));
         pending.set(format.key, window.setTimeout(() => {
           pending.delete(format.key);
-          if (!hasAdvertisingConsent() || document.visibilityState !== 'visible') return;
           appendFormat(format);
         }, delay));
       };
 
       const loadConfiguredAds = () => {
         if (!hasAdvertisingConsent() || document.visibilityState !== 'visible') return;
-
-        // These are independent ad formats; a single format must not suppress
-        // the other two. Monetag's zone-level frequency controls handle delivery.
+        // In-Page Push is the on-page format; Push Notification requires visitors
+        // to subscribe, and Vignette follows its own overlay cooldown.
         scheduleFormat({ key: 'inPagePush', settings: config.inPagePush });
         scheduleFormat({ key: 'push', settings: config.push });
-        // Vignette is the only overlay in this setup and has its own cooldown.
         scheduleFormat({ key: 'vignette', settings: config.vignette });
       };
 
       window.addEventListener('fcmobiletools:consent-updated', (event) => {
         if (event.detail?.advertising === true) {
           loadConfiguredAds();
-          return;
+        } else if (document.querySelector('script[data-fcmt-ad-format]')) {
+          window.location.reload();
         }
-        if (document.querySelector('script[data-fcmt-ad-format]')) window.location.reload();
       });
 
       document.addEventListener('visibilitychange', () => {
