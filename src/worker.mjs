@@ -1735,7 +1735,7 @@ function validateSiteAds(content) {
   if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
   content.enabled=Boolean(content.enabled);
   content.provider='Monetag';
-  content.placementMode='public_giveaway_pages';
+  content.placementMode='public_content_except_sensitive';
   content.frequencyCapMinutes=Number(content.frequencyCapMinutes ?? 30);
 
   const normalizeFormat=(key,label,expectedZone,expectedHost,expectedPath,defaultDelay)=>{
