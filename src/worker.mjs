@@ -1768,7 +1768,7 @@ function validateSiteAds(content) {
   slider.delayMs=Number(slider.delayMs ?? 35000);
   let sliderUrl;
   try { sliderUrl=new URL(slider.src); } catch {}
-  if(!/^\\d{4,12}$/.test(slider.zone) || !sliderUrl || sliderUrl.protocol!=='https:' ||
+  if(!/^\d{4,12}$/.test(slider.zone) || !sliderUrl || sliderUrl.protocol!=='https:' ||
      sliderUrl.hostname!=='conventionalresponse.com' || !sliderUrl.pathname.startsWith('/') || sliderUrl.search || sliderUrl.hash) {
     throw new Error('HilltopAds Video Slider settings are invalid.');
   }
@@ -1786,7 +1786,7 @@ function validateSiteAds(content) {
   return content;
 }
 function siteAdsText(content) {
-  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\\n// Third-party formats are allowed only on the public giveaway hub and public giveaway detail pages. Home, admin, entry, draw, claim, rules, and other routes are excluded. No popunder format is configured.\\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\\n';
+  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// Third-party formats are allowed only on the public giveaway hub and public giveaway detail pages. Home, admin, entry, draw, claim, rules, and other routes are excluded. No popunder format is configured.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
 }
 
 function parseFcMobile27(text) {
