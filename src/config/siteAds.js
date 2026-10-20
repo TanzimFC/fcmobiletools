@@ -9,19 +9,19 @@ export const SITE_ADS = {
     "enabled": true,
     "zone": "12079211",
     "src": "https://n6wxm.com/vignette.min.js",
-    "delayMs": 30000
+    "delayMs": 60000
   },
   "push": {
     "enabled": true,
     "zone": "12079218",
     "src": "https://5gvci.com/act/files/tag.min.js",
-    "delayMs": 15000
+    "delayMs": 30000
   },
   "inPagePush": {
     "enabled": true,
     "zone": "12079223",
     "src": "https://nap5k.com/tag.min.js",
-    "delayMs": 5000
+    "delayMs": 8000
   },
   "excludedPathPrefixes": [
     "/admin",

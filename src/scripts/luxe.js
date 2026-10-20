@@ -91,8 +91,6 @@ if (!window.__fcmtLuxe) {
    * ------------------------------------------------------------------ */
   const boot = () => {
     document.documentElement.classList.add('lx-ready');
-    document.body.appendChild(make('div', 'lx-grain'));
-
     const bar = make('div', 'lx-progress');
     document.body.appendChild(bar);
     const top = make('button', 'lx-top', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>');
@@ -147,7 +145,10 @@ if (!window.__fcmtLuxe) {
         io.unobserve(en.target);
       });
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
-    root.querySelectorAll?.(REVEAL).forEach((el) => {
+    const candidates = [];
+    if (root instanceof Element && root.matches(REVEAL)) candidates.push(root);
+    root.querySelectorAll?.(REVEAL).forEach((el) => candidates.push(el));
+    candidates.forEach((el) => {
       if (el.dataset.lxR || el.closest('.acc-anim, .lx-reveal, [hidden]')) return;
       el.dataset.lxR = '1';
       el.classList.add('lx-reveal');
@@ -433,21 +434,43 @@ if (!window.__fcmtLuxe) {
     }
   };
 
-  const scan = () => {
-    const hero = $('.prof-page .hero-card');
+  const scan = (root = document) => {
+    let hero = null;
+    if (root instanceof Element) {
+      if (root.matches('.prof-page .hero-card')) hero = root;
+      else if (root.matches('.prof-page')) hero = root.querySelector('.hero-card');
+    }
+    if (!hero) hero = root.querySelector?.('.prof-page .hero-card') || null;
     if (hero) enhanceHero(hero);
-    revealScan(document);
+    revealScan(root);
   };
 
   const start = () => {
     boot();
     scan();
     let pending = false;
-    new MutationObserver(() => {
-      if (pending) return;
+    const pendingNodes = new Set();
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node.nodeType === 1) pendingNodes.add(node);
+        }
+      }
+      if (pending || !pendingNodes.size) return;
       pending = true;
-      requestAnimationFrame(() => { pending = false; scan(); });
-    }).observe(document.body, { childList: true, subtree: true });
+      requestAnimationFrame(() => {
+        pending = false;
+        const nodes = Array.from(pendingNodes);
+        pendingNodes.clear();
+        const known = new Set(nodes);
+        nodes.forEach((node) => {
+          let parent = node.parentElement;
+          while (parent && !known.has(parent)) parent = parent.parentElement;
+          if (!parent) scan(node);
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
