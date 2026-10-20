@@ -98,7 +98,12 @@ const canRunGiveawayAds = isGiveawayPage && !blockedByPrefix;
         const delay = Math.max(5000, Math.min(300000, Number(format.settings.delayMs) || 30000));
         pending.set(format.key, window.setTimeout(() => {
           pending.delete(format.key);
-          appendFormat(format);
+          const injectWhenIdle = () => appendFormat(format);
+          if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(injectWhenIdle, { timeout: 2200 });
+          } else {
+            window.setTimeout(injectWhenIdle, 250);
+          }
         }, delay));
       };
 
