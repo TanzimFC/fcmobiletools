@@ -3,7 +3,7 @@ import {
   sha256Hex, randomSeed, entriesHash, rankEntries,
   generateClaimCode, isValidClaimCodeShape, normalizeClaimCode, canonicalClaimCode, maskName
 } from '../src/lib/giveawayDraw.js';
-import { banDaysForStrike, requirementsFor, DEFAULT_REQUIREMENTS, unlockedMilestones } from '../src/data/giveawayConfig.js';
+import { banDaysForStrike, requirementsFor, DEFAULT_REQUIREMENTS, unlockedMilestones, BONUS_DEFAULTS } from '../src/data/giveawayConfig.js';
 
 // sha256 known vector
 assert.equal(await sha256Hex('abc'), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
@@ -71,6 +71,7 @@ assert.equal(banDaysForStrike(4), null, 'fourth strike is permanent');
 assert.equal(unlockedMilestones([{ entries: 100, label: 'A', bonus_winners: 1 }, { entries: 500, label: 'B', bonus_winners: 2 }], 150).bonusWinners, 1);
 assert.equal(unlockedMilestones([{ entries: 100, label: 'A', bonus_winners: 1 }, { entries: 500, label: 'B', bonus_winners: 2 }], 600).bonusWinners, 3);
 assert.equal(requirementsFor(null).length, DEFAULT_REQUIREMENTS.length, 'missing config falls back to defaults');
+assert.deepEqual(BONUS_DEFAULTS, { daily: false, dailyCap: 0, referral: false, referralCap: 0 }, 'giveaways default to one entry with no boosts or referral entries');
 
 console.log('Giveaway engine tests passed.');
 
