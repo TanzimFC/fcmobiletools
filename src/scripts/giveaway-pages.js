@@ -178,6 +178,10 @@ function paintMe(g, me) {
   const host = $('#gwMe');
   const e = me.entry;
   const rejected = Boolean(e && ['rejected', 'disqualified', 'withdrawn'].includes(e.status));
+  const fixMeta = e && e.status === 'needs_proof' ? String(e.reviewReason || '').match(/^\[Requirement: ([^\]]+)\]\s*([\s\S]*)$/) : null;
+  const fixTarget = fixMeta?.[1] || '';
+  const reviewerText = fixMeta ? fixMeta[2] : String(e?.reviewReason || '');
+  const fixAll = !fixTarget || fixTarget === 'Multiple requirements / whole entry';
   // Automatic requirements are green as soon as the site's records confirm them.
   // Discord membership and subscription screenshots require a human, so a valid
   // submitted proof stays yellow until approved and turns red if rejected.
@@ -190,14 +194,16 @@ function paintMe(g, me) {
     // status even if temporary screenshot links expire later.
     const verified = manual ? Boolean(e && e.status === 'approved') : r.ok;
     const rejectedManual = manual && rejected;
-    const needsFix = manual && Boolean(e && e.status === 'needs_proof');
-    const failed = manual ? (!e ? false : (!r.ok || rejectedManual || needsFix)) : !r.ok;
+    const needsFix = manual && Boolean(e && e.status === 'needs_proof') && (fixAll || r.label === fixTarget);
+    const failed = manual ? (!e ? false : (rejectedManual || needsFix || (!r.ok && e.status !== 'needs_proof'))) : !r.ok;
     li.classList.toggle('ok', verified);
     li.classList.toggle('pending', pending);
     li.classList.toggle('bad', failed);
     $('.ic', li).innerHTML = verified || pending ? IC.check : manual && !e ? '•' : '!';
     $('.st', li).textContent = pending ? 'Awaiting manual review'
-      : verified ? 'Approved' : rejectedManual ? 'Entry rejected' : manual && !e ? 'Complete in entry form' : needsFix ? 'Correction requested' : r.detail;
+      : verified ? 'Approved' : rejectedManual ? 'Entry rejected' : needsFix ? 'Correction needed — see reviewer note'
+        : manual && e?.status === 'needs_proof' ? 'Not flagged for correction'
+          : manual && !e ? 'Complete in entry form' : r.detail;
   }
   if (me.ban) { host.innerHTML = '<div class="gw-callout bad"><div><strong>Your account is paused from giveaways' + (me.ban.permanent ? '' : ' until ' + esc(when(me.ban.endsAt))) + '.</strong><br>' + esc(me.ban.reason) + '</div></div>'; return; }
   if (!e) {
@@ -207,24 +213,18 @@ function paintMe(g, me) {
     return;
   }
   const [label, tone] = ENTRY_LABEL[e.status] || [e.status, ''];
-  const t = me.tickets;
-  const link = me.referral.link;
-  host.innerHTML = '<div class="gw-panel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><span class="gw-tag ' + (tone === 'paid' ? 'paid' : '') + '">' + esc(label) + '</span><span class="gw-note">Entered ' + esc(when(e.createdAt)) + '</span></div>' +
-    (e.reviewReason ? '<div class="gw-callout ' + (tone === 'bad' ? 'bad' : 'cyan') + '"><div><strong>Reviewer note:</strong> ' + esc(e.reviewReason) + '</div></div>' : '') +
-    (e.status === 'needs_proof' ? '<div style="margin-top:12px"><a class="gw-btn gw-btn-gold" href="/giveaways/' + esc(g.slug) + '/enter/">Upload corrected proof</a></div>' : '') +
-    '<div class="gw-cols" style="margin-top:18px"><div class="gw-stat"><small>Your tickets</small><strong>' + t.total + '</strong></div><div class="gw-stat" style="--c:var(--gw-cyan)"><small>Daily boosts</small><strong>' + t.daily + '/' + t.dailyCap + '</strong></div><div class="gw-stat" style="--c:var(--gw-vi)"><small>Friends referred</small><strong>' + t.referrals + '</strong></div></div>' +
-    (g.status === 'live' && ['provisional', 'approved'].includes(e.status) ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">' + (t.boostsEnabled ? '<button class="gw-btn gw-btn-gold" id="gwBoost" ' + (t.boostedToday ? 'disabled' : '') + '>' + (t.boostedToday ? 'Boosted today. Come back tomorrow' : '⚡ Daily boost +1 ticket') + '</button>' : '') + '<button class="gw-btn" id="gwShare">Share and earn tickets</button></div>' +
-      (t.referralsEnabled ? '<div class="gw-field" style="margin-top:16px"><label>Your invite link (+1 ticket for each friend who completes entry, up to ' + t.referralCap + ')</label><div style="display:flex;gap:8px"><input class="gw-input" readonly value="' + esc(link) + '" id="gwRefLink"><button class="gw-btn" id="gwCopy">Copy</button></div></div>' : '') : '') +
-    '<p class="gw-note" style="margin-top:14px">Extra tickets improve your odds but never guarantee a win. Winners are drawn by a public, verifiable method.</p></div>' +
+  const shareUrl = location.origin + '/giveaways/' + g.slug + '/';
+  host.innerHTML = '<div class="gw-panel gw-entry-status"><div class="gw-entry-top"><span class="gw-tag ' + (tone === 'paid' ? 'paid' : '') + '">' + esc(label) + '</span><span class="gw-note">Submitted ' + esc(when(e.createdAt)) + '</span></div>' +
+    (e.reviewReason ? '<div class="gw-callout ' + (tone === 'bad' ? 'bad' : 'cyan') + ' gw-review-note"><div><strong>' + (fixTarget ? 'Correction needed: ' + esc(fixTarget) : 'Reviewer note') + '</strong><p>' + esc(reviewerText) + '</p>' + (e.status === 'needs_proof' ? '<span>Use the correction button below. The requested requirement is also marked in the checklist.</span>' : '') + '</div></div>' : '') +
+    (e.status === 'needs_proof' ? '<div class="gw-entry-action-row"><a class="gw-btn gw-btn-gold" href="/giveaways/' + esc(g.slug) + '/enter/">Correct my proof</a><span class="gw-note">Your entry remains out of the draw if the deadline passes without a correction.</span></div>' : '') +
+    '<div class="gw-entry-fair-card"><div><small>YOUR DRAW WEIGHT</small><strong>1 entry</strong><span>The same weight as every other eligible person.</span></div><div class="gw-entry-seal"><span>✓</span> EQUAL WEIGHT</div></div>' +
+    '<p class="gw-note gw-entry-fair-note">No daily boosts, referral entries or share bonuses. Sharing is optional and never changes your chance of winning.</p>' +
+    (g.status === 'live' && ['provisional', 'approved'].includes(e.status) ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px"><button class="gw-btn" id="gwShare">Share giveaway</button></div>' : '') + '</div>' +
     (me.events.length ? '<div class="gw-panel" style="margin-top:14px"><h3>Your entry timeline</h3><ul class="gw-tl">' + me.events.map((ev) => '<li class="' + esc(ev.actor) + '"><b>' + esc(ev.action.replace(/_/g, ' ')) + '</b>' + (ev.reason ? '<p>' + esc(ev.reason) + '</p>' : '') + '<time>' + esc(when(ev.created_at)) + '</time></li>').join('') + '</ul></div>' : '');
-  $('#gwBoost')?.addEventListener('click', (ev) => busy(ev.currentTarget, async () => {
-    try { const r = await api('/api/giveaways/' + g.slug + '/boost', { method: 'POST' }); toast('Boost added. You now have ' + r.tickets.total + ' tickets.'); confetti(); paintMe(g, await api('/api/giveaways/' + g.slug + '/me')); }
-    catch (err) { toast(err.message, true); }
-  }));
-  $('#gwCopy')?.addEventListener('click', () => { copyText(link); fetch('/api/giveaways/' + g.slug + '/track', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ event: 'share' }) }).catch(() => {}); });
   $('#gwShare')?.addEventListener('click', async () => {
-    const data = { title: g.title, text: 'Free to enter: ' + g.title + ' on FCMobiletools. ' + g.prize.display + ' up for grabs.', url: link };
-    if (navigator.share) { try { await navigator.share(data); } catch { /* cancelled */ } } else copyText(link);
+    const data = { title: g.title, text: 'Free to enter: ' + g.title + ' on FCMobiletools. ' + g.prize.display + ' up for grabs.', url: shareUrl };
+    if (navigator.share) { try { await navigator.share(data); } catch { /* cancelled */ } } else copyText(shareUrl);
+    fetch('/api/giveaways/' + g.slug + '/track', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ event: 'share' }) }).catch(() => {});
   });
 }
 
@@ -337,18 +337,25 @@ export async function initEnter() {
   if (me.ban) { host.innerHTML = '<div class="gw-callout bad"><div><strong>Your account is paused from giveaways' + (me.ban.permanent ? '' : ' until ' + esc(when(me.ban.endsAt))) + '.</strong><br>' + esc(me.ban.reason) + '</div></div>'; return; }
   if (!me.verifiedEmail) { host.innerHTML = '<div class="gw-callout"><div><strong>Verify your email first.</strong> Check your inbox for the confirmation link, then come back.</div></div>'; return; }
   const fixing = me.entry && me.entry.status === 'needs_proof';
+  const fixMeta = fixing ? String(me.entry.reviewReason || '').match(/^\[Requirement: ([^\]]+)\]\s*([\s\S]*)$/) : null;
+  const fixTarget = fixMeta?.[1] || '';
+  const fixNote = fixMeta ? fixMeta[2] : String(me.entry?.reviewReason || 'An administrator requested corrected proof.');
   if (me.entry && !fixing) { location.replace('/giveaways/' + slug + '/'); return; }
   if (g.status !== 'live' && !fixing) { host.innerHTML = '<div class="gw-empty"><strong>' + esc(STATUS_LABEL[g.status] || 'Closed') + '</strong>Entries are not open for this giveaway.</div>'; return; }
 
   const reqs = g.requirements;
   const auto = reqs.filter((r) => r.input === 'auto'), text = reqs.filter((r) => r.input === 'text'), imgs = reqs.filter((r) => r.input === 'image');
+  const targetReq = fixing ? reqs.find((r) => r.label === fixTarget) : null;
+  const fixAll = fixing && (!fixTarget || fixTarget === 'Multiple requirements / whole entry');
+  const stale = (id) => { const p = me.entry?.proof.find((x) => x.slot === id); return !p || p.state !== 'ok' || Date.parse(p.expiresAt) <= Date.now(); };
+  const needProofs = () => fixing ? imgs.filter((r) => fixAll || r.id === targetReq?.id || stale(r.id)) : imgs;
+  const needsDiscordFix = Boolean(fixing && text.length && (fixAll || targetReq?.input === 'text'));
   const steps = [];
   if (auto.length && !fixing) steps.push('account');
-  if (text.length && !fixing) steps.push('discord');
-  if (imgs.length) steps.push('proof');
+  if (text.length && (!fixing || needsDiscordFix)) steps.push('discord');
+  if (imgs.length && (!fixing || needProofs().length)) steps.push('proof');
   steps.push('review');
-  const st = { i: 0, discord: me.entry?.discordUsername || '', proofs: {}, previews: {}, ack: false, eligibility: me.eligibility, uploading: new Set() };
-  const stale = (id) => { const p = me.entry?.proof.find((x) => x.slot === id); return !p || p.state !== 'ok' || Date.parse(p.expiresAt) <= Date.now(); };
+  const st = { i: 0, discord: me.entry?.discordUsername || '', proofs: {}, previews: {}, errors: {}, ack: false, eligibility: me.eligibility, uploading: new Set() };
 
   const render = () => {
     const step = steps[st.i];
@@ -365,13 +372,16 @@ export async function initEnter() {
         (o.discordInvite ? '<a class="gw-btn" target="_blank" rel="noopener noreferrer" href="' + esc(o.discordInvite) + '">Open our Discord server</a>' : '<div class="gw-callout">The invite link is being added. Check back shortly.</div>') +
         '<div class="gw-field" style="margin-top:16px"><label for="gwDiscord">Your Discord username</label><input class="gw-input" id="gwDiscord" autocomplete="off" spellcheck="false" maxlength="40" placeholder="for example tanzim_fc" value="' + esc(st.discord) + '"><span class="gw-hint">Your username, not your display name. No spaces.</span></div>';
     } else if (step === 'proof') {
-      const need = fixing ? imgs.filter((r) => stale(r.id)) : imgs;
-      body = '<h3>' + (fixing ? 'Upload corrected proof' : 'Subscribe and show proof') + '</h3><p>Subscribe to each channel, then upload a screenshot showing the <strong>Subscribed</strong> button. Screenshots are temporary images that delete themselves after ' + g.proofTtlHours + ' hours.</p>' +
-        (fixing && me.entry.reviewReason ? '<div class="gw-callout bad" style="margin-bottom:14px"><div><strong>Reviewer note:</strong> ' + esc(me.entry.reviewReason) + '</div></div>' : '') +
-        need.map((r) => '<div class="gw-field"><label>' + esc(r.label) + (r.link ? ' · <a href="' + esc(r.link) + '" target="_blank" rel="noopener noreferrer" style="color:var(--gw-cyan)">open channel</a>' : '') + '</label>' +
-          '<div class="gw-drop ' + (st.proofs[r.id] ? 'done' : '') + '" data-drop="' + esc(r.id) + '">' + (st.previews[r.id] ? '<img src="' + esc(st.previews[r.id]) + '" alt="Your screenshot preview">' : '<strong>Tap or drop a screenshot</strong><span>JPG, PNG or WebP, up to 8 MB</span>') +
-          '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label="Upload screenshot for ' + esc(r.label) + '"></div>' +
-          '<span class="gw-hint">' + (st.uploading.has(r.id) ? 'Uploading...' : st.proofs[r.id] ? '✓ Uploaded securely. Tap the image to replace it.' : 'Must show your account and the Subscribed button.') + '</span></div>').join('');
+      const need = needProofs();
+      body = '<h3>' + (fixing ? 'Replace the requested screenshot' : 'Subscribe and show proof') + '</h3><p>' +
+        (fixing ? 'The reviewer note identifies what needs changing. Upload the screenshot for each requirement shown below; other valid screenshots stay attached.' :
+          'Subscribe to each channel, then upload a screenshot showing the <strong>Subscribed</strong> button. Screenshots are temporary images that delete themselves after ' + g.proofTtlHours + ' hours.') + '</p>' +
+        (fixing ? '<div class="gw-callout bad gw-fix-callout" style="margin-bottom:16px"><div><strong>Requirement to correct: ' + esc(fixTarget || 'Review the note below') + '</strong><p>' + esc(fixNote) + '</p></div></div>' : '') +
+        need.map((r) => '<div class="gw-field gw-proof-field"><label>' + esc(r.label) + (r.link ? ' · <a href="' + esc(r.link) + '" target="_blank" rel="noopener noreferrer" style="color:var(--gw-cyan)">open channel</a>' : '') + '</label>' +
+          '<div class="gw-drop ' + (st.proofs[r.id] ? 'done' : '') + '" data-drop="' + esc(r.id) + '">' + (st.previews[r.id] ? '<img src="' + esc(st.previews[r.id]) + '" alt="Your screenshot preview">' : '<span class="gw-upload-icon">↑</span><strong>' + (fixing ? 'Choose a replacement screenshot' : 'Add a screenshot') + '</strong><span>JPG, PNG or WebP · maximum 8 MB</span>') +
+          '<label class="gw-btn gw-btn-sm gw-upload-select" for="gwFile-' + esc(r.id) + '">Choose photo</label><input id="gwFile-' + esc(r.id) + '" type="file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label="Upload screenshot for ' + esc(r.label) + '">' +
+          '</div><span class="gw-hint">' + (st.uploading.has(r.id) ? 'Uploading your image…' : st.proofs[r.id] ? '✓ Uploaded. Choose photo to replace it.' : 'Make sure the screenshot shows your account and the Subscribed button.') + '</span>' +
+          (st.errors[r.id] ? '<span class="gw-upload-error" role="alert">' + esc(st.errors[r.id]) + '</span>' : '') + '</div>').join('');
     } else {
       body = '<h3>Review and submit</h3><p>You are about to enter <strong>' + esc(g.title) + '</strong>.</p><ul class="gw-reqs" style="margin-bottom:16px">' +
         reqs.map((r) => {
@@ -399,24 +409,38 @@ export async function initEnter() {
     $('#gwDiscord')?.addEventListener('input', (e) => { st.discord = e.target.value.trim(); });
     $('#gwAck')?.addEventListener('change', (e) => { st.ack = e.target.checked; });
     $$('[data-drop]').forEach((drop) => {
-      const id = drop.dataset.drop; const input = $('input', drop);
+      const id = drop.dataset.drop; const input = $('input[type="file"]', drop);
       ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
       ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
       drop.addEventListener('drop', (e) => { if (e.dataTransfer?.files?.[0]) upload(id, e.dataTransfer.files[0]); });
+      drop.addEventListener('click', (e) => { if (!e.target.closest('label') && !e.target.closest('input') && !e.target.closest('a')) input.click(); });
       input.addEventListener('change', () => { if (input.files[0]) upload(id, input.files[0]); });
     });
     $('#gwNext')?.addEventListener('click', (e) => busy(e.currentTarget, () => next(step)));
   }
 
   async function upload(id, file) {
-    if (!/^image\//.test(file.type)) return toast('Choose an image file.', true);
-    if (file.size > 8 * 1024 * 1024) return toast('Choose an image smaller than 8 MB.', true);
-    st.previews[id] = URL.createObjectURL(file); st.uploading.add(id); render();
+    if (file.type && !/^image\//.test(file.type)) {
+      st.errors[id] = 'This file does not look like an image. Choose a JPG, PNG, WebP or GIF photo.';
+      render(); return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      st.errors[id] = 'This image is larger than 8 MB. Choose a smaller photo.';
+      render(); return;
+    }
+    if (st.previews[id]?.startsWith('blob:')) URL.revokeObjectURL(st.previews[id]);
+    st.previews[id] = URL.createObjectURL(file); delete st.errors[id]; st.uploading.add(id); render();
     try {
       const form = new FormData(); form.append('slot', id); form.append('file', file);
       const r = await api('/api/giveaways/' + slug + '/proof', { method: 'POST', body: form });
       st.proofs[id] = r.proof;
-    } catch (err) { delete st.previews[id]; toast(err.message, true); }
+      delete st.errors[id];
+    } catch (err) {
+      if (st.previews[id]?.startsWith('blob:')) URL.revokeObjectURL(st.previews[id]);
+      delete st.previews[id];
+      st.errors[id] = err.message || 'The image could not be uploaded. Please choose it again.';
+      toast(st.errors[id], true);
+    }
     st.uploading.delete(id); render();
   }
 
@@ -427,8 +451,8 @@ export async function initEnter() {
     }
     if (step === 'discord' && !/^[A-Za-z0-9_.]{2,32}(#\d{4})?$/.test(st.discord.replace(/^@/, ''))) return toast('Enter your Discord username exactly as it appears. No spaces.', true);
     if (step === 'proof') {
-      const missing = need().find((r) => !st.proofs[r.id]);
-      if (missing) return toast('Upload a screenshot for: ' + missing.label, true);
+      const missing = needProofs().find((r) => !st.proofs[r.id]);
+      if (missing) return toast('Choose a screenshot for: ' + missing.label, true);
     }
     if (step !== 'review') { st.i += 1; render(); return; }
     if (!st.ack) return toast('Accept the Giveaway Rules to continue.', true);
@@ -447,7 +471,7 @@ export async function initEnter() {
     host.innerHTML = '<div class=\"gw-panel gw-done\"><div class=\"gw-stubcard\" style=\"--c:' + esc(g.accent) + '\"><div class=\"gw-stubcard-l\"><small>Entry</small><b>✓</b></div><div class=\"gw-stubcard-r\"><strong>' + esc(g.title) + '</strong><span>' + esc(g.prize.display) + ' · ' + (fixing ? 'corrected proof sent' : 'in the draw') + '</span></div></div>' +
       '<h3 style=\"font-size:26px;margin:22px 0 6px\">' + (fixing ? 'Corrected proof sent' : 'You are in the draw!') + '</h3>' +
       '<p>An admin will review your entry. You can check the status and every decision, with its reason, on the giveaway page.</p>' +
-      '<div class=\"gw-callout ok\" style=\"text-align:left\"><div><strong>Boost your odds:</strong> come back every day for a free boost ticket, and invite friends with your personal link.</div></div>' +
+      '<div class=\"gw-callout ok\" style=\"text-align:left\"><div><strong>Fair draw:</strong> every eligible person receives exactly one entry. Your entry has the same weight as every other eligible person.</div></div>' +
       '<div style=\"display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px\"><a class=\"gw-btn gw-btn-gold\" href=\"/giveaways/' + esc(slug) + '/\">See my entry</a><a class=\"gw-btn\" href=\"/giveaways/\">More giveaways</a></div></div>';
   }
   render();
