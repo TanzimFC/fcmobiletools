@@ -1,12 +1,12 @@
 // Central ad configuration managed by the FC Mobile Tools admin panel.
 // Monetag formats run on every /giveaways route after advertising consent. Homepage, admin, accounts, and every other tool are excluded. No popunder format is configured.
 export const SITE_ADS = {
-  "enabled": true,
+  "enabled": false,
   "provider": "Monetag",
-  "placementMode": "giveaways_only",
+  "placementMode": "disabled",
   "frequencyCapMinutes": 30,
   "vignette": {
-    "enabled": true,
+    "enabled": false,
     "zone": "12079211",
     "src": "https://n6wxm.com/vignette.min.js",
     "delayMs": 60000
