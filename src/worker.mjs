@@ -1734,8 +1734,8 @@ function parseSiteAds(text) {
 function validateSiteAds(content) {
   if(!content || typeof content!=='object') throw new Error('Ad configuration is required.');
   content.enabled=Boolean(content.enabled);
-  content.provider='Monetag + HilltopAds';
-  content.placementMode='public_giveaway_pages';
+  content.provider='Monetag';
+  content.placementMode='public_content_except_sensitive';
   content.frequencyCapMinutes=Number(content.frequencyCapMinutes ?? 30);
 
   const normalizeFormat=(key,label,expectedZone,expectedHost,expectedPath,defaultDelay)=>{
@@ -1757,8 +1757,8 @@ function validateSiteAds(content) {
   };
 
   normalizeFormat('vignette','Monetag Vignette','12079211','n6wxm.com','/vignette.min.js',30000);
-  normalizeFormat('push','Monetag push notifications','12079218','5gvci.com','/act/files/tag.min.js',20000);
-  normalizeFormat('inPagePush','Monetag In-Page Push','12079223','nap5k.com','/tag.min.js',25000);
+  normalizeFormat('push','Monetag push notifications','12079218','5gvci.com','/act/files/tag.min.js',15000);
+  normalizeFormat('inPagePush','Monetag In-Page Push','12079223','nap5k.com','/tag.min.js',7000);
 
   if(!Number.isInteger(content.frequencyCapMinutes) || content.frequencyCapMinutes<20 || content.frequencyCapMinutes>240) {
     throw new Error('The visitor frequency cap must be between 20 and 240 minutes.');
@@ -1771,7 +1771,7 @@ function validateSiteAds(content) {
   return content;
 }
 function siteAdsText(content) {
-  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// Third-party formats are allowed only on the public giveaway hub and public giveaway detail pages. Home, admin, entry, draw, claim, rules, and other routes are excluded. No popunder format is configured.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
+  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// Monetag formats run on eligible public pages after advertising consent. The homepage, admin, account and sensitive giveaway flows are excluded. No popunder format is configured.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
 }
 
 function parseFcMobile27(text) {
