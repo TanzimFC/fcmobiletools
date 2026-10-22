@@ -201,16 +201,16 @@ export function openDrawStage(opts = {}) {
   const rm = reduced();
   const sound = makeSound(); sound.set(o.sound);
   const S = { alive: true, paused: false, skipping: false, result: null, resultP: null, anims: new Set(), t0: performance.now(), logRows: 0, plan: null, stepStart: 0, prevFocus: document.activeElement };
-  const tag = o.mode === 'live' ? 'Live draw' : o.mode === 'replay' ? 'Replay' : 'Rehearsal';
+  const tag = o.mode === 'live' ? 'Live draw' : o.mode === 'replay' ? 'Replay' : o.mode === 'recorded' ? 'Recorded result' : 'Rehearsal';
 
-  const root = h('div', 'ds' + (rm ? ' ds-calm' : '') + (o.clean ? ' ds-clean' : '') + (o.mode === 'rehearsal' ? ' ds-rehearsal' : ''));
+  const root = h('div', 'ds' + (rm ? ' ds-calm' : '') + (o.clean ? ' ds-clean' : '') + (o.mode === 'rehearsal' ? ' ds-rehearsal' : '') + (o.mode === 'recorded' ? ' ds-recorded' : ''));
   root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Giveaway draw: ' + o.title); root.tabIndex = -1;
   root.innerHTML =
     '<canvas class="ds-cv" aria-hidden="true"></canvas><div class="ds-beams" aria-hidden="true"><i></i><i></i></div><div class="ds-grain" aria-hidden="true"></div><div class="ds-vig" aria-hidden="true"></div><div class="ds-flash" aria-hidden="true"></div>' +
     '<header class="ds-top"><div class="ds-brand"><span class="ds-mark">FC</span><span>FCMobiletools</span></div>' +
     '<div class="ds-title"><strong>' + esc(o.title) + '</strong>' + (o.prize ? '<span>' + esc(o.prize) + '</span>' : '') + '</div>' +
     '<div class="ds-tag ds-tag-' + o.mode + '"><i></i>' + tag + '</div></header>' +
-    (o.mode === 'rehearsal' ? '<div class="ds-banner">Rehearsal. Sample names, not a real draw.</div>' : '') +
+    (o.mode === 'recorded' ? '<div class="ds-banner ds-banner-recorded">Recorded result. This show animates the winner selected in the completed spin-the-wheel; no new draw is being run.</div>' : o.mode === 'rehearsal' ? '<div class="ds-banner">Rehearsal. Sample names, not a real draw.</div>' : '') +
     '<main class="ds-scene" aria-live="off"></main><aside class="ds-log" aria-hidden="true"></aside>' +
     '<footer class="ds-lower"><div class="ds-lt"><b class="ds-phase"></b><span class="ds-sub"></span></div><div class="ds-meta"><span class="ds-step"></span><span class="ds-clock">00:00</span></div></footer>' +
     '<div class="ds-prog" aria-hidden="true"><i></i></div><div class="ds-sr" role="status" aria-live="polite"></div>' +
@@ -291,8 +291,8 @@ export function openDrawStage(opts = {}) {
   // ── scenes ──
   const phases = {
     async prepare(step) {
-      lower('Preparing the draw', 'Getting the stage ready. Nothing is picked yet.', 'Step 1 of 8');
-      const items = ['Connecting to the draw engine', 'Loading the entry list', 'Reading the seed fingerprint', 'Setting up the stage'];
+      lower(o.mode === 'recorded' ? 'Preparing the result show' : 'Preparing the draw', o.mode === 'recorded' ? 'Loading the supplied names and saved outcome. Nothing is being drawn again.' : 'Getting the stage ready. Nothing is picked yet.', 'Step 1 of 8');
+      const items = o.mode === 'recorded' ? ['Loading the supplied participant list', 'Confirming the recorded result', 'Preparing the name reel', 'Setting up the stage'] : ['Connecting to the draw engine', 'Loading the entry list', 'Reading the seed fingerprint', 'Setting up the stage'];
       const el = show(h('div', 'ds-prep', '<div class="ds-rings"><svg viewBox="0 0 200 200"><circle class="r1" cx="100" cy="100" r="86"/><circle class="r2" cx="100" cy="100" r="66"/><circle class="r3" cx="100" cy="100" r="46"/></svg><div class="ds-pct"><b>0</b><small>%</small></div></div>' +
         '<ul class="ds-checks">' + items.map((t) => '<li><i></i><span>' + t + '</span></li>').join('') + '</ul>'));
       const lis = [...el.querySelectorAll('li')]; const pct = $('.ds-pct b', el); let shown = 0;
@@ -306,6 +306,14 @@ export function openDrawStage(opts = {}) {
     },
 
     async seed(step) {
+      if (o.mode === 'recorded') {
+        lower('Original wheel result', 'Arjun was already selected before this presentation began.', 'Step 2 of 8');
+        const el = show(h('div', 'ds-seed', '<div class="ds-lock"><svg viewBox="0 0 64 64"><path class="sh" d="M20 28v-8a12 12 0 0124 0v8"/><rect x="12" y="28" width="40" height="28" rx="7"/><circle cx="32" cy="42" r="4"/></svg></div><div class="ds-cap">Previously selected result</div><div class="ds-hash">ARJUN · STAR PASS</div><div class="ds-pill ds-pill-wait">Loading</div>'));
+        await sleep(step.ms * 0.6);
+        el.classList.add('locked'); const pill = $('.ds-pill', el); pill.textContent = 'Recorded'; pill.className = 'ds-pill ds-pill-ok';
+        sound.lock(); flash(); log('Previously selected result loaded', 'ok');
+        await sleep(step.ms * 0.4); return;
+      }
       lower('Seed fingerprint locked', 'Published before entries opened, so nobody can change it now.', 'Step 2 of 8');
       const commit = String(o.seedCommit || '');
       const el = show(h('div', 'ds-seed', '<div class="ds-lock"><svg viewBox="0 0 64 64"><path class="sh" d="M20 28v-8a12 12 0 0124 0v8"/><rect x="12" y="28" width="40" height="28" rx="7"/><circle cx="32" cy="42" r="4"/></svg></div>' +
@@ -321,15 +329,16 @@ export function openDrawStage(opts = {}) {
     },
 
     async freeze(step) {
-      lower('Freezing the entry list', o.mode === 'live' ? 'The list is frozen and fingerprinted. Late changes cannot count.' : 'The list was frozen and fingerprinted at the draw.', 'Step 3 of 8');
-      const el = show(h('div', 'ds-freeze', '<div class="ds-wait"><i></i><i></i><i></i></div><div class="ds-big"><b data-n>0</b></div><div class="ds-cap" data-cap>Freezing the entry list</div><div class="ds-hash ds-hash-s" data-fp></div>'));
-      log(o.mode === 'live' ? 'Freezing entries and running the draw' : 'Loading the frozen entry list');
+      lower(o.mode === 'recorded' ? 'Loading the participant list' : 'Freezing the entry list', o.mode === 'live' ? 'The list is frozen and fingerprinted. Late changes cannot count.' : o.mode === 'recorded' ? 'The supplied names are being prepared for the recorded-result animation. No new draw will run.' : 'The list was frozen and fingerprinted at the draw.', 'Step 3 of 8');
+      const cap = o.mode === 'recorded' ? 'Loading participant names' : 'Freezing the entry list';
+      const el = show(h('div', 'ds-freeze', '<div class="ds-wait"><i></i><i></i><i></i></div><div class="ds-big"><b data-n>0</b></div><div class="ds-cap" data-cap>' + cap + '</div><div class="ds-hash ds-hash-s" data-fp></div>'));
+      log(o.mode === 'live' ? 'Freezing entries and running the draw' : o.mode === 'recorded' ? 'Loading supplied participant names' : 'Loading the frozen entry list');
       const t0 = performance.now(); const p = getResult();
       await Promise.all([sleep(step.ms * 0.4), p.then(() => {}, () => {})]);
       let res; try { res = await p; } catch (e) { throw e; }
       el.classList.add('done'); const n = $('[data-n]', el);
-      $('[data-cap]', el).textContent = res.entries === 1 ? 'entry in the draw' : 'entries in the draw'; sound.thud();
-      log(fmt(res.entries) + ' entries frozen', 'ok');
+      $('[data-cap]', el).textContent = o.mode === 'recorded' ? 'participant names loaded' : res.entries === 1 ? 'entry in the draw' : 'entries in the draw'; sound.thud();
+      log(fmt(res.entries) + (o.mode === 'recorded' ? ' participant names loaded' : ' entries frozen'), 'ok');
       const rest = Math.max(2400, step.ms - (performance.now() - t0));
       await Promise.all([countTo(n, res.entries, Math.min(rest * 0.8, 4200)), res.entriesHash ? decode($('[data-fp]', el), res.entriesHash, rest * 0.8) : Promise.resolve()]);
       if (res.entriesHash) log('Entry list fingerprint sealed', 'ok');
@@ -337,10 +346,11 @@ export function openDrawStage(opts = {}) {
     },
 
     async scan(step) {
-      lower('Checking every entry', 'Each eligible person has one equal-weight entry.', 'Step 4 of 8');
+      lower(o.mode === 'recorded' ? 'Reviewing the participant list' : 'Checking every entry', o.mode === 'recorded' ? 'The supplied names are being loaded for the result presentation.' : 'Each eligible person has one equal-weight entry.', 'Step 4 of 8');
       const total = S.result?.entries || o.entries || 0;
-      const el = show(h('div', 'ds-readout', '<div class="ds-cap">Entries checked</div><div class="ds-big ds-big-s"><b data-n>0</b><small>of ' + fmt(total) + '</small></div>'));
-      pool.alpha = 1; pool.setMode('grid'); log('Scanning the eligible entry pool');
+      const caption = o.mode === 'recorded' ? 'Participants in show' : 'Entries checked';
+      const el = show(h('div', 'ds-readout', '<div class="ds-cap">' + caption + '</div><div class="ds-big ds-big-s"><b data-n>0</b><small>of ' + fmt(total) + '</small></div>'));
+      pool.alpha = 1; pool.setMode('grid'); log(o.mode === 'recorded' ? 'Loading the participant reel' : 'Scanning the eligible entry pool');
       const n = $('[data-n]', el); let ticks = 0;
       await sleep(step.ms, (k) => {
         pool.scanX = k * 1.04; n.textContent = fmt(Math.round(total * Math.min(1, k * 1.04)));
@@ -351,10 +361,10 @@ export function openDrawStage(opts = {}) {
     },
 
     async shuffle(step) {
-      lower('Shuffling the pool', 'The sealed seed places every equal-weight entry in a fixed order.', 'Step 5 of 8');
-      const lines = ['Mixing the entry pool', 'Keeping every entry equal', 'Sealing the order'];
+      lower(o.mode === 'recorded' ? 'Replaying the wheel build-up' : 'Shuffling the pool', o.mode === 'recorded' ? 'Participant names race through the reel before the already-selected winner appears.' : 'The sealed seed places every equal-weight entry in a fixed order.', 'Step 5 of 8');
+      const lines = o.mode === 'recorded' ? ['Loading every participant', 'Spinning the name reel', 'Preparing the winner reveal'] : ['Mixing the entry pool', 'Keeping every entry equal', 'Sealing the order'];
       const el = show(h('div', 'ds-readout', '<div class="ds-cap" data-l>' + lines[0] + '</div><div class="ds-dots"><i></i><i></i><i></i></div>'));
-      pool.setMode('vortex', { vortex: 0.5 }); log('Shuffling the pool'); sound.whoosh();
+      pool.setMode('vortex', { vortex: 0.5 }); log(o.mode === 'recorded' ? 'Spinning the participant-name reel' : 'Shuffling the pool'); sound.whoosh();
       await sleep(step.ms, (k) => {
         pool.vortex = 0.5 + k * 2.6; $('[data-l]', el).textContent = lines[Math.min(2, Math.floor(k * 3))];
         $('.ds-prog i', root).style.width = ((S.stepStart + step.ms * k) / S.plan.total * 100) + '%';
@@ -363,6 +373,28 @@ export function openDrawStage(opts = {}) {
     },
 
     async rank(step) {
+      if (o.mode === 'recorded') {
+        lower('Preparing the reveal', 'The winner was selected before this animation started. This stage presents the recorded result.', 'Step 6 of 8');
+        const total = S.result?.entries || o.entries || 0;
+        const el = show(h('div', 'ds-rank', '<div class="ds-stream" data-s></div><div class="ds-bar"><i></i></div><div class="ds-cap ds-cap-r"><span data-p>0%</span> names loaded</div><div class="ds-fine">Recorded result · no new draw or cryptographic verification</div>'));
+        pool.setMode('vortex', { vortex: 3.4 }); log('Preparing the recorded result');
+        const stream = $('[data-s]', el); const bar = $('.ds-bar i', el); const pct = $('[data-p]', el);
+        const participants = Array.isArray(o.participantNames) ? o.participantNames : [];
+        let shown = -1;
+        await sleep(step.ms * 0.82, (k) => {
+          bar.style.width = (k * 100) + '%'; pct.textContent = Math.round(k * 100) + '%';
+          $('.ds-prog i', root).style.width = ((S.stepStart + step.ms * 0.82 * k) / S.plan.total * 100) + '%';
+          const idx = participants.length ? Math.min(participants.length - 1, Math.floor(k * participants.length)) : -1;
+          if (idx >= 0 && idx !== shown) {
+            shown = idx;
+            const r = h('div', 'ds-row', '<i>' + String(idx + 1).padStart(4, '0') + '</i><span>' + esc(participants[idx]) + '</span><em>LOADED</em>');
+            stream.appendChild(r); while (stream.children.length > 5) stream.firstElementChild.remove();
+          }
+        });
+        bar.style.width = '100%'; pct.textContent = '100%'; sound.lock();
+        log(fmt(total) + ' participant names loaded', 'ok');
+        await sleep(step.ms * 0.18); return;
+      }
       lower('Ranking the entries', 'Every entry gets a score. The lowest score ranks first.', 'Step 6 of 8');
       const total = S.result?.entries || o.entries || 0;
       const el = show(h('div', 'ds-rank', '<div class="ds-stream" data-s></div><div class="ds-bar"><i></i></div><div class="ds-cap ds-cap-r"><span data-p>0%</span> ranked</div><div class="ds-fine">Live SHA-256 sample of the ranking work</div><ul class="ds-vchecks" data-v></ul>'));
@@ -404,16 +436,18 @@ export function openDrawStage(opts = {}) {
       const total = planSize(); const i = step.index; const w = S.result?.winners[i];
       if (!w) return;
       const label = total === 1 ? 'Winner' : 'Winner ' + (i + 1) + ' of ' + total;
-      lower(label, 'Names are masked to protect winners.', 'Step 8 of 8');
+      lower(label, o.mode === 'recorded' ? 'Replaying the already-selected winner.' : 'Names are masked to protect winners.', 'Step 8 of 8');
       pool.alpha = 0; pool.setMode('float');
-      const names = Array.from({ length: 26 }, fillerName); names.push(w.name);
+      const names = o.mode === 'recorded' && Array.isArray(o.participantNames) && o.participantNames.length ? o.participantNames.slice() : Array.from({ length: 26 }, fillerName);
+      names.push(w.name);
       const el = show(h('div', 'ds-reveal',
         '<div class="ds-chip">' + esc(label) + '</div>' +
         '<div class="ds-ticket"><div class="ds-stub"><small>Slot</small><b>#' + esc(w.slot || i + 1) + '</b></div><div class="ds-main"><div class="ds-reel"><div class="ds-reel-in">' + names.map((n) => '<span>' + esc(n) + '</span>').join('') + '</div></div>' +
         '<div class="ds-prize">' + esc(w.prize || o.prize || 'In-game reward') + '</div></div></div>'));
       const inner = $('.ds-reel-in', el); const ticket = $('.ds-ticket', el);
       const rh = inner.firstElementChild.getBoundingClientRect().height || 84;
-      const spin = rm ? 300 : Math.max(1500, step.ms * 0.5);
+      const recordedSpinMs = o.mode === 'recorded' ? Math.min(14000, Math.max(7000, 2500 + names.length * 45)) : 0;
+      const spin = rm ? 300 : Math.max(1500, step.ms * 0.5, recordedSpinMs);
       log('Drawing ' + label.toLowerCase()); sound.whoosh();
       let ticks = 0; const tickTimer = setInterval(() => { if (!S.paused && ticks < 22) { sound.tick(); ticks += 1; } }, spin / 24);
       const a = anim(inner, [{ transform: 'translateY(0)' }, { transform: 'translateY(' + (-(names.length - 1) * rh) + 'px)' }], { duration: spin, easing: 'cubic-bezier(.14,.82,.12,1)', fill: 'forwards' });
@@ -431,7 +465,7 @@ export function openDrawStage(opts = {}) {
   async function finale() {
     let res; try { res = await getResult(); } catch (e) { return fail(e); }
     pool.alpha = 1; pool.setMode('float');
-    lower('Draw complete', fmt(res.entries) + (res.entries === 1 ? ' entry' : ' entries') + ' · ' + res.winners.length + (res.winners.length === 1 ? ' winner' : ' winners'), 'Finished');
+    lower(o.mode === 'recorded' ? 'Recorded result presented' : 'Draw complete', fmt(res.entries) + (res.entries === 1 ? ' participant' : ' participants') + ' · ' + res.winners.length + (res.winners.length === 1 ? ' winner' : ' winners') + (o.mode === 'recorded' ? ' · already selected' : ''), 'Finished');
     $('.ds-prog i', root).style.width = '100%';
     const alts = res.alternates || [];
     const el = show(h('div', 'ds-final',
@@ -459,11 +493,20 @@ export function openDrawStage(opts = {}) {
   S.pausedMs = 0; let pausedAt = 0;
   let doneResolve; const done = new Promise((r) => { doneResolve = r; });
 
+  const stepsFor = (speed, winnerCount) => {
+    const steps = planStage({ speed, winners: winnerCount }).steps;
+    if (o.mode === 'recorded' && !rm) {
+      const names = Array.isArray(o.participantNames) ? o.participantNames : [];
+      const spinMs = Math.min(14000, Math.max(7000, 2500 + (names.length + 1) * 45));
+      for (const step of steps) if (step.id === 'reveal') step.ms = Math.max(step.ms, spinMs + 1200);
+    }
+    return steps;
+  };
   async function run() {
     S.skipping = false; S.t0 = performance.now(); S.pausedMs = 0;
     const speed = rm ? 'quick' : o.speed;
     const guess = o.winnersTotal || S.result?.winners.length || 1;
-    const queue = planStage({ speed, winners: guess }).steps.slice();
+    const queue = stepsFor(speed, guess).slice();
     S.plan = { total: queue.reduce((n, x) => n + x.ms, 0) };
     let acc = 0; const bar = $('.ds-prog i', root);
     try {
@@ -473,7 +516,7 @@ export function openDrawStage(opts = {}) {
         if (step.id === 'freeze' && S.result) {
           // The real winner count is known now (milestones can add bonus winners), so re-plan the reveals.
           const rest = queue.filter((x) => x.id !== 'reveal');
-          const reveals = planStage({ speed, winners: Math.max(1, S.result.winners.length) }).steps.filter((x) => x.id === 'reveal');
+          const reveals = stepsFor(speed, Math.max(1, S.result.winners.length)).filter((x) => x.id === 'reveal');
           queue.length = 0; queue.push(...rest, ...reveals);
           S.plan.total = acc + queue.reduce((n, x) => n + x.ms, 0);
         }

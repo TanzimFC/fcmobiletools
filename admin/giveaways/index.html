@@ -152,6 +152,208 @@ const stageFields=[
   {k:'speed',label:'Show length',type:'select',options:[['standard','Standard, about 1.5 minutes'],['epic','Epic, about 3 minutes (best for video)'],['quick','Quick, about 30 seconds']],hint:'The draw itself is instant. The show only controls how long the on-screen build-up lasts.'},
   {k:'sound',label:'Sound effects',type:'select',options:[['off','Off'],['on','On']],hint:'Turn on to record the sound with your screen capture. You can toggle it any time with S.'}
 ];
+// Used only by the recorded-result animation; these names are not inserted as accounts or database entries.
+const BALLOON_DOR_PARTICIPANTS = Object.freeze(`
+Rit
+Mehal
+Eivor
+Eliminator47
+Saiansh Tawar
+Pranay
+Anmol Gupta
+Vedant Shinde
+Sathik
+Izu
+Sailesh
+Aman
+Bibo
+Batman
+y (y4jj_)
+GOKU
+Ephemeral
+Impasta
+J8t3RR
+Hemanth
+Apex
+Gustavo
+Majestic
+Melody
+Maestro
+Trevor
+Reyan
+Affan
+Abhirup
+Rishab
+Biswajyoti
+Taggy
+Unmesh
+Divyam
+ChuChu weds Jaggu
+Swaraj
+SHUBHROJIT
+Shivam
+Shah Rukh
+Gaandujun
+Abhisexy bhaiya
+Vinu Boobie
+Satya
+Raunak
+Abishek
+Trepton
+Sujal
+Godfather
+Durva
+Suryassm18
+Void
+subhafc_yt
+Tarun
+ZAID
+Echonights
+kevindebruyne0383
+Zeeshanmursalim01
+Ronaldocr7
+diya
+Doraemon
+KRATOS | kingo2
+Scarlet Speedster
+IndraBora
+Kwnstantinos
+Anuj
+Rexxar
+Ash
+Pritam
+The Maestro II
+JBFC $ xatõz
+boscoe_321
+Ξ G Y ツ
+[J4P] Maxime
+The King Gamer
+Marco
+! LostAmberr
+JBFC • scorrexsquad
+VFC • ELOSTADE
+CR7XANI
+L
+vini
+Kamo
+EL CAPITAN 🦁
+Yashiro
+Arham
+SÜBXRISÉ
+Shadow
+yash003438
+Bobnewacc
+R3aperDgaF
+SimonFC
+*.°Darshan*
+Theobaldthebird
+JBFC GomesPlayf
+Just chillin
+LightningX
+lymon
+Jinwoo sung
+FcMobilePlayer
+Thanos
+Lost_boy19
+賽DIABLO
+ARAF_TOKYO
+JBFC • Dictator
+Soumyadeep
+Mubin
+Bunty
+Arnab
+Poonia
+Luminary drift
+Sayman
+Rudransh
+Broken
+Ravo
+Azp
+Nikil
+Biryani
+Sandy suhas
+sankdh
+itSanatani
+Zaid Thakor
+Duronaldo
+Saadfc
+kakashi10
+jessi6767
+Gk
+monisha
+madhev
+Yamal 123
+peter.xo
+donewithdc
+tanzimfc
+f2pgamer
+fmldx77
+wajihdeyaa
+zachary210711
+mahid_gang
+omvnambiar
+ipsumisticofc
+moniazmir
+ghostnut212
+sabirhosen816
+dev.shah.gpbhuj
+ashikisbornin2010
+mrshinashehzad8
+guthikondarohan
+gagansaisunku
+marhamtab
+ahmedhammaadh
+blancazex
+rithwiksinha601
+kumarharish82868
+mondalswarupa55
+ayushbag279
+gogoibisnu78
+aaravchoudhary495
+ghostadi303
+abdullahalmayeen12
+sakshamaep7
+kingzevs75
+yugmahida05
+adiyogi772
+nathankoshyjohn
+goraisupratim
+timotei676
+adikhanna2008
+Greekgod90
+Kalel ayush
+Cris7
+nexus.61
+Saiansh23
+Leon_aurafc
+Abhnvvfr
+Daman267
+Niloy
+Strange
+Leka
+Messi10
+Mythical njnja
+Shivam
+Arnavtyagi
+Copium
+Zachethan
+Marco
+Mani
+Ahad
+Saineel
+Darkie
+Hammaadh23
+Arkhan faisal
+Pratham
+Jack sparrow
+shadowstrikerfc
+Daddy Garp
+Darth chill chats
+Jiraya
+Imbattles
+Blaugrana
+`.split(/\r?\n/).map((name) => name.trim()).filter(Boolean));
+
 const entryEstimate=g=>{const c=g.entryCounts||{};return(Number(c.provisional)||0)+(Number(c.approved)||0)};
 function stageRows(g,rows){
   const pz=prizeText(g);
@@ -193,6 +395,20 @@ async function runRehearsal(g){
   const n=Math.max(1,Math.min(8,Number(g.winner_count)||3));const pz=prizeText(g);const total=Math.max(entryEstimate(g),120);
   const names=['ta****fc','jo****hn','ma****rt','sa****ra','ni****ck','ka****ri','ra****ul','em****ly'];
   return openStage(g,'rehearsal',v,{entries:total,winnersTotal:n,prepare:async()=>({entries:total,entriesHash:'',winners:Array.from({length:n},(_,i)=>({slot:i+1,name:names[i],prize:pz})),alternates:['a','b']})});
+}
+
+async function runRecordedShow(g){
+  const v=await ask({title:"Ballon d'Or recorded-result show",text:"Plays the supplied participant list through the full-screen build-up, then reveals Arjun as the winner already selected by the original spin-the-wheel. This is a presentation only: it does not run another draw, create account entries or change giveaway status.",ok:"Play recorded result",fields:stageFields});
+  if(!v)return;
+  const total=BALLOON_DOR_PARTICIPANTS.length;
+  return openStage(g,'recorded',v,{
+    entries:total,
+    winnersTotal:1,
+    participantNames:BALLOON_DOR_PARTICIPANTS,
+    maskNote:'The winner name shown here was supplied by the organiser from the completed spin-the-wheel result.',
+    finalNote:'Recorded result: Arjun was selected in the original spin-the-wheel. This animation presents that result and does not run a new draw.',
+    prepare:async()=>({entries:total,entriesHash:'',winners:[{slot:1,name:'Arjun',prize:prizeText(g)}],alternates:[]})
+  });
 }
 
 // ───────────── health ─────────────
@@ -343,13 +559,14 @@ async function subWinners(){
   let w;try{w=await api('/'+g.id+'/winners');state.winners=w.winners;if(!state.settings)state.settings=await api('/settings')}catch(e){$('#sub').innerHTML='<div class="note bad">'+esc(e.message)+'</div>';return}
   const head='<div class="card"><h3>Draw</h3>'+(g.status==='live'?'<div class="note">Close entries first, then draw.</div>':g.status==='closed'?'<p>Review the queue before drawing. Entries still awaiting review are included in the draw, but a winner must be approved before they are announced.</p><div class="row"><button class="btn pri" id="doDraw">Run the draw on stage</button><button class="btn" id="doRehearse">Rehearse the show</button></div><div class="hint" style="margin-top:8px">The draw opens a full-screen show you can screen-record. The result is decided by the server and never by the animation.</div>':g.status==='drawn'?'<div class="note ok">Draw complete'+(g.entries_hash?'. Entry list fingerprint: <span class="mono">'+esc(g.entries_hash)+'</span>':'')+'</div>':g.status==='draft'?'<div class="note">Go live first.</div>':'')+
    (g.status==='drawn'||g.status==='completed'?'<div class="row" style="margin-top:10px"><button class="btn" id="doReplay">Replay the draw show</button><button class="btn" id="doRehearse">Rehearse the show</button>'+(g.results_published_at?'<a class="btn" target="_blank" rel="noopener" href="/giveaways/'+esc(g.slug)+'/draw/">Open public draw page</a>':'')+'</div>':'')+
-   (g.status==='drawn'?'<div class="row" style="margin-top:10px">'+(g.results_published_at?'<span class="tag ok">Results are public. Seed revealed.</span>':'<button class="btn pri" id="doPub">Publish results and reveal the seed</button>')+'</div><div class="hint" style="margin-top:8px">Publishing needs every selected winner approved first, so nobody is announced before their proof is checked. It also starts each winner\'s claim window.</div>':'')+'</div>';
+   (g.status==='drawn'?'<div class="row" style="margin-top:10px">'+(g.results_published_at?'<span class="tag ok">Results are public. Seed revealed.</span>':'<button class="btn pri" id="doPub">Publish results and reveal the seed</button>')+'</div><div class="hint" style="margin-top:8px">Publishing needs every selected winner approved first, so nobody is announced before their proof is checked. It also starts each winner\'s claim window.</div>':'')+(g.slug==='ballon-dor-star-pass-giveaway'?'<div class="row" style="margin-top:10px"><button class="btn pri" id="doRecordedShow">Play recorded participant reveal</button></div><div class="hint" style="margin-top:8px">Uses the supplied participant list and previously selected winner. No account entries are created and no new draw runs.</div>':'')+'</div>';
   const rows=w.winners.filter(x=>x.status!=='alternate'),alts=w.winners.filter(x=>x.status==='alternate');
   $('#sub').innerHTML=head+(rows.length?'<div class="card"><h3>Winners</h3><div class="wrapx"><table class="tbl"><thead><tr><th>Slot</th><th>Winner</th><th>Prize</th><th>Status</th><th>Claim</th><th>Actions</th></tr></thead><tbody>'+rows.map(winRow).join('')+'</tbody></table></div></div>':'')+
    (alts.length?'<div class="card"><h3>Alternates, in order</h3><p>The next alternate is promoted automatically when a winner is rerolled, forfeits or is rejected.</p>'+alts.map(a=>'<span class="tag" style="margin:3px">#'+a.rank_position+' '+esc(a.account&&a.account.username)+'</span>').join('')+'</div>':'')+
    (g.results_published_at&&rows.length?'<div class="card"><h3>Announcement text</h3><p>Copy this into Discord or Instagram. Names are masked.</p><textarea class="in" id="ann" readonly style="min-height:150px"></textarea><button class="btn sm" id="annCopy" style="margin-top:8px">Copy</button></div>':'');
   if($('#doDraw'))$('#doDraw').onclick=e=>act(e.currentTarget,async()=>{const v=await ask({title:'Run the draw on stage?',text:'This freezes the entry list and cannot be repeated. A full-screen show plays while the server runs the draw. Winners and alternates are selected from the fixed ranking.',ok:'Start the show',fields:stageFields});if(!v)return;await runLiveDraw(g,v)});
   if($('#doRehearse'))$('#doRehearse').onclick=e=>act(e.currentTarget,()=>runRehearsal(g));
+  if($('#doRecordedShow'))$('#doRecordedShow').onclick=e=>act(e.currentTarget,()=>runRecordedShow(g));
   if($('#doReplay'))$('#doReplay').onclick=e=>act(e.currentTarget,()=>runReplay(g));
   if($('#doPub'))$('#doPub').onclick=e=>act(e.currentTarget,async()=>{const v=await ask({title:'Publish results?',text:'Winners become public with masked names, the seed is revealed so anyone can verify the draw, and claim windows start.',ok:'Publish'});if(!v)return;await api('/'+g.id+'/publish-results',{method:'POST',body:{}});toast('Results are public.');await refreshSel();renderDetail()});
   $$('#sub [data-w]').forEach(b=>b.onclick=()=>winnerAct(b));
