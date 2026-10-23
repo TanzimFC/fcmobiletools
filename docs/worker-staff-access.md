@@ -12,7 +12,7 @@ npx wrangler secret put WORKER_PASSWORD
 npx wrangler secret put WORKER_SESSION_SECRET
 ```
 
-Enter the value when Wrangler prompts. Use a dedicated username that is different from `ADMIN_USERNAME`, a unique strong password, and a randomly generated session secret (at least 32 random bytes). Do not commit these values to the repository or place them in client-side code.
+Enter the value when Wrangler prompts. Use a dedicated username that is different from `ADMIN_USERNAME`, a unique strong password, and a randomly generated session secret (at least 32 random bytes). Generate a secret locally with `openssl rand -hex 32`, then paste that output at the `WORKER_SESSION_SECRET` prompt. Do not commit these values to the repository or place them in client-side code.
 
 Optional display label:
 
