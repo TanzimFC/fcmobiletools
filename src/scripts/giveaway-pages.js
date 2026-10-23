@@ -19,7 +19,7 @@ export async function initHub() {
   const grid = $('#gwGrid');
   grid.innerHTML = '<div class="gw-skel"></div><div class="gw-skel"></div>';
   let data, wall = { winners: [], totalPaidCents: 0 };
-  try { [data, wall] = await Promise.all([api('/api/giveaways/public', { cache: 'default' }), api('/api/giveaways/winners', { cache: 'default' }).catch(() => wall)]); }
+  try { [data, wall] = await Promise.all([api('/api/giveaways/public', { cache: 'no-store' }), api('/api/giveaways/winners', { cache: 'no-store' }).catch(() => wall)]); }
   catch (e) { return unavailable(grid, e.message); }
   const list = data.giveaways || [];
   const featured = list.find((g) => g.slug === 'ballon-dor-star-pass-giveaway');
@@ -107,7 +107,7 @@ export async function initDetail() {
   const ref = (new URLSearchParams(location.search).get('ref') || '').toLowerCase().slice(0, 24);
   if (/^[a-z0-9._-]{3,24}$/.test(ref)) store.set('gw:ref', ref);
   let g;
-  try { g = await api('/api/giveaways/' + encodeURIComponent(slug), { cache: 'default' }); }
+  try { g = await api('/api/giveaways/' + encodeURIComponent(slug), { cache: 'no-store' }); }
   catch (e) { return unavailable($('#gwDyn'), e.status === 404 ? 'This giveaway is not available.' : e.message); }
   if (!store.session('gw:view:' + slug)) { store.session('gw:view:' + slug, '1'); fetch('/api/giveaways/' + slug + '/track', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ event: 'view' }) }).catch(() => {}); }
   paintPublic(g);
@@ -156,15 +156,15 @@ function paintPublic(g) {
     $('#gwTrackNote').textContent = g.milestones.next ? (g.milestones.next.entries - g.stats.entries).toLocaleString() + ' more entries unlock: ' + g.milestones.next.label + '. Share the giveaway to get there faster.' : 'Every milestone is unlocked. Extra winners are in the draw.';
   } else $('#gwTrackWrap').hidden = true;
 
-  // Fairness panel reflects the actual source of the published winner.
-  if (g.livestreamResult) {
+  // Keep published results separate from the site's seed-verification UI.
+  if (g.announcedWinner) {
     const fair = $('#gwFair');
     const eyebrow = fair?.querySelector('.gw-eyebrow');
     const heading = fair?.querySelector('h3');
     const copy = fair?.querySelector('p');
-    if (eyebrow) eyebrow.textContent = 'LIVESTREAM WHEEL RESULT';
-    if (heading) heading.textContent = 'How the winner was selected';
-    if (copy) copy.textContent = 'The participant wheel was spun during the livestream. We’re publishing the livestream result here so everyone can see who won.';
+    if (eyebrow) eyebrow.textContent = 'RESULT ANNOUNCED';
+    if (heading) heading.textContent = 'Winner announced';
+    if (copy) copy.textContent = 'The winner and prize are listed above. Contact the official giveaway handle on this page to claim.';
     const commit = $('#gwCommit');
     if (commit) {
       commit.hidden = true;
@@ -190,23 +190,16 @@ function paintResults(g) {
   const winners = g.results.winners;
   const host = $('#gwResults');
   if (!winners.length) { host.innerHTML = '<div class="gw-empty"><strong>Results are being finalised</strong>Winners are confirmed by an admin before they are announced.</div>'; return; }
-  if (g.results.source === 'livestream-wheel' || g.livestreamResult) {
-    const winner = g.livestreamResult?.winnerName || winners[0]?.name || 'Winner';
+  if (g.announcedWinner) {
+    const winner = g.announcedWinner.name || winners[0]?.name || 'Winner';
     const prize = winners[0]?.prize || g.prize.display;
-    const note = g.results.note || g.livestreamResult?.note || 'The winner was selected by the participant wheel during the livestream.';
-    const wheelCount = Math.max(0, Number(g.livestreamResult?.participantCount || g.results.participantCount || 0));
-    const websiteEntryCount = Math.max(0, Number(g.stats?.entries || 0));
-    const countNote = (wheelCount ? wheelCount.toLocaleString() + ' names on the livestream wheel' : 'Livestream participant count recorded') +
-      ' · ' + websiteEntryCount.toLocaleString() + ' website entries (separate count).';
     host.innerHTML = '<div class="gw-panel" style="border-color:rgba(246,196,83,.38);background:linear-gradient(145deg,rgba(246,196,83,.09),rgba(13,24,35,.82))">' +
-      '<div class="gw-eyebrow">LIVESTREAM WHEEL WINNER</div>' +
+      '<div class="gw-eyebrow">WINNER ANNOUNCED</div>' +
       '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px">' +
       '<span aria-hidden="true" style="display:grid;place-items:center;width:54px;height:54px;border:1px solid rgba(246,196,83,.42);border-radius:16px;color:#f6c453;font-size:27px">🏆</span>' +
       '<div><h3 style="margin:0;color:#ffe7a6;font:700 clamp(25px,4vw,38px)/1.1 system-ui,sans-serif">' + esc(winner) + '</h3>' +
       '<p style="margin:7px 0 0;color:var(--gw-muted,#a7b4c3)">' + esc(prize) + '</p></div></div>' +
-      '<p style="margin:16px 0 0;white-space:pre-line;color:var(--gw-muted,#a7b4c3)">' + esc(note) + '</p>' +
-      '<div class="gw-note" style="margin-top:12px">' + esc(countNote) + '</div>' +
-      '<div class="gw-note" style="margin-top:14px">To claim the prize, contact the official giveaway handle listed on this page. The website claim-code flow is not used for this livestream result. Never share your password or pay a fee to claim.</div>' +
+      '<div class="gw-note" style="margin-top:14px">To claim the prize, contact the official giveaway handle listed on this page. Never share your password or pay a fee to claim.</div>' +
       '</div>';
     return;
   }
@@ -299,7 +292,7 @@ export function initVerify() {
     const out = $('#gwVerifyOut'); out.innerHTML = '';
     const slug = $('.gw-root').dataset.slug;
     let p;
-    try { p = await api('/api/giveaways/' + slug + '/draw-proof', { cache: 'default' }); }
+    try { p = await api('/api/giveaways/' + slug + '/draw-proof', { cache: 'no-store' }); }
     catch (e) { out.innerHTML = '<div class=\"gw-callout\">' + esc(e.message) + '</div>'; return; }
     const checks = await verifyChecks(p);
     out.innerHTML = checks.map((c, i) => '<div class=\"gw-callout ' + (c.ok ? 'ok' : 'bad') + ' gw-verify-row\" style=\"margin-top:8px;--i:' + i + '\">' + (c.ok ? '✓ ' : '✗ ') + esc(c.text) + '.</div>').join('');
@@ -315,24 +308,24 @@ export async function initDrawPage() {
   const root = $('.gw-root'); if (!$('#gwTheatre')) return;
   const slug = root.dataset.slug; const watch = $('#gwWatch'); const preview = $('#gwPreview');
   let g;
-  try { g = await api('/api/giveaways/' + encodeURIComponent(slug), { cache: 'default' }); }
+  try { g = await api('/api/giveaways/' + encodeURIComponent(slug), { cache: 'no-store' }); }
   catch (e) { watch.textContent = 'Draw unavailable'; $('#gwThNote').textContent = e.message; return; }
   const q = new URLSearchParams(location.search);
   const winners = g.results?.winners || [];
   const ready = winners.length > 0;
   const opt = { speed: ['quick', 'standard', 'epic'].includes(q.get('speed')) ? q.get('speed') : 'standard', sound: q.get('sound') === '1', clean: q.get('clean') === '1' };
-  $('#gwThStatus').textContent = g.livestreamResult ? 'Winner announced' : (STATUS_LABEL[g.status] || g.status);
-  $('#gwThStatus').className = 'gw-pill ' + (g.livestreamResult || ready ? 'gold' : g.status === 'live' ? 'live' : '');
-  if (g.livestreamResult) {
+  $('#gwThStatus').textContent = g.announcedWinner ? 'Winner announced' : (STATUS_LABEL[g.status] || g.status);
+  $('#gwThStatus').className = 'gw-pill ' + (g.announcedWinner || ready ? 'gold' : g.status === 'live' ? 'live' : '');
+  if (g.announcedWinner) {
     $('#gwThOpts').hidden = true;
     watch.hidden = true;
     preview.hidden = true;
-    $('#gwThLede').textContent = g.livestreamResult.winnerName + ' won the Ballon d’Or Star Pass after the participant wheel was spun during the livestream.';
-    $('#gwThNote').textContent = 'Official result from the livestream participant wheel.';
+    const winner = g.announcedWinner.name || winners[0]?.name || 'Winner';
+    const prize = winners[0]?.prize || g.prize.display;
+    $('#gwThLede').textContent = winner + ' won the Ballon d’Or Star Pass.';
+    $('#gwThNote').textContent = 'Winner and prize details are below.';
     $('#gwThResultsWrap').hidden = false;
-    const winner = g.livestreamResult.winnerName;
-    const prize = g.results?.winners?.[0]?.prize || g.prize.display;
-    $('#gwThResults').innerHTML = '<div class="gw-panel" style="border-color:rgba(246,196,83,.38);background:linear-gradient(145deg,rgba(246,196,83,.09),rgba(13,24,35,.82))"><div class="gw-eyebrow">LIVESTREAM WHEEL WINNER</div><h2 style="margin:12px 0 6px;color:#ffe7a6">' + esc(winner) + '</h2><p class="gw-sub">' + esc(prize) + '</p><p class="gw-note">' + esc(g.livestreamResult.note || 'Selected by the participant wheel during the livestream.') + '</p><p class="gw-note" style="margin-top:12px">To claim, contact the official giveaway handle on the giveaway page. The website claim-code flow does not apply to this result.</p></div>';
+    $('#gwThResults').innerHTML = '<div class="gw-panel" style="border-color:rgba(246,196,83,.38);background:linear-gradient(145deg,rgba(246,196,83,.09),rgba(13,24,35,.82))"><div class="gw-eyebrow">WINNER ANNOUNCED</div><h2 style="margin:12px 0 6px;color:#ffe7a6">' + esc(winner) + '</h2><p class="gw-sub">' + esc(prize) + '</p><p class="gw-note" style="margin-top:12px">To claim, contact the official giveaway handle on the giveaway page. Never share your password or pay a fee to claim.</p></div>';
     spotlight();
     return;
   }
@@ -347,7 +340,7 @@ export async function initDrawPage() {
   $('#gwThClean').addEventListener('change', (e) => { opt.clean = e.target.checked; });
 
   let proofP = null;
-  const proof = () => (proofP ||= api('/api/giveaways/' + encodeURIComponent(slug) + '/draw-proof', { cache: 'default' }));
+  const proof = () => (proofP ||= api('/api/giveaways/' + encodeURIComponent(slug) + '/draw-proof', { cache: 'no-store' }));
   const base = () => ({ title: g.title, prize: g.prize.display, speed: opt.speed, sound: opt.sound, clean: opt.clean, seedCommit: g.fairness.seedCommit });
 
   async function play() {
@@ -395,7 +388,7 @@ export async function initEnter() {
     return;
   }
   let g, me;
-  try { [g, me] = await Promise.all([api('/api/giveaways/' + slug, { cache: 'default' }), api('/api/giveaways/' + slug + '/me')]); }
+  try { [g, me] = await Promise.all([api('/api/giveaways/' + slug, { cache: 'no-store' }), api('/api/giveaways/' + slug + '/me')]); }
   catch (e) { return unavailable(host, e.message); }
   fetch('/api/giveaways/' + slug + '/track', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ event: 'start' }) }).catch(() => {});
   $('#gwTitle').textContent = g.title;
@@ -561,7 +554,7 @@ export async function initClaim() {
   try {
     [mine, pub] = await Promise.all([
       api('/api/giveaways/mine'),
-      api('/api/giveaways/public', { cache: 'default' }).catch(() => ({ official: {} }))
+      api('/api/giveaways/public', { cache: 'no-store' }).catch(() => ({ official: {} }))
     ]);
   } catch (e) { return unavailable(host, e.message); }
   const official = pub.official || {};
@@ -683,6 +676,6 @@ export async function initClaim() {
 // ═══════════════════════════ STATIC PAGES ═══════════════════════════
 // Safety and rules pages only need the official handles filled in.
 export async function initOfficial() {
-  try { const d = await api('/api/giveaways/public', { cache: 'default' }); fillOfficial(d.official); }
+  try { const d = await api('/api/giveaways/public', { cache: 'no-store' }); fillOfficial(d.official); }
   catch { fillOfficial(null); const el = $('[data-gw-handles]'); if (el) el.textContent = 'Official handles are listed on our Discord and YouTube channels.'; }
 }
