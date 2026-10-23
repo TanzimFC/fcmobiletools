@@ -1165,16 +1165,21 @@ function purge(ctx, url, slug) {
   } catch { /* cache is best effort */ }
 }
 
-async function cached(ctx, url, ttl, build) {
-  const cache = caches.default;
-  const key = new Request(url.origin + url.pathname);
-  const hit = await cache.match(key);
-  if (hit) return hit;
+async function cached(_ctx, _url, _ttl, build) {
+  // Giveaway pages and counts are operational data, not static content. Old edge responses
+  // made the public page disagree with the admin panel after entries or results changed.
   const body = await build();
   if (body === null) return null;
-  const res = new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=' + ttl } });
-  ctx?.waitUntil?.(cache.put(key, res.clone()));
-  return res;
+  return new Response(JSON.stringify(body), {
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store, max-age=0, must-revalidate',
+      'cdn-cache-control': 'no-store',
+      'cloudflare-cdn-cache-control': 'no-store',
+      'pragma': 'no-cache',
+      'expires': '0'
+    }
+  });
 }
 
 export async function giveawayWorkerRoute({ request, env, url, ctx, authenticated, accountContext, supabaseRest, json, reserveImageUploadQuota }) {
