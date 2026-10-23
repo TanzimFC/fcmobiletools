@@ -99,12 +99,19 @@ const schema = g ? [
 
           <section class="gw-sec" id="gwFair" aria-labelledby="fairH">
             <div class="gw-panel">
-              <div class="gw-eyebrow">DRAW TRANSPARENCY</div><h3 id="fairH" style="margin-top:9px">Provably fair draw</h3>
-              <p>Before entries opened we locked the draw by publishing a fingerprint of a secret seed. When the draw is done we reveal the seed and the frozen entry list, and you can re-run the whole draw in your browser. Every eligible person receives exactly one entry. There are no bonus tickets for daily activity, shares or referrals. The draw gives every eligible entry equal weight, then uses the published seed and frozen entry list to determine the order.</p>
-              <div class="gw-note">Seed fingerprint (published before entries opened)</div>
-              <div class="gw-mono" id="gwCommit"></div>
-              <div id="gwHashRow" hidden><div class="gw-note" style="margin-top:12px">Entry list fingerprint (frozen at the draw)</div><div class="gw-mono" id="gwHash"></div></div>
-              {g.fairness.seedRevealed && <div style="margin-top:16px"><button class="gw-btn gw-btn-gold" id="gwVerify">Verify this draw yourself</button><div id="gwVerifyOut"></div></div>}
+              {g.livestreamResult ? <>
+                <div class="gw-eyebrow">LIVESTREAM WHEEL RESULT</div><h3 id="fairH" style="margin-top:9px">How the winner was selected</h3>
+                <p>The participant wheel was spun during the livestream. This page publishes that result; the website’s seeded ranking is not presented as verification of the livestream spin.</p>
+                <div class="gw-note">Names listed on the participant wheel</div>
+                <div class="gw-mono">{g.livestreamResult.participantCount || '—'}</div>
+              </> : <>
+                <div class="gw-eyebrow">DRAW TRANSPARENCY</div><h3 id="fairH" style="margin-top:9px">Provably fair draw</h3>
+                <p>Before entries opened we locked the draw by publishing a fingerprint of a secret seed. When the draw is done we reveal the seed and the frozen entry list, and you can re-run the whole draw in your browser. Every eligible person receives exactly one entry. There are no bonus tickets for daily activity, shares or referrals. The draw gives every eligible entry equal weight, then uses the published seed and frozen entry list to determine the order.</p>
+                <div class="gw-note">Seed fingerprint (published before entries opened)</div>
+                <div class="gw-mono" id="gwCommit"></div>
+                <div id="gwHashRow" hidden><div class="gw-note" style="margin-top:12px">Entry list fingerprint (frozen at the draw)</div><div class="gw-mono" id="gwHash"></div></div>
+                {g.fairness.seedRevealed && <div style="margin-top:16px"><button class="gw-btn gw-btn-gold" id="gwVerify">Verify this draw yourself</button><div id="gwVerifyOut"></div></div>}
+              </>}
             </div>
           </section>
 
