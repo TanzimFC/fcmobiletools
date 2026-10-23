@@ -971,8 +971,8 @@ async function recordLivestreamResult(db, g, body) {
   if (alreadyDelivered.length) throw new Fail('A reward has already been marked as delivered. Stop and reconcile the result manually.', 409);
   for (const old of active) {
     const oldNote = clean(old.notes, 1000);
-    const replacementNote = (oldNote ? oldNote + '\n' : '') +
-      'Superseded by the organiser-confirmed livestream participant-wheel result: ' + name + '.';
+    const suffix = 'Superseded by the organiser-confirmed livestream participant-wheel result: ' + name + '.';
+    const replacementNote = (oldNote ? oldNote.slice(0, Math.max(0, 999 - suffix.length)) + '\n' : '') + suffix;
     await db.patch('giveaway_winners?id=eq.' + old.id + '&giveaway_id=eq.' + g.id, {
       status: 'replaced',
       claim_code_hash: null,
@@ -984,14 +984,15 @@ async function recordLivestreamResult(db, g, body) {
     });
     await audit(db, g.id, 'winner_superseded_by_livestream', { winner: old.id, priorStatus: old.status });
   }
-  await db.patch('giveaways', 'id=eq.' + g.id + '&status=eq.drawn&results_published_at=is.null', {
+  const recorded = (await db.patch('giveaways', 'id=eq.' + g.id + '&status=eq.drawn&results_published_at=is.null', {
     livestream_winner_name: name,
     livestream_winner_source: 'livestream-wheel',
     livestream_winner_note: note,
     livestream_participant_count: participantCount,
     livestream_result_recorded_at: nowIso(),
     updated_at: nowIso()
-  });
+  }))?.[0];
+  if (!recorded) throw new Fail('The giveaway changed while the result was being saved. Reload and check its status.', 409);
   await audit(db, g.id, 'livestream_result_recorded', {
     winnerName: name,
     source: 'livestream-wheel',
