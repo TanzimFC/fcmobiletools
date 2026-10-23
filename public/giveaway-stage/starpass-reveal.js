@@ -244,7 +244,8 @@ export function playStarPassReveal(options = {}) {
   timer = window.setInterval(() => {
     if (closed || revealed) return;
     const now = performance.now();
-    if (!paused) elapsed += now - last;
+    if (paused) { last = now; return; }
+    elapsed += now - last;
     last = now;
     const fraction = Math.min(1, elapsed / duration);
     progress.style.width = (fraction * 100).toFixed(2) + '%';
