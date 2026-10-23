@@ -8,7 +8,8 @@ export const PUBLIC_COLUMNS = [
   'id', 'slug', 'kind', 'title', 'tagline', 'description', 'status', 'prize_label', 'prize_cents',
   'bonus_prize_cents', 'currency', 'winner_count', 'alternate_count', 'cover_url', 'accent', 'starts_at',
   'ends_at', 'proof_ttl_hours', 'claim_window_hours', 'requirements', 'milestones', 'bonus', 'rules_version',
-  'seed_commit', 'entries_hash', 'drawn_at', 'results_published_at', 'seed_revealed_at', 'created_at'
+  'seed_commit', 'entries_hash', 'drawn_at', 'results_published_at', 'seed_revealed_at', 'created_at',
+  'livestream_winner_name', 'livestream_winner_source', 'livestream_winner_note', 'livestream_participant_count', 'livestream_result_recorded_at'
 ].join(',');
 
 const VISIBLE = '(live,closed,drawn,completed)';
@@ -52,6 +53,15 @@ export function shapeGiveaway(row, entries, official, now = Date.now()) {
   const bonusWinners = ms.bonusWinners;
   const kind = KINDS[row.kind] || KINDS.custom;
   const revealed = Boolean(row.seed_revealed_at);
+  const livestreamResult = Boolean(row.results_published_at && row.livestream_winner_name && row.livestream_winner_source === 'livestream-wheel')
+    ? {
+        winnerName: String(row.livestream_winner_name).slice(0, 80),
+        source: 'livestream-wheel',
+        note: String(row.livestream_winner_note || '').slice(0, 300),
+        participantCount: Math.max(0, Number(row.livestream_participant_count || 0)),
+        recordedAt: row.livestream_result_recorded_at || null
+      }
+    : null;
   return {
     id: row.id, slug: row.slug, kind: row.kind, kindLabel: kind.label, title: row.title, tagline: row.tagline,
     description: row.description, status, rawStatus: row.status,
@@ -75,8 +85,9 @@ export function shapeGiveaway(row, entries, official, now = Date.now()) {
     rulesVersion: row.rules_version,
     fairness: {
       seedCommit: row.seed_commit || '', entriesHash: row.entries_hash || '', drawnAt: row.drawn_at,
-      resultsPublished: Boolean(row.results_published_at), seedRevealed: revealed
+      resultsPublished: Boolean(row.results_published_at), seedRevealed: revealed && !livestreamResult
     },
+    livestreamResult,
     official
   };
 }
@@ -133,7 +144,23 @@ export async function loadPublicList(env, rest) {
   const list = await Promise.all(rows.map(async (row) => {
     const g = publicPreview(row, shapeGiveaway(row, await entryCount(env, rest, row.id), official));
     if (row.results_published_at) {
-      try { g.results = { winners: await loadWinners(env, rest, row.id, row.currency, row.prize_label) }; } catch { g.results = { winners: [] }; }
+      if (g.livestreamResult) {
+        g.results = {
+          source: 'livestream-wheel',
+          participantCount: g.livestreamResult.participantCount,
+          note: g.livestreamResult.note,
+          winners: [{
+            slot: 1,
+            rank: null,
+            name: g.livestreamResult.winnerName,
+            prize: Number(row.prize_cents || 0) > 0 ? money(row.prize_cents, row.currency) : String(row.prize_label || 'In-game reward').split(' · ')[0],
+            status: 'livestream'
+          }]
+        };
+      } else {
+        try { g.results = { winners: await loadWinners(env, rest, row.id, row.currency, row.prize_label) }; }
+        catch { g.results = { winners: [] }; }
+      }
     }
     return g;
   }));
@@ -151,7 +178,22 @@ export async function loadPublicOne(env, rest, slug) {
   const [entries, official] = await Promise.all([entryCount(env, rest, row.id), loadOfficial(env, rest)]);
   const g = publicPreview(row, shapeGiveaway(row, entries, official));
   if (row.results_published_at) {
-    g.results = { winners: await loadWinners(env, rest, row.id, row.currency, row.prize_label) };
+    if (g.livestreamResult) {
+      g.results = {
+        source: 'livestream-wheel',
+        participantCount: g.livestreamResult.participantCount,
+        note: g.livestreamResult.note,
+        winners: [{
+          slot: 1,
+          rank: null,
+          name: g.livestreamResult.winnerName,
+          prize: Number(row.prize_cents || 0) > 0 ? money(row.prize_cents, row.currency) : String(row.prize_label || 'In-game reward').split(' · ')[0],
+          status: 'livestream'
+        }]
+      };
+    } else {
+      g.results = { winners: await loadWinners(env, rest, row.id, row.currency, row.prize_label) };
+    }
   }
   return g;
 }

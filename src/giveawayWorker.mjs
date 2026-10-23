@@ -950,14 +950,85 @@ async function winnerAction(db, env, g, wid, body) {
   return { ok: true };
 }
 
+async function recordLivestreamResult(db, g, body) {
+  if (g.slug !== 'ballon-dor-star-pass-giveaway') {
+    throw new Fail('Livestream result overrides are only enabled for the Ballon d’Or Star Pass Giveaway.', 403);
+  }
+  if (g.status !== 'drawn' || g.results_published_at) {
+    throw new Fail('Record the livestream result before publishing. Published results cannot be changed here.', 409);
+  }
+  const name = clean(body.winnerName, 80);
+  if (name.length < 2) throw new Fail('Enter the winner name (at least 2 characters).');
+  const participantCount = intIn(body.participantCount, 1, 1000, 198);
+  const note = clean(body.note, 300) || 'Winner selected by the participant wheel during the livestream.';
+  const active = (await db.rest(
+    'giveaway_winners?giveaway_id=eq.' + g.id +
+    '&status=in.(selected,awaiting_claim,code_verified)&select=id,slot,status,notes&order=slot.asc'
+  )) || [];
+  const alreadyDelivered = (await db.rest(
+    'giveaway_winners?giveaway_id=eq.' + g.id + '&status=eq.paid&select=id&limit=1'
+  )) || [];
+  if (alreadyDelivered.length) throw new Fail('A reward has already been marked as delivered. Stop and reconcile the result manually.', 409);
+  for (const old of active) {
+    const oldNote = clean(old.notes, 1000);
+    const suffix = 'Superseded by the organiser-confirmed livestream participant-wheel result: ' + name + '.';
+    const replacementNote = (oldNote ? oldNote.slice(0, Math.max(0, 999 - suffix.length)) + '\n' : '') + suffix;
+    await db.patch('giveaway_winners?id=eq.' + old.id + '&giveaway_id=eq.' + g.id, {
+      status: 'replaced',
+      claim_code_hash: null,
+      claim_code_enc: null,
+      claim_deadline: null,
+      announced_at: null,
+      notes: replacementNote,
+      updated_at: nowIso()
+    });
+    await audit(db, g.id, 'winner_superseded_by_livestream', { winner: old.id, priorStatus: old.status });
+  }
+  const recorded = (await db.patch('giveaways', 'id=eq.' + g.id + '&status=eq.drawn&results_published_at=is.null', {
+    livestream_winner_name: name,
+    livestream_winner_source: 'livestream-wheel',
+    livestream_winner_note: note,
+    livestream_participant_count: participantCount,
+    livestream_result_recorded_at: nowIso(),
+    updated_at: nowIso()
+  }))?.[0];
+  if (!recorded) throw new Fail('The giveaway changed while the result was being saved. Reload and check its status.', 409);
+  await audit(db, g.id, 'livestream_result_recorded', {
+    winnerName: name,
+    source: 'livestream-wheel',
+    participantCount,
+    supersededWinnerRows: active.map((x) => x.id)
+  });
+  return { ok: true, winnerName: name, source: 'livestream-wheel', participantCount };
+}
+
 async function publishResults(db, g) {
   if (g.status !== 'drawn') throw new Fail('Draw the giveaway before publishing results.', 409);
   const pending = await db.rest('giveaway_winners?giveaway_id=eq.' + g.id + '&status=eq.selected&select=id&limit=1');
   if (pending.length) throw new Fail('Approve or replace every selected winner before publishing, so nobody is announced before their proof is checked.', 409);
+
+  if (g.livestream_winner_name && g.livestream_winner_source === 'livestream-wheel') {
+    const active = await db.rest('giveaway_winners?giveaway_id=eq.' + g.id + '&status=in.(awaiting_claim,code_verified,paid)&select=id&limit=1');
+    if (active.length) throw new Fail('An account-based claim is still active. Resolve it before publishing the livestream winner.', 409);
+    const row = (await db.patch('giveaways', 'id=eq.' + g.id + '&status=eq.drawn&results_published_at=is.null', {
+      results_published_at: nowIso(),
+      // The published result came from the livestream wheel, not the site's seeded ranking.
+      // Keep the site seed private so its proof endpoint cannot imply otherwise.
+      seed_revealed_at: null
+    }))?.[0];
+    if (!row) throw new Fail('The giveaway changed while you were publishing. Reload and check its status.', 409);
+    await audit(db, g.id, 'livestream_results_published', {
+      winnerName: g.livestream_winner_name,
+      source: 'livestream-wheel',
+      participantCount: g.livestream_participant_count || null
+    });
+    return row;
+  }
+
   const anyone = await db.rest('giveaway_winners?giveaway_id=eq.' + g.id + '&status=in.(awaiting_claim,code_verified,paid)&select=id&limit=1');
   if (!anyone.length) throw new Fail('There are no approved winners to announce.', 409);
   const row = (await db.patch('giveaways', 'id=eq.' + g.id, { results_published_at: g.results_published_at || nowIso(), seed_revealed_at: g.seed_revealed_at || nowIso() }))?.[0];
-  await db.patch('giveaway_winners', 'giveaway_id=eq.' + g.id + '&status=eq.awaiting_claim&announced_at=is.null', { announced_at: nowIso(), claim_deadline: addHours(g.claim_window_hours) });
+  await db.patch('giveaway_winners?giveaway_id=eq.' + g.id + '&status=eq.awaiting_claim&announced_at=is.null', { announced_at: nowIso(), claim_deadline: addHours(g.claim_window_hours) });
   await audit(db, g.id, 'results_published', {});
   return row;
 }
@@ -1286,7 +1357,8 @@ async function adminRoute(request, env, url, ctx, db, json) {
     return json({ ok: true, checked: rows.length, failing: failed });
   }
   if (sub === 'sweep' && m === 'POST') return done({ ok: true, ...(await sweepWith(db)) }, g.slug);
-  if (sub === 'winners' && m === 'GET') return json({ winners: await adminWinners(db, g), results: { published: Boolean(g.results_published_at) } });
+  if (sub === 'livestream-result' && m === 'POST') return done(await recordLivestreamResult(db, g, body), g.slug);
+  if (sub === 'winners' && m === 'GET') return json({ winners: await adminWinners(db, g), results: { published: Boolean(g.results_published_at), livestreamWinnerName: g.livestream_winner_name || '', livestreamWinnerSource: g.livestream_winner_source || '', livestreamWinnerNote: g.livestream_winner_note || '', livestreamParticipantCount: Number(g.livestream_participant_count || 0) } });
   if (sub === 'draw' && m === 'POST') {
     if (body.confirm !== true) throw new Fail('Confirm the draw.');
     return done(await runDraw(db, env, g), g.slug);

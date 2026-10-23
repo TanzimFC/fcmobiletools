@@ -18,9 +18,15 @@ if (!g) { Astro.response.status = failed ? 503 : 404; Astro.response.headers.set
 
 const title = g ? 'Watch the draw: ' + g.title + ' | FCMobiletools' : 'Draw not found';
 const description = g
-  ? 'Watch how the winners of ' + g.title + ' were picked: sealed seed, frozen entries, public ranking and a draw you can verify yourself.'
+  ? g.livestreamResult
+    ? 'Published result from the participant wheel spun during the livestream: ' + g.livestreamResult.winnerName + ' won the Ballon d’Or Star Pass.'
+    : 'Watch how the winners of ' + g.title + ' were picked: sealed seed, frozen entries, public ranking and a draw you can verify yourself.'
   : 'This draw is not available.';
-const steps = [
+const steps = g?.livestreamResult ? [
+  ['Participants loaded', 'The supplied participant names were included on the wheel.'],
+  ['Live spin', 'The participant wheel was spun during the livestream.'],
+  ['Winner revealed', g.livestreamResult.winnerName + ' won the Ballon d’Or Star Pass.']
+] : [
   ['Seed locked', 'A fingerprint of the secret seed was published before entries opened.'],
   ['Entries frozen', 'When entries closed, the list was frozen and fingerprinted.'],
   ['Ranked in public', 'Every eligible person has one equal-weight entry. The published seed fixes the draw order.'],
@@ -81,8 +87,8 @@ const steps = [
         </header>
 
         <section class="gw-sec" aria-labelledby="thStepsH">
-          <h2 class="gw-h2" id="thStepsH">What the show covers</h2>
-          <p class="gw-sub">Nothing on screen is decided by the animation. It replays a draw that anyone can check.</p>
+          <h2 class="gw-h2" id="thStepsH">{g.livestreamResult ? 'Livestream wheel result' : 'What the show covers'}</h2>
+          <p class="gw-sub">{g.livestreamResult ? 'This result comes from the participant wheel spun during the livestream.' : 'Nothing on screen is decided by the animation. It replays a draw that anyone can check.'}</p>
           <ol class="gw-th-steps">
             {steps.map(([t, d], i) => <li><span>{i + 1}</span><div><h3>{t}</h3><p>{d}</p></div></li>)}
           </ol>
@@ -94,13 +100,13 @@ const steps = [
           <div id="gwThResults"></div>
         </section>
 
-        <section class="gw-sec" aria-labelledby="thVerH">
+        {!g.livestreamResult && <section class="gw-sec" aria-labelledby="thVerH">
           <div class="gw-panel">
             <h3 id="thVerH">Check it yourself</h3>
             <p>The show runs a real check in your browser: it hashes the revealed seed, hashes the frozen entry list, and re-runs the ranking to confirm every winner sits where the draw put them.</p>
             <a class="gw-btn" href={'/giveaways/' + g.slug + '/#gwFair'}>Open the verification tool</a>
           </div>
-        </section>
+        </section>}
 
         <p class="gw-note" style="margin-top:26px">Read the <a href="/giveaways/rules/" style="color:var(--gw-cyan)">Giveaway Rules</a>. Rewards are in-game items with no real cash value.</p>
       </>)}

@@ -156,10 +156,28 @@ function paintPublic(g) {
     $('#gwTrackNote').textContent = g.milestones.next ? (g.milestones.next.entries - g.stats.entries).toLocaleString() + ' more entries unlock: ' + g.milestones.next.label + '. Share the giveaway to get there faster.' : 'Every milestone is unlocked. Extra winners are in the draw.';
   } else $('#gwTrackWrap').hidden = true;
 
-  // fairness
-  $('#gwCommit').textContent = g.fairness.seedCommit || 'Published when the giveaway goes live.';
-  $('#gwHashRow').hidden = !g.fairness.entriesHash;
-  $('#gwHash').textContent = g.fairness.entriesHash || '';
+  // Fairness panel reflects the actual source of the published winner.
+  if (g.livestreamResult) {
+    const fair = $('#gwFair');
+    const eyebrow = fair?.querySelector('.gw-eyebrow');
+    const heading = fair?.querySelector('h3');
+    const copy = fair?.querySelector('p');
+    if (eyebrow) eyebrow.textContent = 'LIVESTREAM WHEEL RESULT';
+    if (heading) heading.textContent = 'How the winner was selected';
+    if (copy) copy.textContent = 'The participant wheel was spun during the livestream. We’re publishing the livestream result here so everyone can see who won.';
+    const commit = $('#gwCommit');
+    if (commit) {
+      commit.hidden = true;
+      if (commit.previousElementSibling) commit.previousElementSibling.hidden = true;
+    }
+    const hashRow = $('#gwHashRow');
+    if (hashRow) hashRow.hidden = true;
+    $('#gwVerify')?.remove();
+  } else {
+    $('#gwCommit').textContent = g.fairness.seedCommit || 'Published when the giveaway goes live.';
+    $('#gwHashRow').hidden = !g.fairness.entriesHash;
+    $('#gwHash').textContent = g.fairness.entriesHash || '';
+  }
 
   if (g.results) {
     $('#gwResultsWrap').hidden = false;
@@ -172,6 +190,21 @@ function paintResults(g) {
   const winners = g.results.winners;
   const host = $('#gwResults');
   if (!winners.length) { host.innerHTML = '<div class="gw-empty"><strong>Results are being finalised</strong>Winners are confirmed by an admin before they are announced.</div>'; return; }
+  if (g.results.source === 'livestream-wheel' || g.livestreamResult) {
+    const winner = g.livestreamResult?.winnerName || winners[0]?.name || 'Winner';
+    const prize = winners[0]?.prize || g.prize.display;
+    const note = g.results.note || g.livestreamResult?.note || 'The winner was selected by the participant wheel during the livestream.';
+    host.innerHTML = '<div class="gw-panel" style="border-color:rgba(246,196,83,.38);background:linear-gradient(145deg,rgba(246,196,83,.09),rgba(13,24,35,.82))">' +
+      '<div class="gw-eyebrow">LIVESTREAM WHEEL WINNER</div>' +
+      '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px">' +
+      '<span aria-hidden="true" style="display:grid;place-items:center;width:54px;height:54px;border:1px solid rgba(246,196,83,.42);border-radius:16px;color:#f6c453;font-size:27px">🏆</span>' +
+      '<div><h3 style="margin:0;color:#ffe7a6;font:700 clamp(25px,4vw,38px)/1.1 system-ui,sans-serif">' + esc(winner) + '</h3>' +
+      '<p style="margin:7px 0 0;color:var(--gw-muted,#a7b4c3)">' + esc(prize) + '</p></div></div>' +
+      '<p style="margin:16px 0 0;white-space:pre-line;color:var(--gw-muted,#a7b4c3)">' + esc(note) + '</p>' +
+      '<div class="gw-note" style="margin-top:14px">To claim the prize, contact the official giveaway handle listed on this page. The website claim-code flow is not used for this livestream result. Never share your password or pay a fee to claim.</div>' +
+      '</div>';
+    return;
+  }
   const key = 'gw:reel:' + g.slug;
   const first = winners[0];
   const fillers = ['ma****rt', 'jo****hn', 'al****ex', 'sa****ra', 'ni****ck', 'ka****ri', 'ra****ul', 'em****ly'];
@@ -283,8 +316,21 @@ export async function initDrawPage() {
   const winners = g.results?.winners || [];
   const ready = winners.length > 0;
   const opt = { speed: ['quick', 'standard', 'epic'].includes(q.get('speed')) ? q.get('speed') : 'standard', sound: q.get('sound') === '1', clean: q.get('clean') === '1' };
-  $('#gwThStatus').textContent = STATUS_LABEL[g.status] || g.status;
-  $('#gwThStatus').className = 'gw-pill ' + (g.status === 'live' ? 'live' : ready ? 'gold' : '');
+  $('#gwThStatus').textContent = g.livestreamResult ? 'Winner announced' : (STATUS_LABEL[g.status] || g.status);
+  $('#gwThStatus').className = 'gw-pill ' + (g.livestreamResult || ready ? 'gold' : g.status === 'live' ? 'live' : '');
+  if (g.livestreamResult) {
+    $('#gwThOpts').hidden = true;
+    watch.hidden = true;
+    preview.hidden = true;
+    $('#gwThLede').textContent = g.livestreamResult.winnerName + ' won the Ballon d’Or Star Pass after the participant wheel was spun during the livestream.';
+    $('#gwThNote').textContent = 'Official result from the livestream participant wheel.';
+    $('#gwThResultsWrap').hidden = false;
+    const winner = g.livestreamResult.winnerName;
+    const prize = g.results?.winners?.[0]?.prize || g.prize.display;
+    $('#gwThResults').innerHTML = '<div class="gw-panel" style="border-color:rgba(246,196,83,.38);background:linear-gradient(145deg,rgba(246,196,83,.09),rgba(13,24,35,.82))"><div class="gw-eyebrow">LIVESTREAM WHEEL WINNER</div><h2 style="margin:12px 0 6px;color:#ffe7a6">' + esc(winner) + '</h2><p class="gw-sub">' + esc(prize) + '</p><p class="gw-note">' + esc(g.livestreamResult.note || 'Selected by the participant wheel during the livestream.') + '</p><p class="gw-note" style="margin-top:12px">To claim, contact the official giveaway handle on the giveaway page. The website claim-code flow does not apply to this result.</p></div>';
+    spotlight();
+    return;
+  }
   $('#gwThOpts').hidden = false; preview.hidden = false;
   $$('[data-speed]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.speed === opt.speed)));
   $('#gwThSound').checked = opt.sound; $('#gwThClean').checked = opt.clean;
