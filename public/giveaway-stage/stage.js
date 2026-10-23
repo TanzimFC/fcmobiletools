@@ -439,9 +439,16 @@ export function openDrawStage(opts = {}) {
       lower(label, o.mode === 'recorded' ? 'The wheel has landed.' : 'Names are masked to protect winners.', 'Step 8 of 8');
       pool.alpha = 0; pool.setMode('float');
       const names = o.mode === 'recorded' && Array.isArray(o.participantNames) && o.participantNames.length ? o.participantNames.slice() : Array.from({ length: 26 }, fillerName);
-      names.push(w.name);
+      const winnerName = String(w.name || 'Winner');
+      if (o.mode === 'recorded') {
+        // Move the winner's listed name to the final slot, so it appears once and stays final.
+        const winnerAt = names.findIndex((n) => String(n).trim().toLocaleLowerCase() === winnerName.trim().toLocaleLowerCase());
+        if (winnerAt >= 0) names.splice(winnerAt, 1);
+      }
+      names.push(winnerName);
+      const chipText = o.mode === 'recorded' ? 'SPIN IN PROGRESS' : label;
       const el = show(h('div', 'ds-reveal',
-        '<div class="ds-chip">' + esc(label) + '</div>' +
+        '<div class="ds-chip">' + esc(chipText) + '</div>' +
         '<div class="ds-ticket"><div class="ds-stub"><small>Slot</small><b>#' + esc(w.slot || i + 1) + '</b></div><div class="ds-main"><div class="ds-reel"><div class="ds-reel-in">' + names.map((n) => '<span>' + esc(n) + '</span>').join('') + '</div></div>' +
         '<div class="ds-prize">' + esc(w.prize || o.prize || 'In-game reward') + '</div></div></div>'));
       const inner = $('.ds-reel-in', el); const ticket = $('.ds-ticket', el);
@@ -450,9 +457,15 @@ export function openDrawStage(opts = {}) {
       const spin = rm ? 300 : Math.max(1500, step.ms * 0.5, recordedSpinMs);
       log('Drawing ' + label.toLowerCase()); sound.whoosh();
       let ticks = 0; const tickTimer = setInterval(() => { if (!S.paused && ticks < 22) { sound.tick(); ticks += 1; } }, spin / 24);
-      const a = anim(inner, [{ transform: 'translateY(0)' }, { transform: 'translateY(' + (-(names.length - 1) * rh) + 'px)' }], { duration: spin, easing: 'cubic-bezier(.14,.82,.12,1)', fill: 'forwards' });
+      const targetY = -(names.length - 1) * rh;
+      const a = anim(inner, [{ transform: 'translateY(0px)' }, { transform: 'translateY(' + targetY + 'px)' }], { duration: spin, easing: 'cubic-bezier(.14,.82,.12,1)', fill: 'forwards' });
       try { await a.finished; } catch { /* cancelled */ } finally { clearInterval(tickTimer); }
       check();
+      // Freeze the reel at the final item so it cannot drift or reveal an earlier candidate.
+      inner.style.transform = 'translateY(' + targetY + 'px)';
+      a.cancel();
+      const chip = $('.ds-chip', el);
+      if (o.mode === 'recorded' && chip) chip.textContent = 'WINNER';
       ticket.classList.add('landed'); flash(); sound.win(); pool.alpha = 1;
       const r = ticket.getBoundingClientRect(); pool.burst(r.left + r.width / 2, r.top + r.height / 2, i === total - 1 ? 150 : 100, 1);
       log(label + ': ' + w.name, 'ok'); say(label + ': ' + w.name + ' wins ' + (w.prize || o.prize || 'the reward'));
