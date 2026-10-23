@@ -152,9 +152,9 @@ const stageFields=[
   {k:'speed',label:'Show length',type:'select',options:[['standard','Standard, about 1.5 minutes'],['epic','Epic, about 3 minutes (best for video)'],['quick','Quick, about 30 seconds']],hint:'The draw itself is instant. The show only controls how long the on-screen build-up lasts.'},
   {k:'sound',label:'Sound effects',type:'select',options:[['off','Off'],['on','On']],hint:'Turn on to record the sound with your screen capture. You can toggle it any time with S.'}
 ];
-const recordedStageFields=[
-  {k:'speed',label:'Reveal length',type:'select',options:[['standard','Standard, about 22 seconds'],['epic','Epic, about 32 seconds'],['quick','Quick, about 12 seconds']],hint:'The new reveal never cycles through participant names. It animates the wheel graphic, then locks on Bunty.'},
-  {k:'sound',label:'Sound effects',type:'select',options:[['off','Off'],['on','On']],hint:'Optional sound for your screen recording.'}
+const starPassReplayFields=[
+  {k:'speed',label:'Replay length',type:'select',options:[['quick','Quick, about 12 seconds'],['standard','Standard, about 22 seconds'],['epic','Epic, about 32 seconds']],hint:'This is a separate visual replay. It does not run or change the giveaway draw.'},
+  {k:'sound',label:'Sound effects',type:'select',options:[['off','Off'],['on','On']],hint:'You can also toggle sound inside the replay.'}
 ];
 // Used only by the recorded-result animation; these names are not inserted as accounts or database entries.
 const BALLOON_DOR_PARTICIPANTS = Object.freeze(`
@@ -402,11 +402,26 @@ async function runRehearsal(g){
 }
 
 async function runRecordedShow(g){
+  const v=await ask({title:"Ballon d'Or Star Pass Giveaway",text:"Prepare the full-screen participant spin and winner reveal for your video. The animation includes everyone on the supplied list and finishes on Bunty.",ok:"Play giveaway animation",fields:stageFields});
+  if(!v)return;
+  const total=BALLOON_DOR_PARTICIPANTS.length;
+  return openStage(g,'recorded',v,{
+    entries:total,
+    winnersTotal:1,
+    participantNames:BALLOON_DOR_PARTICIPANTS,
+    maskNote:'Thanks to everyone who joined the Ballon d’Or Star Pass Giveaway.',
+    finalNote:'Bunty wins the Ballon d’Or Star Pass. Congratulations!',
+    prepare:async()=>({entries:total,entriesHash:'',winners:[{slot:1,name:'Bunty',prize:prizeText(g)}],alternates:[]})
+  });
+}
+
+
+async function runStarPassReplay(g){
   const v=await ask({
-    title:"Ballon d'Or Star Pass Giveaway",
-    text:"This is a new, independent winner reveal. No participant names rotate on screen. The wheel graphic spins, then Bunty appears once and stays fixed.",
-    ok:"Play new reveal",
-    fields:recordedStageFields
+    title:"Ballon d'Or Star Pass winner replay",
+    text:"This is a separate replay for the recorded winner. It does not draw, reroll, publish, or change any giveaway data. No participant names appear during the spin; Bunty is revealed once and stays fixed.",
+    ok:"Play winner replay",
+    fields:starPassReplayFields
   });
   if(!v)return;
   const S=await import('/giveaway-stage/starpass-reveal.js');
@@ -567,7 +582,7 @@ async function subWinners(){
   let w;try{w=await api('/'+g.id+'/winners');state.winners=w.winners;if(!state.settings)state.settings=await api('/settings')}catch(e){$('#sub').innerHTML='<div class="note bad">'+esc(e.message)+'</div>';return}
   const head='<div class="card"><h3>Draw</h3>'+(g.status==='live'?'<div class="note">Close entries first, then draw.</div>':g.status==='closed'?'<p>Review the queue before drawing. Entries still awaiting review are included in the draw, but a winner must be approved before they are announced.</p><div class="row"><button class="btn pri" id="doDraw">Run the draw on stage</button><button class="btn" id="doRehearse">Rehearse the show</button></div><div class="hint" style="margin-top:8px">The draw opens a full-screen show you can screen-record. The result is decided by the server and never by the animation.</div>':g.status==='drawn'?(g.livestream_winner_source==='livestream-wheel'?'<div class="note go">Website ranking retained for audit only. The official result is <b>'+esc(g.livestream_winner_name||'the livestream winner')+'</b>; the website seed stays private.</div>':'<div class="note ok">Draw complete'+(g.entries_hash?'. Entry list fingerprint: <span class="mono">'+esc(g.entries_hash)+'</span>':'')+'</div>'):g.status==='draft'?'<div class="note">Go live first.</div>':'')+
    (g.status==='drawn'||g.status==='completed'?'<div class="row" style="margin-top:10px">'+(g.livestream_winner_source==='livestream-wheel'?'':'<button class="btn" id="doReplay">Replay website draw (audit only)</button>')+'<button class="btn" id="doRehearse">Rehearse the show</button>'+(g.results_published_at?'<a class="btn" target="_blank" rel="noopener" href="/giveaways/'+esc(g.slug)+'/draw/">Open public draw page</a>':'')+'</div>':'')+
-   (g.status==='drawn'?'<div class="row" style="margin-top:10px">'+(g.results_published_at?'<span class="tag ok">'+(g.livestream_winner_source==='livestream-wheel'?'Results are public. Livestream wheel result.':'Results are public. Seed revealed.')+'</span>':'<button class="btn pri" id="doPub">'+(g.livestream_winner_source==='livestream-wheel'?'Publish livestream winner':'Publish results and reveal the seed')+'</button>')+'</div><div class="hint" style="margin-top:8px">'+(g.livestream_winner_source==='livestream-wheel'?'The livestream-wheel result is published separately from the seeded site ranking. The seed stays private, and the winner claims directly through your official contact channel.':'Publishing needs every selected winner approved first, so nobody is announced before their proof is checked. It also starts each winner\'s claim window.')+'</div>':'')+(g.slug==='ballon-dor-star-pass-giveaway'?'<div class="row" style="margin-top:10px"><button class="btn pri" id="doRecordedShow">Play giveaway animation</button></div><div class="hint" style="margin-top:8px">New full-screen reveal: no names cycle on screen; Bunty appears once and remains fixed.</div>':'')+(g.slug==='ballon-dor-star-pass-giveaway'&&g.status==='drawn'&&!g.results_published_at?'<div class="row" style="margin-top:10px"><button class="btn pri" id="doLivestreamResult">'+(g.livestream_winner_name?'Update livestream winner':'Record livestream winner')+'</button></div><div class="hint" style="margin-top:8px">'+(g.livestream_winner_name?'Current livestream winner: <b>'+esc(g.livestream_winner_name)+'</b>.':'Record the name selected by your livestream participant wheel.')+' This replaces the website’s selected draw entry for publication, records an audit trail, and does not reveal the seeded draw.</div>':'')+'</div>';
+   (g.status==='drawn'?'<div class="row" style="margin-top:10px">'+(g.results_published_at?'<span class="tag ok">'+(g.livestream_winner_source==='livestream-wheel'?'Results are public. Livestream wheel result.':'Results are public. Seed revealed.')+'</span>':'<button class="btn pri" id="doPub">'+(g.livestream_winner_source==='livestream-wheel'?'Publish livestream winner':'Publish results and reveal the seed')+'</button>')+'</div><div class="hint" style="margin-top:8px">'+(g.livestream_winner_source==='livestream-wheel'?'The livestream-wheel result is published separately from the seeded site ranking. The seed stays private, and the winner claims directly through your official contact channel.':'Publishing needs every selected winner approved first, so nobody is announced before their proof is checked. It also starts each winner\'s claim window.')+'</div>':'')+(g.slug==='ballon-dor-star-pass-giveaway'?'<div class="row" style="margin-top:10px"><button class="btn pri" id="doRecordedShow">Play giveaway animation</button><button class="btn" id="doStarPassReplay">Play new winner replay</button></div><div class="hint" style="margin-top:8px">The existing participant-spin animation is unchanged. The separate replay uses a nameless wheel and reveals Bunty once, without changing the giveaway result.</div>':'')+(g.slug==='ballon-dor-star-pass-giveaway'&&g.status==='drawn'&&!g.results_published_at?'<div class="row" style="margin-top:10px"><button class="btn pri" id="doLivestreamResult">'+(g.livestream_winner_name?'Update livestream winner':'Record livestream winner')+'</button></div><div class="hint" style="margin-top:8px">'+(g.livestream_winner_name?'Current livestream winner: <b>'+esc(g.livestream_winner_name)+'</b>.':'Record the name selected by your livestream participant wheel.')+' This replaces the website’s selected draw entry for publication, records an audit trail, and does not reveal the seeded draw.</div>':'')+'</div>';
   const isLivestream= g.livestream_winner_source==='livestream-wheel' && Boolean(g.livestream_winner_name);
   const ec=g.entryCounts||{};
   const websiteEntries=Number(ec.provisional||0)+Number(ec.approved||0)+Number(ec.needs_proof||0);
@@ -585,6 +600,7 @@ async function subWinners(){
   if($('#doDraw'))$('#doDraw').onclick=e=>act(e.currentTarget,async()=>{const v=await ask({title:'Run the draw on stage?',text:'This freezes the entry list and cannot be repeated. A full-screen show plays while the server runs the draw. Winners and alternates are selected from the fixed ranking.',ok:'Start the show',fields:stageFields});if(!v)return;await runLiveDraw(g,v)});
   if($('#doRehearse'))$('#doRehearse').onclick=e=>act(e.currentTarget,()=>runRehearsal(g));
   if($('#doRecordedShow'))$('#doRecordedShow').onclick=e=>act(e.currentTarget,()=>runRecordedShow(g));
+  if($('#doStarPassReplay'))$('#doStarPassReplay').onclick=e=>act(e.currentTarget,()=>runStarPassReplay(g));
   if($('#doReplay'))$('#doReplay').onclick=e=>act(e.currentTarget,()=>runReplay(g));
   if($('#doLivestreamResult'))$('#doLivestreamResult').onclick=e=>act(e.currentTarget,async()=>{
     const v=await ask({
