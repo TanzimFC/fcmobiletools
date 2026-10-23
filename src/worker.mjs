@@ -18,6 +18,7 @@ import { accountSurveyRoutes, adminSurveyApi } from './lib/surveyApi.mjs';
 
 const SESSION_COOKIE = 'fcm_admin_session';
 const CREATOR_SESSION_COOKIE = 'fcm_creator_session';
+const WORKER_SESSION_COOKIE = 'fcm_worker_session';
 const SESSION_MAX_AGE = 60 * 60 * 8;
 const ARGON2_OPTIONS = { iterations: 3, memorySize: 32768, parallelism: 1, hashLength: 32, outputType: 'encoded' };
 
@@ -25,6 +26,13 @@ const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(dat
   status,
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...extra },
 });
+
+function jsonWithCookies(data, status = 200, cookies = []) {
+  const response = json(data, status);
+  const headers = new Headers(response.headers);
+  for (const cookie of cookies) headers.append('set-cookie', cookie);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
 
 // Keep in sync with admin/login.html (this inline copy is what the Worker serves).
 const ADMIN_LOGIN_HTML = `<!doctype html>
@@ -124,11 +132,11 @@ h2{margin:8px 0 6px;font:700 31px/1.05 var(--display);letter-spacing:-.05em}
 <main class="shell">
   <section class="brand-side">
     <div>
-      <div class="logo"><div class="mark">FC</div><div><b>FC Mobile Tools</b><small>Admin workspace</small></div></div>
+      <div class="logo"><div class="mark">FC</div><div><b>FC Mobile Tools</b><small>Staff workspace</small></div></div>
       <div style="margin-top:38px">
         <span class="kicker"><i></i> PRIVATE ACCESS</span>
         <h1>Your command<br><em>centre.</em></h1>
-        <p class="lede">Publish articles, manage redeem codes, run tournaments and keep the community accounts healthy, all from one place.</p>
+        <p class="lede">Sign in with your assigned account. Staff permissions limit which parts of the website you can change.</p>
       </div>
     </div>
     <div class="tiles">
@@ -152,7 +160,7 @@ h2{margin:8px 0 6px;font:700 31px/1.05 var(--display);letter-spacing:-.05em}
       </label>
       <button class="go" id="submit" type="submit"><span id="label">Enter workspace</span><svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
       <div class="err" id="error" role="alert" aria-live="polite"></div>
-      <div class="foot"><i></i>Encrypted session · Admin access only</div>
+      <div class="foot"><i></i>Encrypted session · Role-restricted access</div>
     </form>
   </section>
 </main>
@@ -267,6 +275,51 @@ async function authenticated(request, env) {
     if(!configuredUser || username!==configuredUser) { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'ADMIN_USERNAME_MISMATCH'}); return false; }
     return true;
   } catch { adminAuthLog('SESSION_VALIDATION_FAILED',{reason:'VALIDATION_EXCEPTION'}); return false; }
+}
+
+async function workerAuthenticated(request, env) {
+  const usernameExpected=String(env.WORKER_USERNAME||'').trim();
+  const secret=String(env.WORKER_SESSION_SECRET||'');
+  if(!usernameExpected || !secret || !env.WORKER_PASSWORD) return false;
+  const match=(request.headers.get('cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(WORKER_SESSION_COOKIE+'='));
+  if(!match) return false;
+  try {
+    const token=match.slice(WORKER_SESSION_COOKIE.length+1);
+    const dot=token.indexOf('.');
+    if(dot<1) return false;
+    const payload64=token.slice(0,dot), signature=token.slice(dot+1);
+    const payload=new TextDecoder().decode(unb64(payload64));
+    const separator=payload.lastIndexOf('|');
+    const username=separator>0?payload.slice(0,separator):'';
+    const expiry=separator>0?payload.slice(separator+1):'';
+    if(username!==usernameExpected || !expiry || Number(expiry)<=Date.now()) return false;
+    return (await sign(secret,payload))===signature;
+  } catch { return false; }
+}
+
+const WORKER_API_PERMISSIONS = {
+  '/me': ['GET'],
+  '/logout': ['POST'],
+  '/overview': ['GET'],
+  '/redeem': ['GET', 'POST'],
+  '/redeem/export': ['GET'],
+  '/redeem/bulk': ['POST'],
+  '/football': ['GET', 'POST'],
+  '/media': ['GET'],
+  '/media/sign': ['GET'],
+  '/rank-up': ['GET', 'POST'],
+  '/training': ['GET', 'POST'],
+  '/fc-mobile-27': ['GET', 'POST'],
+  '/db-status': ['GET']
+};
+
+function workerApiAllowed(path, method) {
+  const normalized=path.length>1?path.replace(/\/+$/,''):path;
+  return (WORKER_API_PERMISSIONS[normalized]||[]).includes(String(method||'GET').toUpperCase());
+}
+
+function workerAdminPageAllowed(path) {
+  return ['/admin/dashboard.html','/admin/fc-mobile-27.html','/admin/rank-up.html'].includes(path);
 }
 
 async function adminCanRemoveFraud(request,env) {
@@ -2176,7 +2229,11 @@ function adminAuthLog(stage, details={}) {
   console.warn('[ADMIN_AUTH]', JSON.stringify({stage,...details}));
 }
 
-async function api(request,env,path) {
+async function api(request,env,path,actorRole='admin') {
+  if(actorRole==='worker') {
+    if(!(await workerAuthenticated(request,env))) return json({error:'Authentication required.'},401);
+    if(!workerApiAllowed(path,request.method)) return json({error:'This operation is outside Worker permissions.'},403);
+  }
 
   if(path === '/accounts' && request.method === 'GET') {
     if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
@@ -2335,6 +2392,10 @@ async function api(request,env,path) {
     return json({items:rows.results||[]});
   }
   if(path === '/overview' && request.method === 'GET') {
+    if(actorRole==='worker') {
+      const database=await d1(env), codes=(await listAdminCodes(database)).codes;
+      return json({codes:{total:codes.length,active:codes.filter(x=>x.status==='active').length,scheduled:codes.filter(x=>x.status==='scheduled').length,expired:codes.filter(x=>x.status==='expired').length},user:{displayName:String(env.WORKER_DISPLAY_NAME||env.WORKER_USERNAME||'Worker')}});
+    }
     const creator=await creatorRecord(request,env); if(!creator) return json({error:'Authentication required.'},401);
     const database=await d1(env); const codes=(await listAdminCodes(database)).codes;
     const articleCount=await database.prepare('SELECT COUNT(*) AS n FROM articles WHERE owner_id=? AND deleted_at IS NULL').bind(creator.id).first();
@@ -2342,8 +2403,8 @@ async function api(request,env,path) {
     return json({codes:{total:codes.length,active:codes.filter(x=>x.status==='active').length,scheduled:codes.filter(x=>x.status==='scheduled').length,expired:codes.filter(x=>x.status==='expired').length},articles:{total:Number(articleCount?.n||0),review:Number(reviewCount?.n||0)},user:{displayName:creator.display_name}});
   }
   if(path === '/media' && request.method === 'GET') {
-    const admin=await authenticated(request,env);
-    const creator=admin?null:await creatorRecord(request,env); if(!admin && !creator) return json({error:'Authentication required.'},401);
+    const admin=actorRole==='worker'?false:await authenticated(request,env);
+    const creator=(admin||actorRole==='worker')?null:await creatorRecord(request,env); if(!admin && !creator && actorRole!=='worker') return json({error:'Authentication required.'},401);
     if(!env.CLOUDINARY_CLOUD_NAME||!env.CLOUDINARY_API_KEY||!env.CLOUDINARY_API_SECRET) throw new Error('Cloudinary is not fully configured in the Worker.');
     const auth=btoa(env.CLOUDINARY_API_KEY+':'+env.CLOUDINARY_API_SECRET), r=await fetch('https://api.cloudinary.com/v1_1/'+env.CLOUDINARY_CLOUD_NAME+'/resources/image/upload?max_results=100',{headers:{authorization:'Basic '+auth}}), body=await r.json();
     if(!r.ok) throw new Error(body?.error?.message||'Cloudinary request failed ('+r.status+').');
@@ -2355,7 +2416,23 @@ async function api(request,env,path) {
     const suppliedPassword=String(body.password||'');
     const configuredUser=String(env.ADMIN_USERNAME||'').trim();
     const configuredPassword=String(env.ADMIN_PASSWORD||'');
+    const configuredWorkerUser=String(env.WORKER_USERNAME||'').trim();
+    const configuredWorkerPassword=String(env.WORKER_PASSWORD||'');
     if(!suppliedUser || !suppliedPassword) return json({error:'Username and password are required.'},400);
+    if(configuredWorkerUser && configuredWorkerUser!==configuredUser && suppliedUser===configuredWorkerUser && suppliedPassword===configuredWorkerPassword) {
+      if(!configuredWorkerPassword || !env.WORKER_SESSION_SECRET) return json({error:'Worker login is not configured. Set WORKER_USERNAME, WORKER_PASSWORD and WORKER_SESSION_SECRET.'},503);
+      let workerToken;
+      try { workerToken=await session(configuredWorkerUser,env.WORKER_SESSION_SECRET); }
+      catch { return json({error:'Worker session could not be created.'},500); }
+      if(!workerToken) return json({error:'Worker session could not be created.'},500);
+      const cookieFlags='; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Strict';
+      const clearFlags='; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict';
+      return jsonWithCookies({ok:true,role:'worker'},200,[
+        WORKER_SESSION_COOKIE+'='+workerToken+cookieFlags,
+        SESSION_COOKIE+'='+clearFlags,
+        CREATOR_SESSION_COOKIE+'='+clearFlags
+      ]);
+    }
     if(!env.ADMIN_SESSION_SECRET || !configuredUser || !configuredPassword) {
       adminAuthLog('LOGIN_CONFIGURATION_FAILED',{sessionSecret:Boolean(env.ADMIN_SESSION_SECRET),username:Boolean(configuredUser),password:Boolean(configuredPassword)});
       return json({error:'Admin login is not configured.'},503);
@@ -2371,13 +2448,23 @@ async function api(request,env,path) {
     catch { adminAuthLog('SESSION_CREATION_FAILED'); return json({error:'Signing failed.'},500); }
     if(!token) { adminAuthLog('SESSION_CREATION_FAILED'); return json({error:'Signing failed.'},500); }
     adminAuthLog('PASSWORD_VERIFICATION_SUCCEEDED',{usernameMatch:true,verified:true});
-    return json({ok:true},200,{'set-cookie':SESSION_COOKIE+'='+token+'; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Lax'});
+    const cookieFlags='; Path=/; Max-Age='+SESSION_MAX_AGE+'; HttpOnly; Secure; SameSite=Lax';
+    const clearFlags='; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict';
+    return jsonWithCookies({ok:true,role:'admin'},200,[
+      SESSION_COOKIE+'='+token+cookieFlags,
+      WORKER_SESSION_COOKIE+'='+clearFlags,
+      CREATOR_SESSION_COOKIE+'='+clearFlags
+    ]);
   }
 
-  if(path === '/logout' && request.method === 'POST') return json({ok:true},200,{'set-cookie':`${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`});
-  if(!(await authenticated(request,env))) return json({error:'Authentication required.'},401);
+  if(path === '/logout' && request.method === 'POST') {
+    const clearFlags='; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict';
+    return jsonWithCookies({ok:true},200,[SESSION_COOKIE+'='+clearFlags,WORKER_SESSION_COOKIE+'='+clearFlags,CREATOR_SESSION_COOKIE+'='+clearFlags]);
+  }
+  if(actorRole!=='worker' && !(await authenticated(request,env))) return json({error:'Authentication required.'},401);
   try {
     if(path === '/me') {
+      if(actorRole==='worker') return json({username:String(env.WORKER_USERNAME||''),displayName:String(env.WORKER_DISPLAY_NAME||env.WORKER_USERNAME||'Worker'),role:'worker'});
       // Session authentication has already succeeded above. Keep identity discovery
       // available even if the optional admin-profile lookup is temporarily unavailable.
       let account=null;
@@ -2557,6 +2644,7 @@ const PUBLIC_REDEEM_TTL = 60; // seconds the edge keeps one snapshot; admin writ
 
 async function redeemIdentity(request, env) {
   if (await authenticated(request, env)) return { role: 'admin', actor: 'admin' };
+  if (await workerAuthenticated(request, env)) return { role: 'worker', actor: 'worker:' + String(env.WORKER_USERNAME||'staff') };
   const creator = await creatorRecord(request, env);
   if (creator) return { role: 'creator', actor: 'creator:' + creator.username };
   return null;
@@ -2610,7 +2698,7 @@ function redeemErrorResponse(error) {
 async function redeemAdminApi(request, env, url) {
   const identity = await redeemIdentity(request, env);
   if (!identity) return json({ error: 'Authentication required.' }, 401);
-  const sub = url.pathname.replace(/^\/api\/(?:admin|creator)\/redeem/, '').replace(/\/$/, '') || '/';
+  const sub = url.pathname.replace(/^\/api\/(?:admin|creator|worker)\/redeem/, '').replace(/\/$/, '') || '/';
   const method = request.method;
 
   try {
@@ -2927,6 +3015,21 @@ export function createExports(manifest) {
     });
   }
 
+  // Worker sessions are checked before route handlers that have their own auth
+  // gates, so a limited staff cookie cannot fall through to an owner-only endpoint.
+  if(url.pathname.startsWith('/api/admin/') && url.pathname!=='/api/admin/login' && await workerAuthenticated(request,env)) {
+    const workerPath=url.pathname.slice('/api/admin'.length);
+    if(!workerApiAllowed(workerPath,request.method)) return json({error:'This area is restricted for Worker accounts.'},403);
+  }
+
+  if(url.pathname.startsWith('/api/worker/')) {
+    if(!(await workerAuthenticated(request,env))) return json({error:'Authentication required.'},401);
+    const workerPath=url.pathname.slice('/api/worker'.length);
+    if(!workerApiAllowed(workerPath,request.method)) return json({error:'This operation is outside Worker permissions.'},403);
+    if(/^\/redeem(?:\/|$)/.test(workerPath)) return redeemAdminApi(request,env,url);
+    return api(request,env,workerPath,'worker');
+  }
+
   // Keep crawl-control files on the static asset path with explicit cache
   // headers. These routes must never fall through to application routing.
   if(
@@ -2969,7 +3072,7 @@ export function createExports(manifest) {
   if (legacyTarget) return Response.redirect(new URL(legacyTarget, url), 301);
 
   if (url.pathname === PUBLIC_REDEEM_PATH) return publicRedeemApi(request, env, ctx, url);
-  if (/^\/api\/(?:admin|creator)\/redeem(?:\/|$)/.test(url.pathname)) return redeemAdminApi(request, env, url);
+  if (/^\/api\/(?:admin|creator|worker)\/redeem(?:\/|$)/.test(url.pathname)) return redeemAdminApi(request, env, url);
   if ((url.pathname === '/redeem-codes' || url.pathname === '/redeem-codes/') && request.method === 'GET') return redeemPage(request, env, ctx, url);
 
 
@@ -3009,6 +3112,7 @@ export function createExports(manifest) {
   }
   if(url.pathname === '/admin/fc-mobile-27.html') {
     if(await authenticated(request,env)) return env.ASSETS.fetch(request);
+    if(await workerAuthenticated(request,env) && workerAdminPageAllowed(url.pathname)) return env.ASSETS.fetch(request);
     return new Response('Not found',{status:404});
   }
   if(url.pathname === '/reset-center' || url.pathname === '/reset-center/') {
@@ -3044,13 +3148,20 @@ export function createExports(manifest) {
   if(url.pathname.startsWith('/api/admin/articles') || url.pathname.startsWith('/api/admin/inbox')) return editorialApi(request,env,url.pathname.slice('/api/admin'.length));
   if(url.pathname.startsWith('/api/creator/articles') || url.pathname.startsWith('/api/creator/inbox')) return editorialApi(request,env,url.pathname.slice('/api/creator'.length));
   if(url.pathname.startsWith('/api/creator/')) { const creatorRoute=await creatorEditorialRoute(request,env,url.pathname.slice('/api/creator'.length)); if(creatorRoute) return creatorRoute; }
-  if(url.pathname.startsWith('/api/admin/')) return api(request,env,url.pathname.slice('/api/admin'.length));
+  if(url.pathname === '/api/admin/login') return api(request,env,url.pathname.slice('/api/admin'.length),'admin');
+  if(url.pathname.startsWith('/api/admin/')) {
+    if(await authenticated(request,env)) return api(request,env,url.pathname.slice('/api/admin'.length),'admin');
+    if(await workerAuthenticated(request,env)) return api(request,env,url.pathname.slice('/api/admin'.length),'worker');
+    return api(request,env,url.pathname.slice('/api/admin'.length),'admin');
+  }
   if(isAdminEntry) {
-    if(await authenticated(request,env) || await creatorAuthenticated(request,env)) return adminDashboard(request,env,url);
+    if(await authenticated(request,env) || await creatorAuthenticated(request,env) || await workerAuthenticated(request,env)) return adminDashboard(request,env,url);
     return new Response(ADMIN_LOGIN_HTML,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }
   if(url.pathname.startsWith('/admin/')) {
     if(await authenticated(request,env)) return env.ASSETS.fetch(request);
+    const worker=await workerAuthenticated(request,env);
+    if(worker && workerAdminPageAllowed(url.pathname)) return env.ASSETS.fetch(request);
     const creator=await creatorAuthenticated(request,env);
     if(creator && url.pathname === '/admin/dashboard.html') return env.ASSETS.fetch(request);
     return new Response('Not found',{status:404});
