@@ -164,7 +164,7 @@ function paintPublic(g) {
     const copy = fair?.querySelector('p');
     if (eyebrow) eyebrow.textContent = 'LIVESTREAM WHEEL RESULT';
     if (heading) heading.textContent = 'How the winner was selected';
-    if (copy) copy.textContent = 'The participant wheel was spun during the livestream. This page records that result; the website’s seeded ranking is not presented as verification of the livestream spin.';
+    if (copy) copy.textContent = 'The participant wheel was spun during the livestream. We’re publishing the livestream result here so everyone can see who won.';
     const commit = $('#gwCommit');
     if (commit) {
       commit.hidden = true;
@@ -198,7 +198,7 @@ function paintResults(g) {
       '<div class="gw-eyebrow">LIVESTREAM WHEEL WINNER</div>' +
       '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px">' +
       '<span aria-hidden="true" style="display:grid;place-items:center;width:54px;height:54px;border:1px solid rgba(246,196,83,.42);border-radius:16px;color:#f6c453;font-size:27px">🏆</span>' +
-      '<div><h3 style="margin:0;color:#ffe7a6;font:700 clamp(25px,4vw,38px)/1.1 var(--gw-display,inherit)">' + esc(winner) + '</h3>' +
+      '<div><h3 style="margin:0;color:#ffe7a6;font:700 clamp(25px,4vw,38px)/1.1 system-ui,sans-serif">' + esc(winner) + '</h3>' +
       '<p style="margin:7px 0 0;color:var(--gw-muted,#a7b4c3)">' + esc(prize) + '</p></div></div>' +
       '<p style="margin:16px 0 0;white-space:pre-line;color:var(--gw-muted,#a7b4c3)">' + esc(note) + '</p>' +
       '<div class="gw-note" style="margin-top:14px">To claim the prize, contact the official giveaway handle listed on this page. The website claim-code flow is not used for this livestream result. Never share your password or pay a fee to claim.</div>' +
