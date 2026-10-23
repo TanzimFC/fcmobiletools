@@ -2419,8 +2419,7 @@ async function api(request,env,path,actorRole='admin') {
     const configuredWorkerUser=String(env.WORKER_USERNAME||'').trim();
     const configuredWorkerPassword=String(env.WORKER_PASSWORD||'');
     if(!suppliedUser || !suppliedPassword) return json({error:'Username and password are required.'},400);
-    if(configuredWorkerUser && configuredWorkerUser===configuredUser) return json({error:'Worker username must be different from the owner username. Check the Worker secrets.'},503);
-    if(configuredWorkerUser && suppliedUser===configuredWorkerUser && suppliedPassword===configuredWorkerPassword) {
+    if(configuredWorkerUser && configuredWorkerUser!==configuredUser && suppliedUser===configuredWorkerUser && suppliedPassword===configuredWorkerPassword) {
       if(!configuredWorkerPassword || !env.WORKER_SESSION_SECRET) return json({error:'Worker login is not configured. Set WORKER_USERNAME, WORKER_PASSWORD and WORKER_SESSION_SECRET.'},503);
       let workerToken;
       try { workerToken=await session(configuredWorkerUser,env.WORKER_SESSION_SECRET); }
