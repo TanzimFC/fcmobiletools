@@ -1,0 +1,348 @@
+---
+/**
+ * One event card. The same markup is used in the Live, Coming up and Ended
+ * sections: the page script re-buckets it as time passes, and CSS decides which
+ * parts show for each data-state. Everything here is server-rendered, so the
+ * page is complete before any JavaScript runs.
+ */
+const { e } = Astro.props;
+const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
+---
+<article
+  class="ev"
+  data-ev
+  data-id={e.id}
+  data-tn={e.tn}
+  data-start={e.startUtc}
+  data-end={e.endUtc || ''}
+  data-state={e.state}
+  style={'--acc:' + e.accent}
+>
+  <div class="ev-media">
+    <div class="ev-art" aria-hidden="true"><b>{e.mono}</b></div>
+    {e.banner && (
+      <img
+        src={e.banner}
+        alt=""
+        width="800"
+        height="450"
+        loading="lazy"
+        decoding="async"
+        referrerpolicy="no-referrer"
+        onerror="this.style.display='none'"
+      />
+    )}
+    <div class="ev-fade"></div>
+    <span class="ev-pill" data-pill><i></i><span data-pill-text>{pill[e.state]}</span></span>
+    <div class="ev-dates">
+      <time data-t={e.startUtc} data-f="day">{e.startLabel}</time>
+      {e.endUtc && <><span aria-hidden="true">→</span><time data-t={e.endUtc} data-f="day">{e.endLabel}</time></>}
+    </div>
+  </div>
+
+  <div class="ev-body">
+    <p class="ev-kicker">{e.kicker}</p>
+    <h3>{e.title}</h3>
+    <p class="ev-sum">{e.summary}</p>
+
+    {e.highlights.length > 0 && (
+      <ul class="ev-hl">
+        {e.highlights.slice(0, 4).map((h) => <li>{h}</li>)}
+      </ul>
+    )}
+
+    <div class="ev-foot">
+      <div class="ev-clock">
+        <div>
+          <small data-label>{e.label}</small>
+          <em data-day>{e.dayText}</em>
+        </div>
+        <strong data-clock role="timer">{e.clock}</strong>
+      </div>
+      <div class="ev-bar" aria-hidden="true"><i data-bar style={'width:' + e.pct + '%'}></i></div>
+    </div>
+
+    <div class="ev-links">
+      <a class="ev-main" href={e.href}>{e.hrefLabel || 'Read more'} <span>→</span></a>
+      {e.guide && (
+        <a class="ev-ext" href={e.guide} target="_blank" rel="noopener noreferrer">
+          {e.guideLabel || 'Guide'} ↗
+        </a>
+      )}
+    </div>
+  </div>
+</article>
+
+<style>
+  .ev {
+    --acc: #62d9ff;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+      #0a1219;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.35s ease;
+    isolation: isolate;
+  }
+  .ev::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(420px 220px at 100% 0%, color-mix(in srgb, var(--acc) 16%, transparent), transparent 70%);
+    pointer-events: none;
+  }
+  .ev:hover {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--acc) 55%, rgba(255, 255, 255, 0.1));
+    box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.85), 0 0 0 1px color-mix(in srgb, var(--acc) 14%, transparent);
+  }
+
+  .ev-media {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #070d13;
+    overflow: hidden;
+  }
+  .ev-media img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+  }
+  .ev:hover .ev-media img { transform: scale(1.05); }
+  .ev-art {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(60% 90% at 25% 15%, color-mix(in srgb, var(--acc) 38%, transparent), transparent 70%),
+      radial-gradient(50% 80% at 90% 100%, color-mix(in srgb, var(--acc) 22%, transparent), transparent 72%),
+      linear-gradient(135deg, #0d1822, #070d13);
+  }
+  .ev-art b {
+    font: 700 clamp(64px, 11vw, 96px) / 1 var(--font-display, system-ui);
+    letter-spacing: -0.06em;
+    color: color-mix(in srgb, var(--acc) 62%, #fff);
+    opacity: 0.55;
+    text-shadow: 0 10px 40px color-mix(in srgb, var(--acc) 55%, transparent);
+  }
+  .ev-fade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(5, 10, 15, 0.1) 0%, rgba(5, 10, 15, 0.2) 45%, rgba(10, 18, 25, 0.96) 100%);
+  }
+
+  .ev-pill {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 11px 6px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(5, 10, 15, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #dbe9ef;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .ev-pill i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .ev[data-state='live'] .ev-pill { color: #86f0bd; border-color: rgba(88, 224, 166, 0.4); }
+  .ev[data-state='live'] .ev-pill i { box-shadow: 0 0 0 4px rgba(88, 224, 166, 0.16), 0 0 12px rgba(88, 224, 166, 0.7); animation: pulse 2s ease-in-out infinite; }
+  .ev[data-state='upcoming'] .ev-pill { color: var(--acc); border-color: color-mix(in srgb, var(--acc) 40%, transparent); }
+  .ev[data-state='ended'] .ev-pill { color: #8a9aa5; }
+
+  .ev-dates {
+    position: absolute;
+    left: 16px;
+    bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #eaf4f8;
+    font: 700 12px / 1 var(--font-body, system-ui);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+  }
+  .ev-dates span { color: var(--acc); }
+
+  .ev-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    padding: 18px 20px 20px;
+  }
+  .ev-kicker {
+    margin: 0;
+    color: var(--acc);
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .ev-body h3 {
+    margin: 0;
+    font: 700 23px / 1.1 var(--font-display, system-ui);
+    letter-spacing: -0.035em;
+    color: #f3fbff;
+  }
+  .ev-sum {
+    margin: 0;
+    color: #9db3bd;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .ev-hl {
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 7px;
+  }
+  .ev-hl li {
+    position: relative;
+    padding-left: 18px;
+    color: #cfe0e7;
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+  .ev-hl li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 0.5em;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    transform: rotate(45deg);
+    background: var(--acc);
+    opacity: 0.9;
+  }
+
+  .ev-foot {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .ev-clock {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ev-clock small {
+    display: block;
+    color: #6f8792;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .ev-clock em {
+    display: block;
+    margin-top: 4px;
+    color: #8da4ae;
+    font-size: 11.5px;
+    font-style: normal;
+  }
+  .ev-clock strong {
+    font: 700 22px / 1 var(--font-display, system-ui);
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    color: #f3fbff;
+    white-space: nowrap;
+  }
+  .ev-bar {
+    height: 5px;
+    margin-top: 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+  }
+  .ev-bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--acc) 60%, #000), var(--acc));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--acc) 70%, transparent);
+    transition: width 1s linear;
+  }
+  .ev[data-state='upcoming'] .ev-bar,
+  .ev[data-state='ended'] .ev-bar { display: none; }
+
+  .ev-links {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .ev-links a {
+    font-size: 12.5px;
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .ev-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-radius: 11px;
+    color: #06131a;
+    background: var(--acc);
+    transition: filter 0.2s ease, transform 0.2s ease;
+  }
+  .ev-main:hover { filter: brightness(1.1); transform: translateX(2px); }
+  .ev-ext { color: #9fb7c2; }
+  .ev-ext:hover { color: var(--acc); }
+
+  /* Ended: calmer, desaturated, no hype */
+  .ev[data-state='ended'] { background: #091017; }
+  .ev[data-state='ended'] .ev-media img { filter: grayscale(0.85) brightness(0.7); }
+  .ev[data-state='ended'] .ev-art b { opacity: 0.3; }
+  .ev[data-state='ended'] .ev-hl { display: none; }
+  .ev[data-state='ended'] .ev-body { padding: 16px 16px 18px; gap: 8px; }
+  .ev[data-state='ended'] h3 { font-size: 19px; }
+  .ev[data-state='ended'] .ev-sum {
+    font-size: 12.5px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+  .ev[data-state='ended'] .ev-ext { display: none; }
+  .ev[data-state='ended'] .ev-clock strong { font-size: 14px; color: #8da4ae; }
+  .ev[data-state='ended'] h3 { color: #c3d2d9; }
+  .ev[data-state='ended'] .ev-main {
+    color: #cfe0e7;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(88, 224, 166, 0), 0 0 12px rgba(88, 224, 166, 0.7); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ev, .ev-media img, .ev-main, .ev-bar i { transition: none; }
+    .ev:hover { transform: none; }
+    .ev:hover .ev-media img { transform: none; }
+    .ev-pill i { animation: none !important; }
+  }
+</style>

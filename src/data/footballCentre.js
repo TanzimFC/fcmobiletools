@@ -177,20 +177,20 @@ export const FOOTBALL_CENTRE_CONTENT = {
   },
   "eventCountdown": {
     "enabled": true,
-    "title": "FC Mobile 3rd Anniversary",
-    "subtitle": "The third-anniversary celebration is live with the FC Mobile 27 Season Update.",
-    "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790493363/fc-mobile-tools/yxuxjsxdsrfzyel58eai.png",
-    "startUtc": "2026-09-24T02:00:00.000Z",
+    "title": "Ballon d'Or",
+    "subtitle": "Four weeks of nominee challenges, Winner’s Portrait exchanges and 124 OVR Drafts.",
+    "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790754887/fc-mobile-tools/iek8oibsiahmut3qefuf.jpg",
+    "startUtc": "2026-10-22T01:00:00.000Z",
     "endUtc": "",
-    "accent": "3RD ANNIVERSARY",
-    "logo": "https://sappurit.github.io/s10img/png/2026-09-17/anniversary27_topup_ANNI27_LOGO.png"
+    "accent": "BALLON D'OR",
+    "logo": ""
   },
   "secondaryEvent": {
     "enabled": true,
     "title": "Unbreakable",
-    "subtitle": "Upcoming FC Mobile major event",
+    "subtitle": "Live FC Mobile side event",
     "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg",
-    "startUtc": "2026-10-15T00:00:00.000Z",
+    "startUtc": "2026-10-15T01:00:00.000Z",
     "dateLabel": "",
     "status": "AUTO",
     "note": "Status and date are calculated automatically from the configured start time."
@@ -199,30 +199,22 @@ export const FOOTBALL_CENTRE_CONTENT = {
     {
       "id": "conmebol-libertadores",
       "title": "CONMEBOL Libertadores",
-      "subtitle": "Upcoming FC Mobile event",
+      "subtitle": "Live FC Mobile side event",
       "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790755003/fc-mobile-tools/ivcmoudljmftrau8bc2o.jpg",
-      "startUtc": "2026-10-15T00:00:00.000Z",
-      "dateLabel": "15 OCT 2026"
-    },
-    {
-      "id": "ballon-dor",
-      "title": "Ballon d'Or",
-      "subtitle": "Upcoming FC Mobile event",
-      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790754887/fc-mobile-tools/iek8oibsiahmut3qefuf.jpg",
-      "startUtc": "2026-10-22T00:00:00.000Z",
-      "dateLabel": "22 OCT 2026"
+      "startUtc": "2026-10-16T01:00:00.000Z",
+      "dateLabel": "16 OCT 2026"
     }
   ],
   "divisionRivalsReset": {
     "enabled": true,
-    "title": "Division Rivals Anniversary Season",
+    "title": "Division Rivals season",
     "anchorUtc": "2026-09-24T01:00:00.000Z",
     "cycleDays": 28,
-    "label": "Anniversary season reset on October 22, 2026",
-    "note": "The Anniversary Division Rivals season runs from the September 24 Season 27 launch to the October 22 reset."
+    "label": "Next Division Rivals reset on November 19, 2026",
+    "note": "Division Rivals resets every 28 days. The Anniversary season ended on October 22; the next reset lands on November 19."
   },
   "maintenanceGift": {
-    "enabled": true,
+    "enabled": false,
     "title": "Season 27 maintenance gift",
     "note": "Maintenance is over. Log in to claim.",
     "items": [
@@ -616,5 +608,219 @@ export const FOOTBALL_CENTRE_CONTENT = {
       }
     ],
     "lastUpdated": "2026-10-18T17:15:00.000Z"
-  }
+  },
+  "eventsCatalog": [
+    {
+      "id": "ballon-dor",
+      "slot": "main",
+      "tier": "main",
+      "title": "Ballon d'Or",
+      "kicker": "Main event · 4 weeks",
+      "startUtc": "2026-10-22T01:00:00.000Z",
+      "endUtc": "2026-11-19T01:00:00.000Z",
+      "summary": "Reveal the 2026 nominees with league goal challenges, play matches inspired by Ronaldinho, Cannavaro and Kaká, and chase 124 OVR Ballon d’Or Drafts.",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790754887/fc-mobile-tools/iek8oibsiahmut3qefuf.jpg",
+      "accent": "#ffd56f",
+      "highlights": [
+        "Nominees chapter · league goal challenges",
+        "Winner’s Portrait exchanges (Ronaldo, Shevchenko)",
+        "6 weekly Drafts topping out at 124 OVR",
+        "Weekly 124 OVR Signature Box"
+      ],
+      "href": "/blog/",
+      "hrefLabel": "Latest event news",
+      "guide": "https://www.fifamobileguide.com/ballon-dor-27",
+      "guideLabel": "Full rewards guide",
+      "confidence": "guide"
+    },
+    {
+      "id": "unbreakable",
+      "slot": "secondary",
+      "tier": "side",
+      "title": "Unbreakable",
+      "kicker": "Side event · 2 weeks",
+      "startUtc": "2026-10-15T01:00:00.000Z",
+      "endUtc": "2026-10-29T01:00:00.000Z",
+      "summary": "Earn Unbreakable Tokens from Daily Training skill games and restore the memories of two Mystery Unbreakable players, one revealed each week.",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790323741/fc-mobile-tools/nql89jl6h2udu51cquje.jpg",
+      "accent": "#9b8cff",
+      "highlights": [
+        "3,200 tokens clears the full reward track",
+        "118 LB Shaw (Rank 4) on the track",
+        "Second Mystery Player unlocked 22 Oct",
+        "Two weekly Draft pools"
+      ],
+      "href": "/blog/fc-mobile-unbreakable-2026-drafts/",
+      "hrefLabel": "Unbreakable Drafts",
+      "guide": "https://www.fifamobileguide.com/unbreakable",
+      "guideLabel": "Full rewards guide",
+      "confidence": "guide"
+    },
+    {
+      "id": "conmebol-libertadores",
+      "tier": "side",
+      "title": "CONMEBOL Libertadores",
+      "kicker": "Side event · 2 weeks",
+      "startUtc": "2026-10-16T01:00:00.000Z",
+      "endUtc": "2026-10-30T01:00:00.000Z",
+      "summary": "Skill games and matches earn Libertadores Tokens for an 11-player team, plus a Vote Challenge with a 9,900-vote reward store.",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790755003/fc-mobile-tools/ivcmoudljmftrau8bc2o.jpg",
+      "accent": "#58dca8",
+      "highlights": [
+        "Buy all 11 team players for 118 CB Cuesta (Rank 4)",
+        "Vote Challenge: win 5 matches for up to 1,000 votes",
+        "2 FC Draft Vouchers at 6 players"
+      ],
+      "href": "/blog/fc-mobile-conmebol-libertadores-2026-coming-soon/",
+      "hrefLabel": "Libertadores Drafts",
+      "guide": "https://www.fifamobileguide.com/conmebol-libertadores-27",
+      "guideLabel": "Full rewards guide",
+      "confidence": "guide"
+    },
+    {
+      "id": "3rd-anniversary",
+      "tier": "main",
+      "title": "3rd Anniversary",
+      "kicker": "Main event · 4 weeks",
+      "startUtc": "2026-09-24T02:00:00.000Z",
+      "endUtc": "2026-10-22T01:00:00.000Z",
+      "summary": "The month-long celebration that launched with the FC Mobile 27 Season Update, with community-voted players, Ginga matches and six Drafts.",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1790493363/fc-mobile-tools/yxuxjsxdsrfzyel58eai.png",
+      "accent": "#f6c453",
+      "logo": "https://sappurit.github.io/s10img/png/2026-09-17/anniversary27_topup_ANNI27_LOGO.png",
+      "highlights": [
+        "Launched with Gauntlet Mode and Game Plans",
+        "Community-voted player pool",
+        "Drafts topping out at 122 OVR"
+      ],
+      "href": "/blog/fc-mobile-3rd-anniversary-leaked-player-pools-weeks-1-4/",
+      "hrefLabel": "Anniversary player pools",
+      "guide": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/3rd-anniversary",
+      "guideLabel": "EA announcement",
+      "confidence": "official"
+    },
+    {
+      "id": "stellar-libra",
+      "tier": "side",
+      "title": "Stellar: Libra",
+      "kicker": "First Stellar series",
+      "startUtc": "2026-09-24T02:00:00.000Z",
+      "endUtc": "2026-10-22T01:00:00.000Z",
+      "summary": "The first zodiac series in the new Stellar format: weekly Libra Tokens, a Libra’s Choice reward track and 117+ OVR Stellar Drafts.",
+      "banner": "",
+      "accent": "#c9a7ff",
+      "highlights": [
+        "2 Libra Tokens per week",
+        "Stellar Draft Vouchers",
+        "More zodiac series are expected"
+      ],
+      "href": "/blog/fc-mobile-27-stellar-libra-event/",
+      "hrefLabel": "Stellar Libra guide",
+      "guide": "https://www.fifamobileguide.com/stellar",
+      "guideLabel": "Series overview",
+      "confidence": "guide"
+    },
+    {
+      "id": "season-recap-trivia",
+      "tier": "trivia",
+      "title": "Trivia: Season Recap",
+      "kicker": "Extra Time trivia",
+      "startUtc": "2026-10-08T01:00:00.000Z",
+      "endUtc": "2026-10-15T01:00:00.000Z",
+      "summary": "A week of daily questions on the biggest moments of the 2025/26 football season for Extra Time: Season Recap Tokens.",
+      "banner": "",
+      "accent": "#62d9ff",
+      "highlights": [
+        "Daily questions in the Extra Time menu"
+      ],
+      "href": "/trivia/extra-time/season-recap/",
+      "hrefLabel": "Season Recap answers",
+      "confidence": "guide"
+    },
+    {
+      "id": "numero",
+      "tier": "side",
+      "title": "Numero",
+      "kicker": "Three-week number series",
+      "startUtc": "2026-08-27T01:00:00.000Z",
+      "endUtc": "2026-09-24T01:00:00.000Z",
+      "summary": "A weekly spotlight on iconic shirt numbers: Number 7, Number 4 and Number 10, with Draft pools and Daily Training objectives.",
+      "banner": "",
+      "accent": "#ff9d76",
+      "highlights": [
+        "Week 1 · Number 7",
+        "Week 2 · Number 4",
+        "Week 3 · Number 10"
+      ],
+      "href": "/blog/fc-mobile-numero-week-3-number-10/",
+      "hrefLabel": "Numero Week 3",
+      "confidence": "guide"
+    }
+  ],
+  "eventsTimeline": [
+    {
+      "utc": "2026-10-25T01:00:00.000Z",
+      "event": "ballon-dor",
+      "label": "Ballon d’Or Draft B",
+      "detail": "124 CB Beckenbauer · 123 ST Haaland · 122 CDM Rice",
+      "kind": "draft",
+      "confidence": "community"
+    },
+    {
+      "utc": "2026-10-29T01:00:00.000Z",
+      "event": "ballon-dor",
+      "label": "Ballon d’Or Draft C + 70 Years Archive",
+      "detail": "124 Kane · 123 Mbappé · 122 Vitinha",
+      "kind": "draft",
+      "confidence": "community"
+    },
+    {
+      "utc": "2026-10-29T01:00:00.000Z",
+      "event": "unbreakable",
+      "label": "Unbreakable ends",
+      "detail": "Spend your Unbreakable Tokens before the reset.",
+      "kind": "end",
+      "confidence": "guide"
+    },
+    {
+      "utc": "2026-10-30T01:00:00.000Z",
+      "event": "conmebol-libertadores",
+      "label": "CONMEBOL Libertadores ends",
+      "detail": "Use your Votes and Tokens before the reset.",
+      "kind": "end",
+      "confidence": "guide"
+    },
+    {
+      "utc": "2026-11-01T01:00:00.000Z",
+      "event": "ballon-dor",
+      "label": "Ballon d’Or Draft D",
+      "detail": "124 Lamine Yamal · 123 Rodri · 122 Nuno Mendes",
+      "kind": "draft",
+      "confidence": "community"
+    },
+    {
+      "utc": "2026-11-05T01:00:00.000Z",
+      "event": "ballon-dor",
+      "label": "Ballon d’Or Draft E + Winner’s Portrait II",
+      "detail": "124 Cannavaro · 123 Baggio · 122 Papin",
+      "kind": "draft",
+      "confidence": "community"
+    },
+    {
+      "utc": "2026-11-08T01:00:00.000Z",
+      "event": "ballon-dor",
+      "label": "Ballon d’Or Draft F",
+      "detail": "124 Gullit · 123 Hakimi · 122 Kvaratskhelia",
+      "kind": "draft",
+      "confidence": "community"
+    },
+    {
+      "utc": "2026-11-19T01:00:00.000Z",
+      "event": "ballon-dor",
+      "label": "Ballon d’Or ends · Division Rivals reset",
+      "detail": "Both land on the same reset.",
+      "kind": "end",
+      "confidence": "guide"
+    }
+  ]
 };
