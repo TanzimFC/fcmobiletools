@@ -53,14 +53,9 @@ export function shapeGiveaway(row, entries, official, now = Date.now()) {
   const bonusWinners = ms.bonusWinners;
   const kind = KINDS[row.kind] || KINDS.custom;
   const revealed = Boolean(row.seed_revealed_at);
-  const livestreamResult = Boolean(row.results_published_at && row.livestream_winner_name && row.livestream_winner_source === 'livestream-wheel')
-    ? {
-        winnerName: String(row.livestream_winner_name).slice(0, 80),
-        source: 'livestream-wheel',
-        note: String(row.livestream_winner_note || '').slice(0, 300),
-        participantCount: Math.max(0, Number(row.livestream_participant_count || 0)),
-        recordedAt: row.livestream_result_recorded_at || null
-      }
+  // Public pages receive only the final published winner, not internal result provenance.
+  const announcedWinner = Boolean(row.results_published_at && row.livestream_winner_name && row.livestream_winner_source === 'livestream-wheel')
+    ? { name: String(row.livestream_winner_name).slice(0, 80) }
     : null;
   return {
     id: row.id, slug: row.slug, kind: row.kind, kindLabel: kind.label, title: row.title, tagline: row.tagline,
@@ -85,9 +80,9 @@ export function shapeGiveaway(row, entries, official, now = Date.now()) {
     rulesVersion: row.rules_version,
     fairness: {
       seedCommit: row.seed_commit || '', entriesHash: row.entries_hash || '', drawnAt: row.drawn_at,
-      resultsPublished: Boolean(row.results_published_at), seedRevealed: revealed && !livestreamResult
+      resultsPublished: Boolean(row.results_published_at), seedRevealed: revealed && !announcedWinner
     },
-    livestreamResult,
+    announcedWinner,
     official
   };
 }
@@ -144,17 +139,14 @@ export async function loadPublicList(env, rest) {
   const list = await Promise.all(rows.map(async (row) => {
     const g = publicPreview(row, shapeGiveaway(row, await entryCount(env, rest, row.id), official));
     if (row.results_published_at) {
-      if (g.livestreamResult) {
+      if (g.announcedWinner) {
         g.results = {
-          source: 'livestream-wheel',
-          participantCount: g.livestreamResult.participantCount,
-          note: g.livestreamResult.note,
           winners: [{
             slot: 1,
             rank: null,
-            name: g.livestreamResult.winnerName,
+            name: g.announcedWinner.name,
             prize: Number(row.prize_cents || 0) > 0 ? money(row.prize_cents, row.currency) : String(row.prize_label || 'In-game reward').split(' · ')[0],
-            status: 'livestream'
+            status: 'announced'
           }]
         };
       } else {
@@ -178,17 +170,14 @@ export async function loadPublicOne(env, rest, slug) {
   const [entries, official] = await Promise.all([entryCount(env, rest, row.id), loadOfficial(env, rest)]);
   const g = publicPreview(row, shapeGiveaway(row, entries, official));
   if (row.results_published_at) {
-    if (g.livestreamResult) {
+    if (g.announcedWinner) {
       g.results = {
-        source: 'livestream-wheel',
-        participantCount: g.livestreamResult.participantCount,
-        note: g.livestreamResult.note,
         winners: [{
           slot: 1,
           rank: null,
-          name: g.livestreamResult.winnerName,
+          name: g.announcedWinner.name,
           prize: Number(row.prize_cents || 0) > 0 ? money(row.prize_cents, row.currency) : String(row.prize_label || 'In-game reward').split(' · ')[0],
-          status: 'livestream'
+          status: 'announced'
         }]
       };
     } else {
