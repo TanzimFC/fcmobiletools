@@ -16,6 +16,9 @@ let g = null;
 let failed = false;
 try { g = await loadPublicOne(env, ssrSupabaseRest, slug); } catch (e) { failed = true; console.error('[GIVEAWAY_PAGE]', e?.message); }
 if (!g) { Astro.response.status = failed ? 503 : 404; Astro.response.headers.set('cache-control', 'no-store'); }
+Astro.response.headers.set('cache-control', 'no-store, max-age=0, must-revalidate');
+Astro.response.headers.set('cdn-cache-control', 'no-store');
+Astro.response.headers.set('cloudflare-cdn-cache-control', 'no-store');
 
 const title = g ? g.title + ' | FCMobiletools' : 'Giveaway not found';
 const description = g
@@ -53,7 +56,7 @@ const schema = g ? [
               <span class="gw-detail-chip neutral">No real cash value</span>
             </div>
             <div class="gw-bignum">{g.prize.display}</div>
-            <div class="gw-note" style="font-size:13px;line-height:1.8">{g.prize.label} · <span id="gwWinnersN">{g.winners.total} {g.winners.total === 1 ? 'winner' : 'winners'}</span> · <b id="gwEntries" style="color:#fff">{g.stats.entries}</b> entries so far</div>
+            <div class="gw-note" style="font-size:13px;line-height:1.8">{g.prize.label} · <span id="gwWinnersN">{g.winners.total} {g.winners.total === 1 ? 'winner' : 'winners'}</span> · <b id="gwEntries" style="color:#fff">{g.stats.entries}</b> website entries</div>
             <div class="gw-count" id="gwCount" aria-live="off">
               {g.previewOnly && <div style="min-width:0;padding:12px 18px"><strong style="font-size:18px">Entry opens soon</strong><div class="gw-note" style="margin-top:4px">Preview only · in-game reward · no real cash value</div></div>}
             </div>
@@ -104,6 +107,7 @@ const schema = g ? [
                 <p>The participant wheel was spun during the livestream. We’re publishing the livestream result here so everyone can see who won.</p>
                 <div class="gw-note">Names listed on the participant wheel</div>
                 <div class="gw-mono">{g.livestreamResult.participantCount || '—'}</div>
+                <p class="gw-note">This wheel count is separate from the website entries shown above.</p>
               </> : <>
                 <div class="gw-eyebrow">DRAW TRANSPARENCY</div><h3 id="fairH" style="margin-top:9px">Provably fair draw</h3>
                 <p>Before entries opened we locked the draw by publishing a fingerprint of a secret seed. When the draw is done we reveal the seed and the frozen entry list, and you can re-run the whole draw in your browser. Every eligible person receives exactly one entry. There are no bonus tickets for daily activity, shares or referrals. The draw gives every eligible entry equal weight, then uses the published seed and frozen entry list to determine the order.</p>

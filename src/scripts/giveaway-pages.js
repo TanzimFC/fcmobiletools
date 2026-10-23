@@ -194,6 +194,10 @@ function paintResults(g) {
     const winner = g.livestreamResult?.winnerName || winners[0]?.name || 'Winner';
     const prize = winners[0]?.prize || g.prize.display;
     const note = g.results.note || g.livestreamResult?.note || 'The winner was selected by the participant wheel during the livestream.';
+    const wheelCount = Math.max(0, Number(g.livestreamResult?.participantCount || g.results.participantCount || 0));
+    const websiteEntryCount = Math.max(0, Number(g.stats?.entries || 0));
+    const countNote = (wheelCount ? wheelCount.toLocaleString() + ' names on the livestream wheel' : 'Livestream participant count recorded') +
+      ' · ' + websiteEntryCount.toLocaleString() + ' website entries (separate count).';
     host.innerHTML = '<div class="gw-panel" style="border-color:rgba(246,196,83,.38);background:linear-gradient(145deg,rgba(246,196,83,.09),rgba(13,24,35,.82))">' +
       '<div class="gw-eyebrow">LIVESTREAM WHEEL WINNER</div>' +
       '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px">' +
@@ -201,6 +205,7 @@ function paintResults(g) {
       '<div><h3 style="margin:0;color:#ffe7a6;font:700 clamp(25px,4vw,38px)/1.1 system-ui,sans-serif">' + esc(winner) + '</h3>' +
       '<p style="margin:7px 0 0;color:var(--gw-muted,#a7b4c3)">' + esc(prize) + '</p></div></div>' +
       '<p style="margin:16px 0 0;white-space:pre-line;color:var(--gw-muted,#a7b4c3)">' + esc(note) + '</p>' +
+      '<div class="gw-note" style="margin-top:12px">' + esc(countNote) + '</div>' +
       '<div class="gw-note" style="margin-top:14px">To claim the prize, contact the official giveaway handle listed on this page. The website claim-code flow is not used for this livestream result. Never share your password or pay a fee to claim.</div>' +
       '</div>';
     return;

@@ -15,6 +15,9 @@ let g = null;
 let failed = false;
 try { g = await loadPublicOne(env, ssrSupabaseRest, slug); } catch (e) { failed = true; console.error('[GIVEAWAY_DRAW_PAGE]', e?.message); }
 if (!g) { Astro.response.status = failed ? 503 : 404; Astro.response.headers.set('cache-control', 'no-store'); }
+Astro.response.headers.set('cache-control', 'no-store, max-age=0, must-revalidate');
+Astro.response.headers.set('cdn-cache-control', 'no-store');
+Astro.response.headers.set('cloudflare-cdn-cache-control', 'no-store');
 
 const title = g ? 'Watch the draw: ' + g.title + ' | FCMobiletools' : 'Draw not found';
 const description = g
@@ -23,7 +26,7 @@ const description = g
     : 'Watch how the winners of ' + g.title + ' were picked: sealed seed, frozen entries, public ranking and a draw you can verify yourself.'
   : 'This draw is not available.';
 const steps = g?.livestreamResult ? [
-  ['Participants loaded', 'The supplied participant names were included on the wheel.'],
+  ['Participants loaded', String(g.livestreamResult.participantCount || '—') + ' names were listed on the livestream wheel. The ' + Number(g.stats.entries || 0).toLocaleString() + ' website entries are a separate count.'],
   ['Live spin', 'The participant wheel was spun during the livestream.'],
   ['Winner revealed', g.livestreamResult.winnerName + ' won the Ballon d’Or Star Pass.']
 ] : [
