@@ -458,6 +458,12 @@ export function openDrawStage(opts = {}) {
         '<div class="ds-chip">' + esc(chipText) + '</div>' +
         '<div class="ds-ticket"><div class="ds-stub"><small>Slot</small><b>#' + esc(w.slot || i + 1) + '</b></div><div class="ds-main"><div class="ds-reel"><div class="ds-reel-in">' + names.map((n) => '<span>' + esc(n) + '</span>').join('') + '</div></div>' +
         '<div class="ds-prize">' + esc(w.prize || o.prize || 'In-game reward') + '</div></div></div>'));
+      // Wait for the scene's 0.7s entrance transform to finish before measuring the reel.
+      // Measuring during its scale(.985) phase skews long-reel landing by multiple rows.
+      const entranceAnimations = typeof el.getAnimations === 'function' ? el.getAnimations() : [];
+      if (entranceAnimations.length) await Promise.all(entranceAnimations.map((animation) => animation.finished.catch(() => {})));
+      else await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      check();
       const inner = $('.ds-reel-in', el); const viewport = $('.ds-reel', el); const ticket = $('.ds-ticket', el);
       const recordedSpinMs = o.mode === 'recorded' ? Math.min(14000, Math.max(7000, 2500 + names.length * 45)) : 0;
       const spin = rm ? 300 : Math.max(1500, step.ms * 0.5, recordedSpinMs);
@@ -471,9 +477,27 @@ export function openDrawStage(opts = {}) {
       const a = anim(inner, [{ transform: 'translateY(0px)' }, { transform: 'translateY(' + targetY + 'px)' }], { duration: spin, easing: 'cubic-bezier(.14,.82,.12,1)', fill: 'forwards' });
       try { await a.finished; } catch { /* cancelled */ } finally { clearInterval(tickTimer); }
       check();
-      // Freeze the reel at the final item so it cannot drift or reveal an earlier candidate.
-      inner.style.transform = 'translateY(' + targetY + 'px)';
+      // Measure the real landing while the reel animation is still applied. Correct any residual
+      // subpixel/layout drift, then remove the WAAPI effect and lock the corrected transform inline.
+      const landedViewport = viewport.getBoundingClientRect();
+      const landedRow = finalRow.getBoundingClientRect();
+      const residualY = (landedViewport.top + landedViewport.height / 2) - (landedRow.top + landedRow.height / 2);
+      const lockedY = targetY + residualY;
       a.cancel();
+      inner.style.transform = 'translateY(' + lockedY + 'px)';
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      check();
+      const lockedViewport = viewport.getBoundingClientRect();
+      const lockedRow = finalRow.getBoundingClientRect();
+      const finalError = Math.abs((lockedViewport.top + lockedViewport.height / 2) - (lockedRow.top + lockedRow.height / 2));
+      if (finalError > 2) {
+        // A final deterministic fallback handles fractional browser zoom and late font/layout changes.
+        const rowStep = finalRow.getBoundingClientRect().height;
+        if (rowStep > 0) {
+          const extra = (lockedViewport.top + lockedViewport.height / 2) - (lockedRow.top + lockedRow.height / 2);
+          inner.style.transform = 'translateY(' + (lockedY + extra) + 'px)';
+        }
+      }
       const chip = $('.ds-chip', el);
       if (o.mode === 'recorded' && chip) chip.textContent = 'WINNER';
       ticket.classList.add('landed'); flash(); sound.win(); pool.alpha = 1;
