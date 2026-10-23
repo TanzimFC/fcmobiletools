@@ -441,23 +441,33 @@ export function openDrawStage(opts = {}) {
       const names = o.mode === 'recorded' && Array.isArray(o.participantNames) && o.participantNames.length ? o.participantNames.slice() : Array.from({ length: 26 }, fillerName);
       const winnerName = String(w.name || 'Winner');
       if (o.mode === 'recorded') {
-        // Move the winner's listed name to the final slot, so it appears once and stays final.
-        const winnerAt = names.findIndex((n) => String(n).trim().toLocaleLowerCase() === winnerName.trim().toLocaleLowerCase());
-        if (winnerAt >= 0) names.splice(winnerAt, 1);
+        // Keep the announced winner out of the passing names, reshuffle everyone else, then lock the winner into slot #1.
+        const winnerKey = winnerName.trim().toLocaleLowerCase();
+        const others = names.filter((n) => String(n).trim().toLocaleLowerCase() !== winnerKey);
+        for (let j = others.length - 1; j > 0; j--) {
+          const k = Math.floor(Math.random() * (j + 1));
+          [others[j], others[k]] = [others[k], others[j]];
+        }
+        names.length = 0;
+        names.push(...others, winnerName);
+      } else {
+        names.push(winnerName);
       }
-      names.push(winnerName);
       const chipText = o.mode === 'recorded' ? 'SPIN IN PROGRESS' : label;
       const el = show(h('div', 'ds-reveal',
         '<div class="ds-chip">' + esc(chipText) + '</div>' +
         '<div class="ds-ticket"><div class="ds-stub"><small>Slot</small><b>#' + esc(w.slot || i + 1) + '</b></div><div class="ds-main"><div class="ds-reel"><div class="ds-reel-in">' + names.map((n) => '<span>' + esc(n) + '</span>').join('') + '</div></div>' +
         '<div class="ds-prize">' + esc(w.prize || o.prize || 'In-game reward') + '</div></div></div>'));
-      const inner = $('.ds-reel-in', el); const ticket = $('.ds-ticket', el);
-      const rh = inner.firstElementChild.getBoundingClientRect().height || 84;
+      const inner = $('.ds-reel-in', el); const viewport = $('.ds-reel', el); const ticket = $('.ds-ticket', el);
       const recordedSpinMs = o.mode === 'recorded' ? Math.min(14000, Math.max(7000, 2500 + names.length * 45)) : 0;
       const spin = rm ? 300 : Math.max(1500, step.ms * 0.5, recordedSpinMs);
       log('Drawing ' + label.toLowerCase()); sound.whoosh();
       let ticks = 0; const tickTimer = setInterval(() => { if (!S.paused && ticks < 22) { sound.tick(); ticks += 1; } }, spin / 24);
-      const targetY = -(names.length - 1) * rh;
+      // Measure the real viewport and final row. Fixed-height arithmetic can land on a nearby name after responsive layout rounding.
+      const finalRow = inner.lastElementChild;
+      const viewportRect = viewport.getBoundingClientRect();
+      const finalRect = finalRow.getBoundingClientRect();
+      const targetY = Math.round((viewportRect.top + viewportRect.height / 2) - (finalRect.top + finalRect.height / 2));
       const a = anim(inner, [{ transform: 'translateY(0px)' }, { transform: 'translateY(' + targetY + 'px)' }], { duration: spin, easing: 'cubic-bezier(.14,.82,.12,1)', fill: 'forwards' });
       try { await a.finished; } catch { /* cancelled */ } finally { clearInterval(tickTimer); }
       check();
