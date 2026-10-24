@@ -2748,6 +2748,10 @@ async function recordNotificationCampaign(db,campaign,result,errorText) {
 }
 async function autoRedeemPush(env,db,info) {
   if(!String(env.ONESIGNAL_REST_API_KEY||'').trim()) { console.warn('[ONESIGNAL_AUTO_REDEEM] Skipped: ONESIGNAL_REST_API_KEY is not configured.'); return; }
+  await ensureNotificationCampaignSchema(db);
+  const dedupeKey='redeem:'+String(info.dedupe||'').slice(0,120);
+  const alreadySent=await db.prepare("SELECT id FROM notification_campaigns WHERE dedupe_key=? AND status='sent' LIMIT 1").bind(dedupeKey).first();
+  if(alreadySent) return;
   const isBulk=info.kind==='redeem_bulk';
   const reward=String(info.reward||'FC Mobile rewards').trim().slice(0,90);
   const campaign={
@@ -2757,7 +2761,7 @@ async function autoRedeemPush(env,db,info) {
       ? (Math.max(1,Number(info.count)||1)+' new code'+(Number(info.count)===1?'':'s')+' added. Check rewards, region and expiry, then claim yours.')
       : ('A new code is live for '+reward+'. Check the region and expiry, then claim your rewards.'),
     launchUrl:'https://fcmobiletools.online/redeem-codes/',topic:'redeem_codes',kind:'automation',createdBy:info.actor||'admin',
-    dedupeKey:'redeem:'+String(info.dedupe||'').slice(0,120)
+    dedupeKey
   };
   try {
     const sent=await sendOneSignalPush(env,campaign);
@@ -2803,7 +2807,7 @@ async function notificationStudioApi(request,env,url) {
 
 // Handles /api/admin/redeem* and /api/creator/redeem*. Admins and creators can
 // read and write; only admins can delete.
-async function redeemAdminApi(request, env, url) {
+async function redeemAdminApi(request, env, url, ctx) {
   const identity = await redeemIdentity(request, env);
   if (!identity) return json({ error: 'Authentication required.' }, 401);
   const sub = url.pathname.replace(/^\/api\/(?:admin|creator|worker)\/redeem/, '').replace(/\/$/, '') || '/';
@@ -2851,7 +2855,7 @@ async function redeemAdminApi(request, env, url) {
       return json({ error: 'Not found.' }, 404);
     }
 
-    if (autoPush) await autoRedeemPush(env, db, autoPush);
+    if (autoPush) { const pushTask = autoRedeemPush(env, db, autoPush); if (ctx?.waitUntil) ctx.waitUntil(pushTask); else await pushTask; }
     await purgePublicRedeemCache(url.origin);
     return json({ ok: true, ...result });
   } catch (error) {
@@ -3145,7 +3149,7 @@ export function createExports(manifest) {
     if(!(await workerAuthenticated(request,env))) return json({error:'Authentication required.'},401);
     const workerPath=url.pathname.slice('/api/worker'.length);
     if(!workerApiAllowed(workerPath,request.method)) return json({error:'This operation is outside Worker permissions.'},403);
-    if(/^\/redeem(?:\/|$)/.test(workerPath)) return redeemAdminApi(request,env,url);
+    if(/^\/redeem(?:\/|$)/.test(workerPath)) return redeemAdminApi(request,env,url,ctx);
     return api(request,env,workerPath,'worker');
   }
 
@@ -3191,7 +3195,7 @@ export function createExports(manifest) {
   if (legacyTarget) return Response.redirect(new URL(legacyTarget, url), 301);
 
   if (url.pathname === PUBLIC_REDEEM_PATH) return publicRedeemApi(request, env, ctx, url);
-  if (/^\/api\/(?:admin|creator|worker)\/redeem(?:\/|$)/.test(url.pathname)) return redeemAdminApi(request, env, url);
+  if (/^\/api\/(?:admin|creator|worker)\/redeem(?:\/|$)/.test(url.pathname)) return redeemAdminApi(request, env, url, ctx);
   if ((url.pathname === '/redeem-codes' || url.pathname === '/redeem-codes/') && request.method === 'GET') return redeemPage(request, env, ctx, url);
 
 
