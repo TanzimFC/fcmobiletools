@@ -166,10 +166,10 @@ let currentSummary = readBootstrap();
 if (currentSummary?.developmentFallback) {
   renderSummary(currentSummary);
 } else {
+  let refreshInFlight = null;
   renderSummary(currentSummary);
   refresh();
 
-  let refreshInFlight = null;
   async function refresh() {
     if (refreshInFlight) return refreshInFlight;
     refreshInFlight = (async () => {
