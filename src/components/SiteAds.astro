@@ -9,14 +9,11 @@ const blockedByPrefix = SITE_ADS.excludedPathPrefixes.some((prefix) =>
 const canRunGiveawayAds = isGiveawayPage && !blockedByPrefix;
 ---
 
-{SITE_ADS.enabled && canRunGiveawayAds && (
+{SITE_ADS.enabled && canRunGiveawayAds && SITE_ADS.vignette?.enabled && (
   <script define:vars={{ config: SITE_ADS }}>
     (() => {
       if (window.__FCMOBILETOOLS_SITE_ADS__) return;
       window.__FCMOBILETOOLS_SITE_ADS__ = true;
-
-      const pending = new Map();
-      const loaded = new Set();
 
       const hasAdvertisingConsent = () => {
         const name = 'fcmobiletools_consent=';
@@ -37,98 +34,61 @@ const canRunGiveawayAds = isGiveawayPage && !blockedByPrefix;
           const last = Number(localStorage.getItem(key) || 0);
           return !Number.isFinite(last) || last <= 0 || Date.now() - last >= capMinutes * 60 * 1000;
         } catch {
-          // Storage restrictions must not prevent In-Page Push from loading.
           return true;
         }
       };
 
-      const markVignetteLoaded = () => {
-        try {
-          localStorage.setItem('fcmt:ads:last-vignette:v2', String(Date.now()));
-        } catch {}
-      };
-
-      const appendFormat = (format, attempt = 0) => {
+      const appendVignette = () => {
+        const format = config.vignette;
         if (!hasAdvertisingConsent() || document.visibilityState !== 'visible') return;
-        if (loaded.has(format.key) || document.querySelector('script[data-fcmt-ad-format="' + format.key + '"]')) return;
-        if (!document.head) return;
-        if (format.key === 'vignette' && !canShowVignette()) return;
+        if (!format?.enabled || !format?.src || !format?.zone || !document.head) return;
+        if (document.querySelector('script[data-fcmt-ad-format="vignette"]') || !canShowVignette()) return;
 
         const script = document.createElement('script');
         script.setAttribute('data-cfasync', 'false');
-        script.setAttribute('data-fcmt-ad-format', format.key);
+        script.setAttribute('data-fcmt-ad-format', 'vignette');
+        script.setAttribute('data-zone', format.zone);
         script.async = true;
-
-        if (format.key === 'vignette') {
-          script.setAttribute('data-zone', format.settings.zone);
-          script.src = format.settings.src;
-        } else if (format.key === 'push') {
-          script.src = format.settings.src + '?z=' + encodeURIComponent(format.settings.zone);
-        } else if (format.key === 'inPagePush') {
-          script.setAttribute('data-zone', format.settings.zone);
-          script.src = format.settings.src;
-        } else {
-          return;
-        }
-
+        script.src = format.src;
         script.addEventListener('load', () => {
-          loaded.add(format.key);
-          document.documentElement.dataset.siteAdFormatLoaded = format.key;
-          if (format.key === 'vignette') markVignetteLoaded();
+          document.documentElement.dataset.siteAdFormatLoaded = 'vignette';
+          try { localStorage.setItem('fcmt:ads:last-vignette:v2', String(Date.now())); } catch {}
         }, { once: true });
-
         script.addEventListener('error', () => {
-          document.documentElement.dataset.siteAdFormatError = format.key;
+          document.documentElement.dataset.siteAdFormatError = 'vignette';
           script.remove();
-          if (attempt < 1 && hasAdvertisingConsent()) {
-            pending.set(format.key, window.setTimeout(() => {
-              pending.delete(format.key);
-              appendFormat(format, attempt + 1);
-            }, 5000));
-          }
         }, { once: true });
-
-        // Keep the Monetag tag in <head> with Rocket Loader bypass enabled.
         document.head.appendChild(script);
       };
 
-      const scheduleFormat = (format) => {
-        if (!format.settings?.enabled || !format.settings?.src || !format.settings?.zone) return;
-        if (loaded.has(format.key) || document.querySelector('script[data-fcmt-ad-format="' + format.key + '"]') || pending.has(format.key)) return;
-        const delay = Math.max(5000, Math.min(300000, Number(format.settings.delayMs) || 30000));
-        pending.set(format.key, window.setTimeout(() => {
-          pending.delete(format.key);
-          const injectWhenIdle = () => appendFormat(format);
-          if (typeof window.requestIdleCallback === 'function') {
-            window.requestIdleCallback(injectWhenIdle, { timeout: 2200 });
-          } else {
-            window.setTimeout(injectWhenIdle, 250);
-          }
-        }, delay));
-      };
-
-      const loadConfiguredAds = () => {
+      let timer = 0;
+      const scheduleVignette = () => {
+        window.clearTimeout(timer);
         if (!hasAdvertisingConsent() || document.visibilityState !== 'visible') return;
-        // In-Page Push is the on-page format; Push Notification requires visitors
-        // to subscribe, and Vignette follows its own overlay cooldown.
-        scheduleFormat({ key: 'inPagePush', settings: config.inPagePush });
-        scheduleFormat({ key: 'push', settings: config.push });
-        scheduleFormat({ key: 'vignette', settings: config.vignette });
+        const delay = Math.max(5000, Math.min(300000, Number(config.vignette.delayMs) || 60000));
+        timer = window.setTimeout(() => {
+          if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(appendVignette, { timeout: 2200 });
+          } else {
+            window.setTimeout(appendVignette, 250);
+          }
+        }, delay);
       };
 
       window.addEventListener('fcmobiletools:consent-updated', (event) => {
         if (event.detail?.advertising === true) {
-          loadConfiguredAds();
-        } else if (document.querySelector('script[data-fcmt-ad-format]')) {
+          scheduleVignette();
+        } else if (document.querySelector('script[data-fcmt-ad-format="vignette"]')) {
           window.location.reload();
         }
       });
 
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') loadConfiguredAds();
+        if (document.visibilityState === 'visible') scheduleVignette();
+        else window.clearTimeout(timer);
       });
 
-      loadConfiguredAds();
+      scheduleVignette();
     })();
   </script>
 )}
