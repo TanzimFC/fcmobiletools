@@ -1822,7 +1822,7 @@ function validateSiteAds(content) {
   return content;
 }
 function siteAdsText(content) {
-  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\\n// Only Monetag Vignette is supported; browser push ads and In-Page Push have been removed.\\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\\n';
+  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// Only Monetag Vignette is supported; browser push ads and In-Page Push have been removed.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
 }
 
 function parseFcMobile27(text) {
