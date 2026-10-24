@@ -218,7 +218,7 @@ body:before{background-image:linear-gradient(rgba(255,255,255,.025) 1px,transpar
 .rxa-bulkbar b{margin-right:6px;color:var(--c2);font:700 13px var(--sans)}
 .rxa-bulkbar .btn{min-height:34px;font-size:12.5px}
 
-.rxa-listhead,.rxa-row{display:grid;grid-template-columns:34px 190px minmax(0,1.7fr) 160px 160px 100px 196px;gap:14px;align-items:center;padding:0 16px}
+.rxa-listhead,.rxa-row{display:grid;grid-template-columns:34px 190px minmax(0,1.7fr) 160px 160px 100px 236px;gap:14px;align-items:center;padding:0 16px}
 .rxa-listhead{height:40px;border-bottom:1px solid var(--ln);color:#667c8f;font:700 14px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase}
 .rxa-row{min-height:68px;padding-block:12px;border-bottom:1px solid var(--ln);transition:background .15s}
 .rxa-row:last-child{border-bottom:0}
@@ -678,7 +678,8 @@ const rxaIco={
   out:'<path d="M7 17L17 7M9 7h8v8"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   down:'<path d="M12 4v12M6 11l6 6 6-6M4 21h16"/>',
-  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  img:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/>'
 };
 const rxaSvg=(k,s=15)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${rxaIco[k]}</svg>`;
 const rxaToday=()=>RXA.serverDate||new Date().toISOString().slice(0,10);
@@ -739,6 +740,7 @@ function rxaRow(c,latest){
     `<button class="rxa-ib" data-act="edit" title="Edit" aria-label="Edit ${esc(c.code)}">${rxaSvg('edit')}</button>`,
     c.status==='active'?`<button class="rxa-ib" data-act="verify" title="Mark verified today" aria-label="Verify ${esc(c.code)}">${rxaSvg('check')}</button><button class="rxa-ib rxa-warn" data-act="expire" title="Mark expired" aria-label="Expire ${esc(c.code)}">${rxaSvg('clock')}</button>`:'',
     c.status==='scheduled'?`<button class="rxa-ib rxa-go" data-act="activate" title="Go live now" aria-label="Activate ${esc(c.code)}">${rxaSvg('bolt')}</button>`:'',
+    `<button class="rxa-ib" data-act="promo" title="Promo banner" aria-label="Promo banner for ${esc(c.code)}">${rxaSvg('img')}</button>`,
     `<button class="rxa-ib" data-act="dup" title="Duplicate" aria-label="Duplicate ${esc(c.code)}">${rxaSvg('dup')}</button>`,
     admin?`<button class="rxa-ib rxa-bad" data-act="delete" title="Delete" aria-label="Delete ${esc(c.code)}">${rxaSvg('trash')}</button>`:''
   ].join('');
@@ -772,6 +774,7 @@ function rxaRender(){
   const delBtn=$('#rxaBulkDelete');if(delBtn)delBtn.hidden=workspaceRole!=='admin';
 }
 
+async function rxaPromo(code){try{const m=await import('/admin/promo-studio.js?v=1');await m.openPromoStudio({codes:RXA.codes,code:code||'',toast:showToast})}catch(e){state('Promo Studio failed to load: '+e.message,false)}}
 async function rxaRefresh(){try{await rxaLoad();rxaRender()}catch(e){state(e.message,false)}}
 
 /* ----- modal helpers ----- */
@@ -928,7 +931,7 @@ async function redeem(){
   app.innerHTML=`<div class="rxa">
   <header class="rxa-head">
     <div><div class="rxa-eyebrow"><i class="rxa-live"></i> LIVE · changes appear on the public page within seconds</div><h2>Redeem Codes</h2><p>Publish, expire and verify codes. Codes past their expiry date are marked expired automatically.</p></div>
-    <div class="rxa-head-acts"><a class="btn" href="/redeem-codes/" target="_blank" rel="noopener">${rxaSvg('out')} View public page</a><a class="btn" href="${exportHref}" download>${rxaSvg('down')} Export CSV</a><button class="btn" id="rxaBulkOpen">${rxaSvg('list')} Bulk add</button><button class="btn primary" id="rxaNew">${rxaSvg('plus')} New code</button></div>
+    <div class="rxa-head-acts"><a class="btn" href="/redeem-codes/" target="_blank" rel="noopener">${rxaSvg('out')} View public page</a><a class="btn" href="${exportHref}" download>${rxaSvg('down')} Export CSV</a><button class="btn" id="rxaPromoOpen">${rxaSvg('img')} Promo studio</button><button class="btn" id="rxaBulkOpen">${rxaSvg('list')} Bulk add</button><button class="btn primary" id="rxaNew">${rxaSvg('plus')} New code</button></div>
   </header>
   <div class="rxa-kpis">
     <div class="rxa-kpi k-good"><small>ACTIVE NOW</small><strong id="rxaK-active">0</strong><span>live on the site</span></div>
@@ -965,6 +968,7 @@ async function redeem(){
 
   $('#rxaNew').onclick=()=>rxaForm(null);
   $('#rxaBulkOpen').onclick=rxaBulkModal;
+  $('#rxaPromoOpen').onclick=()=>rxaPromo('');
   $('#rxaQGo').onclick=rxaQuickPublish;
   [$('#rxaQCode'),$('#rxaQReward')].forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();rxaQuickPublish()}}));
   $('#rxaQCode').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/\s+/g,'')});
@@ -988,6 +992,7 @@ async function redeem(){
     const a=btn.dataset.act;
     if(a==='copy'){try{await navigator.clipboard.writeText(code);showToast(code+' copied')}catch{showToast('Copy failed','error')}}
     else if(a==='edit')rxaForm(c);
+    else if(a==='promo')rxaPromo(code);
     else if(a==='dup')rxaForm(c,{duplicate:true});
     else if(a==='delete')rxaDelete([code]);
     else if(a==='expire')rxaBulk('expire',[code],code+' marked expired');
