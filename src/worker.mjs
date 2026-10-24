@@ -2627,7 +2627,7 @@ async function adminDashboard(request, env, url) {
   const isWorker = await workerAuthenticated(request,env);
   const isCreator = await creatorAuthenticated(request,env);
   const notificationLink = !isWorker && !isCreator ? '<a class="nav-external" href="/admin/notification-studio.html"><span class="ni">✦</span><span>Notification Studio</span></a>' : '';
-  const growthLinks = '<div class="nav-group">Growth</div><a class="nav-external" href="/admin/dashboard.html?section=redeem&openPromo=1"><span class="ni">✧</span><span>Promo Studio</span></a>' + notificationLink;
+  const growthLinks = '<div class="nav-group">Growth</div><a class="nav-external" href="/admin/?section=redeem&openPromo=1"><span class="ni">✧</span><span>Promo Studio</span></a>' + notificationLink;
   const withStudios = withLeagueLink.includes('<div class="nav-group">Game data</div>') ? withLeagueLink.replace('<div class="nav-group">Game data</div>', growthLinks + '<div class="nav-group">Game data</div>') : withLeagueLink;
   const promoBoot = `<script>(function(){var p=new URLSearchParams(location.search);if(p.get('openPromo')!=='1')return;var n=0;function launch(){var nav=document.querySelector('[data-section="redeem"]');if(nav&&!nav.classList.contains('active'))nav.click();var b=document.getElementById('rxaPromoOpen');if(b){b.click();return true}return false}var timer=setInterval(function(){if(launch()||++n>60)clearInterval(timer)},120);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',launch,{once:true})})();</script>`;
   const patched = withStudios.replace('</head>', `<style id="fc-admin-cyan-theme">${ADMIN_DASHBOARD_CSS}</style></head>`).replace('</body>', promoBoot + '</body>');
@@ -2833,7 +2833,7 @@ async function redeemAdminApi(request, env, url, ctx) {
     if (method === 'POST' && sub === '/') {
       const input = await request.json();
       result = await saveRedeemRecord(db, input, identity.actor);
-      if (result.action === 'created' && String(input.status || 'active') === 'active') {
+      if (result.action === 'created' && String(input.status || 'active') === 'active' && String(input.releaseDate || new Date().toISOString().slice(0,10)) <= new Date().toISOString().slice(0,10)) {
         autoPush = { kind: 'redeem_single', reward: input.reward, dedupe: result.code, actor: identity.actor };
       }
     } else if (method === 'DELETE' && sub === '/') {
@@ -2843,7 +2843,8 @@ async function redeemAdminApi(request, env, url, ctx) {
       const body = await request.json();
       if (body.action === 'create') {
         result = await bulkCreateRedeem(db, body.items, identity.actor);
-        const newActiveItems = (body.items || []).filter(item => String(item.status || 'active') === 'active');
+        const today = new Date().toISOString().slice(0,10);
+        const newActiveItems = (body.items || []).filter(item => String(item.status || 'active') === 'active' && String(item.releaseDate || today) <= today);
         if (Number(result.created || 0) > 0 && newActiveItems.length) {
           autoPush = { kind: 'redeem_bulk', count: result.created, reward: 'FC Mobile rewards', dedupe: 'bulk:' + crypto.randomUUID(), actor: identity.actor };
         }
