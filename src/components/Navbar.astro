@@ -1,39 +1,65 @@
 ---
-const current = Astro.url.pathname;
+import { getLocaleFromPath, stripLocale, localizeHref, translator } from '../i18n/index.js';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+const locale = getLocaleFromPath(Astro.url.pathname);
+const tr = translator(locale);
+// Active states compare English paths, so /bn/events/ highlights Events the same as /events/.
+const current = stripLocale(Astro.url.pathname) === '/' ? '/' : stripLocale(Astro.url.pathname).replace(/\/$/, '');
 const isActive = (href) => href === '/' ? current === '/' : current === href || current.startsWith(href + '/');
+// Internal links stay in the visitor's language when a translated page exists, else English.
+const href = (h) => localizeHref(h, locale);
+const item = (id, h, icon) => ({ id, label: tr(`nav.items.${id}.label`), meta: tr(`nav.items.${id}.meta`), href: h, icon });
 
-const cta = { label: 'FC Mobile 27 Update', href: '/fc-mobile-27', meta: 'Season 27 · Sep 24', image: 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790218791/fc-mobile-tools/t0gwuzeytzlmk13pes8q.webp' };
+const cta = { label: tr('nav.update.label'), href: '/fc-mobile-27', meta: tr('nav.update.meta'), blurb: tr('nav.update.blurb'), image: 'https://res.cloudinary.com/b0qikv7n/image/upload/v1790218791/fc-mobile-tools/t0gwuzeytzlmk13pes8q.webp' };
 
 const navGroups = [
-  { id: 'tools', label: 'Tools', links: [
-    { label: 'Team OVR', href: '/team-ovr', meta: 'Squad rating', icon: 'ovr' },
-    { label: 'PlayStyle Guide', href: '/player/playstyle', meta: 'Player abilities', icon: 'playstyle' },
-    { label: 'PlayStyle Finder', href: '/player/playstyle-finder', meta: 'Smart role-based matcher', icon: 'playstyle' },
-    { label: 'Training Calculator', href: '/training-calculator', meta: 'XP planner', icon: 'training' },
-    { label: 'Rank Up Calculator', href: '/rank-up-calculator', meta: 'Rank costs', icon: 'rank' },
-    { label: 'Investment Calculator', href: '/investment-calculator', meta: 'Market planning', icon: 'investment' },
-    { label: 'Gauntlet Planner', href: '/gauntlet-planner', meta: 'Squad rotation', icon: 'gauntlet' },
-    { label: 'Shards Counter', href: '/shards-counter', meta: 'Star Shards target', icon: 'story' }
+  { id: 'tools', label: tr('nav.groups.tools'), links: [
+    item('team-ovr', '/team-ovr', 'ovr'),
+    item('playstyle', '/player/playstyle', 'playstyle'),
+    item('playstyle-finder', '/player/playstyle-finder', 'playstyle'),
+    item('training', '/training-calculator', 'training'),
+    item('rank', '/rank-up-calculator', 'rank'),
+    item('investment', '/investment-calculator', 'investment'),
+    item('gauntlet', '/gauntlet-planner', 'gauntlet'),
+    item('shards', '/shards-counter', 'story')
   ]},
-  { id: 'live', label: 'Live', links: [
-    { label: 'Events', href: '/events', meta: 'Countdowns', icon: 'events' },
-    { label: 'Redeem Codes', href: '/redeem-codes', meta: 'Latest rewards', icon: 'codes' },
-    { label: 'Football Centre', href: '/football-centre', meta: 'Live hub', icon: 'centre' },
-    { label: 'Captain OVR Tracker', href: '/captain-tracker', meta: 'Matchday 7 analysis', icon: 'tracker' },
-    { label: 'Trivia', href: '/trivia/', meta: "Extra Time & A Nation's Story", icon: 'story' }
+  { id: 'live', label: tr('nav.groups.live'), links: [
+    item('events', '/events', 'events'),
+    item('codes', '/redeem-codes', 'codes'),
+    item('centre', '/football-centre', 'centre'),
+    item('tracker', '/captain-tracker', 'tracker'),
+    item('trivia', '/trivia/', 'story')
   ]},
-  { id: 'community', label: 'Community', links: [
-    { label: 'Tournaments', href: '/tournaments', meta: 'Community competitions', icon: 'tournaments' },
-    { label: 'Find a League', href: '/leagues/', meta: 'Find your club or recruit players', icon: 'ovr' },
-    { label: 'Giveaways', href: '/giveaways/', meta: 'Win prizes. Free to enter', icon: 'gift' }
+  { id: 'community', label: tr('nav.groups.community'), links: [
+    item('tournaments', '/tournaments', 'tournaments'),
+    item('leagues', '/leagues/', 'ovr'),
+    item('giveaways', '/giveaways/', 'gift')
   ]}
 ];
 
+// Strings the client-side account sync needs, already translated for this page.
+const navClient = {
+  account: tr('common.account'),
+  login: tr('common.login'),
+  myProfile: tr('common.myProfile'),
+  myAccount: tr('common.myAccount'),
+  accountProfile: tr('common.accountProfile'),
+  accountMeta: tr('common.accountMeta'),
+  profileMeta: tr('common.profileMeta'),
+  levelShort: tr('common.levelShort'),
+  levelLong: tr('common.levelLong'),
+  signInAria: tr('common.signInAria'),
+  openProfileAria: tr('common.openProfileAria'),
+  profileHref: href('/profile/'),
+  accountHref: href('/account/')
+};
+
+const articlesItem = item('articles', '/blog', 'articles');
 const allLinks = [
-  { label: 'Home', href: '/', meta: 'Start here', icon: 'home' },
+  { label: tr('common.home'), href: '/', meta: tr('common.homeMeta'), icon: 'home' },
   { label: cta.label, href: cta.href, meta: cta.meta, icon: 'arrow' },
   ...navGroups.flatMap((g) => g.links.map((l) => ({ ...l, group: g.label }))),
-  { label: 'Articles', href: '/blog', meta: 'News, leaks, guides', icon: 'articles' }
+  articlesItem
 ];
 
 const groupActive = (g) => g.links.some((l) => isActive(l.href));
@@ -62,20 +88,20 @@ const icons = {
 const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 ---
 
-<a class="fcmt-skip" href="#content">Skip to content</a>
+<a class="fcmt-skip" href="#content">{tr('common.skipToContent')}</a>
 
 <header class="fcmt" id="fcmt" data-scrolled="false">
   <div class="fcmt-bar" id="fcmtBar">
     <!-- Brand -->
-    <a class="fcmt-brand" href="/" aria-label="FCMobiletools home">
+    <a class="fcmt-brand" href={href('/')} aria-label={tr('common.homeAria')}>
       <img class="fcmt-logo-img" src="/assets/images/logo.png" alt="FCMobiletools" width="1774" height="887" decoding="async" fetchpriority="low" />
     </a>
 
     <!-- Desktop nav -->
-    <nav class="fcmt-nav" id="fcmtNav" aria-label="Primary navigation">
+    <nav class="fcmt-nav" id="fcmtNav" aria-label={tr('common.primaryNav')}>
       <span class="fcmt-glide" id="fcmtGlide" aria-hidden="true"></span>
 
-      <a class:list={['fcmt-link', { active: isActive('/') }]} href="/" aria-current={isActive('/') ? 'page' : undefined}>Home</a>
+      <a class:list={['fcmt-link', { active: isActive('/') }]} href={href('/')} aria-current={isActive('/') ? 'page' : undefined}>{tr('common.home')}</a>
 
       {navGroups.map((g) => (
         <div class="fcmt-group" data-group={g.id}>
@@ -89,7 +115,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
               <div class="fcmt-mega-list">
                 <p class="fcmt-eyebrow">{g.label}</p>
                 {g.links.map((l) => (
-                  <a class:list={['fcmt-item', { active: isActive(l.href) }]} href={l.href} aria-current={isActive(l.href) ? 'page' : undefined}>
+                  <a class:list={['fcmt-item', { active: isActive(l.href) }]} href={href(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}>
                     <span class="fcmt-ico" set:html={ico(l.icon)}></span>
                     <span class="fcmt-item-text"><strong>{l.label}</strong><small>{l.meta}</small></span>
                     <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
@@ -97,49 +123,51 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
                 ))}
               </div>
 
-              <a class="fcmt-feature" href={cta.href}>
+              <a class="fcmt-feature" href={href(cta.href)}>
                 <img class="fcmt-feature-art" src={cta.image} alt="" width="520" height="300" loading="lazy" decoding="async" />
                 <span class="fcmt-feature-glow" aria-hidden="true"></span>
-                <span class="fcmt-feature-tag"><i></i>Most popular</span>
+                <span class="fcmt-feature-tag"><i></i>{tr('common.mostPopular')}</span>
                 <strong>{cta.label}</strong>
-                <small>Season 27 changes, feature guide and official Android install.</small>
-                <span class="fcmt-feature-cta">Open page <span set:html={ico('arrow', 14, 2.4)}></span></span>
+                <small>{cta.blurb}</small>
+                <span class="fcmt-feature-cta">{tr('common.openPage')} <span set:html={ico('arrow', 14, 2.4)}></span></span>
               </a>
             </div>
           </div>
         </div>
       ))}
 
-      <a class:list={['fcmt-link', 'fcmt-gw', { active: current.startsWith('/giveaways') }]} href="/giveaways/" aria-current={current.startsWith('/giveaways') ? 'page' : undefined}><span class="fcmt-gw-ico" set:html={ico('gift', 15, 2)}></span>Giveaways<em class="fcmt-gw-tag">Free</em></a>
-      <a class:list={['fcmt-link', { active: current.startsWith('/blog') }]} href="/blog" aria-current={current.startsWith('/blog') ? 'page' : undefined}>Articles</a>
+      <a class:list={['fcmt-link', 'fcmt-gw', { active: current.startsWith('/giveaways') }]} href={href('/giveaways/')} aria-current={current.startsWith('/giveaways') ? 'page' : undefined}><span class="fcmt-gw-ico" set:html={ico('gift', 15, 2)}></span>{tr('nav.items.giveaways.label')}<em class="fcmt-gw-tag">{tr('common.free')}</em></a>
+      <a class:list={['fcmt-link', { active: current.startsWith('/blog') }]} href={href('/blog')} aria-current={current.startsWith('/blog') ? 'page' : undefined}>{articlesItem.label}</a>
     </nav>
 
     <!-- Actions -->
     <div class="fcmt-actions">
-      <a class="fcmt-account" id="fcmtNavAccount" href="/profile/" aria-label="Open your FCMobiletools profile">
+      <a class="fcmt-account" id="fcmtNavAccount" href={href('/profile/')} aria-label={tr('common.openProfileAria')}>
         <span class="fcmt-acc-avatar" id="fcmtNavAvatar" aria-hidden="true">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>
         </span>
         <span class="fcmt-acc-meta">
-          <strong id="fcmtNavName">Account</strong>
+          <strong id="fcmtNavName">{tr('common.account')}</strong>
           <small id="fcmtNavLevel" hidden>Lv. 1</small>
         </span>
       </a>
 
-      <button class="fcmt-search" id="fcmtSearchBtn" type="button" aria-label="Search pages" aria-haspopup="dialog">
+      <LanguageSwitcher variant="bar" />
+
+      <button class="fcmt-search" id="fcmtSearchBtn" type="button" aria-label={tr('common.search')} aria-haspopup="dialog">
         <span class="fcmt-search-icon" set:html={ico('search', 17, 2)}></span>
-        <span class="fcmt-search-txt">Search tools, events, codes...</span>
+        <span class="fcmt-search-txt">{tr('common.searchPlaceholder')}</span>
         <kbd>/</kbd>
       </button>
 
-      <a class:list={['fcmt-cta', 'fcmt-account-cta', { active: isActive('/profile/') || isActive('/account/') }]} id="fcmtNavAccountCta" href="/account/" aria-label="Sign in to your FCMobiletools account">
+      <a class:list={['fcmt-cta', 'fcmt-account-cta', { active: isActive('/profile/') || isActive('/account/') }]} id="fcmtNavAccountCta" href={href('/account/')} aria-label={tr('common.signInAria')}>
         <span class="fcmt-account-cta-avatar" id="fcmtNavAccountCtaAvatar" aria-hidden="true">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>
         </span>
-        <span class="fcmt-cta-txt" id="fcmtNavAccountCtaText">Login</span>
+        <span class="fcmt-cta-txt" id="fcmtNavAccountCtaText">{tr('common.login')}</span>
       </a>
 
-      <button class="fcmt-burger" id="fcmtBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="fcmtSheet">
+      <button class="fcmt-burger" id="fcmtBurger" type="button" aria-label={tr('common.openMenu')} aria-expanded="false" aria-controls="fcmtSheet">
         <span set:html={ico('menu', 20, 2)}></span>
       </button>
     </div>
@@ -147,30 +175,30 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 </header>
 
 <!-- Mobile bottom tab bar -->
-<nav class="fcmt-dock" aria-label="Quick navigation">
-  <a class:list={{ active: isActive('/') }} href="/" aria-current={isActive('/') ? 'page' : undefined}><span set:html={ico('home', 20)}></span><em>Home</em></a>
-  <a class:list={{ active: isActive('/events') }} href="/events" aria-current={isActive('/events') ? 'page' : undefined}><span set:html={ico('events', 20)}></span><em>Events</em></a>
-  <a class:list={['fcmt-dock-main', { active: isActive(cta.href) }]} href={cta.href} aria-label={cta.label}><span set:html={ico('arrow', 22, 2)}></span><em>Update</em></a>
-  <a class:list={{ active: isActive('/redeem-codes') }} href="/redeem-codes" aria-current={isActive('/redeem-codes') ? 'page' : undefined}><span set:html={ico('codes', 20)}></span><em>Codes</em></a>
-  <button type="button" id="fcmtDockMore" aria-label="More" aria-haspopup="dialog"><span set:html={ico('menu', 20)}></span><em>More</em></button>
+<nav class="fcmt-dock" aria-label={tr('common.quickNav')}>
+  <a class:list={{ active: isActive('/') }} href={href('/')} aria-current={isActive('/') ? 'page' : undefined}><span set:html={ico('home', 20)}></span><em>{tr('common.home')}</em></a>
+  <a class:list={{ active: isActive('/events') }} href={href('/events')} aria-current={isActive('/events') ? 'page' : undefined}><span set:html={ico('events', 20)}></span><em>{tr('common.events')}</em></a>
+  <a class:list={['fcmt-dock-main', { active: isActive(cta.href) }]} href={href(cta.href)} aria-label={cta.label}><span set:html={ico('arrow', 22, 2)}></span><em>{tr('common.update')}</em></a>
+  <a class:list={{ active: isActive('/redeem-codes') }} href={href('/redeem-codes')} aria-current={isActive('/redeem-codes') ? 'page' : undefined}><span set:html={ico('codes', 20)}></span><em>{tr('common.codes')}</em></a>
+  <button type="button" id="fcmtDockMore" aria-label={tr('common.more')} aria-haspopup="dialog"><span set:html={ico('menu', 20)}></span><em>{tr('common.more')}</em></button>
 </nav>
 
 <!-- Full-screen mobile sheet -->
-<div class="fcmt-sheet" id="fcmtSheet" role="dialog" aria-modal="true" aria-label="Site menu" aria-hidden="true" inert>
+<div class="fcmt-sheet" id="fcmtSheet" role="dialog" aria-modal="true" aria-label={tr('common.siteMenu')} aria-hidden="true" inert>
   <div class="fcmt-sheet-inner">
     <div class="fcmt-sheet-head">
-      <a class="fcmt-brand" href="/" aria-label="FCMobiletools home">
+      <a class="fcmt-brand" href={href('/')} aria-label={tr('common.homeAria')}>
         <img class="fcmt-logo-img" src="/assets/images/logo.png" alt="FCMobiletools" width="1774" height="887" decoding="async" />
       </a>
-      <button class="fcmt-x" id="fcmtSheetClose" type="button" aria-label="Close menu"><span set:html={ico('close', 20, 2.2)}></span></button>
+      <button class="fcmt-x" id="fcmtSheetClose" type="button" aria-label={tr('common.closeMenu')}><span set:html={ico('close', 20, 2.2)}></span></button>
     </div>
 
-    <a class="fcmt-hero" href={cta.href}>
+    <a class="fcmt-hero" href={href(cta.href)}>
       <img class="fcmt-feature-art" src={cta.image} alt="" width="720" height="360" loading="lazy" decoding="async" />
       <span class="fcmt-feature-glow" aria-hidden="true"></span>
-      <span class="fcmt-feature-tag"><i></i>Most popular</span>
+      <span class="fcmt-feature-tag"><i></i>{tr('common.mostPopular')}</span>
       <strong>{cta.label}</strong>
-      <small>Season 27 changes, feature guide and official Android install.</small>
+      <small>{cta.blurb}</small>
       <span class="fcmt-hero-arrow" set:html={ico('arrow', 18, 2.2)}></span>
     </a>
 
@@ -180,7 +208,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
           <p class="fcmt-eyebrow">{g.label}</p>
           <div class="fcmt-sec-grid">
             {g.links.map((l) => (
-              <a class:list={['fcmt-tile', { active: isActive(l.href) }]} href={l.href} aria-current={isActive(l.href) ? 'page' : undefined}>
+              <a class:list={['fcmt-tile', { active: isActive(l.href) }]} href={href(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}>
                 <span class="fcmt-ico" set:html={ico(l.icon)}></span>
                 <strong>{l.label}</strong>
                 <small>{l.meta}</small>
@@ -189,47 +217,48 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
           </div>
         </section>
       ))}
-      <a class:list={['fcmt-wide', { active: isActive('/tournaments') }]} href="/tournaments">
+      <a class:list={['fcmt-wide', { active: isActive('/tournaments') }]} href={href('/tournaments')}>
         <span class="fcmt-ico" set:html={ico('tournaments')}></span>
-        <span class="fcmt-item-text"><strong>Tournaments</strong><small>Community competitions</small></span>
+        <span class="fcmt-item-text"><strong>{tr('nav.items.tournaments.label')}</strong><small>{tr('nav.items.tournaments.meta')}</small></span>
         <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
       </a>
-      <a class:list={['fcmt-wide', 'fcmt-gw-wide', { active: current.startsWith('/giveaways') }]} href="/giveaways/">
+      <a class:list={['fcmt-wide', 'fcmt-gw-wide', { active: current.startsWith('/giveaways') }]} href={href('/giveaways/')}>
         <span class="fcmt-ico" set:html={ico('gift')}></span>
-        <span class="fcmt-item-text"><strong>Giveaways <em class="fcmt-gw-tag">Free</em></strong><small>Win prizes. Verified and safe</small></span>
+        <span class="fcmt-item-text"><strong>{tr('nav.items.giveaways.label')} <em class="fcmt-gw-tag">{tr('common.free')}</em></strong><small>{tr('nav.giveawaysSheetMeta')}</small></span>
         <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
       </a>
-      <a class:list={['fcmt-wide', { active: current.startsWith('/blog') }]} href="/blog">
+      <a class:list={['fcmt-wide', { active: current.startsWith('/blog') }]} href={href('/blog')}>
         <span class="fcmt-ico" set:html={ico('articles')}></span>
-        <span class="fcmt-item-text"><strong>Articles</strong><small>News, leaks, guides</small></span>
+        <span class="fcmt-item-text"><strong>{articlesItem.label}</strong><small>{articlesItem.meta}</small></span>
         <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
       </a>
-      <a class="fcmt-wide fcmt-account-wide" id="fcmtSheetAccount" href="/profile/">
+      <LanguageSwitcher variant="sheet" />
+      <a class="fcmt-wide fcmt-account-wide" id="fcmtSheetAccount" href={href('/profile/')}>
         <span class="fcmt-ico" id="fcmtSheetAvatar" set:html={ico('ovr')}></span>
-        <span class="fcmt-item-text"><strong id="fcmtSheetName">Account &amp; Profile</strong><small id="fcmtSheetMeta">Identity, XP progression &amp; community</small></span>
+        <span class="fcmt-item-text"><strong id="fcmtSheetName">{tr('common.accountProfile')}</strong><small id="fcmtSheetMeta">{tr('common.accountMeta')}</small></span>
         <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
       </a>
       <button class="fcmt-wide fcmt-wide-btn" id="fcmtSheetSearch" type="button">
         <span class="fcmt-ico" set:html={ico('search')}></span>
-        <span class="fcmt-item-text"><strong>Search pages</strong><small>Jump anywhere</small></span>
+        <span class="fcmt-item-text"><strong>{tr('common.search')}</strong><small>{tr('common.jumpAnywhere')}</small></span>
       </button>
     </div>
   </div>
 </div>
 
 <!-- Command palette -->
-<div class="fcmt-pal" id="fcmtPal" role="dialog" aria-modal="true" aria-label="Search pages" aria-hidden="true" inert>
+<div class="fcmt-pal" id="fcmtPal" role="dialog" aria-modal="true" aria-label={tr('common.search')} aria-hidden="true" inert>
   <div class="fcmt-pal-backdrop" id="fcmtPalBackdrop"></div>
   <div class="fcmt-pal-card">
     <div class="fcmt-pal-field">
       <span set:html={ico('search', 18, 2)}></span>
-      <input id="fcmtPalInput" type="text" placeholder="Search tools, events, codes..." autocomplete="off" spellcheck="false" aria-label="Search pages" />
+      <input id="fcmtPalInput" type="text" placeholder={tr('common.searchPlaceholder')} autocomplete="off" spellcheck="false" aria-label={tr('common.search')} />
       <kbd>esc</kbd>
     </div>
     <ul class="fcmt-pal-list" id="fcmtPalList" role="listbox">
       {allLinks.map((l) => (
         <li role="option" data-label={l.label.toLowerCase()} data-meta={(l.meta + ' ' + (l.group || '')).toLowerCase()}>
-          <a href={l.href}>
+          <a href={href(l.href)}>
             <span class="fcmt-ico" set:html={ico(l.icon)}></span>
             <span class="fcmt-item-text"><strong>{l.label}</strong><small>{l.group ? l.group + ' · ' : ''}{l.meta}</small></span>
             <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
@@ -237,13 +266,15 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         </li>
       ))}
     </ul>
-    <p class="fcmt-pal-empty" id="fcmtPalEmpty" hidden>No matches. Try “codes”, “events” or “update”.</p>
+    <p class="fcmt-pal-empty" id="fcmtPalEmpty" hidden>{tr('common.noMatches')}</p>
   </div>
 </div>
 
+<script type="application/json" id="fcmt-nav-i18n" set:html={JSON.stringify(navClient).replace(/</g, '\\u003c')}></script>
 <script is:inline>
 (() => {
   const $ = (id) => document.getElementById(id);
+  const N = JSON.parse(document.getElementById('fcmt-nav-i18n').textContent);
   const root = document.documentElement;
   const header = $('fcmt');
   const nav = $('fcmtNav'), glide = $('fcmtGlide');
@@ -387,8 +418,8 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         const initials = display.slice(0, 2).toUpperCase();
         navBtn.classList.add('is-authenticated');
         if (ctaBtn) {
-          ctaBtn.href = '/profile/';
-          ctaBtn.setAttribute('aria-label', 'Open your FCMobiletools profile');
+          ctaBtn.href = N.profileHref;
+          ctaBtn.setAttribute('aria-label', N.openProfileAria);
         }
         if (ctaText) ctaText.textContent = display;
         if (ctaAvatar) {
@@ -402,10 +433,10 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
             ctaAvatar.textContent = initials;
           }
         }
-        navBtn.href = '/profile/';
+        navBtn.href = N.profileHref;
         navName.textContent = display;
         if (navLevel) {
-          navLevel.textContent = 'Lv. ' + lv;
+          navLevel.textContent = N.levelShort.replace('{n}', lv);
           navLevel.hidden = false;
         }
         if (navAvatar) {
@@ -419,46 +450,46 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
             navAvatar.textContent = initials;
           }
         }
-        if (sheetName) sheetName.textContent = display + ' · Level ' + lv;
+        if (sheetName) sheetName.textContent = display + ' · ' + N.levelLong.replace('{n}', lv);
         if (sheetMeta) sheetMeta.textContent = '@' + identity.username + ' · ' + Number(identity.xp || 0).toLocaleString() + ' XP';
-        if (sheetAccount) sheetAccount.href = '/profile/';
+        if (sheetAccount) sheetAccount.href = N.profileHref;
         if (sheetAvatar) sheetAvatar.textContent = initials;
       } else if (hasAuth) {
         // A user can have a valid session while profile details are still loading.
         // Never show a sign-in CTA for that authenticated state.
         navBtn.classList.add('is-authenticated');
-        navBtn.href = '/profile/';
-        navName.textContent = 'My Profile';
+        navBtn.href = N.profileHref;
+        navName.textContent = N.myProfile;
         if (navLevel) navLevel.hidden = true;
         if (navAvatar) navAvatar.textContent = 'FC';
         if (ctaBtn) {
           ctaBtn.href = '/profile/';
           ctaBtn.setAttribute('aria-label', 'Open your FCMobiletools profile');
         }
-        if (ctaText) ctaText.textContent = 'My Profile';
+        if (ctaText) ctaText.textContent = N.myProfile;
         if (ctaAvatar) ctaAvatar.textContent = 'FC';
-        if (sheetAccount) sheetAccount.href = '/profile/';
+        if (sheetAccount) sheetAccount.href = N.profileHref;
         if (sheetAvatar) sheetAvatar.textContent = 'FC';
-        if (sheetName) sheetName.textContent = 'My Account';
-        if (sheetMeta) sheetMeta.textContent = 'Profile, progression and rewards';
+        if (sheetName) sheetName.textContent = N.myAccount;
+        if (sheetMeta) sheetMeta.textContent = N.profileMeta;
       } else {
         navBtn.classList.remove('is-authenticated');
-        navBtn.href = '/account/';
-        navName.textContent = 'Account';
+        navBtn.href = N.accountHref;
+        navName.textContent = N.account;
         if (navLevel) navLevel.hidden = true;
         if (navAvatar) navAvatar.textContent = 'FC';
         if (ctaBtn) {
-          ctaBtn.href = '/account/';
-          ctaBtn.setAttribute('aria-label', 'Sign in to your FCMobiletools account');
+          ctaBtn.href = N.accountHref;
+          ctaBtn.setAttribute('aria-label', N.signInAria);
         }
-        if (ctaText) ctaText.textContent = 'Login';
+        if (ctaText) ctaText.textContent = N.login;
         if (ctaAvatar) {
           ctaAvatar.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>';
         }
-        if (sheetAccount) sheetAccount.href = '/account/';
+        if (sheetAccount) sheetAccount.href = N.accountHref;
         if (sheetAvatar) sheetAvatar.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>';
-        if (sheetName) sheetName.textContent = 'Account & Profile';
-        if (sheetMeta) sheetMeta.textContent = 'Identity, XP progression & community';
+        if (sheetName) sheetName.textContent = N.accountProfile;
+        if (sheetMeta) sheetMeta.textContent = N.accountMeta;
       }
     } catch {}
   };

@@ -8,6 +8,7 @@
 // This module has no Worker-only or Node-only APIs so the Astro build can import
 // it too (the page uses REDEEM_FAQ and redeemJsonLd).
 
+import { namespace, pathForLocale, hasLocalizedPage, LOCALES } from '../i18n/index.js';
 import { REDEEM_CODES as SEED_CODES } from '../data/redeemCodes.js';
 
 export const STATUSES = ['active', 'scheduled', 'expired'];
@@ -463,46 +464,31 @@ export function codesToCsv(codes) {
 /* Page content shared by the Astro page and the Worker                */
 /* ------------------------------------------------------------------ */
 
-export const REDEEM_FAQ = [
-  {
-    q: 'What are FC Mobile redeem codes?',
-    a: "FC Mobile redeem codes are promotional codes you enter on EA's official FC Mobile redemption website to claim in-game rewards such as Gems, Coins, Player Items or Packs.",
-  },
-  {
-    q: 'How do I redeem an FC Mobile code?',
-    a: 'Open the official EA redemption page, sign in with the EA Account linked to your FC Mobile game, enter the code and select Redeem. Successful rewards are delivered to your in-game inbox.',
-  },
-  {
-    q: 'Why is my FC Mobile code not working?',
-    a: 'Check that the code is entered exactly as shown, has not expired or reached its usage limit, and that you are signed in with the same EA Account that is linked to your FC Mobile game.',
-  },
-  {
-    q: 'How often is this list updated?',
-    a: 'This page syncs live. When a new code is added or an old one ends, it appears here within about a minute without you needing to refresh. Codes that pass their listed expiry date are marked expired automatically.',
-  },
-  {
-    q: 'What does the region tag mean?',
-    a: 'Each code shows the region it was announced for. Global codes are announced for all players; if a code is limited to a region, the tag tells you before you try it.',
-  },
-];
+// FAQ copy lives in the i18n dictionaries (English is the source), so every language shares one list.
+export const redeemFaq = (locale = 'en') => namespace(locale, 'redeem').faq.items;
+export const REDEEM_FAQ = redeemFaq('en');
 
-export function redeemJsonLd(codes, origin = 'https://fcmobiletools.online', dateModified) {
+export function redeemJsonLd(codes, origin = 'https://fcmobiletools.online', dateModified, locale = 'en') {
   const active = codes.filter((c) => c.status === 'active' && !c.masked);
-  const pageUrl = `${origin}/redeem-codes/`;
+  const m = namespace(locale, 'redeem').meta;
+  const pageUrl = `${origin}${pathForLocale('/redeem-codes/', locale)}`;
+  // Link home in the same language only once a translated home page exists.
+  const homeUrl = `${origin}${hasLocalizedPage('/', locale) ? pathForLocale('/', locale) : '/'}`;
   return {
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'WebPage',
         '@id': `${pageUrl}#webpage`,
-        name: 'FC Mobile Redeem Codes | Working Codes & Rewards | FCMOBILETOOLS',
-        description: 'Live FC Mobile redeem codes with rewards, expiry status and the official EA redemption steps.',
+        name: m.ldName,
+        description: m.ldDescription,
+        inLanguage: LOCALES[locale]?.htmlLang || 'en',
         url: pageUrl,
         ...(dateModified ? { dateModified } : {}),
         publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
         mainEntity: {
           '@type': 'ItemList',
-          name: 'Working FC Mobile redeem codes',
+          name: m.ldList,
           numberOfItems: active.length,
           itemListElement: active.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.code, description: c.reward })),
         },
@@ -510,13 +496,13 @@ export function redeemJsonLd(codes, origin = 'https://fcmobiletools.online', dat
       {
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'FCMOBILETOOLS', item: `${origin}/` },
-          { '@type': 'ListItem', position: 2, name: 'FC Mobile Redeem Codes', item: pageUrl },
+          { '@type': 'ListItem', position: 1, name: 'FCMOBILETOOLS', item: homeUrl },
+          { '@type': 'ListItem', position: 2, name: m.ldCrumb, item: pageUrl },
         ],
       },
       {
         '@type': 'FAQPage',
-        mainEntity: REDEEM_FAQ.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+        mainEntity: redeemFaq(locale).map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
       },
     ],
   };

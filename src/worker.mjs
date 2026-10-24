@@ -5,6 +5,8 @@ import { matchCenterRoute } from './matchCenterWorker.mjs';
 import { leagueWorkerRoute } from './leagueWorker.mjs';
 import { giveawayWorkerRoute, giveawaySweep } from './giveawayWorker.mjs';
 import { argon2id, argon2Verify } from 'hash-wasm';
+import { splitLocalePath, hasLocalizedPage, pathForLocale, withTrailingSlash } from './i18n/routes.js';
+import { DEFAULT_LOCALE } from './i18n/locales.js';
 import {
   RedeemError, listAdminCodes, publicPayload, saveCode as saveRedeemRecord,
   bulkCreate as bulkCreateRedeem, bulkAction as bulkRedeemAction, deleteCode as deleteRedeemCode,
@@ -2864,11 +2866,25 @@ async function redeemAdminApi(request, env, url, ctx) {
   }
 }
 
+// Locale-aware matching for pages the Worker serves specially (live redeem data, events, Team OVR).
+// Returns the static asset path for a GET request to <englishPath> in any language, or null when
+// the request is for something else. A localized URL only matches when that translation is
+// registered and the URL uses the exact lowercase prefix, so unknown or mis-cased paths fall
+// through to Astro and 404 as before. English behavior is unchanged.
+function localizedPageAsset(url, englishPath) {
+  const { locale, path } = splitLocalePath(url.pathname);
+  if (path !== englishPath) return null;
+  if (locale === DEFAULT_LOCALE) return englishPath;
+  if (!hasLocalizedPage(englishPath, locale)) return null;
+  const assetPath = pathForLocale(englishPath, locale);
+  return withTrailingSlash(url.pathname) === assetPath && url.pathname.startsWith('/' + assetPath.split('/')[1]) ? assetPath : null;
+}
+
 // The page itself is static HTML. The Worker injects the live snapshot into it,
 // so the first paint already shows today's codes (no skeleton flash, no extra
 // round trip) and crawlers get fresh structured data.
-async function redeemPage(request, env, ctx, url) {
-  const asset = await env.ASSETS.fetch(new Request(new URL('/redeem-codes/', url), { method: 'GET', headers: request.headers }));
+async function redeemPage(request, env, ctx, url, assetPath = '/redeem-codes/') {
+  const asset = await env.ASSETS.fetch(new Request(new URL(assetPath, url), { method: 'GET', headers: request.headers }));
   if (!asset.ok || !(asset.headers.get('content-type') || '').includes('text/html')) return asset;
 
   const headers = new Headers(asset.headers);
@@ -2882,7 +2898,7 @@ async function redeemPage(request, env, ctx, url) {
   if (!snapshot) return new Response(asset.body, { status: asset.status, headers });
 
   const bootstrap = safeScriptJson(snapshot);
-  const structured = safeScriptJson(redeemJsonLd(snapshot.codes, url.origin, snapshot.updatedAt || undefined));
+  const structured = safeScriptJson(redeemJsonLd(snapshot.codes, url.origin, snapshot.updatedAt || undefined, splitLocalePath(url.pathname).locale));
   return new HTMLRewriter()
     .on('script#rx-bootstrap', { element(el) { el.setInnerContent(bootstrap, { html: true }); } })
     .on('script#rx-ld', { element(el) { el.setInnerContent(structured, { html: true }); } })
@@ -3197,7 +3213,8 @@ export function createExports(manifest) {
 
   if (url.pathname === PUBLIC_REDEEM_PATH) return publicRedeemApi(request, env, ctx, url);
   if (/^\/api\/(?:admin|creator|worker)\/redeem(?:\/|$)/.test(url.pathname)) return redeemAdminApi(request, env, url, ctx);
-  if ((url.pathname === '/redeem-codes' || url.pathname === '/redeem-codes/') && request.method === 'GET') return redeemPage(request, env, ctx, url);
+  const redeemAsset = request.method === 'GET' ? localizedPageAsset(url, '/redeem-codes/') : null;
+  if (redeemAsset) return redeemPage(request, env, ctx, url, redeemAsset);
 
 
   if(url.pathname === '/fc-mobile-beta' || url.pathname === '/fc-mobile-beta/' || url.pathname === '/legacy/fc-mobile-beta.html') {
@@ -3244,8 +3261,9 @@ export function createExports(manifest) {
   if(url.pathname === '/reset-center' || url.pathname === '/reset-center/') {
     return Response.redirect(new URL('/events/',url),301);
   }
-  if(url.pathname === '/team-ovr' || url.pathname === '/team-ovr/') {
-    const assetUrl = new URL('/team-ovr/', url);
+  const teamOvrAsset = localizedPageAsset(url, '/team-ovr/');
+  if(teamOvrAsset) {
+    const assetUrl = new URL(teamOvrAsset, url);
     assetUrl.searchParams.set('_fcmtools_build', '2026-09-29-ovr-fix');
     const asset=await env.ASSETS.fetch(new Request(assetUrl,{method:'GET',headers:request.headers}));
     if(!asset.ok) return asset;
@@ -3263,8 +3281,9 @@ export function createExports(manifest) {
   // /profile/:username is now handled by Astro's on-demand dynamic route.
   // Keep the JSON endpoint above as the single privacy-filtered profile data source
   // for the dynamic page and other account surfaces such as the leaderboard.
-  if(url.pathname === '/events' || url.pathname === '/events/') {
-    const asset=await env.ASSETS.fetch(new Request(new URL('/events/',url),{method:'GET',headers:request.headers}));
+  const eventsAsset = localizedPageAsset(url, '/events/');
+  if(eventsAsset) {
+    const asset=await env.ASSETS.fetch(new Request(new URL(eventsAsset,url),{method:'GET',headers:request.headers}));
     if(!asset.ok) return asset;
     const headers=new Headers(asset.headers);
     headers.set('cache-control','no-store, max-age=0, must-revalidate');

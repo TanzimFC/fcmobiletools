@@ -5,6 +5,8 @@ import remarkGfm from 'remark-gfm';
 import cloudflare from '@astrojs/cloudflare';
 import { optimizeMarkdownImages } from './src/lib/image-delivery.js';
 import { buildNationQuestions } from './src/lib/triviaNations.js';
+import { stripLocale, withTrailingSlash } from './src/i18n/routes.js';
+import { LOCALES, NON_DEFAULT_LOCALES } from './src/i18n/locales.js';
 
 const NATIONS = ['japan', 'netherlands', 'mexico', 'france', 'brazil'];
 const DAYS = Array.from({ length: 9 }, (_, i) => `day-${i + 1}`);
@@ -44,40 +46,35 @@ export default defineConfig({
   }),
   build: { format: 'directory' },
   integrations: [sitemap({
+    // Localized pages are matched by their English path, so /bn/account/ is excluded exactly like
+    // /account/. Alternates are only written for pages that really exist in the sitemap.
+    i18n: {
+      defaultLocale: 'en',
+      locales: {
+        en: LOCALES.en.hreflang,
+        ...Object.fromEntries(NON_DEFAULT_LOCALES.map((code) => [LOCALES[code].prefix, LOCALES[code].hreflang]))
+      }
+    },
     filter: (page) => {
       const pathname = new URL(page).pathname;
+      const englishPath = stripLocale(pathname);
       return ![
-        '/a-nations-story',
         '/a-nations-story/',
-        '/trivia/play',
         '/trivia/play/',
-        '/admin',
         '/admin/',
-        '/giveaways/claim',
         '/giveaways/claim/',
-        '/creator/login',
         '/creator/login/',
-        '/reset-center',
         '/reset-center/',
-        '/account',
         '/account/',
-        '/profile',
         '/profile/',
-        '/profile/public',
         '/profile/public/',
-        '/settings',
         '/settings/',
-        '/missions',
         '/missions/',
-        '/achievements',
         '/achievements/',
-        '/leaderboard',
         '/leaderboard/',
-        '/rewards',
         '/rewards/',
-        '/surveys',
         '/surveys/'
-      ].includes(pathname) && !redirectPaths.has(pathname);
+      ].includes(withTrailingSlash(englishPath)) && !redirectPaths.has(pathname);
     }
   })],
   markdown: { remarkPlugins: [remarkGfm], rehypePlugins: [optimizeMarkdownImages] },

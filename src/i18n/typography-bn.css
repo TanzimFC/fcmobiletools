@@ -1,0 +1,37 @@
+/* Bengali typography. Loaded ONLY on /bn/ pages, so English and the other Latin-script
+   languages are untouched. Inter and Space Grotesk stay first in the stack, which keeps Latin
+   letters, digits and game terms identical to the rest of the site. Noto Sans Bengali supplies
+   the Bengali glyphs, so no global font swap is needed. */
+html[lang="bn"] {
+  --font-body: 'Inter', 'Noto Sans Bengali', 'Hind Siliguri', 'Kalpurush', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Noto Sans Bengali', 'Hind Siliguri', 'Kalpurush', system-ui, sans-serif;
+  --sans: var(--font-body);
+  --display: var(--font-display);
+}
+html[lang="bn"] body {
+  line-height: 1.75;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+/* Bengali has matras above and below the line. The site uses tight line-heights (often 1) on
+   buttons, tabs and labels, which clips them, so give text elements room. */
+html[lang="bn"] body :is(a, button, strong, b, small, em, label, li, td, th, dt, dd, summary, legend, option, input, select, textarea, p) {
+  line-height: 1.55 !important;
+}
+html[lang="bn"] body :is(h1, h2, h3, h4, h5, h6) {
+  line-height: 1.38 !important;
+  letter-spacing: 0 !important;
+}
+html[lang="bn"] body :is(p, li, dd) { line-height: 1.8 !important; }
+/* Letter-spacing and forced capitals look wrong in Bengali and split conjuncts. */
+html[lang="bn"] body * {
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+/* Bengali is dense. 800 and 900 weights smear conjuncts, so cap bold text at 700. */
+html[lang="bn"] body :is(h1, h2, h3, h4, h5, h6, strong, b, button, .btn) { font-weight: 700; }
+/* Wrap long words inside cards, tabs and menus instead of overflowing. */
+html[lang="bn"] body :is(p, li, a, button, strong, small, span, label, td, th, h1, h2, h3, h4) {
+  overflow-wrap: break-word;
+}

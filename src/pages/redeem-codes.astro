@@ -1,34 +1,34 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
-import { REDEEM_FAQ, EA_REDEEM_URL, redeemJsonLd, safeScriptJson } from '../lib/redeem.js';
+import { redeemFaq, EA_REDEEM_URL, redeemJsonLd, safeScriptJson } from '../lib/redeem.js';
+import { getLocaleFromPath, localizeHref, namespace, translator } from '../i18n/index.js';
+
+// One page component serves English at /redeem-codes/ and the translated copies under /bn/, /pt-br/, /id/.
+const locale = getLocaleFromPath(Astro.url.pathname);
+const tr = translator(locale);
+const T = namespace(locale, 'redeem');
+const faq = redeemFaq(locale);
+const href = (h) => localizeHref(h, locale);
 
 const origin = (Astro.site ?? new URL('https://fcmobiletools.online')).origin;
 const socialImage = 'https://res.cloudinary.com/b0qikv7n/image/upload/f_auto,q_auto,w_1200/v1789655014/fc-mobile-tools/clmgprc6viqdrp4zhdfj.png';
 
 // The deployed Worker injects live data into #rx-bootstrap and #rx-ld on every
 // request. These build-time values are what you see in `astro dev`.
-const structuredData = safeScriptJson(redeemJsonLd([], origin));
+const structuredData = safeScriptJson(redeemJsonLd([], origin, undefined, locale));
 const devFallback = import.meta.env.DEV
   ? safeScriptJson({ codes: REDEEM_CODES, serverDate: new Date().toISOString().slice(0, 10), updatedAt: null })
   : null;
 
-const steps = [
-  { n: '01', t: 'Copy the code', d: 'Tap any active code. It goes straight to your clipboard.' },
-  { n: '02', t: "Open EA's redeem page", d: "Hit Redeem and EA's official site opens in a new tab with your code ready to paste." },
-  { n: '03', t: 'Sign in and claim', d: 'Use the EA Account linked to FC Mobile. Rewards land in your in-game inbox.' },
-];
+const steps = T.how.steps.map((step, i) => ({ n: String(i + 1).padStart(2, '0'), t: step.t, d: step.d }));
 
-const tools = [
-  { t: 'Events & Reset', d: 'Live countdowns', h: '/events/' },
-  { t: 'Team OVR', d: 'Squad rating', h: '/team-ovr/' },
-  { t: 'Rank Up Calculator', d: 'Plan your points', h: '/rank-up-calculator/' },
-  { t: 'Football Centre', d: 'Showdowns & points', h: '/football-centre/' },
-];
+const toolLinks = ['/events/', '/team-ovr/', '/rank-up-calculator/', '/football-centre/'];
+const tools = T.how.tools.map((tool, i) => ({ t: tool.t, d: tool.d, h: href(toolLinks[i]) }));
 ---
 <BaseLayout
-  title="FC Mobile Redeem Codes | Working Codes & Rewards"
-  description="Live FC Mobile redeem codes with rewards, expiry status and the official EA redemption steps. Copy a code in one tap and redeem on FCMOBILETOOLS."
+  title={T.meta.title}
+  description={T.meta.description}
   image={socialImage}
 >
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" />
@@ -42,20 +42,20 @@ const tools = [
         <div class="rx-hero-copy">
           <p class="rx-eyebrow">
             <span class="rx-sync" data-rx-sync-dot data-state="live"><i></i></span>
-            <span data-rx-sync-text>Connecting…</span>
+            <span data-rx-sync-text>{T.hero.connecting}</span>
           </p>
-          <h1 class="rx-h1">FC Mobile <span class="rx-grad">Redeem Codes</span></h1>
-          <p class="rx-lede">Every working code in one place. Copy it in a tap, jump to EA's official page, and watch this list update itself the moment a new one drops.</p>
+          <h1 class="rx-h1">{T.hero.titleLead} <span class="rx-grad">{T.hero.titleGrad}</span></h1>
+          <p class="rx-lede">{T.hero.lede}</p>
 
           <div class="rx-cta">
-            <a class="rx-btn rx-btn-primary rx-btn-lg" href="#codes"><span>See live codes</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
-            <a class="rx-btn rx-btn-ghost rx-btn-lg" href={EA_REDEEM_URL} target="_blank" rel="noopener noreferrer"><span>Open EA redemption</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+            <a class="rx-btn rx-btn-primary rx-btn-lg" href="#codes"><span>{T.hero.ctaLive}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
+            <a class="rx-btn rx-btn-ghost rx-btn-lg" href={EA_REDEEM_URL} target="_blank" rel="noopener noreferrer"><span>{T.hero.ctaEa}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
           </div>
 
           <dl class="rx-stats">
-            <div><dt>Active now</dt><dd data-rx-stat="active">–</dd></div>
-            <div><dt>Upcoming</dt><dd data-rx-stat="upcoming">–</dd></div>
-            <div><dt>Codes tracked</dt><dd data-rx-stat="total">–</dd></div>
+            <div><dt>{T.hero.statActive}</dt><dd data-rx-stat="active">–</dd></div>
+            <div><dt>{T.hero.statUpcoming}</dt><dd data-rx-stat="upcoming">–</dd></div>
+            <div><dt>{T.hero.statTotal}</dt><dd data-rx-stat="total">–</dd></div>
           </dl>
         </div>
 
@@ -73,26 +73,26 @@ const tools = [
       <section class="rx-section" id="codes" aria-labelledby="rx-live-h">
         <div class="rx-sec-head">
           <div>
-            <p class="rx-kicker">Live now</p>
-            <h2 id="rx-live-h" class="rx-h2">Working FC Mobile codes</h2>
-            <p class="rx-sub">Tap a code to copy it. Redeem copies it and opens EA's page in one go.</p>
+            <p class="rx-kicker">{T.live.kicker}</p>
+            <h2 id="rx-live-h" class="rx-h2">{T.live.title}</h2>
+            <p class="rx-sub">{T.live.sub}</p>
           </div>
-          <span class="rx-count-pill" data-rx-active-count>– active</span>
+          <span class="rx-count-pill" data-rx-active-count>{T.live.activePill.replace('{n}', '–')}</span>
         </div>
         <div class="rx-cards" data-rx-active aria-live="polite">
           <div class="rx-card rx-card-skel"><div class="rx-skel rx-skel-line" style="width:40%"></div><div class="rx-skel rx-skel-code"></div><div class="rx-skel rx-skel-line" style="width:75%"></div><div class="rx-skel rx-skel-btn"></div></div>
           <div class="rx-card rx-card-skel"><div class="rx-skel rx-skel-line" style="width:40%"></div><div class="rx-skel rx-skel-code"></div><div class="rx-skel rx-skel-line" style="width:75%"></div><div class="rx-skel rx-skel-btn"></div></div>
           <div class="rx-card rx-card-skel"><div class="rx-skel rx-skel-line" style="width:40%"></div><div class="rx-skel rx-skel-code"></div><div class="rx-skel rx-skel-line" style="width:75%"></div><div class="rx-skel rx-skel-btn"></div></div>
         </div>
-        <noscript><p class="rx-noscript">Live codes need JavaScript. You can still open <a href={EA_REDEEM_URL}>EA's redemption page</a> directly.</p></noscript>
+        <noscript><p class="rx-noscript">{T.live.noscriptPre}<a href={EA_REDEEM_URL}>{T.live.noscriptLink}</a>{T.live.noscriptPost}</p></noscript>
       </section>
 
       <section class="rx-section rx-upcoming" data-rx-upcoming hidden aria-labelledby="rx-soon-h">
         <div class="rx-sec-head">
           <div>
-            <p class="rx-kicker">Coming soon</p>
-            <h2 id="rx-soon-h" class="rx-h2">Codes on the way</h2>
-            <p class="rx-sub">Announced but not live yet. The code is revealed the moment it drops.</p>
+            <p class="rx-kicker">{T.soon.kicker}</p>
+            <h2 id="rx-soon-h" class="rx-h2">{T.soon.title}</h2>
+            <p class="rx-sub">{T.soon.sub}</p>
           </div>
         </div>
         <div class="rx-soon-list" data-rx-upcoming-list></div>
@@ -102,34 +102,34 @@ const tools = [
       <section class="rx-section" id="archive" aria-labelledby="rx-arch-h">
         <div class="rx-sec-head">
           <div>
-            <p class="rx-kicker">Archive</p>
-            <h2 id="rx-arch-h" class="rx-h2">Every code, searchable</h2>
-            <p class="rx-sub">Search by code, reward or region. Filter by status or reward type.</p>
+            <p class="rx-kicker">{T.archive.kicker}</p>
+            <h2 id="rx-arch-h" class="rx-h2">{T.archive.title}</h2>
+            <p class="rx-sub">{T.archive.sub}</p>
           </div>
         </div>
 
         <div class="rx-controls">
           <label class="rx-search">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-            <input type="search" data-rx-search placeholder="Search codes or rewards…" autocomplete="off" spellcheck="false" aria-label="Search redeem codes" />
-            <button type="button" class="rx-clear" data-rx-clear hidden aria-label="Clear search">×</button>
+            <input type="search" data-rx-search placeholder={T.archive.searchPlaceholder} autocomplete="off" spellcheck="false" aria-label={T.archive.searchAria} />
+            <button type="button" class="rx-clear" data-rx-clear hidden aria-label={T.archive.clearAria}>×</button>
           </label>
-          <div class="rx-tabs" role="tablist" aria-label="Filter by status" data-rx-status></div>
+          <div class="rx-tabs" role="tablist" aria-label={T.archive.statusAria} data-rx-status></div>
           <label class="rx-sort">
-            <span class="rx-vh">Sort</span>
-            <select data-rx-sort aria-label="Sort codes">
-              <option value="new">Newest first</option>
-              <option value="old">Oldest first</option>
-              <option value="az">A → Z</option>
+            <span class="rx-vh">{T.archive.sortLabel}</span>
+            <select data-rx-sort aria-label={T.archive.sortAria}>
+              <option value="new">{T.archive.sortNew}</option>
+              <option value="old">{T.archive.sortOld}</option>
+              <option value="az">{T.archive.sortAz}</option>
             </select>
           </label>
         </div>
-        <div class="rx-types" data-rx-types aria-label="Filter by reward type"></div>
+        <div class="rx-types" data-rx-types aria-label={T.archive.typesAria}></div>
 
         <div class="rx-table" data-rx-list></div>
         <div class="rx-more">
           <span class="rx-count" data-rx-count></span>
-          <button type="button" class="rx-btn rx-btn-soft" data-rx-more hidden><span>Show more</span></button>
+          <button type="button" class="rx-btn rx-btn-soft" data-rx-more hidden><span>{T.archive.showMoreInitial}</span></button>
         </div>
       </section>
 
@@ -137,8 +137,8 @@ const tools = [
       <section class="rx-section" id="how" aria-labelledby="rx-how-h">
         <div class="rx-sec-head">
           <div>
-            <p class="rx-kicker">How it works</p>
-            <h2 id="rx-how-h" class="rx-h2">Redeem a code in three steps</h2>
+            <p class="rx-kicker">{T.how.kicker}</p>
+            <h2 id="rx-how-h" class="rx-h2">{T.how.title}</h2>
           </div>
         </div>
         <ol class="rx-steps">
@@ -149,16 +149,13 @@ const tools = [
 
         <div class="rx-two">
           <div class="rx-panel">
-            <p class="rx-kicker">Code not working?</p>
+            <p class="rx-kicker">{T.how.troubleKicker}</p>
             <ul class="rx-checks">
-              <li>Enter it exactly as shown. Tapping Copy avoids typos.</li>
-              <li>Check the status badge. Expired codes can no longer be redeemed.</li>
-              <li>Sign in with the same EA Account that is linked to your FC Mobile game.</li>
-              <li>Some codes have a usage limit and can run out before their expiry.</li>
+              {T.how.checks.map((c) => <li>{c}</li>)}
             </ul>
           </div>
           <div class="rx-panel">
-            <p class="rx-kicker">More FC Mobile tools</p>
+            <p class="rx-kicker">{T.how.toolsKicker}</p>
             <div class="rx-tools">
               {tools.map((t) => (
                 <a href={t.h} class="rx-tool"><b>{t.t}</b><span>{t.d}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
@@ -172,12 +169,12 @@ const tools = [
       <section class="rx-section" aria-labelledby="rx-faq-h">
         <div class="rx-sec-head">
           <div>
-            <p class="rx-kicker">FAQ</p>
-            <h2 id="rx-faq-h" class="rx-h2">Common questions</h2>
+            <p class="rx-kicker">{T.faq.kicker}</p>
+            <h2 id="rx-faq-h" class="rx-h2">{T.faq.title}</h2>
           </div>
         </div>
         <div class="rx-faq">
-          {REDEEM_FAQ.map((f, i) => (
+          {faq.map((f, i) => (
             <details open={i === 0}>
               <summary>{f.q}</summary>
               <p>{f.a}</p>
@@ -187,9 +184,9 @@ const tools = [
       </section>
 
       <section class="rx-about">
-        <h2 class="rx-h3">About these FC Mobile redeem codes</h2>
-        <p>FCMOBILETOOLS tracks every FC Mobile redeem code in one searchable list, with the reward, the date it was added, its expiry and when it was last verified. Codes that pass their expiry date are marked expired automatically, so what you see under "Working codes" is what is still worth trying.</p>
-        <p>Rewards are claimed on EA's official redemption website, never here. We never ask for your EA login. If a code is rejected, it has most likely expired or reached its usage limit.</p>
+        <h2 class="rx-h3">{T.about.title}</h2>
+        <p>{T.about.p1}</p>
+        <p>{T.about.p2}</p>
       </section>
     </div>
 
@@ -197,12 +194,15 @@ const tools = [
   </main>
 
   <script type="application/ld+json" id="rx-ld" is:inline set:html={structuredData}></script>
+  <script type="application/json" id="rx-i18n" is:inline set:html={safeScriptJson({ locale: tr.locale, htmlLang: locale, activePill: T.live.activePill, activePillOne: T.live.activePillOne, ui: T.ui })}></script>
   <script type="application/json" id="rx-bootstrap" is:inline>null</script>
   {devFallback && <script type="application/json" id="rx-fallback" is:inline set:html={devFallback}></script>}
   <script>import '../scripts/redeem-page.js';</script>
 </BaseLayout>
 
 <style is:global>
+/* Translated headings can be longer than the English one, so allow them to wrap. */
+html:not([lang="en"]) .rx-grad{ white-space:normal; }
 /* ============================================================
    Redeem codes — one stylesheet, built on the site's tokens.
    Everything is prefixed .rx so nothing leaks into other pages.

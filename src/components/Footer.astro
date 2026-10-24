@@ -1,62 +1,70 @@
 ---
 import { ONESIGNAL_ENABLED } from '../config/siteNotifications.js';
+import { getLocaleFromPath, localizeHref, translator } from '../i18n/index.js';
+const locale = getLocaleFromPath(Astro.url.pathname);
+const tr = translator(locale);
+// Links stay in the visitor's language when a translated page exists. Blog and legal pages
+// are not translated, so those keep their English URLs.
+const href = (h) => localizeHref(h, locale);
+const navItem = (id) => tr(`nav.items.${id}.label`);
+const link = (key) => tr(`footer.links.${key}`);
 ---
 <footer class="fcmt-footer">
   <div class="fcmt-footer-glow" aria-hidden="true"></div>
   <div class="wrap fcmt-footer-grid">
     <div class="fcmt-footer-brand">
-      <a class="fcmt-footer-logo" href="/" aria-label="FCMobiletools home">
+      <a class="fcmt-footer-logo" href={href('/')} aria-label={tr('common.homeAria')}>
         <img src="/assets/images/logo.png" alt="FCMobiletools" width="1774" height="887" loading="lazy" decoding="async" />
       </a>
-      <p>FC Mobile tools, live resources, calculators and guides built to keep everything useful in one place.</p>
-      <span class="fcmt-footer-note">Fan-made • Not affiliated with EA SPORTS FC Mobile.</span>
+      <p>{tr('footer.brand')}</p>
+      <span class="fcmt-footer-note">{tr('footer.note')}</span>
     </div>
 
-    <nav class="fcmt-footer-col" aria-label="Tools">
-      <b>TOOLS</b>
-      <a href="/team-ovr">Team OVR</a>
-      <a href="/training-calculator">Training Calculator</a>
-      <a href="/rank-up-calculator">Rank Up Calculator</a>
-      <a href="/investment-calculator">Investment Calculator</a>
-      <a href="/gauntlet-planner">Gauntlet Planner</a>
-      <a href="/shards-counter">Shards Counter</a>
+    <nav class="fcmt-footer-col" aria-label={tr('footer.aria.tools')}>
+      <b>{tr('footer.cols.tools')}</b>
+      <a href={href('/team-ovr')}>{navItem('team-ovr')}</a>
+      <a href={href('/training-calculator')}>{navItem('training')}</a>
+      <a href={href('/rank-up-calculator')}>{navItem('rank')}</a>
+      <a href={href('/investment-calculator')}>{navItem('investment')}</a>
+      <a href={href('/gauntlet-planner')}>{navItem('gauntlet')}</a>
+      <a href={href('/shards-counter')}>{navItem('shards')}</a>
     </nav>
 
-    <nav class="fcmt-footer-col" aria-label="Live">
-      <b>LIVE</b>
-      <a href="/events">Events</a>
-      <a href="/redeem-codes">Redeem Codes</a>
-      <a href="/football-centre">Football Centre</a>
-      <a href="/captain-tracker">Captain OVR Tracker</a>
-      <a href="/trivia/">Trivia Answers</a>
-      <a href="/fc-mobile-27">FC Mobile 27 Update</a>
+    <nav class="fcmt-footer-col" aria-label={tr('footer.aria.live')}>
+      <b>{tr('footer.cols.live')}</b>
+      <a href={href('/events')}>{navItem('events')}</a>
+      <a href={href('/redeem-codes')}>{navItem('codes')}</a>
+      <a href={href('/football-centre')}>{navItem('centre')}</a>
+      <a href={href('/captain-tracker')}>{navItem('tracker')}</a>
+      <a href={href('/trivia/')}>{link('triviaAnswers')}</a>
+      <a href={href('/fc-mobile-27')}>{tr('nav.update.label')}</a>
     </nav>
 
-    <nav class="fcmt-footer-col" aria-label="Articles">
-      <b>ARTICLES</b>
-      <a href="/blog">All Articles</a>
-      <a href="/blog?type=updates">Updates</a>
-      <a href="/blog?type=leaks">Leaks</a>
-      <a href="/blog?type=guides">Guides</a>
-      <a href="/blog?type=analysis">Analysis</a>
-      <a href="/blog?type=reviews">Reviews</a>
+    <nav class="fcmt-footer-col" aria-label={tr('footer.aria.articles')}>
+      <b>{tr('footer.cols.articles')}</b>
+      <a href="/blog">{link('allArticles')}</a>
+      <a href="/blog?type=updates">{link('updates')}</a>
+      <a href="/blog?type=leaks">{link('leaks')}</a>
+      <a href="/blog?type=guides">{link('guides')}</a>
+      <a href="/blog?type=analysis">{link('analysis')}</a>
+      <a href="/blog?type=reviews">{link('reviews')}</a>
     </nav>
 
-    <nav class="fcmt-footer-col" aria-label="Information and legal">
-      <b>INFO &amp; LEGAL</b>
-      <a href="/legal/about/">About</a>
-      <a href="/legal/privacy-policy">Privacy</a>
-      <a href="/legal/terms-of-use">Terms</a>
-      <a href="/legal/disclaimer">Disclaimer</a>
-      <a href="/legal/contact">Contact</a>
-      <a href="/legal/privacy-policy#privacy-choices" data-privacy-choices>Privacy Choices</a>
-      {ONESIGNAL_ENABLED && <a href="/notifications/">Push Alerts</a>}
+    <nav class="fcmt-footer-col" aria-label={tr('footer.aria.legal')}>
+      <b>{tr('footer.cols.legal')}</b>
+      <a href="/legal/about/">{link('about')}</a>
+      <a href="/legal/privacy-policy">{link('privacy')}</a>
+      <a href="/legal/terms-of-use">{link('terms')}</a>
+      <a href="/legal/disclaimer">{link('disclaimer')}</a>
+      <a href="/legal/contact">{link('contact')}</a>
+      <a href="/legal/privacy-policy#privacy-choices" data-privacy-choices>{link('privacyChoices')}</a>
+      {ONESIGNAL_ENABLED && <a href="/notifications/">{link('pushAlerts')}</a>}
     </nav>
   </div>
 
   <div class="wrap fcmt-footer-bottom">
     <span>© {new Date().getFullYear()} FCMobiletools</span>
-    <span>Built for the FC Mobile community.</span>
+    <span>{tr('footer.built')}</span>
   </div>
 </footer>
 
