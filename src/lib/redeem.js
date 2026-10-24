@@ -509,14 +509,7 @@ export function redeemJsonLd(codes, origin = 'https://fcmobiletools.online', dat
 }
 
 // JSON that is safe to embed inside a <script> element.
-// JSON embedded in script elements must not be able to close the element via untrusted text.
-// JSON that is safe to embed inside a <script> element.
 export const safeScriptJson = (value) => JSON.stringify(value)
-  .replace(/</g, '\\u003c')
-  .replace(/>/g, '\\u003e')
-  .replace(/&/g, '\\u0026')
-  .replace(/\u2028/g, '\\u2028')
-  .replace(/\u2029/g, '\\u2029');
   .replace(/</g, '\\u003c')
   .replace(/>/g, '\\u003e')
   .replace(/&/g, '\\u0026')
