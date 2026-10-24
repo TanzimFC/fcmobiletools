@@ -3,11 +3,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import EventCard from '../components/events/EventCard.astro';
 import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
+import { summarizeRedeemPayload } from '../lib/redeem-summary.js';
+import { safeScriptJson } from '../lib/redeem.js';
 import { getPosts, img, fmtDate } from '../lib/blog.js';
 
 const FC = FOOTBALL_CENTRE_CONTENT;
 const DAY = 864e5;
 const now = Date.now();
+const DEV_REDEEM_SUMMARY = import.meta.env.DEV
+  ? { ...summarizeRedeemPayload({ codes: REDEEM_CODES, serverDate: new Date().toISOString().slice(0, 10) }), developmentFallback: true }
+  : null;
 
 /* ------------------------------------------------------------------ helpers */
 const pad = (n) => String(Math.max(0, Math.floor(n))).padStart(2, '0');
@@ -133,10 +138,8 @@ const nextDailyMs = (t) => {
 };
 const nextDaily = nextDailyMs(now);
 
-/* --------------------------------------------------------------------- codes */
-const activeCodes = REDEEM_CODES.filter(
-  (c) => c.status === 'active' && (!c.expiryDate || Date.parse(c.expiryDate + 'T23:59:59Z') > now)
-);
+/* --------------------------------------------------------------------- codes
+   The homepage, Events hub and Redeem Codes page use one D1-backed live source. */
 
 /* ------------------------------------------------------------------ coverage */
 const allPosts = await getPosts();
@@ -312,10 +315,10 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
           <strong id="gRivals" role="timer">{Number.isFinite(nextRivals) ? clockText(nextRivals - now) : '—'}</strong>
           <em id="gRivalsDate">{Number.isFinite(nextRivals) ? utcFmt(nextRivals) : ''}</em>
         </a>
-        <a class="tile tile--codes" href="/redeem-codes">
+        <a class="tile tile--codes" href="/redeem-codes/" data-fcmt-events-code-tile>
           <small>Redeem codes</small>
-          <strong>{activeCodes.length} active</strong>
-          <em>{activeCodes[0] ? 'Latest: ' + activeCodes[0].code : 'Check for new codes'} →</em>
+          <strong data-fcmt-code-count>Live status loading</strong>
+          <em data-fcmt-code-latest>Open the full code list →</em>
         </a>
       </section>
 
@@ -491,6 +494,9 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       </p>
     </div>
   </main>
+
+  <script type="application/json" id="fcmt-current-redeem-bootstrap" is:inline set:html={safeScriptJson(DEV_REDEEM_SUMMARY)}></script>
+  <script>import '../scripts/current-redeem-code.js';</script>
 
   <script define:vars={{ rivalsAnchorUtc: rivals.anchorUtc, rivalsCycleDays: rivals.cycleDays, dailyResetUtc: schedule.dailyResetUtc || '01:00' }}>
   (() => {
