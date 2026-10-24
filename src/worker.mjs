@@ -1791,40 +1791,38 @@ function validateSiteAds(content) {
   content.placementMode='giveaways_only';
   content.frequencyCapMinutes=Number(content.frequencyCapMinutes ?? 30);
 
-  const normalizeFormat=(key,label,expectedZone,expectedHost,expectedPath,defaultDelay)=>{
-    const item=content[key];
-    if(!item || typeof item!=='object') throw new Error(label+' configuration is missing.');
-    item.enabled=Boolean(item.enabled);
-    item.zone=String(item.zone||'').trim();
-    item.src=String(item.src||'').trim();
-    item.delayMs=Number(item.delayMs ?? defaultDelay);
-    let parsed;
-    try { parsed=new URL(item.src); } catch {}
-    if(item.zone!==expectedZone || !parsed || parsed.protocol!=='https:' ||
-       parsed.hostname!==expectedHost || parsed.pathname!==expectedPath || parsed.search || parsed.hash) {
-      throw new Error(label+' settings are invalid.');
-    }
-    if(!Number.isInteger(item.delayMs) || item.delayMs<5000 || item.delayMs>300000) {
-      throw new Error(label+' delay must be between 5 and 300 seconds.');
-    }
-  };
+  // Ignore and remove legacy push-ad fields, even if an older admin client submits them.
+  delete content.push;
+  delete content.inPagePush;
 
-  normalizeFormat('vignette','Monetag Vignette','12079211','n6wxm.com','/vignette.min.js',30000);
-  normalizeFormat('push','Monetag push notifications','12079218','5gvci.com','/act/files/tag.min.js',15000);
-  normalizeFormat('inPagePush','Monetag In-Page Push','12079223','nap5k.com','/tag.min.js',7000);
+  const item=content.vignette;
+  if(!item || typeof item!=='object') throw new Error('Monetag Vignette configuration is missing.');
+  item.enabled=Boolean(item.enabled);
+  item.zone=String(item.zone||'').trim();
+  item.src=String(item.src||'').trim();
+  item.delayMs=Number(item.delayMs ?? 60000);
+  let parsed;
+  try { parsed=new URL(item.src); } catch {}
+  if(item.zone!=='12079211' || !parsed || parsed.protocol!=='https:' ||
+     parsed.hostname!=='n6wxm.com' || parsed.pathname!=='/vignette.min.js' || parsed.search || parsed.hash) {
+    throw new Error('Monetag Vignette settings are invalid.');
+  }
+  if(!Number.isInteger(item.delayMs) || item.delayMs<5000 || item.delayMs>300000) {
+    throw new Error('Monetag Vignette delay must be between 5 and 300 seconds.');
+  }
 
   if(!Number.isInteger(content.frequencyCapMinutes) || content.frequencyCapMinutes<20 || content.frequencyCapMinutes>240) {
     throw new Error('The visitor frequency cap must be between 20 and 240 minutes.');
   }
 
-  // Legacy clients may submit old fields; never save a popunder configuration.
+  // Legacy clients may submit old fields; never save a popunder or push-ad configuration.
   delete content.popunder;
   delete content.videoSlider;
   content.excludedPathPrefixes=['/admin','/api','/creator/login','/fc-mobile-27','/account'];
   return content;
 }
 function siteAdsText(content) {
-  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\n// Monetag formats run on every /giveaways route after advertising consent. Homepage, admin, accounts, and every other tool are excluded. No popunder format is configured.\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\n';
+  return '// Central ad configuration managed by the FC Mobile Tools admin panel.\\n// Only Monetag Vignette is supported; browser push ads and In-Page Push have been removed.\\nexport const SITE_ADS = '+JSON.stringify(content,null,2)+';\\n';
 }
 
 function parseFcMobile27(text) {
@@ -2482,8 +2480,6 @@ async function api(request,env,path,actorRole='admin') {
         enabled:input.enabled===undefined?current.enabled:Boolean(input.enabled),
         provider:current.provider,
         vignette:{...current.vignette,...(input.vignette||{})},
-        push:{...current.push,...(input.push||{})},
-        inPagePush:{...current.inPagePush,...(input.inPagePush||{})},
         frequencyCapMinutes:input.frequencyCapMinutes===undefined?current.frequencyCapMinutes:Number(input.frequencyCapMinutes)
       });
       const file=await repoFile(env,'src/config/siteAds.js');
