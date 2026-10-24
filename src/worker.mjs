@@ -2624,7 +2624,13 @@ async function adminDashboard(request, env, url) {
   const html = await asset.text();
   const leagueLink = '<a class="nav-external" href="/admin/leagues.html"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-6 9 6v11H3z"/><path d="M8 20v-7h8v7"/></svg></span><span>League Review</span></a>';
   const withLeagueLink = html.includes('href="/admin/leagues.html"') ? html : html.replace('<a class="nav-external" href="/admin/surveys/">', leagueLink + '<a class="nav-external" href="/admin/surveys/">');
-  const patched = withLeagueLink.replace('</head>', `<style id="fc-admin-cyan-theme">${ADMIN_DASHBOARD_CSS}</style></head>`);
+  const isWorker = await workerAuthenticated(request,env);
+  const isCreator = await creatorAuthenticated(request,env);
+  const notificationLink = !isWorker && !isCreator ? '<a class="nav-external" href="/admin/notification-studio.html"><span class="ni">✦</span><span>Notification Studio</span></a>' : '';
+  const growthLinks = '<div class="nav-group">Growth</div><a class="nav-external" href="/admin/dashboard.html?section=redeem&openPromo=1"><span class="ni">✧</span><span>Promo Studio</span></a>' + notificationLink;
+  const withStudios = withLeagueLink.includes('<div class="nav-group">Game data</div>') ? withLeagueLink.replace('<div class="nav-group">Game data</div>', growthLinks + '<div class="nav-group">Game data</div>') : withLeagueLink;
+  const promoBoot = `<script>(function(){var p=new URLSearchParams(location.search);if(p.get('openPromo')!=='1')return;var n=0;function launch(){var nav=document.querySelector('[data-section="redeem"]');if(nav&&!nav.classList.contains('active'))nav.click();var b=document.getElementById('rxaPromoOpen');if(b){b.click();return true}return false}var timer=setInterval(function(){if(launch()||++n>60)clearInterval(timer)},120);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',launch,{once:true})})();</script>`;
+  const patched = withStudios.replace('</head>', `<style id="fc-admin-cyan-theme">${ADMIN_DASHBOARD_CSS}</style></head>`).replace('</body>', promoBoot + '</body>');
   const headers = new Headers(asset.headers);
   headers.set('content-type','text/html; charset=utf-8');
   headers.set('cache-control','no-store');
@@ -2689,6 +2695,112 @@ function redeemErrorResponse(error) {
   return json({ error: error?.message || 'Unexpected error.' }, 500);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* OneSignal Notification Studio                                       */
+/* ------------------------------------------------------------------ */
+const FCM_ONESIGNAL_APP_ID = 'c64e5faf-4171-4fbc-af73-8406200cee1e';
+const NOTIFICATION_TOPICS = Object.freeze({
+  all: { label: 'All subscribed push users', tag: null },
+  redeem_codes: { label: 'Redeem code alerts', tag: 'notify_redeem_codes' },
+  live_events: { label: 'Live event alerts', tag: 'notify_live_events' },
+  giveaways: { label: 'Giveaway alerts', tag: 'notify_giveaways' },
+  site_updates: { label: 'Site update alerts', tag: 'notify_site_updates' },
+});
+async function ensureNotificationCampaignSchema(db) {
+  await db.prepare("CREATE TABLE IF NOT EXISTS notification_campaigns (id TEXT PRIMARY KEY, onesignal_id TEXT, label TEXT NOT NULL DEFAULT '', title TEXT NOT NULL, message TEXT NOT NULL, launch_url TEXT NOT NULL, topic TEXT NOT NULL, status TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'manual', created_by TEXT NOT NULL DEFAULT 'admin', created_at TEXT NOT NULL, error TEXT, dedupe_key TEXT UNIQUE)").run();
+}
+function safeNotificationUrl(value, origin) {
+  const raw=String(value||'https://fcmobiletools.online/redeem-codes/').trim();
+  let target;
+  try { target=new URL(raw); } catch { throw new Error('Enter a valid launch URL.'); }
+  if(target.protocol!=='https:' || target.origin!==origin || !['fcmobiletools.online','www.fcmobiletools.online'].includes(target.hostname)) throw new Error('Push links must point to FCMobiletools.');
+  if(target.hostname==='www.fcmobiletools.online') target.hostname='fcmobiletools.online';
+  return target.toString();
+}
+async function sendOneSignalPush(env, campaign, options={}) {
+  const apiKey=String(env.ONESIGNAL_REST_API_KEY||'').trim();
+  if(!apiKey) throw new Error('ONESIGNAL_REST_API_KEY is not configured as a Cloudflare Worker secret.');
+  const topic=NOTIFICATION_TOPICS[campaign.topic];
+  if(!topic) throw new Error('Choose a valid notification audience.');
+  const payload={app_id:FCM_ONESIGNAL_APP_ID,target_channel:'push',headings:{en:campaign.title},contents:{en:campaign.message},url:campaign.launchUrl,ttl:86400};
+  if(options.subscriptionId) {
+    if(!/^[0-9a-f-]{20,80}$/i.test(options.subscriptionId)) throw new Error('That subscription ID does not look valid.');
+    payload.include_subscription_ids=[options.subscriptionId];
+  } else if(topic.tag) {
+    payload.filters=[{field:'tag',key:topic.tag,relation:'=',value:'true'}];
+  } else {
+    payload.included_segments=['Subscribed Users'];
+  }
+  const response=await fetch('https://api.onesignal.com/notifications?c=push',{method:'POST',headers:{authorization:'Key '+apiKey,'content-type':'application/json',accept:'application/json'},body:JSON.stringify(payload)});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok || result.errors) {
+    const detail=Array.isArray(result.errors)?result.errors.join('; '):typeof result.errors==='string'?result.errors:'';
+    throw new Error(detail.slice(0,300)||'OneSignal rejected the notification ('+response.status+').');
+  }
+  return {id:result.id||null,recipients:Number(result.recipients||0)};
+}
+async function recordNotificationCampaign(db,campaign,result,errorText) {
+  await ensureNotificationCampaignSchema(db);
+  await db.prepare("INSERT OR IGNORE INTO notification_campaigns (id,onesignal_id,label,title,message,launch_url,topic,status,kind,created_by,created_at,error,dedupe_key) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(
+    crypto.randomUUID(),result?.id||null,String(campaign.label||'').slice(0,80),campaign.title,campaign.message,campaign.launchUrl,campaign.topic,result?'sent':'failed',campaign.kind||'manual',campaign.createdBy||'admin',new Date().toISOString(),errorText||null,campaign.dedupeKey||null
+  ).run();
+}
+async function autoRedeemPush(env,db,info) {
+  if(!String(env.ONESIGNAL_REST_API_KEY||'').trim()) { console.warn('[ONESIGNAL_AUTO_REDEEM] Skipped: ONESIGNAL_REST_API_KEY is not configured.'); return; }
+  const isBulk=info.kind==='redeem_bulk';
+  const reward=String(info.reward||'FC Mobile rewards').trim().slice(0,90);
+  const campaign={
+    label:isBulk?'New redeem codes':'New redeem code',
+    title:isBulk?'🎁 New FC Mobile codes are live':'⚽ New FC Mobile redeem code',
+    message:isBulk
+      ? (Math.max(1,Number(info.count)||1)+' new code'+(Number(info.count)===1?'':'s')+' added. Check rewards, region and expiry, then claim yours.')
+      : ('A new code is live for '+reward+'. Check the region and expiry, then claim your rewards.'),
+    launchUrl:'https://fcmobiletools.online/redeem-codes/',topic:'redeem_codes',kind:'automation',createdBy:info.actor||'admin',
+    dedupeKey:'redeem:'+String(info.dedupe||'').slice(0,120)
+  };
+  try {
+    const sent=await sendOneSignalPush(env,campaign);
+    await recordNotificationCampaign(db,campaign,sent,null);
+    console.info('[ONESIGNAL_AUTO_REDEEM] Sent',sent.id||'accepted');
+  } catch(error) {
+    try { await recordNotificationCampaign(db,campaign,null,String(error?.message||'Send failed.').slice(0,300)); } catch {}
+    console.error('[ONESIGNAL_AUTO_REDEEM]',error?.message||'Send failed.');
+  }
+}
+async function notificationStudioApi(request,env,url) {
+  if(!(await authenticated(request,env))) return json({error:'Owner admin authentication required.'},401);
+  if(request.method==='GET') {
+    try {
+      const db=await d1(env); await ensureNotificationCampaignSchema(db);
+      const rows=await db.prepare("SELECT id,onesignal_id,label,title,message,launch_url,topic,status,kind,created_by,created_at,error FROM notification_campaigns ORDER BY created_at DESC LIMIT 40").all();
+      return json({campaigns:(rows.results||[]).map(x=>({...x,topic_label:NOTIFICATION_TOPICS[x.topic]?.label||x.topic}))});
+    } catch(error) { return json({error:error?.message||'Campaign history is unavailable.'},503); }
+  }
+  if(request.method!=='POST') return json({error:'Method not allowed.'},405,{allow:'GET, POST'});
+  if((request.headers.get('origin')||url.origin)!==url.origin) return json({error:'Request origin rejected.'},403);
+  const input=await request.json().catch(()=>null);
+  if(!input||typeof input!=='object') return json({error:'Send a valid JSON campaign.'},400);
+  const action=String(input.action||'send'),title=String(input.title||'').trim(),message=String(input.message||'').trim(),topic=String(input.topic||'all');
+  if(title.length<3||title.length>70) return json({error:'Title must be 3–70 characters.'},400);
+  if(message.length<8||message.length>180) return json({error:'Message must be 8–180 characters.'},400);
+  if(!NOTIFICATION_TOPICS[topic]) return json({error:'Choose a valid audience.'},400);
+  let launchUrl;
+  try { launchUrl=safeNotificationUrl(input.url,url.origin); } catch(error) { return json({error:error.message},400); }
+  if(action!=='send'&&action!=='test') return json({error:'Unknown notification action.'},400);
+  if(action==='test'&&!String(input.subscriptionId||'').trim()) return json({error:'A single subscription ID is required for test sends.'},400);
+  const campaign={label:String(input.label||'').trim().slice(0,80),title,message,launchUrl,topic,kind:action==='test'?'test':'manual',createdBy:'admin'};
+  const db=await d1(env);
+  try {
+    const sent=await sendOneSignalPush(env,campaign,action==='test'?{subscriptionId:String(input.subscriptionId).trim()}:{});
+    await recordNotificationCampaign(db,campaign,sent,null);
+    return json({ok:true,id:sent.id,recipients:sent.recipients||0});
+  } catch(error) {
+    try { await recordNotificationCampaign(db,campaign,null,String(error?.message||'Send failed.').slice(0,300)); } catch {}
+    return json({error:error?.message||'OneSignal send failed.'},502);
+  }
+}
+
 // Handles /api/admin/redeem* and /api/creator/redeem*. Admins and creators can
 // read and write; only admins can delete.
 async function redeemAdminApi(request, env, url) {
@@ -2713,15 +2825,25 @@ async function redeemAdminApi(request, env, url) {
     if (method === 'POST' && !(request.headers.get('content-type') || '').includes('application/json')) return json({ error: 'Send JSON.' }, 415);
 
     let result;
+    let autoPush = null;
     if (method === 'POST' && sub === '/') {
-      result = await saveRedeemRecord(db, await request.json(), identity.actor);
+      const input = await request.json();
+      result = await saveRedeemRecord(db, input, identity.actor);
+      if (result.action === 'created' && String(input.status || 'active') === 'active') {
+        autoPush = { kind: 'redeem_single', reward: input.reward, dedupe: result.code, actor: identity.actor };
+      }
     } else if (method === 'DELETE' && sub === '/') {
       if (identity.role !== 'admin') return json({ error: 'Only admins can delete codes.' }, 403);
       result = await deleteRedeemCode(db, url.searchParams.get('code') || '');
     } else if (method === 'POST' && sub === '/bulk') {
       const body = await request.json();
-      if (body.action === 'create') result = await bulkCreateRedeem(db, body.items, identity.actor);
-      else {
+      if (body.action === 'create') {
+        result = await bulkCreateRedeem(db, body.items, identity.actor);
+        const newActiveItems = (body.items || []).filter(item => String(item.status || 'active') === 'active');
+        if (Number(result.created || 0) > 0 && newActiveItems.length) {
+          autoPush = { kind: 'redeem_bulk', count: result.created, reward: 'FC Mobile rewards', dedupe: 'bulk:' + crypto.randomUUID(), actor: identity.actor };
+        }
+      } else {
         if (body.action === 'delete' && identity.role !== 'admin') return json({ error: 'Only admins can delete codes.' }, 403);
         result = await bulkRedeemAction(db, body.action, body.codes, identity.actor);
       }
@@ -2729,6 +2851,7 @@ async function redeemAdminApi(request, env, url) {
       return json({ error: 'Not found.' }, 404);
     }
 
+    if (autoPush) await autoRedeemPush(env, db, autoPush);
     await purgePublicRedeemCache(url.origin);
     return json({ ok: true, ...result });
   } catch (error) {
@@ -3098,6 +3221,8 @@ export function createExports(manifest) {
   }
 
   const isAdminEntry = url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/login/' || url.pathname === '/admin/login.html';
+  if(url.pathname === '/api/notification-studio') return notificationStudioApi(request,env,url);
+
   if(url.pathname === '/api/football' && request.method === 'GET') {
     try {
       const file=await repoFile(env,'src/data/footballCentre.js');
