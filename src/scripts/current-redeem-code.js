@@ -186,8 +186,8 @@ if (currentSummary?.developmentFallback) {
         currentSummary = payload;
         renderSummary(currentSummary);
       } catch {
-        currentSummary = null;
-        renderUnavailable();
+        // Keep a valid server-injected snapshot if only the background refresh failed.
+        if (!currentSummary) renderUnavailable();
       } finally {
         refreshInFlight = null;
       }
