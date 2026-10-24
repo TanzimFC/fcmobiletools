@@ -12,6 +12,7 @@ import {
   bulkCreate as bulkCreateRedeem, bulkAction as bulkRedeemAction, deleteCode as deleteRedeemCode,
   codesToCsv, redeemJsonLd, safeScriptJson
 } from './lib/redeem.js';
+import { summarizeRedeemPayload } from './lib/redeem-summary.js';
 import { adminAccountApi } from './lib/accountApi.mjs';
 import { ensureImageUploadQuotaSchema, reserveImageUploadQuota as reserveD1ImageUploadQuota, pruneExpiredImageUploadQuotas } from './lib/imageUploadQuota.mjs';
 import { accountSurveyRoutes, adminSurveyApi } from './lib/surveyApi.mjs';
@@ -2677,13 +2678,16 @@ async function publicRedeemApi(request, env, ctx, url) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return json({ error: 'Method not allowed.' }, 405, { allow: 'GET, HEAD' });
   try {
     const { payload, etag } = await publicRedeemSnapshot(env, ctx, url.origin);
+    const compact = url.searchParams.get('view') === 'summary';
+    const responsePayload = compact ? summarizeRedeemPayload(payload) : payload;
+    const responseEtag = compact ? etag.replace('W/"', 'W/"summary-') : etag;
     const headers = {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': `public, max-age=${PUBLIC_REDEEM_TTL}, stale-while-revalidate=60`,
-      etag,
+      etag: responseEtag,
     };
-    if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers });
-    return new Response(request.method === 'HEAD' ? null : JSON.stringify(payload), { headers });
+    if (request.headers.get('if-none-match') === responseEtag) return new Response(null, { status: 304, headers });
+    return new Response(request.method === 'HEAD' ? null : JSON.stringify(responsePayload), { headers });
   } catch (error) {
     console.error('[REDEEM_PUBLIC]', error?.message);
     return json({ error: 'Redeem codes are temporarily unavailable.' }, 503);
@@ -2903,6 +2907,34 @@ async function redeemPage(request, env, ctx, url, assetPath = '/redeem-codes/') 
     .on('script#rx-bootstrap', { element(el) { el.setInnerContent(bootstrap, { html: true }); } })
     .on('script#rx-ld', { element(el) { el.setInnerContent(structured, { html: true }); } })
     .transform(new Response(asset.body, { status: asset.status, headers }));
+}
+
+// Homepage and Events hub receive a compact snapshot from the same cached D1 source.
+// If D1 is unavailable, keep the static asset's safe fallback and let the client try the API.
+async function currentRedeemSummaryPage(request, env, ctx, url, assetPath, pageName) {
+  const asset = await env.ASSETS.fetch(new Request(new URL(assetPath, url), { method: 'GET', headers: request.headers }));
+  if (!asset.ok || !(asset.headers.get('content-type') || '').includes('text/html')) return asset;
+
+  const headers = new Headers(asset.headers);
+  headers.set('cache-control', 'no-store, max-age=0, must-revalidate');
+  headers.set('x-fcmobiletools-page', pageName);
+  headers.delete('content-length');
+  headers.delete('etag');
+
+  let summary = null;
+  try {
+    summary = summarizeRedeemPayload((await publicRedeemSnapshot(env, ctx, url.origin)).payload);
+  } catch (error) {
+    console.error('[REDEEM_SUMMARY_PAGE]', error?.message);
+  }
+
+  const response = new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers });
+  if (!summary) return response;
+  return new HTMLRewriter()
+    .on('script#fcmt-current-redeem-bootstrap', {
+      element(el) { el.setInnerContent(safeScriptJson(summary), { html: true }); }
+    })
+    .transform(response);
 }
 
 
@@ -3216,6 +3248,8 @@ export function createExports(manifest) {
   const redeemAsset = request.method === 'GET' ? localizedPageAsset(url, '/redeem-codes/') : null;
   if (redeemAsset) return redeemPage(request, env, ctx, url, redeemAsset);
 
+  const homeAsset = request.method === 'GET' ? localizedPageAsset(url, '/') : null;
+  if (homeAsset) return currentRedeemSummaryPage(request, env, ctx, url, homeAsset, 'homepage-live-codes');
 
   if(url.pathname === '/fc-mobile-beta' || url.pathname === '/fc-mobile-beta/' || url.pathname === '/legacy/fc-mobile-beta.html') {
     return Response.redirect(new URL('/fc-mobile-27/',url),301);
@@ -3281,15 +3315,8 @@ export function createExports(manifest) {
   // /profile/:username is now handled by Astro's on-demand dynamic route.
   // Keep the JSON endpoint above as the single privacy-filtered profile data source
   // for the dynamic page and other account surfaces such as the leaderboard.
-  const eventsAsset = localizedPageAsset(url, '/events/');
-  if(eventsAsset) {
-    const asset=await env.ASSETS.fetch(new Request(new URL(eventsAsset,url),{method:'GET',headers:request.headers}));
-    if(!asset.ok) return asset;
-    const headers=new Headers(asset.headers);
-    headers.set('cache-control','no-store, max-age=0, must-revalidate');
-    headers.set('x-fcmobiletools-page','events-reset-live');
-    return new Response(await asset.arrayBuffer(),{status:asset.status,statusText:asset.statusText,headers});
-  }
+  const eventsAsset = request.method === 'GET' ? localizedPageAsset(url, '/events/') : null;
+  if (eventsAsset) return currentRedeemSummaryPage(request, env, ctx, url, eventsAsset, 'events-reset-live');
   if(url.pathname.startsWith('/api/admin/articles') || url.pathname.startsWith('/api/admin/inbox')) return editorialApi(request,env,url.pathname.slice('/api/admin'.length));
   if(url.pathname.startsWith('/api/creator/articles') || url.pathname.startsWith('/api/creator/inbox')) return editorialApi(request,env,url.pathname.slice('/api/creator'.length));
   if(url.pathname.startsWith('/api/creator/')) { const creatorRoute=await creatorEditorialRoute(request,env,url.pathname.slice('/api/creator'.length)); if(creatorRoute) return creatorRoute; }
