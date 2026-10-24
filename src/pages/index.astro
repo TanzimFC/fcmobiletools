@@ -2,6 +2,8 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPosts, img, fmtDate, iso } from '../lib/blog.js';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
+import { summarizeRedeemPayload } from '../lib/redeem-summary.js';
+import { safeScriptJson } from '../lib/redeem.js';
 import { FOOTBALL_CENTRE_CONTENT as FC } from '../data/footballCentre.js';
 
 /* ───────────────────────── data ───────────────────────── */
@@ -9,13 +11,11 @@ const posts = await getPosts();
 const latest = posts.slice(0, 5);
 const buildTime = Date.now();
 
-// Codes: only call a code "active" if its status says so AND it has not passed its expiry date.
-const isLiveCode = (c) =>
-  c.status === 'active' && (!c.expiryDate || Date.parse(c.expiryDate + 'T23:59:59Z') > buildTime);
-const liveCodes = REDEEM_CODES.filter(isLiveCode);
-const featuredCode = liveCodes[0] ?? null;
-const lastCode = featuredCode ?? REDEEM_CODES[0] ?? null;
-const lastChecked = REDEEM_CODES.map((c) => c.lastVerified).filter(Boolean).sort().pop() ?? null;
+// Local Astro development can use the seed data for previewing. Production is hydrated
+// from the same D1-backed live endpoint as the Redeem Codes page.
+const DEV_REDEEM_SUMMARY = import.meta.env.DEV
+  ? { ...summarizeRedeemPayload({ codes: REDEEM_CODES, serverDate: new Date().toISOString().slice(0, 10) }), developmentFallback: true }
+  : null;
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(String(hex).slice(i, i + 2), 16) || 0).join(',');
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -122,7 +122,7 @@ const faqs = [
 ];
 
 const SITE = 'https://fcmobiletools.online';
-const title = 'FC Mobile Tools, Redeem Codes, Calculators & Guides';
+const title = 'FC Mobile Tools, Codes & Calculators';
 const description =
   'FCMOBILETOOLS is the FC Mobile hub for redeem codes, live events, reset times, calculators, the Shards Counter, planners, event answers, guides and the latest Season 27 updates.';
 
@@ -164,11 +164,12 @@ const jsonLd = {
         </p>
 
         <h1 id="hx-h1" class="hx-h1">
-          <span class="hx-in" style="--d:.12s">EVERYTHING USEFUL</span>
-          <span class="hx-in hx-grad" style="--d:.2s">STARTS HERE...</span>
+          <span class="hx-in" style="--d:.12s">FC MOBILE TOOLS</span>
+          <span class="hx-in hx-grad" style="--d:.2s">FOR SQUAD BUILDING, EVENTS &amp; UPGRADES</span>
         </h1>
 
-        <p class="hx-lead hx-in" style="--d:.3s">
+        <p class="hx-lead hx-in" style="--d:.3s">Everything useful starts here.</p>
+        <p class="hx-supporting hx-in" style="--d:.34s">
           Live countdowns, redeem codes, calculators and guides for FC Mobile 27. Everything you check before you play, in one place.
         </p>
 
@@ -180,7 +181,7 @@ const jsonLd = {
         <ul class="hx-proof hx-in" style="--d:.46s" aria-label="Site at a glance">
           <li><b>{tools.length}</b> tools &amp; planners</li>
           <li><b>{posts.length}</b> guides &amp; updates</li>
-          {lastChecked && <li>Codes checked <b>{dayMonth(lastChecked)}</b></li>}
+          <li data-fcmt-code-proof>Live code status loading</li>
         </ul>
       </div>
     </section>
@@ -228,32 +229,21 @@ const jsonLd = {
         </article>
 
         <!-- Redeem code -->
-        <article class:list={['hx-panel', 'hx-code', 'hx-reveal', featuredCode ? 'is-active' : 'is-none']} style="--i:2" data-hx-expires={featuredCode?.expiryDate ? Date.parse(featuredCode.expiryDate + 'T23:59:59Z') : undefined}>
+        <article class="hx-panel hx-code hx-reveal is-none" style="--i:2" data-fcmt-current-code>
           <header class="hx-panel__head">
             <span class="hx-label"><span set:html={svg('ticket')} />Redeem code</span>
-            <span class="hx-chip hx-chip--status" data-hx-status>{featuredCode ? 'Active' : 'None active'}</span>
+            <span class="hx-chip hx-chip--status" data-fcmt-code-status>Live status loading</span>
           </header>
 
-          {featuredCode ? (
-            <div class="hx-code__body">
-              <button type="button" class="hx-copy" data-hx-copy={featuredCode.code} aria-label={`Copy code ${featuredCode.code}`}>
-                <strong>{featuredCode.code}</strong>
-                <span class="hx-copy__act"><span set:html={svg('copy', 'hx-copy__i')} /><em data-hx-copy-label>Copy</em></span>
-              </button>
-              <p class="hx-code__reward">{featuredCode.reward}</p>
-            </div>
-          ) : (
-            <div class="hx-code__body">
-              <p class="hx-code__none">No active code right now</p>
-              <p class="hx-code__reward">
-                {lastCode && <>Last code <b>{lastCode.code}</b>{codeNote}. </>}New codes show up here as soon as they drop.
-              </p>
-            </div>
-          )}
+          <div class="hx-code__body" data-fcmt-code-body>
+            <p class="hx-code__none">Current code status is loading.</p>
+            <p class="hx-code__reward">Check the full list for current rewards, regions and expiry dates.</p>
+            <a class="hx-textlink" href="/redeem-codes/">Open full code list →</a>
+          </div>
 
           <footer class="hx-panel__foot">
-            <span>{codeFoot}</span>
-            <a class="hx-textlink" href="/redeem-codes">Open codes <span set:html={svg('arrow')} /></a>
+            <span data-fcmt-code-foot>Live data from the Redeem Codes page</span>
+            <a class="hx-textlink" href="/redeem-codes/">Open codes <span set:html={svg('arrow')} /></a>
           </footer>
         </article>
       </div>
@@ -281,20 +271,16 @@ const jsonLd = {
               </span>
 
               {t.size === 'hero' && (
-                <span class="hx-recent" aria-hidden="true">
-                  {recentCodes.map((c) => (
-                    <span class:list={['hx-recent__row', c.live && 'is-live']}>
-                      <b>{c.code}</b><i>{c.reward}</i><em>{c.live ? 'Active' : 'Expired'}</em>
-                    </span>
-                  ))}
+                <span class="hx-recent" aria-hidden="true" data-fcmt-code-recent>
+                  <span class="hx-recent__row"><b>Current codes</b><i>Open the live list</i><em>View all</em></span>
                 </span>
               )}
 
               {t.size === 'hero' && (
                 <span class="hx-tile__stats" aria-hidden="true">
-                  <span><b>{REDEEM_CODES.length}</b>codes tracked</span>
-                  <span><b>{liveCodes.length}</b>active now</span>
-                  {lastChecked && <span><b>{dayMonth(lastChecked)}</b>last checked</span>}
+                  <span><b data-fcmt-code-total>—</b>codes tracked</span>
+                  <span><b data-fcmt-code-active>—</b>active now</span>
+                  <span><b data-fcmt-code-sync-value>—</b>data synced</span>
                 </span>
               )}
 
@@ -432,7 +418,10 @@ const jsonLd = {
       </div>
     </section>
 
-    <script define:vars={{ resetH, resetM }}>
+    <script type="application/json" id="fcmt-current-redeem-bootstrap" is:inline set:html={safeScriptJson(DEV_REDEEM_SUMMARY)}></script>
+        <script>import '../scripts/current-redeem-code.js';</script>
+
+        <script define:vars={{ resetH, resetM }}>
 (() => {
   const root = document.querySelector('.hx');
   if (!root) return;
@@ -482,15 +471,16 @@ const jsonLd = {
   };
 
   /* ── redeem code expiry (static build, so double-check on the client) ── */
-  const codeCard = root.querySelector('.hx-code.is-active[data-hx-expires]');
-  const codeExpires = codeCard ? parseInt(codeCard.dataset.hxExpires, 10) : NaN;
+  const codeCard = root.querySelector('.hx-code');
+  let trackedCode = '';
+  let trackedExpiry = NaN;
   let codeExpired = false;
   const expireCode = () => {
-    if (codeExpired || !codeCard) return;
+    if (codeExpired || !codeCard || !trackedCode) return;
     codeExpired = true;
     codeCard.classList.remove('is-active');
     codeCard.classList.add('is-none', 'is-expired');
-    const st = codeCard.querySelector('[data-hx-status]');
+    const st = codeCard.querySelector('[data-fcmt-code-status]');
     if (st) st.textContent = 'Expired';
     const btn = codeCard.querySelector('[data-hx-copy]');
     if (btn) btn.disabled = true;
@@ -520,7 +510,16 @@ const jsonLd = {
       }
     }
 
-    if (codeCard && !Number.isNaN(codeExpires) && now > codeExpires) expireCode();
+    const liveCopy = codeCard?.querySelector('[data-hx-copy]');
+    const currentCode = liveCopy?.dataset.hxCopy || '';
+    const currentExpiry = codeCard?.dataset.hxExpires ? Number(codeCard.dataset.hxExpires) : NaN;
+    if (currentCode !== trackedCode || currentExpiry !== trackedExpiry) {
+      trackedCode = currentCode;
+      trackedExpiry = currentExpiry;
+      codeExpired = false;
+      codeCard?.classList.remove('is-expired');
+    }
+    if (currentCode && Number.isFinite(currentExpiry) && now > currentExpiry) expireCode();
   };
 
   tick();
@@ -657,10 +656,11 @@ const jsonLd = {
   .hx-kicker { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font: 600 12.5px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
   .hx-live { display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid rgba(110, 240, 194, .3); border-radius: 99px; background: rgba(110, 240, 194, .09); color: var(--mint); }
   .hx-live i, .hx-row.is-live .hx-row__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 0 rgba(110, 240, 194, .6); animation: hxPulse 2s ease-out infinite; }
-  .hx-h1 { margin-top: 26px; max-width: 12ch; font-size: clamp(48px, 7.4vw, 100px); line-height: .96; letter-spacing: -.042em; }
+  .hx-h1 { margin-top: 26px; max-width: 18ch; font-size: clamp(48px, 7.4vw, 100px); line-height: .96; letter-spacing: -.042em; }
   .hx-h1 > span { display: block; padding-bottom: .06em; }
   .hx h1, .hx h3 { text-wrap: balance; }
-  .hx-lead { max-width: 560px; margin-top: 26px; color: var(--soft); font: 400 clamp(16px, 1.5vw, 19px)/1.65 var(--body); }
+  .hx-lead { max-width: 560px; margin-top: 26px; color: var(--soft); font: 600 clamp(17px, 1.65vw, 21px)/1.4 var(--display); }
+   .hx-supporting { max-width: 560px; margin-top: 8px; color: var(--soft); font: 400 clamp(15px, 1.3vw, 17px)/1.65 var(--body); }
   .hx-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
   .hx-proof { display: flex; flex-wrap: wrap; gap: 10px 0; margin-top: 36px; color: var(--muted); font: 500 14px/1 var(--body); }
   .hx-proof li { display: inline-flex; align-items: center; gap: 7px; }
