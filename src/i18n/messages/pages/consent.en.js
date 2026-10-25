@@ -1,0 +1,25 @@
+// Cookie consent banner and settings dialog. English is copied verbatim from the original component.
+export default {
+  title: 'Your privacy matters',
+  text: 'Advertising helps support free giveaways and keep FCMOBILETOOLS tools available. Optional ad scripts load only if you allow advertising. Google Analytics is disabled.',
+  policy: 'Read our privacy policy',
+  reject: 'Reject non-essential',
+  manage: 'Manage choices',
+  accept: 'Allow advertising',
+  settingsTitle: 'Control your choices',
+  settingsLead: 'Choose which optional technologies FCMOBILETOOLS can use. You can change this any time.',
+  closeAria: 'Close privacy settings',
+  essential: 'Essential',
+  essentialText: 'Core site functionality, security, and remembering the preferences the site needs.',
+  alwaysOn: 'Always on',
+  analytics: 'Analytics',
+  analyticsText: 'Google Analytics is disabled. No Google Analytics tag is loaded.',
+  disabled: 'Disabled',
+  advertising: 'Advertising',
+  advertisingText: 'Allows Monetag ads on eligible public pages and helps fund free tools and giveaways.',
+  on: 'On',
+  off: 'Off',
+  cookiePolicy: 'Cookie policy',
+  rejectAll: 'Reject all',
+  save: 'Save choices'
+};

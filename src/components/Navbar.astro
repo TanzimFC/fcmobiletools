@@ -1,6 +1,7 @@
 ---
 import { getLocaleFromPath, stripLocale, localizeHref, translator } from '../i18n/index.js';
 import LanguageSwitcher from './LanguageSwitcher.astro';
+import AccountMenu from './AccountMenu.astro';
 const locale = getLocaleFromPath(Astro.url.pathname);
 const tr = translator(locale);
 // Active states compare English paths, so /bn/events/ highlights Events the same as /events/.
@@ -92,6 +93,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 
 <header class="fcmt" id="fcmt" data-scrolled="false">
   <div class="fcmt-bar" id="fcmtBar">
+    <span class="fcmt-progress" id="fcmtProgress" aria-hidden="true"><i></i></span>
     <!-- Brand -->
     <a class="fcmt-brand" href={href('/')} aria-label={tr('common.homeAria')}>
       <img class="fcmt-logo-img" src="/assets/images/logo.png" alt="FCMobiletools" width="1774" height="887" decoding="async" fetchpriority="low" />
@@ -160,12 +162,16 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         <kbd>/</kbd>
       </button>
 
+      <div class="fcmt-acc-wrap" id="fcmtAccWrap">
       <a class:list={['fcmt-cta', 'fcmt-account-cta', { active: isActive('/profile/') || isActive('/account/') }]} id="fcmtNavAccountCta" href={href('/account/')} aria-label={tr('common.signInAria')}>
         <span class="fcmt-account-cta-avatar" id="fcmtNavAccountCtaAvatar" aria-hidden="true">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>
         </span>
         <span class="fcmt-cta-txt" id="fcmtNavAccountCtaText">{tr('common.login')}</span>
+        <svg class="fcmt-cta-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
       </a>
+        <AccountMenu />
+      </div>
 
       <button class="fcmt-burger" id="fcmtBurger" type="button" aria-label={tr('common.openMenu')} aria-expanded="false" aria-controls="fcmtSheet">
         <span set:html={ico('menu', 20, 2)}></span>
@@ -201,6 +207,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
       <small>{cta.blurb}</small>
       <span class="fcmt-hero-arrow" set:html={ico('arrow', 18, 2.2)}></span>
     </a>
+      <LanguageSwitcher variant="sheet" />
 
     <div class="fcmt-sheet-scroll">
       {navGroups.map((g) => (
@@ -232,7 +239,6 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         <span class="fcmt-item-text"><strong>{articlesItem.label}</strong><small>{articlesItem.meta}</small></span>
         <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
       </a>
-      <LanguageSwitcher variant="sheet" />
       <a class="fcmt-wide fcmt-account-wide" id="fcmtSheetAccount" href={href('/profile/')}>
         <span class="fcmt-ico" id="fcmtSheetAvatar" set:html={ico('ovr')}></span>
         <span class="fcmt-item-text"><strong id="fcmtSheetName">{tr('common.accountProfile')}</strong><small id="fcmtSheetMeta">{tr('common.accountMeta')}</small></span>
@@ -547,6 +553,9 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
     queueMicrotask(() => { void hydrateIdentity(session, version); });
   }
 
+  // Triggered by the account menu. onAuthStateChange below clears the cached identity.
+  window.addEventListener('fcmt:sign-out', () => { accountAuth.auth.signOut().catch((error) => console.warn('[FCMobiletools account] Sign out failed.', error)); });
+
   accountAuth.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION' || event === 'SIGNED_IN' ||
         event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
@@ -775,3 +784,54 @@ kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 
 }
 @media(forced-colors:active){.fcmt-bar,.fcmt-mega-card,.fcmt-sheet-inner,.fcmt-pal-card,.fcmt-dock{border:1px solid CanvasText}.fcmt-link.active::after{background:Highlight}}
 </style>
+
+<style is:global>
+/* ============ Premium polish layer ============ */
+/* Reading-progress hairline along the bottom edge of the bar */
+.fcmt-progress{position:absolute;left:22px;right:22px;bottom:-1px;height:2px;border-radius:99px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .3s}
+.fcmt[data-scrolled="true"] .fcmt-progress{opacity:1}
+.fcmt-progress i{display:block;width:100%;height:100%;transform-origin:left center;transform:scaleX(var(--fcmt-p,0));background:linear-gradient(90deg,rgba(76,201,255,0),#4cc9ff 30%,#9a8cff);box-shadow:0 0 12px rgba(76,201,255,.7)}
+/* Slow light sweep across the top edge of the bar */
+.fcmt-bar::after{content:"";position:absolute;left:0;right:0;top:0;height:1px;border-radius:inherit;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55) 50%,transparent);background-size:42% 100%;background-repeat:no-repeat;background-position:-60% 0;animation:fcmtSheen 9s ease-in-out 1.5s infinite;opacity:.7}
+@keyframes fcmtSheen{0%,70%{background-position:-60% 0}100%{background-position:160% 0}}
+/* Cursor spotlight on menu items */
+.fcmt-item,.fcmt-tile,.fcmt-wide{--mx:50%;--my:50%;overflow:hidden}
+.fcmt-item::before,.fcmt-tile::before,.fcmt-wide::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;background:radial-gradient(180px circle at var(--mx) var(--my),rgba(76,201,255,.16),rgba(76,201,255,0) 70%);transition:opacity .25s}
+.fcmt-item:hover::before,.fcmt-tile:hover::before,.fcmt-wide:hover::before{opacity:1}
+.fcmt-item>*,.fcmt-tile>*,.fcmt-wide>*{position:relative}
+/* Richer bar surface and search */
+.fcmt-bar{background:linear-gradient(180deg,rgba(22,37,54,.78),rgba(10,20,30,.7)),radial-gradient(120% 220% at 50% -80%,rgba(76,201,255,.12),transparent 60%)}
+.fcmt-search{transition:border-color .2s,background .2s,box-shadow .2s,transform .2s cubic-bezier(.2,.8,.2,1)}
+.fcmt-search:hover{border-color:rgba(76,201,255,.38);box-shadow:0 10px 28px -12px rgba(76,201,255,.5);transform:translateY(-1px)}
+.fcmt-cta{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s,filter .2s}
+.fcmt-cta:hover{transform:translateY(-1px);filter:brightness(1.05)}
+/* Account card in the mobile menu */
+.fcmt-account-wide{position:relative;border-color:rgba(76,201,255,.28)!important;background:radial-gradient(120% 140% at 0% 0%,rgba(76,201,255,.2),rgba(76,201,255,.05) 55%,rgba(8,16,24,.5))!important}
+.fcmt-account-wide #fcmtSheetAvatar{border-radius:50%;box-shadow:0 0 0 2px rgba(76,201,255,.35),0 0 22px rgba(76,201,255,.3)}
+@media(prefers-reduced-motion:reduce){.fcmt-bar::after{animation:none}.fcmt-progress i{transition:none}}
+</style>
+
+<script is:inline>
+(() => {
+  const bar = document.getElementById('fcmt'), prog = document.getElementById('fcmtProgress');
+  let tick = false;
+  const update = () => {
+    tick = false;
+    if (!prog) return;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    prog.style.setProperty('--fcmt-p', max > 0 ? Math.min(1, Math.max(0, scrollY / max)).toFixed(4) : 0);
+  };
+  addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(update); } }, { passive: true });
+  update();
+  // Spotlight follows the cursor inside menu cards.
+  if (bar && matchMedia('(hover:hover)').matches) {
+    bar.addEventListener('pointermove', (e) => {
+      const el = e.target.closest && e.target.closest('.fcmt-item,.fcmt-tile,.fcmt-wide');
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    }, { passive: true });
+  }
+})();
+</script>

@@ -4,7 +4,6 @@ import { tournamentWorkerRoute } from './tournamentWorker.mjs';
 import { matchCenterRoute } from './matchCenterWorker.mjs';
 import { leagueWorkerRoute } from './leagueWorker.mjs';
 import { giveawayWorkerRoute, giveawaySweep } from './giveawayWorker.mjs';
-import { createEditorialApi } from './editorial/studioApi.mjs';
 import { argon2id, argon2Verify } from 'hash-wasm';
 import { splitLocalePath, hasLocalizedPage, pathForLocale, withTrailingSlash } from './i18n/routes.js';
 import { DEFAULT_LOCALE } from './i18n/locales.js';
@@ -13,7 +12,6 @@ import {
   bulkCreate as bulkCreateRedeem, bulkAction as bulkRedeemAction, deleteCode as deleteRedeemCode,
   codesToCsv, redeemJsonLd, safeScriptJson
 } from './lib/redeem.js';
-import { summarizeRedeemPayload } from './lib/redeem-summary.js';
 import { adminAccountApi } from './lib/accountApi.mjs';
 import { ensureImageUploadQuotaSchema, reserveImageUploadQuota as reserveD1ImageUploadQuota, pruneExpiredImageUploadQuotas } from './lib/imageUploadQuota.mjs';
 import { accountSurveyRoutes, adminSurveyApi } from './lib/surveyApi.mjs';
@@ -1499,6 +1497,81 @@ async function publicLeaderboardApi(request, env, url) {
   return json({leaderboards:out},200,{'cache-control':'public, max-age=60, stale-while-revalidate=300'});
 }
 
+function editorialStatus(value){
+  return ({draft:'draft',review:'in_review',in_review:'in_review',changes_requested:'changes_requested',published:'published',scheduled:'scheduled',approved:'approved',archived:'archived',trash:'trash'})[String(value||'draft')]||'draft';
+}
+function editorialUiStatus(value){
+  return ({in_review:'review',changes_requested:'review',approved:'published'})[String(value||'draft')]||String(value||'draft');
+}
+function editorialRow(row){
+  const tags=Array.isArray(row.tags)?row.tags:[];
+  return {
+    id:row.id,
+    body:row.content_html||'',
+    data:{
+      id:row.id,slug:row.slug,title:row.title,subtitle:row.subtitle||'',
+      description:row.description||row.excerpt||'',excerpt:row.excerpt||row.description||'',
+      content:row.content_html||'',contentJson:row.content_json||null,
+      type:row.type||'guide',category:row.category||'Guides',author:row.author_name||'TanzimFC',
+      authorSlug:row.author_slug||'',status:editorialUiStatus(row.status),image:row.cover_image||'',
+      imageAlt:row.image_alt||'',imageCaption:row.image_caption||'',thumbnail:row.cover_image||'',
+      featured:Boolean(row.featured),readingTime:Number(row.reading_time||1),tags,
+      seoTitle:row.seo_title||'',seoDescription:row.seo_description||'',canonicalUrl:row.canonical_url||'',
+      factStatus:row.fact_status||'verified',lastReviewed:row.last_reviewed||'',sources:Array.isArray(row.sources)?row.sources:[],
+      relatedArticles:Array.isArray(row.related_articles)?row.related_articles:[],relatedTools:Array.isArray(row.related_tools)?row.related_tools:[],
+      series:row.series||'',seriesOrder:row.series_order??null,createdAt:row.created_at,updatedAt:row.updated_at,publishedAt:row.published_at||null
+    }
+  };
+}
+async function editorialRevision(env,articleId,input,actorName='TanzimFC'){
+  const existing=await supabaseRest(env,"article_revisions?select=revision_no&article_id=eq."+encodeURIComponent(articleId)+"&order=revision_no.desc&limit=1");
+  const revisionNo=Number(existing?.[0]?.revision_no||0)+1;
+  const article=(await supabaseRest(env,"articles?id=eq."+encodeURIComponent(articleId)+"&select=content_json,content_html,slug,title,subtitle,excerpt,description,cover_image,image_alt,image_caption,featured,seo_title,seo_description,canonical_url,series,tags,reading_time&limit=1"))?.[0];
+  if(!article) return;
+  await supabaseRest(env,'article_revisions',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+    article_id:Number(articleId),revision_no:revisionNo,editor_id:null,editor_name:actorName,
+    action:input.action||'save',note:String(input.note||''),content_json:article.content_json||{},
+    content_html:article.content_html||'',metadata:{title:article.title,subtitle:article.subtitle,slug:article.slug,tags:article.tags||[],featured:Boolean(article.featured)}
+  }])});
+  return revisionNo;
+}
+async function editorialIdentity(request,env){
+  if(await authenticated(request,env)){
+    return {role:'admin',name:String(env.ADMIN_DISPLAY_NAME||env.ADMIN_USERNAME||'TanzimFC'),ownerKey:'admin'};
+  }
+  const creator=await creatorRecord(request,env);
+  if(!creator) return null;
+  return {role:'writer',name:String(creator.display_name||creator.username||'Writer'),ownerKey:'creator:'+String(creator.id),creator};
+}
+
+async function editorialArticles(env,identity){
+  let path="articles?select=*&order=updated_at.desc&limit=100";
+  if(identity?.role==='writer') path+="&owner_key=eq."+encodeURIComponent(identity.ownerKey);
+  const rows=await supabaseRest(env,path);
+  return (rows||[]).map(row=>{
+    const mapped=editorialRow({...row,category_name:row.category});
+    return mapped;
+  });
+}
+
+async function editorialInbox(env,identity){
+  if(identity?.role==='admin'){
+    const reviews=await supabaseRest(env,"article_reviews?select=*,articles(id,title,slug,author_name,status)&status=eq.submitted&order=created_at.asc&limit=100");
+    const items=[];
+    for(const review of reviews||[]){
+      const revisions=await supabaseRest(env,"article_revisions?select=revision_no,note,created_at&article_id=eq."+encodeURIComponent(review.article_id)+"&order=revision_no.desc&limit=1");
+      items.push({
+        id:review.id,article_id:review.article_id,revision_no:revisions?.[0]?.revision_no||1,note:review.comment||'',
+        created_at:review.created_at,title:review.articles?.title||'Untitled',slug:review.articles?.slug||'',
+        status:review.articles?.status||'in_review',author_name:review.articles?.author_name||'Writer'
+      });
+    }
+    return items;
+  }
+  const rows=await supabaseRest(env,"editorial_inbox?recipient_key=eq."+encodeURIComponent(identity.ownerKey)+"&order=created_at.desc&limit=100");
+  return rows||[];
+}
+
 async function creatorEditorialRoute(request,env,path){
   if(path==='/me' && request.method==='GET'){
     const creator=await creatorRecord(request,env);
@@ -1511,15 +1584,172 @@ async function creatorEditorialRoute(request,env,path){
   return null;
 }
 
+async function editorialApi(request,env,path){
+  try{
+  const identity=await editorialIdentity(request,env);
+  if(!identity) return json({error:'Unauthorized.'},401);
 
-// Editorial Studio (see src/editorial/). Created lazily because it needs helpers defined further down.
-let editorialStudio = null;
-function editorialApi(request, env, path) {
-  if (!editorialStudio) {
-    editorialStudio = createEditorialApi({ supabaseRest, json, authenticated, creatorRecord, d1, github });
+  if(path==='/articles' && request.method==='GET') return json({articles:await editorialArticles(env,identity)});
+  if(path==='/articles/trash' && request.method==='GET'){
+    if(identity.role!=='admin') return json({articles:[]});
+    const rows=await supabaseRest(env,'articles?status=eq.trash&order=updated_at.desc&limit=100');
+    return json({articles:(rows||[]).map(row=>editorialRow({...row,category_name:row.category}))});
   }
-  return editorialStudio.handle(request, env, path);
+  if(path==='/inbox' && request.method==='GET') return json({items:await editorialInbox(env,identity)});
+
+  const revisionsMatch=path.match(/^\/articles\/(\d+)\/revisions$/);
+  if(revisionsMatch && request.method==='GET'){
+    const id=revisionsMatch[1];
+    const rows=await supabaseRest(env,"article_revisions?article_id=eq."+id+"&select=*&order=revision_no.desc");
+    if(identity.role==='writer'){
+      const own=await supabaseRest(env,"articles?id=eq."+id+"&owner_key=eq."+encodeURIComponent(identity.ownerKey)+"&select=id&limit=1");
+      if(!own?.length) return json({error:'Article not found.'},404);
+    }
+    const normalized=(rows||[]).map(row=>({
+      ...row,
+      editor_role:row.editor_role||'editorial',
+      review_status:row.review_status||row.action||'save',
+      snapshot:JSON.stringify({content:row.content_html||'',metadata:row.metadata||{},contentJson:row.content_json||{}})
+    }));
+    return json({revisions:normalized});
+  }
+
+  const actionMatch=path.match(/^\/articles\/(\d+)\/(approve|request-changes)$/);
+  if(actionMatch && request.method==='POST'){
+    if(identity.role!=='admin') return json({error:'Only editors can approve or request changes.'},403);
+    const id=actionMatch[1],action=actionMatch[2];
+    const body=await request.json().catch(()=>({})),note=String(body.note||'').trim();
+    const article=(await supabaseRest(env,"articles?id=eq."+id+"&select=id,title,slug,author_name,status,owner_key,published_at&limit=1"))?.[0];
+    if(!article) return json({error:'Article not found.'},404);
+
+    const next=action==='approve'?'published':'changes_requested';
+    const update={status:next,updated_at:new Date().toISOString()};
+    if(action==='approve') update.published_at=article.published_at||new Date().toISOString();
+    await supabaseRest(env,"articles?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(update)});
+    const submitted=await supabaseRest(env,"article_reviews?article_id=eq."+id+"&status=eq.submitted&select=id&order=created_at.desc&limit=1");
+    const reviewPayload={status:action==='approve'?'approved':'changes_requested',comment:note,reviewer_name:identity.name};
+    if(submitted?.[0]?.id){
+      await supabaseRest(env,"article_reviews?id=eq."+submitted[0].id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(reviewPayload)});
+    }else{
+      await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{article_id:Number(id),reviewer_id:null,...reviewPayload}])});
+    }
+    await editorialRevision(env,Number(id),{action:action==='approve'?'approve':'request_changes',note},identity.name);
+
+    if(action==='approve'){
+      await supabaseRest(env,'editorial_inbox',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+        recipient_id:null,recipient_key:article.owner_key||null,actor_id:null,article_id:Number(id),
+        kind:'published',title:'Article published',message:'Your article has been approved and published.'
+      }])});
+    }else{
+      await supabaseRest(env,'editorial_inbox',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+        recipient_id:null,recipient_key:article.owner_key||null,actor_id:null,article_id:Number(id),
+        kind:'changes_requested',title:'Changes requested',message:note
+      }])});
+    }
+    return json({ok:true,action:action==='approve'?'approved':'changes_requested'});
+  }
+
+  const trashMatch=path.match(/^\/articles\/(\d+)\/(trash|restore)$/);
+  if(trashMatch && request.method==='POST'){
+    if(identity.role!=='admin') return json({error:'Only editors can manage article trash.'},403);
+    const id=trashMatch[1],action=trashMatch[2];
+    await supabaseRest(env,"articles?id=eq."+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+      status:action==='trash'?'trash':'draft',updated_at:new Date().toISOString()
+    })});
+    return json({ok:true,action});
+  }
+
+  if(path==='/inbox/read' && request.method==='POST'){
+    const body=await request.json().catch(()=>({}));
+    const id=Number(body.id);
+    if(!Number.isInteger(id)||id<1) return json({error:'Invalid inbox item.'},400);
+    const readFilter=identity.role==='writer'?"&recipient_key=eq."+encodeURIComponent(identity.ownerKey):'';
+    await supabaseRest(env,"editorial_inbox?id=eq."+id+readFilter,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({read_at:new Date().toISOString()})});
+    return json({ok:true});
+  }
+
+  const articleUpdateMatch=path.match(/^\/articles\/(\d+)$/);
+  if((path==='/articles' && request.method==='POST') || (articleUpdateMatch && (request.method==='PUT'||request.method==='PATCH'))){
+    const input=await request.json().catch(()=>({}));
+    if(articleUpdateMatch) input.id=Number(articleUpdateMatch[1]);
+    const title=String(input.title||'').trim();
+    const slug=String(input.slug||title).trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,160);
+    if(!title||!slug) return json({error:'Article title is required.'},400);
+    const isAutosave=Boolean(input.autosave);
+    let status=editorialStatus(input.status);
+    if(identity.role==='writer' && status==='published') status='in_review';
+
+    const bySlug=await supabaseRest(env,"articles?slug=eq."+encodeURIComponent(slug)+"&select=id,owner_key,status&limit=1");
+    const existingId=input.id?Number(input.id):(bySlug?.[0]?.id||null);
+    let existing=null;
+    if(existingId){
+      existing=(await supabaseRest(env,"articles?id=eq."+existingId+"&select=*&limit=1"))?.[0]||null;
+      if(!existing) return json({error:'Article not found.'},404);
+      if(identity.role==='writer' && existing.owner_key!==identity.ownerKey) return json({error:'You can only edit your own articles.'},403);
+      if(identity.role==='writer' && !['draft','changes_requested','in_review'].includes(existing.status)) return json({error:'This article is locked after publication.'},409);
+    }else if(bySlug?.length && identity.role==='writer' && bySlug[0].owner_key!==identity.ownerKey){
+      return json({error:'An article with this slug already exists.'},409);
+    }
+
+    const payload={
+      slug,title,subtitle:String(input.subtitle||''),excerpt:String(input.description||input.excerpt||''),
+      description:String(input.description||input.excerpt||''),content_html:String(input.bodyHtml||input.body||''),
+      content_json:input.contentJson&&typeof input.contentJson==='object'?input.contentJson:{},
+      author_name:identity.role==='writer'?identity.name:String(input.author||identity.name||'TanzimFC'),
+      author_slug:String(input.authorSlug||identity.name||'TanzimFC').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),
+      status,owner_key:existing?.owner_key||identity.ownerKey,author_key:existing?.author_key||identity.ownerKey,
+      cover_image:String(input.image||''),image_alt:String(input.imageAlt||''),image_caption:String(input.imageCaption||''),
+      featured:identity.role==='admin'?Boolean(input.featured):Boolean(existing?.featured),
+      type:String(input.type||existing?.type||'guide'),category:String(input.category||existing?.category||'Guides'),
+      tags:Array.isArray(input.tags)?input.tags:(existing?.tags||[]),
+      seo_title:String(input.seoTitle||title),seo_description:String(input.seoDescription||input.description||''),
+      canonical_url:String(input.canonicalUrl||existing?.canonical_url||''),
+      fact_status:String(input.factStatus||existing?.fact_status||'verified'),last_reviewed:input.lastReviewed?String(input.lastReviewed):(existing?.last_reviewed||null),
+      sources:Array.isArray(input.sources)?input.sources:(existing?.sources||[]),
+      related_articles:Array.isArray(input.relatedArticles)?input.relatedArticles:(existing?.related_articles||[]),
+      related_tools:Array.isArray(input.relatedTools)?input.relatedTools:(existing?.related_tools||[]),
+      series:String(input.series||existing?.series||''),series_order:Number.isFinite(Number(input.seriesOrder))?Number(input.seriesOrder):existing?.series_order||null,
+      reading_time:Number(input.readingTime||existing?.reading_time||1),
+      published_at:status==='published'?(existing?.published_at||new Date().toISOString()):null,
+      updated_at:new Date().toISOString()
+    };
+
+    let saved;
+    if(existingId) saved=await supabaseRest(env,"articles?id=eq."+existingId,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
+    else saved=await supabaseRest(env,'articles',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([payload])});
+
+    const savedRow=saved?.[0];
+    if(!savedRow) return json({error:'Article could not be saved.'},500);
+    const revisionNo=await editorialRevision(env,savedRow.id,{
+      action:status==='published'?'publish':status==='in_review'?'submit':'save'
+    },identity.name);
+
+    if(status==='in_review'){
+      const pending=await supabaseRest(env,"article_reviews?article_id=eq."+encodeURIComponent(savedRow.id)+"&status=eq.submitted&select=id&limit=1");
+      if(!pending?.length){
+        await supabaseRest(env,'article_reviews',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{
+          article_id:savedRow.id,reviewer_id:null,reviewer_name:'',status:'submitted',comment:''
+        }])});
+      }
+    }
+    return json({
+      ok:true,
+      articleId:savedRow.id,
+      slug:savedRow.slug,
+      action:existingId?'updated':'created',
+      revisionNo,
+      status:editorialUiStatus(savedRow.status),
+      updatedAt:savedRow.updated_at,
+      contentLength:String(savedRow.content_html||'').length
+    });
+  }
+
+  return json({error:'Editorial endpoint not found.'},404);
+  }catch(error){
+    return json({error:error?.message||'Editorial backend failed.'},500);
+  }
 }
+
 
 async function github(env, path, options = {}) {
   const [owner, repo] = (env.GITHUB_REPO || 'TanzimFC/fcmobiletools').split('/');
@@ -2308,7 +2538,6 @@ async function api(request,env,path,actorRole='admin') {
       if(input.avatarUrl!==undefined){fields.push('avatar_url=?');values.push(String(input.avatarUrl));}
       if(input.websiteUrl!==undefined){fields.push('website_url=?');values.push(String(input.websiteUrl));}
       if(input.active!==undefined){fields.push('active=?');values.push(input.active?1:0);}
-      if(input.role!==undefined){if(!['creator','editor'].includes(input.role)) return json({error:'Role must be creator or editor.'},400);fields.push('role=?');values.push(input.role);}
       if(input.password){fields.push('password_hash=?');values.push(await hashPassword(String(input.password)));}
       if(!fields.length) return json({ok:true});
       fields.push('updated_at=?');values.push(new Date().toISOString());values.push(id);
@@ -2448,16 +2677,13 @@ async function publicRedeemApi(request, env, ctx, url) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return json({ error: 'Method not allowed.' }, 405, { allow: 'GET, HEAD' });
   try {
     const { payload, etag } = await publicRedeemSnapshot(env, ctx, url.origin);
-    const compact = url.searchParams.get('view') === 'summary';
-    const responsePayload = compact ? summarizeRedeemPayload(payload) : payload;
-    const responseEtag = compact ? etag.replace('W/"', 'W/"summary-') : etag;
     const headers = {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': `public, max-age=${PUBLIC_REDEEM_TTL}, stale-while-revalidate=60`,
-      etag: responseEtag,
+      etag,
     };
-    if (request.headers.get('if-none-match') === responseEtag) return new Response(null, { status: 304, headers });
-    return new Response(request.method === 'HEAD' ? null : JSON.stringify(responsePayload), { headers });
+    if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers });
+    return new Response(request.method === 'HEAD' ? null : JSON.stringify(payload), { headers });
   } catch (error) {
     console.error('[REDEEM_PUBLIC]', error?.message);
     return json({ error: 'Redeem codes are temporarily unavailable.' }, 503);
@@ -2679,34 +2905,6 @@ async function redeemPage(request, env, ctx, url, assetPath = '/redeem-codes/') 
     .transform(new Response(asset.body, { status: asset.status, headers }));
 }
 
-// Homepage and Events hub receive a compact snapshot from the same cached D1 source.
-// If D1 is unavailable, keep the static asset's safe fallback and let the client try the API.
-async function currentRedeemSummaryPage(request, env, ctx, url, assetPath, pageName) {
-  const asset = await env.ASSETS.fetch(new Request(new URL(assetPath, url), { method: 'GET', headers: request.headers }));
-  if (!asset.ok || !(asset.headers.get('content-type') || '').includes('text/html')) return asset;
-
-  const headers = new Headers(asset.headers);
-  headers.set('cache-control', 'no-store, max-age=0, must-revalidate');
-  headers.set('x-fcmobiletools-page', pageName);
-  headers.delete('content-length');
-  headers.delete('etag');
-
-  let summary = null;
-  try {
-    summary = summarizeRedeemPayload((await publicRedeemSnapshot(env, ctx, url.origin)).payload);
-  } catch (error) {
-    console.error('[REDEEM_SUMMARY_PAGE]', error?.message);
-  }
-
-  const response = new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers });
-  if (!summary) return response;
-  return new HTMLRewriter()
-    .on('script#fcmt-current-redeem-bootstrap', {
-      element(el) { el.setInnerContent(safeScriptJson(summary), { html: true }); }
-    })
-    .transform(response);
-}
-
 
 const IMAGE_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
 const IMAGE_UPLOAD_DEFAULT_EXPIRATION_DAYS = 7;
@@ -2919,16 +3117,8 @@ export function createExports(manifest) {
         }).catch(error => {
           console.error('[GIVEAWAY_SWEEP]', error?.message || 'Giveaway sweep failed.');
         });
-        const editorialMaintenance = (async () => {
-          if (!env.SUPABASE_SECRET_KEY) return;
-          if (!editorialStudio) editorialStudio = createEditorialApi({ supabaseRest, json, authenticated, creatorRecord, d1, github });
-          const out = await editorialStudio.sweep(env);
-          if (out.length) console.info('[EDITORIAL_SWEEP]', JSON.stringify(out));
-        })().catch(error => {
-          console.error('[EDITORIAL_SWEEP]', error?.message || 'Editorial sweep failed.');
-        });
-        if (ctx?.waitUntil) ctx.waitUntil(Promise.all([cleanup, listingExpiry, screenshotPurge, quotaCleanup, giveawayMaintenance, editorialMaintenance]));
-        else await Promise.all([cleanup, listingExpiry, screenshotPurge, quotaCleanup, giveawayMaintenance, editorialMaintenance]);
+        if (ctx?.waitUntil) ctx.waitUntil(Promise.all([cleanup, listingExpiry, screenshotPurge, quotaCleanup, giveawayMaintenance]));
+        else await Promise.all([cleanup, listingExpiry, screenshotPurge, quotaCleanup, giveawayMaintenance]);
       },
       async fetch(request,env,ctx) {
   const url=new URL(request.url);
@@ -3026,8 +3216,6 @@ export function createExports(manifest) {
   const redeemAsset = request.method === 'GET' ? localizedPageAsset(url, '/redeem-codes/') : null;
   if (redeemAsset) return redeemPage(request, env, ctx, url, redeemAsset);
 
-  const homeAsset = request.method === 'GET' ? localizedPageAsset(url, '/') : null;
-  if (homeAsset) return currentRedeemSummaryPage(request, env, ctx, url, homeAsset, 'homepage-live-codes');
 
   if(url.pathname === '/fc-mobile-beta' || url.pathname === '/fc-mobile-beta/' || url.pathname === '/legacy/fc-mobile-beta.html') {
     return Response.redirect(new URL('/fc-mobile-27/',url),301);
@@ -3093,11 +3281,17 @@ export function createExports(manifest) {
   // /profile/:username is now handled by Astro's on-demand dynamic route.
   // Keep the JSON endpoint above as the single privacy-filtered profile data source
   // for the dynamic page and other account surfaces such as the leaderboard.
-  const eventsAsset = request.method === 'GET' ? localizedPageAsset(url, '/events/') : null;
-  if (eventsAsset) return currentRedeemSummaryPage(request, env, ctx, url, eventsAsset, 'events-reset-live');
-  if(url.pathname.startsWith('/api/admin/editorial/') || url.pathname.startsWith('/api/creator/editorial/')) {
-    return editorialApi(request,env,url.pathname.replace(/^\/api\/(?:admin|creator)\/editorial/,''));
+  const eventsAsset = localizedPageAsset(url, '/events/');
+  if(eventsAsset) {
+    const asset=await env.ASSETS.fetch(new Request(new URL(eventsAsset,url),{method:'GET',headers:request.headers}));
+    if(!asset.ok) return asset;
+    const headers=new Headers(asset.headers);
+    headers.set('cache-control','no-store, max-age=0, must-revalidate');
+    headers.set('x-fcmobiletools-page','events-reset-live');
+    return new Response(await asset.arrayBuffer(),{status:asset.status,statusText:asset.statusText,headers});
   }
+  if(url.pathname.startsWith('/api/admin/articles') || url.pathname.startsWith('/api/admin/inbox')) return editorialApi(request,env,url.pathname.slice('/api/admin'.length));
+  if(url.pathname.startsWith('/api/creator/articles') || url.pathname.startsWith('/api/creator/inbox')) return editorialApi(request,env,url.pathname.slice('/api/creator'.length));
   if(url.pathname.startsWith('/api/creator/')) { const creatorRoute=await creatorEditorialRoute(request,env,url.pathname.slice('/api/creator'.length)); if(creatorRoute) return creatorRoute; }
   if(url.pathname === '/api/admin/login') return api(request,env,url.pathname.slice('/api/admin'.length),'admin');
   if(url.pathname.startsWith('/api/admin/')) {
@@ -3114,7 +3308,7 @@ export function createExports(manifest) {
     const worker=await workerAuthenticated(request,env);
     if(worker && workerAdminPageAllowed(url.pathname)) return env.ASSETS.fetch(request);
     const creator=await creatorAuthenticated(request,env);
-    if(creator && (url.pathname === '/admin/dashboard.html' || url.pathname.startsWith('/admin/articles/'))) return env.ASSETS.fetch(request);
+    if(creator && url.pathname === '/admin/dashboard.html') return env.ASSETS.fetch(request);
     return new Response('Not found',{status:404});
   }
   // League pages are rendered on demand and cached at the edge. The HTML is the same for every

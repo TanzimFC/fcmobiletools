@@ -1,30 +1,36 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SHARDS_COUNTER_DATA } from '../data/fcMobileShards.js';
+import { getLocaleFromPath, namespace } from '../i18n/index.js';
 
-const title = SHARDS_COUNTER_DATA.title || 'FC Mobile Shards Counter';
-const description = SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Star Shards and target progress.';
+// One component serves English at /shards-counter/ and the translated copies under /bn/, /pt-br/, /id/.
+// English keeps using the admin-managed title, description and eyebrow. Other languages use the
+// translated defaults. Currency label and preset targets are game data and are never translated.
+const locale = getLocaleFromPath(Astro.url.pathname);
+const T = namespace(locale, 'shards');
+const isEnglish = locale === 'en';
+const title = isEnglish ? (SHARDS_COUNTER_DATA.title || 'FC Mobile Shards Counter') : T.meta.title;
+const description = isEnglish ? (SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Star Shards and target progress.') : T.meta.description;
+const eyebrow = isEnglish ? SHARDS_COUNTER_DATA.eyebrow : T.hero.eyebrow;
 ---
 <BaseLayout title={title} description={description}>
   <main class="shards-page">
     <header class="shards-hero">
       <div class="wrap hero-wrap">
         <div class="hero-copy">
-          <p class="eyebrow">{SHARDS_COUNTER_DATA.eyebrow}<span>·</span> FCMOBILETOOLS</p>
-          <h1>Shards <em>Counter</em></h1>
+          <p class="eyebrow">{eyebrow}<span>·</span> FCMOBILETOOLS</p>
+          <h1>{T.hero.h1a}<em>{T.hero.h1em}</em></h1>
           <p>{description}</p>
           <div class="hero-points">
-            <span><i></i> Live counter</span>
-            <span><i></i> Preset targets</span>
-            <span><i></i> Saves in this browser</span>
+            {T.hero.points.map((point) => <span><i></i> {point}</span>)}
           </div>
         </div>
         <div class="hero-metric">
           <small>{SHARDS_COUNTER_DATA.currencyLabel.toUpperCase()}</small>
           <strong id="heroBalance">0</strong>
-          <span>Current balance</span>
+          <span>{T.hero.balance}</span>
           <div class="metric-line"><i id="heroMetricFill"></i></div>
-          <div class="metric-foot"><span>Progress</span><b id="heroPercent">0%</b></div>
+          <div class="metric-foot"><span>{T.hero.progress}</span><b id="heroPercent">0%</b></div>
         </div>
       </div>
     </header>
@@ -33,38 +39,38 @@ const description = SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Sta
       <div class="counter-shell">
         <div class="counter-top">
           <div>
-            <p class="label">SHARDS TRACKER</p>
-            <h2 id="counterTitle">Track your next reward</h2>
-            <p>Choose a preset managed from the admin panel or enter your own target.</p>
+            <p class="label">{T.counter.label}</p>
+            <h2 id="counterTitle">{T.counter.title}</h2>
+            <p>{T.counter.lead}</p>
           </div>
           <span class="currency-chip">{SHARDS_COUNTER_DATA.currencyLabel}</span>
         </div>
 
         <div class="counter-body">
-          <section class="inputs-panel" aria-label="Shards inputs">
+          <section class="inputs-panel" aria-label={T.counter.inputsAria}>
             <div class="field-grid">
               <label>
-                <span>PRESET TARGET</span>
+                <span>{T.counter.preset}</span>
                 <select id="presetTarget">
-                  <option value="">Custom target</option>
+                  <option value="">{T.counter.custom}</option>
                 </select>
               </label>
               <label>
-                <span>TARGET SHARDS</span>
+                <span>{T.counter.target}</span>
                 <div class="input-wrap">
                   <b>✦</b>
-                  <input id="targetShards" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter target" />
+                  <input id="targetShards" type="number" min="0" step="1" inputmode="numeric" placeholder={T.counter.targetPh} />
                 </div>
               </label>
               <label>
-                <span>CURRENT SHARDS</span>
+                <span>{T.counter.current}</span>
                 <div class="input-wrap">
                   <b>✦</b>
                   <input id="currentShards" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
                 </div>
               </label>
               <label>
-                <span>DAILY RATE <small>optional</small></span>
+                <span>{T.counter.daily} <small>{T.counter.optional}</small></span>
                 <div class="input-wrap">
                   <b>✦</b>
                   <input id="dailyRate" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
@@ -74,8 +80,8 @@ const description = SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Sta
 
             <div class="quick-add">
               <div class="quick-label">
-                <span>QUICK ADD</span>
-                <small>Add shards as you earn them</small>
+                <span>{T.counter.quickAdd}</span>
+                <small>{T.counter.quickHint}</small>
               </div>
               <div class="quick-buttons">
                 <button type="button" data-add="1">+1</button>
@@ -87,34 +93,34 @@ const description = SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Sta
             </div>
 
             <div class="input-actions">
-              <button class="btn" id="minusOne" type="button">−1 shard</button>
-              <button class="btn" id="resetCounter" type="button">Reset counter</button>
+              <button class="btn" id="minusOne" type="button">{T.counter.minus}</button>
+              <button class="btn" id="resetCounter" type="button">{T.counter.reset}</button>
             </div>
           </section>
 
           <section class="result-panel" aria-live="polite">
-            <div class="result-label">REMAINING</div>
+            <div class="result-label">{T.result.remaining}</div>
             <div class="result-main"><strong id="remaining">—</strong><span>{SHARDS_COUNTER_DATA.currencyLabel}</span></div>
             <div class="progress-track" aria-hidden="true"><i id="progressFill"></i></div>
-            <div class="result-meta"><span id="progressText">Enter a target to start</span><b id="progressPercent">0%</b></div>
+            <div class="result-meta"><span id="progressText">{T.ui.enterTarget}</span><b id="progressPercent">0%</b></div>
 
             <div class="result-stats">
-              <div><small>TARGET</small><b id="targetStat">—</b></div>
-              <div><small>CURRENT</small><b id="currentStat">0</b></div>
-              <div><small>OVER TARGET</small><b id="overflowStat">0</b></div>
-              <div><small>DAYS LEFT</small><b id="daysStat">—</b></div>
+              <div><small>{T.result.target}</small><b id="targetStat">—</b></div>
+              <div><small>{T.result.current}</small><b id="currentStat">0</b></div>
+              <div><small>{T.result.over}</small><b id="overflowStat">0</b></div>
+              <div><small>{T.result.days}</small><b id="daysStat">—</b></div>
             </div>
 
             <div class="status" id="statusBox">
-              <strong id="statusTitle">Set a target</strong>
-              <span id="statusDetail">Add a preset or enter the number of shards you want to reach.</span>
+              <strong id="statusTitle">{T.result.statusTitle}</strong>
+              <span id="statusDetail">{T.result.statusDetail}</span>
             </div>
           </section>
         </div>
 
         <footer class="calc-footer">
-          <span>{SHARDS_COUNTER_DATA.currencyLabel.toUpperCase()} · PLAYER-SIDE COUNTER</span>
-          <button id="clearSaved" type="button">CLEAR SAVED DATA ↺</button>
+          <span>{SHARDS_COUNTER_DATA.currencyLabel.toUpperCase()} · {T.result.footer}</span>
+          <button id="clearSaved" type="button">{T.result.clear}</button>
         </footer>
       </div>
     </section>
@@ -122,15 +128,13 @@ const description = SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Sta
     <section class="wrap guide-section">
       <div class="section-head">
         <div>
-          <p class="eyebrow">HOW IT WORKS</p>
-          <h2>Simple counter. <em>Clear target.</em></h2>
+          <p class="eyebrow">{T.guide.eyebrow}</p>
+          <h2>{T.guide.h2a}<em>{T.guide.h2em}</em></h2>
         </div>
-        <p>Preset targets are maintained by the site's admin panel, while your balance stays local to your browser.</p>
+        <p>{T.guide.lead}</p>
       </div>
       <div class="guide-grid">
-        <article class="guide-card"><span>01</span><h3>Set your target</h3><p>Pick an admin-managed preset or enter any custom shard target.</p></article>
-        <article class="guide-card"><span>02</span><h3>Count what you earn</h3><p>Type your current balance or use the quick-add buttons while you play.</p></article>
-        <article class="guide-card"><span>03</span><h3>Know the gap</h3><p>The counter shows remaining shards, progress and optional days-to-target.</p></article>
+        {T.guide.cards.map((card, i) => <article class="guide-card"><span>{String(i + 1).padStart(2, '0')}</span><h3>{card.t}</h3><p>{card.d}</p></article>)}
       </div>
     </section>
   </main>
@@ -140,8 +144,9 @@ const description = SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Sta
 .shards-page{background:var(--bg);color:var(--text);overflow:hidden}.shards-page .wrap{width:min(1180px,calc(100% - 36px));margin:auto}.shards-hero{min-height:575px;border-bottom:1px solid var(--line);background:radial-gradient(circle at 72% 32%,#55c7f20f,transparent 27%),radial-gradient(circle at 92% 85%,#5b7cff0f,transparent 31%),linear-gradient(145deg,#071017,#05090d 58%,#07111a)}.hero-wrap{display:grid;grid-template-columns:minmax(0,1.25fr) 360px;gap:70px;align-items:center;min-height:575px;padding:86px 0 72px}.hero-copy{position:relative;z-index:2}.hero-copy .eyebrow{display:flex;gap:9px;align-items:center;color:var(--blue);font:900 9px var(--mono);letter-spacing:.16em}.hero-copy .eyebrow span{color:#667985}.hero-copy h1{margin:18px 0 18px;font-size:clamp(54px,7vw,92px);line-height:.88;letter-spacing:-.07em}.hero-copy h1 em,.section-head h2 em{font-style:normal;color:var(--blue)}.hero-copy>p{max-width:650px;color:#98aeb9;font-size:14px;line-height:1.8;margin:0}.hero-points{display:flex;flex-wrap:wrap;gap:18px;margin-top:27px;color:#708693;font:800 8px var(--mono);letter-spacing:.02em}.hero-points i{display:inline-block;width:5px;height:5px;border-radius:50%;background:#63e3a1;margin-right:6px}.hero-metric{padding:28px;border:1px solid #274554;border-radius:24px;background:linear-gradient(145deg,#0d1922dd,#071019e8);box-shadow:0 28px 90px #0009;backdrop-filter:blur(14px)}.hero-metric small{display:block;color:#718895;font:900 8px var(--mono);letter-spacing:.14em}.hero-metric strong{display:block;margin:10px 0 4px;font:900 clamp(42px,5vw,62px) var(--mono);letter-spacing:-.08em;color:#76e4ab}.hero-metric>span{color:#8298a4;font:800 9px var(--mono)}.metric-line{height:5px;margin:24px 0 16px;background:#ffffff09;border-radius:999px;overflow:hidden}.metric-line i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),#66e5ff);transition:width .25s}.metric-foot{display:flex;justify-content:space-between;gap:10px;color:#657c88;font:800 8px var(--mono)}.metric-foot b{color:#dff8ff}.calculator-section{padding:65px 0 35px}.counter-shell{border:1px solid var(--line);border-radius:26px;overflow:hidden;background:linear-gradient(145deg,#0b141d,#071018);box-shadow:0 25px 80px #0005}.counter-top{display:flex;justify-content:space-between;gap:22px;padding:28px 30px;border-bottom:1px solid var(--line)}.counter-top h2{margin:8px 0 6px;font-size:29px;letter-spacing:-.05em}.counter-top p{margin:0;color:var(--muted);font-size:10px}.label,.result-label{color:var(--blue);font:900 8px var(--mono);letter-spacing:.15em}.currency-chip{align-self:start;padding:10px 12px;border:1px solid #31556b;border-radius:999px;background:#55c7f20b;color:#a9dff0;font:800 8px var(--mono)}.counter-body{display:grid;grid-template-columns:1.1fr .9fr}.inputs-panel{padding:28px;border-right:1px solid var(--line)}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field-grid label{display:grid;gap:8px}.field-grid label>span{color:#91a6b2;font:900 8px var(--mono);letter-spacing:.1em}.field-grid label>span small{color:#5f7581;font:800 7px var(--mono);letter-spacing:0}.input-wrap{display:flex;align-items:center;border:1px solid #263b49;border-radius:11px;background:#060d14;overflow:hidden}.input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px #55c7f210}.input-wrap b{padding-left:13px;color:#4e7388;font:900 12px var(--mono)}.input-wrap input,.field-grid select{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#f4fbff;padding:13px 12px;font:800 12px var(--mono)}.field-grid select{border:1px solid #263b49;border-radius:11px;background:#060d14;padding:13px 12px}.quick-add{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-top:20px;padding:15px;border:1px solid #ffffff0c;border-radius:12px;background:#ffffff04}.quick-label span{display:block;color:#96aab5;font:900 8px var(--mono);letter-spacing:.12em}.quick-label small{display:block;margin-top:4px;color:#607986;font-size:9px}.quick-buttons{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.quick-buttons button{min-width:48px;padding:9px 10px;border:1px solid #294252;border-radius:9px;background:#0d171e;color:#9ed7e9;font:900 8px var(--mono);cursor:pointer}.quick-buttons button:hover{border-color:#55c7f2;color:#fff;transform:translateY(-1px)}.input-actions{display:flex;gap:8px;margin-top:12px}.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 13px;border:1px solid #29414e;border-radius:10px;background:#0c151c;color:#d7e8ef;font:800 8px var(--mono);cursor:pointer}.btn:hover{border-color:#55c7f2;color:#fff}.result-panel{padding:28px;background:radial-gradient(circle at 90% 0,#55c7f20b,transparent 40%)}.result-main{display:flex;align-items:baseline;gap:10px;margin-top:8px}.result-main strong{font:900 clamp(43px,5vw,64px) var(--mono);letter-spacing:-.08em;color:#dff8ff}.result-main span{color:#6f8793;font:800 8px var(--mono)}.progress-track{height:11px;margin-top:23px;border:1px solid #203341;border-radius:999px;background:#050a0f;overflow:hidden}.progress-track i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),#5de2ff);box-shadow:0 0 18px #55c7f22f;transition:width .25s}.result-meta{display:flex;justify-content:space-between;gap:10px;margin-top:9px;color:#657c88;font:800 8px var(--mono)}.result-meta b{color:#bfefff}.result-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:27px}.result-stats div{padding:13px;border:1px solid #ffffff0c;border-radius:10px;background:#ffffff04}.result-stats small{display:block;color:#607985;font:900 7px var(--mono)}.result-stats b{display:block;margin-top:6px;color:#dcecf2;font:900 13px var(--mono)}.status{margin-top:18px;padding:13px 14px;border:1px solid #294252;border-radius:11px;background:#55c7f207}.status.good{border-color:#285d46;background:#123d2b46}.status strong{display:block;font-size:12px}.status span{display:block;margin-top:4px;color:#78909b;font-size:9px;line-height:1.5}.calc-footer{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:15px 28px;border-top:1px solid var(--line);color:#5e7683;font:800 7px var(--mono)}.calc-footer button{border:0;background:transparent;color:#8298a4;font:900 7px var(--mono);cursor:pointer}.calc-footer button:hover{color:var(--blue)}.guide-section{padding:55px 0 100px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:35px;margin-bottom:22px}.section-head h2{margin:10px 0 0;font-size:clamp(31px,4.5vw,52px);line-height:.95;letter-spacing:-.06em}.section-head>p{max-width:420px;color:var(--muted);font-size:10px;line-height:1.7;margin:0}.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.guide-card{padding:21px;border:1px solid var(--line);border-radius:15px;background:var(--surface);min-height:170px}.guide-card span{color:var(--blue);font:900 8px var(--mono);letter-spacing:.12em}.guide-card h3{margin:35px 0 8px;font-size:18px;letter-spacing:-.03em}.guide-card p{color:var(--muted);font-size:10px;line-height:1.7;margin:0}@media(max-width:900px){.hero-wrap,.counter-body{grid-template-columns:1fr}.hero-metric{max-width:420px}.inputs-panel{border-right:0;border-bottom:1px solid var(--line)}.guide-grid{grid-template-columns:1fr 1fr}.hero-wrap{gap:35px}}@media(max-width:620px){.shards-page .wrap{width:calc(100% - 26px)}.shards-hero,.hero-wrap{min-height:0}.hero-wrap{padding:72px 0 52px}.hero-copy h1{font-size:clamp(48px,14vw,72px)}.field-grid,.guide-grid{grid-template-columns:1fr}.counter-top{align-items:start;flex-direction:column}.quick-add{align-items:start;flex-direction:column}.quick-buttons{justify-content:flex-start}.calc-footer{align-items:start;flex-direction:column}.input-actions{flex-wrap:wrap}.result-panel{padding:22px}.inputs-panel{padding:22px}}
 </style>
 
-<script define:vars={{ shardConfig: SHARDS_COUNTER_DATA }}>
+<script define:vars={{ shardConfig: SHARDS_COUNTER_DATA, ui: T.ui }}>
   const config = shardConfig || {};
+  const fill = (text, n) => text.replace('{n}', n);
   const storageKey = 'fcmobiletools:shards-counter:v1';
   const presetList = Array.isArray(config.targets) ? config.targets.filter((item) => item && item.enabled !== false) : [];
   const $ = (selector) => document.querySelector(selector);
@@ -185,7 +190,7 @@ const description = SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Sta
 
   function renderPresets() {
     els.preset.replaceChildren();
-    els.preset.appendChild(new Option('Custom target', ''));
+    els.preset.appendChild(new Option(ui.custom, ''));
     for (const item of presetList) {
       els.preset.appendChild(new Option(item.label + ' · ' + format(item.cost), item.id));
     }
@@ -215,19 +220,19 @@ const description = SHARDS_COUNTER_DATA.description || 'Track your FC Mobile Sta
     els.remaining.textContent = target ? format(remaining) : '—';
 
     if (!target) {
-      els.progressText.textContent = 'Enter a target to start';
-      els.statusTitle.textContent = 'Set a target';
-      els.statusDetail.textContent = presetList.length ? 'Pick a preset or enter your own shard target.' : 'Enter the number of shards you want to reach.';
+      els.progressText.textContent = ui.enterTarget;
+      els.statusTitle.textContent = ui.setTarget;
+      els.statusDetail.textContent = presetList.length ? ui.pickPreset : ui.enterNumber;
       els.statusBox.classList.remove('good');
     } else if (current >= target) {
-      els.progressText.textContent = overflow ? format(overflow) + ' over target' : 'Target reached';
-      els.statusTitle.textContent = overflow ? 'Target secured' : 'Target reached';
-      els.statusDetail.textContent = overflow ? 'You have enough shards for this target with room to spare.' : 'You have reached your selected shard target.';
+      els.progressText.textContent = overflow ? fill(ui.over, format(overflow)) : ui.reached;
+      els.statusTitle.textContent = overflow ? ui.secured : ui.reached;
+      els.statusDetail.textContent = overflow ? ui.securedDetail : ui.reachedDetail;
       els.statusBox.classList.add('good');
     } else {
-      els.progressText.textContent = format(remaining) + ' remaining';
-      els.statusTitle.textContent = 'Keep going';
-      els.statusDetail.textContent = days ? 'At your daily rate, about ' + format(days) + ' day' + (days === 1 ? '' : 's') + ' remain.' : 'Use the quick-add buttons as you earn more shards.';
+      els.progressText.textContent = fill(ui.remaining, format(remaining));
+      els.statusTitle.textContent = ui.keepGoing;
+      els.statusDetail.textContent = days ? fill(days === 1 ? ui.daysOne : ui.daysMany, format(days)) : ui.quickHint;
       els.statusBox.classList.remove('good');
     }
     save();

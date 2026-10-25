@@ -1,9 +1,15 @@
 // English source dictionary. Add a key here first, then translate it in the other files.
 // Keys that a language leaves out fall back to this file.
 import redeem from './pages/redeem.en.js';
+import consent from './pages/consent.en.js';
+import investment from './pages/investment.en.js';
+import shards from './pages/shards.en.js';
 
 export default {
   redeem,
+  consent,
+  investment,
+  shards,
   common: {
     skipToContent: 'Skip to content',
     home: 'Home',
@@ -35,7 +41,30 @@ export default {
     quickNav: 'Quick navigation',
     siteMenu: 'Site menu',
     openMenu: 'Open menu',
-    closeMenu: 'Close menu'
+    closeMenu: 'Close menu',
+    accountMenu: {
+      aria: 'Account menu',
+      signedInAs: 'Signed in as',
+      xp: 'XP',
+      tokens: 'Tokens',
+      streak: 'Streak',
+      streakDays: '{n}d',
+      signOut: 'Sign out',
+      profile: 'Profile', profileMeta: 'Your player card',
+      quests: 'Quests', questsMeta: 'Daily and weekly',
+      surveys: 'Surveys', surveysMeta: 'Share your opinion',
+      achievements: 'Achievements', achievementsMeta: 'Badges and milestones',
+      leaderboard: 'Leaderboard', leaderboardMeta: 'Top players',
+      rewards: 'Rewards', rewardsMeta: 'Claim and spend',
+      settings: 'Settings', settingsMeta: 'Account and privacy'
+    },
+    accountNav: {
+      breadcrumb: 'Breadcrumb',
+      account: 'Account',
+      sections: 'Account sections',
+      guestLead: 'Optional account · ',
+      guestCta: 'Sign in or join →'
+    }
   },
   nav: {
     groups: { tools: 'Tools', live: 'Live', community: 'Community' },
@@ -87,6 +116,9 @@ export default {
   switcher: {
     label: 'Language',
     aria: 'Change language',
-    fallbackHint: 'This page is not translated into {language} yet. Opens the closest available page.'
+    title: 'Choose your language',
+    subtitle: 'Pages without a translation open in English.',
+    englishOnly: 'English only',
+    current: 'Current language'
   }
 };

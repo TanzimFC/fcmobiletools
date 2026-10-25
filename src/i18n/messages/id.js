@@ -1,9 +1,15 @@
 // Bahasa Indonesia. Istilah game (Team OVR, PlayStyle, Rank Up, Gauntlet, Star Shards,
 // Football Centre) tetap dalam bahasa Inggris, seperti di FC Mobile.
 import redeem from './pages/redeem.id.js';
+import consent from './pages/consent.id.js';
+import investment from './pages/investment.id.js';
+import shards from './pages/shards.id.js';
 
 export default {
   redeem,
+  consent,
+  investment,
+  shards,
   common: {
     skipToContent: 'Lewati ke konten',
     home: 'Beranda',
@@ -35,7 +41,30 @@ export default {
     quickNav: 'Navigasi cepat',
     siteMenu: 'Menu situs',
     openMenu: 'Buka menu',
-    closeMenu: 'Tutup menu'
+    closeMenu: 'Tutup menu',
+    accountMenu: {
+      aria: 'Menu akun',
+      signedInAs: 'Masuk sebagai',
+      xp: 'XP',
+      tokens: 'Tokens',
+      streak: 'Streak',
+      streakDays: '{n} hr',
+      signOut: 'Keluar',
+      profile: 'Profil', profileMeta: 'Kartu pemain Anda',
+      quests: 'Misi', questsMeta: 'Harian dan mingguan',
+      surveys: 'Survei', surveysMeta: 'Bagikan pendapat Anda',
+      achievements: 'Pencapaian', achievementsMeta: 'Lencana dan tonggak',
+      leaderboard: 'Papan Peringkat', leaderboardMeta: 'Pemain teratas',
+      rewards: 'Hadiah', rewardsMeta: 'Klaim dan gunakan',
+      settings: 'Pengaturan', settingsMeta: 'Akun dan privasi'
+    },
+    accountNav: {
+      breadcrumb: 'Jejak navigasi',
+      account: 'Akun',
+      sections: 'Bagian akun',
+      guestLead: 'Akun opsional · ',
+      guestCta: 'Masuk atau gabung →'
+    }
   },
   nav: {
     groups: { tools: 'Alat', live: 'Live', community: 'Komunitas' },
@@ -87,6 +116,9 @@ export default {
   switcher: {
     label: 'Bahasa',
     aria: 'Ganti bahasa',
-    fallbackHint: 'Halaman ini belum diterjemahkan ke {language}. Membuka halaman terdekat yang tersedia.'
+    title: 'Pilih bahasa Anda',
+    subtitle: 'Halaman tanpa terjemahan dibuka dalam bahasa Inggris.',
+    englishOnly: 'Hanya Inggris',
+    current: 'Bahasa saat ini'
   }
 };

@@ -1,11 +1,14 @@
 ---
-// Language switcher. Every option is a real link, so it works without JavaScript and crawlers
-// can follow it. The link goes to the same page in the chosen language when that translation
-// exists, and to that language's closest page otherwise. A language with no translated pages
-// at all is not offered.
+// Premium language switcher. Every option is a real link, so it works without JavaScript and
+// crawlers can follow it.
+//
+// Behavior for a page that has no translation in the chosen language: the link opens the normal
+// English page at the same path (never another page, never a 404) and is tagged "English only".
+// A translated page links straight to its translation. Blog, guides, admin and API areas are
+// English only by design, so they get no switcher at all.
 import {
-  LOCALES, LOCALE_CODES, DEFAULT_LOCALE, getLocaleFromPath, stripLocale, hasLocalizedPage,
-  pathForLocale, fallbackPageFor, isLocalizablePath, translator
+  LOCALES, LOCALE_CODES, getLocaleFromPath, stripLocale, hasLocalizedPage,
+  pathForLocale, isLocalizablePath, translator
 } from '../i18n/index.js';
 
 export interface Props { variant?: 'bar' | 'sheet'; }
@@ -15,54 +18,77 @@ const locale = getLocaleFromPath(Astro.url.pathname);
 const tr = translator(locale);
 const englishPath = stripLocale(Astro.url.pathname);
 
-// Pages that are not part of the translated site (admin, blog, guides, creator tools) have no
-// language versions, so the switcher is left out of them entirely.
-const options = LOCALE_CODES.map((code) => {
+const options = LOCALE_CODES.map((code, index) => {
   const exact = hasLocalizedPage(englishPath, code);
-  const fallbackPath = exact ? englishPath : fallbackPageFor(code);
-  if (!fallbackPath) return null;
   return {
     code,
+    index,
     native: LOCALES[code].native,
+    english: LOCALES[code].english,
+    badge: LOCALES[code].badge,
     short: LOCALES[code].short,
     hreflang: LOCALES[code].hreflang,
-    href: pathForLocale(fallbackPath, code),
-    exact,
-    current: code === locale,
-    hint: exact ? '' : tr('switcher.fallbackHint', { language: LOCALES[code].native })
+    // Translation when it exists, otherwise the normal English page at the same path.
+    href: exact ? pathForLocale(englishPath, code) : pathForLocale(englishPath, 'en'),
+    englishOnly: !exact,
+    current: code === locale
   };
-}).filter(Boolean);
+});
 
-// Blog, guides, admin and API areas stay English only, so they get no switcher.
-const show = isLocalizablePath(englishPath) && options.filter((o) => !o.current).length > 0;
+const show = isLocalizablePath(englishPath);
 const currentOption = LOCALES[locale];
-const uid = variant === 'bar' ? 'fcmtLangBar' : 'fcmtLangSheet';
 ---
 {show && variant === 'bar' && (
-  <details class="fcmt-lang" id={uid} data-fcmt-lang>
+  <details class="fcmt-lang" id="fcmtLangBar" data-fcmt-lang>
     <summary class="fcmt-lang-btn" aria-label={`${tr('switcher.aria')}: ${currentOption.native}`}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9S14.6 18.4 12 21c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>
+      <span class="fcmt-lang-globe" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9S14.6 18.4 12 21c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>
+      </span>
       <span class="fcmt-lang-cur" lang={currentOption.htmlLang}>{currentOption.short}</span>
+      <svg class="fcmt-lang-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </summary>
-    <ul class="fcmt-lang-menu" role="list">
-      {options.map((o) => (
-        <li>
-          <a href={o.href} hreflang={o.hreflang} lang={o.hreflang} data-lang-code={o.code} aria-current={o.current ? 'true' : undefined} title={o.hint || undefined} rel="alternate">
-            <span>{o.native}</span>
-            {o.current ? <i aria-hidden="true">✓</i> : null}
-          </a>
-        </li>
-      ))}
-    </ul>
+    <div class="fcmt-lang-pop" role="group" aria-label={tr('switcher.title')}>
+      <div class="fcmt-lang-head">
+        <p class="fcmt-lang-kicker">{tr('switcher.label')}</p>
+        <p class="fcmt-lang-title">{tr('switcher.title')}</p>
+      </div>
+      <ul class="fcmt-lang-list" role="list">
+        {options.map((o) => (
+          <li style={`--i:${o.index}`}>
+            <a class:list={['fcmt-lang-opt', { 'is-current': o.current, 'is-fallback': o.englishOnly && !o.current }]}
+               href={o.href} hreflang={o.hreflang} lang={o.hreflang} data-lang-code={o.code}
+               aria-current={o.current ? 'true' : undefined} rel="alternate">
+              <span class="fcmt-lang-badge" aria-hidden="true">{o.badge}</span>
+              <span class="fcmt-lang-names">
+                <strong>{o.native}</strong>
+                <small>{o.english}</small>
+              </span>
+              {o.current
+                ? <span class="fcmt-lang-check" aria-label={tr('switcher.current')}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+                : o.englishOnly ? <span class="fcmt-lang-tag">{tr('switcher.englishOnly')}</span> : null}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p class="fcmt-lang-foot">{tr('switcher.subtitle')}</p>
+    </div>
   </details>
 )}
 
 {show && variant === 'sheet' && (
   <section class="fcmt-sec fcmt-lang-sec" data-fcmt-lang>
     <p class="fcmt-eyebrow">{tr('switcher.label')}</p>
-    <div class="fcmt-lang-chips">
+    <div class="fcmt-lang-cards">
       {options.map((o) => (
-        <a href={o.href} hreflang={o.hreflang} lang={o.hreflang} data-lang-code={o.code} aria-current={o.current ? 'true' : undefined} title={o.hint || undefined} rel="alternate">{o.native}</a>
+        <a class:list={['fcmt-lang-card', { 'is-current': o.current, 'is-fallback': o.englishOnly && !o.current }]}
+           href={o.href} hreflang={o.hreflang} lang={o.hreflang} data-lang-code={o.code}
+           aria-current={o.current ? 'true' : undefined} rel="alternate">
+          <span class="fcmt-lang-badge" aria-hidden="true">{o.badge}</span>
+          <span class="fcmt-lang-names">
+            <strong>{o.native}</strong>
+            <small>{o.englishOnly && !o.current ? tr('switcher.englishOnly') : o.english}</small>
+          </span>
+        </a>
       ))}
     </div>
   </section>
@@ -70,31 +96,62 @@ const uid = variant === 'bar' ? 'fcmtLangBar' : 'fcmtLangSheet';
 
 <style is:global>
 .fcmt-lang{position:relative;flex:0 0 auto}
-.fcmt-lang-btn{list-style:none;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 12px;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.035);color:var(--muted);font:700 12px/1 var(--font-body);cursor:pointer;transition:color .2s,background .2s,border-color .2s}
+.fcmt-lang-btn{list-style:none;display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 11px 0 6px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));color:var(--muted);font:800 12px/1 var(--font-body);cursor:pointer;transition:color .2s,background .2s,border-color .2s,box-shadow .2s,transform .2s cubic-bezier(.2,.8,.2,1)}
 .fcmt-lang-btn::-webkit-details-marker{display:none}
-.fcmt-lang-btn:hover,.fcmt-lang[open] .fcmt-lang-btn{color:var(--text);background:rgba(255,255,255,.06);border-color:rgba(76,201,255,.3)}
+.fcmt-lang-globe{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:rgba(76,201,255,.12);border:1px solid rgba(76,201,255,.22);color:var(--primary);transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .25s}
+.fcmt-lang-btn:hover,.fcmt-lang[open] .fcmt-lang-btn{color:var(--text);border-color:rgba(76,201,255,.38);background:linear-gradient(180deg,rgba(76,201,255,.1),rgba(76,201,255,.035));box-shadow:0 10px 28px -12px rgba(76,201,255,.5)}
+.fcmt-lang-btn:hover .fcmt-lang-globe,.fcmt-lang[open] .fcmt-lang-globe{transform:rotate(24deg);box-shadow:0 0 18px rgba(76,201,255,.35)}
 .fcmt-lang-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
-.fcmt-lang-menu{position:absolute;right:0;top:calc(100% + 10px);z-index:5;min-width:210px;margin:0;padding:8px;list-style:none;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:linear-gradient(180deg,rgba(20,34,49,.97),rgba(9,18,27,.98));box-shadow:0 24px 60px -14px rgba(0,0,0,.75)}
-.fcmt-lang-menu a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:11px;color:#b3c0cc;font:600 13px/1.4 var(--font-body);text-decoration:none;white-space:nowrap}
-.fcmt-lang-menu a:hover,.fcmt-lang-menu a:focus-visible{background:rgba(76,201,255,.1);color:#fff;outline:none}
-.fcmt-lang-menu a[aria-current="true"]{color:var(--primary)}
-.fcmt-lang-menu i{font-style:normal;font-size:12px}
-.fcmt-lang-chips{display:flex;flex-wrap:wrap;gap:8px}
-.fcmt-lang-chips a{display:inline-flex;align-items:center;min-height:42px;padding:0 16px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.035);color:#c7d3de;font:700 13px/1.4 var(--font-body);text-decoration:none}
-.fcmt-lang-chips a[aria-current="true"]{border-color:rgba(76,201,255,.55);background:rgba(76,201,255,.12);color:#fff}
-.fcmt-lang-sec{margin-bottom:6px}
+.fcmt-lang-chev{color:var(--muted-strong);transition:transform .28s cubic-bezier(.2,.8,.2,1),color .2s}
+.fcmt-lang[open] .fcmt-lang-chev{transform:rotate(180deg);color:var(--primary)}
+
+.fcmt-lang-pop{position:absolute;right:0;top:calc(100% + 14px);z-index:6;width:304px;padding:10px;border-radius:24px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(21,36,52,.97),rgba(9,18,27,.985));box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 40px 90px -14px rgba(0,0,0,.8),0 0 0 1px rgba(76,201,255,.04);transform-origin:top right;overflow:hidden}
+.fcmt-lang-pop::before{content:"";position:absolute;inset:0 0 auto 0;height:110px;pointer-events:none;background:radial-gradient(120% 100% at 85% 0%,rgba(76,201,255,.2),rgba(76,201,255,0) 62%)}
+.fcmt-lang[open] .fcmt-lang-pop{animation:fcmtLangPop .34s cubic-bezier(.2,.8,.2,1) both}
+@keyframes fcmtLangPop{from{opacity:0;transform:translateY(-8px) scale(.965)}to{opacity:1;transform:none}}
+.fcmt-lang-head{position:relative;padding:8px 10px 10px}
+.fcmt-lang-kicker{margin:0 0 6px;color:var(--primary);font:800 10px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase}
+.fcmt-lang-title{margin:0;color:#f4f8fb;font:800 17px/1.2 var(--font-display);letter-spacing:-.01em}
+.fcmt-lang-list{position:relative;display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.fcmt-lang[open] .fcmt-lang-list li{animation:fcmtLangItem .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*55ms + 70ms)}
+@keyframes fcmtLangItem{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+.fcmt-lang-opt,.fcmt-lang-card{position:relative;display:flex;align-items:center;gap:12px;padding:9px 12px 9px 9px;border:1px solid transparent;border-radius:16px;color:#b9c6d2;text-decoration:none;transition:background .18s,border-color .18s,color .18s,transform .18s}
+.fcmt-lang-opt:hover,.fcmt-lang-opt:focus-visible,.fcmt-lang-card:hover,.fcmt-lang-card:focus-visible{outline:none;color:#fff;background:linear-gradient(90deg,rgba(76,201,255,.12),rgba(76,201,255,.03));border-color:rgba(76,201,255,.22);transform:translateX(2px)}
+.fcmt-lang-opt.is-current,.fcmt-lang-card.is-current{color:#fff;background:linear-gradient(90deg,rgba(76,201,255,.18),rgba(76,201,255,.05));border-color:rgba(76,201,255,.4)}
+.fcmt-lang-badge{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:13px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.045);color:#d6e2ec;font:800 13.5px/1 var(--font-display);transition:.2s}
+.fcmt-lang-opt:hover .fcmt-lang-badge,.fcmt-lang-card:hover .fcmt-lang-badge{border-color:rgba(76,201,255,.35);color:var(--primary)}
+.is-current .fcmt-lang-badge{border-color:transparent;background:linear-gradient(180deg,#9fe9ff,#4cc9ff);color:#03131c;box-shadow:0 8px 20px -6px rgba(76,201,255,.7)}
+.fcmt-lang-names{flex:1;min-width:0;text-align:left}
+.fcmt-lang-names strong,.fcmt-lang-names small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fcmt-lang-names strong{font:750 14px/1.3 var(--font-body);color:inherit}
+.fcmt-lang-names small{margin-top:3px;font:600 11.5px/1.2 var(--font-body);color:#728496}
+.fcmt-lang-check{display:grid;place-items:center;flex:0 0 22px;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#03131c;box-shadow:0 0 16px rgba(76,201,255,.55)}
+.fcmt-lang-tag{flex:0 0 auto;padding:5px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#8798a8;font:700 10px/1 var(--font-body);white-space:nowrap}
+.fcmt-lang-opt.is-fallback .fcmt-lang-names strong{color:#c7d3de}
+.fcmt-lang-foot{position:relative;margin:8px 4px 2px;padding:10px 8px 6px;border-top:1px solid rgba(255,255,255,.06);color:#6f8192;font:500 11.5px/1.45 var(--font-body)}
+
+.fcmt-lang-sec{margin:6px 0 10px}
+.fcmt-lang-sec .fcmt-eyebrow{margin:12px 0 8px;padding:0 4px;color:var(--primary);font:800 10px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase}
+.fcmt-lang-card .fcmt-lang-names strong,.fcmt-lang-card .fcmt-lang-names small{white-space:normal;overflow:visible}
+.fcmt-lang-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fcmt-lang-card{padding:10px;border-color:rgba(255,255,255,.07);background:rgba(255,255,255,.03)}
+.fcmt-lang-card .fcmt-lang-badge{flex-basis:36px;width:36px;height:36px;border-radius:12px;font-size:12.5px}
+.fcmt-lang-card .fcmt-lang-names strong{font-size:13px}
+
 /* The mobile menu has its own language block, so the bar button is desktop only. */
 @media(max-width:980px){.fcmt-lang[data-fcmt-lang]{display:none}}
 @media(min-width:981px){.fcmt-sheet .fcmt-lang-sec{display:none}}
-@media(max-width:1120px){.fcmt-lang-btn{padding:0 10px}}
+@media(max-width:1120px){.fcmt-lang-btn{padding:0 9px 0 5px;gap:6px}}
 /* The language button needs room in the bar, so on mid-size desktops the search box shrinks to its icon.
    Only bars that actually contain the switcher are affected. */
 @media(min-width:981px) and (max-width:1320px){
   .fcmt-bar:has(.fcmt-lang) .fcmt-search{width:42px;padding:0;justify-content:center}
   .fcmt-bar:has(.fcmt-lang) .fcmt-search-txt,.fcmt-bar:has(.fcmt-lang) .fcmt-search kbd{display:none}
 }
+@media(max-width:1180px) and (min-width:981px){.fcmt-lang-cur,.fcmt-lang-chev{display:none}.fcmt-lang-btn{padding:0 6px}}
 /* Longer translated labels must never wrap inside the bar. */
 .fcmt-nav .fcmt-link,.fcmt-nav .fcmt-trigger{white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.fcmt-lang[open] .fcmt-lang-pop,.fcmt-lang[open] .fcmt-lang-list li{animation:none}.fcmt-lang-globe{transition:none}}
 </style>
 
 {show && variant === 'bar' && <script is:inline set:html={`
@@ -102,22 +159,35 @@ const uid = variant === 'bar' ? 'fcmtLangBar' : 'fcmtLangSheet';
   if (window.__fcmtLangInit) return;
   window.__fcmtLangInit = true;
   const i18n = () => window.FCMT_I18N;
+  const openMenus = () => document.querySelectorAll('details.fcmt-lang[open]');
   // Remember an explicit choice and keep the query string and hash when switching.
   document.addEventListener('click', (event) => {
     const link = event.target.closest && event.target.closest('[data-fcmt-lang] a[data-lang-code]');
     if (!link) return;
     try {
-      const code = link.getAttribute('data-lang-code');
-      if (i18n()) i18n().remember(code);
+      if (i18n()) i18n().remember(link.getAttribute('data-lang-code'));
       const url = new URL(link.href, location.href);
+      // Already on this exact page (a language with no translation here): stay put instead of reloading.
+      if (url.pathname === location.pathname) { event.preventDefault(); openMenus().forEach((d) => d.removeAttribute('open')); return; }
       if (!url.search) url.search = location.search;
       if (!url.hash) url.hash = location.hash;
       link.href = url.pathname + url.search + url.hash;
     } catch {}
   }, true);
-  // Close the dropdown on outside click or Escape.
-  const menus = () => document.querySelectorAll('details.fcmt-lang[open]');
-  document.addEventListener('click', (event) => { menus().forEach((d) => { if (!d.contains(event.target)) d.removeAttribute('open'); }); });
-  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') menus().forEach((d) => { d.removeAttribute('open'); d.querySelector('summary')?.focus(); }); });
+  document.addEventListener('click', (event) => { openMenus().forEach((d) => { if (!d.contains(event.target)) d.removeAttribute('open'); }); });
+  document.addEventListener('keydown', (event) => {
+    const menu = document.querySelector('details.fcmt-lang');
+    if (!menu) return;
+    if (event.key === 'Escape' && menu.open) { menu.removeAttribute('open'); menu.querySelector('summary')?.focus(); return; }
+    if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+    const onSummary = document.activeElement === menu.querySelector('summary');
+    if (!menu.open && !onSummary) return;
+    event.preventDefault();
+    if (!menu.open) menu.setAttribute('open', '');
+    const items = [...menu.querySelectorAll('a.fcmt-lang-opt')];
+    const at = items.indexOf(document.activeElement);
+    const next = event.key === 'ArrowDown' ? (at + 1) % items.length : (at <= 0 ? items.length - 1 : at - 1);
+    items[onSummary && event.key === 'ArrowDown' ? 0 : next]?.focus();
+  });
 })();
 `}></script>}

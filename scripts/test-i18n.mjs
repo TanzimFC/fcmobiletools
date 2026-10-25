@@ -4,7 +4,7 @@ import path from 'node:path';
 import {
   dictionaries, flattenKeys, t, namespace, LOCALES, NON_DEFAULT_LOCALES, DEFAULT_LOCALE,
   LOCALIZED_PAGES, PAGE_NAMESPACES, SHARED_NAMESPACES, localizeHref, splitLocalePath, pathForLocale,
-  alternatesFor, availableLocales, hasLocalizedPage, fallbackPageFor, localizedSitemapPaths
+  alternatesFor, availableLocales, hasLocalizedPage, isLocalizablePath, localizedSitemapPaths
 } from '../src/i18n/index.js';
 
 const root = process.cwd();
@@ -107,10 +107,8 @@ for (const [englishPath, locales] of Object.entries(LOCALIZED_PAGES)) {
 }
 assert.deepEqual(alternatesFor('/blog/anything/', 'https://fcmobiletools.online'), [], 'blog never gets alternates');
 assert.deepEqual(availableLocales('/blog/'), ['en']);
-for (const code of NON_DEFAULT_LOCALES) {
-  const fallback = fallbackPageFor(code);
-  if (fallback) assert.ok(hasLocalizedPage(fallback, code), `fallback page for ${code} must exist`);
-}
+assert.equal(isLocalizablePath('/blog/x/'), false);
+assert.equal(isLocalizablePath('/events/'), true);
 assert.equal(localizedSitemapPaths().length, Object.values(LOCALIZED_PAGES).flat().length);
 
 if (failures.length) {

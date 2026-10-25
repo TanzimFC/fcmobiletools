@@ -1,9 +1,15 @@
 // বাংলা। গেমের পরিভাষা (Team OVR, PlayStyle, Rank Up, Gauntlet, Star Shards, Football Centre)
 // FC Mobile-এর মতোই ইংরেজিতে রাখা হয়েছে।
 import redeem from './pages/redeem.bn.js';
+import consent from './pages/consent.bn.js';
+import investment from './pages/investment.bn.js';
+import shards from './pages/shards.bn.js';
 
 export default {
   redeem,
+  consent,
+  investment,
+  shards,
   common: {
     skipToContent: 'মূল কনটেন্টে যান',
     home: 'হোম',
@@ -35,7 +41,30 @@ export default {
     quickNav: 'দ্রুত নেভিগেশন',
     siteMenu: 'সাইট মেনু',
     openMenu: 'মেনু খুলুন',
-    closeMenu: 'মেনু বন্ধ করুন'
+    closeMenu: 'মেনু বন্ধ করুন',
+    accountMenu: {
+      aria: 'অ্যাকাউন্ট মেনু',
+      signedInAs: 'সাইন ইন করা আছে',
+      xp: 'XP',
+      tokens: 'Tokens',
+      streak: 'স্ট্রিক',
+      streakDays: '{n} দিন',
+      signOut: 'সাইন আউট',
+      profile: 'প্রোফাইল', profileMeta: 'আপনার প্লেয়ার কার্ড',
+      quests: 'কোয়েস্ট', questsMeta: 'দৈনিক ও সাপ্তাহিক',
+      surveys: 'সার্ভে', surveysMeta: 'আপনার মতামত জানান',
+      achievements: 'অর্জন', achievementsMeta: 'ব্যাজ ও মাইলফলক',
+      leaderboard: 'লিডারবোর্ড', leaderboardMeta: 'সেরা খেলোয়াড়',
+      rewards: 'পুরস্কার', rewardsMeta: 'নিন ও খরচ করুন',
+      settings: 'সেটিংস', settingsMeta: 'অ্যাকাউন্ট ও গোপনীয়তা'
+    },
+    accountNav: {
+      breadcrumb: 'ব্রেডক্রাম্ব',
+      account: 'অ্যাকাউন্ট',
+      sections: 'অ্যাকাউন্টের বিভাগ',
+      guestLead: 'ঐচ্ছিক অ্যাকাউন্ট · ',
+      guestCta: 'সাইন ইন করুন বা যোগ দিন →'
+    }
   },
   nav: {
     groups: { tools: 'টুলস', live: 'লাইভ', community: 'কমিউনিটি' },
@@ -87,6 +116,9 @@ export default {
   switcher: {
     label: 'ভাষা',
     aria: 'ভাষা পরিবর্তন করুন',
-    fallbackHint: 'এই পেজ এখনও {language} ভাষায় অনুবাদ হয়নি। কাছাকাছি উপলব্ধ পেজ খুলবে।'
+    title: 'আপনার ভাষা বেছে নিন',
+    subtitle: 'অনুবাদ না থাকা পেজ ইংরেজিতে খুলবে।',
+    englishOnly: 'শুধু ইংরেজি',
+    current: 'বর্তমান ভাষা'
   }
 };

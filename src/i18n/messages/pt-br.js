@@ -1,9 +1,15 @@
 // Português (Brasil). Termos do jogo (Team OVR, PlayStyle, Rank Up, Gauntlet, Star Shards,
 // Football Centre) ficam em inglês, como no próprio FC Mobile.
 import redeem from './pages/redeem.pt-br.js';
+import consent from './pages/consent.pt-br.js';
+import investment from './pages/investment.pt-br.js';
+import shards from './pages/shards.pt-br.js';
 
 export default {
   redeem,
+  consent,
+  investment,
+  shards,
   common: {
     skipToContent: 'Ir para o conteúdo',
     home: 'Início',
@@ -35,7 +41,30 @@ export default {
     quickNav: 'Navegação rápida',
     siteMenu: 'Menu do site',
     openMenu: 'Abrir menu',
-    closeMenu: 'Fechar menu'
+    closeMenu: 'Fechar menu',
+    accountMenu: {
+      aria: 'Menu da conta',
+      signedInAs: 'Conectado como',
+      xp: 'XP',
+      tokens: 'Tokens',
+      streak: 'Sequência',
+      streakDays: '{n} d',
+      signOut: 'Sair',
+      profile: 'Perfil', profileMeta: 'Seu cartão de jogador',
+      quests: 'Missões', questsMeta: 'Diárias e semanais',
+      surveys: 'Pesquisas', surveysMeta: 'Dê sua opinião',
+      achievements: 'Conquistas', achievementsMeta: 'Emblemas e marcos',
+      leaderboard: 'Ranking', leaderboardMeta: 'Melhores jogadores',
+      rewards: 'Recompensas', rewardsMeta: 'Resgate e use',
+      settings: 'Configurações', settingsMeta: 'Conta e privacidade'
+    },
+    accountNav: {
+      breadcrumb: 'Trilha de navegação',
+      account: 'Conta',
+      sections: 'Seções da conta',
+      guestLead: 'Conta opcional · ',
+      guestCta: 'Entre ou cadastre-se →'
+    }
   },
   nav: {
     groups: { tools: 'Ferramentas', live: 'Ao vivo', community: 'Comunidade' },
@@ -87,6 +116,9 @@ export default {
   switcher: {
     label: 'Idioma',
     aria: 'Mudar idioma',
-    fallbackHint: 'Esta página ainda não foi traduzida para {language}. Abre a página disponível mais próxima.'
+    title: 'Escolha seu idioma',
+    subtitle: 'Páginas sem tradução abrem em inglês.',
+    englishOnly: 'Só em inglês',
+    current: 'Idioma atual'
   }
 };

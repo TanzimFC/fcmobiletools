@@ -9,7 +9,9 @@ import { DEFAULT_LOCALE, LOCALES, NON_DEFAULT_LOCALES, PREFIX_TO_LOCALE } from '
 // English path (trailing slash) -> locales that have a complete translation.
 export const LOCALIZED_PAGES = {
   // Filled in page by page as translations are completed, for example:
-  '/redeem-codes/': ['bn', 'pt-BR', 'id']
+  '/redeem-codes/': ['bn', 'pt-BR', 'id'],
+  '/investment-calculator/': ['bn', 'pt-BR', 'id'],
+  '/shards-counter/': ['bn', 'pt-BR', 'id']
 };
 
 // Paths that must never be localized (admin, API, assets, blog and guide content, legacy apps).
@@ -120,26 +122,17 @@ export function localizedPagesFor(locale) {
   return Object.keys(LOCALIZED_PAGES).filter((path) => hasLocalizedPage(path, locale));
 }
 
-/**
- * Where the language switcher sends a visitor when the current page has no translation in the
- * chosen language: that language's home page if it exists, otherwise its first translated page.
- * Returns null when the language has no translated pages at all, so it is not offered.
- */
-export function fallbackPageFor(locale) {
-  if (locale === DEFAULT_LOCALE) return '/';
-  const pages = localizedPagesFor(locale);
-  if (!pages.length) return null;
-  return pages.includes('/') ? '/' : pages[0];
-}
 
 // Dictionary namespaces a page needs. Before a page is added to LOCALIZED_PAGES for a locale,
 // every key in these namespaces must be translated there (scripts/test-i18n.mjs enforces it).
 export const PAGE_NAMESPACES = {
-  '/redeem-codes/': ['redeem']
+  '/redeem-codes/': ['redeem'],
+  '/investment-calculator/': ['investment'],
+  '/shards-counter/': ['shards']
 };
 
 // Namespaces every localized page shares (navbar, footer, switcher).
-export const SHARED_NAMESPACES = ['common', 'nav', 'footer', 'switcher'];
+export const SHARED_NAMESPACES = ['common', 'nav', 'footer', 'switcher', 'consent'];
 
 /** False for admin, API, blog, guides and other areas that are intentionally English only. */
 export function isLocalizablePath(englishPath) {

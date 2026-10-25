@@ -2,27 +2,32 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { DEFAULT_MARKET_TAX } from '../lib/fcMobileInvestment.js';
 import { formatCoins, formatCoinsExact, parseCoinsInput } from '../lib/formatCoins.js';
+import { getLocaleFromPath, namespace } from '../i18n/index.js';
 
-const title = 'FC Mobile Investment Calculator | Profit & ROI Calculator | FCMOBILETOOLS';
-const description = 'Calculate FC Mobile investment profit, market tax, break-even sell price, ROI and target sell price from your buy price, quantity and expected sale price.';
+// One component serves English at /investment-calculator/ and the translated copies under /bn/, /pt-br/, /id/.
+const locale = getLocaleFromPath(Astro.url.pathname);
+const T = namespace(locale, 'investment');
+const title = T.meta.title;
+const description = T.meta.description;
 ---
 
 <BaseLayout title={title} description={description}>
+  <script type="application/json" id="inv-i18n" is:inline set:html={JSON.stringify(T.ui).replace(/</g, '\\u003c')}></script>
   <main class="investment-page">
     <section class="investment-hero">
       <div class="investment-orbit orbit-a" aria-hidden="true"></div>
       <div class="investment-orbit orbit-b" aria-hidden="true"></div>
       <div class="wrap hero-wrap">
         <div class="hero-copy">
-          <div class="hero-kicker"><span>FC MOBILE / MARKET LAB</span><i>LIVE CALCULATOR</i></div>
-          <h1>Know the <em>real return</em><br />before you invest</h1>
-          <p>Model a player-card investment with the sale tax included. See your net coins, profit, ROI and the exact sell price needed to break even.</p>
-          <div class="hero-points"><span><b>10%</b> default market tax</span><span><b>NET</b> after-tax returns</span><span><b>LIVE</b> instant recalculation</span></div>
+          <div class="hero-kicker"><span>{T.hero.kicker}</span><i>{T.hero.badge}</i></div>
+          <h1>{T.hero.h1a}<em>{T.hero.h1em}</em>{T.hero.h1b ? <><br />{T.hero.h1b}</> : null}</h1>
+          <p>{T.hero.lede}</p>
+          <div class="hero-points"><span><b>{T.hero.pointTaxB}</b> {T.hero.pointTax}</span><span><b>{T.hero.pointNetB}</b> {T.hero.pointNet}</span><span><b>{T.hero.pointLiveB}</b> {T.hero.pointLive}</span></div>
         </div>
-        <div class="hero-metric" aria-label="Investment calculator preview">
-          <small>NET RETURN</small><strong id="heroProfit">+0</strong><span id="heroRoi">0.0% ROI</span>
+        <div class="hero-metric" aria-label={T.hero.metricAria}>
+          <small>{T.hero.netReturn}</small><strong id="heroProfit">+0</strong><span id="heroRoi">0.0% ROI</span>
           <div class="metric-line"><i></i></div>
-          <label>BREAK-EVEN <b id="heroBreakEven">0</b></label>
+          <label>{T.hero.breakEven} <b id="heroBreakEven">0</b></label>
         </div>
       </div>
     </section>
@@ -30,79 +35,80 @@ const description = 'Calculate FC Mobile investment profit, market tax, break-ev
     <section class="wrap calculator-section" aria-labelledby="calculator-title">
       <div class="calculator-shell">
         <div class="calc-top">
-          <div><span class="eyebrow">01 / INVESTMENT ANALYZER</span><h2 id="calculator-title">Run the deal</h2><p>Enter the market numbers you are actually considering. Everything updates as you type.</p></div>
-          <div class="tax-chip"><span>MARKET TAX</span><b id="taxBadge">10%</b></div>
+          <div><span class="eyebrow">{T.calc.eyebrow}</span><h2 id="calculator-title">{T.calc.title}</h2><p>{T.calc.lead}</p></div>
+          <div class="tax-chip"><span>{T.calc.taxChip}</span><b id="taxBadge">10%</b></div>
         </div>
         <div class="calc-body">
           <div class="inputs-panel">
             <div class="field-grid">
-              <label><span>BUY PRICE <small>PER CARD</small></span><div class="input-wrap"><b>◈</b><input id="buyPrice" type="text" inputmode="decimal" autocomplete="off" value="1M" placeholder="1M" aria-describedby="coin-input-help" /></div></label>
-              <label><span>SELL PRICE <small>PER CARD</small></span><div class="input-wrap"><b>◈</b><input id="sellPrice" type="text" inputmode="decimal" autocomplete="off" value="1.25M" placeholder="1.25M" aria-describedby="coin-input-help" /></div></label>
-              <label><span>QUANTITY <small>CARDS</small></span><div class="input-wrap"><b>×</b><input id="quantity" type="number" min="1" step="1" value="1" inputmode="numeric" /></div></label>
-              <label><span>MARKET TAX <small>PERCENT</small></span><div class="input-wrap"><b>%</b><input id="taxRate" type="number" min="0" max="100" step="0.1" value={DEFAULT_MARKET_TAX} inputmode="decimal" /></div></label>
+              <label><span>{T.calc.buy} <small>{T.calc.perCard}</small></span><div class="input-wrap"><b>◈</b><input id="buyPrice" type="text" inputmode="decimal" autocomplete="off" value="1M" placeholder="1M" aria-describedby="coin-input-help" /></div></label>
+              <label><span>{T.calc.sell} <small>{T.calc.perCard}</small></span><div class="input-wrap"><b>◈</b><input id="sellPrice" type="text" inputmode="decimal" autocomplete="off" value="1.25M" placeholder="1.25M" aria-describedby="coin-input-help" /></div></label>
+              <label><span>{T.calc.qty} <small>{T.calc.cards}</small></span><div class="input-wrap"><b>×</b><input id="quantity" type="number" min="1" step="1" value="1" inputmode="numeric" /></div></label>
+              <label><span>{T.calc.tax} <small>{T.calc.percent}</small></span><div class="input-wrap"><b>%</b><input id="taxRate" type="number" min="0" max="100" step="0.1" value={DEFAULT_MARKET_TAX} inputmode="decimal" /></div></label>
             </div>
-            <div class="target-row"><div><span>WANT A TARGET PROFIT?</span><p id="coin-input-help">Use normal numbers or shorthand such as 750K, 12.5M or 1.25B.</p></div><div class="target-input"><b>◈</b><input id="targetProfit" type="text" inputmode="decimal" autocomplete="off" value="250K" placeholder="250K" aria-describedby="coin-input-help" /><span>coins</span></div></div>
+            <div class="target-row"><div><span>{T.calc.targetQ}</span><p id="coin-input-help">{T.calc.targetHelp}</p></div><div class="target-input"><b>◈</b><input id="targetProfit" type="text" inputmode="decimal" autocomplete="off" value="250K" placeholder="250K" aria-describedby="coin-input-help" /><span>{T.calc.coins}</span></div></div>
           </div>
 
           <div class="result-panel">
-            <div class="result-label">PROJECTED PROFIT</div>
+            <div class="result-label">{T.result.label}</div>
             <div class="result-profit" id="profit">+250K</div>
-            <div class="result-sub"><span>after <b id="taxRateInline">10%</b> market tax</span><span id="statusPill" class="positive">PROFITABLE</span></div>
+            <div class="result-sub"><span set:html={T.result.afterTax.replace('{rate}', '<b id="taxRateInline">10%</b>')}></span><span id="statusPill" class="positive">{T.result.pill}</span></div>
             <div class="result-stats">
-              <div><small>TOTAL COST</small><b id="totalCost">1M</b></div>
-              <div><small>NET SALE</small><b id="netSale">1.13M</b></div>
-              <div><small>TAX PAID</small><b id="taxAmount">125K</b></div>
-              <div><small>ROI</small><b id="roi">25.0%</b></div>
+              <div><small>{T.result.totalCost}</small><b id="totalCost">1M</b></div>
+              <div><small>{T.result.netSale}</small><b id="netSale">1.13M</b></div>
+              <div><small>{T.result.taxPaid}</small><b id="taxAmount">125K</b></div>
+              <div><small>{T.result.roi}</small><b id="roi">25.0%</b></div>
             </div>
           </div>
         </div>
-        <div class="calc-footer"><span>FORMULA: NET SALE − TOTAL COST = PROFIT</span><button id="reset" type="button">RESET CALCULATION ↺</button></div>
+        <div class="calc-footer"><span>{T.result.formula}</span><button id="reset" type="button">{T.result.reset}</button></div>
       </div>
     </section>
 
     <section class="wrap insight-section">
       <div class="insight-grid">
-        <article class="insight-card break-even"><div class="insight-head"><span>BREAK-EVEN</span><i>01</i></div><strong id="breakEven">1.11M</strong><p>Minimum sell price per card to recover your buy price after the selected market tax.</p><div class="micro"><span>PRICE MOVE REQUIRED</span><b id="breakEvenMove">+11.1%</b></div></article>
-        <article class="insight-card target"><div class="insight-head"><span>TARGET SELL PRICE</span><i>02</i></div><strong id="targetSell">1.39M</strong><p>Sell price per card needed to reach your target profit after tax.</p><div class="micro"><span>YOUR TARGET</span><b id="targetValue">250,000</b></div></article>
-        <article class="insight-card exposure"><div class="insight-head"><span>CAPITAL AT RISK</span><i>03</i></div><strong id="exposure">1M</strong><p>Total coins committed to this position before any sale happens.</p><div class="micro"><span>QUANTITY</span><b id="quantityValue">1 CARD</b></div></article>
+        <article class="insight-card break-even"><div class="insight-head"><span>{T.insight.breakEven}</span><i>01</i></div><strong id="breakEven">1.11M</strong><p>{T.insight.breakEvenText}</p><div class="micro"><span>{T.insight.breakEvenMove}</span><b id="breakEvenMove">+11.1%</b></div></article>
+        <article class="insight-card target"><div class="insight-head"><span>{T.insight.target}</span><i>02</i></div><strong id="targetSell">1.39M</strong><p>{T.insight.targetText}</p><div class="micro"><span>{T.insight.yourTarget}</span><b id="targetValue">250,000</b></div></article>
+        <article class="insight-card exposure"><div class="insight-head"><span>{T.insight.exposure}</span><i>03</i></div><strong id="exposure">1M</strong><p>{T.insight.exposureText}</p><div class="micro"><span>{T.insight.quantity}</span><b id="quantityValue">1 CARD</b></div></article>
       </div>
     </section>
 
     <section class="wrap explain-section">
-      <div class="section-intro"><span class="eyebrow">02 / READ THE DEAL</span><h2>Profit is not the<br /><em>listing price</em></h2><p>The market tax is taken from the sale. This calculator works from the money you actually receive, not the headline market price.</p></div>
+      <div class="section-intro"><span class="eyebrow">{T.explain.eyebrow}</span><h2>{T.explain.h2a}<br /><em>{T.explain.h2em}</em></h2><p>{T.explain.text}</p></div>
       <div class="flow">
-        <div class="flow-step"><b>01</b><span>BUY</span><strong id="flowBuy">1M</strong><small>Your total acquisition cost</small></div>
-        <i>→</i><div class="flow-step tax"><b>02</b><span>SELL</span><strong id="flowSell">1.25M</strong><small>Gross market sale value</small></div>
-        <i>→</i><div class="flow-step net"><b>03</b><span>AFTER TAX</span><strong id="flowNet">1.13M</strong><small>Coins that come back to you</small></div>
-        <i>→</i><div class="flow-step profit"><b>04</b><span>RETURN</span><strong id="flowProfit">+125K</strong><small>Actual profit on the position</small></div>
+        <div class="flow-step"><b>01</b><span>{T.explain.flow[0].s}</span><strong id="flowBuy">1M</strong><small>{T.explain.flow[0].d}</small></div>
+        <i>→</i><div class="flow-step tax"><b>02</b><span>{T.explain.flow[1].s}</span><strong id="flowSell">1.25M</strong><small>{T.explain.flow[1].d}</small></div>
+        <i>→</i><div class="flow-step net"><b>03</b><span>{T.explain.flow[2].s}</span><strong id="flowNet">1.13M</strong><small>{T.explain.flow[2].d}</small></div>
+        <i>→</i><div class="flow-step profit"><b>04</b><span>{T.explain.flow[3].s}</span><strong id="flowProfit">+125K</strong><small>{T.explain.flow[3].d}</small></div>
       </div>
     </section>
 
     <section class="reference-section">
       <div class="wrap reference-wrap">
-        <div><span class="eyebrow">03 / QUICK REFERENCE</span><h2>Useful market math</h2><p>Keep these relationships in mind when you are checking a card investment.</p></div>
+        <div><span class="eyebrow">{T.reference.eyebrow}</span><h2>{T.reference.title}</h2><p>{T.reference.lead}</p></div>
         <div class="reference-list">
-          <div><b>Break-even multiplier</b><span id="refMultiplier">1.111×</span><small>At 10% tax, your sale needs to be 11.1% above the buy price to break even.</small></div>
-          <div><b>Profit margin</b><span id="margin">11.1%</span><small>Profit measured against the net coins received from the sale.</small></div>
-          <div><b>Price movement</b><span id="priceMove">+25.0%</span><small>Change from your buy price to your expected gross sell price.</small></div>
+          <div><b>{T.reference.items[0].b}</b><span id="refMultiplier">1.111×</span><small>{T.reference.items[0].d}</small></div>
+          <div><b>{T.reference.items[1].b}</b><span id="margin">11.1%</span><small>{T.reference.items[1].d}</small></div>
+          <div><b>{T.reference.items[2].b}</b><span id="priceMove">+25.0%</span><small>{T.reference.items[2].d}</small></div>
         </div>
       </div>
     </section>
 
     <section class="wrap faq-section">
-      <div><span class="eyebrow">04 / FAQ</span><h2>FC Mobile Investment Calculator FAQ</h2></div>
+      <div><span class="eyebrow">{T.faq.eyebrow}</span><h2>{T.faq.title}</h2></div>
       <div class="faq-list">
-        <details open><summary>Does the calculator include market tax?</summary><p>Yes. The default is 10%, and you can change the tax field if the in-game rate changes. Profit and ROI are calculated from the net sale after tax.</p></details>
-        <details><summary>What is the break-even sell price?</summary><p>It is the lowest gross sale price that returns your full purchase cost after tax. At a 10% tax rate, selling at the same price you bought for would create a loss.</p></details>
-        <details><summary>Can I calculate an investment with multiple cards?</summary><p>Yes. Enter the number of cards in Quantity. Total cost, sale value, tax, net return and profit are scaled across the whole position.</p></details>
-        <details><summary>Does this predict whether a card will rise?</summary><p>No. It calculates the financial outcome of the prices you enter. Market movement, supply, demand and liquidity still determine whether a target sale is actually reached.</p></details>
+        {T.faq.items.map((f, i) => <details open={i === 0}><summary>{f.q}</summary><p>{f.a}</p></details>)}
       </div>
     </section>
   </main>
 
 <script>
 import { calculateInvestment, DEFAULT_MARKET_TAX } from '../lib/fcMobileInvestment.js';
+// These were only imported for the server-side frontmatter before, so the browser threw a ReferenceError and the calculator never ran.
+import { formatCoins, formatCoinsExact, parseCoinsInput } from '../lib/formatCoins.js';
 const $ = (id) => document.getElementById(id);
+const U = JSON.parse(document.getElementById('inv-i18n').textContent);
+const fill = (text, n) => text.replace('{n}', n);
 const fmt = (n) => formatCoins(n);
 const exact = (n) => formatCoinsExact(n);
 const money = (n) => `${n < 0 ? '-' : ''}${fmt(Math.abs(n))}`;
@@ -121,12 +127,13 @@ function render(){
     taxRate: $('taxRate').value,
     targetProfit: parseCoinsInput($('targetProfit').value)
   });
-  const signed = d.profit >= 0 ? `+${money(d.profit)}` : `-${money(d.profit)}`;
+  // money() already prefixes a minus sign for negatives, so adding another produced "--1.65M".
+  const signed = d.profit >= 0 ? `+${money(d.profit)}` : money(d.profit);
   $('profit').textContent = signed;
   $('profit').title = `${d.profit < 0 ? '-' : ''}${exact(Math.abs(d.profit))} coins`;
   $('heroProfit').textContent = signed;
   $('heroProfit').title = `${d.profit < 0 ? '-' : ''}${exact(Math.abs(d.profit))} coins`;
-  $('heroRoi').textContent = `${d.roi.toFixed(1)}% ROI`;
+  $('heroRoi').textContent = fill(U.roi, d.roi.toFixed(1));
   setCoinOutput('totalCost', d.totalCost);
   setCoinOutput('netSale', d.netSale);
   setCoinOutput('taxAmount', d.taxAmount);
@@ -138,7 +145,7 @@ function render(){
   setCoinOutput('targetSell', d.targetSell);
   setCoinOutput('targetValue', d.targetProfit);
   setCoinOutput('exposure', d.totalCost);
-  $('quantityValue').textContent = `${d.quantity.toLocaleString('en-US')} CARD${d.quantity === 1 ? '' : 'S'}`;
+  $('quantityValue').textContent = fill(d.quantity === 1 ? U.qtyOne : U.qtyMany, d.quantity.toLocaleString('en-US'));
   const breakMove = d.buy > 0 ? ((d.breakEvenSell / d.buy - 1) * 100) : 0;
   $('breakEvenMove').textContent = `+${breakMove.toFixed(1)}%`;
   setCoinOutput('flowBuy', d.totalCost);
@@ -149,7 +156,7 @@ function render(){
   $('refMultiplier').textContent = d.buy > 0 ? `${(d.breakEvenSell / d.buy).toFixed(3)}×` : '—';
   $('margin').textContent = `${d.margin.toFixed(1)}%`;
   $('priceMove').textContent = `${d.priceChange >= 0 ? '+' : ''}${d.priceChange.toFixed(1)}%`;
-  $('statusPill').textContent = d.profit > 0 ? 'PROFITABLE' : d.profit < 0 ? 'LOSS' : 'BREAK EVEN';
+  $('statusPill').textContent = d.profit > 0 ? U.status.profit : d.profit < 0 ? U.status.loss : U.status.even;
   $('statusPill').className = d.profit > 0 ? 'positive' : d.profit < 0 ? 'negative' : 'neutral';
   $('profit').classList.toggle('loss', d.profit < 0);
   $('heroProfit').classList.toggle('loss', d.profit < 0);
@@ -183,4 +190,31 @@ render();
 .reference-section{background:#071018;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.reference-wrap{display:grid;grid-template-columns:.75fr 1.25fr;gap:80px;padding:75px 0}.reference-wrap h2{font-size:39px;letter-spacing:-.06em;margin:10px 0 8px}.reference-wrap>div:first-child p{margin:0;color:var(--muted);font-size:10px;line-height:1.7}.reference-list{border-top:1px solid #ffffff0c}.reference-list>div{display:grid;grid-template-columns:1fr auto;gap:10px;padding:18px 0;border-bottom:1px solid #ffffff0c}.reference-list b{font-size:12px}.reference-list span{font:900 18px var(--mono);color:var(--cyan)}.reference-list small{grid-column:1/-1;color:#687f8b;font-size:9px;line-height:1.5}
 .faq-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:80px;padding:80px 0 100px}.faq-section h2{font-size:36px;line-height:1;letter-spacing:-.06em;margin:10px 0}.faq-list{border-top:1px solid var(--line)}.faq-list details{padding:18px 0;border-bottom:1px solid var(--line)}.faq-list summary{cursor:pointer;font-weight:800;font-size:12px}.faq-list p{margin:10px 0 0;color:var(--muted);font-size:10px;line-height:1.7}
 @media(max-width:900px){.hero-wrap,.calc-body,.explain-section,.reference-wrap,.faq-section{grid-template-columns:1fr}.hero-metric{max-width:420px}.inputs-panel{border-right:0;border-bottom:1px solid var(--line)}.insight-grid{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.flow>i{transform:rotate(90deg);margin:-4px 0}.flow-step{min-height:auto}.reference-wrap,.faq-section,.explain-section{gap:35px}}@media(max-width:620px){.investment-page .wrap{width:calc(100% - 26px)}.hero-wrap{padding:75px 0}.hero-copy h1{font-size:clamp(47px,14vw,70px)}.field-grid{grid-template-columns:1fr}.target-row{align-items:stretch;flex-direction:column}.target-input{min-width:0}.calc-top,.calc-footer{align-items:flex-start;flex-direction:column}.result-panel{padding:25px}.hero-points{gap:10px}.investment-orbit{opacity:.5}.reference-wrap h2,.faq-section h2{font-size:31px}}
+</style>
+
+<style is:global>
+/* Bengali needs larger sizes than the tiny uppercase Latin labels this page uses, and a calmer hero heading. */
+html[lang="bn"] .investment-page .hero-copy h1{font-size:clamp(36px,5vw,64px)!important;line-height:1.3!important}
+html[lang="bn"] .investment-page .hero-points span,
+html[lang="bn"] .investment-page .hero-points b,
+html[lang="bn"] .investment-page .hero-kicker,
+html[lang="bn"] .investment-page .eyebrow,
+html[lang="bn"] .investment-page .hero-metric small,
+html[lang="bn"] .investment-page .hero-metric label,
+html[lang="bn"] .investment-page .result-label,
+html[lang="bn"] .investment-page .result-stats small,
+html[lang="bn"] .investment-page .result-sub,
+html[lang="bn"] .investment-page .field-grid small,
+html[lang="bn"] .investment-page .field-grid label > span,
+html[lang="bn"] .investment-page .target-row span,
+html[lang="bn"] .investment-page .insight-head span,
+html[lang="bn"] .investment-page .micro span,
+html[lang="bn"] .investment-page .tax-chip span,
+html[lang="bn"] .investment-page .flow-step span,
+html[lang="bn"] .investment-page .flow-step small,
+html[lang="bn"] .investment-page .calc-footer span,
+html[lang="bn"] .investment-page .calc-footer button{font-size:12.5px!important}
+html[lang="bn"] .investment-page .section-intro h2,
+html[lang="bn"] .investment-page .reference-wrap h2,
+html[lang="bn"] .investment-page .faq-section h2{font-size:clamp(26px,3.4vw,36px)!important;line-height:1.35!important}
 </style>

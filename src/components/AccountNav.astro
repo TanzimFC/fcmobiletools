@@ -2,17 +2,26 @@
 import '../styles/premium.css';
 import '../styles/luxe-account.css';
 
+import { getLocaleFromPath, localizeHref, translator } from '../i18n/index.js';
+
 const { active = 'profile', sectionLabel = 'Profile' } = Astro.props;
+const locale = getLocaleFromPath(Astro.url.pathname);
+const tr = translator(locale);
+// Account pages link to each other in the visitor's language once those pages are translated.
+const href = (h) => localizeHref(h, locale);
+const label = (key) => tr(`common.accountMenu.${key}`);
 
 const tabs = [
-  { id: 'profile', label: 'Profile', href: '/profile/', icon: 'user' },
-  { id: 'missions', label: 'Quests', href: '/missions/', icon: 'target' },
-  { id: 'surveys', label: 'Surveys', href: '/surveys/', icon: 'clipboard' },
-  { id: 'achievements', label: 'Achievements', href: '/achievements/', icon: 'trophy' },
-  { id: 'leaderboard', label: 'Leaderboard', href: '/leaderboard/', icon: 'chart' },
-  { id: 'rewards', label: 'Rewards', href: '/rewards/', icon: 'gift' },
-  { id: 'settings', label: 'Settings', href: '/settings/', icon: 'sliders' }
+  { id: 'profile', label: label('profile'), href: href('/profile/'), icon: 'user' },
+  { id: 'missions', label: label('quests'), href: href('/missions/'), icon: 'target' },
+  { id: 'surveys', label: label('surveys'), href: href('/surveys/'), icon: 'clipboard' },
+  { id: 'achievements', label: label('achievements'), href: href('/achievements/'), icon: 'trophy' },
+  { id: 'leaderboard', label: label('leaderboard'), href: href('/leaderboard/'), icon: 'chart' },
+  { id: 'rewards', label: label('rewards'), href: href('/rewards/'), icon: 'gift' },
+  { id: 'settings', label: label('settings'), href: href('/settings/'), icon: 'sliders' }
 ];
+// English keeps each page's own wording (for example "Profile Hub"); other languages use the tab name.
+const currentLabel = locale === 'en' ? sectionLabel : (tabs.find((tab) => tab.id === active)?.label || sectionLabel);
 
 const iconSvg = (name) => {
   switch (name) {
@@ -36,22 +45,22 @@ const iconSvg = (name) => {
 };
 ---
 
-<div class="acc-nav-shell" data-acc-nav>
+<div class="acc-nav-shell" data-acc-nav data-level-fmt={tr('common.levelShort')} data-xp-label={tr('common.accountMenu.xp')}>
   <div class="acc-nav-top">
-    <nav class="acc-crumbs" aria-label="Breadcrumb">
-      <a href="/">FCMOBILETOOLS</a>
+    <nav class="acc-crumbs" aria-label={tr('common.accountNav.breadcrumb')}>
+      <a href={href('/')}>FCMOBILETOOLS</a>
       <span aria-hidden="true">/</span>
-      <a href="/profile/">Account</a>
+      <a href={href('/profile/')}>{tr('common.accountNav.account')}</a>
       <span aria-hidden="true">/</span>
-      <strong>{sectionLabel}</strong>
+      <strong>{currentLabel}</strong>
     </nav>
 
     <div class="acc-mini-identity" id="accMiniIdentity">
-      <a class="acc-mini-guest" href="/account/" id="accMiniGuest">
+      <a class="acc-mini-guest" href={href('/account/')} id="accMiniGuest">
         <span class="acc-mini-dot"></span>
-        <span>Optional account · <strong>Sign in or join →</strong></span>
+        <span>{tr('common.accountNav.guestLead')}<strong>{tr('common.accountNav.guestCta')}</strong></span>
       </a>
-      <a class="acc-mini-user" href="/profile/" id="accMiniUser" hidden>
+      <a class="acc-mini-user" href={href('/profile/')} id="accMiniUser" hidden>
         <span class="acc-mini-avatar" id="accMiniAvatar">FC</span>
         <span class="acc-mini-name" id="accMiniName">@player</span>
         <span class="acc-mini-pill" id="accMiniLevel">Lv. 1</span>
@@ -60,7 +69,7 @@ const iconSvg = (name) => {
     </div>
   </div>
 
-  <nav class="acc-tabs" aria-label="Account sections">
+  <nav class="acc-tabs" aria-label={tr('common.accountNav.sections')}>
     {tabs.map((tab) => (
       <a
         href={tab.href}
@@ -96,8 +105,9 @@ const iconSvg = (name) => {
     userEl.hidden = false;
     const display = String(identity.displayName || identity.username);
     if (nameEl) nameEl.textContent = display;
-    if (levelEl) levelEl.textContent = 'Lv. ' + Math.max(1, Number(identity.level) || 1);
-    if (xpEl) xpEl.textContent = Number(identity.xp || 0).toLocaleString() + ' XP';
+    const shell = document.querySelector('[data-acc-nav]');
+    if (levelEl) levelEl.textContent = (shell?.dataset.levelFmt || 'Lv. {n}').replace('{n}', Math.max(1, Number(identity.level) || 1));
+    if (xpEl) xpEl.textContent = Number(identity.xp || 0).toLocaleString() + ' ' + (shell?.dataset.xpLabel || 'XP');
     if (avatarEl) {
       if (identity.avatarUrl && /^https?:\/\//i.test(identity.avatarUrl)) {
         avatarEl.innerHTML = '';
@@ -342,4 +352,20 @@ const iconSvg = (name) => {
       font-size: 12.5px;
     }
   }
+</style>
+
+<style is:global>
+/* Premium treatment for the account section bar */
+.acc-tabs{position:relative;padding:7px;border-radius:20px;border-color:rgba(255,255,255,.09);background:linear-gradient(180deg,rgba(22,37,54,.9),rgba(9,17,26,.94)),radial-gradient(120% 200% at 50% -90%,rgba(76,201,255,.14),transparent 60%);box-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 22px 50px -20px rgba(0,0,0,.7)}
+.acc-tab{position:relative;min-height:44px;padding:0 16px;border-radius:14px;white-space:nowrap}
+.acc-tab:hover{transform:translateY(-1px)}
+.acc-tab:hover .acc-tab-ico{color:#4cc9ff;transform:translateY(-1px) scale(1.08)}
+.acc-tab.active{background:linear-gradient(180deg,rgba(76,201,255,.24),rgba(76,201,255,.08));box-shadow:inset 0 0 0 1px rgba(76,201,255,.42),0 12px 26px -10px rgba(76,201,255,.5)}
+.acc-tab.active::after{content:"";position:absolute;left:50%;bottom:5px;width:18px;height:2px;margin-left:-9px;border-radius:99px;background:#4cc9ff;box-shadow:0 0 10px #4cc9ff}
+.acc-mini-user,.acc-mini-guest{min-height:40px;padding:5px 14px 5px 6px;background:linear-gradient(180deg,rgba(22,37,54,.92),rgba(12,22,33,.92));box-shadow:0 12px 28px -16px rgba(0,0,0,.7)}
+.acc-mini-guest{padding-left:14px}
+.acc-mini-avatar{width:30px;height:30px;box-shadow:0 0 0 2px rgba(76,201,255,.35),0 0 18px rgba(76,201,255,.3)}
+.acc-mini-pill{background:linear-gradient(180deg,#9fe9ff,#4cc9ff);border-color:transparent;color:#03131c}
+.acc-crumbs{padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025)}
+@media(max-width:640px){.acc-tab.active::after{bottom:4px}.acc-tabs{border-radius:18px}}
 </style>
