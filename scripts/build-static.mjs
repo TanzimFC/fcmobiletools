@@ -16,5 +16,9 @@ await exec(astroBin,['build'],{cwd:root,maxBuffer:EXEC_MAX_BUFFER});
 await access(path.join(distDir,'_worker.js','index.js'));
 console.log('Astro Cloudflare worker entry verified.');
 await cp(path.join(root,'admin'),path.join(distDir,'admin'),{recursive:true,force:true});
+// Editorial Studio shares one document engine between the Worker and the browser. Copy it next to the editor.
+await mkdir(path.join(distDir,'admin','articles','engine'),{recursive:true});
+for(const file of ['blocks.js','validate.js']) await cp(path.join(root,'src','editorial',file),path.join(distDir,'admin','articles','engine',file),{force:true});
+for(const file of ['articles/index.html','articles/app.js','articles/engine/blocks.js','articles/engine/validate.js']) await access(path.join(distDir,'admin',file));
 for(const file of ['dashboard.html','login.html','rank-up.html','fc-mobile-27.html']) await access(path.join(distDir,'admin',file));
 console.log('Astro build complete. Admin assets verified in dist/admin.');
