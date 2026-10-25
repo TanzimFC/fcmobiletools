@@ -22,6 +22,7 @@ async function walk(dir) {
 
 for (const file of await walk(path.join(root, 'admin'))) {
   let html = await readFile(file, 'utf8');
+  if (html.includes('<!--premium-admin:skip-->')) { console.log('skip (own design system):', path.relative(root, file)); continue; }
   const re = new RegExp(`${START}[\\s\\S]*?${END}`);
   if (re.test(html)) html = html.replace(re, () => block);
   else if (html.includes('</head>')) html = html.replace('</head>', () => block + '</head>');
