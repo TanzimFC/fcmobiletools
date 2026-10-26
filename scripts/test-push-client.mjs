@@ -15,7 +15,15 @@ async function boot({ ua = 'Mozilla/5.0 (Linux; Android 14)', permission = 'defa
       addEventListener() {} }, addTags: async (tags) => { calls.tags.push(tags); } },
     init: async () => {},
   };
-  class FakeNotification { static permission = permission; }
+  class FakeNotification {
+    static permission = permission;
+    static requestPermission = async () => {
+      calls.permissionAsks += 1;
+      calls.sdkLoadsWhenPermissionRequested = calls.sdkLoads;
+      FakeNotification.permission = answer;
+      return answer;
+    };
+  }
   const win = globalThis;
   win.window = win;
   win.addEventListener = bus.addEventListener.bind(bus);
@@ -52,6 +60,7 @@ await step('enable: permission, subscribe, tags, registry, welcome, funnel', asy
   const result = await FC.enable({ topics: { redeem_codes: true }, source: 'redeem_page' });
   assert.deepEqual([result.ok, result.state], [true, 'enabled']);
   assert.equal(calls.permissionAsks, 1); assert.equal(calls.optIn, 1);
+  assert.equal(calls.sdkLoadsWhenPermissionRequested, 0, 'the permission prompt must start before the network-loaded OneSignal SDK');
   assert.equal(calls.tags.at(-1).notify_redeem_codes, 'true');
   assert.equal(calls.tags.at(-1).notify_daily_reset, 'false');
   const reg = posted(calls, '/api/push/register')[0].body;
