@@ -8,7 +8,7 @@ async function boot({ ua = 'Mozilla/5.0 (Linux; Android 14)', permission = 'defa
   const store = new Map(Object.entries(storage));
   const bus = new EventTarget();
   const OS = {
-    Notifications: { requestPermission: async () => { calls.permissionAsks += 1; Notification.permission = answer; return answer === 'granted'; } },
+    Notifications: { requestPermission: async () => { calls.permissionAsks += 1; calls.sdkLoadsWhenPermissionRequested = calls.sdkLoads; Notification.permission = answer; return answer === 'granted'; } },
     User: { PushSubscription: { id: undefined, optedIn: false,
       optIn: async () => { calls.optIn += 1; OS.User.PushSubscription.optedIn = true; OS.User.PushSubscription.id = '33333333-3333-4333-8333-333333333333'; },
       optOut: async () => { calls.optOut += 1; OS.User.PushSubscription.optedIn = false; },
@@ -58,9 +58,11 @@ await step('first visit: nothing is requested, nothing is downloaded', async () 
 await step('enable: permission, subscribe, tags, registry, welcome, funnel', async () => {
   const { FC, calls, store } = await boot();
   const result = await FC.enable({ topics: { redeem_codes: true }, source: 'redeem_page' });
+  await FC.prepare();
+  const result = await FC.enable({ topics: { redeem_codes: true }, source: 'redeem_page' });
   assert.deepEqual([result.ok, result.state], [true, 'enabled']);
   assert.equal(calls.permissionAsks, 1); assert.equal(calls.optIn, 1);
-  assert.equal(calls.sdkLoadsWhenPermissionRequested, 0, 'the permission prompt must start before the network-loaded OneSignal SDK');
+  assert.equal(calls.sdkLoadsWhenPermissionRequested, 1, 'OneSignal must initialize before the permission prompt');
   assert.equal(calls.tags.at(-1).notify_redeem_codes, 'true');
   assert.equal(calls.tags.at(-1).notify_daily_reset, 'false');
   const reg = posted(calls, '/api/push/register')[0].body;
@@ -73,6 +75,7 @@ await step('enable: permission, subscribe, tags, registry, welcome, funnel', asy
 
 await step('a failed server registration is never reported as subscribed', async () => {
   const { FC, calls, store } = await boot({ registerFails: true });
+  await FC.prepare();
   const result = await FC.enable({ topics: { redeem_codes: true }, source: 'redeem_page' });
   assert.equal(result.ok, false);
   assert.equal(result.state, 'error');
@@ -83,6 +86,7 @@ await step('a failed server registration is never reported as subscribed', async
 
 await step('flipping a topic on while alerts are off subscribes in the same step', async () => {
   const { FC, calls } = await boot();
+  await FC.prepare();
   const result = await FC.setTopic('giveaways', true, 'notifications_page');
   assert.equal(result.state, 'enabled'); assert.equal(calls.optIn, 1);
   assert.equal(calls.tags.at(-1).notify_giveaways, 'true');
@@ -90,6 +94,7 @@ await step('flipping a topic on while alerts are off subscribes in the same step
 
 await step('turning every topic off pauses alerts and tells the server', async () => {
   const { FC, calls } = await boot();
+  await FC.prepare();
   await FC.enable({ topics: { redeem_codes: true }, source: 'bell' });
   for (const key of FC.topics) await FC.setTopic(key, false, 'bell');
   assert.equal(FC.state(), 'paused'); assert.equal(calls.optOut, 1);
@@ -98,10 +103,12 @@ await step('turning every topic off pauses alerts and tells the server', async (
 
 await step('blocked browser: the prompt answer is respected and reported', async () => {
   const denied = await boot({ answer: 'denied' });
+  await denied.FC.prepare();
   const result = await denied.FC.enable({ source: 'sheet' });
   assert.equal(result.ok, false); assert.equal(result.state, 'denied');
   assert.ok(posted(denied.calls, '/api/push/event').some((p) => p.body.event === 'blocked'));
   const closed = await boot({ answer: 'default' });
+  await closed.FC.prepare();
   assert.equal((await closed.FC.enable({ source: 'sheet' })).state, 'dismissed');
   const already = await boot({ permission: 'denied' });
   assert.equal(already.FC.state(), 'denied');
