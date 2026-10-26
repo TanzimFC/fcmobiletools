@@ -14,6 +14,8 @@ if (FC && root && T.panel) {
   const pause = $('pushPause');
   const flash = $('pushFlash');
   const inputs = [...document.querySelectorAll('[data-push-topic]')];
+  let preparing = true;
+  let prepareError = '';
   const NOTES = { 'ios-install': 'iosInstall', denied: 'denied', unsupported: 'unsupported', 'sdk-blocked': 'sdkBlocked' };
 
   const say = (message, tone = '') => { flash.textContent = message || ''; flash.dataset.tone = tone; };
@@ -29,14 +31,16 @@ if (FC && root && T.panel) {
     const prefs = FC.prefs();
     const on = state === 'enabled';
     const blocked = Boolean(NOTES[state]);
+    const hardBlocked = ['ios-install', 'denied', 'unsupported'].includes(state);
     status.dataset.state = on ? 'on' : state === 'paused' ? 'paused' : blocked ? 'blocked' : 'idle';
     status.querySelector('span').textContent = on ? T.panel.on : state === 'paused' ? T.panel.paused : T.panel.off;
     note.hidden = !blocked;
-    note.textContent = blocked ? T.states[NOTES[state]] : '';
+    note.textContent = blocked ? (state === 'sdk-blocked' && prepareError ? prepareError : T.states[NOTES[state]]) : '';
     list.dataset.pending = on || blocked ? 'false' : 'true';
-    for (const input of inputs) { input.checked = Boolean(prefs[input.dataset.pushTopic]); input.disabled = blocked; }
-    enable.hidden = on || blocked;
-    enable.textContent = state === 'paused' ? T.panel.resume : T.panel.enable;
+    for (const input of inputs) { input.checked = Boolean(prefs[input.dataset.pushTopic]); input.disabled = blocked || preparing; }
+    enable.hidden = on || hardBlocked;
+    enable.disabled = preparing;
+    enable.textContent = preparing ? T.panel.working : state === 'paused' ? T.panel.resume : T.panel.enable;
     pause.hidden = !on;
   }
 
@@ -55,4 +59,10 @@ if (FC && root && T.panel) {
   });
   window.addEventListener('fcmt:push-state', render);
   render();
+  FC.prepare().then((result) => {
+    preparing = false;
+    prepareError = result.ok ? '' : (result.message || T.states.sdkBlocked);
+    if (!result.ok) say(prepareError, 'bad');
+    render();
+  });
 }
