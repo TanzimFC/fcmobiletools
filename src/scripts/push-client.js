@@ -73,7 +73,7 @@ function computeState() {
   if (perm === 'granted') {
     const flag = store.get(KEY.active);
     if (flag === '0') return 'paused';
-    if (flag === '1') return 'enabled';
+    if (flag === '1') return sdkState || 'enabled';
     return sdkState || 'can-resume';
   }
   return 'available';
@@ -107,19 +107,30 @@ function getConfig() {
 function loadSdk() {
   if (sdkPromise) return sdkPromise;
   sdkPromise = new Promise((resolve, reject) => {
+    let settled = false;
+    let timeout = null;
+    const finish = (error, OneSignal) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      if (error) reject(error);
+      else resolve(OneSignal);
+    };
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (OneSignal) => {
       try {
         await OneSignal.init({ appId: ONESIGNAL_APP_ID, serviceWorkerPath: SW_PATH, serviceWorkerParam: { scope: SW_SCOPE } });
-        resolve(OneSignal);
-      } catch (error) { reject(error); }
+        sdkBlocked = false;
+        sdkState = null;
+        finish(null, OneSignal);
+      } catch (error) { finish(error); }
     });
     const script = document.createElement('script');
     script.src = SDK_URL;
     script.async = true;
-    script.onerror = () => reject(new Error('blocked'));
+    script.onerror = () => finish(new Error('The OneSignal library could not load. Check your connection or content blocker and try again.'));
     document.head.appendChild(script);
-    setTimeout(() => reject(new Error('timeout')), 20000);
+    timeout = setTimeout(() => finish(new Error('OneSignal took too long to start. Check your connection and retry.')), 20000);
   }).catch((error) => {
     sdkPromise = null;
     sdkBlocked = true;
@@ -129,13 +140,16 @@ function loadSdk() {
   return sdkPromise;
 }
 
-async function subscriptionId(OneSignal, waitMs = 8000) {
+async function subscriptionId(OneSignal, waitMs = 12000) {
+  const subscription = OneSignal.User?.PushSubscription;
+  if (!subscription) return '';
   const deadline = Date.now() + waitMs;
   for (;;) {
-    const id = OneSignal.User?.PushSubscription?.id;
-    if (id) return String(id);
+    const id = subscription.id;
+    // OneSignal documents that optedIn alone does not guarantee an ID/token exists yet.
+    if (id && subscription.optedIn === true) return String(id);
     if (Date.now() > deadline) return '';
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 250));
   }
 }
 
@@ -149,21 +163,40 @@ async function syncTags(OneSignal, prefs, force = false) {
 
 async function post(path, body) {
   try {
-    const response = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), keepalive: true });
+    const response = await fetch(path, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), keepalive: true });
     return response.ok ? response.json().catch(() => ({})) : null;
   } catch { return null; }
 }
 
+async function postRequired(path, body) {
+  let response;
+  try {
+    response = await fetch(path, {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(body), keepalive: true,
+    });
+  } catch {
+    throw new Error('Your browser allowed alerts, but FCMOBILETOOLS could not save this subscription. Check your connection and try again.');
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data?.ok === false) {
+    throw new Error(data?.error || `FCMOBILETOOLS could not save this subscription (HTTP ${response.status}). Please try again.`);
+  }
+  return data;
+}
+
 /** Tells our own server this device exists, so the studio can count it and send it a test. */
-async function register(OneSignal, { source = 'other', welcome = false, force = false } = {}) {
-  const id = await subscriptionId(OneSignal);
-  if (!id) return null;
+async function register(OneSignal, { source = 'other', welcome = false, force = false, confirmedId = '' } = {}) {
+  const id = confirmedId || await subscriptionId(OneSignal);
+  if (!id) throw new Error('OneSignal has not finished creating a push subscription for this browser. Your alerts are not confirmed yet. Please retry.');
   const prefs = readPrefs();
   const signature = TOPIC_KEYS.map((key) => (prefs[key] ? '1' : '0')).join('');
   const last = store.json(KEY.registered);
   if (!force && !welcome && last && last.id === id && last.signature === signature && Date.now() - last.at < WEEK) return id;
-  const result = await post('/api/push/register', { subscriptionId: id, topics: prefs, locale: locale(), source, welcome });
-  if (result) store.setJson(KEY.registered, { id, signature, at: Date.now() });
+  const result = await postRequired('/api/push/register', { subscriptionId: id, topics: prefs, locale: locale(), source, welcome });
+  if (result?.ok !== true) throw new Error('FCMOBILETOOLS did not confirm that your subscription was saved. Please retry.');
+  store.setJson(KEY.registered, { id, signature, at: Date.now() });
   return id;
 }
 
@@ -186,20 +219,31 @@ async function enable({ topics = {}, source = 'other', welcome = true } = {}) {
   writePrefs(prefs);
   track('accepted', source);
   let OneSignal;
-  try { OneSignal = await loadSdk(); } catch { return { ok: false, state: 'sdk-blocked' }; }
+  try { OneSignal = await loadSdk(); } catch (error) {
+    return { ok: false, state: 'sdk-blocked', message: String(error?.message || 'OneSignal could not start.') };
+  }
   try {
     if (permission() !== 'granted') await OneSignal.Notifications.requestPermission();
     if (permission() === 'denied') { track('blocked', source); return { ok: false, state: emit() }; }
-    if (permission() !== 'granted') return { ok: false, state: 'dismissed' };
+    if (permission() !== 'granted') { sdkState = null; return { ok: false, state: 'dismissed' }; }
+
     await OneSignal.User.PushSubscription.optIn();
-    store.set(KEY.active, '1');
+    const id = await subscriptionId(OneSignal);
+    if (!id) {
+      throw new Error('Browser permission is on, but OneSignal has not created a subscription ID yet. Alerts are not confirmed. Keep this page open and try again.');
+    }
     await syncTags(OneSignal, prefs, true);
-    await register(OneSignal, { source, welcome, force: true });
+    await register(OneSignal, { source, welcome, force: true, confirmedId: id });
+
+    // Do not show “enabled” until both OneSignal and our registry confirm the subscription.
+    store.set(KEY.active, '1');
     sdkState = 'enabled';
     track('enabled', source);
     return { ok: true, state: emit() };
   } catch (error) {
-    return { ok: false, state: 'error', message: String(error?.message || '') };
+    sdkState = 'error';
+    emit();
+    return { ok: false, state: 'error', message: String(error?.message || 'The subscription could not be confirmed. Please retry.') };
   }
 }
 
@@ -236,9 +280,14 @@ async function setTopic(key, on, source = 'other') {
     const OneSignal = await loadSdk();
     await syncTags(OneSignal, prefs, true);
     await register(OneSignal, { source, force: true });
+    sdkState = 'enabled';
     emit();
     return { ok: true, state: 'enabled' };
-  } catch (error) { return { ok: false, state: computeState(), message: String(error?.message || '') }; }
+  } catch (error) {
+    sdkState = 'error';
+    emit();
+    return { ok: false, state: 'error', message: String(error?.message || 'Could not update alert preferences. Please retry.') };
+  }
 }
 
 /** Brings this browser back in line: re-attaches a lost subscription and syncs topics. Never prompts. */
@@ -247,13 +296,21 @@ async function reconcile(source = 'other') {
   try {
     const OneSignal = await loadSdk();
     if (!OneSignal.User.PushSubscription.optedIn) await OneSignal.User.PushSubscription.optIn();
+    const id = await subscriptionId(OneSignal);
+    if (!id) throw new Error('OneSignal has not confirmed a push subscription ID for this browser.');
     const prefs = readPrefs();
     await syncTags(OneSignal, prefs);
-    await register(OneSignal, { source });
+    await register(OneSignal, { source, confirmedId: id });
+    sdkState = 'enabled';
     OneSignal.User.PushSubscription.addEventListener?.('change', (event) => {
-      if (event?.current?.optedIn) register(OneSignal, { source, force: true });
+      if (event?.current?.optedIn && event?.current?.id) register(OneSignal, { source, force: true, confirmedId: String(event.current.id) }).catch((error) => {
+        sdkState = 'error'; emit(); console.warn('[FCPush] Subscription refresh failed:', error?.message || error);
+      });
     });
-  } catch { /* the page keeps working; the next visit tries again */ }
+  } catch (error) {
+    sdkState = 'error';
+    console.warn('[FCPush] Subscription reconciliation failed:', error?.message || error);
+  }
   return emit();
 }
 
