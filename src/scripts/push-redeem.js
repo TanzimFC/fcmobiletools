@@ -19,6 +19,8 @@ if (root && FC && T.card) {
   const BLOCKED = { 'ios-install': 'iosInstall', denied: 'denied', unsupported: 'unsupported', 'sdk-blocked': 'sdkBlocked' };
   let cardAbove = false;
   let busy = false;
+  let preparing = false;
+  let prepareError = '';
 
   const dayNumber = (iso) => { const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number); return Math.floor(Date.UTC(y, (m || 1) - 1, d || 1) / 86400000); };
   const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, key) => (vars[key] === undefined ? '' : vars[key]));
@@ -29,14 +31,16 @@ if (root && FC && T.card) {
     const state = FC.state();
     const prefs = FC.prefs();
     const blockedKey = BLOCKED[state];
+    const hardBlocked = blockedKey && state !== 'sdk-blocked';
     const on = state === 'enabled' && prefs.redeem_codes;
-    root.dataset.state = blockedKey ? 'blocked' : on ? 'on' : 'off';
+    root.dataset.state = hardBlocked ? 'blocked' : on ? 'on' : 'off';
     toggle.checked = on;
-    toggle.disabled = busy || Boolean(blockedKey);
-    cta.hidden = on || Boolean(blockedKey);
-    cta.disabled = busy;
+    toggle.disabled = busy || preparing || Boolean(hardBlocked);
+    cta.hidden = on || Boolean(hardBlocked);
+    cta.disabled = busy || preparing;
     manage.hidden = !on;
-    if (blockedKey) say(T.states[blockedKey], 'bad');
+    if (state === 'sdk-blocked') say(prepareError || T.states.sdkBlocked, 'bad');
+    else if (blockedKey) say(T.states[blockedKey], 'bad');
     else if (on) say(R.statusOn, 'good');
     else if (!busy) say('');
     sticky?.classList.toggle('is-on', !on && !blockedKey && cardAbove && state !== 'paused');
@@ -98,7 +102,14 @@ if (root && FC && T.card) {
   FC.config().then((config) => {
     if (config.redeemCardEnabled === false) { root.hidden = true; if (sticky) sticky.hidden = true; return; }
     if (sticky) sticky.hidden = false;
+    preparing = true;
     render();
+    FC.prepare().then((result) => {
+      preparing = false;
+      prepareError = result.ok ? '' : (result.message || T.states.sdkBlocked);
+      render();
+      if (!result.ok) say(prepareError, 'bad');
+    });
     if ('IntersectionObserver' in window) {
       let reported = false;
       new IntersectionObserver((entries) => {
