@@ -1,6 +1,6 @@
 # OneSignal setup for FCMOBILETOOLS
 
-This integration uses the OneSignal Web SDK v16 with App ID `c64e5faf-4171-4fbc-af73-8406200cee1e`. It is deliberately opt-in: the SDK loads on the Notifications page, and browser permission is requested only after a visitor presses **Enable push alerts**.
+This integration uses the OneSignal Web SDK v16 with App ID `c64e5faf-4171-4fbc-af73-8406200cee1e` and Safari Web ID `web.onesignal.auto.560021c2-877c-448b-9811-f001e7b5ec58`. The shared push client initializes the SDK once, keeps the custom `/onesignal/OneSignalSDKWorker.js` path and `/onesignal/` scope, and enables OneSignal's notification button. Browser permission is requested only after a visitor presses an enable control.
 
 ## One-time dashboard setup
 
