@@ -95,6 +95,7 @@ function closePanel() {
 function reportResult(result) {
   if (!result) return;
   if (result.ok) { flash(result.state === 'enabled' ? T.states.enabled : T.panel.saved); return; }
+  if (result.message) { flash(result.message, 'bad'); return; }
   if (result.state === 'dismissed') flash(T.states.dismissed, 'info');
   else if (result.state === 'denied') flash(T.states.denied, 'bad');
   else if (result.state === 'sdk-blocked') flash(T.states.sdkBlocked, 'bad');
