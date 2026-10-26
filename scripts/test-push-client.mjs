@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 
 let run = 0;
-async function boot({ ua = 'Mozilla/5.0 (Linux; Android 14)', permission = 'default', answer = 'granted', storage = {}, standalone = false, noPush = false, sdkFails = false } = {}) {
+async function boot({ ua = 'Mozilla/5.0 (Linux; Android 14)', permission = 'default', answer = 'granted', storage = {}, standalone = false, noPush = false, sdkFails = false, registerFails = false } = {}) {
   run += 1;
   const calls = { posts: [], tags: [], optIn: 0, optOut: 0, permissionAsks: 0, sdkLoads: 0 };
   const store = new Map(Object.entries(storage));
@@ -30,7 +30,11 @@ async function boot({ ua = 'Mozilla/5.0 (Linux; Android 14)', permission = 'defa
   if (noPush) { delete win.PushManager; delete win.Notification; } else { win.PushManager = class {}; win.Notification = FakeNotification; }
   if (!noPush && Object.keys(navigator.serviceWorker).length === 0) navigator.serviceWorker = {};
   win.document = { head: { appendChild: (script) => { calls.sdkLoads += 1; setTimeout(() => { if (sdkFails) script.onerror?.(); else for (const fn of win.OneSignalDeferred.splice(0)) fn(OS); }, 0); } }, createElement: () => ({}), getElementById: () => null };
-  win.fetch = async (url, init) => { calls.posts.push({ url, body: JSON.parse(init.body) }); return { ok: true, json: async () => ({ ok: true }) }; };
+  win.fetch = async (url, init) => {
+    calls.posts.push({ url, body: JSON.parse(init.body) });
+    if (registerFails && url === '/api/push/register') return { ok: false, status: 503, json: async () => ({ error: 'Subscription registry temporarily unavailable.' }) };
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
   await import('../src/scripts/push-client.js?run=' + run);
   return { FC: win.FCPush, calls, store, OS, bus };
 }
@@ -56,6 +60,16 @@ await step('enable: permission, subscribe, tags, registry, welcome, funnel', asy
   assert.deepEqual(posted(calls, '/api/push/event').map((p) => p.body.event), ['accepted', 'enabled']);
   assert.equal(store.get('fcmt:onesignal:active:v1'), '1');
   assert.equal(FC.state(), 'enabled');
+});
+
+await step('a failed server registration is never reported as subscribed', async () => {
+  const { FC, calls, store } = await boot({ registerFails: true });
+  const result = await FC.enable({ topics: { redeem_codes: true }, source: 'redeem_page' });
+  assert.equal(result.ok, false);
+  assert.equal(result.state, 'error');
+  assert.match(result.message, /registry temporarily unavailable/i);
+  assert.notEqual(store.get('fcmt:onesignal:active:v1'), '1');
+  assert.equal(posted(calls, '/api/push/register').length, 1);
 });
 
 await step('flipping a topic on while alerts are off subscribes in the same step', async () => {
