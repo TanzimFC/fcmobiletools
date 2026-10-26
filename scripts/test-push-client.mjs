@@ -57,7 +57,6 @@ await step('first visit: nothing is requested, nothing is downloaded', async () 
 
 await step('enable: permission, subscribe, tags, registry, welcome, funnel', async () => {
   const { FC, calls, store } = await boot();
-  const result = await FC.enable({ topics: { redeem_codes: true }, source: 'redeem_page' });
   await FC.prepare();
   const result = await FC.enable({ topics: { redeem_codes: true }, source: 'redeem_page' });
   assert.deepEqual([result.ok, result.state], [true, 'enabled']);
