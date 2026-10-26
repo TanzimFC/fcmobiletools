@@ -438,7 +438,7 @@ export function buildOneSignalPayload(appId, campaign, options = {}) {
   } else if (audience.tag) {
     payload.filters = [{ field: 'tag', key: audience.tag, relation: '=', value: 'true' }];
   } else {
-    payload.included_segments = ['Subscribed Users'];
+    payload.included_segments = ['Total Subscriptions'];
   }
   return payload;
 }
