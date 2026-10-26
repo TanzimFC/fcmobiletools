@@ -142,10 +142,10 @@ export function clip(text, max) {
 
 /** Hand-written starting points shown as cards in the studio. */
 export const COMPOSE_TEMPLATES = Object.freeze([
-  { id: 'code', label: 'New redeem code', topic: 'redeem_codes', title: '\u26BD New FC Mobile redeem code', message: 'A new code is live for {reward}. Claim it before it expires.', url: '/redeem-codes/' },
+  { id: 'code', label: 'New redeem code', topic: 'redeem_codes', title: '\u26BD New FC Mobile redeem code', message: 'A new FC Mobile code is live. Check its reward, region and expiry, then claim it before it expires.', url: '/redeem-codes/' },
   { id: 'expiring', label: 'Codes expiring', topic: 'redeem_codes', title: '\u23F3 Redeem codes expiring soon', message: 'Some codes end soon. Check which ones are still active and claim them today.', url: '/redeem-codes/' },
-  { id: 'event', label: 'Event is live', topic: 'live_events', title: '\uD83D\uDD25 {event} is live', message: 'The event just started. See the rewards, the schedule and the best way to spend your tokens.', url: '/events/' },
-  { id: 'ending', label: 'Event ending', topic: 'live_events', title: '\u23F0 {event} ends soon', message: 'Spend your tokens and finish your objectives before the reset.', url: '/events/' },
+  { id: 'event', label: 'Event is live', topic: 'live_events', title: '\uD83D\uDD25 A new FC Mobile event is live', message: 'The event is live. Check its rewards, schedule and token offers before you start.', url: '/events/' },
+  { id: 'ending', label: 'Event ending', topic: 'live_events', title: '\u23F0 FC Mobile event ends soon', message: 'Spend your tokens and finish your objectives before the reset.', url: '/events/' },
   { id: 'reset', label: 'Daily reset', topic: 'daily_reset', title: '\uD83D\uDD04 Daily reset is live', message: 'Your daily rewards, objectives and Division Rivals matches are ready. Do not waste them.', url: '/events/' },
   { id: 'giveaway', label: 'Giveaway open', topic: 'giveaways', title: '\uD83C\uDF81 A giveaway is open', message: 'Entries are open. Check the rules and the closing time, then enter.', url: '/giveaways/' },
   { id: 'winner', label: 'Winner announced', topic: 'giveaways', title: '\uD83C\uDFC6 Giveaway winner announced', message: 'The draw is done. See whether your entry won.', url: '/giveaways/' },
