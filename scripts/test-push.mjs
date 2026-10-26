@@ -60,7 +60,11 @@ test('templates: every default automation and compose template passes validation
     if (auto.bulkTitle) validateCopy({ title: renderTemplate(auto.bulkTitle, sample), message: renderTemplate(auto.bulkMessage, sample) });
     assert.ok(TOPICS[auto.topic], key);
   }
-  for (const tpl of COMPOSE_TEMPLATES) { assert.ok(tpl.title.length <= 65 && tpl.message.length <= 178, tpl.id); assert.ok(!/\u2014/.test(tpl.title + tpl.message)); }
+  for (const tpl of COMPOSE_TEMPLATES) {
+    assert.ok(tpl.title.length <= 65 && tpl.message.length <= 178, tpl.id);
+    assert.ok(!/\\u2014/.test(tpl.title + tpl.message));
+    assert.ok(!/\\{\\w+\\}/.test(tpl.title + tpl.message), `${tpl.id} contains an unresolved placeholder that the composer will block`);
+  }
 });
 test('automations: stored overrides merge over defaults and config is clamped', () => {
   const auto = resolveAutomation('daily_reset', { enabled: true, title: 'Reset!', config: { hoursBefore: 999 } });
