@@ -62,6 +62,11 @@ await step('enable: permission, subscribe, tags, registry, welcome, funnel', asy
   assert.deepEqual([result.ok, result.state], [true, 'enabled']);
   assert.equal(calls.permissionAsks, 1); assert.equal(calls.optIn, 1);
   assert.equal(calls.sdkLoadsWhenPermissionRequested, 1, 'OneSignal must initialize before the permission prompt');
+  assert.equal(calls.initOptions?.appId, 'c64e5faf-4171-4fbc-af73-8406200cee1e');
+  assert.equal(calls.initOptions?.safari_web_id, 'web.onesignal.auto.560021c2-877c-448b-9811-f001e7b5ec58');
+  assert.equal(calls.initOptions?.notifyButton?.enable, true);
+  assert.equal(calls.initOptions?.serviceWorkerPath, 'onesignal/OneSignalSDKWorker.js');
+  assert.equal(calls.initOptions?.serviceWorkerParam?.scope, '/onesignal/');
   assert.equal(calls.tags.at(-1).notify_redeem_codes, 'true');
   assert.equal(calls.tags.at(-1).notify_daily_reset, 'false');
   const reg = posted(calls, '/api/push/register')[0].body;
