@@ -365,6 +365,8 @@ function boot() {
     renderArchive();
     root.dataset.ready = 'true';
     state.firstRender = false;
+    // The alert card reads real numbers (codes added lately, newest release date) from here.
+    window.dispatchEvent(new CustomEvent('fcmt:redeem-data', { detail: { codes: state.codes, serverDate: state.serverDate } }));
   }
 
   /* ------------------------------ url state ------------------------------ */
@@ -549,6 +551,7 @@ function boot() {
         trackRedeemCodeCopy(copyBtn.dataset.copy);
         toast(fmt(U.toast.copied, { code: copyBtn.dataset.copy }), 'good');
         navigator.vibrate?.(12);
+        window.dispatchEvent(new CustomEvent('fcmt:code-copied'));
       } else {
         toast(U.toast.copyBlocked);
       }

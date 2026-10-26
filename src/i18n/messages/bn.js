@@ -4,12 +4,14 @@ import redeem from './pages/redeem.bn.js';
 import consent from './pages/consent.bn.js';
 import investment from './pages/investment.bn.js';
 import shards from './pages/shards.bn.js';
+import push from './pages/push.bn.js';
 
 export default {
   redeem,
   consent,
   investment,
   shards,
+  push,
   common: {
     skipToContent: 'মূল কনটেন্টে যান',
     home: 'হোম',

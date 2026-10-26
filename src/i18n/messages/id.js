@@ -4,12 +4,14 @@ import redeem from './pages/redeem.id.js';
 import consent from './pages/consent.id.js';
 import investment from './pages/investment.id.js';
 import shards from './pages/shards.id.js';
+import push from './pages/push.id.js';
 
 export default {
   redeem,
   consent,
   investment,
   shards,
+  push,
   common: {
     skipToContent: 'Lewati ke konten',
     home: 'Beranda',

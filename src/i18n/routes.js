@@ -132,7 +132,7 @@ export const PAGE_NAMESPACES = {
 };
 
 // Namespaces every localized page shares (navbar, footer, switcher).
-export const SHARED_NAMESPACES = ['common', 'nav', 'footer', 'switcher', 'consent'];
+export const SHARED_NAMESPACES = ['common', 'nav', 'footer', 'switcher', 'consent', 'push'];
 
 /** False for admin, API, blog, guides and other areas that are intentionally English only. */
 export function isLocalizablePath(englishPath) {

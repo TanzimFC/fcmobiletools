@@ -3,12 +3,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
 import { redeemFaq, EA_REDEEM_URL, redeemJsonLd, safeScriptJson } from '../lib/redeem.js';
 import { getLocaleFromPath, localizeHref, namespace, translator } from '../i18n/index.js';
+import { pushIcon } from '../lib/pushIcons.js';
 
 // One page component serves English at /redeem-codes/ and the translated copies under /bn/, /pt-br/, /id/.
 const locale = getLocaleFromPath(Astro.url.pathname);
 const tr = translator(locale);
 const T = namespace(locale, 'redeem');
 const faq = redeemFaq(locale);
+const P = namespace(locale, 'push');
+const R = P.redeemCard;
 const href = (h) => localizeHref(h, locale);
 
 const origin = (Astro.site ?? new URL('https://fcmobiletools.online')).origin;
@@ -51,6 +54,27 @@ const tools = T.how.tools.map((tool, i) => ({ t: tool.t, d: tool.d, h: href(tool
             <a class="rx-btn rx-btn-primary rx-btn-lg" href="#codes"><span>{T.hero.ctaLive}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
             <a class="rx-btn rx-btn-ghost rx-btn-lg" href={EA_REDEEM_URL} target="_blank" rel="noopener noreferrer"><span>{T.hero.ctaEa}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
           </div>
+
+
+          <section class="rx-alert" data-rx-alert data-state="off" aria-labelledby="rx-alert-h">
+            <div class="rx-alert-bell" aria-hidden="true"><span set:html={pushIcon('bell', 24, 2)}></span><i></i></div>
+            <div class="rx-alert-copy">
+              <p class="rx-alert-kicker">{R.kicker}</p>
+              <h2 id="rx-alert-h" class="rx-alert-title">{R.title}</h2>
+              <p class="rx-alert-body" data-rx-alert-body>{R.body}</p>
+              <ul class="rx-alert-facts" data-rx-alert-facts></ul>
+            </div>
+            <div class="rx-alert-action">
+              <label class="rx-alert-toggle">
+                <input type="checkbox" data-rx-alert-toggle />
+                <span class="rx-alert-switch" aria-hidden="true"></span>
+                <span class="rx-alert-toggle-text" data-rx-alert-label>{R.toggle}</span>
+              </label>
+              <button type="button" class="rx-btn rx-btn-primary rx-alert-cta" data-rx-alert-cta><span>{R.turnOn}</span></button>
+              <p class="rx-alert-status" data-rx-alert-status role="status" aria-live="polite"></p>
+              <button type="button" class="rx-alert-manage" data-rx-alert-manage hidden>{R.manage}</button>
+            </div>
+          </section>
 
           <dl class="rx-stats">
             <div><dt>{T.hero.statActive}</dt><dd data-rx-stat="active">–</dd></div>
@@ -190,14 +214,20 @@ const tools = T.how.tools.map((tool, i) => ({ t: tool.t, d: tool.d, h: href(tool
       </section>
     </div>
 
+
+    <button type="button" class="rx-alert-sticky" data-rx-alert-sticky hidden aria-label={R.stickyCta}>
+      <span set:html={pushIcon('bell', 18, 2)}></span><b>{R.stickyCta}</b>
+    </button>
     <div class="rx-toast" data-rx-toast role="status" aria-live="polite"></div>
   </main>
 
   <script type="application/ld+json" id="rx-ld" is:inline set:html={structuredData}></script>
   <script type="application/json" id="rx-i18n" is:inline set:html={safeScriptJson({ locale: tr.locale, htmlLang: locale, activePill: T.live.activePill, activePillOne: T.live.activePillOne, ui: T.ui })}></script>
+  <script type="application/json" id="rx-alert-i18n" is:inline set:html={safeScriptJson({ card: R, states: P.states, panel: P.panel })}></script>
   <script type="application/json" id="rx-bootstrap" is:inline>null</script>
   {devFallback && <script type="application/json" id="rx-fallback" is:inline set:html={devFallback}></script>}
   <script>import '../scripts/redeem-page.js';</script>
+  <script>import '../scripts/push-redeem.js';</script>
 </BaseLayout>
 
 <style is:global>
@@ -223,6 +253,47 @@ html:not([lang="en"]) .rx-grad{ white-space:normal; }
 .rx :focus-visible{ outline:2px solid var(--rx-cyan); outline-offset:3px; border-radius:10px; }
 .rx-vh{ position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 .rx-wrap{ width:min(1180px,calc(100% - 32px)); margin-inline:auto; }
+
+
+/* ── redeem alert card: the one place codes are discussed, so it is the loudest ask on the page ── */
+.rx-alert{ position:relative; display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 16px; margin:26px 0 0; padding:18px; border:1px solid rgba(76,201,255,.34); border-radius:22px; background:linear-gradient(140deg,rgba(76,201,255,.14),rgba(14,26,38,.86) 55%); box-shadow:0 18px 50px -20px rgba(76,201,255,.55); overflow:hidden; max-width:560px; }
+.rx-alert::before{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1px; background:linear-gradient(120deg,rgba(143,227,255,.9),transparent 35%,transparent 65%,rgba(140,155,255,.7)); -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:.55; pointer-events:none; animation:rx-alert-glow 4.5s ease-in-out infinite; }
+@keyframes rx-alert-glow{ 0%,100%{opacity:.35} 50%{opacity:.85} }
+.rx-alert-bell{ position:relative; display:grid; place-items:center; width:52px; height:52px; border-radius:17px; color:#06202c; background:linear-gradient(135deg,#a3eaff,#4cc9ff); box-shadow:0 10px 26px -6px rgba(76,201,255,.8); }
+.rx-alert-bell span{ display:grid; transform-origin:50% 6px; animation:rx-bell-ring 3.4s ease-in-out infinite; }
+.rx-alert-bell i{ position:absolute; top:-3px; right:-3px; width:14px; height:14px; border-radius:50%; background:#ff6b6b; border:2px solid #0d1a25; animation:rx-bell-ping 2.2s ease-out infinite; }
+.rx-alert[data-state="on"] .rx-alert-bell i{ background:#47d16c; animation:none; }
+@keyframes rx-bell-ring{ 0%,62%,100%{transform:rotate(0)} 67%{transform:rotate(15deg)} 73%{transform:rotate(-13deg)} 79%{transform:rotate(9deg)} 85%{transform:rotate(-5deg)} 91%{transform:rotate(0)} }
+@keyframes rx-bell-ping{ 0%{box-shadow:0 0 0 0 rgba(255,107,107,.7)} 70%,100%{box-shadow:0 0 0 10px rgba(255,107,107,0)} }
+.rx-alert-copy{ min-width:0; }
+.rx-alert-kicker{ margin:0; color:var(--rx-cyan-2); font:800 11px/1 var(--font-body,'Inter',sans-serif); letter-spacing:.14em; text-transform:uppercase; }
+.rx-alert-title{ margin:6px 0 0; font:700 21px/1.15 var(--font-display,'Space Grotesk',sans-serif); letter-spacing:-.025em; }
+.rx-alert-body{ margin:8px 0 0; color:var(--rx-ink-2); font-size:14px; line-height:1.55; }
+.rx-alert-facts{ display:flex; flex-wrap:wrap; gap:6px; margin:11px 0 0; padding:0; list-style:none; }
+.rx-alert-facts li{ padding:5px 10px; border:1px solid var(--rx-line-2); border-radius:99px; background:rgba(255,255,255,.04); color:var(--rx-ink-2); font:700 11.5px/1.2 var(--font-body,'Inter',sans-serif); }
+.rx-alert-action{ grid-column:1 / -1; display:grid; gap:10px; margin-top:8px; padding-top:14px; border-top:1px solid var(--rx-line); }
+.rx-alert-toggle{ display:flex; align-items:center; gap:12px; cursor:pointer; font:700 14px/1.2 var(--font-body,'Inter',sans-serif); }
+.rx-alert-toggle input{ position:absolute; width:1px; height:1px; opacity:0; }
+.rx-alert-switch{ position:relative; flex:0 0 52px; width:52px; height:30px; border:1px solid rgba(255,255,255,.18); border-radius:99px; background:#1a2a39; transition:background .2s,border-color .2s; }
+.rx-alert-switch::after{ content:""; position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:50%; background:#8394a4; transition:transform .22s,background .2s; }
+.rx-alert-toggle input:checked~.rx-alert-switch{ border-color:rgba(71,209,108,.6); background:rgba(71,209,108,.28); }
+.rx-alert-toggle input:checked~.rx-alert-switch::after{ transform:translateX(22px); background:#6fe892; }
+.rx-alert-toggle input:focus-visible~.rx-alert-switch{ outline:2px solid var(--rx-cyan); outline-offset:3px; }
+.rx-alert-toggle input:disabled~.rx-alert-switch{ opacity:.55; }
+.rx-alert-cta{ width:100%; }
+.rx-alert[data-state="on"] .rx-alert-cta{ display:none; }
+.rx-alert[data-state="blocked"] .rx-alert-toggle{ display:none; }
+.rx-alert-status{ margin:0; min-height:0; color:var(--rx-ink-3); font-size:12.5px; line-height:1.5; }
+.rx-alert-status:empty{ display:none; }
+.rx-alert-status[data-tone="good"]{ color:#8ce9a8; }
+.rx-alert-status[data-tone="bad"]{ color:#ffb0a8; }
+.rx-alert-manage{ justify-self:start; padding:2px 0; border:0; background:none; color:#8fb7cc; font:700 12px/1.2 var(--font-body,'Inter',sans-serif); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.rx-alert-manage[hidden]{ display:none; }
+.rx-alert-sticky{ position:fixed; z-index:1200; right:14px; bottom:calc(92px + env(safe-area-inset-bottom,0px)); display:none; align-items:center; gap:9px; min-height:46px; padding:0 18px 0 14px; border:1px solid rgba(143,227,255,.5); border-radius:99px; color:#04121b; background:linear-gradient(135deg,#a3eaff,#4cc9ff); box-shadow:0 14px 34px -8px rgba(76,201,255,.85); font:800 13px/1 var(--font-body,'Inter',sans-serif); cursor:pointer; animation:rx-sticky-in .35s ease both; }
+.rx-alert-sticky.is-on{ display:inline-flex; }
+@keyframes rx-sticky-in{ from{ opacity:0; transform:translateY(12px) } to{ opacity:1; transform:none } }
+@media(min-width:981px){ .rx-alert-sticky{ bottom:24px; } .rx-alert{ grid-template-columns:auto minmax(0,1fr) auto; } .rx-alert-action{ grid-column:auto; margin:0; padding:0; border:0; align-content:center; min-width:210px; } .rx-alert{ max-width:none; } }
+@media(prefers-reduced-motion:reduce){ .rx-alert::before,.rx-alert-bell span,.rx-alert-bell i,.rx-alert-sticky{ animation:none!important; } }
 
 /* ── ambient background ── */
 .rx-bg{ position:absolute; inset:0; z-index:-1; pointer-events:none; overflow:hidden; }

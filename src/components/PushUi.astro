@@ -1,0 +1,137 @@
+---
+// Alert panel (opened from the bell in the navbar) and the soft prompt. Rendered once per page by
+// BaseLayout. The script keeps itself quiet: no permission box, no request, until a button is pressed.
+import { getLocaleFromPath, localizeHref, namespace } from '../i18n/index.js';
+import { TOPIC_KEYS } from '../lib/pushCore.js';
+import { pushIcon } from '../lib/pushIcons.js';
+
+const locale = getLocaleFromPath(Astro.url.pathname);
+const T = namespace(locale, 'push');
+const topics = TOPIC_KEYS.map((key) => ({ key, ...T.topics[key] }));
+const manageHref = localizeHref('/notifications/', locale);
+---
+<script type="application/json" id="fcPushI18n" is:inline set:html={JSON.stringify({ panel: T.panel, states: T.states, sheet: T.sheet }).replace(/</g, '\\u003c')}></script>
+
+<div class="fcp-backdrop" id="fcPushBackdrop" hidden></div>
+
+<section class="fcp-panel" id="fcPushPanel" role="dialog" aria-labelledby="fcPushPanelTitle" data-state="available" hidden>
+  <header class="fcp-head">
+    <span class="fcp-badge" set:html={pushIcon('bell', 20, 2)}></span>
+    <div class="fcp-head-copy">
+      <h2 id="fcPushPanelTitle">{T.panel.title}</h2>
+      <span class="fcp-pill" id="fcPushPill" data-state="off"><i></i><span>{T.panel.off}</span></span>
+    </div>
+    <button class="fcp-x" id="fcPushClose" type="button" aria-label={T.panel.close} set:html={pushIcon('close', 18, 2.2)}></button>
+  </header>
+  <p class="fcp-sub">{T.panel.sub}</p>
+  <p class="fcp-note" id="fcPushNote" hidden></p>
+
+  <div class="fcp-topics" data-pending="true">
+    {topics.map((topic) => (
+      <label class="fcp-topic">
+        <span class="fcp-topic-icon" set:html={pushIcon(topic.key, 18, 1.9)}></span>
+        <span class="fcp-topic-copy"><strong>{topic.label}</strong><small>{topic.blurb}</small></span>
+        <input type="checkbox" data-topic={topic.key} />
+        <span class="fcp-switch" aria-hidden="true"></span>
+      </label>
+    ))}
+  </div>
+
+  <button class="fcp-btn fcp-primary" id="fcPushEnable" type="button">{T.panel.enable}</button>
+  <div class="fcp-foot">
+    <button class="fcp-link" id="fcPushPause" type="button" hidden>{T.panel.pause}</button>
+    <a class="fcp-link" href={manageHref}>{T.panel.more}</a>
+  </div>
+  <p class="fcp-flash" id="fcPushFlash" role="status" aria-live="polite"></p>
+</section>
+
+<aside class="fcp-sheet" id="fcPushSheet" role="dialog" aria-labelledby="fcPushSheetTitle" hidden>
+  <div class="fcp-sheet-bell" aria-hidden="true"><span set:html={pushIcon('bell', 22, 2)}></span></div>
+  <div class="fcp-sheet-copy">
+    <h2 id="fcPushSheetTitle">{T.sheet.defaultTitle}</h2>
+    <p id="fcPushSheetBody">{T.sheet.defaultBody}</p>
+    <div class="fcp-sheet-actions">
+      <button class="fcp-btn fcp-primary" id="fcPushSheetYes" type="button">{T.sheet.yes}</button>
+      <button class="fcp-btn fcp-ghost" id="fcPushSheetLater" type="button">{T.sheet.later}</button>
+    </div>
+    <div class="fcp-sheet-links">
+      <button class="fcp-link" id="fcPushSheetChoose" type="button">{T.sheet.choose}</button>
+      <button class="fcp-link" id="fcPushSheetNever" type="button">{T.sheet.never}</button>
+    </div>
+  </div>
+</aside>
+
+<script>import '../scripts/push-ui.js';</script>
+
+<style is:global>
+.fcp-backdrop{position:fixed;inset:0;z-index:1490;background:rgba(3,9,14,.55);opacity:0;transition:opacity .2s}
+.fcp-backdrop.is-open{opacity:1}
+@media(min-width:981px){.fcp-backdrop{display:none}}
+.fcp-panel,.fcp-sheet{--fcp-line:rgba(255,255,255,.1);--fcp-muted:#93a6b7;font-family:var(--font-body,'Inter',system-ui,sans-serif);color:#f3f7fa}
+.fcp-panel *,.fcp-sheet *{box-sizing:border-box}
+.fcp-panel[hidden],.fcp-sheet[hidden],.fcp-backdrop[hidden]{display:none!important}
+.fcp-panel{position:fixed;z-index:1500;top:84px;right:16px;width:min(396px,calc(100vw - 24px));max-height:calc(100dvh - 104px);overflow:auto;padding:20px;border:1px solid var(--fcp-line);border-radius:22px;background:linear-gradient(155deg,rgba(20,36,52,.98),rgba(8,17,26,.99));box-shadow:0 30px 80px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.05) inset;opacity:0;transform:translateY(-8px) scale(.985);transition:opacity .2s,transform .2s;overscroll-behavior:contain}
+.fcp-panel.is-open{opacity:1;transform:none}
+.fcp-panel::before{content:"";position:absolute;left:12%;right:12%;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(76,201,255,.7),transparent)}
+.fcp-head{display:flex;align-items:center;gap:12px}
+.fcp-badge{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:14px;color:#07202d;background:linear-gradient(135deg,#a3eaff,#4cc9ff)}
+.fcp-head-copy{flex:1;min-width:0}
+.fcp-head h2{margin:0 0 5px;font:700 18px/1.15 var(--font-display,'Space Grotesk',sans-serif);letter-spacing:-.02em}
+.fcp-pill{display:inline-flex;align-items:center;gap:7px;padding:4px 9px;border:1px solid var(--fcp-line);border-radius:99px;background:rgba(255,255,255,.04);color:#aab9c7;font:700 10.5px/1 var(--font-body,sans-serif)}
+.fcp-pill i{width:6px;height:6px;border-radius:50%;background:#7d8d9c}
+.fcp-pill[data-state="on"]{color:#8ce9a8;border-color:rgba(71,209,108,.28);background:rgba(71,209,108,.08)}
+.fcp-pill[data-state="on"] i{background:#47d16c;box-shadow:0 0 9px rgba(71,209,108,.7)}
+.fcp-pill[data-state="blocked"]{color:#ffb0a8;border-color:rgba(255,125,115,.25)}
+.fcp-pill[data-state="blocked"] i{background:#ff8a80}
+.fcp-x{display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:11px;background:transparent;color:#9fb0bf;cursor:pointer}
+.fcp-x:hover{background:rgba(255,255,255,.07);color:#fff}
+.fcp-sub{margin:14px 0 0;color:var(--fcp-muted);font-size:13px;line-height:1.55}
+.fcp-note{margin:12px 0 0;padding:11px 13px;border:1px solid rgba(255,189,89,.28);border-radius:13px;background:rgba(255,189,89,.07);color:#ffd9a0;font-size:12.5px;line-height:1.55}
+.fcp-topics{display:grid;gap:7px;margin:16px 0 0}
+.fcp-topics[data-pending="true"] .fcp-topic{opacity:.72}
+.fcp-topic{position:relative;display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 12px;border:1px solid rgba(255,255,255,.07);border-radius:15px;background:rgba(255,255,255,.025);cursor:pointer;transition:border-color .18s,background .18s}
+.fcp-topic:hover{border-color:rgba(76,201,255,.25)}
+.fcp-topic:has(input:checked){border-color:rgba(76,201,255,.26);background:linear-gradient(110deg,rgba(76,201,255,.08),rgba(255,255,255,.015))}
+.fcp-topic-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:rgba(76,201,255,.09);color:#8fe3ff}
+.fcp-topic-copy{display:grid;gap:3px;flex:1;min-width:0}
+.fcp-topic-copy strong{font:700 13px/1.2 var(--font-body,sans-serif)}
+.fcp-topic-copy small{color:#8497a8;font-size:11.5px;line-height:1.4}
+.fcp-topic input{position:absolute;width:1px;height:1px;opacity:0}
+.fcp-switch{position:relative;flex:0 0 42px;width:42px;height:24px;border:1px solid rgba(255,255,255,.14);border-radius:99px;background:#192836;transition:background .2s,border-color .2s}
+.fcp-switch::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#7d8d9c;transition:transform .2s,background .2s}
+.fcp-topic input:checked~.fcp-switch{border-color:rgba(76,201,255,.55);background:rgba(76,201,255,.26)}
+.fcp-topic input:checked~.fcp-switch::after{transform:translateX(18px);background:#8fe3ff}
+.fcp-topic input:focus-visible~.fcp-switch{outline:2px solid #4cc9ff;outline-offset:3px}
+.fcp-topic input:disabled~.fcp-switch{opacity:.5}
+.fcp-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border:1px solid transparent;border-radius:14px;font:800 13.5px/1 var(--font-body,sans-serif);cursor:pointer;transition:transform .15s,box-shadow .2s,opacity .2s}
+.fcp-btn:disabled{opacity:.6;cursor:wait}
+.fcp-btn:active{transform:scale(.98)}
+.fcp-primary{width:100%;margin-top:16px;color:#04121b;background:linear-gradient(135deg,#a3eaff,#4cc9ff 60%,#2daee8);box-shadow:0 10px 28px -8px rgba(76,201,255,.7)}
+.fcp-primary[hidden]{display:none}
+.fcp-ghost{color:#cfdbe5;background:rgba(255,255,255,.045);border-color:var(--fcp-line)}
+.fcp-foot{display:flex;justify-content:space-between;gap:12px;margin-top:12px}
+.fcp-link{padding:6px 2px;border:0;background:none;color:#8fb7cc;font:700 12px/1.2 var(--font-body,sans-serif);text-decoration:none;cursor:pointer}
+.fcp-link:hover{color:#bfeaff;text-decoration:underline}
+.fcp-link[hidden]{display:none}
+.fcp-flash{min-height:0;margin:0;font-size:12px;line-height:1.5;opacity:0;max-height:0;overflow:hidden;transition:opacity .2s,max-height .2s,margin .2s}
+.fcp-flash.is-on{opacity:1;max-height:80px;margin-top:10px}
+.fcp-flash[data-tone="good"]{color:#8ce9a8}.fcp-flash[data-tone="info"]{color:#9bb0be}.fcp-flash[data-tone="bad"]{color:#ffb0a8}
+
+.fcp-sheet{position:fixed;z-index:1450;left:18px;bottom:18px;display:flex;gap:14px;width:min(392px,calc(100vw - 24px));padding:16px;border:1px solid rgba(76,201,255,.26);border-radius:20px;background:linear-gradient(150deg,rgba(18,34,50,.98),rgba(8,17,26,.99));box-shadow:0 26px 70px rgba(0,0,0,.5);opacity:0;transform:translateY(14px);transition:opacity .22s,transform .22s}
+.fcp-sheet.is-open{opacity:1;transform:none}
+.fcp-sheet-bell{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border-radius:15px;color:#07202d;background:linear-gradient(135deg,#a3eaff,#4cc9ff);animation:fcp-ring 3.2s ease-in-out infinite;transform-origin:50% 8px}
+.fcp-sheet-copy{min-width:0;flex:1}
+.fcp-sheet h2{margin:2px 0 5px;font:700 16px/1.25 var(--font-display,'Space Grotesk',sans-serif);letter-spacing:-.015em}
+.fcp-sheet p{margin:0;color:#9db0c0;font-size:12.5px;line-height:1.55}
+.fcp-sheet-actions{display:flex;gap:8px;margin-top:13px}
+.fcp-sheet-actions .fcp-btn{min-height:42px;margin:0;padding:0 15px;font-size:12.5px;width:auto}
+.fcp-sheet-actions .fcp-primary{flex:1}
+.fcp-sheet-links{display:flex;gap:16px;margin-top:6px}
+@keyframes fcp-ring{0%,60%,100%{transform:rotate(0)}66%{transform:rotate(14deg)}72%{transform:rotate(-12deg)}78%{transform:rotate(9deg)}84%{transform:rotate(-6deg)}90%{transform:rotate(0)}}
+
+@media(max-width:980px){
+  .fcp-panel{top:auto;right:12px;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:auto;max-height:84dvh;padding:18px;transform:translateY(24px)}
+  .fcp-sheet{left:12px;right:12px;width:auto;bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+}
+@media(prefers-reduced-motion:reduce){.fcp-panel,.fcp-sheet,.fcp-backdrop,.fcp-switch,.fcp-switch::after{transition:none!important}.fcp-sheet-bell{animation:none}}
+</style>

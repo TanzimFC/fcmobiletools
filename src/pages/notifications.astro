@@ -1,100 +1,65 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { ONESIGNAL_APP_ID, ONESIGNAL_ENABLED } from '../config/siteNotifications.js';
+import { getLocaleFromPath, localizeHref, namespace } from '../i18n/index.js';
+import { TOPIC_KEYS } from '../lib/pushCore.js';
+import { pushIcon } from '../lib/pushIcons.js';
+
+const locale = getLocaleFromPath(Astro.url.pathname);
+const P = namespace(locale, 'push');
+const topics = TOPIC_KEYS.map((key) => ({ key, ...P.topics[key] }));
 ---
 
-<BaseLayout
-  title="Push Alerts | FCMobiletools"
-  description="Choose which FC Mobile Tools updates can reach your browser through optional push alerts."
-  robots="noindex,nofollow"
-  googlebot="noindex,nofollow"
->
-  <main class="push-page" data-onesignal-app-id={ONESIGNAL_APP_ID}>
+<BaseLayout title={P.page.title} description={P.page.description} robots="noindex,nofollow" googlebot="noindex,nofollow">
+  <main class="push-page" data-push-page>
     <div class="push-shell">
-      <a class="push-back" href="/">← Back to FCMOBILETOOLS</a>
+      <a class="push-back" href={localizeHref('/', locale)}>{'\u2190 ' + P.page.back}</a>
 
       <header class="push-hero">
-        <span class="push-eyebrow"><span class="push-live-dot"></span> FCMOBILETOOLS / ALERTS</span>
-        <h1>Only the alerts you choose.</h1>
-        <p>Get new redeem codes and live-event updates without checking the site every time. You control the topics, and the browser permission prompt appears only when you press Enable.</p>
-        <div class="push-promise"><span aria-hidden="true">✓</span> Site updates only. No third-party push ads.</div>
+        <span class="push-eyebrow"><span class="push-live-dot"></span> {P.page.eyebrow}</span>
+        <h1>{P.page.h1}</h1>
+        <p>{P.page.lede}</p>
+        <div class="push-promise"><span aria-hidden="true">{'\u2713'}</span> {P.page.promise}</div>
       </header>
 
-      {ONESIGNAL_ENABLED ? (
-        <section class="push-panel" aria-labelledby="push-panel-title">
-          <div class="push-panel-head">
-            <div>
-              <span class="push-kicker">YOUR PREFERENCES</span>
-              <h2 id="push-panel-title">Choose your alerts</h2>
-              <p>Choose your topics, save them, then enable alerts for this browser.</p>
-            </div>
-            <span class="push-status" id="pushStatus" data-state="idle" role="status">
-              <i aria-hidden="true"></i><span>Connecting</span>
-            </span>
+      <section class="push-panel" aria-labelledby="push-panel-title">
+        <div class="push-panel-head">
+          <div>
+            <span class="push-kicker">{P.page.eyebrow}</span>
+            <h2 id="push-panel-title">{P.page.panelTitle}</h2>
+            <p>{P.page.panelSub}</p>
           </div>
+          <span class="push-status" id="pushStatus" data-state="idle" role="status"><i aria-hidden="true"></i><span>{P.panel.off}</span></span>
+        </div>
 
-          <div class="push-topic-list">
-            <label class="push-topic">
-              <span class="push-topic-icon" aria-hidden="true">⌁</span>
-              <span class="push-topic-copy"><strong>Redeem codes</strong><small>New code drops and important code status changes.</small></span>
-              <input type="checkbox" data-push-topic="notify_redeem_codes" checked />
-              <span class="push-switch" aria-hidden="true"></span>
-            </label>
-            <label class="push-topic">
-              <span class="push-topic-icon" aria-hidden="true">◷</span>
-              <span class="push-topic-copy"><strong>Live events</strong><small>New events, schedule changes and reset reminders.</small></span>
-              <input type="checkbox" data-push-topic="notify_live_events" checked />
-              <span class="push-switch" aria-hidden="true"></span>
-            </label>
-            <label class="push-topic">
-              <span class="push-topic-icon" aria-hidden="true">✦</span>
-              <span class="push-topic-copy"><strong>Giveaways</strong><small>Giveaway openings, draw results and winner notices.</small></span>
-              <input type="checkbox" data-push-topic="notify_giveaways" />
-              <span class="push-switch" aria-hidden="true"></span>
-            </label>
-            <label class="push-topic">
-              <span class="push-topic-icon" aria-hidden="true">↗</span>
-              <span class="push-topic-copy"><strong>New tools and site updates</strong><small>Major feature releases, not routine site activity.</small></span>
-              <input type="checkbox" data-push-topic="notify_site_updates" />
-              <span class="push-switch" aria-hidden="true"></span>
-            </label>
-          </div>
+        <p class="push-note" id="pushNote" hidden></p>
 
-          <div class="push-actions">
-            <button class="push-btn push-primary" id="pushEnable" type="button" disabled>Enable push alerts</button>
-            <button class="push-btn push-secondary" id="pushSave" type="button" disabled>Save topics</button>
-            <button class="push-btn push-quiet" id="pushPause" type="button" disabled>Pause alerts</button>
-          </div>
-          <p class="push-message" id="pushMessage" aria-live="polite">Loading notification controls. No permission prompt has been shown.</p>
-          <p class="push-footnote">Alerts are optional. You can pause them here or block them in your browser’s site settings. Topic choices are saved on this device and synced to OneSignal when available.</p>
-        </section>
-      ) : (
-        <section class="push-panel push-not-ready" aria-labelledby="push-panel-title">
-          <span class="push-kicker">SETUP PENDING</span>
-          <h2 id="push-panel-title">Push alerts are not active yet.</h2>
-          <p>OneSignal has not been configured for this production build. No browser prompt will appear. This page activates after the site owner adds the public OneSignal App ID to the build settings.</p>
-        </section>
-      )}
+        <div class="push-topic-list" id="pushTopics" data-pending="true">
+          {topics.map((topic) => (
+            <label class="push-topic">
+              <span class="push-topic-icon" aria-hidden="true" set:html={pushIcon(topic.key, 18, 1.9)}></span>
+              <span class="push-topic-copy"><strong>{topic.label}</strong><small>{topic.blurb}</small></span>
+              <input type="checkbox" data-push-topic={topic.key} />
+              <span class="push-switch" aria-hidden="true"></span>
+            </label>
+          ))}
+        </div>
+
+        <div class="push-actions">
+          <button class="push-btn push-primary" id="pushEnable" type="button">{P.panel.enable}</button>
+          <button class="push-btn push-quiet" id="pushPause" type="button" hidden>{P.panel.pause}</button>
+        </div>
+        <p class="push-flash" id="pushFlash" role="status" aria-live="polite"></p>
+      </section>
 
       <div class="push-detail-grid">
-        <section class="push-detail">
-          <span class="push-detail-number">01</span>
-          <h3>You choose the topics</h3>
-          <p>Redeem codes and live events are selected by default. Giveaways and product updates stay off until you choose them.</p>
-        </section>
-        <section class="push-detail">
-          <span class="push-detail-number">02</span>
-          <h3>No surprise prompts</h3>
-          <p>Opening the site does not request browser permission. You must press Enable on this page first.</p>
-        </section>
-        <section class="push-detail">
-          <span class="push-detail-number">03</span>
-          <h3>Pause whenever</h3>
-          <p>Use Pause alerts to stop delivery to this browser, or change the site permission in your browser settings.</p>
-        </section>
+        <section class="push-detail"><span class="push-detail-number">01</span><h3>{P.page.b1t}</h3><p>{P.page.b1d}</p></section>
+        <section class="push-detail"><span class="push-detail-number">02</span><h3>{P.page.b2t}</h3><p>{P.page.b2d}</p></section>
+        <section class="push-detail"><span class="push-detail-number">03</span><h3>{P.page.b3t}</h3><p>{P.page.b3d}</p></section>
       </div>
     </div>
   </main>
+  <script type="application/json" id="push-page-i18n" is:inline set:html={JSON.stringify({ panel: P.panel, states: P.states }).replace(/</g, '\\u003c')}></script>
+  <script>import '../scripts/push-page.js';</script>
 </BaseLayout>
 
 <style>
@@ -156,185 +121,13 @@ import { ONESIGNAL_APP_ID, ONESIGNAL_ENABLED } from '../config/siteNotifications
 .push-detail p{margin:0;color:#8b9dad;font:500 11.5px/1.65 var(--font-body)}
 @media(max-width:700px){.push-page{padding-inline:13px}.push-panel-head{flex-direction:column}.push-detail-grid{grid-template-columns:1fr}.push-detail{padding:17px}.push-quiet{margin-left:0}.push-actions{display:grid;grid-template-columns:1fr 1fr}.push-primary{grid-column:1/-1}.push-topic{gap:10px;padding:12px}.push-topic-icon{width:32px;height:32px;flex-basis:32px}}
 @media(prefers-reduced-motion:reduce){.push-topic,.push-btn,.push-switch,.push-switch:after{transition:none!important}}
+
+.push-ios{margin:18px 0 0;padding:16px 18px;border:1px solid rgba(255,189,89,.3);border-radius:16px;background:rgba(255,189,89,.07);color:#ffd9a0;font:600 12.5px/1.65 var(--font-body)}
+.push-note{margin:16px 0 0;padding:12px 14px;border:1px solid rgba(255,189,89,.28);border-radius:14px;background:rgba(255,189,89,.07);color:#ffd9a0;font:600 12.5px/1.6 var(--font-body)}
+.push-note[hidden],.push-ios[hidden]{display:none}
+.push-topic-list[data-pending="true"] .push-topic{opacity:.74}
+.push-topic input:disabled~.push-switch{opacity:.5}
+.push-flash{min-height:20px;margin:14px 0 0;font:600 12px/1.55 var(--font-body);color:#9bb0be}
+.push-flash[data-tone="good"]{color:#83e49e}.push-flash[data-tone="bad"]{color:#ffadad}
+.push-status[data-state="paused"],.push-status[data-state="blocked"]{border-color:rgba(255,189,89,.28);background:rgba(255,189,89,.07);color:#ffd9a0}
 </style>
-
-<script define:vars={{ appId: ONESIGNAL_APP_ID }}>
-(() => {
-  const page = document.querySelector('.push-page[data-onesignal-app-id]');
-  if (!page || !appId) return;
-
-  const statusEl = document.getElementById('pushStatus');
-  const statusText = statusEl?.querySelector('span');
-  const messageEl = document.getElementById('pushMessage');
-  const enableButton = document.getElementById('pushEnable');
-  const saveButton = document.getElementById('pushSave');
-  const pauseButton = document.getElementById('pushPause');
-  const topicInputs = [...document.querySelectorAll('[data-push-topic]')];
-  const preferenceKey = 'fcmt:push-preferences:v1';
-  const defaultPreferences = {
-    notify_redeem_codes: true,
-    notify_live_events: true,
-    notify_giveaways: false,
-    notify_site_updates: false
-  };
-  let oneSignal = null;
-
-  const permission = () => ('Notification' in window ? Notification.permission : 'unsupported');
-  const currentPreferences = () => Object.fromEntries(topicInputs.map((input) => [input.dataset.pushTopic, input.checked]));
-  const readPreferences = () => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(preferenceKey) || 'null');
-      return { ...defaultPreferences, ...(saved && typeof saved === 'object' ? saved : {}) };
-    } catch {
-      return { ...defaultPreferences };
-    }
-  };
-  const setMessage = (message, state = 'idle') => {
-    if (!messageEl) return;
-    messageEl.textContent = message;
-    messageEl.dataset.state = state;
-  };
-  const setStatus = (message, state = 'idle') => {
-    if (!statusEl || !statusText) return;
-    statusText.textContent = message;
-    statusEl.dataset.state = state;
-  };
-
-  const loadPreferencesIntoForm = () => {
-    const saved = readPreferences();
-    topicInputs.forEach((input) => { input.checked = saved[input.dataset.pushTopic] !== false; });
-  };
-
-  const applyTopicTags = async () => {
-    if (!oneSignal?.User?.addTags) return;
-    const preferences = currentPreferences();
-    await oneSignal.User.addTags(Object.fromEntries(
-      Object.entries(preferences).map(([key, enabled]) => [key, enabled ? 'true' : 'false'])
-    ));
-  };
-
-  const refreshStatus = () => {
-    const optedIn = Boolean(oneSignal?.User?.PushSubscription?.optedIn);
-    const currentPermission = permission();
-    if (currentPermission === 'unsupported') {
-      setStatus('Not supported', 'error');
-      setMessage('This browser does not expose the notification permission API. Try a current version of Chrome, Edge, Firefox or Safari.', 'error');
-    } else if (currentPermission === 'denied') {
-      setStatus('Blocked in browser', 'error');
-      setMessage('Notifications are blocked for this site in your browser settings. Change that permission there before trying again.', 'error');
-    } else if (optedIn) {
-      setStatus('Alerts enabled', 'on');
-      setMessage('This browser is subscribed. Your selected topics are saved.', 'success');
-    } else if (currentPermission === 'granted') {
-      setStatus('Permission granted', 'ready');
-      setMessage('Browser permission is available. Press Enable to resume delivery on this device.', 'idle');
-    } else {
-      setStatus('Not enabled', 'idle');
-      setMessage('No notifications will be sent until you enable them and grant browser permission.', 'idle');
-    }
-    if (enableButton) {
-      enableButton.disabled = !oneSignal || currentPermission === 'unsupported' || currentPermission === 'denied' || optedIn;
-      enableButton.textContent = optedIn ? 'Alerts are enabled' : currentPermission === 'granted' ? 'Resume push alerts' : 'Enable push alerts';
-    }
-    if (pauseButton) pauseButton.disabled = !oneSignal || !optedIn;
-    if (saveButton) saveButton.disabled = !oneSignal;
-  };
-
-  const sdkReady = new Promise((resolve, reject) => {
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async (OneSignal) => {
-      try {
-        await OneSignal.init({
-          appId,
-          serviceWorkerPath: 'onesignal/OneSignalSDKWorker.js',
-          serviceWorkerParam: { scope: '/onesignal/' }
-        });
-        oneSignal = OneSignal;
-        resolve(OneSignal);
-      } catch (error) {
-        reject(error);
-      }
-    });
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-    script.async = true;
-    script.onerror = () => reject(new Error('The OneSignal library could not be loaded.'));
-    document.head.appendChild(script);
-  });
-
-  topicInputs.forEach((input) => {
-    input.addEventListener('change', () => setMessage('Topic edits are not saved yet. Select Save topics to apply them.', 'idle'));
-  });
-
-  saveButton?.addEventListener('click', async () => {
-    if (!oneSignal) return;
-    saveButton.disabled = true;
-    try {
-      const preferences = currentPreferences();
-      localStorage.setItem(preferenceKey, JSON.stringify(preferences));
-      await applyTopicTags();
-      setMessage('Your topic preferences have been saved on this device.', 'success');
-    } catch {
-      setMessage('Preferences were saved on this device, but OneSignal could not sync them. Try again.', 'error');
-    } finally {
-      refreshStatus();
-    }
-  });
-
-  enableButton?.addEventListener('click', async () => {
-    if (!oneSignal) return;
-    enableButton.disabled = true;
-    try {
-      if (permission() !== 'granted') await oneSignal.Notifications.requestPermission();
-      if (permission() !== 'granted') {
-        refreshStatus();
-        setMessage('Permission was not granted. Nothing was enabled.', 'idle');
-        return;
-      }
-      await oneSignal.User.PushSubscription.optIn();
-      localStorage.setItem('fcmt:onesignal:active:v1', '1');
-      await applyTopicTags();
-      refreshStatus();
-      setMessage('Push alerts are enabled for this browser. You can pause them here at any time.', 'success');
-    } catch (error) {
-      refreshStatus();
-      setMessage(error?.message || 'Could not enable push alerts. Please try again.', 'error');
-    }
-  });
-
-  pauseButton?.addEventListener('click', async () => {
-    if (!oneSignal) return;
-    pauseButton.disabled = true;
-    try {
-      await oneSignal.User.PushSubscription.optOut();
-      localStorage.setItem('fcmt:onesignal:active:v1', '0');
-      refreshStatus();
-      setMessage('Alerts are paused on this browser. Browser permission has not been changed.', 'success');
-    } catch (error) {
-      refreshStatus();
-      setMessage(error?.message || 'Could not pause alerts. Please try again.', 'error');
-    }
-  });
-
-  loadPreferencesIntoForm();
-  setStatus('Connecting', 'idle');
-  setMessage('Loading notification controls. No permission prompt has been shown.', 'idle');
-
-  sdkReady.then(async () => {
-    if (permission() !== 'unsupported') {
-      try { await applyTopicTags(); } catch {}
-    }
-    refreshStatus();
-    if (permission() !== 'denied') {
-      setMessage('Notification controls are ready. No browser prompt has been shown.', 'success');
-    }
-  }).catch(() => {
-    setStatus('Unavailable', 'error');
-    setMessage('The notification service could not be reached. You can keep using the site; no permission was requested.', 'error');
-    if (enableButton) enableButton.disabled = true;
-    if (saveButton) saveButton.disabled = true;
-    if (pauseButton) pauseButton.disabled = true;
-  });
-})();
-</script>
