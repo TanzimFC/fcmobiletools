@@ -218,15 +218,26 @@ async function enable({ topics = {}, source = 'other', welcome = true } = {}) {
   if (!anyTopic(prefs)) prefs.redeem_codes = true;
   writePrefs(prefs);
   track('accepted', source);
+
+  // Request permission synchronously from the click path, before downloading the SDK.
+  // Browsers may discard transient user activation while awaiting a network-loaded script.
+  if (permission() !== 'granted') {
+    try {
+      await Notification.requestPermission();
+    } catch (error) {
+      sdkState = 'error';
+      emit();
+      return { ok: false, state: 'error', message: String(error?.message || 'The browser could not open its notification permission prompt. Try enabling alerts from the browser address-bar settings.') };
+    }
+  }
+  if (permission() === 'denied') { track('blocked', source); return { ok: false, state: emit() }; }
+  if (permission() !== 'granted') { sdkState = null; return { ok: false, state: 'dismissed' }; }
+
   let OneSignal;
   try { OneSignal = await loadSdk(); } catch (error) {
     return { ok: false, state: 'sdk-blocked', message: String(error?.message || 'OneSignal could not start.') };
   }
   try {
-    if (permission() !== 'granted') await OneSignal.Notifications.requestPermission();
-    if (permission() === 'denied') { track('blocked', source); return { ok: false, state: emit() }; }
-    if (permission() !== 'granted') { sdkState = null; return { ok: false, state: 'dismissed' }; }
-
     await OneSignal.User.PushSubscription.optIn();
     const id = await subscriptionId(OneSignal);
     if (!id) {
