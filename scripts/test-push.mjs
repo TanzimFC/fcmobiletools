@@ -85,7 +85,7 @@ test('onesignal: payload targets by tag, segment or explicit ids', () => {
   assert.deepEqual(byTag.filters, [{ field: 'tag', key: 'notify_redeem_codes', relation: '=', value: 'true' }]);
   assert.equal(byTag.included_segments, undefined);
   const all = buildOneSignalPayload('app', { ...base, topic: 'all' });
-  assert.deepEqual(all.included_segments, ['Subscribed Users']);
+  assert.deepEqual(all.included_segments, ['Total Subscriptions']);
   const ids = buildOneSignalPayload('app', { ...base, topic: 'all' }, { subscriptionIds: [ID] });
   assert.deepEqual(ids.include_subscription_ids, [ID]);
   assert.equal(ids.included_segments, undefined);
