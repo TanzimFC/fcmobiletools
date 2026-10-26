@@ -43,6 +43,7 @@ const isStandalone = (() => {
 const hasApis = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 
 let sdkPromise = null;
+let sdkInstance = null;
 let sdkBlocked = false;
 let sdkState = null; // set after the SDK has reported what this browser really has
 const listeners = new Set();
@@ -122,6 +123,7 @@ function loadSdk() {
         await OneSignal.init({ appId: ONESIGNAL_APP_ID, serviceWorkerPath: SW_PATH, serviceWorkerParam: { scope: SW_SCOPE } });
         sdkBlocked = false;
         sdkState = null;
+        sdkInstance = OneSignal;
         finish(null, OneSignal);
       } catch (error) { finish(error); }
     });
@@ -133,6 +135,7 @@ function loadSdk() {
     timeout = setTimeout(() => finish(new Error('OneSignal took too long to start. Check your connection and retry.')), 20000);
   }).catch((error) => {
     sdkPromise = null;
+    sdkInstance = null;
     sdkBlocked = true;
     emit();
     throw error;
@@ -140,17 +143,32 @@ function loadSdk() {
   return sdkPromise;
 }
 
-async function subscriptionId(OneSignal, waitMs = 12000) {
+async function subscriptionDiagnostic(OneSignal) {
   const subscription = OneSignal.User?.PushSubscription;
-  if (!subscription) return '';
+  const permissionState = permission();
+  let registration = null;
+  let browserSubscription = null;
+  try {
+    registration = await navigator.serviceWorker.getRegistration(new URL(SW_SCOPE, location.origin).href);
+    if (registration) browserSubscription = await registration.pushManager?.getSubscription?.();
+  } catch { /* diagnostic only */ }
+  if (permissionState !== 'granted') return 'Browser notification permission is not granted.';
+  if (!registration) return 'The browser cannot find the OneSignal service worker at /onesignal/. Reload once. If this keeps happening, the worker registration or site service-worker setup needs checking.';
+  if (!browserSubscription) return 'The OneSignal service worker is registered, but the browser did not create a push token. This points to the browser push/VAPID setup or a service-worker conflict, not the permission switch.';
+  if (subscription?.optedIn !== true) return 'The browser push token exists, but OneSignal still reports this browser as not opted in. The SDK subscription state needs checking.';
+  return 'The browser push token exists, but OneSignal has not assigned a subscription ID yet. The SDK registration has not completed.';
+}
+
+async function subscriptionId(OneSignal, waitMs = 25000) {
+  const subscription = OneSignal.User?.PushSubscription;
+  if (!subscription) throw new Error('The OneSignal SDK did not expose its push subscription API.');
   const deadline = Date.now() + waitMs;
-  for (;;) {
+  while (Date.now() <= deadline) {
     const id = subscription.id;
-    // OneSignal documents that optedIn alone does not guarantee an ID/token exists yet.
     if (id && subscription.optedIn === true) return String(id);
-    if (Date.now() > deadline) return '';
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
+  throw new Error(await subscriptionDiagnostic(OneSignal));
 }
 
 async function syncTags(OneSignal, prefs, force = false) {
@@ -219,30 +237,23 @@ async function enable({ topics = {}, source = 'other', welcome = true } = {}) {
   writePrefs(prefs);
   track('accepted', source);
 
-  // Request permission synchronously from the click path, before downloading the SDK.
-  // Browsers may discard transient user activation while awaiting a network-loaded script.
-  if (permission() !== 'granted') {
-    try {
-      await Notification.requestPermission();
-    } catch (error) {
-      sdkState = 'error';
-      emit();
-      return { ok: false, state: 'error', message: String(error?.message || 'The browser could not open its notification permission prompt. Try enabling alerts from the browser address-bar settings.') };
-    }
-  }
-  if (permission() === 'denied') { track('blocked', source); return { ok: false, state: emit() }; }
-  if (permission() !== 'granted') { sdkState = null; return { ok: false, state: 'dismissed' }; }
-
-  let OneSignal;
-  try { OneSignal = await loadSdk(); } catch (error) {
+  // The UI prepares OneSignal before enabling the native permission button. Do not
+  // open a prompt after waiting for a network-loaded SDK: browsers may drop user activation.
+  let OneSignal = sdkInstance;
+  const hadReadySdk = Boolean(OneSignal);
+  try { if (!OneSignal) OneSignal = await loadSdk(); } catch (error) {
     return { ok: false, state: 'sdk-blocked', message: String(error?.message || 'OneSignal could not start.') };
   }
+  if (permission() !== 'granted' && !hadReadySdk) {
+    return { ok: false, state: 'preparing', message: 'OneSignal has finished starting. Tap Enable alerts once more to open the browser permission prompt.' };
+  }
   try {
+    if (permission() !== 'granted') await OneSignal.Notifications.requestPermission();
+    if (permission() === 'denied') { track('blocked', source); return { ok: false, state: emit() }; }
+    if (permission() !== 'granted') { sdkState = null; return { ok: false, state: 'dismissed' }; }
+
     await OneSignal.User.PushSubscription.optIn();
     const id = await subscriptionId(OneSignal);
-    if (!id) {
-      throw new Error('Browser permission is on, but OneSignal has not created a subscription ID yet. Alerts are not confirmed. Keep this page open and try again.');
-    }
     await syncTags(OneSignal, prefs, true);
     await register(OneSignal, { source, welcome, force: true, confirmedId: id });
 
@@ -351,6 +362,7 @@ if (hasApis && permission() === 'granted' && store.get(KEY.active) === '1') idle
 
 window.FCPush = {
   state: computeState,
+  prepare: async () => { try { await loadSdk(); return { ok: true, state: 'ready' }; } catch (error) { return { ok: false, state: 'sdk-blocked', message: String(error?.message || 'OneSignal could not start.') }; } },
   prefs: readPrefs,
   topics: TOPIC_KEYS,
   config: getConfig,
