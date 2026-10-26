@@ -9,7 +9,7 @@
 //
 // The OneSignal library is only downloaded when it is needed: when someone turns alerts on, or when this
 // browser already has alerts on and needs its topics kept in sync. Nobody is asked for permission here.
-import { ONESIGNAL_APP_ID } from '../config/siteNotifications.js';
+import { ONESIGNAL_APP_ID, ONESIGNAL_SAFARI_WEB_ID } from '../config/siteNotifications.js';
 import { TOPIC_KEYS, TOPICS, normalizeTopicState, topicStateToTags, shouldShowPrompt } from '../lib/pushCore.js';
 
 const SDK_URL = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
