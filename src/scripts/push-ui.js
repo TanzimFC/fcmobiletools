@@ -20,6 +20,7 @@ const NEVER_PROMPT = /^\/(admin|account|creator|profile|notifications|giveaways\
 
 let panelOpen = false;
 let returnFocus = null;
+let panelPreparing = false;
 
 function stateNote(state) {
   if (state === 'ios-install') return T.states.iosInstall;
@@ -33,7 +34,7 @@ function renderPanel() {
   const state = FC.state();
   const prefs = FC.prefs();
   const on = state === 'enabled';
-  const blocked = ['ios-install', 'denied', 'unsupported', 'sdk-blocked'].includes(state);
+  const blocked = ['ios-install', 'denied', 'unsupported'].includes(state);
   const pill = $('fcPushPill');
   pill.dataset.state = on ? 'on' : state === 'paused' ? 'paused' : blocked ? 'blocked' : 'off';
   pill.querySelector('span').textContent = on ? T.panel.on : state === 'paused' ? T.panel.paused : T.panel.off;
@@ -44,12 +45,13 @@ function renderPanel() {
   panel.dataset.state = state;
   for (const input of panel.querySelectorAll('[data-topic]')) {
     input.checked = Boolean(prefs[input.dataset.topic]);
-    input.disabled = blocked;
+    input.disabled = blocked || panelPreparing;
   }
   panel.querySelector('.fcp-topics').dataset.pending = on || blocked ? 'false' : 'true';
   const enable = $('fcPushEnable');
   enable.hidden = on || blocked;
-  enable.textContent = state === 'paused' ? T.panel.resume : T.panel.enable;
+  enable.disabled = panelPreparing;
+  enable.textContent = panelPreparing ? T.panel.working : state === 'paused' ? T.panel.resume : T.panel.enable;
   $('fcPushPause').hidden = !on;
 }
 
@@ -70,6 +72,17 @@ function flash(message, tone = 'good') {
   flash.timer = setTimeout(() => el.classList.remove('is-on'), 2400);
 }
 
+function preparePanel() {
+  if (panelPreparing) return;
+  panelPreparing = true;
+  renderPanel();
+  FC.prepare().then((result) => {
+    panelPreparing = false;
+    renderPanel();
+    if (!result.ok) flash(result.message || T.states.sdkBlocked, 'bad');
+  });
+}
+
 function openPanel() {
   if (panelOpen) return;
   hideSheet();
@@ -77,6 +90,7 @@ function openPanel() {
   returnFocus = document.activeElement;
   renderPanel();
   panel.hidden = false;
+  preparePanel();
   backdrop.hidden = false;
   requestAnimationFrame(() => { panel.classList.add('is-open'); backdrop.classList.add('is-open'); });
   bell?.setAttribute('aria-expanded', 'true');
@@ -172,6 +186,17 @@ function showSheet(which = variantForPage(), source = 'sheet') {
   requestAnimationFrame(() => sheet.classList.add('is-open'));
   sheetShown = true;
   FC.track('shown', source);
+  const yes = $('fcPushSheetYes');
+  const readyText = yes.dataset.readyText || yes.textContent;
+  yes.dataset.readyText = readyText;
+  yes.disabled = true;
+  yes.textContent = T.panel.working;
+  FC.prepare().then((result) => {
+    if (sheet.dataset.source !== source || sheet.hidden) return;
+    yes.disabled = false;
+    yes.textContent = readyText;
+    if (!result.ok) flash(result.message || T.states.sdkBlocked, 'bad');
+  });
   return true;
 }
 function dismissSheet(forever) {
