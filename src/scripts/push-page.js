@@ -19,6 +19,7 @@ if (FC && root && T.panel) {
   const say = (message, tone = '') => { flash.textContent = message || ''; flash.dataset.tone = tone; };
   const explain = (result) => {
     if (result.ok) return say(result.state === 'enabled' ? T.states.enabled : T.panel.saved, 'good');
+    if (result.message) return say(result.message, 'bad');
     if (result.state === 'dismissed') return say(T.states.dismissed);
     say(T.states[NOTES[result.state] || 'error'], 'bad');
   };
