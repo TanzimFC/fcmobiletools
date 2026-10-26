@@ -13,7 +13,7 @@ async function boot({ ua = 'Mozilla/5.0 (Linux; Android 14)', permission = 'defa
       optIn: async () => { calls.optIn += 1; OS.User.PushSubscription.optedIn = true; OS.User.PushSubscription.id = '33333333-3333-4333-8333-333333333333'; },
       optOut: async () => { calls.optOut += 1; OS.User.PushSubscription.optedIn = false; },
       addEventListener() {} }, addTags: async (tags) => { calls.tags.push(tags); } },
-    init: async () => {},
+    init: async (options) => { calls.initOptions = options; },
   };
   class FakeNotification {
     static permission = permission;
