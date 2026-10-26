@@ -120,7 +120,13 @@ function loadSdk() {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (OneSignal) => {
       try {
-        await OneSignal.init({ appId: ONESIGNAL_APP_ID, serviceWorkerPath: SW_PATH, serviceWorkerParam: { scope: SW_SCOPE } });
+        await OneSignal.init({
+          appId: ONESIGNAL_APP_ID,
+          safari_web_id: ONESIGNAL_SAFARI_WEB_ID,
+          serviceWorkerPath: SW_PATH,
+          serviceWorkerParam: { scope: SW_SCOPE },
+          notifyButton: { enable: true },
+        });
         sdkBlocked = false;
         sdkState = null;
         sdkInstance = OneSignal;
