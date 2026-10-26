@@ -62,7 +62,7 @@ if (root && FC && T.card) {
     busy = false;
     if (!result.ok) {
       const key = result.state === 'dismissed' ? 'dismissed' : BLOCKED[result.state] || 'error';
-      render(); say(T.states[key], result.state === 'dismissed' ? '' : 'bad');
+      render(); say(result.message || T.states[key], result.state === 'dismissed' ? '' : 'bad');
       return;
     }
     render(); say(R.enabledToast, 'good');
