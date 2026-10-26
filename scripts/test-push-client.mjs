@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 let run = 0;
 async function boot({ ua = 'Mozilla/5.0 (Linux; Android 14)', permission = 'default', answer = 'granted', storage = {}, standalone = false, noPush = false, sdkFails = false, registerFails = false } = {}) {
   run += 1;
-  const calls = { posts: [], tags: [], optIn: 0, optOut: 0, permissionAsks: 0, sdkLoads: 0 };
+  const calls = { posts: [], tags: [], optIn: 0, optOut: 0, permissionAsks: 0, sdkLoads: 0, initOptions: null };
   const store = new Map(Object.entries(storage));
   const bus = new EventTarget();
   const OS = {
