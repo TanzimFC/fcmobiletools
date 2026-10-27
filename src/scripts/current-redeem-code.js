@@ -118,7 +118,7 @@ function renderSummary(summary) {
 
       const verified = active.lastVerified ? 'verified ' + formatDate(active.lastVerified) : 'verification date unavailable';
       const region = active.region || 'Global';
-      if (foot) foot.textContent = region + ' · ' + verified + ' · synced ' + synced;
+      if (foot) foot.textContent = region + ', ' + verified + ', synced ' + synced;
     } else {
       card.classList.remove('is-active');
       card.classList.add('is-none');
@@ -157,8 +157,8 @@ function renderSummary(summary) {
   const eventLatest = document.querySelector('[data-fcmt-code-latest]');
   if (eventLatest) {
     eventLatest.textContent = active?.code
-      ? 'Newest active: ' + active.code + ' · synced ' + synced + ' →'
-      : 'No active codes · View full list →';
+      ? 'Newest active: ' + active.code + ', synced ' + synced
+      : 'No active codes, view the full list';
   }
 }
 

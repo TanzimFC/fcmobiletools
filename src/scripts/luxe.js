@@ -160,7 +160,7 @@ if (!window.__fcmtLuxe) {
     const prog = Math.min(100, ((idx + frac) / (TIERS.length - 1)) * 100);
     const head = next
       ? `<span><b>${next.at - p.level}</b> level${next.at - p.level === 1 ? '' : 's'} to <b>${next.name}</b></span>`
-      : '<span><b>Max tier</b> — you are a Legend</span>';
+      : '<span><b>Max tier</b>: you are a Legend</span>';
     const rungs = TIERS.map((t, i) => `
       <div class="lx-rung ${i < idx ? 'done' : i === idx ? 'now' : ''}">
         <i>${t.icon}</i><small>${t.name}</small><em>Lv ${t.at}+</em>
@@ -333,7 +333,7 @@ if (!window.__fcmtLuxe) {
           window.fcToast('Player card saved', { type: 'gold' });
         }
       } catch (err) {
-        if (err?.name !== 'AbortError') window.fcToast('Could not create the card — try again', { type: 'error' });
+        if (err?.name !== 'AbortError') window.fcToast('Could not create the card. Try again', { type: 'error' });
       } finally { btn.disabled = false; }
     });
     const copy = $('#copyProfileUrlBtn', actions);

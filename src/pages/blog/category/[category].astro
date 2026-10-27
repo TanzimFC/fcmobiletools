@@ -24,12 +24,12 @@ const site = Astro.site ?? new URL('https://fcmobiletools.online');
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
-  name: page.label + ' — FC Mobile Articles',
+  name: page.label + ' | FC Mobile Articles',
   url: new URL('/blog/category/' + page.slug + '/', site).toString(),
   mainEntity: { '@type': 'ItemList', itemListElement: page.posts.slice(0, 20).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: new URL(p.href, site).toString(), name: p.title })) }
 };
 ---
-<BaseLayout title={page.label + ' — FC Mobile Articles'} description={'FC Mobile ' + page.label.toLowerCase() + ' from FCMOBILETOOLS. ' + page.blurb}>
+<BaseLayout title={page.label + ' | FC Mobile Articles'} description={'FC Mobile ' + page.label.toLowerCase() + ' from FCMOBILETOOLS. ' + page.blurb}>
 <script type="application/ld+json" set:html={JSON.stringify(schema)}></script>
 <main class="bl bl-category" style={'--bl-accent:' + page.accent}>
   <BlogEffects />

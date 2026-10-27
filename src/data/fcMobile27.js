@@ -6,7 +6,7 @@ export const FC_MOBILE_27 = {
   "releases": [
     {
       "id": "2026-09-24",
-      "title": "FC Mobile 27 — September 24, 2026 Season Update",
+      "title": "FC Mobile 27: September 24, 2026 Season Update",
       "version": "FC Mobile 27",
       "season": "Season 27",
       "buildLabel": "September 24, 2026 season update",
