@@ -61,12 +61,14 @@ const launchPost = posts.find((p) => p.slug === 'fc-mobile-27-launch-third-anniv
 const seasonHref = launchPost ? launchPost.href : '/fc-mobile-27';
 
 // Display strings (kept out of the template so the markup stays simple)
-const kicker = ['FC Mobile 27', FC.eventCountdown?.accent].filter(Boolean).join(' · ');
+// Filled in after the rows are decorated below.
 radarRows.forEach((r) => {
   r.isLive = r.start <= buildTime;
   r.sub = r.isLive ? 'Since ' + dayMonth(r.start) : dayMonth(r.start);
   r.initial = r.isLive ? 'Live' : dayMonth(r.start);
 });
+const liveNow = radarRows.find((r) => r.isLive && r.kind === 'event');
+const liveLine = liveNow ? `Live now: ${liveNow.title}` : 'FC Mobile 27 season';
 // Current redeem-code UI is hydrated by the shared live summary client.
 
 /* ───────────────────────── icons ───────────────────────── */
@@ -93,18 +95,30 @@ const svg = (name, extra = '') =>
   `<svg class="hx-i ${extra}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICON[name]}</svg>`;
 
 /* ───────────────────────── tools ───────────────────────── */
-const CYAN = '#4CC9FF', MINT = '#6EF0C2', AMBER = '#FFC36B', VIOLET = '#A99BFF';
+const GROUPS = [
+  { id: 'squad', title: 'Build your squad', note: 'Work out what an upgrade costs before you spend anything.' },
+  { id: 'earn', title: 'Earn and track', note: 'Keep an eye on coins, shards and event progress.' },
+  { id: 'live', title: 'Stay up to date', note: 'What is live in the game right now.' },
+];
 const tools = [
-  { href: '/redeem-codes', tag: 'Live', name: 'Redeem Codes', text: 'Every code with its reward, region and status, plus a direct route to official redemption.', icon: 'ticket', accent: MINT, size: 'hero' },
-  { href: '/team-ovr', tag: 'Calculator', name: 'Team OVR', text: 'Check your squad rating before you upgrade.', icon: 'ovr', accent: CYAN, size: 'sm' },
-  { href: '/training-calculator', tag: 'Calculator', name: 'Training Calculator', text: 'Plan XP, fodder and training levels.', icon: 'bolt', accent: CYAN, size: 'sm' },
-  { href: '/rank-up-calculator', tag: 'Calculator', name: 'Rank Up Calculator', text: 'Compare Rank Up costs and OVR gains.', icon: 'rank', accent: CYAN, size: 'sm' },
-  { href: '/gauntlet-planner', tag: 'Planner', name: 'Gauntlet Planner', text: 'Plan rotations and player availability.', icon: 'shuffle', accent: VIOLET, size: 'sm' },
-  { href: '/investment-calculator', tag: 'Calculator', name: 'Investment Calculator', text: 'Calculate market tax, net profit and break-even prices.', icon: 'pulse', accent: AMBER, size: 'sm' },
-  { href: '/shards-counter', tag: 'Tracker', name: 'Shards Counter', text: 'Track your Star Shards balance and progress toward a reward.', icon: 'star', accent: MINT, size: 'sm' },
-  { href: '/trivia/', tag: 'Trivia Answers', name: 'Trivia', text: "Season Recap and A Nation's Story answers: search any question, then practice.", icon: 'book', accent: VIOLET, size: 'sm' },
-  { href: '/football-centre', tag: 'Tracker', name: 'Football Centre', text: 'Showdown results, points progress and event resources in one live hub.', icon: 'pulse', accent: MINT, size: 'wide' },
-  { href: '/fc-mobile-27', tag: 'Season 27', name: 'FC Mobile 27', text: 'Update hub with features, install guide and coverage.', icon: 'star', accent: AMBER, size: 'sm' },
+  { group: 'squad', href: '/team-ovr', name: 'Team OVR Calculator', text: 'See your squad rating and what the next point costs.' },
+  { group: 'squad', href: '/training-calculator', name: 'Training Calculator', text: 'Plan the XP and fodder to reach a training level.' },
+  { group: 'squad', href: '/rank-up-calculator', name: 'Rank Up Calculator', text: 'Compare Rank Up costs with the OVR you gain.' },
+  { group: 'squad', href: '/gauntlet-planner', name: 'Gauntlet Planner', text: 'Plan player rotations for Gauntlet Mode.' },
+  { group: 'earn', href: '/investment-calculator', name: 'Investment Calculator', text: 'Work out market tax, profit and break-even prices.' },
+  { group: 'earn', href: '/shards-counter', name: 'Shards Counter', text: 'Track Star Shards toward the reward you want.' },
+  { group: 'earn', href: '/football-centre', name: 'Football Centre', text: 'Showdown results and event progress in one place.' },
+  { group: 'live', href: '/redeem-codes', name: 'Redeem Codes', text: 'Every code with its reward, region and status.' },
+  { group: 'live', href: '/trivia/', name: 'Trivia answers', text: 'Search any Season Recap or A Nation\'s Story question.' },
+  { group: 'live', href: '/fc-mobile-27', name: 'FC Mobile 27 hub', text: 'Season 27 features, install guide and coverage.' },
+];
+
+// The beginner path: four things people actually come here to do.
+const START = [
+  { href: '/redeem-codes', title: 'Get a free redeem code', text: 'Copy the newest working code and redeem it in the game.' },
+  { href: '/events', title: 'See what is live in the game', text: 'Event dates, the daily reset and countdowns.' },
+  { href: '/team-ovr', title: 'Plan an upgrade for my squad', text: 'Start with the Team OVR calculator, then move on to training.' },
+  { href: '/giveaways', title: 'Win a free reward', text: 'Free to enter. Every winner is checked by a person.' },
 ];
 
 /* ───────────────────────── FAQ (single source for page + JSON-LD) ───────────────────────── */
@@ -142,218 +156,193 @@ const jsonLd = {
 
   <main class="hx" id="main">
 
-    <!-- ═════════════ HERO ═════════════ -->
+    <!-- Hero: same artwork as before, calmer type -->
     <section class="hx-hero" aria-labelledby="hx-h1">
       <picture class="hx-hero__img" aria-hidden="true">
         <source media="(max-width: 700px)" srcset="/assets/images/hero-home-mobile.webp" type="image/webp" />
         <img src="/assets/images/hero-home.webp" alt="" width="1918" height="820" fetchpriority="high" decoding="async" />
       </picture>
       <div class="hx-hero__shade" aria-hidden="true"></div>
-      <div class="hx-hero__grid" aria-hidden="true"></div>
 
       <div class="hx-wrap hx-hero__inner">
-        <p class="hx-kicker hx-in" style="--d:.05s">
-          <span class="hx-live"><i></i>Live</span>
-          <span>{kicker}</span>
-        </p>
+        <p class="hx-status"><span class="hx-dot" aria-hidden="true"></span>{liveLine}</p>
+        <h1 id="hx-h1" class="hx-h1">Everything useful starts here</h1>
+        <p class="hx-sub">Free redeem codes, live event countdowns, calculators and guides for FC Mobile 27.</p>
 
-        <h1 id="hx-h1" class="hx-h1">
-          <span class="hx-in" style="--d:.12s">FC MOBILE TOOLS</span>
-          <span class="hx-in hx-grad" style="--d:.2s">FOR SQUAD BUILDING, EVENTS &amp; UPGRADES</span>
-        </h1>
-
-        <p class="hx-lead hx-in" style="--d:.3s">Everything useful starts here.</p>
-        <p class="hx-supporting hx-in" style="--d:.34s">
-          Live countdowns, redeem codes, calculators and guides for FC Mobile 27. Everything you check before you play, in one place.
-        </p>
-
-        <div class="hx-actions hx-in" style="--d:.38s">
-          <a class="hx-btn hx-btn--primary" href="/redeem-codes"><span>Check redeem codes</span><span set:html={svg('arrow')} /></a>
+        <div class="hx-actions">
+          <a class="hx-btn hx-btn--primary" href="/redeem-codes"><span>Get today's redeem code</span><span set:html={svg('arrow')} /></a>
           <a class="hx-btn hx-btn--ghost" href="/events"><span>See live events</span></a>
         </div>
 
-        <ul class="hx-proof hx-in" style="--d:.46s" aria-label="Site at a glance">
-          <li><b>{tools.length}</b> tools &amp; planners</li>
-          <li><b>{posts.length}</b> guides &amp; updates</li>
-          <li data-fcmt-code-proof>Live code status loading</li>
+        <ul class="hx-proof" aria-label="Site at a glance">
+          <li><b>{tools.length}</b> tools</li>
+          <li><b>{posts.length}</b> guides and updates</li>
+          <li data-fcmt-code-proof>Checking code status</li>
         </ul>
       </div>
     </section>
 
-    <!-- ═════════════ LIVE CONSOLE ═════════════ -->
-    <section class="hx-console" aria-label="Live status">
-      <div class="hx-wrap hx-console__grid">
+    <!-- Live board: reset clock, event radar, current code -->
+    <section class="hx-board" aria-label="Live status">
+      <div class="hx-wrap">
+        <div class="hx-board__grid">
 
-        <!-- Reset -->
-        <article class="hx-panel hx-reset hx-reveal" style="--i:0">
-          <header class="hx-panel__head">
-            <span class="hx-label"><span set:html={svg('clock')} />Next daily reset</span>
-            <span class="hx-chip" data-hx-tz>Local time</span>
-          </header>
-          <div class="hx-clock" role="timer" aria-label="Time until next daily reset">
-            <span data-hx-h>--</span><i>:</i><span data-hx-m>--</span><i>:</i><span data-hx-s>--</span>
-          </div>
-          <div class="hx-bar" aria-hidden="true"><span data-hx-bar></span></div>
-          <footer class="hx-panel__foot">
-            <span>Your time <b data-hx-local>--:--</b></span>
-            <span>{resetLabel}</span>
-          </footer>
-        </article>
+          <article class="hx-cell hx-reset">
+            <header class="hx-cell__head">
+              <span class="hx-label"><span set:html={svg('clock')} />Next daily reset</span>
+              <span class="hx-chip" data-hx-tz>Local time</span>
+            </header>
+            <div class="hx-clock" role="timer" aria-label="Time until next daily reset">
+              <span data-hx-h>--</span><i>:</i><span data-hx-m>--</span><i>:</i><span data-hx-s>--</span>
+            </div>
+            <div class="hx-bar" aria-hidden="true"><span data-hx-bar></span></div>
+            <footer class="hx-cell__foot">
+              <span>Your time <b data-hx-local>--:--</b></span>
+              <span>{resetLabel}</span>
+            </footer>
+          </article>
 
-        <!-- Event radar -->
-        <article class="hx-panel hx-radar hx-reveal" style="--i:1">
-          <header class="hx-panel__head">
-            <span class="hx-label"><span set:html={svg('calendar')} />Event radar</span>
-            <a class="hx-textlink" href="/events">All events <span set:html={svg('arrow')} /></a>
-          </header>
-          <ul class="hx-radar__list">
-            {radarRows.map((r) => (
-              <li>
-                <a href="/events" class:list={['hx-row', r.isLive && 'is-live']} data-hx-ts={r.start} data-hx-kind={r.kind}>
-                  <span class="hx-row__dot" aria-hidden="true"></span>
-                  <span class="hx-row__main">
-                    <b>{r.title}</b>
-                    <small>{r.sub}</small>
-                  </span>
-                  <span class="hx-row__cd" data-hx-cd>{r.initial}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </article>
+          <article class="hx-cell hx-radar">
+            <header class="hx-cell__head">
+              <span class="hx-label"><span set:html={svg('calendar')} />Event radar</span>
+              <a class="hx-textlink" href="/events">All events <span set:html={svg('arrow')} /></a>
+            </header>
+            <ul class="hx-radar__list">
+              {radarRows.slice(0, 4).map((r) => (
+                <li>
+                  <a href="/events" class:list={['hx-row', r.isLive && 'is-live']} data-hx-ts={r.start} data-hx-kind={r.kind}>
+                    <span class="hx-row__dot" aria-hidden="true"></span>
+                    <span class="hx-row__main">
+                      <b>{r.title}</b>
+                      <small>{r.sub}</small>
+                    </span>
+                    <span class="hx-row__cd" data-hx-cd>{r.initial}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </article>
 
-        <!-- Redeem code -->
-        <article class="hx-panel hx-code hx-reveal is-none" style="--i:2" data-fcmt-current-code>
-          <header class="hx-panel__head">
-            <span class="hx-label"><span set:html={svg('ticket')} />Redeem code</span>
-            <span class="hx-chip hx-chip--status" data-fcmt-code-status>Live status loading</span>
-          </header>
-
-          <div class="hx-code__body" data-fcmt-code-body>
-            <p class="hx-code__none">Current code status is loading.</p>
-            <p class="hx-code__reward">Check the full list for current rewards, regions and expiry dates.</p>
-            <a class="hx-textlink" href="/redeem-codes/">Open full code list →</a>
-          </div>
-
-          <footer class="hx-panel__foot">
-            <span data-fcmt-code-foot>Live data from the Redeem Codes page</span>
-            <a class="hx-textlink" href="/redeem-codes/">Open codes <span set:html={svg('arrow')} /></a>
-          </footer>
-        </article>
+          <article class="hx-cell hx-code is-none" data-fcmt-current-code>
+            <header class="hx-cell__head">
+              <span class="hx-label"><span set:html={svg('ticket')} />Redeem code</span>
+              <span class="hx-chip hx-chip--status" data-fcmt-code-status>Checking</span>
+            </header>
+            <div class="hx-code__body" data-fcmt-code-body>
+              <p class="hx-code__none">Checking the current code.</p>
+              <p class="hx-code__reward">The full list shows every code with its reward, region and expiry date.</p>
+              <a class="hx-textlink" href="/redeem-codes/">Open the full list <span set:html={svg('arrow')} /></a>
+            </div>
+            <footer class="hx-cell__foot">
+              <span data-fcmt-code-foot>Live data from the Redeem Codes page</span>
+            </footer>
+          </article>
+        </div>
       </div>
     </section>
 
-    <!-- ═════════════ TOOLKIT ═════════════ -->
-    <section class="hx-section" id="tools" aria-labelledby="hx-tools-h">
+    <!-- Beginner path -->
+    <section class="hx-section" id="start" aria-labelledby="hx-start-h">
       <div class="hx-wrap">
-        <header class="hx-head hx-reveal">
-          <div>
-            <span class="hx-eyebrow">The toolkit</span>
-            <h2 id="hx-tools-h">Use the tool you need <span class="hx-grad">next.</span></h2>
-          </div>
-          <p>Built around real FC Mobile decisions, from squad building to event progress.</p>
+        <header class="hx-section__head">
+          <h2 id="hx-start-h">New here? Start with what you want to do</h2>
+          <p>Pick one. Each page explains itself on the first screen, and you can come back for the rest.</p>
         </header>
+        <ol class="hx-start">
+          {START.map((s, i) => (
+            <li>
+              <a href={s.href}>
+                <span class="hx-start__n" aria-hidden="true">{i + 1}</span>
+                <span class="hx-start__text"><b>{s.title}</b><small>{s.text}</small></span>
+                <span class="hx-start__go" aria-hidden="true" set:html={svg('arrow')} />
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
 
-        <div class="hx-bento" data-hx-bento>
-          {tools.map((t, i) => (
-            <a class={`hx-tile hx-tile--${t.size} hx-reveal`} style={`--a:${t.accent};--ar:${rgb(t.accent)};--i:${i % 4}`} href={t.href}>
-              <span class="hx-tile__glow" aria-hidden="true"></span>
-              <span class="hx-tile__mark" aria-hidden="true" set:html={svg(t.icon)} />
-              <span class="hx-tile__top">
-                <span class="hx-tile__ico" aria-hidden="true" set:html={svg(t.icon)} />
-                <span class="hx-tile__tag">{t.tag}</span>
-              </span>
-
-              {t.size === 'hero' && (
-                <span class="hx-recent" aria-hidden="true" data-fcmt-code-recent>
-                  <span class="hx-recent__row"><b>Current codes</b><i>Open the live list</i><em>View all</em></span>
-                </span>
-              )}
-
-              {t.size === 'hero' && (
-                <span class="hx-tile__stats" aria-hidden="true">
-                  <span><b data-fcmt-code-total>—</b>codes tracked</span>
-                  <span><b data-fcmt-code-active>—</b>active now</span>
-                  <span><b data-fcmt-code-sync-value>—</b>data synced</span>
-                </span>
-              )}
-
-              <span class="hx-tile__body">
-                <h3>{t.name}</h3>
-                <p>{t.text}</p>
-              </span>
-              <span class="hx-tile__go" aria-hidden="true" set:html={svg('arrow')} />
-            </a>
+    <!-- All tools, grouped by purpose -->
+    <section class="hx-section hx-section--tight" id="tools" aria-labelledby="hx-tools-h">
+      <div class="hx-wrap">
+        <header class="hx-section__head">
+          <h2 id="hx-tools-h">Every tool, grouped by what it helps you do</h2>
+        </header>
+        <div class="hx-groups">
+          {GROUPS.map((g) => (
+            <section class="hx-group" aria-labelledby={`hx-g-${g.id}`}>
+              <h3 id={`hx-g-${g.id}`}>{g.title}</h3>
+              <p>{g.note}</p>
+              <ul>
+                {tools.filter((t) => t.group === g.id).map((t) => (
+                  <li>
+                    <a href={t.href}>
+                      <b>{t.name}</b>
+                      <small>{t.text}</small>
+                      <span class="hx-group__go" aria-hidden="true" set:html={svg('arrow')} />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
         </div>
       </div>
     </section>
 
-    <!-- ═════════════ SEASON 27 ═════════════ -->
+    <!-- Season 27 -->
     <section class="hx-section" aria-labelledby="hx-s27-h">
       <div class="hx-wrap">
-        <div class="hx-season hx-reveal">
-          <div class="hx-season__glow" aria-hidden="true"></div>
+        <div class="hx-season">
           <img class="hx-season__art" src="/assets/images/hero-striker.webp" alt="" width="900" height="711" loading="lazy" decoding="async" />
-
           <div class="hx-season__copy">
-            <span class="hx-eyebrow">Season 27 briefing</span>
-            <h2 id="hx-s27-h">FC&nbsp;Mobile&nbsp;27 <span class="hx-grad">is&nbsp;live.</span></h2>
-            <p>The third-anniversary season landed on 24 September with Game Plans, Gauntlet Mode, PlayStyles and major optimizations, and it keeps your existing club instead of wiping it.</p>
-            <ul class="hx-pills" aria-label="What's new in FC Mobile 27">
-              <li>Game Plans</li><li>Gauntlet Mode</li><li>PlayStyles</li><li>Optimizations</li>
-            </ul>
+            <h2 id="hx-s27-h">FC Mobile 27 is live</h2>
+            <p>The third-anniversary season landed on 24 September with Game Plans, Gauntlet Mode, PlayStyles and major optimizations. It keeps your existing club instead of wiping it.</p>
+            {gift && (
+              <aside class="hx-gift" aria-label={gift.title}>
+                <span class="hx-label"><span set:html={svg('gift')} />{gift.title}</span>
+                <ul>
+                  {(gift.items ?? []).map((item) => <li><span set:html={svg('check')} />{item}</li>)}
+                </ul>
+                {gift.note && <small>{gift.note}</small>}
+              </aside>
+            )}
             <div class="hx-actions">
               <a class="hx-btn hx-btn--primary" href={seasonHref}><span>Read the launch guide</span><span set:html={svg('arrow')} /></a>
               <a class="hx-btn hx-btn--ghost" href="/fc-mobile-27"><span>Update hub</span></a>
             </div>
           </div>
-
-          {gift && (
-            <aside class="hx-gift" aria-label={gift.title}>
-              <span class="hx-label"><span set:html={svg('gift')} />{gift.title}</span>
-              <ul>
-                {(gift.items ?? []).map((item) => <li><span set:html={svg('check')} />{item}</li>)}
-              </ul>
-              <small>{gift.note}</small>
-            </aside>
-          )}
         </div>
       </div>
     </section>
 
-    <!-- ═════════════ EDITORIAL ═════════════ -->
-    <section class="hx-section" aria-labelledby="hx-news-h">
+    <!-- Latest articles -->
+    <section class="hx-section hx-section--tight" aria-labelledby="hx-news-h">
       <div class="hx-wrap">
-        <header class="hx-head hx-reveal">
-          <div>
-            <span class="hx-eyebrow">The editorial desk</span>
-            <h2 id="hx-news-h">What's <span class="hx-grad">new.</span></h2>
-          </div>
+        <header class="hx-section__head hx-section__head--row">
+          <h2 id="hx-news-h">Latest articles</h2>
           <a class="hx-textlink hx-textlink--lg" href="/blog">All articles <span set:html={svg('arrow')} /></a>
         </header>
 
         {latest.length ? (
           <div class="hx-news">
-            <a class="hx-feature hx-reveal" href={latest[0].href} style={`--a:${latest[0].section.accent};--ar:${rgb(latest[0].section.accent)}`}>
+            <a class="hx-feature" href={latest[0].href}>
               <span class="hx-feature__media">
                 {latest[0].cover
                   ? <img src={img(latest[0].cover, 1100)} alt={latest[0].imageAlt || ''} width="1100" height="619" loading="lazy" decoding="async" />
                   : <span class="hx-feature__ph">FCM</span>}
-                <span class="hx-feature__badge">Featured</span>
               </span>
               <span class="hx-feature__body">
                 <span class="hx-meta"><b>{latest[0].section.label}</b>{latest[0].date && <time datetime={iso(latest[0].date)}>{fmtDate(latest[0].date, 'medium')}</time>}<span>{latest[0].minutes} min read</span></span>
                 <h3>{latest[0].title}</h3>
                 <p>{latest[0].excerpt}</p>
-                <span class="hx-textlink">Read article <span set:html={svg('arrow')} /></span>
               </span>
             </a>
 
             <ul class="hx-list">
-              {latest.slice(1).map((p, i) => (
-                <li class="hx-reveal" style={`--i:${i}`}>
-                  <a class="hx-item" href={p.href} style={`--a:${p.section.accent};--ar:${rgb(p.section.accent)}`}>
+              {latest.slice(1).map((p) => (
+                <li>
+                  <a class="hx-item" href={p.href}>
                     <span class="hx-item__media">
                       {p.cover ? <img src={img(p.cover, 360)} alt="" width="360" height="240" loading="lazy" decoding="async" /> : <span>FCM</span>}
                     </span>
@@ -372,17 +361,15 @@ const jsonLd = {
       </div>
     </section>
 
-    <!-- ═════════════ FAQ ═════════════ -->
+    <!-- FAQ -->
     <section class="hx-section" aria-labelledby="hx-faq-h">
       <div class="hx-wrap hx-faq">
-        <div class="hx-faq__lead hx-reveal">
-          <span class="hx-eyebrow">Quick answers</span>
-          <h2 id="hx-faq-h">Less hunting, <span class="hx-grad">more playing.</span></h2>
-          <p>FCMOBILETOOLS puts the useful parts of FC Mobile in one place so you can get an answer and get back to the game.</p>
+        <div class="hx-faq__lead">
+          <h2 id="hx-faq-h">Quick answers</h2>
+          <p>The short version of what this site is and how to use it.</p>
           <a class="hx-textlink hx-textlink--lg" href="/legal/about">About FCMOBILETOOLS <span set:html={svg('arrow')} /></a>
         </div>
-
-        <div class="hx-faq__list hx-reveal" style="--i:1">
+        <div class="hx-faq__list">
           {faqs.map((f, i) => (
             <details name="hx-faq" open={i === 0}>
               <summary><span>{f.q}</span><i aria-hidden="true"></i></summary>
@@ -393,14 +380,13 @@ const jsonLd = {
       </div>
     </section>
 
-    <!-- ═════════════ CREATOR / COMMUNITY ═════════════ -->
+    <!-- Creator -->
     <section class="hx-section hx-section--last" aria-labelledby="hx-cta-h">
       <div class="hx-wrap">
-        <div class="hx-cta hx-reveal">
+        <div class="hx-cta">
           <img class="hx-cta__logo" src="/assets/images/creator-tf.webp" alt="TanzimFC logo" width="481" height="512" loading="lazy" decoding="async" />
           <div class="hx-cta__copy">
-            <span class="hx-eyebrow">Built by TanzimFC</span>
-            <h2 id="hx-cta-h">Made by a player, <span class="hx-grad">for players.</span></h2>
+            <h2 id="hx-cta-h">Made by a player, for players</h2>
             <p>New tools, trackers and guides land as FC Mobile changes. Follow along and tell us what to build next.</p>
           </div>
           <div class="hx-cta__links">
@@ -413,9 +399,9 @@ const jsonLd = {
     </section>
 
     <script type="application/json" id="fcmt-current-redeem-bootstrap" is:inline set:html={safeScriptJson(DEV_REDEEM_SUMMARY)}></script>
-        <script>import '../scripts/current-redeem-code.js';</script>
+    <script>import '../scripts/current-redeem-code.js';</script>
 
-        <script define:vars={{ resetH, resetM }}>
+    <script define:vars={{ resetH, resetM }}>
 (() => {
   const root = document.querySelector('.hx');
   if (!root) return;
@@ -498,7 +484,7 @@ const jsonLd = {
       if (r.ts <= now) {
         r.row.classList.add('is-live');
         const day = Math.floor((now - r.ts) / DAY) + 1;
-        r.out.textContent = r.row.dataset.hxKind === 'reset' ? 'Now' : `Live · Day ${day}`;
+        r.out.textContent = r.row.dataset.hxKind === 'reset' ? 'Now' : `Live, day ${day}`;
       } else {
         r.out.textContent = fmtLeft(r.ts - now);
       }
@@ -550,18 +536,6 @@ const jsonLd = {
     });
   }
 
-  /* ── tile spotlight (pointer devices only) ── */
-  const bento = root.querySelector('[data-hx-bento]');
-  if (bento && !reduce && matchMedia('(hover: hover)').matches) {
-    bento.addEventListener('pointermove', (e) => {
-      const tile = e.target.closest('.hx-tile');
-      if (!tile) return;
-      const b = tile.getBoundingClientRect();
-      tile.style.setProperty('--mx', `${e.clientX - b.left}px`);
-      tile.style.setProperty('--my', `${e.clientY - b.top}px`);
-    }, { passive: true });
-  }
-
   /* ── scroll reveals (content stays visible if JS or IO is unavailable) ── */
   const items = root.querySelectorAll('.hx-reveal');
   if (reduce || !('IntersectionObserver' in window)) {
@@ -582,338 +556,184 @@ const jsonLd = {
 </BaseLayout>
 
 <style is:global>
-  /* ════════════════════════════════════════════════════════════
-     HOMEPAGE — "Matchday Control Room"
-     Everything is namespaced hx-* and scoped under .hx.
-     ════════════════════════════════════════════════════════════ */
-  .hx {
-    --bg: #06111a;
-    --glass: rgba(255, 255, 255, .035);
-    --glass-2: rgba(255, 255, 255, .06);
-    --line: rgba(150, 205, 230, .14);
-    --text: #eef8fc;
-    --soft: #b6c8d2;
-    --muted: #8aa0ad;
-    --cyan: #4cc9ff;
-    --cyan-soft: #8be0ff;
-    --mint: #6ef0c2;
-    --amber: #ffc36b;
-    --violet: #a99bff;
-    --display: "Space Grotesk", var(--font-display, system-ui), system-ui, sans-serif;
-    --body: "Inter", var(--font-body, system-ui), system-ui, sans-serif;
-    --ease: cubic-bezier(.2, .8, .2, 1);
-    position: relative;
-    overflow: clip;
-    color: var(--text);
-    font-family: var(--body);
-    background:
-      radial-gradient(1000px 600px at 90% 38%, rgba(76, 201, 255, .06), transparent 70%),
-      radial-gradient(900px 600px at 0% 62%, rgba(110, 240, 194, .04), transparent 70%),
-      var(--bg);
-  }
-  .hx, .hx *, .hx *::before, .hx *::after { box-sizing: border-box; }
-  .hx :where(h1, h2, h3, p, ul) { margin: 0; padding: 0; }
-  .hx :where(ul) { list-style: none; }
-  .hx :where(a) { color: inherit; text-decoration: none; }
-  .hx :where(img) { max-width: 100%; }
-  .hx h1, .hx h2, .hx h3 { font-family: var(--display); color: var(--text); font-weight: 700; }
-  .hx :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
-  .hx-wrap { width: min(1200px, calc(100% - 48px)); margin-inline: auto; }
-  .hx-i { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-  .hx-grad { background: linear-gradient(100deg, #4cc9ff 0%, #6ef0c2 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hx { --hx-ease: cubic-bezier(.2, .7, .2, 1); color: var(--text); }
+  .hx-wrap { width: min(var(--content-width), calc(100% - 40px)); margin-inline: auto; }
+  .hx-i { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-  /* ───────── buttons / links ───────── */
-  .hx-btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; height: 54px; padding: 0 22px; border: 1px solid transparent; border-radius: 16px; font: 700 15px/1 var(--body); white-space: nowrap; transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s, border-color .25s; }
-  .hx-btn .hx-i { font-size: 18px; transition: transform .25s var(--ease); }
-  .hx-btn:hover .hx-i { transform: translate(2px, -2px); }
-  .hx-btn--primary { color: #04202b; background: linear-gradient(110deg, #4cc9ff, #6ef0c2); box-shadow: 0 16px 40px -12px rgba(76, 201, 255, .6), inset 0 1px 0 rgba(255, 255, 255, .4); }
-  .hx-btn--primary:hover { transform: translateY(-2px); box-shadow: 0 22px 50px -12px rgba(76, 201, 255, .75), inset 0 1px 0 rgba(255, 255, 255, .4); }
-  .hx-btn--ghost { color: var(--text); background: rgba(255, 255, 255, .05); border-color: var(--line); backdrop-filter: blur(14px); }
-  .hx-btn--ghost:hover { transform: translateY(-2px); border-color: rgba(76, 201, 255, .5); background: rgba(76, 201, 255, .08); }
-  .hx-textlink { display: inline-flex; align-items: center; gap: 6px; color: var(--cyan-soft); font: 600 14px/1 var(--body); }
-  .hx-textlink .hx-i { font-size: 16px; transition: transform .2s var(--ease); }
-  .hx-textlink:hover .hx-i, a:hover > .hx-textlink .hx-i, a:hover .hx-textlink .hx-i { transform: translate(2px, -2px); }
+  /* Hero */
+  .hx-hero { position: relative; isolation: isolate; display: flex; align-items: center; min-height: clamp(620px, 88svh, 820px); padding: 150px 0 140px; overflow: hidden; }
+  .hx-hero__img { position: absolute; inset: 0; z-index: -2; background: #07131c; }
+  .hx-hero__img img { width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 88% 35%; }
+  .hx-hero__shade { position: absolute; inset: 0; z-index: -1;
+    background:
+      linear-gradient(90deg, rgba(6, 17, 26, .96) 0%, rgba(6, 17, 26, .84) 26%, rgba(6, 17, 26, .4) 52%, rgba(6, 17, 26, .06) 76%, rgba(6, 17, 26, 0) 100%),
+      linear-gradient(180deg, rgba(6, 17, 26, .55) 0%, rgba(6, 17, 26, 0) 24%, rgba(6, 17, 26, 0) 62%, var(--bg) 100%); }
+  .hx-hero__inner { position: relative; }
+  .hx-status { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 22px; font: 600 14px/1 var(--font-body); color: var(--muted-strong); }
+  .hx-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px rgba(71, 209, 108, .18); }
+  .hx-h1 { margin: 0 0 20px; max-width: 14em; font-size: clamp(42px, 6.6vw, 88px); line-height: .98; letter-spacing: -.035em; color: #fff; }
+  .hx-sub { margin: 0; max-width: 34em; font-size: clamp(17px, 1.7vw, 20px); line-height: 1.55; color: var(--muted-strong); }
+  .hx-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .hx-proof { display: flex; flex-wrap: wrap; gap: 6px 24px; list-style: none; margin: 30px 0 0; padding: 0; font-size: 14px; color: var(--muted); }
+  .hx-proof b { color: var(--text); font-weight: 700; margin-right: 4px; }
+
+  /* Buttons */
+  .hx-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 20px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: rgba(8, 12, 17, .5); color: var(--text); font: 600 15px/1 var(--font-body); text-decoration: none; transition: background .15s, border-color .15s; }
+  .hx-btn:hover { background: var(--surface2); border-color: #3d4e60; }
+  .hx-btn--primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+  .hx-btn--primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  .hx-btn .hx-i { width: 16px; height: 16px; }
+
+  /* Live board */
+  .hx-board { position: relative; z-index: 2; margin-top: -76px; }
+  .hx-board__grid { display: grid; grid-template-columns: 1fr 1.3fr 1fr; border: 1px solid var(--line-strong); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; box-shadow: var(--shadow-md); }
+  .hx-cell { display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 22px 24px; }
+  .hx-cell + .hx-cell { border-left: 1px solid var(--line); }
+  .hx-cell__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; font: 600 13px/1 var(--font-body); color: var(--muted); }
+  .hx-label { display: inline-flex; align-items: center; gap: 8px; }
+  .hx-label .hx-i { width: 16px; height: 16px; color: var(--dim); }
+  .hx-chip { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line-strong); font: 600 12px/1 var(--font-body); color: var(--muted-strong); white-space: nowrap; }
+  .hx-clock { display: flex; align-items: baseline; gap: 4px; font: 700 clamp(38px, 4vw, 52px)/1 var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .hx-clock i { font-style: normal; color: var(--dim); }
+  .hx-bar { height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .hx-bar span { display: block; height: 100%; background: var(--primary); transform-origin: left; transform: scaleX(0); }
+  .hx-cell__foot { display: flex; justify-content: space-between; gap: 12px; margin-top: auto; font-size: 13px; color: var(--dim); }
+  .hx-cell__foot b { color: var(--muted-strong); font-weight: 600; }
+
+  .hx-radar__list { list-style: none; margin: 0; padding: 0; }
+  .hx-row { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); color: inherit; text-decoration: none; }
+  .hx-radar__list li:first-child .hx-row { border-top: 0; padding-top: 2px; }
+  .hx-row__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+  .hx-row.is-live .hx-row__dot { background: var(--success); }
+  .hx-row__main b { display: block; font-weight: 600; font-size: 15px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hx-row__main small { font-size: 13px; color: var(--dim); }
+  .hx-row__cd { font: 600 14px/1 var(--font-body); font-variant-numeric: tabular-nums; color: var(--muted-strong); white-space: nowrap; }
+  .hx-row:hover .hx-row__main b { color: var(--primary); }
+
+  .hx-code__body { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .hx-code__none { margin: 0; font-weight: 600; }
+  .hx-code__reward { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .hx-copy { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: var(--r-md); background: var(--surface2); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+  .hx-copy strong { font: 700 clamp(15px, 1.5vw, 18px)/1.2 var(--font-display); letter-spacing: .02em; overflow-wrap: anywhere; }
+  .hx-copy__act em { font: 600 13px/1 var(--font-body); font-style: normal; color: var(--primary); }
+  .hx-copy:hover { border-color: var(--primary); }
+  .hx-copy.is-copied { border-color: var(--success); }
+  .hx-copy.is-copied .hx-copy__act em { color: var(--success); }
+  .hx-copy:disabled { opacity: .5; cursor: not-allowed; }
+  .hx-code.is-active .hx-chip--status { color: var(--success); border-color: rgba(71, 209, 108, .4); }
+  .hx-code.is-expired .hx-chip--status { color: var(--danger); border-color: rgba(255, 112, 112, .4); }
+
+  .hx-textlink { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font: 600 14px/1.2 var(--font-body); text-decoration: none; }
+  .hx-textlink .hx-i { width: 14px; height: 14px; }
+  .hx-textlink:hover { color: var(--primary-hover); }
   .hx-textlink--lg { font-size: 15px; }
 
-  /* ───────── HERO ───────── */
-  .hx-hero { position: relative; isolation: isolate; display: flex; align-items: center; min-height: clamp(660px, 90svh, 880px); padding: 140px 0 190px; overflow: hidden; }
-  .hx-hero__img { position: absolute; inset: 0; z-index: -3; background: #07131c; }
-  .hx-hero__img img { width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 88% 35%; animation: hxImg 1.8s var(--ease) both; }
-  .hx-hero__shade { position: absolute; inset: 0; z-index: -2;
-    background:
-      linear-gradient(90deg, rgba(6, 17, 26, .96) 0%, rgba(6, 17, 26, .86) 24%, rgba(6, 17, 26, .46) 50%, rgba(6, 17, 26, .08) 74%, rgba(6, 17, 26, 0) 100%),
-      linear-gradient(180deg, rgba(6, 17, 26, .6) 0%, rgba(6, 17, 26, 0) 24%, rgba(6, 17, 26, 0) 58%, var(--bg) 100%); }
-  .hx-hero__grid { position: absolute; inset: 0; z-index: -1; opacity: .5; pointer-events: none;
-    background-image: linear-gradient(rgba(190, 230, 245, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(190, 230, 245, .05) 1px, transparent 1px);
-    background-size: 96px 96px; -webkit-mask-image: radial-gradient(ellipse 60% 70% at 15% 40%, #000, transparent 75%); mask-image: radial-gradient(ellipse 60% 70% at 15% 40%, #000, transparent 75%); }
-  .hx-hero__inner { position: relative; }
-  .hx-kicker { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font: 600 12.5px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
-  .hx-live { display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid rgba(110, 240, 194, .3); border-radius: 99px; background: rgba(110, 240, 194, .09); color: var(--mint); }
-  .hx-live i, .hx-row.is-live .hx-row__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 0 rgba(110, 240, 194, .6); animation: hxPulse 2s ease-out infinite; }
-  .hx-h1 { margin-top: 26px; max-width: 18ch; font-size: clamp(48px, 7.4vw, 100px); line-height: .96; letter-spacing: -.042em; }
-  .hx-h1 > span { display: block; padding-bottom: .06em; }
-  .hx h1, .hx h3 { text-wrap: balance; }
-  .hx-lead { max-width: 560px; margin-top: 26px; color: var(--soft); font: 600 clamp(17px, 1.65vw, 21px)/1.4 var(--display); }
-   .hx-supporting { max-width: 560px; margin-top: 8px; color: var(--soft); font: 400 clamp(15px, 1.3vw, 17px)/1.65 var(--body); }
-  .hx-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
-  .hx-proof { display: flex; flex-wrap: wrap; gap: 10px 0; margin-top: 36px; color: var(--muted); font: 500 14px/1 var(--body); }
-  .hx-proof li { display: inline-flex; align-items: center; gap: 7px; }
-  .hx-proof li + li::before { content: ""; width: 4px; height: 4px; margin: 0 16px; border-radius: 50%; background: rgba(139, 224, 255, .5); }
-  .hx-proof b { color: var(--text); font: 700 15px/1 var(--display); }
+  /* Sections */
+  .hx-section { padding: var(--section-y) 0; }
+  .hx-section--tight { padding-top: 0; }
+  .hx-section--last { padding-bottom: clamp(72px, 10vw, 120px); }
+  .hx-section__head { max-width: 40em; margin-bottom: 36px; }
+  .hx-section__head h2 { margin: 0 0 12px; }
+  .hx-section__head p { margin: 0; color: var(--muted); font-size: 17px; }
+  .hx-section__head--row { display: flex; align-items: end; justify-content: space-between; gap: 20px; max-width: none; }
+  .hx-section__head--row h2 { margin: 0; }
 
-  .hx-in { animation: hxIn .9s var(--ease) var(--d, 0s) backwards; }
+  /* Beginner path */
+  .hx-start { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .hx-start a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 22px 24px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); color: inherit; text-decoration: none; transition: border-color .15s, background .15s; }
+  .hx-start a:hover { border-color: var(--primary); background: var(--surface2); }
+  .hx-start__n { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line-strong); font: 700 16px/1 var(--font-display); color: var(--primary); }
+  .hx-start__text b { display: block; margin-bottom: 4px; font: 700 19px/1.25 var(--font-display); letter-spacing: -.01em; }
+  .hx-start__text small { display: block; font-size: 15px; line-height: 1.45; color: var(--muted); }
+  .hx-start__go { color: var(--dim); font-size: 20px; display: inline-flex; transition: transform .15s, color .15s; }
+  .hx-start a:hover .hx-start__go { color: var(--primary); transform: translate(2px, -2px); }
 
-  /* ───────── LIVE CONSOLE ───────── */
-  .hx-console { position: relative; z-index: 6; margin-top: -136px; }
-  .hx-console__grid { display: grid; grid-template-columns: 1fr 1.25fr 1fr; grid-template-areas: "reset radar code"; gap: 14px; }
-  .hx-reset { grid-area: reset; } .hx-radar { grid-area: radar; } .hx-code { grid-area: code; }
-  .hx-panel { position: relative; display: flex; flex-direction: column; gap: 18px; min-height: 262px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 26px;
-    background: linear-gradient(160deg, rgba(20, 42, 58, .82), rgba(8, 22, 32, .88)); -webkit-backdrop-filter: blur(24px) saturate(1.25); backdrop-filter: blur(24px) saturate(1.25);
-    box-shadow: 0 34px 80px -34px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .07); }
-  .hx-panel::before { content: ""; position: absolute; left: 24px; right: 24px; top: -1px; height: 1px; background: linear-gradient(90deg, transparent, rgba(76, 201, 255, .7), transparent); opacity: .6; }
-  .hx-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .hx-panel__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; color: var(--muted); font: 500 13px/1.3 var(--body); }
-  .hx-panel__foot b { color: var(--text); font-weight: 600; }
-  .hx-label { display: inline-flex; align-items: center; gap: 9px; color: var(--soft); font: 600 12.5px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; }
-  .hx-label .hx-i { font-size: 17px; color: var(--cyan); }
-  .hx-chip { padding: 6px 11px; border: 1px solid var(--line); border-radius: 99px; background: var(--glass-2); color: var(--soft); font: 600 12px/1 var(--body); white-space: nowrap; }
+  /* Tools by purpose */
+  .hx-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
+  .hx-group h3 { margin: 0 0 6px; font-size: 21px; }
+  .hx-group > p { margin: 0 0 18px; font-size: 15px; color: var(--muted); }
+  .hx-group ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .hx-group a { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; padding: 15px 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+  .hx-group a b { font: 600 16px/1.3 var(--font-body); }
+  .hx-group a small { grid-column: 1; margin-top: 2px; font-size: 14px; line-height: 1.45; color: var(--muted); }
+  .hx-group__go { grid-column: 2; grid-row: 1 / 3; align-self: center; display: inline-flex; color: var(--dim); transition: transform .15s, color .15s; }
+  .hx-group a:hover b { color: var(--primary); }
+  .hx-group a:hover .hx-group__go { color: var(--primary); transform: translate(2px, -2px); }
 
-  .hx-clock { display: flex; align-items: baseline; gap: 4px; margin-top: 4px; font: 700 clamp(48px, 5.2vw, 66px)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
-  .hx-clock i { padding: 0 2px; color: rgba(76, 201, 255, .55); font-style: normal; animation: hxBlink 1s steps(2, jump-none) infinite; }
-  .hx-bar { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; }
-  .hx-bar span { display: block; width: 100%; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--cyan), var(--mint)); transform: scaleX(0); transform-origin: left; transition: transform 1s linear; }
+  /* Season 27 */
+  .hx-season { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; }
+  .hx-season__art { width: 100%; height: 100%; min-height: 340px; object-fit: cover; object-position: center top; background: #0a141d; }
+  .hx-season__copy { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: clamp(26px, 4vw, 48px); }
+  .hx-season__copy h2, .hx-season__copy p { margin: 0; }
+  .hx-season__copy p { color: var(--muted); font-size: 17px; max-width: 38em; }
+  .hx-season .hx-actions { margin-top: 6px; }
+  .hx-gift { width: 100%; padding: 16px 18px; border: 1px solid rgba(245, 196, 81, .3); border-radius: var(--r-md); background: rgba(245, 196, 81, .05); }
+  .hx-gift .hx-label { color: var(--reward); font-weight: 600; font-size: 14px; }
+  .hx-gift .hx-label .hx-i { color: var(--reward); }
+  .hx-gift ul { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+  .hx-gift li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--muted-strong); }
+  .hx-gift li .hx-i { margin-top: 4px; width: 14px; height: 14px; color: var(--success); }
+  .hx-gift small { display: block; margin-top: 12px; color: var(--dim); font-size: 13px; }
 
-  .hx-radar__list { display: grid; gap: 2px; }
-  .hx-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 14px; margin: 0 -12px; padding: 11px 12px; border-radius: 14px; transition: background .2s; }
-  .hx-row:hover { background: var(--glass-2); }
-  .hx-row__dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--amber); }
-  .hx-row[data-hx-kind="reset"] .hx-row__dot { border-color: var(--violet); }
-  .hx-row.is-live .hx-row__dot { border: 0; }
-  .hx-row__main { display: grid; gap: 4px; min-width: 0; }
-  .hx-row__main b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 15.5px/1.2 var(--body); }
-  .hx-row__main small { color: var(--muted); font: 500 12.5px/1 var(--body); }
-  .hx-row__cd { color: var(--soft); font: 600 14px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .hx-row.is-live .hx-row__cd { color: var(--mint); }
+  /* Articles */
+  .hx-news { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; }
+  .hx-feature { display: flex; flex-direction: column; gap: 18px; color: inherit; text-decoration: none; }
+  .hx-feature__media { display: block; aspect-ratio: 16 / 9; border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; background: var(--surface2); }
+  .hx-feature__media img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s var(--hx-ease); }
+  .hx-feature:hover img { transform: scale(1.02); }
+  .hx-feature__ph { display: grid; place-items: center; height: 100%; font: 700 32px var(--font-display); color: var(--dim); }
+  .hx-feature h3 { margin: 10px 0 8px; font-size: clamp(22px, 2.4vw, 30px); }
+  .hx-feature:hover h3 { color: var(--primary); }
+  .hx-feature p { margin: 0; color: var(--muted); }
+  .hx-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font: 500 13px/1.3 var(--font-body); color: var(--dim); }
+  .hx-meta b { color: var(--muted-strong); font-weight: 600; }
+  .hx-list { list-style: none; margin: 0; padding: 0; align-content: start; }
+  .hx-list li:first-child .hx-item { padding-top: 0; }
+  .hx-item { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+  .hx-item__media { display: block; aspect-ratio: 3 / 2; border-radius: var(--r-sm); overflow: hidden; background: var(--surface2); }
+  .hx-item__media img { width: 100%; height: 100%; object-fit: cover; }
+  .hx-item h3 { margin: 8px 0 0; font: 600 16px/1.4 var(--font-body); letter-spacing: 0; }
+  .hx-item:hover h3 { color: var(--primary); }
+  .hx-empty { color: var(--muted); }
 
-  .hx-code__body { display: grid; gap: 14px; }
-  .hx-copy { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 14px 16px; border: 1px dashed rgba(110, 240, 194, .45); border-radius: 16px; background: rgba(110, 240, 194, .07); color: var(--text); cursor: pointer; text-align: left; transition: background .2s, border-color .2s, transform .2s var(--ease); }
-  .hx-copy:hover:not(:disabled) { background: rgba(110, 240, 194, .12); border-style: solid; transform: translateY(-1px); }
-  .hx-copy:disabled { opacity: .5; cursor: not-allowed; }
-  .hx-copy strong { min-width: 0; overflow-wrap: anywhere; font: 700 clamp(22px, 2.3vw, 29px)/1.05 var(--display); letter-spacing: .04em; }
-  .hx-copy__act { display: inline-flex; align-items: center; gap: 7px; color: var(--mint); font: 600 12.5px/1 var(--body); white-space: nowrap; }
-  .hx-copy__act .hx-i { font-size: 16px; }
-  .hx-copy__act em { font-style: normal; }
-  .hx-copy.is-copied { border-style: solid; background: rgba(110, 240, 194, .16); }
-  .hx-code__reward { color: var(--soft); font: 400 15px/1.6 var(--body); }
-  .hx-code__reward b { color: var(--text); font-weight: 600; }
-  .hx-code__none { font: 700 24px/1.15 var(--display); letter-spacing: -.02em; }
-  .hx-code.is-active .hx-chip--status { color: var(--mint); border-color: rgba(110, 240, 194, .35); background: rgba(110, 240, 194, .1); }
-  .hx-code.is-none .hx-chip--status { color: var(--amber); border-color: rgba(255, 195, 107, .35); background: rgba(255, 195, 107, .09); }
+  /* FAQ */
+  .hx-faq { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 80px); }
+  .hx-faq__lead h2 { margin: 0 0 12px; }
+  .hx-faq__lead p { margin: 0 0 18px; color: var(--muted); font-size: 17px; }
+  .hx-faq__list details { border-top: 1px solid var(--line); }
+  .hx-faq__list details:last-child { border-bottom: 1px solid var(--line); }
+  .hx-faq__list summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; font: 600 17px/1.4 var(--font-body); cursor: pointer; list-style: none; }
+  .hx-faq__list summary::-webkit-details-marker { display: none; }
+  .hx-faq__list summary i { position: relative; flex: none; width: 14px; height: 14px; }
+  .hx-faq__list summary i::before, .hx-faq__list summary i::after { content: ''; position: absolute; left: 0; right: 0; top: 6px; height: 2px; background: var(--muted); border-radius: 2px; transition: transform .2s; }
+  .hx-faq__list summary i::after { transform: rotate(90deg); }
+  .hx-faq__list details[open] summary i::after { transform: rotate(0); }
+  .hx-faq__list details p { margin: 0 0 20px; max-width: 60ch; color: var(--muted); }
 
-  /* ───────── sections / headings ───────── */
-  .hx-section { padding-top: clamp(76px, 10vw, 132px); }
-  .hx-section--last { padding-bottom: clamp(72px, 8vw, 112px); }
-  .hx-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; margin-bottom: 40px; }
-  .hx-head p { max-width: 340px; color: var(--muted); font: 400 15.5px/1.65 var(--body); }
-  .hx-eyebrow { display: inline-flex; align-items: center; gap: 12px; color: var(--cyan); font: 700 12.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; }
-  .hx-eyebrow::before { content: ""; width: 26px; height: 1px; background: currentColor; opacity: .6; }
-  .hx h2 { margin-top: 14px; font-size: clamp(34px, 4.8vw, 60px); line-height: 1.02; letter-spacing: -.037em; text-wrap: balance; }
+  /* Creator */
+  .hx-cta { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 28px; padding: 32px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+  .hx-cta__logo { width: 72px; height: auto; border-radius: var(--r-md); }
+  .hx-cta__copy h2 { margin: 0 0 8px; font-size: clamp(24px, 3vw, 32px); }
+  .hx-cta__copy p { margin: 0; color: var(--muted); max-width: 40em; }
+  .hx-cta__links { display: flex; flex-wrap: wrap; gap: 10px; }
 
-  /* ───────── TOOL BENTO ───────── */
-  .hx-bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(212px, auto); gap: 14px; }
-  .hx-tile { position: relative; isolation: isolate; display: flex; flex-direction: column; overflow: hidden; padding: 24px; border: 1px solid var(--line); border-radius: 26px;
-    background: linear-gradient(160deg, rgba(17, 36, 50, .92), rgba(8, 20, 30, .94)); transition: transform .35s var(--ease), border-color .3s, box-shadow .35s; }
-  .hx-tile--sm { grid-column: span 3; }
-  .hx-tile--wide { grid-column: span 6; }
-  .hx-tile--hero { grid-column: span 6; grid-row: span 2; padding: 30px; }
-  .hx-tile::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity .3s;
-    background: radial-gradient(380px circle at var(--mx, 85%) var(--my, 0%), rgba(var(--ar), .2), transparent 62%); }
-  .hx-tile:hover { transform: translateY(-5px); border-color: rgba(var(--ar), .5); box-shadow: 0 30px 70px -28px rgba(0, 0, 0, .8), 0 0 0 1px rgba(var(--ar), .12); }
-  .hx-tile:hover::before { opacity: 1; }
-  .hx-tile__glow { position: absolute; z-index: -1; right: -60px; top: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(var(--ar), .12); filter: blur(46px); }
-  .hx-tile__mark { position: absolute; z-index: -1; right: -26px; bottom: -34px; width: 190px; height: 190px; color: var(--a); opacity: .075; transition: transform .5s var(--ease), opacity .3s; pointer-events: none; }
-  .hx-tile__mark .hx-i { width: 100%; height: 100%; stroke-width: .7; }
-  .hx-tile--hero .hx-tile__mark { width: 340px; height: 340px; right: -50px; bottom: -60px; }
-  .hx-tile:hover .hx-tile__mark { opacity: .12; transform: rotate(-6deg) scale(1.06); }
-  .hx-tile__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .hx-tile__ico { display: grid; place-items: center; width: 50px; height: 50px; border: 1px solid rgba(var(--ar), .3); border-radius: 15px; background: rgba(var(--ar), .1); color: var(--a); font-size: 23px; transition: transform .35s var(--ease); }
-  .hx-tile:hover .hx-tile__ico { transform: translateY(-2px) scale(1.05); }
-  .hx-tile__tag { padding: 6px 11px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font: 700 11.5px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; }
-  .hx-tile__stats { display: flex; flex-wrap: wrap; gap: 14px 34px; margin-top: auto; padding-top: 30px; }
-  .hx-tile__stats > span { display: grid; gap: 6px; color: var(--muted); font: 500 12.5px/1 var(--body); }
-  .hx-tile__stats b { color: var(--text); font: 700 clamp(26px, 3vw, 36px)/1 var(--display); letter-spacing: -.02em; }
-  .hx-tile__body { margin-top: auto; padding-top: 28px; }
-  .hx-tile--hero .hx-tile__body { margin-top: 22px; padding-top: 0; }
-  .hx-tile__body h3 { font-size: clamp(21px, 1.9vw, 25px); line-height: 1.1; letter-spacing: -.022em; }
-  .hx-tile--hero .hx-tile__body h3 { font-size: clamp(32px, 3.4vw, 44px); letter-spacing: -.03em; }
-  .hx-tile--wide .hx-tile__body h3 { font-size: clamp(26px, 2.6vw, 32px); }
-  .hx-tile__body p { max-width: 36ch; margin-top: 9px; padding-right: 50px; color: #9cb1be; font: 400 14.5px/1.55 var(--body); }
-  .hx-tile--hero .hx-tile__body p { max-width: 44ch; font-size: 16px; }
-  .hx-tile--wide .hx-tile__body p { max-width: 46ch; font-size: 15px; }
-  .hx-tile__go { position: absolute; right: 20px; bottom: 20px; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; color: var(--soft); font-size: 18px; transition: background .3s, color .3s, border-color .3s, transform .35s var(--ease); }
-  .hx-tile--hero .hx-tile__go { right: 28px; bottom: 28px; }
-  .hx-tile:hover .hx-tile__go { background: var(--a); border-color: transparent; color: #04202b; transform: scale(1.08); }
-
-  .hx-recent { display: grid; gap: 8px; margin-top: 26px; }
-  .hx-recent__row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, .03); }
-  .hx-recent__row b { font: 700 14.5px/1 var(--display); letter-spacing: .05em; }
-  .hx-recent__row i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font: 400 13.5px/1 var(--body); font-style: normal; }
-  .hx-recent__row em { padding: 5px 9px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font: 600 11.5px/1 var(--body); font-style: normal; }
-  .hx-recent__row.is-live em { color: var(--mint); border-color: rgba(110, 240, 194, .35); background: rgba(110, 240, 194, .1); }
-
-  /* ───────── SEASON 27 ───────── */
-  .hx-season { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 32px; align-items: center; overflow: hidden; padding: clamp(32px, 5vw, 68px); border: 1px solid rgba(76, 201, 255, .22); border-radius: 34px;
-    background: radial-gradient(720px 380px at 88% 18%, rgba(76, 201, 255, .2), transparent 70%), radial-gradient(520px 320px at 0% 100%, rgba(110, 240, 194, .1), transparent 70%), linear-gradient(145deg, #0b2331, #071620 72%); }
-  .hx-season__glow { position: absolute; z-index: -1; right: 6%; top: 8%; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(76, 201, 255, .28), transparent 66%); filter: blur(24px); }
-  .hx-season__art { position: absolute; z-index: -1; right: 0; top: 50%; width: min(48%, 560px); height: auto; transform: translateY(-58%); filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .45)); pointer-events: none; }
-  .hx-season__copy p { max-width: 50ch; margin: 18px 0 22px; color: var(--soft); font: 400 clamp(16px, 1.4vw, 18px)/1.65 var(--body); }
-  .hx-season__copy .hx-actions { margin-top: 28px; }
-  .hx-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-  .hx-pills li { padding: 8px 14px; border: 1px solid var(--line); border-radius: 99px; background: var(--glass); color: var(--soft); font: 600 13.5px/1 var(--body); }
-  .hx-gift { justify-self: end; align-self: end; width: min(100%, 350px); padding: 22px; border: 1px solid var(--line); border-radius: 24px; background: rgba(6, 17, 26, .68); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8); }
-  .hx-gift ul { margin: 14px 0 0; }
-  .hx-gift li { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); font: 600 15px/1.3 var(--body); }
-  .hx-gift li .hx-i { font-size: 17px; color: var(--mint); }
-  .hx-gift small { display: block; margin-top: 12px; color: var(--muted); font: 400 13px/1.5 var(--body); }
-
-  /* ───────── EDITORIAL ───────── */
-  .hx-news { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 18px; align-items: stretch; }
-  .hx-feature { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 30px; background: linear-gradient(160deg, rgba(17, 36, 50, .92), rgba(8, 20, 30, .94)); transition: transform .35s var(--ease), border-color .3s, box-shadow .35s; }
-  .hx-feature:hover { transform: translateY(-5px); border-color: rgba(var(--ar), .5); box-shadow: 0 34px 70px -30px rgba(0, 0, 0, .8); }
-  .hx-feature__media { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: #08161f; }
-  .hx-feature__media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s var(--ease); }
-  .hx-feature:hover .hx-feature__media img { transform: scale(1.045); }
-  .hx-feature__media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(6, 17, 26, .55)); pointer-events: none; }
-  .hx-feature__ph { display: grid; place-items: center; height: 100%; color: rgba(76, 201, 255, .5); font: 700 48px/1 var(--display); }
-  .hx-feature__badge { position: absolute; z-index: 2; left: 18px; top: 18px; padding: 8px 12px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 99px; background: rgba(6, 17, 26, .6); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: var(--text); font: 700 11.5px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; }
-  .hx-feature__body { display: grid; gap: 14px; padding: 26px 28px 30px; }
-  .hx-feature__body h3 { font-size: clamp(25px, 2.7vw, 36px); line-height: 1.08; letter-spacing: -.03em; }
-  .hx-feature__body p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--soft); font: 400 15.5px/1.65 var(--body); }
-  .hx-feature__body .hx-textlink { margin-top: 4px; }
-  .hx-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font: 600 12px/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; }
-  .hx-meta b { color: var(--a, var(--cyan)); font-weight: 700; }
-  .hx-list { display: grid; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 12px; }
-  .hx-item { display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: 16px; align-items: center; height: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 22px; background: var(--glass); transition: transform .3s var(--ease), border-color .3s, background .3s; }
-  .hx-item:hover { transform: translateX(4px); border-color: rgba(var(--ar), .45); background: var(--glass-2); }
-  .hx-item__media { display: block; aspect-ratio: 3 / 2; overflow: hidden; border-radius: 14px; background: #08161f; }
-  .hx-item__media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s var(--ease); }
-  .hx-item:hover .hx-item__media img { transform: scale(1.06); }
-  .hx-item__media > span { display: grid; place-items: center; height: 100%; color: rgba(76, 201, 255, .5); font: 700 20px/1 var(--display); }
-  .hx-item__body { display: grid; gap: 9px; min-width: 0; padding-right: 6px; }
-  .hx-item__body h3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 16.5px; line-height: 1.3; letter-spacing: -.01em; font-weight: 600; }
-  .hx-empty { padding: 48px; border: 1px dashed var(--line); border-radius: 24px; color: var(--muted); text-align: center; }
-
-  /* ───────── FAQ ───────── */
-  .hx-faq { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 100px); align-items: start; }
-  .hx-faq__lead { position: sticky; top: 120px; }
-  .hx-faq__lead p { max-width: 40ch; margin: 20px 0 24px; color: var(--muted); font: 400 16px/1.7 var(--body); }
-  .hx-faq__list { display: grid; gap: 10px; }
-  .hx-faq details { border: 1px solid var(--line); border-radius: 20px; background: var(--glass); transition: border-color .25s, background .25s; }
-  .hx-faq details[open] { border-color: rgba(76, 201, 255, .35); background: rgba(76, 201, 255, .045); }
-  .hx-faq summary { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 21px 24px; cursor: pointer; list-style: none; font: 600 17.5px/1.35 var(--display); letter-spacing: -.01em; }
-  .hx-faq summary::-webkit-details-marker { display: none; }
-  .hx-faq summary i { position: relative; flex: none; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; transition: background .25s, border-color .25s, transform .3s var(--ease); }
-  .hx-faq summary i::before, .hx-faq summary i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 1.8px; margin: -.9px 0 0 -6px; border-radius: 2px; background: var(--cyan); transition: transform .3s var(--ease); }
-  .hx-faq summary i::after { transform: rotate(90deg); }
-  .hx-faq details[open] summary i { background: rgba(76, 201, 255, .12); border-color: rgba(76, 201, 255, .4); }
-  .hx-faq details[open] summary i::after { transform: rotate(0); }
-  .hx-faq details p { padding: 0 24px 24px; max-width: 62ch; color: var(--soft); font: 400 15.5px/1.7 var(--body); }
-
-  /* ───────── CTA ───────── */
-  .hx-cta { position: relative; isolation: isolate; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(22px, 4vw, 48px); align-items: center; overflow: hidden; padding: clamp(28px, 4.5vw, 56px); border: 1px solid rgba(76, 201, 255, .22); border-radius: 34px;
-    background: radial-gradient(640px 300px at 100% 0, rgba(76, 201, 255, .16), transparent 70%), radial-gradient(420px 260px at 0 100%, rgba(169, 155, 255, .12), transparent 70%), linear-gradient(145deg, #0b2331, #071620 72%); }
-  .hx-cta__logo { width: 104px; height: auto; border-radius: 26px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 24px 60px -16px rgba(120, 90, 255, .55); }
-  .hx-cta__copy h2 { font-size: clamp(30px, 3.6vw, 48px); }
-  .hx-cta__copy p { max-width: 46ch; margin-top: 14px; color: var(--soft); font: 400 16px/1.65 var(--body); }
-  .hx-cta__links { display: grid; gap: 10px; min-width: 200px; }
-  .hx-cta__links .hx-btn { height: 50px; justify-content: flex-start; }
-  .hx-cta__links .hx-btn .hx-i { font-size: 19px; }
-
-  /* ───────── motion ───────── */
-  .hx.hx-js .hx-reveal { opacity: 0; }
-  .hx.hx-js .hx-reveal.is-in { opacity: 1; animation: hxRise .85s var(--ease) calc(var(--i, 0) * 90ms) backwards; }
-
-  @keyframes hxIn { from { opacity: 0; transform: translateY(20px); } }
-  @keyframes hxRise { from { opacity: 0; transform: translateY(26px); } }
-  @keyframes hxImg { from { opacity: 0; transform: scale(1.06); } }
-  @keyframes hxPulse { 70% { box-shadow: 0 0 0 9px rgba(110, 240, 194, 0); } 100% { box-shadow: 0 0 0 0 rgba(110, 240, 194, 0); } }
-  @keyframes hxBlink { 50% { opacity: .25; } }
-
-  /* ───────── responsive ───────── */
-  @media (max-width: 1100px) {
-    .hx-console__grid { grid-template-columns: 1fr 1fr; grid-template-areas: "reset code" "radar radar"; }
-    .hx-panel { min-height: 0; }
-    .hx-bento { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-    .hx-tile--sm { grid-column: span 3; }
-    .hx-tile--wide, .hx-tile--hero { grid-column: span 6; }
-    .hx-tile--hero { grid-row: auto; min-height: 330px; }
-    .hx-season { grid-template-columns: 1fr; }
-    .hx-season__art { width: min(60%, 460px); right: -6%; top: 0; transform: translateY(-12%); opacity: .5; }
-    .hx-gift { justify-self: start; }
-  }
-  @media (max-width: 900px) {
-    .hx-news, .hx-faq { grid-template-columns: 1fr; }
-    .hx-faq__lead { position: static; }
-    .hx-list { grid-template-rows: none; }
-    .hx-cta { grid-template-columns: 1fr; }
-    .hx-cta__logo { width: 84px; }
-    .hx-cta__links { grid-template-columns: repeat(3, auto); justify-content: start; }
-    .hx-head { align-items: flex-start; flex-direction: column; gap: 14px; }
+  /* Responsive */
+  @media (max-width: 960px) {
+    .hx-board__grid { grid-template-columns: 1fr; }
+    .hx-cell + .hx-cell { border-left: 0; border-top: 1px solid var(--line); }
+    .hx-groups { grid-template-columns: 1fr; gap: 36px; }
+    .hx-season, .hx-news, .hx-faq { grid-template-columns: 1fr; }
+    .hx-season__art { min-height: 0; aspect-ratio: 16 / 9; }
+    .hx-cta { grid-template-columns: 1fr; text-align: left; }
+    .hx-cta__logo { width: 56px; }
   }
   @media (max-width: 700px) {
-    .hx-wrap { width: calc(100% - 32px); }
-    .hx-hero { min-height: 0; padding: 124px 0 170px; align-items: flex-start; }
+    .hx-hero { min-height: 0; padding: 120px 0 120px; align-items: flex-start; }
     .hx-hero__img img { object-position: 62% 40%; }
-    .hx-hero__shade { background:
-      linear-gradient(180deg, rgba(6, 17, 26, .86) 0%, rgba(6, 17, 26, .62) 38%, rgba(6, 17, 26, .3) 62%, var(--bg) 100%),
-      linear-gradient(90deg, rgba(6, 17, 26, .55), rgba(6, 17, 26, 0) 80%); }
-    .hx-h1 { max-width: none; font-size: clamp(44px, 12.4vw, 62px); }
-    .hx-actions .hx-btn { flex: 1 1 100%; }
-    .hx-proof { gap: 10px 20px; margin-top: 28px; font-size: 13.5px; }
-    .hx-proof li + li::before { display: none; }
-    .hx-console { margin-top: -110px; }
-    .hx-console__grid { grid-template-columns: 1fr; grid-template-areas: "reset" "code" "radar"; }
-    .hx-panel { padding: 20px; border-radius: 24px; }
-    .hx-clock { font-size: clamp(46px, 15vw, 60px); }
-
-    .hx-bento { grid-template-columns: 1fr; grid-auto-rows: auto; }
-    .hx-tile--sm, .hx-tile--wide, .hx-tile--hero { grid-column: auto; }
-    .hx-tile--sm, .hx-tile--wide { display: grid; grid-template-columns: 50px minmax(0, 1fr) 42px; align-items: center; gap: 16px; min-height: 0; padding: 18px; }
-    .hx-tile--sm .hx-tile__top, .hx-tile--wide .hx-tile__top { display: contents; }
-    .hx-tile--sm .hx-tile__tag, .hx-tile--wide .hx-tile__tag, .hx-tile--sm .hx-tile__mark, .hx-tile--wide .hx-tile__mark { display: none; }
-    .hx-tile--sm .hx-tile__body, .hx-tile--wide .hx-tile__body { margin: 0; padding: 0; }
-    .hx-tile--sm .hx-tile__go, .hx-tile--wide .hx-tile__go { position: static; }
-    .hx-tile--wide .hx-tile__body h3 { font-size: 21px; }
-    .hx-tile--sm .hx-tile__body p, .hx-tile--wide .hx-tile__body p { padding-right: 0; }
-    .hx-recent__row { grid-template-columns: minmax(0, 1fr) auto; }
-    .hx-recent__row i { display: none; }
-    .hx-recent__row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .hx-tile__stats { gap: 14px 22px; }
-    .hx-row__main b { white-space: normal; }
-    .hx-tile--hero { min-height: 0; padding: 24px; }
-    .hx-tile--hero .hx-tile__mark { width: 240px; height: 240px; }
-    .hx-tile--hero .hx-tile__body { padding-right: 0; }
-    .hx-tile--hero .hx-tile__go { display: none; }
-
-    .hx-season { padding: 28px 22px; border-radius: 28px; }
-    .hx-season__art { width: 78%; right: -22%; opacity: .35; }
-    .hx-gift { width: 100%; }
-    .hx-item { grid-template-columns: 108px minmax(0, 1fr); gap: 14px; padding: 10px; }
-    .hx-item__body h3 { font-size: 15.5px; }
-    .hx-feature__body { padding: 22px 20px 26px; }
-    .hx-faq summary { padding: 18px 18px; font-size: 16.5px; }
-    .hx-faq details p { padding: 0 18px 20px; }
-    .hx-cta { padding: 28px 22px; border-radius: 28px; }
-    .hx-cta__links { grid-template-columns: 1fr; }
-    .hx-cta__links .hx-btn { justify-content: center; }
-  }
-  @media (max-width: 420px) {
-    .hx-tile--sm, .hx-tile--wide { grid-template-columns: 46px minmax(0, 1fr) 38px; gap: 14px; }
-    .hx-tile__ico { width: 46px; height: 46px; }
-    .hx-tile__go { width: 38px; height: 38px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .hx *, .hx *::before, .hx *::after { animation: none !important; transition: none !important; }
-    .hx.hx-js .hx-reveal { opacity: 1; }
+    .hx-hero__shade { background: linear-gradient(180deg, rgba(6, 17, 26, .86) 0%, rgba(6, 17, 26, .62) 40%, rgba(6, 17, 26, .3) 64%, var(--bg) 100%); }
+    .hx-start { grid-template-columns: 1fr; }
+    .hx-start a { padding: 18px; gap: 14px; }
+    .hx-item { grid-template-columns: 96px minmax(0, 1fr); }
+    .hx-board { margin-top: -56px; }
   }
 </style>

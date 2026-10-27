@@ -1,0 +1,30 @@
+---
+/**
+ * The one page header. Use it at the top of every new page.
+ *   <PageHero title="Redeem codes" lede="Every working code in one place.">
+ *     <a slot="actions" class="sys-btn sys-btn--primary" href="#live">See live codes</a>
+ *     <Fragment slot="aside">...optional right-hand content...</Fragment>
+ *   </PageHero>
+ * Keep titles short and plain. One sentence for the lede. No eyebrow, no gradient.
+ */
+interface Props {
+  title: string;
+  lede?: string;
+  status?: string;
+  id?: string;
+}
+const { title, lede, status, id = 'page-title' } = Astro.props;
+const hasAside = Astro.slots.has('aside');
+const hasActions = Astro.slots.has('actions');
+---
+<header class:list={['page-head', hasAside && 'page-head--aside']} aria-labelledby={id}>
+  <div class="sys-wrap page-head__grid">
+    <div>
+      {status && <p class="page-head__status">{status}</p>}
+      <h1 id={id}>{title}</h1>
+      {lede && <p class="page-head__lede">{lede}</p>}
+      {hasActions && <div class="page-head__actions"><slot name="actions" /></div>}
+    </div>
+    {hasAside && <div class="page-head__aside"><slot name="aside" /></div>}
+  </div>
+</header>

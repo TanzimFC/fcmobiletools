@@ -1,0 +1,104 @@
+---
+/**
+ * One consistent "where am I" line at the top of every inner page.
+ * It replaces the old mix of pill labels, mono labels and nothing at all.
+ * Home is excluded. Pages that are not in the map fall back to their section only.
+ */
+import { getLocaleFromPath, stripLocale, localizeHref, translator } from '../i18n/index.js';
+
+const locale = getLocaleFromPath(Astro.url.pathname);
+const tr = translator(locale);
+const path = (stripLocale(Astro.url.pathname) || '/').replace(/\/+$/, '') || '/';
+const item = (id) => tr(`nav.items.${id}.label`);
+
+const GROUPS = {
+  tools: { label: tr('nav.groups.tools'), href: '/#tools' },
+  live: { label: tr('nav.groups.live'), href: '/events' },
+  community: { label: tr('nav.groups.community'), href: '/giveaways' },
+  articles: { label: item('articles'), href: '/blog' },
+  account: { label: 'Account', href: '/account' },
+  info: { label: 'Info', href: '/legal/about' },
+};
+
+// path prefix -> [group, current page label]
+const ROUTES = [
+  ['/team-ovr', 'tools', item('team-ovr')],
+  ['/training-calculator', 'tools', item('training')],
+  ['/rank-up-calculator', 'tools', item('rank')],
+  ['/investment-calculator', 'tools', item('investment')],
+  ['/gauntlet-planner', 'tools', item('gauntlet')],
+  ['/shards-counter', 'tools', item('shards')],
+  ['/player/playstyle-finder', 'tools', item('playstyle-finder')],
+  ['/player/playstyle', 'tools', item('playstyle')],
+  ['/events', 'live', item('events')],
+  ['/redeem-codes', 'live', item('codes')],
+  ['/football-centre', 'live', item('centre')],
+  ['/captain-tracker', 'live', item('tracker')],
+  ['/match-center', 'live', 'Match Center'],
+  ['/fc-mobile-27', 'live', tr('nav.update.label')],
+  ['/a-nations-story', 'live', "A Nation's Story"],
+  ['/trivia', 'live', item('trivia')],
+  ['/giveaways', 'community', item('giveaways')],
+  ['/leagues', 'community', item('leagues')],
+  ['/host-a-tournament', 'community', 'Host a tournament'],
+  ['/tournaments', 'community', item('tournaments')],
+  ['/tournament', 'community', item('tournaments')],
+  ['/leaderboard', 'community', 'Leaderboard'],
+  ['/creator', 'community', 'Creator'],
+  ['/blog', 'articles', null],
+  ['/account', 'account', 'Sign in'],
+  ['/profile', 'account', 'Profile'],
+  ['/settings', 'account', 'Settings'],
+  ['/rewards', 'account', 'Rewards'],
+  ['/missions', 'account', 'Missions'],
+  ['/achievements', 'account', 'Achievements'],
+  ['/notifications', 'account', 'Notifications'],
+  ['/surveys', 'account', 'Surveys'],
+  ['/legal', 'info', null],
+];
+
+const hit = path === '/' ? null : ROUTES.find(([p]) => path === p || path.startsWith(p + '/'));
+const group = hit ? GROUPS[hit[1]] : null;
+const exact = hit && path === hit[0];
+const current = hit ? hit[2] : null;
+
+// Pages with a custom label in the map get "Home / Group / Page".
+// Deeper pages (an article, a league) get "Home / Group / Parent" with the parent linked.
+const crumbs = [];
+if (hit) {
+  crumbs.push({ label: 'Home', href: '/' });
+  crumbs.push({ label: group.label, href: group.href });
+  if (current) crumbs.push({ label: current, href: hit[0] });
+}
+
+const origin = (Astro.site ?? new URL('https://fcmobiletools.online')).toString().replace(/\/$/, '');
+const ld = crumbs.length > 1 ? {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: crumbs.map((c, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: c.label,
+    ...(c.href ? { item: origin + c.href.replace('/#tools', '/') } : {}),
+  })),
+} : null;
+---
+{crumbs.length > 1 && (
+  <nav class="site-crumbs" aria-label="Breadcrumb">
+    <ol class="wrap">
+      {crumbs.map((c, i) => {
+        const last = i === crumbs.length - 1;
+        // The final crumb is plain text only when we are on that exact page.
+        const isHere = last && path === (current ? hit[0] : hit[0]);
+        return (
+          <li>
+            {isHere || !c.href
+              ? <span aria-current="page">{c.label}</span>
+              : <a href={localizeHref(c.href, locale)}>{c.label}</a>}
+          </li>
+        );
+      })}
+    </ol>
+  </nav>
+)}
+{ld && <script type="application/ld+json" set:html={JSON.stringify(ld)} />}

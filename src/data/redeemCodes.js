@@ -1552,7 +1552,7 @@ export const REDEEM_CODES = [
   },
   {
     "code": "ANYWHERE",
-    "reward": "Gamescom Pack — 95 OVR Wirtz",
+    "reward": "Gamescom Pack: 95 OVR Wirtz",
     "status": "expired",
     "releaseDate": "2024-08-22",
     "expiryDate": null,

@@ -247,7 +247,7 @@ function paintMe(g, me) {
     const neutralManual = manual && Boolean(e && e.status === 'needs_proof') && !needsFix;
     $('.ic', li).innerHTML = verified || pending ? IC.check : manual && (!e || neutralManual) ? '•' : '!';
     $('.st', li).textContent = pending ? 'Awaiting manual review'
-      : verified ? 'Approved' : rejectedManual ? 'Entry rejected' : needsFix ? 'Correction needed — see reviewer note'
+      : verified ? 'Approved' : rejectedManual ? 'Entry rejected' : needsFix ? 'Correction needed: see reviewer note'
         : manual && e?.status === 'needs_proof' ? 'Not flagged for correction'
           : manual && !e ? 'Complete in entry form' : r.detail;
   }

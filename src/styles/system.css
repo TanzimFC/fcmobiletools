@@ -1,0 +1,264 @@
+/* ==========================================================================
+   FCMOBILETOOLS design system
+   Loaded last in BaseLayout, so it wins over styles.css, luxe.css and every
+   per-page <style> block that uses a plain class selector.
+
+   Rules of the house
+   1. Three radii only: 8 (controls), 12 (cards), 18 (large panels). Pills are 999.
+   2. One accent: cyan. Gold is reserved for rewards and giveaways.
+   3. Surfaces are flat with a hairline. Glow is for the live state only.
+   4. Headlines are sentence case, never gradient, never one-word-highlighted.
+   5. Every inner page starts with the same breadcrumb, then the same hero.
+
+   Section A defines the system. Section B ("legacy normalizer") flattens old
+   per-page styling so every page matches while pages are migrated one by one.
+   Delete a rule in B once nothing needs it.
+   ========================================================================== */
+
+/* ---------- A. Tokens ---------- */
+:root {
+  /* colour */
+  --bg: #080c11;
+  --surface: #0e141b;
+  --surface2: #141c25;
+  --surface3: #1a2430;
+  --border: #1f2933;
+  --line: #1f2933;
+  --line-strong: #2d3a48;
+  --text: #edf2f6;
+  --muted: #93a1b0;
+  --muted-strong: #c3cdd7;
+  --dim: #66748a;
+  --primary: #4cc9ff;
+  --primary-hover: #7ad9ff;
+  --primary-ink: #04131c;
+  --reward: #f5c451;
+  --success: #47d16c;
+  --danger: #ff7070;
+
+  /* type */
+  --font-display: 'Archivo Variable', 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Instrument Sans Variable', 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: var(--font-display);
+  --fd: var(--font-display);
+  --sans: var(--font-body);
+  --mono: var(--font-body);
+  --tv-serif: var(--font-display);
+
+  /* shape */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --r-s: var(--r-sm);
+  --r-m: var(--r-md);
+  --r-l: var(--r-lg);
+
+  /* depth: one level, used only for things that float */
+  --shadow-sm: none;
+  --shadow-md: 0 18px 48px -18px rgba(0, 0, 0, 0.7);
+
+  /* layout */
+  --content-width: 1160px;
+  --section-y: clamp(56px, 8vw, 96px);
+}
+
+html { background: var(--bg); }
+html body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  font-optical-sizing: auto;
+}
+
+/* ---------- A. Type ---------- */
+html body :is(h1, h2, h3, h4) {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-stretch: 106%;
+  text-transform: none;
+  text-wrap: balance;
+}
+html body :is(h1) { font-size: clamp(34px, 5.2vw, 60px); line-height: 1.04; letter-spacing: -0.03em; }
+html body :is(h2) { font-size: clamp(26px, 3.4vw, 38px); line-height: 1.12; letter-spacing: -0.025em; }
+html body :is(h3) { font-size: clamp(19px, 2vw, 24px); line-height: 1.2; letter-spacing: -0.015em; }
+html body :is(p, li) { text-wrap: pretty; }
+html body :is(.num, [data-tabular], time, .clock) { font-variant-numeric: tabular-nums; }
+
+/* ---------- A. Shared primitives ---------- */
+.sys-wrap { width: min(var(--content-width), calc(100% - 40px)); margin-inline: auto; }
+
+/* Breadcrumb: the one "where am I" line on every inner page.
+   The header is a zero-height sticky bar with a floating pill, so the line sits
+   just under the pill and overlays the clearance every hero already reserves. */
+.site-crumbs { padding-top: 92px; }
+.site-crumbs ol {
+  margin: 0 auto; padding: 0;
+  width: min(var(--content-width), calc(100% - 40px));
+  list-style: none; display: flex; flex-wrap: wrap; align-items: center;
+  font: 500 13px/1.4 var(--font-body); color: var(--dim);
+}
+/* The crumb now provides the nav clearance, so the first block of every inner page
+   starts a fixed distance below it instead of each page guessing its own padding. */
+html body .site-crumbs + #content > :is(main, section, div, article):first-child { padding-top: 0 !important; margin-top: 0 !important; }
+html body .site-crumbs + #content :is(main) > :is(section, header, div, article):first-child { padding-top: clamp(20px, 3vw, 36px) !important; margin-top: 0 !important; }
+.site-crumbs li { display: inline-flex; align-items: center; }
+.site-crumbs li + li::before { content: '/'; margin: 0 9px; color: var(--line-strong); }
+.site-crumbs a { color: var(--muted); transition: color 0.15s; }
+.site-crumbs a:hover { color: var(--text); }
+.site-crumbs [aria-current] { color: var(--muted-strong); }
+/* One breadcrumb only: hide the older per-page ones */
+html body :is(.crumbs, .breadcrumbs, .bl-crumbs, .tv-crumbs, .rk-crumbs, .psf-crumbs, .ps-crumbs, .lp-crumb, .acc-crumbs) { display: none !important; }
+
+/* Page hero: used by <PageHero>. Same left edge, scale and spacing everywhere. */
+.page-head { padding: clamp(28px, 5vw, 56px) 0 clamp(28px, 4vw, 44px); }
+.page-head__grid { display: grid; gap: 28px 56px; align-items: end; grid-template-columns: minmax(0, 1fr); }
+.page-head--aside .page-head__grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.page-head h1 { margin: 0 0 14px; max-width: 18ch; }
+.page-head__lede { margin: 0; max-width: 56ch; color: var(--muted); font-size: clamp(16px, 1.6vw, 18px); line-height: 1.55; }
+.page-head__status { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px; font: 500 13px/1 var(--font-body); color: var(--muted); }
+.page-head__status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(71, 209, 108, 0.16); }
+.page-head__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+@media (max-width: 820px) { .page-head--aside .page-head__grid { grid-template-columns: 1fr; } }
+
+/* Buttons: one primary, one secondary, one text link */
+.sys-btn, html body :is(.premium-button) {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 18px; border-radius: var(--r-md);
+  font: 600 15px/1 var(--font-body); letter-spacing: 0; text-transform: none;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--text);
+  cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.sys-btn:hover, html body .premium-button:hover { background: var(--surface2); border-color: #3a4a5b; transform: none; box-shadow: none; }
+.sys-btn--primary, html body .premium-button.primary {
+  background: var(--primary); border-color: var(--primary); color: var(--primary-ink);
+  background-image: none; box-shadow: none;
+}
+.sys-btn--primary:hover, html body .premium-button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+
+.sys-link { color: var(--primary); font-weight: 600; text-underline-offset: 3px; }
+.sys-link:hover { text-decoration: underline; }
+
+/* ---------- B. Legacy normalizer ----------
+   Old pages hard-code their own heroes, glows and labels. These rules make them
+   look like one product without touching their markup. `html body` raises
+   specificity above plain page selectors. */
+
+/* B1. No gradient or one-word-accent headlines, anywhere */
+html body :is(h1, h2, h3) :is(span, em, i, b, strong, mark),
+html body :is(.lx-gradient-text, .hx-grad, .grad, .gradient-text, [class*='grad-text']) {
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: inherit !important;
+  font-style: normal !important;
+  font-weight: inherit !important;
+  font-family: inherit !important;
+  text-shadow: none !important;
+}
+
+/* B2. Eyebrows and kickers: one quiet style, not pills or tracked caps */
+html body :is([class*='eyebrow'], [class*='kicker']):not(svg, path) {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font: 500 14px/1.4 var(--font-body) !important;
+  color: var(--muted) !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* B3. Surfaces: flat, hairline, no lift, no gradient edge */
+html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card) {
+  background: var(--surface) !important;
+  background-image: none !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: none !important;
+}
+html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card):hover {
+  transform: none !important;
+  border-color: var(--line-strong) !important;
+  box-shadow: none !important;
+}
+html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card)::before,
+html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card)::after {
+  content: none !important;
+}
+
+/* B4. Buttons: flat solid primary, no living gradient or glow */
+html body :is(.btn-primary, .submit-btn, .lg-btn.primary, .tv-btn.primary, .hx-btn.primary, .hx-btn--primary) {
+  background: var(--primary) !important;
+  background-image: none !important;
+  color: var(--primary-ink) !important;
+  border-color: var(--primary) !important;
+  box-shadow: none !important;
+}
+html body :is(.btn-primary, .submit-btn, .lg-btn.primary, .tv-btn.primary, .hx-btn.primary, .hx-btn--primary):hover {
+  background: var(--primary-hover) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+
+/* B4b. One primary button colour on every page. Pages used to pick their own
+   (gold on Trivia and Giveaways, mint on Leagues, gradient on Redeem Codes). */
+html body :is([class*='btn-primary'], [class*='btn--primary'], [class*='btn-gold'], .hb-primary, .tp-btn:not(.ghost), .tv-btn:not(.ghost, .secondary), .gw-btn-gold, .rx-btn-primary, .lg-btn-primary) {
+  background: var(--primary) !important;
+  background-image: none !important;
+  border-color: var(--primary) !important;
+  color: var(--primary-ink) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  animation: none !important;
+}
+html body :is([class*='btn-primary'], [class*='btn--primary'], [class*='btn-gold'], .hb-primary, .tp-btn:not(.ghost), .tv-btn:not(.ghost, .secondary), .gw-btn-gold, .rx-btn-primary, .lg-btn-primary):hover {
+  background: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  transform: none !important;
+}
+
+/* B5. Remove decoration that reads as generated: cursor light, scroll glow */
+html body :is(.lx-cursor, .lx-glow, .lx-aurora) { display: none !important; }
+.lx-progress { box-shadow: none !important; background: var(--primary) !important; height: 2px !important; }
+
+/* B6. Inputs */
+html body :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range']) {
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+html body :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range']):focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(76, 201, 255, 0.16);
+}
+
+/* B7. Consent banner: a compact card in the corner instead of a wall across the first screen */
+html body .fcmt-consent { left: auto !important; right: 20px !important; bottom: 20px !important; width: min(400px, calc(100vw - 24px)) !important; }
+html body .fcmt-consent-card {
+  width: 100%; margin: 0; flex-direction: column; align-items: stretch; gap: 14px; padding: 18px;
+  border-radius: var(--r-lg); background: var(--surface2); backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--line-strong);
+}
+html body .fcmt-consent-glow, html body .fcmt-consent-icon { display: none !important; }
+html body .fcmt-consent-copy h2 { font-size: 17px; margin: 0 0 6px; letter-spacing: -0.01em; }
+html body .fcmt-consent-copy p { font-size: 14px; line-height: 1.5; margin: 0; color: var(--muted); }
+html body .fcmt-consent-actions { flex-wrap: wrap; justify-content: stretch; }
+html body .fcmt-consent-btn { flex: 1 1 auto; border-radius: var(--r-sm); font: 600 14px/1 var(--font-body); }
+html body .fcmt-consent-btn.primary { order: -1; flex-basis: 100%; background: var(--primary); border-color: var(--primary); color: var(--primary-ink); box-shadow: none; }
+@media (max-width: 600px) { html body .fcmt-consent { right: 12px !important; left: 12px !important; bottom: 12px !important; width: auto !important; } }
+
+/* B8. Motion: respect reduced motion everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Keyboard focus, always visible */
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }

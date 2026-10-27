@@ -100,7 +100,7 @@ export default {
     expiry: {
       none: 'No expiry listed',
       ended: 'Ended {date}',
-      lastDay: 'Last day — expires today',
+      lastDay: 'Last day: expires today',
       tomorrow: 'Expires tomorrow',
       inDays: 'Expires in {n} days',
       on: 'Expires {date}'
@@ -128,7 +128,7 @@ export default {
     },
     empty: {
       title: 'No active codes right now',
-      text: 'New codes usually arrive with events and updates. Leave this tab open — it refreshes on its own and shows a notice when one goes live.',
+      text: 'New codes usually arrive with events and updates. Leave this tab open. It refreshes on its own and shows a notice when one goes live.',
       mostRecent: ' The most recent code, <b>{code}</b>, has ended.',
       browse: 'Browse recent codes'
     },
@@ -145,7 +145,7 @@ export default {
       showMore: 'Show {n} more'
     },
     sync: {
-      offline: 'Offline — showing the last codes we loaded',
+      offline: 'Offline: showing the last codes we loaded',
       justNow: 'Live · synced just now',
       seconds: 'Live · synced {n}s ago',
       minutes: 'Live · synced {n} min ago'
@@ -155,8 +155,8 @@ export default {
       newMore: ' (+{n} more)',
       quest: 'Redeem Code Quest completed · +{n} Tokens',
       copied: '{code} copied',
-      copyBlocked: 'Copy was blocked — select the code and copy it manually',
-      redeemCopied: "{code} copied — paste it on the EA page if it isn't filled in",
+      copyBlocked: 'Copy was blocked. Select the code and copy it manually',
+      redeemCopied: "{code} copied. Paste it on the EA page if it isn't filled in",
       copiedButton: 'Copied'
     },
     error: {
