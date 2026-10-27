@@ -75,15 +75,14 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
 
 <style>
   .ev {
-    --acc: #62d9ff;
+    --acc: #4CC9FF;
     position: relative;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: 22px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.09);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
       #0a1219;
     transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.35s ease;
     isolation: isolate;
@@ -93,13 +92,13 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: radial-gradient(420px 220px at 100% 0%, color-mix(in srgb, var(--acc) 16%, transparent), transparent 70%);
+    background:transparent;
     pointer-events: none;
   }
   .ev:hover {
     transform: translateY(-5px);
     border-color: color-mix(in srgb, var(--acc) 55%, rgba(255, 255, 255, 0.1));
-    box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.85), 0 0 0 1px color-mix(in srgb, var(--acc) 14%, transparent);
+    box-shadow:0 30px 70px -28px rgba(0, 0, 0, 0.85), 0 0 0 1px color-mix(in srgb, var(--acc) 14%, transparent);
   }
 
   .ev-media {
@@ -124,7 +123,6 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
     display: grid;
     place-items: center;
     background:
-      radial-gradient(60% 90% at 25% 15%, color-mix(in srgb, var(--acc) 38%, transparent), transparent 70%),
       radial-gradient(50% 80% at 90% 100%, color-mix(in srgb, var(--acc) 22%, transparent), transparent 72%),
       linear-gradient(135deg, #0d1822, #070d13);
   }
@@ -138,7 +136,7 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
   .ev-fade {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(5, 10, 15, 0.1) 0%, rgba(5, 10, 15, 0.2) 45%, rgba(10, 18, 25, 0.96) 100%);
+    background:rgba(5, 10, 15, 0.1);
   }
 
   .ev-pill {
@@ -155,10 +153,10 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     color: #dbe9ef;
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.09em;
-    text-transform: uppercase;
+    text-transform:none;
   }
   .ev-pill i {
     width: 7px;
@@ -167,7 +165,7 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
     background: currentColor;
   }
   .ev[data-state='live'] .ev-pill { color: #86f0bd; border-color: rgba(88, 224, 166, 0.4); }
-  .ev[data-state='live'] .ev-pill i { box-shadow: 0 0 0 4px rgba(88, 224, 166, 0.16), 0 0 12px rgba(88, 224, 166, 0.7); animation: pulse 2s ease-in-out infinite; }
+  .ev[data-state='live'] .ev-pill i { box-shadow:0 0 0 4px rgba(88, 224, 166, 0.16); animation: pulse 2s ease-in-out infinite; }
   .ev[data-state='upcoming'] .ev-pill { color: var(--acc); border-color: color-mix(in srgb, var(--acc) 40%, transparent); }
   .ev[data-state='ended'] .ev-pill { color: #8a9aa5; }
 
@@ -194,10 +192,10 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
   .ev-kicker {
     margin: 0;
     color: var(--acc);
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.1em;
-    text-transform: uppercase;
+    text-transform:none;
   }
   .ev-body h3 {
     margin: 0;
@@ -252,16 +250,16 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
   .ev-clock small {
     display: block;
     color: #6f8792;
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.06em;
-    text-transform: uppercase;
+    text-transform:none;
   }
   .ev-clock em {
     display: block;
     margin-top: 4px;
     color: #8da4ae;
-    font-size: 11.5px;
+    font-size: 12px;
     font-style: normal;
   }
   .ev-clock strong {
@@ -282,8 +280,8 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, color-mix(in srgb, var(--acc) 60%, #000), var(--acc));
-    box-shadow: 0 0 14px color-mix(in srgb, var(--acc) 70%, transparent);
+    background:var(--acc);
+    box-shadow:0 0 14px color-mix(in srgb, var(--acc) 70%, transparent);
     transition: width 1s linear;
   }
   .ev[data-state='upcoming'] .ev-bar,
@@ -338,7 +336,7 @@ const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(88, 224, 166, 0), 0 0 12px rgba(88, 224, 166, 0.7); } }
+  @keyframes pulse { 50% { box-shadow:0 0 0 7px rgba(88, 224, 166, 0); } }
   @media (prefers-reduced-motion: reduce) {
     .ev, .ev-media img, .ev-main, .ev-bar i { transition: none; }
     .ev:hover { transform: none; }

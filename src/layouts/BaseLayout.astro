@@ -5,7 +5,10 @@ import SiteAds from '../components/SiteAds.astro';
 import ConsentBanner from '../components/ConsentBanner.astro';
 import PushUi from '../components/PushUi.astro';
 import '../../styles.css';
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/figtree/index.css';
 import '../styles/luxe.css';
+import '../styles/system.css';
 import bengaliTypography from '../i18n/typography-bn.css?raw';
 import { LOCALES, DEFAULT_LOCALE, LANGUAGE_STORAGE_KEY, getLocaleFromPath, stripLocale, alternatesFor, availableLocales, pathForLocale, localizedPagesFor, translator } from '../i18n/index.js';
 
@@ -186,15 +189,6 @@ const pageSchema = {
     <link rel="preload" as="image" href="/assets/images/hero-home.webp" type="image/webp" media="(min-width: 701px)" fetchpriority="high" />
     <link rel="preload" as="image" href="/assets/images/hero-home-mobile.webp" type="image/webp" media="(max-width: 700px)" fetchpriority="high" />
   </> : null}
-  <link
-    rel="preload"
-    as="style"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-    onload="this.onload=null;this.rel='stylesheet'"
-  />
-  <noscript>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
-  </noscript>
   {locale === 'bn' ? <>
     <link
       rel="preload"
@@ -234,7 +228,7 @@ const pageSchema = {
   <slot name="head" />
   <SiteAds />
 </head>
-<body>
+<body class={isHomePage ? 'is-home' : undefined}>
   <a class="skip-link" href="#content">{tr('common.skipToContent')}</a>
   <Navbar />
   <div id="content"><slot /></div>

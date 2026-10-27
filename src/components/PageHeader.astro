@@ -1,0 +1,54 @@
+---
+/**
+ * The one page header used across the site.
+ *
+ *  title   – the page's h1 (sentence case, plain text)
+ *  lead    – one or two plain-language sentences: what this page does for the player
+ *  crumbs  – optional trail, e.g. [{ label: 'Tools', href: '/#tools' }]
+ *  steps   – optional "How it works" (2–4 short imperative steps) to guide beginners
+ *  status  – optional live status in gold, e.g. "Live now"
+ *  slots   – default: extra markup under the lead, "actions": buttons, "aside": right column
+ */
+interface Crumb { label: string; href?: string }
+interface Props {
+  title: string;
+  lead?: string;
+  crumbs?: Crumb[];
+  steps?: string[];
+  stepsTitle?: string;
+  status?: string;
+  id?: string;
+}
+const { title, lead, crumbs = [], steps = [], stepsTitle = 'How it works', status, id } = Astro.props;
+const hasAside = Astro.slots.has('aside');
+---
+<header class="ph" id={id}>
+  <div class="wrap">
+    <div class:list={['ph-inner', { 'has-aside': hasAside }]}>
+      <div class="ph-main">
+        {crumbs.length > 0 && (
+          <nav aria-label="Breadcrumb">
+            <ol class="ph-crumbs">
+              {crumbs.map((c) => <li>{c.href ? <a href={c.href}>{c.label}</a> : <span aria-current="page">{c.label}</span>}</li>)}
+            </ol>
+          </nav>
+        )}
+        {status && <p class="ph-status">{status}</p>}
+        <slot name="status" />
+        <h1 class="ph-title">{title}</h1>
+        {lead && <p class="ph-lead">{lead}</p>}
+        <slot />
+        {Astro.slots.has('actions') && <div class="ph-actions"><slot name="actions" /></div>}
+      </div>
+      {hasAside && <div class="ph-aside"><slot name="aside" /></div>}
+    </div>
+    {steps.length > 0 && (
+      <section class="how" aria-label={stepsTitle}>
+        <h2 class="how-title">{stepsTitle}</h2>
+        <ol class="how-list">
+          {steps.map((s) => <li>{s}</li>)}
+        </ol>
+      </section>
+    )}
+  </div>
+</header>

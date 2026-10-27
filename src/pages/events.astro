@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
 import EventCard from '../components/events/EventCard.astro';
 import { FOOTBALL_CENTRE_CONTENT } from '../data/footballCentre.js';
 import { REDEEM_CODES } from '../data/redeemCodes.js';
@@ -201,19 +202,16 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
     <div class="wrap">
 
       <!-- ====================================================== PAGE HEAD -->
-      <header class="head">
-        <div>
-          <p class="eyebrow"><i class="dot"></i> FC Mobile 27 · Event hub</p>
-          <h1>Events &amp; resets</h1>
+      <PageHeader
+        title="Events & resets"
+        lead="See what’s live in FC Mobile, when the next event starts and when the daily reset happens. Every time is shown in your own time zone."
+        crumbs={[{ label: 'Live', href: '/#start' }, { label: 'Events & resets' }]}
+      >
+        <div slot="aside" class="head-meta">
+          <span class="chip live"><span id="syncLabel">Live clock</span></span>
+          <span class="chip chip--tz" title="All times on this page are shown in your timezone"><span id="tzLabel">Your local time</span></span>
         </div>
-        <div class="head-meta">
-          <span class="chip"><i class="dot"></i><span id="syncLabel">Live clock</span></span>
-          <span class="chip chip--tz" title="All times on this page are shown in your timezone">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            <span id="tzLabel">Your local time</span>
-          </span>
-        </div>
-      </header>
+      </PageHeader>
 
       <!-- ============================================================ HERO -->
       {hero && (
@@ -720,11 +718,11 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       --ink: #f2fbff;
       --mute: #8fa6b1;
       --line: rgba(255, 255, 255, 0.085);
-      --cyan: #62d9ff;
+      --cyan: #4CC9FF;
       --green: #58e0a6;
-      --gold: #ffd56f;
-      --hero: #62d9ff;
-      --display: var(--font-display, 'Space Grotesk', system-ui, sans-serif);
+      --gold: #F2C14E;
+      --hero: #4CC9FF;
+      --display:var(--font-display);
       position: relative;
       min-height: 100vh;
       padding: 104px 24px 96px;
@@ -738,7 +736,6 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       height: 900px;
       pointer-events: none;
       background:
-        radial-gradient(760px 420px at 12% -4%, color-mix(in srgb, var(--hero) 22%, transparent), transparent 68%),
         radial-gradient(700px 460px at 96% 14%, rgba(124, 108, 255, 0.14), transparent 66%),
         radial-gradient(600px 340px at 50% 40%, rgba(98, 217, 255, 0.05), transparent 70%);
       mask-image: linear-gradient(#000 55%, transparent);
@@ -753,10 +750,10 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       align-items: center;
       gap: 9px;
       color: var(--cyan);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: 0.12em;
-      text-transform: uppercase;
+      text-transform:none;
     }
     .dot {
       display: inline-block;
@@ -764,7 +761,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       height: 7px;
       border-radius: 50%;
       background: var(--green);
-      box-shadow: 0 0 0 4px rgba(88, 224, 166, 0.13), 0 0 12px rgba(88, 224, 166, 0.55);
+      box-shadow:0 0 0 4px rgba(88, 224, 166, 0.13);
     }
 
     /* ----------------------------------------------------------- head */
@@ -790,11 +787,11 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       border: 1px solid var(--line);
       background: rgba(255, 255, 255, 0.035);
       color: #b5c9d2;
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 700;
       backdrop-filter: blur(8px);
     }
-    .chip .dot { width: 6px; height: 6px; box-shadow: 0 0 0 3px rgba(88, 224, 166, 0.13); }
+    .chip .dot { width: 6px; height: 6px; box-shadow:0 0 0 3px rgba(88, 224, 166, 0.13); }
     .chip svg { color: var(--cyan); }
 
     /* ----------------------------------------------------------- hero */
@@ -805,17 +802,13 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       grid-template-columns: minmax(0, 1fr) 300px;
       min-height: 560px;
       overflow: hidden;
-      border-radius: 30px;
+      border-radius: 14px;
       border: 1px solid color-mix(in srgb, var(--acc) 34%, rgba(255, 255, 255, 0.08));
       background:
-        radial-gradient(620px 420px at 78% 28%, color-mix(in srgb, var(--acc) 30%, transparent), transparent 68%),
         radial-gradient(520px 380px at 96% 100%, color-mix(in srgb, var(--acc) 16%, transparent), transparent 70%),
         repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 26px),
         linear-gradient(135deg, #0d1822, #070d13);
-      box-shadow:
-        0 50px 120px -40px rgba(0, 0, 0, 0.9),
-        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-        0 0 90px -30px color-mix(in srgb, var(--acc) 40%, transparent);
+      box-shadow:0 50px 120px -40px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.02) inset, 0 0 90px -30px color-mix(in srgb, var(--acc) 40%, transparent);
       isolation: isolate;
     }
     .hero-img {
@@ -832,7 +825,6 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       inset: 0;
       z-index: -2;
       background:
-        linear-gradient(95deg, rgba(4, 8, 13, 0.96) 0%, rgba(4, 8, 13, 0.82) 38%, rgba(4, 8, 13, 0.25) 78%, rgba(4, 8, 13, 0.1) 100%),
         linear-gradient(0deg, rgba(4, 8, 13, 0.85), transparent 55%),
         radial-gradient(700px 400px at 100% 0%, color-mix(in srgb, var(--acc) 26%, transparent), transparent 70%);
     }
@@ -864,27 +856,27 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       background: rgba(5, 12, 17, 0.7);
       backdrop-filter: blur(10px);
       color: #8ff2c2;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: 0.1em;
-      text-transform: uppercase;
+      text-transform:none;
     }
     .state i {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: currentColor;
-      box-shadow: 0 0 0 4px rgba(88, 224, 166, 0.16), 0 0 14px rgba(88, 224, 166, 0.8);
+      box-shadow:0 0 0 4px rgba(88, 224, 166, 0.16);
       animation: beat 2s ease-in-out infinite;
     }
     .hero[data-state='upcoming'] .state { color: var(--acc); border-color: color-mix(in srgb, var(--acc) 45%, transparent); }
-    .hero[data-state='upcoming'] .state i, .hero[data-state='ended'] .state i { box-shadow: none; animation: none; }
+    .hero[data-state='upcoming'] .state i, .hero[data-state='ended'] .state i { box-shadow:none; animation: none; }
     .hero[data-state='ended'] .state { color: #93a5ae; border-color: var(--line); }
     .hero-kicker { color: #b9cdd5; font-size: 12.5px; font-weight: 600; }
     .hero h2 {
       font: 700 clamp(44px, 7.4vw, 92px) / 0.92 var(--display);
       letter-spacing: -0.055em;
-      background: linear-gradient(180deg, #fff 30%, color-mix(in srgb, var(--acc) 55%, #fff));
+      background:#fff;
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -893,7 +885,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
     .hero-sum { max-width: 54ch; color: #c1d3db; font-size: 15.5px; line-height: 1.65; }
 
     .cd { display: grid; gap: 10px; }
-    .cd-label { color: #94abb5; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+    .cd-label { color: #94abb5; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform:none; }
     .cd-grid { display: flex; gap: 10px; }
     .cd-grid > div {
       min-width: 74px;
@@ -901,10 +893,10 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       border-radius: 16px;
       text-align: center;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+      background:rgba(255, 255, 255, 0.09);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 14px 30px -18px rgba(0, 0, 0, 0.8);
+      box-shadow:0 14px 30px -18px rgba(0, 0, 0, 0.8);
     }
     .cd-grid b {
       display: block;
@@ -912,7 +904,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       letter-spacing: -0.05em;
       font-variant-numeric: tabular-nums;
     }
-    .cd-grid small { display: block; margin-top: 6px; color: #8ea5af; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+    .cd-grid small { display: block; margin-top: 6px; color: #8ea5af; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform:none; }
     .cd-grid.is-urgent b { color: #ffb36b; }
 
     .hero-prog { width: min(480px, 100%); }
@@ -923,8 +915,8 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       display: block;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, color-mix(in srgb, var(--acc) 55%, #000), var(--acc));
-      box-shadow: 0 0 18px color-mix(in srgb, var(--acc) 80%, transparent);
+      background:var(--acc);
+      box-shadow:0 0 18px color-mix(in srgb, var(--acc) 80%, transparent);
       transition: width 1s linear;
     }
     .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
@@ -940,7 +932,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       transition: transform 0.2s ease, filter 0.2s ease, background 0.2s ease, border-color 0.2s ease;
     }
     .hb:hover { transform: translateY(-2px); }
-    .hb-primary { background: var(--acc); color: #06131a; box-shadow: 0 16px 40px -14px color-mix(in srgb, var(--acc) 80%, transparent); }
+    .hb-primary { background: var(--acc); color: #06131a; box-shadow:0 16px 40px -14px color-mix(in srgb, var(--acc) 80%, transparent); }
     .hb-primary:hover { filter: brightness(1.1); }
     .hb-ghost { color: var(--ink); border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(6, 14, 20, 0.5); backdrop-filter: blur(10px); }
     .hb-ghost:hover { border-color: var(--acc); color: var(--acc); }
@@ -949,13 +941,13 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       align-self: end;
       margin: 0 28px 28px 0;
       padding: 20px 20px 22px;
-      border-radius: 22px;
+      border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      background: linear-gradient(180deg, rgba(8, 15, 22, 0.72), rgba(8, 15, 22, 0.55));
+      background:rgba(8, 15, 22, 0.72);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
     }
-    .hero-side-h { color: var(--acc); font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 14px; }
+    .hero-side-h { color: var(--acc); font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform:none; margin-bottom: 14px; }
     .hero-side ul { list-style: none; padding: 0; display: grid; gap: 14px; }
     .hero-side li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; color: #d6e5eb; font-size: 13px; line-height: 1.45; }
     .hero-side li b { color: var(--acc); font: 700 12px / 1.5 var(--display); opacity: 0.9; }
@@ -968,18 +960,18 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       flex-direction: column;
       gap: 6px;
       padding: 16px 18px;
-      border-radius: 18px;
+      border-radius: 14px;
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+      background:rgba(255, 255, 255, 0.045);
       color: inherit;
       text-decoration: none;
       overflow: hidden;
       transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
     }
     .tile:hover { transform: translateY(-3px); border-color: rgba(98, 217, 255, 0.4); background: rgba(98, 217, 255, 0.05); }
-    .tile small { color: #7d95a0; font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+    .tile small { color: #7d95a0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform:none; }
     .tile strong { white-space: nowrap; font: 700 25px / 1.05 var(--display); letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
-    .tile em { color: #8fa6b1; font-size: 11.5px; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tile em { color: #8fa6b1; font-size: 12px; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tile--codes strong { color: var(--green); }
 
     /* --------------------------------------------------------- subnav */
@@ -1000,7 +992,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       background: rgba(8, 14, 21, 0.78);
       backdrop-filter: blur(16px) saturate(1.3);
       -webkit-backdrop-filter: blur(16px) saturate(1.3);
-      box-shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.8);
+      box-shadow:0 18px 50px -20px rgba(0, 0, 0, 0.8);
     }
     .subnav::-webkit-scrollbar { display: none; }
     .subnav a {
@@ -1034,10 +1026,10 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       display: inline-block;
       padding: 3px 8px;
       border-radius: 6px;
-      font-size: 9.5px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: 0.08em;
-      text-transform: uppercase;
+      text-transform:none;
       vertical-align: middle;
     }
     .tag--leak { color: #c9b8ff; background: rgba(154, 140, 255, 0.14); border: 1px solid rgba(154, 140, 255, 0.3); }
@@ -1052,13 +1044,13 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       top: 14px;
       bottom: 14px;
       width: 2px;
-      background: linear-gradient(180deg, rgba(98, 217, 255, 0.5), rgba(255, 255, 255, 0.06) 70%);
+      background:rgba(98, 217, 255, 0.5);
       border-radius: 2px;
     }
     .tl { --acc: var(--cyan); display: grid; grid-template-columns: 112px 52px minmax(0, 1fr); align-items: start; }
     .tl-date { padding-top: 16px; text-align: right; }
     .tl-date time { display: block; font: 700 15px / 1.1 var(--display); letter-spacing: -0.02em; }
-    .tl-date small { display: block; margin-top: 5px; color: #7d95a0; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .tl-date small { display: block; margin-top: 5px; color: #7d95a0; font-size: 12px; font-variant-numeric: tabular-nums; }
     .tl-dot {
       position: relative;
       z-index: 1;
@@ -1068,18 +1060,18 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       border-radius: 50%;
       background: #0a121a;
       border: 3px solid var(--acc);
-      box-shadow: 0 0 0 5px #05090f;
+      box-shadow:0 0 0 5px #05090f;
     }
-    .tl.is-next .tl-dot { background: var(--acc); box-shadow: 0 0 0 5px #05090f, 0 0 0 8px color-mix(in srgb, var(--acc) 30%, transparent), 0 0 22px var(--acc); }
+    .tl.is-next .tl-dot { background: var(--acc); box-shadow:0 0 0 5px #05090f, 0 0 0 8px color-mix(in srgb, var(--acc) 30%, transparent), 0 0 22px var(--acc); }
     .tl-card {
       padding: 16px 20px 17px;
-      border-radius: 18px;
+      border-radius: 14px;
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012));
+      background:rgba(255, 255, 255, 0.04);
       transition: border-color 0.25s ease, transform 0.25s ease;
     }
     .tl:hover .tl-card { border-color: color-mix(in srgb, var(--acc) 45%, var(--line)); transform: translateX(3px); }
-    .tl.is-next .tl-card { border-color: color-mix(in srgb, var(--acc) 50%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--acc) 9%, transparent), rgba(255, 255, 255, 0.015)); }
+    .tl.is-next .tl-card { border-color: color-mix(in srgb, var(--acc) 50%, var(--line)); background:linear-gradient(180deg, color-mix(in srgb, var(--acc) 9%, transparent), rgba(255, 255, 255, 0.015)); }
     .tl-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
     .tl-card h3 { font: 700 17px / 1.25 var(--display); letter-spacing: -0.025em; }
     .tl-card p { margin-top: 6px; color: #9db3bd; font-size: 13px; line-height: 1.5; }
@@ -1088,18 +1080,18 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
     /* --------------------------------------------------------- resets */
     .reset {
       padding: 26px;
-      border-radius: 24px;
+      border-radius: 14px;
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+      background:rgba(255, 255, 255, 0.045);
     }
     .reset--hi {
       border-color: rgba(98, 217, 255, 0.3);
-      background: linear-gradient(180deg, rgba(98, 217, 255, 0.09), rgba(255, 255, 255, 0.012));
+      background:rgba(98, 217, 255, 0.09);
     }
     .reset-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .reset-top small, .reset-times small { display: block; color: #7d95a0; font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+    .reset-top small, .reset-times small { display: block; color: #7d95a0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform:none; }
     .reset-top h3 { margin-top: 6px; font: 700 21px / 1.1 var(--display); letter-spacing: -0.03em; }
-    .reset-badge { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: #c4d6de; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+    .reset-badge { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: #c4d6de; font-size: 12px; font-weight: 700; white-space: nowrap; }
     .reset-count {
       display: block;
       margin: 24px 0 20px;
@@ -1141,7 +1133,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       font-size: 16px;
     }
     .evergreen strong { display: block; font-size: 12.5px; line-height: 1.25; }
-    .evergreen small { display: block; margin-top: 3px; color: #7d95a0; font-size: 11px; }
+    .evergreen small { display: block; margin-top: 3px; color: #7d95a0; font-size: 12px; }
     .evergreen b { margin-left: auto; color: var(--cyan); }
 
     /* ------------------------------------------------------ coverage */
@@ -1149,9 +1141,9 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      border-radius: 20px;
+      border-radius: 14px;
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      background:rgba(255, 255, 255, 0.04);
       color: inherit;
       text-decoration: none;
       transition: transform 0.3s ease, border-color 0.25s ease;
@@ -1162,8 +1154,8 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
     .news:hover .news-media img { transform: scale(1.05); }
     .news-media span { color: #5d7681; font: 700 12px var(--display); letter-spacing: 0.1em; }
     .news-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 20px; }
-    .news-body > div { display: flex; justify-content: space-between; gap: 10px; font-size: 10.5px; color: var(--mute); }
-    .news-body > div span { color: var(--cyan); font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+    .news-body > div { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--mute); }
+    .news-body > div span { color: var(--cyan); font-weight: 800; text-transform:none; letter-spacing: 0.06em; }
     .news-body h3 { font: 700 16px / 1.28 var(--display); letter-spacing: -0.02em; }
     .news-body p {
       color: #8fa6b1;
@@ -1181,7 +1173,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       flex-direction: column;
       gap: 4px;
       padding: 18px;
-      border-radius: 18px;
+      border-radius: 14px;
       border: 1px solid var(--line);
       background: rgba(255, 255, 255, 0.03);
       color: inherit;
@@ -1189,13 +1181,13 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
     }
     .tools a:hover { transform: translateY(-3px); border-color: rgba(98, 217, 255, 0.4); background: rgba(98, 217, 255, 0.05); }
-    .tools span { color: #587480; font: 700 11px var(--display); }
+    .tools span { color: #587480; font: 700 12px var(--display); }
     .tools strong { margin-top: 10px; font: 700 15px / 1.2 var(--display); letter-spacing: -0.02em; }
     .tools small { color: var(--mute); font-size: 12px; }
 
     .fine { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: #6b838e; font-size: 12px; line-height: 1.65; max-width: 80ch; }
 
-    @keyframes beat { 50% { box-shadow: 0 0 0 8px rgba(88, 224, 166, 0), 0 0 14px rgba(88, 224, 166, 0.8); } }
+    @keyframes beat { 50% { box-shadow:0 0 0 8px rgba(88, 224, 166, 0); } }
 
     /* Gentle entrance for the above-the-fold blocks only; everything stays visible without it */
     @media (prefers-reduced-motion: no-preference) {
@@ -1217,10 +1209,9 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       .hub { padding: 88px 14px 72px; }
       .head { align-items: flex-start; flex-direction: column; gap: 14px; }
       .head-meta { justify-content: flex-start; }
-      .hero { min-height: 0; border-radius: 24px; }
+      .hero { min-height: 0; border-radius: 14px; }
       .hero-shade {
         background:
-          linear-gradient(0deg, rgba(4, 8, 13, 0.98) 0%, rgba(4, 8, 13, 0.88) 52%, rgba(4, 8, 13, 0.3) 100%),
           radial-gradient(500px 300px at 100% 0%, color-mix(in srgb, var(--acc) 28%, transparent), transparent 70%);
       }
       .hero-body { padding: 210px 20px 24px; gap: 15px; }

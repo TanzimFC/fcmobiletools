@@ -1,0 +1,291 @@
+/* ==========================================================================
+   FCMOBILETOOLS — "Matchday" design system
+   Loaded last on every page. One source of truth for type, colour, shape and
+   the shared page header, so no two pages can drift apart again.
+
+   Rules the whole site follows
+   1. Cyan means "do something". Gold means "live now" or "reward". Nothing else is coloured.
+   2. Headings are sentence case. No gradient text, no tracked all-caps labels.
+   3. Two radii only: 8px (controls) and 14px (containers).
+   4. Minimum text size is 12px. Body is 16px.
+   5. Structure comes from hairlines and spacing, not glow, blur or lift.
+   ========================================================================== */
+
+:root {
+  --gold-soft: rgba(242, 193, 78, 0.14);
+  --accent-soft: rgba(76, 201, 255, 0.12);
+  --r-control: 8px;
+  --r-box: 14px;
+  --wrap: 1200px;
+  --gutter: clamp(18px, 4vw, 32px);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* legacy luxe tokens now resolve to the same palette */
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --lx-cyan: #4cc9ff;
+  --lx-cyan-2: #7bd8ff;
+  --lx-gold: #f2c14e;
+  --lx-gold-2: #f2c14e;
+  --lx-mint: #4ade80;
+  --lx-rose: #ff7b7b;
+  --lx-violet: #4cc9ff;
+  --lx-line: rgba(255, 255, 255, 0.09);
+}
+
+html { scroll-padding-top: 88px; text-size-adjust: 100%; }
+body { font-feature-settings: 'kern', 'liga'; text-rendering: optimizeLegibility; }
+::selection { background: rgba(76, 201, 255, 0.28); color: #fff; }
+
+/* ---------- Type ---------- */
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 82%;
+  letter-spacing: -0.012em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+h1 { font-size: clamp(2.5rem, 6.2vw, 4.5rem); }
+h2 { font-size: clamp(1.9rem, 3.8vw, 2.9rem); letter-spacing: -0.008em; }
+h3 { font-size: clamp(1.2rem, 1.8vw, 1.45rem); font-stretch: 90%; font-weight: 700; line-height: 1.15; }
+p, li { text-wrap: pretty; }
+.num, [data-count], time { font-variant-numeric: tabular-nums; }
+:where(a) { text-underline-offset: 3px; }
+:where(a:not([class])) { color: var(--primary); }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { width: min(100% - var(--gutter) * 2, var(--wrap)); margin-inline: auto; }
+
+/* ---------- Ban list: patterns that read as templated ---------- */
+/* gradient headline words */
+html body :is(h1, h2, h3, h4) :is(em, i, span, strong)[class*='grad'],
+html body :is(h1, h2, h3, h4) em,
+html body [class*='gradient-text'] {
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: inherit !important;
+  font-style: normal !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+/* tracked all-caps eyebrow / kicker labels: quiet, normal-case, readable */
+html body :is([class*='eyebrow'], [class*='kicker']):not(.keep) {
+  font-family: var(--font-body) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--muted) !important;
+}
+/* ambient glow / orb / noise decoration layers */
+html body :is([class*='-glow'], [class*='orb'], [class*='-aurora'], [class*='-grain'], .lx-cursor):not(.keep) {
+  display: none !important;
+}
+/* motion: one calm hover language, colour only */
+@media (hover: hover) {
+  html body :is(.premium-card, .result-card, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card):hover {
+    transform: none !important;
+  }
+}
+
+/* ---------- Buttons: one shape, two voices ---------- */
+html body :is(a, button):is([class*='btn'], .primary, .secondary, .ghost):not(.icon-btn, [class*='icon-btn'], [class*='close'], [class*='tab'], [class*='chip'], [class*='share'], [class*='skel']) {
+  font-family: var(--font-body);
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  border-radius: var(--r-control);
+  box-shadow: none;
+  text-shadow: none;
+  transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease), color 0.18s var(--ease);
+}
+html body :is(a, button):is([class*='primary'], .primary):not(.icon-btn, [class*='tab'], [class*='chip'], [class*='close'], [class*='skel']) {
+  background: var(--primary) !important;
+  background-image: none !important;
+  color: var(--on-primary) !important;
+  border: 1px solid var(--primary) !important;
+}
+html body :is(a, button):is([class*='primary'], .primary):not(.icon-btn, [class*='tab'], [class*='chip'], [class*='close'], [class*='skel']):hover {
+  background: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+html body :is(a, button):is([class*='secondary'], [class*='ghost'], [class*='outline'], [class*='glass'], [class*='quiet'], .secondary, .ghost):not(.icon-btn, [class*='tab'], [class*='chip'], [class*='close']) {
+  background: transparent !important;
+  background-image: none !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border-strong) !important;
+}
+html body :is(a, button):is([class*='secondary'], [class*='ghost'], [class*='outline'], [class*='glass'], [class*='quiet'], .secondary, .ghost):not(.icon-btn, [class*='tab'], [class*='chip'], [class*='close']):hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+html body :is(a, button)[class*='gold'] {
+  background: var(--gold) !important;
+  background-image: none !important;
+  color: #1a1203 !important;
+  border: 1px solid var(--gold) !important;
+}
+
+/* shared button (use in new markup) */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; padding: 0 20px; font-size: 0.95rem; line-height: 1; cursor: pointer; text-decoration: none;
+}
+.btn svg { flex: none; }
+
+/* ---------- Surfaces ---------- */
+html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-box);
+  box-shadow: none;
+}
+
+/* ---------- Form controls ---------- */
+html body :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range'], [type='color']) {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-control);
+  box-shadow: none;
+}
+html body :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range']):focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+html body ::placeholder { color: #6f8094; opacity: 1; }
+
+/* ==========================================================================
+   Shared page header  (<PageHeader />)  — the same on every page
+   ========================================================================== */
+.ph { position: relative; left: 50%; width: 100vw; margin-left: -50vw; margin-bottom: clamp(24px, 3vw, 40px); border-bottom: 1px solid var(--border); padding-block: clamp(36px, 6vw, 72px) clamp(28px, 4vw, 44px); background: var(--bg); }
+.ph-inner { display: grid; gap: 32px; grid-template-columns: minmax(0, 1fr); align-items: end; }
+.ph-inner.has-aside { grid-template-columns: minmax(0, 1fr) auto; }
+.ph-crumbs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; padding: 0; list-style: none; font-size: 0.875rem; color: var(--muted); }
+.ph-crumbs li + li::before { content: '/'; margin-right: 6px; opacity: 0.45; }
+.ph-crumbs a { color: var(--muted); text-decoration: none; }
+.ph-crumbs a:hover { color: var(--text); }
+.ph-status { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px; font-size: 0.875rem; font-weight: 600; color: var(--gold); }
+.ph-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.ph-title { margin: 0; max-width: 18ch; font-size: clamp(2.4rem, 5.6vw, 4.25rem); }
+.ph-lead { margin: 18px 0 0; max-width: 58ch; font-size: clamp(1.0625rem, 1.5vw, 1.25rem); line-height: 1.55; color: var(--muted-strong); }
+.ph-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+.ph-aside { min-width: 0; }
+
+/* "How it works" — beginner guidance, same strip on every tool page */
+.how { margin-top: clamp(26px, 4vw, 40px); }
+.how-title { margin: 0 0 12px; font: 700 0.875rem/1.2 var(--font-body); color: var(--muted); }
+.how-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: 0; padding: 0; list-style: none; counter-reset: how; border: 1px solid var(--border); border-radius: var(--r-box); overflow: hidden; background: var(--surface); }
+.how-list li { counter-increment: how; display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; font-size: 0.975rem; line-height: 1.45; color: var(--muted-strong); }
+.how-list li + li { border-left: 1px solid var(--border); }
+.how-list li::before { content: counter(how); flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--primary); font: 800 0.8125rem/1 var(--font-display); }
+@media (max-width: 720px) {
+  .ph-inner.has-aside { grid-template-columns: 1fr; }
+  .how-list li + li { border-left: 0; border-top: 1px solid var(--border); }
+}
+
+/* ==========================================================================
+   Section heading — one pattern for every section of every page
+   ========================================================================== */
+.sec { padding-block: var(--space-section); }
+.sec + .sec { padding-top: 0; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 32px; margin-bottom: clamp(24px, 3.5vw, 40px); }
+.sec-head h2 { margin: 0; }
+.sec-head p { margin: 10px 0 0; max-width: 54ch; color: var(--muted-strong); font-size: 1.0625rem; }
+.sec-link { color: var(--primary); font-weight: 650; text-decoration: none; white-space: nowrap; }
+.sec-link:hover { color: var(--primary-hover); text-decoration: underline; }
+
+/* ---------- Reading pages (legal, guides) ---------- */
+.prose { max-width: 70ch; margin-inline: auto; font-size: 1.0625rem; line-height: 1.75; color: var(--muted-strong); }
+.prose h2 { margin: 2.4em 0 0.6em; font-size: clamp(1.5rem, 2.6vw, 1.9rem); color: var(--text); }
+.prose h3 { margin: 1.8em 0 0.5em; color: var(--text); }
+.prose a { color: var(--primary); }
+.prose ul, .prose ol { padding-left: 1.25em; }
+.prose li { margin: 0.4em 0; }
+.prose .meta { color: var(--muted); font-size: 0.9375rem; }
+
+/* ---------- Chips ---------- */
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--border-strong); border-radius: 999px; font: 600 0.8125rem/1.3 var(--font-body); color: var(--muted-strong); }
+.chip.live { color: var(--gold); border-color: rgba(242, 193, 78, 0.4); background: var(--gold-soft); }
+.chip.live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* ==========================================================================
+   Headings: one width, one tracking, everywhere (pages used to set their own)
+   ========================================================================== */
+html body :is(h1, h2, h3) {
+  font-stretch: 84% !important;
+  letter-spacing: -0.01em !important;
+  word-spacing: 0.1em;
+}
+html body :is(h4, h5, h6) { letter-spacing: 0 !important; }
+
+/* ==========================================================================
+   Navigation: a calm, solid, full-width bar
+   ========================================================================== */
+html body .fcmt { height: 68px; pointer-events: auto; background: rgba(7, 16, 24, 0.9); border-bottom: 1px solid var(--border); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); }
+html body .fcmt-bar { width: min(100% - var(--gutter) * 2, var(--wrap)); max-width: none; height: 68px; margin: 0 auto !important; padding: 0; gap: 20px; border: 0 !important; border-radius: 0; background: transparent !important; box-shadow: none !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
+html body .fcmt[data-scrolled='true'] .fcmt-bar { height: 68px; margin-top: 0 !important; background: transparent !important; box-shadow: none !important; }
+html body .fcmt-bar::before, html body .fcmt-bar::after, html body .fcmt-glide { display: none !important; }
+html body .fcmt-logo-img { height: 46px; filter: none; }
+html body .fcmt-link { height: 40px; padding: 0 14px; border-radius: var(--r-control); font-family: var(--font-body); font-size: 0.9375rem; font-weight: 600; color: var(--muted-strong); background: transparent; }
+html body .fcmt-link:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+html body .fcmt-link.active { color: #fff; }
+html body .fcmt-gw, html body .fcmt-gw-ico { color: var(--gold); animation: none !important; }
+html body .fcmt-gw-tag { animation: none !important; box-shadow: none !important; letter-spacing: 0; text-transform: none; }
+html body .fcmt-search, html body .fcmt-bell, html body .fcmt-account { border-radius: var(--r-control); background: transparent; border-color: var(--border-strong); height: 40px; }
+html body .fcmt-bell { width: 40px; flex-basis: 40px; }
+html body .fcmt-cta { height: 40px; border-radius: var(--r-control); background: var(--primary) !important; box-shadow: none !important; color: var(--on-primary); font-family: var(--font-body); }
+html body .fcmt-cta::before, html body .fcmt-cta::after { display: none !important; }
+html body .fcmt-mega-card { background: var(--surface2); border-radius: var(--r-box); box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.6); }
+html body .fcmt-ico { border-radius: var(--r-control); }
+html body .fcmt-item:hover { background: rgba(255, 255, 255, 0.05); }
+html body .fcmt-feature-tag i, html body .fcmt-pulse { animation: none !important; box-shadow: none !important; }
+
+/* ==========================================================================
+   Cookie / consent banner: compact, one calm row, never covers the hero
+   ========================================================================== */
+html body .fcmt-consent { left: 12px; right: 12px; bottom: 12px; }
+html body .fcmt-consent .fcmt-consent-card { width: min(880px, 100%) !important; padding: 14px 18px !important; gap: 18px !important; border-radius: var(--r-box) !important; background: var(--surface2) !important; backdrop-filter: none !important; box-shadow: 0 18px 50px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-strong) !important; }
+html body .fcmt-consent .fcmt-consent-card::before { display: none !important; }
+html body .fcmt-consent .fcmt-consent-icon { display: none !important; }
+html body .fcmt-consent .fcmt-consent-copy h2 { font-family: var(--font-body) !important; font-stretch: 100% !important; font-size: 1rem !important; font-weight: 700 !important; letter-spacing: 0 !important; word-spacing: 0 !important; margin-bottom: 4px !important; }
+html body .fcmt-consent .fcmt-consent-copy p { font-size: 0.8125rem; line-height: 1.5; color: var(--muted-strong); }
+@media (max-width: 760px) { html body .fcmt-consent .fcmt-consent-card { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; } html body .fcmt-consent-actions { justify-content: stretch; } html body .fcmt-consent-actions > * { flex: 1; } }
+
+/* pages that start with the shared header sit flush under the nav */
+html body main:has(.ph) { padding-top: 0 !important; margin-top: 0 !important; }
+html, body { overflow-x: clip; }
+
+/* home: the nav floats transparent over the photo until you scroll */
+html body.is-home .fcmt { margin-bottom: -68px; }
+html body.is-home .fcmt[data-scrolled='false'] { background: transparent; border-bottom-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* live side widgets inside the shared header (investment, shards, rank up) */
+html body .ph-aside :is(.hero-metric, .rk-target) { position: static; display: grid; gap: 6px; min-width: 250px; margin: 0; padding: 20px 22px; border: 1px solid var(--border-strong); border-radius: var(--r-box); background: var(--surface); box-shadow: none; transform: none; }
+html body .ph-aside .hero-metric small { font: 600 0.875rem/1.2 var(--font-body); color: var(--muted); }
+html body .ph-aside .hero-metric strong { font: 800 clamp(2.4rem, 4vw, 3.25rem)/1 var(--font-display); font-stretch: 80%; font-variant-numeric: tabular-nums; color: #fff; }
+html body .ph-aside .hero-metric > span, html body .ph-aside .hero-metric label { font-size: 0.9rem; color: var(--muted-strong); }
+html body .ph-aside .hero-metric .metric-line { height: 4px; margin: 6px 0; border-radius: 2px; background: var(--border); overflow: hidden; }
+html body .ph-aside .hero-metric .metric-line i { display: block; height: 100%; background: var(--primary); }
+html body .ph-aside .hero-metric .metric-foot { display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--muted-strong); }
+html body .ph-aside .rk-target { grid-auto-flow: column; align-items: center; gap: 16px; }
+html body .ph-aside .rk-target .rk-gem-float { width: 72px; height: 72px; position: relative; animation: none; }
+html body .ph-aside .rk-target svg { width: 72px; height: 72px; display: block; }
+html body .ph-aside .rk-target small { display: block; font: 600 0.875rem/1.2 var(--font-body); color: var(--muted); }
+html body .ph-aside .rk-target strong { font: 800 1.75rem/1.1 var(--font-display); font-stretch: 82%; color: #fff; }
+
+/* retire page-level decorative layers that survived the header swap */
+html body :is(.rx-bg, .ambient, .ct-ambient, .rx-gridlines, .aurora) { display: none !important; }
+html body .ph-status.rx-eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--muted-strong) !important; }
+html body .rx-below { display: grid; gap: 20px; padding-block: 28px 0; }
+html body .rx-below .rx-alert { max-width: none; }
+html body .ph-aside .rx-stage { min-width: min(100%, 360px); }
+html body .ph-aside .ct-ladder { position: static; min-width: 240px; padding: 18px 20px; border: 1px solid var(--border-strong); border-radius: var(--r-box); background: var(--surface); }
