@@ -40,7 +40,6 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 
 ### 🚀 New
 - **Gauntlet Mode Planner:** A dedicated tool to help plan your Gauntlet Mode progress.
-- **Website ad controls:** Ads were adjusted during this period as we worked on page performance.
 
 ### ✨ Improvements
 - **Team OVR Calculator:** Improved squad planning, substitute handling, and formation feedback.
