@@ -61,6 +61,7 @@ export default defineConfig({
       return ![
         '/a-nations-story/',
         '/trivia/play/',
+        '/match-center/',
         '/admin/',
         '/giveaways/claim/',
         '/creator/login/',
