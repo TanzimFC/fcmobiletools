@@ -224,7 +224,7 @@ export function normalizeSettings(input = {}) {
   const a = input.adsense || {};
   const publisherId = flat(a.publisherId || base.adsense.publisherId, 40);
   if (!/^ca-pub-\d{10,20}$/.test(publisherId)) throw new AdsError('The AdSense publisher ID looks like ca-pub-1234567890123456.');
-  out.adsense = { enabled: a.enabled === true, publisherId, share: Math.round(num(a.share, 0, 100, 100)) };
+  out.adsense = { enabled: needsDensityMigration ? false : a.enabled === true, publisherId, share: Math.round(num(a.share, 0, 100, 100)) };
   return out;
 }
 
