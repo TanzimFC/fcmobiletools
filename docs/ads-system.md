@@ -26,7 +26,7 @@ Data lives in D1 (tables `ads_creatives`, `ads_stats`, `ads_settings`, `ads_inqu
 
 ## Placement plan
 
-- Home pages can use a wide hero and footer strip. Lists can use a compact feed placement and footer strip. Articles can use a mid-read card and an end-of-article hero.
+- Home pages can use a wide hero and footer strip. Lists can use a compact feed placement and footer strip. Long articles can use an early in-read card, a mid-read card, an end-of-article hero and a footer strip; the extra in-read placement is limited to articles with enough length and spacing.
 - Tool pages use a square creative in a reserved desktop rail at 1280px and wider, an additional placement beneath the tool or its visible results, and a footer strip. The rail is hidden on smaller screens to protect the usable width.
 - Public informational pages with enough sections can show a mid-page card and a footer strip. Account, giveaway, reward, legal, settings and other sensitive routes remain excluded.
 - House creative layouts adapt to hero, compact, strip and square side-rail shapes. AdSense uses its configured fluid or auto format when it is approved and enabled.
