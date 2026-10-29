@@ -4,7 +4,7 @@ export default {
   policy: 'Leia nossa política de privacidade',
   manage: 'Escolhas de privacidade',
   continue: 'Continuar',
-  basic: 'Usar anúncios básicos',
+  basic: 'Continuar com as configurações básicas',
   settingsTitle: 'Suas escolhas de privacidade',
   settingsLead: 'Escolha se o armazenamento opcional relacionado a anúncios e as solicitações elegíveis a terceiros podem funcionar. As promoções do site continuam visíveis em qualquer opção.',
   closeAria: 'Fechar configurações de privacidade',
