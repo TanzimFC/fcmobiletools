@@ -103,11 +103,12 @@ await test('page budget and network gate', () => {
   assert.equal(pageBudget(s, { pageType: 'list' }), 3);
   assert.equal(pageBudget(s, { pageType: 'article', words: 2000 }), 4);
   assert.equal(pageBudget({ ...s, enabled: false }, { pageType: 'list' }), 0);
-  const migrated = normalizeSettings({ enabled: false, maxPerPage: 2, maxPerLongArticle: 3 });
+  const migrated = normalizeSettings({ enabled: false, maxPerPage: 2, maxPerLongArticle: 3, adsense: { enabled: true } });
   assert.equal(migrated.enabled, true, 'the new sitewide promotion policy re-enables legacy-disabled ads');
   assert.equal(migrated.maxPerPage, 3);
   assert.equal(migrated.maxPerLongArticle, 4);
   assert.equal(migrated.policyVersion, 2);
+  assert.equal(migrated.adsense.enabled, false, 'legacy third-party ads remain off during migration');
   const ownerTuned = normalizeSettings({ ...defaultSettings(), maxPerPage: 1, maxPerLongArticle: 2 });
   assert.equal(ownerTuned.maxPerPage, 1, 'post-migration settings remain owner-tunable');
   assert.equal(ownerTuned.maxPerLongArticle, 2);
