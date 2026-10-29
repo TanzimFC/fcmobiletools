@@ -26,8 +26,9 @@ await test('page types', () => {
   assert.equal(pageTypeFor('/player/playstyle-finder/'), 'tool');
   assert.equal(pageTypeFor('/player/playstyle/'), 'page');
   assert.equal(pageTypeFor('/leagues/'), 'list');
-  for (const p of ['/giveaways/x/', '/account', '/admin/', '/api/ads/config', '/fc-mobile-27/', '/unknown-page', '/advertise/']) assert.equal(pageTypeFor(p), 'none', p);
+  for (const p of ['/giveaways/x/', '/account', '/admin/', '/api/ads/config', '/fc-mobile-27/', '/unknown-page', '/advertise/', '/football-centre/rewards/', '/football-centre/settings/', '/football-centre/history/']) assert.equal(pageTypeFor(p), 'none', p);
   assert.ok(slotsForPageType('article').some((s) => s.id === 'article-mid'));
+  assert.ok(slotsForPageType('page').some((s) => s.id === 'page-mid'));
   const sidebar = slotsForPageType('tool').find((s) => s.id === 'tool-sidebar');
   assert.ok(sidebar, 'tools have a desktop side-rail slot');
   assert.deepEqual(sidebar.devices, ['desktop']);
