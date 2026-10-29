@@ -15,10 +15,10 @@ import { chooseCreative, blockers, pageBudget, networkAllowed } from '../lib/ads
 const root = document.getElementById('fcmtAdsRoot');
 
 const COPY = {
-  en: { hide: 'Hide this promotion', hidden: 'Hidden for {n} days.', undo: 'Undo', network: 'Advertisement', done: 'Done. You will get these alerts.', busy: 'One moment' },
-  id: { hide: 'Sembunyikan promosi ini', hidden: 'Disembunyikan selama {n} hari.', undo: 'Urungkan', network: 'Iklan', done: 'Selesai. Anda akan menerima notifikasi ini.', busy: 'Sebentar' },
-  'pt-BR': { hide: 'Ocultar esta promoção', hidden: 'Oculto por {n} dias.', undo: 'Desfazer', network: 'Publicidade', done: 'Pronto. Você receberá esses alertas.', busy: 'Um momento' },
-  bn: { hide: 'এই প্রচার লুকান', hidden: '{n} দিনের জন্য লুকানো হয়েছে।', undo: 'ফিরিয়ে আনুন', network: 'বিজ্ঞাপন', done: 'হয়েছে। আপনি এই অ্যালার্টগুলো পাবেন।', busy: 'একটু অপেক্ষা করুন' }
+  en: { hide: 'Hide this promotion', hidden: 'Hidden for {n} days.', hiddenSession: 'Hidden for this visit. It may appear again next time.', undo: 'Undo', network: 'Advertisement', done: 'Done. You will get these alerts.', busy: 'One moment' },
+  id: { hide: 'Sembunyikan promosi ini', hidden: 'Disembunyikan selama {n} hari.', hiddenSession: 'Disembunyikan selama kunjungan ini. Promosi dapat muncul lagi saat Anda kembali.', undo: 'Urungkan', network: 'Iklan', done: 'Selesai. Anda akan menerima notifikasi ini.', busy: 'Sebentar' },
+  'pt-BR': { hide: 'Ocultar esta promoção', hidden: 'Oculto por {n} dias.', hiddenSession: 'Oculto nesta visita. A promoção pode aparecer novamente na próxima visita.', undo: 'Desfazer', network: 'Publicidade', done: 'Pronto. Você receberá esses alertas.', busy: 'Um momento' },
+  bn: { hide: 'এই প্রচার লুকান', hidden: '{n} দিনের জন্য লুকানো হয়েছে।', hiddenSession: 'এই ভিজিটে লুকানো হয়েছে। পরেরবার আবার দেখা যেতে পারে।', undo: 'ফিরিয়ে আনুন', network: 'বিজ্ঞাপন', done: 'হয়েছে। আপনি এই অ্যালার্টগুলো পাবেন।', busy: 'একটু অপেক্ষা করুন' }
 };
 
 const KEYS = { state: 'fcmt:ads:state:v1', views: 'fcmt:ads:views:v1', config: 'fcmt:ads:config:v1', pv: 'fcmt:ads:pv:v1' };
@@ -280,7 +280,7 @@ async function boot() {
     markDismissed(c.id);
     const days = settings.dismissDays;
     const note = el('div', 'fcmt-ad-gone');
-    const text = el('span'); text.textContent = t.hidden.replace('{n}', String(days));
+    const text = el('span'); text.textContent = hasAdvertisingConsent() ? t.hidden.replace('{n}', String(days)) : t.hiddenSession;
     const undo = el('button', 'fcmt-ad-undo'); undo.type = 'button'; undo.textContent = t.undo;
     note.append(text, undo);
     host.replaceChildren(note);
@@ -478,9 +478,9 @@ function createEvents(pageType) {
 // Counting how often they saw an ad is stored on the device only with advertising consent.
 
 function readState() {
-  const persistent = parseJson(safeGet(localStorage, KEYS.state), {});
-  const today = new Date().toDateString();
   const store = hasAdvertisingConsent() ? localStorage : sessionStorage;
+  const persistent = parseJson(safeGet(store, KEYS.state), {});
+  const today = new Date().toDateString();
   const counted = parseJson(safeGet(store, KEYS.views), {});
   return {
     clickedAt: persistent.clickedAt || {},
@@ -489,12 +489,13 @@ function readState() {
   };
 }
 function writePersistent(mutate) {
-  const state = parseJson(safeGet(localStorage, KEYS.state), {});
+  const store = hasAdvertisingConsent() ? localStorage : sessionStorage;
+  const state = parseJson(safeGet(store, KEYS.state), {});
   state.clickedAt = state.clickedAt || {}; state.dismissedAt = state.dismissedAt || {};
   mutate(state);
   const cutoff = Date.now() - 100 * DAY;
   for (const map of [state.clickedAt, state.dismissedAt]) for (const id of Object.keys(map)) if (map[id] < cutoff) delete map[id];
-  safeSet(localStorage, KEYS.state, JSON.stringify(state));
+  safeSet(store, KEYS.state, JSON.stringify(state));
 }
 const markClicked = (id) => writePersistent((s) => { s.clickedAt[id] = Date.now(); });
 const markDismissed = (id) => writePersistent((s) => { s.dismissedAt[id] = Date.now(); });
