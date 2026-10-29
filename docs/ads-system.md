@@ -24,6 +24,13 @@ Until AdSense is approved, steps 1 and 3 do all the work. House ads earn nothing
 
 Data lives in D1 (tables `ads_creatives`, `ads_stats`, `ads_settings`, `ads_inquiries`, `ads_rate`). The tables and the starter ads are created on first use. Nothing needs a migration.
 
+## Placement plan
+
+- Home pages can use a wide hero and footer strip. Lists can use a compact feed placement and footer strip. Articles can use a mid-read card and an end-of-article hero.
+- Tool pages use a square creative in a reserved desktop rail at 1280px and wider, an additional placement beneath the tool or its visible results, and a footer strip. The rail is hidden on smaller screens to protect the usable width.
+- Public informational pages with enough sections can show a mid-page card and a footer strip. Account, giveaway, reward, legal, settings and other sensitive routes remain excluded.
+- House creative layouts adapt to hero, compact, strip and square side-rail shapes. AdSense uses its configured fluid or auto format when it is approved and enabled.
+
 ## Daily use
 
 * **Change an ad:** Ads Studio, Ads, Edit. Visitors see the change within a minute.
