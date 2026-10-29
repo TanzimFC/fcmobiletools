@@ -26,6 +26,8 @@ await test('page types', () => {
   assert.equal(pageTypeFor('/player/playstyle-finder/'), 'tool');
   assert.equal(pageTypeFor('/player/playstyle/'), 'page');
   assert.equal(pageTypeFor('/leagues/'), 'list');
+  assert.equal(pageTypeFor('/tournaments/'), 'page');
+  assert.equal(pageTypeFor('/tournaments/samples/'), 'page');
   for (const p of ['/giveaways/x/', '/account', '/admin/', '/api/ads/config', '/fc-mobile-27/', '/unknown-page', '/advertise/', '/football-centre/rewards/', '/football-centre/settings/', '/football-centre/history/']) assert.equal(pageTypeFor(p), 'none', p);
   assert.ok(slotsForPageType('article').some((s) => s.id === 'article-mid'));
   assert.ok(slotsForPageType('page').some((s) => s.id === 'page-mid'));
