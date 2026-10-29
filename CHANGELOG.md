@@ -2,6 +2,17 @@
 
 Updates to the tools and features available on FCMOBILETOOLS, written for the people who use the site.
 
+## 27–29 October 2026
+
+### 🚀 New
+- **Advertise on FCMOBILETOOLS:** Creators, Discord communities, and tool makers can now enquire about sponsored placements on the site.
+- **Custom promotional artwork:** Site promotions now have artwork designed for different spaces, from wide banners to compact cards.
+
+### ✨ Improvements
+- **Ad presentation:** Sponsored cards have clearer labels and layouts that adapt to phones and desktop screens.
+- **Page experience:** Ads are limited to selected content pages. They don't cover the page or open pop-ups, and stay off account and giveaway entry pages.
+- **Privacy choices:** Updated the advertising explanations in English, Bengali, Indonesian, and Brazilian Portuguese so visitors can see what their choice allows.
+
 ## 24–26 October 2026
 
 ### 🚀 New
