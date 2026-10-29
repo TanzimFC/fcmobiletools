@@ -11,6 +11,7 @@ export function summarizeRedeemPayload(payload = {}) {
   );
   const activeCodes = ordered.filter((code) =>
     code?.status === 'active' &&
+    code.community?.state !== 'possibly_expired' && // players report it as dead
     (!code.expiryDate || String(code.expiryDate) >= serverDate)
   );
   const verifiedDates = ordered

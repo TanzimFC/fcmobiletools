@@ -242,7 +242,7 @@ body:before{background-image:linear-gradient(rgba(255,255,255,.025) 1px,transpar
 .rxa-scheduled{color:var(--w);background:rgba(255,189,89,.12)}.rxa-expired{color:#8ea3b5;background:rgba(255,255,255,.06)}
 @keyframes rxaBlink{50%{opacity:.35}}
 .rxa-c-status{display:grid;gap:6px;justify-items:start}
-.rxa-hint{padding:3px 8px;border-radius:7px;background:rgba(255,189,89,.12);color:var(--w);font:600 14px/1.2 var(--sans)}
+.rxa-hint{padding:3px 8px;border-radius:7px;background:rgba(255,189,89,.12);color:var(--w);font:600 14px/1.2 var(--sans)}.rxa-rep{display:block;margin-top:4px;font-weight:700}.rxa-rep-bad{color:#ff8f86}.rxa-rep-warn{color:#ffbd59}.rxa-rep-ok{color:#4ee0a0}
 .rxa-hint-go{background:rgba(76,201,255,.12);color:var(--c)}
 .rxa-c-dates{display:grid;gap:4px;color:#9fb2c2;font-size:12.5px}
 .rxa-t-hot{color:var(--w);font-weight:700}.rxa-t-warm{color:#ffd89a}
@@ -468,12 +468,10 @@ html body .toast{border-radius:16px;font-size:13.5px}
   html body .layout{display:block}
   html body .side{position:static;height:auto;padding:14px 14px 10px;flex-direction:column}
   html body .side-card,html body .nav-group{display:none}
-  html body #mobileAdminMenu,html body #adminNav{position:absolute;left:12px;right:12px;top:58px;z-index:80;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:9px;border:1px solid rgba(76,201,255,.24);border-radius:15px;background:rgba(7,16,24,.98);box-shadow:0 22px 70px rgba(0,0,0,.52);backdrop-filter:blur(18px);max-height:min(60vh,430px);overflow:auto}
-  html body.mobile-menu-open #mobileAdminMenu,html body.mobile-menu-open #adminNav{display:grid;overflow:auto}
-  html body #mobileAdminMenu .ni,html body #adminNav .ni{display:none}
-  html body #mobileAdminMenu button,html body #mobileAdminMenu a.nav-external,html body #adminNav button,html body #adminNav a.nav-external{width:100%;min-width:0;min-height:43px;padding:10px 11px;text-align:left;border-radius:10px;font-size:12px}
-  html body #mobileAdminMenu button:before,html body #mobileAdminMenu a.nav-external:before,html body #adminNav button:before,html body #adminNav a.nav-external:before{display:none}
-  html body #mobileAdminMenu button.active:after,html body #adminNav button.active:after{display:none}
+  html body .nav{flex-direction:row;overflow-x:auto;gap:6px;padding:10px 0 4px}
+  html body .nav button,html body .nav a.nav-external{width:auto;min-width:max-content;flex:0 0 auto;padding:8px 12px}
+  html body .nav .ni{display:none}
+  html body .nav button.active:after{display:none}
   html body .top{height:72px}
 }
 @media(prefers-reduced-motion:reduce){html body *{animation-duration:.001ms!important;transition-duration:.001ms!important}}
@@ -566,7 +564,51 @@ async function accountSection(){
   $('#saveAccount').onclick=async()=>{const b=$('#saveAccount');busy(b,true);try{const payload={displayName:$('#accountName').value.trim()};if(workspaceRole==='creator'){payload.bio=$('#accountBio').value;payload.avatarUrl=$('#accountAvatar').value.trim();payload.websiteUrl=$('#accountWebsite').value.trim();}await api('/account',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});state('Account saved');}catch(e){state(e.message,false)}finally{busy(b,false)}};
   $('#changePassword').onclick=async()=>{const b=$('#changePassword');busy(b,true);try{await api('/account',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({currentPassword:$('#currentPassword').value,newPassword:$('#newPassword').value})});$('#currentPassword').value='';$('#newPassword').value='';state('Password changed');}catch(e){state(e.message,false)}finally{busy(b,false)}};
 }
-function adSettings(){location.replace('/admin/ads-studio.html');}
+async function adSettings(){
+  const out=await api('/ad-settings');
+  const c=out.settings;
+  const seconds=(key,fallback)=>Math.round(Number(c[key]?.delayMs||fallback)/1000);
+  app.innerHTML='<div class="hero"><div><div class="eyebrow"><i></i> MONETIZATION CONTROL</div><h2>Ad Settings</h2><p>Monetag Vignette is the only remaining ad format and is off by default. Browser push ads and In-Page Push have been removed.</p></div><div class="hero-tools"><span class="ad-locked">HOME / ADMIN EXCLUDED</span></div></div>'
+    +'<div class="ad-settings-grid">'
+    +'<section class="card ad-setting-card"><div class="head"><div><h3>Giveaway ad system</h3><p>Only the delayed Vignette format is supported here. Push notification ads and In-Page Push are permanently removed.</p></div></div>'
+    +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>Master ad switch</b><span>Emergency kill switch for all third-party formats.</span></div><label class="ad-switch"><input id="adsEnabled" type="checkbox" '+(c.enabled?'checked':'')+'><span></span></label></div>'
+    +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>Monetag Vignette</b><span>Zone #12079211 · delayed interstitial-style format · visitor ad consent required.</span></div><label class="ad-switch"><input id="vignetteEnabled" type="checkbox" '+(c.vignette.enabled?'checked':'')+'><span></span></label></div>'
+    +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>HilltopAds</b><span>Referrer policy installed. Zone #7503133 is a MultiTag variant that includes popup/popunder behavior, so its script is blocked.</span></div><span class="ad-locked">SCRIPT DISABLED</span></div>'
+    +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>Vignette cooldown</b><span>Minimum time between Vignette overlays for the same browser.</span></div><div class="ad-delay"><input id="frequencyCap" class="input" type="number" min="20" max="240" step="10" value="'+Number(c.frequencyCapMinutes||30)+'"><span class="muted">minutes</span></div></div>'
+    +'<div class="ad-toggle-row"><div class="ad-toggle-copy"><b>Vignette delay</b><span>Wait before loading the Vignette overlay after ad consent.</span></div><div class="ad-delay"><input id="vignetteDelay" class="input" type="number" min="5" max="300" step="5" value="'+seconds('vignette',30000)+'"><span class="muted">seconds</span></div></div>'
+    +'<div class="ad-actions"><button class="btn primary" id="saveAds">Save ad settings</button><button class="btn" id="disableAds">Disable all ads</button></div>'
+    +'</section>'
+    +'<section class="card ad-setting-card"><div class="head"><div><h3>Safety controls</h3><p>Route exclusions and provider IDs are checked by the Worker, not just by this form.</p></div></div>'
+    +'<div class="ad-status-grid"><div class="ad-status"><small>MASTER SWITCH</small><strong>'+(c.enabled?'ON':'OFF')+'</strong></div><div class="ad-status"><small>PLACEMENT</small><strong>GIVEAWAYS ONLY · ALL ROUTES</strong></div><div class="ad-status"><small>VIGNETTE</small><strong>'+(c.vignette.enabled?'ON':'OFF')+' · #12079211</strong></div><div class="ad-status"><small>HILLTOPADS SCRIPT</small><strong>BLOCKED · POPUNDER-SAFE</strong></div></div>'
+    +'<div class="ad-warning"><b>AdSense separation:</b> The homepage and giveaway area do not load AdSense. The Monetag Vignette can load on eligible giveaway routes after advertising consent; browser push ads and In-Page Push are not available. Keep ad density reasonable beside content, and review live placements after each format is enabled. HilltopAds zone #7503133 stays blocked because its MultiTag includes popunder behavior. This setup cannot guarantee network approval.</div>'
+    +'<div class="notice" style="margin-top:12px">Only <b>/giveaways/</b> and its nested routes can load the optional Vignette. Homepage, admin, account/auth, FC Mobile 27 and all other tools never load these ad tags.</div>'
+    +'<div class="notice" style="margin-top:12px">Use the master switch to stop all formats. Saving changes updates the central config and deploys; a visitor must allow advertising before tags load.</div>'
+    +'</section></div>';
+  $('#disableAds').onclick=()=>{
+    $('#adsEnabled').checked=false;
+    $('#vignetteEnabled').checked=false;
+    state('All ad formats disabled locally — click Save to publish');
+  };
+  $('#saveAds').onclick=async()=>{
+    const b=$('#saveAds');busy(b,true);
+    try{
+      const number=(id,min,max)=>{
+        const value=Number($('#'+id).value);
+        if(!Number.isInteger(value)||value<min||value>max) throw Error('Please enter a whole number between '+min+' and '+max+'.');
+        return value;
+      };
+      const frequencyCapMinutes=number('frequencyCap',20,240);
+      const delayMs=(id)=>number(id,5,300)*1000;
+      const result=await api('/ad-settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+        enabled:$('#adsEnabled').checked,
+        vignette:{enabled:$('#vignetteEnabled').checked,delayMs:delayMs('vignetteDelay')},
+        frequencyCapMinutes
+      })});
+      state(result.settings.enabled?'Ad settings saved; master switch is ON':'Ad settings saved; master switch is OFF');
+      await adSettings();
+    }catch(e){state(e.message||'Could not save ad settings',false)}finally{busy(b,false)}
+  };
+}
 async function overview(){
   if(workspaceRole==='worker'){
     const out=await api('/overview');const codes=out.codes||{};
@@ -650,7 +692,17 @@ function rxaNeedsAttention(c){
   const today=rxaToday();
   return (c.status==='active'&&c.expiryDate&&rxaDay(c.expiryDate)-rxaDay(today)<=2)
     ||(c.status==='scheduled'&&c.releaseDate<=today)
-    ||(c.storedStatus==='active'&&c.status==='expired');
+    ||(c.storedStatus==='active'&&c.status==='expired')
+    ||rxaFlagged(c);
+}
+// Players report this code failing. Votes never change status: an admin decides (verify or expire).
+function rxaFlagged(c){return c.status==='active'&&!!c.community&&c.community.state!=='ok'}
+function rxaReports(c){
+  const m=c.community;if(!m||c.status!=='active'||(!m.worked&&!m.failed&&m.state==='ok'))return'';
+  const tone=m.state==='possibly_expired'?'bad':m.state==='review'?'warn':'ok';
+  const label=m.state==='possibly_expired'?'Players say it may be dead':m.state==='review'?'Some players report problems':'Players confirm it works';
+  const tip='Last 24h: '+m.worked+' worked, '+m.failed+' failed. Weighted failures '+(m.failWeight||0).toFixed(1)+' from '+(m.failSources||0)+' independent sources. Verify to clear, or expire it.';
+  return `<small class="rxa-hint rxa-rep rxa-rep-${tone}" title="${esc(tip)}">${esc(label)} · ✓${m.worked} ✗${m.failed}</small>`;
 }
 function rxaKind(t){
   if(/\bgems?\b/i.test(t))return'gems';if(/\bcoins?\b/i.test(t))return'coins';if(/rank[\s-]?up|\bRU\b/i.test(t))return'rankup';
@@ -688,7 +740,7 @@ function rxaRow(c,latest){
   const due=c.status==='scheduled'&&c.releaseDate<=rxaToday();
   const acts=[
     `<button class="rxa-ib" data-act="edit" title="Edit" aria-label="Edit ${esc(c.code)}">${rxaSvg('edit')}</button>`,
-    c.status==='active'?`<button class="rxa-ib" data-act="verify" title="Mark verified today" aria-label="Verify ${esc(c.code)}">${rxaSvg('check')}</button><button class="rxa-ib rxa-warn" data-act="expire" title="Mark expired" aria-label="Expire ${esc(c.code)}">${rxaSvg('clock')}</button>`:'',
+    c.status==='active'?`<button class="rxa-ib" data-act="verify" title="${rxaFlagged(c)?'Still works: mark verified today and clear player reports':'Mark verified today (also clears player reports)'}" aria-label="Verify ${esc(c.code)}">${rxaSvg('check')}</button><button class="rxa-ib rxa-warn" data-act="expire" title="Mark expired" aria-label="Expire ${esc(c.code)}">${rxaSvg('clock')}</button>`:'',
     c.status==='scheduled'?`<button class="rxa-ib rxa-go" data-act="activate" title="Go live now" aria-label="Activate ${esc(c.code)}">${rxaSvg('bolt')}</button>`:'',
     `<button class="rxa-ib" data-act="promo" title="Promo banner" aria-label="Promo banner for ${esc(c.code)}">${rxaSvg('img')}</button>`,
     `<button class="rxa-ib" data-act="dup" title="Duplicate" aria-label="Duplicate ${esc(c.code)}">${rxaSvg('dup')}</button>`,
@@ -698,7 +750,7 @@ function rxaRow(c,latest){
     <label class="rxa-check"><input type="checkbox" data-sel="${esc(c.code)}" ${sel?'checked':''} aria-label="Select ${esc(c.code)}"></label>
     <div class="rxa-c-code"><button type="button" class="rxa-codebtn" data-act="copy" title="Copy code">${esc(c.code)}${rxaSvg('copy',13)}</button>${latest?'<em class="rxa-latest">LATEST</em>':''}</div>
     <div class="rxa-c-reward"><div class="rxa-chips">${rxaChips(c.reward)}</div><small>${esc(c.region)}${c.notes?' · '+esc(c.notes):''}</small></div>
-    <div class="rxa-c-status">${rxaPill(c)}${auto?'<small class="rxa-hint">Auto-expired · tidy up</small>':''}${due?'<small class="rxa-hint rxa-hint-go">Release date reached</small>':''}</div>
+    <div class="rxa-c-status">${rxaPill(c)}${rxaReports(c)}${auto?'<small class="rxa-hint">Auto-expired · tidy up</small>':''}${due?'<small class="rxa-hint rxa-hint-go">Release date reached</small>':''}</div>
     <div class="rxa-c-dates"><span>Added ${esc(rxaFmt(c.releaseDate))}</span><span class="${ex.tone?'rxa-t-'+ex.tone:''}">${esc(ex.t)}</span></div>
     <div class="rxa-c-ver"><span>${esc(rxaRel(c.lastVerified))}</span><small>by ${esc(String(c.updatedBy||'').replace('creator:',''))}</small></div>
     <div class="rxa-acts">${acts}</div>
@@ -1036,7 +1088,7 @@ async function events(){const{content}=await api('/football');football=content;c
 <div class="card section"><div class="dialogfoot"><button class="btn primary" id="saveEvents">Save automatic schedule</button><span id="eventMsg" class="muted"></span></div></div>`;
 const preview=()=>{const v=$('#eventStart').value;$('#eventUtc').textContent=v?'UTC start: '+new Date(v).toISOString():'UTC start: —';const sv=$('#secondaryStart').value,ms=sv?new Date(sv):null;$('#secondaryDatePreview').textContent=ms?dateLabel(ms.toISOString()):'—';$('#secondaryStatusPreview').textContent=ms?(Date.now()<ms.getTime()?'UPCOMING':'LIVE / PAST'):'—'};$('#eventBanner').oninput=e=>$('#eventPreview').src=e.target.value;$('#eventStart').oninput=preview;$('#secondaryStart').oninput=preview;preview();
 $('#saveEvents').onclick=async()=>{const b=$('#saveEvents');busy(b,true);try{const ne={...e,enabled:$('#eventEnabled').checked,title:$('#eventTitle').value.trim(),subtitle:$('#eventSubtitle').value.trim(),banner:$('#eventBanner').value.trim(),startUtc:toUtc($('#eventStart').value),accent:e.accent||'ANNIVERSARY EVENT',endUtc:''};const nr={...r,enabled:r.enabled!==false,anchorUtc:toUtc($('#rivalsAnchor').value),cycleDays:Number($('#cycleDays').value)||28,title:r.title||'Division Rivals Reset',label:r.label||'28-day Division Rivals season reset'};const ns={...s,enabled:$('#secondaryEnabled').checked,title:$('#secondaryTitle').value.trim()||'Unbreakable',subtitle:s.subtitle||'Upcoming FC Mobile side event',banner:$('#secondaryBanner').value.trim(),startUtc:toUtc($('#secondaryStart').value),dateLabel:'',status:'AUTO',note:'Status and date are calculated automatically from the configured start time.'};if(!ne.startUtc||!nr.anchorUtc||!Number.isInteger(nr.cycleDays)||nr.cycleDays<1||!ns.startUtc)throw Error('Main event start, Division Rivals anchor, cycle length and Unbreakable start are required');const out={...content,eventCountdown:ne,divisionRivalsReset:nr,secondaryEvent:ns};const result=await api('/football',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({content:out})});football=out;state(result.action==='updated'?'Events & Reset saved':'Events & Reset saved');$('#eventMsg').textContent='Saved — public clocks will sync automatically'}catch(err){state(err.message,false);$('#eventMsg').textContent=err.message}finally{busy(b,false)}}}
-async function load(s){if(workspaceRole==='worker'&&!WORKER_SECTIONS.has(s)){renderWorkerLock(s);return;}if(s==='articles'||s==='inbox'){location.href='/admin/articles/'+(s==='inbox'?'#inbox':'');return;}nav(s);app.setAttribute('aria-busy','true');app.innerHTML='<div class="app-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i></div>';try{if(s==='overview')await overview();else if(s==='redeem')await redeem();else if(s==='football')await footballTab('content');else if(s==='events')await events();else if(s==='creators')await creatorsSection();else if(s==='accounts')await accountsSection();else if(s==='account')await accountSection();else if(s==='ads' && workspaceRole==='admin'){adSettings();return;}else await mediaPage()}catch(e){app.innerHTML=`<div class="error"><b>Workspace error</b><br>${esc(e.message)}</div>`;state(e.message,false)}finally{app.removeAttribute('aria-busy')}}async function bootstrapWorkspace(){
+async function load(s){if(workspaceRole==='worker'&&!WORKER_SECTIONS.has(s)){renderWorkerLock(s);return;}if(s==='articles'||s==='inbox'){location.href='/admin/articles/'+(s==='inbox'?'#inbox':'');return;}nav(s);app.setAttribute('aria-busy','true');app.innerHTML='<div class="app-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i></div>';try{if(s==='overview')await overview();else if(s==='redeem')await redeem();else if(s==='football')await footballTab('content');else if(s==='events')await events();else if(s==='creators')await creatorsSection();else if(s==='accounts')await accountsSection();else if(s==='account')await accountSection();else if(s==='ads' && workspaceRole==='admin')await adSettings();else await mediaPage()}catch(e){app.innerHTML=`<div class="error"><b>Workspace error</b><br>${esc(e.message)}</div>`;state(e.message,false)}finally{app.removeAttribute('aria-busy')}}async function bootstrapWorkspace(){
   try {
     const adminResponse=await fetch('/api/admin/me',{credentials:'same-origin',cache:'no-store'});
     if(adminResponse.ok){

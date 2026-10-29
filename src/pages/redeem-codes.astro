@@ -103,6 +103,7 @@ const tools = T.how.tools.map((tool, i) => ({ t: tool.t, d: tool.d, h: href(tool
           </div>
           <span class="rx-count-pill" data-rx-active-count>{T.live.activePill.replace('{n}', '–')}</span>
         </div>
+        <div class="rx-strip" data-rx-strip hidden></div>
         <div class="rx-cards" data-rx-active aria-live="polite">
           <div class="rx-card rx-card-skel"><div class="rx-skel rx-skel-line" style="width:40%"></div><div class="rx-skel rx-skel-code"></div><div class="rx-skel rx-skel-line" style="width:75%"></div><div class="rx-skel rx-skel-btn"></div></div>
           <div class="rx-card rx-card-skel"><div class="rx-skel rx-skel-line" style="width:40%"></div><div class="rx-skel rx-skel-code"></div><div class="rx-skel rx-skel-line" style="width:75%"></div><div class="rx-skel rx-skel-btn"></div></div>
@@ -440,6 +441,83 @@ button.rx-ticket-code:hover{ text-shadow:0 0 38px rgba(76,201,255,.85),0 2px 0 r
 .rx-card-actions{ display:grid; grid-template-columns:1fr 1.25fr; gap:10px; margin-top:auto; }
 .rx-card-actions .rx-btn{ min-height:48px; }
 .rx-flash{ animation:rx-flash 2.4s ease-out 1; }
+
+/* ── community feedback, ticks, "new for you" ── */
+.rx-card-tags{ flex-wrap:wrap; row-gap:6px; }
+.rx-card-top .rx-tag{ white-space:nowrap; }
+.rx-tag-foryou{ color:#06202c; background:linear-gradient(135deg,#a3eaff,#4cc9ff); box-shadow:0 6px 18px -6px rgba(76,201,255,.7); }
+.rx-tag-ok{ display:inline-flex; align-items:center; gap:5px; color:var(--rx-green); background:rgba(71,209,108,.12); }
+.rx-pill-warn{ color:var(--rx-amber); background:rgba(255,189,89,.13); }
+.rx-pill-warn i{ animation:rx-blink 1.8s ease-in-out infinite; }
+.rx-card.is-static{ animation:none; }
+
+.rx-banner{ display:grid; gap:3px; padding:11px 13px; border:1px solid rgba(255,189,89,.35); border-radius:var(--r-md); background:linear-gradient(135deg,rgba(255,189,89,.14),rgba(255,189,89,.04)); color:var(--rx-amber); font:600 13px/1.4 var(--font-body,'Instrument Sans Variable',sans-serif); }
+.rx-banner span{ color:var(--rx-ink-2); font-weight:500; }
+.rx-card-flag{ border-color:rgba(255,189,89,.28); }
+
+.rx-feedback{ display:grid; gap:10px; padding:13px; border:1px solid var(--rx-line); border-radius:var(--r-md); background:rgba(255,255,255,.03); transition:opacity .2s; }
+.rx-feedback.is-busy{ opacity:.72; pointer-events:none; }
+.rx-fb-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.rx-fb-q{ color:var(--rx-ink-2); font:600 13px/1.3 var(--font-body,'Instrument Sans Variable',sans-serif); }
+.rx-fb-note{ margin:0; color:var(--rx-ink-3); font:500 12.5px/1.45 var(--font-body,'Instrument Sans Variable',sans-serif); }
+.rx-fb-warn{ margin:0; padding:8px 10px; border-radius:var(--r-sm); color:var(--rx-amber); background:rgba(255,189,89,.1); font:600 12.5px/1.4 var(--font-body,'Instrument Sans Variable',sans-serif); }
+
+.rx-tick{ display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:0 13px 0 9px; border:1px solid var(--rx-line-2); border-radius:999px; background:transparent; color:var(--rx-ink-2); font:600 12.5px/1 var(--font-body,'Instrument Sans Variable',sans-serif); transition:color .2s,border-color .2s,background .2s,transform .15s; -webkit-tap-highlight-color:transparent; }
+.rx-tick:hover{ border-color:rgba(71,209,108,.5); color:var(--rx-green); }
+.rx-tick:active{ transform:scale(.96); }
+.rx-tick-box{ display:grid; place-items:center; width:19px; height:19px; border-radius:6px; border:1.5px solid currentColor; }
+.rx-tick-box svg{ opacity:0; transform:scale(.5); transition:opacity .15s,transform .2s cubic-bezier(.2,.8,.2,1); }
+.rx-tick.is-on{ color:var(--rx-green); border-color:rgba(71,209,108,.55); background:rgba(71,209,108,.1); }
+.rx-tick.is-on .rx-tick-box{ background:var(--rx-green); border-color:var(--rx-green); color:#06210f; }
+.rx-tick.is-on .rx-tick-box svg{ opacity:1; transform:none; }
+
+.rx-vote-btns{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.rx-vbtn{ display:flex; align-items:center; justify-content:center; gap:7px; min-height:46px; padding:0 10px; border:1px solid var(--rx-line-2); border-radius:var(--r-md); background:rgba(255,255,255,.04); color:var(--rx-ink); font:700 13.5px/1.1 var(--font-body,'Instrument Sans Variable',sans-serif); transition:background .2s,border-color .2s,color .2s,transform .15s; -webkit-tap-highlight-color:transparent; }
+.rx-vbtn:active{ transform:scale(.97); }
+.rx-vbtn span{ white-space:nowrap; }
+@media(max-width:480px){ .rx-feedback .rx-vbtn svg{ display:none; } }
+.rx-vbtn b{ min-width:1.4em; padding:2px 6px; border-radius:999px; background:rgba(255,255,255,.08); color:var(--rx-ink-2); font:700 12px/1.2 var(--rx-mono); text-align:center; font-variant-numeric:tabular-nums; }
+.rx-vbtn-ok:hover{ border-color:rgba(71,209,108,.55); background:rgba(71,209,108,.1); color:var(--rx-green); }
+.rx-vbtn-bad:hover{ border-color:rgba(255,122,122,.55); background:rgba(255,122,122,.1); color:var(--rx-red); }
+.rx-feedback[data-mine="worked"] .rx-vbtn-ok{ color:#06210f; background:var(--rx-green); border-color:var(--rx-green); }
+.rx-feedback[data-mine="worked"] .rx-vbtn-ok b{ background:rgba(6,33,15,.2); color:#06210f; }
+.rx-feedback[data-mine="failed"] .rx-vbtn-bad{ color:#2a0808; background:var(--rx-red); border-color:var(--rx-red); }
+.rx-feedback[data-mine="failed"] .rx-vbtn-bad b{ background:rgba(42,8,8,.2); color:#2a0808; }
+.rx-vfix{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; color:var(--rx-ink-3); font:500 12.5px/1.3 var(--font-body,'Instrument Sans Variable',sans-serif); }
+.rx-vfix button{ min-height:32px; padding:0 11px; border:1px solid var(--rx-line-2); border-radius:999px; background:rgba(255,255,255,.05); color:var(--rx-ink-2); font:600 12.5px/1 var(--font-body,'Instrument Sans Variable',sans-serif); }
+.rx-vfix button:hover{ border-color:var(--rx-cyan); color:var(--rx-cyan-2); }
+
+/* A code I already redeemed: dimmed but still copyable, and the tick stays easy to undo. */
+.rx-card.is-done .rx-coupon,.rx-card.is-done .rx-card-rewards,.rx-card.is-done .rx-card-note,.rx-card.is-done .rx-card-meta,.rx-card.is-done .rx-card-top{ opacity:.5; }
+.rx-card.is-done .rx-coupon{ filter:saturate(.25); border-color:rgba(255,255,255,.18); }
+.rx-card.is-done::before{ opacity:0; }
+.rx-row.is-done{ opacity:.6; }
+.rx-row.is-done code{ text-decoration:line-through; text-decoration-color:rgba(71,209,108,.7); }
+.rx-mini-tick.is-on{ color:#06210f; background:var(--rx-green); border-color:var(--rx-green); }
+
+/* strip: new since last visit + progress */
+.rx-strip{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin:-6px 0 20px; }
+.rx-strip[hidden]{ display:none; }
+.rx-strip-new{ display:inline-flex; align-items:center; gap:9px; min-height:42px; padding:0 8px 0 14px; border:1px solid rgba(255,189,89,.45); border-radius:999px; background:linear-gradient(135deg,rgba(255,189,89,.2),rgba(255,189,89,.06)); color:#FFD68A; font:700 13.5px/1 var(--font-body,'Instrument Sans Variable',sans-serif); box-shadow:0 10px 28px -14px rgba(255,189,89,.8); }
+.rx-strip-new em{ padding:7px 11px; border-radius:999px; background:var(--rx-amber); color:#1b1200; font-style:normal; font-size:12px; }
+.rx-strip-prog{ display:inline-flex; align-items:center; gap:10px; min-height:42px; padding:0 8px 0 14px; border:1px solid var(--rx-line-2); border-radius:999px; background:rgba(255,255,255,.04); color:var(--rx-ink-2); font:600 13px/1 var(--font-body,'Instrument Sans Variable',sans-serif); }
+.rx-strip-prog small{ color:var(--rx-ink-3); font-size:12.5px; font-weight:500; }
+.rx-strip-bar{ width:54px; height:6px; border-radius:99px; background:rgba(255,255,255,.1); overflow:hidden; }
+.rx-strip-bar i{ display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#47D16C,#9CE4FF); transition:width .35s ease; }
+.rx-strip-prog button{ min-height:30px; padding:0 11px; border:0; border-radius:999px; background:rgba(255,255,255,.08); color:var(--rx-ink-2); font:600 12px/1 var(--font-body,'Instrument Sans Variable',sans-serif); }
+.rx-strip-row{ display:flex; align-items:center; gap:8px; max-width:100%; }
+.rx-strip-new{ min-width:0; }
+.rx-strip-x{ flex:none; width:34px; height:34px; border:0; border-radius:50%; background:rgba(255,255,255,.07); color:var(--rx-ink-2); font-size:19px; line-height:1; }
+
+/* "How did it go?" prompt after copying a code and coming back */
+.rx-ask{ position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom,0)); z-index:1350; display:grid; gap:10px; width:min(440px,calc(100% - 24px)); padding:14px; border:1px solid rgba(76,201,255,.4); border-radius:var(--r-lg); background:rgba(12,22,33,.96); backdrop-filter:blur(18px) saturate(160%); -webkit-backdrop-filter:blur(18px) saturate(160%); box-shadow:0 28px 70px -16px rgba(0,0,0,.85),0 0 40px -18px rgba(76,201,255,.6); transform:translateX(-50%); animation:rx-ask-in .35s cubic-bezier(.2,.8,.2,1) both; }
+@media(max-width:980px){ .rx-ask{ bottom:calc(104px + env(safe-area-inset-bottom,0)); } }
+.rx-ask-t{ margin:0; color:var(--rx-ink); font:600 14.5px/1.3 var(--font-body,'Instrument Sans Variable',sans-serif); }
+.rx-ask-t b{ font-family:var(--rx-mono); letter-spacing:.02em; }
+.rx-ask-btns{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.rx-ask-skip{ justify-self:center; min-height:30px; padding:0 12px; border:0; background:transparent; color:var(--rx-ink-3); font:600 12.5px/1 var(--font-body,'Instrument Sans Variable',sans-serif); }
+@keyframes rx-ask-in{ from{ opacity:0; transform:translate(-50%,18px) scale(.97); } to{ opacity:1; transform:translate(-50%,0) scale(1); } }
+@media(prefers-reduced-motion:reduce){ .rx-ask,.rx-pill-warn i{ animation:none!important; } .rx-tick-box svg,.rx-strip-bar i{ transition:none; } }
 
 /* ── upcoming ── */
 .rx-soon-list{ display:grid; gap:12px; }

@@ -5,7 +5,11 @@
 // /api/public/redeem-codes. Every dynamic string is escaped before it touches
 // innerHTML.
 
+import { createLocalStore, rankActive, pickTicket } from './redeem-local.js';
+
 const API = '/api/public/redeem-codes';
+const VOTE_API = `${API}/vote`;
+const MINE_API = `${API}/my-votes`;
 const EA_URL = 'https://redeem.fcm.ea.com/';
 const POLL_MS = 120_000;
 const PAGE_SIZE = 20;
@@ -45,7 +49,14 @@ function boot() {
     syncDot: $('[data-rx-sync-dot]'),
     syncText: $('[data-rx-sync-text]'),
     toast: $('[data-rx-toast]'),
+    strip: $('[data-rx-strip]'),
   };
+
+  // What this device remembers: ticks, last-seen codes, my votes. Never throws (see redeem-local.js).
+  let storage = null;
+  try { storage = window.localStorage; } catch { /* blocked: the store falls back to memory */ }
+  const local = createLocalStore(storage);
+  const pageStart = Date.now();
 
   /* ------------------------------ utilities ------------------------------ */
 
@@ -74,6 +85,9 @@ function boot() {
     online: true,
     firstRender: true,
     etag: null,
+    fresh: new Set(), // codes that are new for THIS player (not in what they saw last visit)
+    baselineChecked: false,
+    stripDismissed: false,
   };
 
   const age = (iso) => {
@@ -82,6 +96,31 @@ function boot() {
     if (d === 1) return U.age.yesterday;
     if (d < 14) return fmt(U.age.daysAgo, { n: d });
     return fmtDate(iso);
+  };
+
+  /* ------------------------------ community + memory helpers ------------------------------ */
+
+  const EMPTY_COMMUNITY = { state: 'ok', confirmed: false, lastAt: null, resetAt: null };
+  const community = (c) => c.community || EMPTY_COMMUNITY;
+  const myVote = (c) => local.votes.get(c.code, community(c).resetAt);
+  const isRedeemed = (code) => local.redeemed.has(code);
+
+  const whenAgo = (iso) => {
+    const ms = Date.now() - Date.parse(iso);
+    if (!(ms >= 0)) return U.vote.justNow;
+    const minutes = Math.floor(ms / 60_000);
+    if (minutes < 2) return U.vote.justNow;
+    if (minutes < 60) return fmt(U.vote.minAgo, { n: minutes });
+    const hours = Math.floor(minutes / 60);
+    return hours < 48 ? fmt(U.vote.hourAgo, { n: hours }) : age(String(iso).slice(0, 10));
+  };
+
+  const authToken = () => {
+    try {
+      const raw = localStorage.getItem('fcmobiletools-auth-v1');
+      const auth = raw ? JSON.parse(raw) : null;
+      return auth?.access_token || auth?.session?.access_token || auth?.currentSession?.access_token || '';
+    } catch { return ''; }
   };
 
   /* ------------------------------ reward model ------------------------------ */
@@ -169,7 +208,8 @@ function boot() {
 
   function renderTicket() {
     if (!el.ticket) return;
-    const latest = activeCodes()[0];
+    // Never advertise a code players report as dead while a healthier one exists.
+    const latest = pickTicket(activeCodes());
     if (latest) {
       const ex = expiry(latest);
       el.ticket.innerHTML = `
@@ -206,18 +246,59 @@ function boot() {
     el.ticket.dataset.state = 'idle';
   }
 
+  const checkSvg = icon(I.check, 14);
+  const sparkSvg = icon('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/>', 15);
+
+  function feedback(c) {
+    const com = community(c);
+    const mine = myVote(c);
+    const done = isRedeemed(c.code);
+    // Plain words only: no counts. The admin's own re-check is shown first because it outranks players.
+    const bits = [];
+    if (com.resetAt && Date.now() - Date.parse(com.resetAt) < 86_400_000) bits.push(fmt(U.vote.adminChecked, { when: whenAgo(com.resetAt) }));
+    if (com.lastAt) bits.push(fmt(U.vote.last, { when: whenAgo(com.lastAt) }));
+    else if (!bits.length) bits.push(U.vote.none);
+    return `
+        <div class="rx-feedback" data-fb="${esc(c.code)}" data-mine="${mine ? mine.v : 'none'}">
+          <div class="rx-fb-head">
+            <span class="rx-fb-q">${esc(U.vote.q)}</span>
+            <button type="button" class="rx-tick${done ? ' is-on' : ''}" data-tick="${esc(c.code)}" aria-pressed="${done}" aria-label="${esc(fmt(done ? U.mine.unmarkAria : U.mine.markAria, { code: c.code }))}">
+              <span class="rx-tick-box">${checkSvg}</span><span class="rx-tick-text">${esc(done ? U.mine.redeemed : U.mine.mark)}</span>
+            </button>
+          </div>
+          <div class="rx-vote-btns">
+            <button type="button" class="rx-vbtn rx-vbtn-ok" data-vote="worked" aria-pressed="${mine?.v === 'worked'}" aria-label="${esc(fmt(U.vote.workedAria, { code: c.code }))}">
+              ${icon('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 17)}<span>${esc(U.vote.worked)}</span>
+            </button>
+            <button type="button" class="rx-vbtn rx-vbtn-bad" data-vote="failed" aria-pressed="${mine?.v === 'failed'}" aria-label="${esc(fmt(U.vote.failedAria, { code: c.code }))}">
+              ${icon('<path d="M6 6l12 12M18 6L6 18"/>', 17)}<span>${esc(U.vote.failed)}</span>
+            </button>
+          </div>
+          ${mine?.v === 'failed' ? `<div class="rx-vfix"><span>${esc(U.vote.fixQ)}</span><button type="button" data-vote-fix="used">${esc(U.vote.used)}</button><button type="button" data-vote-fix="region">${esc(U.vote.region)}</button></div>` : ''}
+          ${com.state === 'review' ? `<p class="rx-fb-warn">${esc(U.vote.review)}</p>` : ''}
+          <p class="rx-fb-note">${esc(bits.join(' · '))}</p>
+        </div>`;
+  }
+
   function activeCard(c, index) {
     const ex = expiry(c);
     const fresh = isNew(c);
+    const com = community(c);
+    const dead = com.state === 'possibly_expired';
+    const done = isRedeemed(c.code);
+    const forYou = state.fresh.has(c.code);
+    const classes = ['rx-card', fresh && 'rx-card-new', done && 'is-done', dead && 'rx-card-flag'].filter(Boolean).join(' ');
     return `
-      <article class="rx-card${fresh ? ' rx-card-new' : ''}" data-code="${esc(c.code)}" style="--i:${index}">
+      <article class="${classes}" data-code="${esc(c.code)}" style="--i:${index}">
         <div class="rx-card-top">
           <span class="rx-card-tags">
-            ${fresh ? `<span class="rx-tag rx-tag-new">${esc(U.card.isNew)}</span>` : ''}
+            ${forYou ? `<span class="rx-tag rx-tag-foryou">${esc(U.fresh.tag)}</span>` : fresh ? `<span class="rx-tag rx-tag-new">${esc(U.card.isNew)}</span>` : ''}
             <span class="rx-tag rx-tag-region">${esc(c.region || U.card.global)}</span>
+            ${com.confirmed ? `<span class="rx-tag rx-tag-ok">${checkSvg}${esc(U.vote.confirmed)}</span>` : ''}
           </span>
-          ${pill('active')}
+          ${dead ? `<span class="rx-pill rx-pill-warn"><i></i>${esc(U.vote.possibly)}</span>` : pill('active')}
         </div>
+        ${dead ? `<div class="rx-banner" role="note"><b>${esc(U.vote.expired)}</b><span>${esc(U.vote.expiredHint)}</span></div>` : ''}
         <button type="button" class="rx-coupon" data-copy="${esc(c.code)}" style="--len:${c.code.length}" aria-label="${esc(fmt(U.ticket.copyAria, { code: c.code }))}">
           <span class="rx-coupon-code">${esc(c.code)}</span>
           <span class="rx-coupon-icon">${icon(I.copy, 18)}</span>
@@ -228,6 +309,7 @@ function boot() {
           <span class="rx-meta rx-tone-${ex.tone}">${icon(I.clock, 14)}${esc(ex.text)}</span>
           <span class="rx-meta">${esc(fmt(U.card.verified, { when: age(c.lastVerified || c.releaseDate) }))}</span>
         </div>
+        ${feedback(c)}
         <div class="rx-card-actions">
           <button type="button" class="rx-btn rx-btn-soft" data-copy="${esc(c.code)}">${icon(I.copy, 16)}<span>${esc(U.card.copy)}</span></button>
           <a class="rx-btn rx-btn-primary" href="${esc(eaLink(c.code, c.region))}" target="_blank" rel="noopener noreferrer" data-redeem="${esc(c.code)}"><span>${esc(U.card.redeem)}</span>${icon(I.out, 16)}</a>
@@ -236,7 +318,7 @@ function boot() {
   }
 
   function renderActive() {
-    const list = activeCodes();
+    const list = rankActive(activeCodes(), { isRedeemed });
     if (el.activeCount) el.activeCount.textContent = fmt(list.length === 1 ? I18N.activePillOne : I18N.activePill, { n: list.length });
     if (!el.active) return;
     if (!list.length) {
@@ -306,11 +388,13 @@ function boot() {
 
   function row(c) {
     const masked = Boolean(c.masked);
+    const done = c.status === 'active' && isRedeemed(c.code);
     return `
-      <article class="rx-row" data-status="${esc(c.status)}">
+      <article class="rx-row${done ? ' is-done' : ''}" data-status="${esc(c.status)}" data-code="${esc(c.code)}">
         <div class="rx-row-code">
           <code>${esc(c.code)}</code>
           ${masked ? '' : `<button type="button" class="rx-mini" data-copy="${esc(c.code)}" aria-label="${esc(fmt(U.archive.copyAria, { code: c.code }))}">${icon(I.copy, 15)}</button>`}
+          ${c.status === 'active' && !masked ? `<button type="button" class="rx-mini rx-mini-tick${done ? ' is-on' : ''}" data-tick="${esc(c.code)}" aria-pressed="${done}" aria-label="${esc(fmt(done ? U.mine.unmarkAria : U.mine.markAria, { code: c.code }))}">${checkSvg}</button>` : ''}
         </div>
         <div class="rx-row-reward">${chips(c.reward, 2)}</div>
         <div class="rx-row-date"><small>${esc(U.archive.added)}</small><span>${esc(fmtDate(c.releaseDate))}</span></div>
@@ -356,10 +440,63 @@ function boot() {
     }
   }
 
+  /* ------------------------------ "new for you" + progress strip ------------------------------ */
+
+  function renderStrip() {
+    if (!el.strip) return;
+    const active = activeCodes();
+    const done = local.redeemed.count(active.map((c) => c.code));
+    const fresh = state.stripDismissed ? [] : active.filter((c) => state.fresh.has(c.code));
+    const out = [];
+    if (fresh.length) {
+      out.push(`<div class="rx-strip-row"><button type="button" class="rx-strip-new" data-strip-jump>${sparkSvg}<span>${esc(fmt(fresh.length === 1 ? U.fresh.one : U.fresh.many, { n: fresh.length }))}</span><em>${esc(U.fresh.jump)}</em></button><button type="button" class="rx-strip-x" data-strip-x aria-label="${esc(U.fresh.dismiss)}">×</button></div>`);
+    }
+    if (active.length && done) {
+      const pct = Math.round((done / active.length) * 100);
+      out.push(`<div class="rx-strip-prog"><span class="rx-strip-bar" aria-hidden="true"><i style="width:${pct}%"></i></span><span>${esc(fmt(U.mine.progress, { done, total: active.length }))}</span>${done < active.length ? `<small>${esc(fmt(U.mine.left, { n: active.length - done }))}</small>` : ''}<button type="button" data-strip-reset>${esc(U.mine.reset)}</button></div>`);
+    }
+    el.strip.hidden = !out.length;
+    el.strip.innerHTML = out.join('');
+  }
+
+  /** Which codes are new for THIS player: not in the set they saw at their last visit. */
+  function trackFresh(previousActive, hadData) {
+    const active = activeCodes().map((c) => c.code);
+    if (!state.baselineChecked) {
+      state.baselineChecked = true;
+      state.fresh = new Set(local.seen.diff(active).fresh);
+    } else if (hadData) {
+      for (const code of active) if (!previousActive.has(code) && !isRedeemed(code)) state.fresh.add(code);
+    }
+    for (const code of [...state.fresh]) if (!active.includes(code)) state.fresh.delete(code);
+  }
+
+  // The baseline only moves once the player has actually SEEN the list (visible for a moment),
+  // so opening the page and bouncing does not use up the "new" badge.
+  let listVisible = false;
+  let commitTimer = 0;
+  let committedKey = '';
+  function commitSeen() {
+    const codes = activeCodes().map((c) => c.code);
+    const key = codes.join('|');
+    if (!state.codes.length || key === committedKey) return;
+    committedKey = key;
+    local.seen.commit(codes);
+  }
+  function armCommit() {
+    clearTimeout(commitTimer);
+    if (listVisible && document.visibilityState === 'visible') commitTimer = setTimeout(commitSeen, 2200);
+  }
+  if (el.active && 'IntersectionObserver' in window) {
+    new IntersectionObserver((entries) => { listVisible = entries.some((e) => e.isIntersecting); armCommit(); }, { threshold: 0.25 }).observe(el.active);
+  } else { listVisible = true; }
+  document.addEventListener('visibilitychange', armCommit);
+
   function renderAll() {
     renderStats();
     renderTicket();
     renderActive();
+    renderStrip();
     renderUpcoming();
     renderFilters();
     renderArchive();
@@ -400,7 +537,10 @@ function boot() {
     state.serverDate = payload.serverDate || state.serverDate;
     state.updatedAt = payload.updatedAt || state.updatedAt;
     state.lastSync = Date.now();
+    local.redeemed.prune(state.codes.map((c) => c.code));
+    trackFresh(previousActive, hadData);
     renderAll();
+    armCommit();
 
     if (announce && hadData) {
       const fresh = activeCodes().filter((c) => !previousActive.has(c.code));
@@ -500,20 +640,14 @@ function boot() {
   }
 
 
-  function trackRedeemCodeCopy(code) {
-    let accessToken = '';
-    try {
-      const raw = localStorage.getItem('fcmobiletools-auth-v1');
-      const auth = raw ? JSON.parse(raw) : null;
-      accessToken = auth?.access_token || auth?.session?.access_token || auth?.currentSession?.access_token || '';
-    } catch {}
+  function trackActivity(eventType, code) {
+    const accessToken = authToken();
     if (!accessToken) return;
-
     fetch('/api/account/activity', {
       method: 'POST',
       headers: { authorization: 'Bearer ' + accessToken, 'content-type': 'application/json' },
       body: JSON.stringify({
-        eventType: 'redeem_code_copy',
+        eventType,
         entityType: 'redeem_code',
         entityId: String(code || '').trim().toUpperCase(),
         durationMs: 0,
@@ -527,6 +661,114 @@ function boot() {
         window.dispatchEvent(new CustomEvent('fcmobiletools:quest-status-changed'));
       }
     }).catch(() => {});
+  }
+  const trackRedeemCodeCopy = (code) => trackActivity('redeem_code_copy', code);
+
+  /* ------------------------------ ticks, votes, prompts ------------------------------ */
+
+  const sameCode = (node, code) => node.dataset.code === code || node.dataset.tick === code;
+
+  function paintTick(code) {
+    const on = isRedeemed(code);
+    $$('[data-tick]').filter((b) => b.dataset.tick === code).forEach((b) => {
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+      b.setAttribute('aria-label', fmt(on ? U.mine.unmarkAria : U.mine.markAria, { code }));
+      const text = b.querySelector('.rx-tick-text');
+      if (text) text.textContent = on ? U.mine.redeemed : U.mine.mark;
+    });
+    $$('.rx-card[data-code], .rx-row[data-code]').filter((n) => sameCode(n, code)).forEach((n) => {
+      if (n.classList.contains('rx-row') && n.dataset.status !== 'active') return;
+      n.classList.toggle('is-done', on);
+    });
+    renderStrip();
+  }
+
+  function setTick(code, on) {
+    local.redeemed.set(code, on);
+    paintTick(code);
+  }
+
+  function repaintCard(code) {
+    const old = $$('.rx-card').find((n) => n.dataset.code === code);
+    const c = state.codes.find((x) => x.code === code);
+    if (!old || !c) return;
+    const next = document.createElement('div');
+    next.innerHTML = activeCard(c, Number(old.style.getPropertyValue('--i')) || 0).trim();
+    const card = next.firstElementChild;
+    card.classList.add('is-static');
+    if (old.classList.contains('rx-flash')) card.classList.add('rx-flash');
+    old.replaceWith(card);
+  }
+
+  const VOTE_ERRORS = { rate_limited: 'limit', locked: 'locked', network_limit: 'network', inactive: 'inactive' };
+  const voting = new Set();
+
+  /** Sends Worked / Didn't work / retract. Returns true when the server accepted it. */
+  async function sendVote(code, verdict, { quiet = false } = {}) {
+    const c = state.codes.find((x) => x.code === code);
+    if (!c || voting.has(code)) return false;
+    voting.add(code);
+    const box = $$('[data-fb]').find((n) => n.dataset.fb === code);
+    const before = box?.dataset.mine;
+    if (box) { box.dataset.mine = verdict === 'clear' ? 'none' : verdict; box.classList.add('is-busy'); }
+    try {
+      const token = authToken();
+      const response = await fetch(VOTE_API, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ code, verdict, device: local.device.id(() => crypto.randomUUID()) }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) throw Object.assign(new Error(data.error || 'failed'), { reason: data.code });
+
+      const stateBefore = community(c).state;
+      c.community = data.community || c.community;
+      local.votes.set(code, data.vote || 'clear', Date.parse(data.at) || Date.now());
+      local.attempts.asked(code);
+      if (data.vote === 'worked') local.redeemed.set(code, true); // it worked, so it is redeemed
+      repaintCard(code);
+      paintTick(code);
+      if (community(c).state !== stateBefore) renderTicket();
+      if (!quiet) toast(data.vote ? U.vote.thanks : U.vote.removed, 'good');
+      if (data.vote && data.account) trackActivity('redeem_code_vote', code);
+      return true;
+    } catch (error) {
+      if (box) { box.dataset.mine = before || 'none'; }
+      toast(U.vote[VOTE_ERRORS[error.reason]] || U.vote.error);
+      return false;
+    } finally {
+      voting.delete(code);
+      $$('[data-fb]').filter((n) => n.dataset.fb === code).forEach((n) => n.classList.remove('is-busy'));
+    }
+  }
+
+  // "How did it go?": players copy a code, switch to the game, then come back. Ask once, then.
+  let askNode = null;
+  let hiddenAt = 0;
+  const hideAsk = () => { askNode?.remove(); askNode = null; };
+
+  function maybeAsk(reason) {
+    if (askNode || !state.codes.length) return;
+    const pending = local.attempts.pending();
+    if (!pending) return;
+    const c = activeCodes().find((x) => x.code === pending.code);
+    if (!c || isRedeemed(c.code) || myVote(c)) { local.attempts.asked(pending.code); return; }
+    const away = reason === 'load' ? pending.at < pageStart : hiddenAt > pending.at && Date.now() - hiddenAt >= 8000;
+    if (!away) return;
+    askNode = document.createElement('div');
+    askNode.className = 'rx-ask';
+    askNode.setAttribute('role', 'group');
+    askNode.setAttribute('aria-label', fmt(U.vote.askTitle, { code: c.code }));
+    askNode.dataset.ask = c.code;
+    askNode.innerHTML = `
+      <p class="rx-ask-t"><b>${esc(fmt(U.vote.askTitle, { code: c.code }))}</b></p>
+      <div class="rx-ask-btns">
+        <button type="button" class="rx-vbtn rx-vbtn-ok" data-ask-vote="worked">${icon('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 17)}<span>${esc(U.vote.worked)}</span></button>
+        <button type="button" class="rx-vbtn rx-vbtn-bad" data-ask-vote="failed">${icon('<path d="M6 6l12 12M18 6L6 18"/>', 17)}<span>${esc(U.vote.failed)}</span></button>
+      </div>
+      <button type="button" class="rx-ask-skip" data-ask-skip>${esc(U.vote.askSkip)}</button>`;
+    root.appendChild(askNode);
   }
 
   function flashCopied(button) {
@@ -542,12 +784,59 @@ function boot() {
 
   /* ------------------------------ events ------------------------------ */
 
+  const markAttempt = (code) => {
+    if (activeCodes().some((c) => c.code === code) && !isRedeemed(code)) local.attempts.mark(code);
+  };
+
   root.addEventListener('click', async (event) => {
+    const tick = event.target.closest('[data-tick]');
+    if (tick) { setTick(tick.dataset.tick, !isRedeemed(tick.dataset.tick)); navigator.vibrate?.(8); return; }
+
+    const voteBtn = event.target.closest('[data-vote]');
+    if (voteBtn) {
+      const code = voteBtn.closest('[data-fb]')?.dataset.fb;
+      const c = state.codes.find((x) => x.code === code);
+      if (!c) return;
+      // Pressing the verdict you already gave takes it back.
+      const same = myVote(c)?.v === voteBtn.dataset.vote;
+      await sendVote(code, same ? 'clear' : voteBtn.dataset.vote);
+      return;
+    }
+
+    const fix = event.target.closest('[data-vote-fix]');
+    if (fix) {
+      const code = fix.closest('[data-fb]')?.dataset.fb;
+      if (await sendVote(code, 'clear', { quiet: true })) {
+        if (fix.dataset.voteFix === 'used') { setTick(code, true); toast(U.vote.usedDone, 'good'); } else toast(U.vote.regionDone, 'good');
+      }
+      return;
+    }
+
+    const askVote = event.target.closest('[data-ask-vote]');
+    if (askVote && askNode) { const code = askNode.dataset.ask; hideAsk(); await sendVote(code, askVote.dataset.askVote); return; }
+    if (event.target.closest('[data-ask-skip]') && askNode) { local.attempts.asked(askNode.dataset.ask); hideAsk(); return; }
+
+    if (event.target.closest('[data-strip-x]')) { state.stripDismissed = true; commitSeen(); renderStrip(); renderActive(); return; }
+    if (event.target.closest('[data-strip-reset]')) {
+      local.redeemed.clear(activeCodes().map((c) => c.code));
+      renderActive(); renderArchive(); renderStrip(); toast(U.mine.resetDone);
+      return;
+    }
+    if (event.target.closest('[data-strip-jump]')) {
+      const target = $$('.rx-card').find((n) => state.fresh.has(n.dataset.code));
+      if (target) {
+        target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+        target.classList.remove('rx-flash'); void target.offsetWidth; target.classList.add('rx-flash');
+      }
+      return;
+    }
+
     const copyBtn = event.target.closest('[data-copy]');
     if (copyBtn) {
       const ok = await copyText(copyBtn.dataset.copy);
       if (ok) {
         flashCopied(copyBtn);
+        markAttempt(copyBtn.dataset.copy);
         trackRedeemCodeCopy(copyBtn.dataset.copy);
         toast(fmt(U.toast.copied, { code: copyBtn.dataset.copy }), 'good');
         navigator.vibrate?.(12);
@@ -561,6 +850,7 @@ function boot() {
     // Redeem opens EA in a new tab; copy first so the code is ready to paste.
     const redeem = event.target.closest('[data-redeem]');
     if (redeem) {
+      markAttempt(redeem.dataset.redeem);
       copyText(redeem.dataset.redeem).then((ok) => {
         if (!ok) return;
         trackRedeemCodeCopy(redeem.dataset.redeem);
@@ -639,6 +929,26 @@ function boot() {
       }
     });
   }
+
+  // Signed-in players: pull my votes so a second device shows the same pressed buttons.
+  const token = authToken();
+  if (token) {
+    fetch(MINE_API, { headers: { authorization: `Bearer ${token}`, accept: 'application/json' }, cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.votes && Object.keys(data.votes).length) { local.votes.merge(data.votes); renderActive(); } })
+      .catch(() => {});
+  }
+
+  // Ticks made in another tab show up here at once.
+  window.addEventListener('storage', (e) => {
+    if (e.key && e.key.startsWith('fcmt:rx:')) { renderActive(); renderArchive(); renderStrip(); }
+  });
+
+  setTimeout(() => maybeAsk('load'), 2500);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+    setTimeout(() => maybeAsk('return'), 600);
+  });
 
   setInterval(paintSync, 30_000);
   setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, POLL_MS);

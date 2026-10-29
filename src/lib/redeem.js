@@ -10,6 +10,8 @@
 
 import { namespace, pathForLocale, hasLocalizedPage, LOCALES } from '../i18n/index.js';
 import { REDEEM_CODES as SEED_CODES } from '../data/redeemCodes.js';
+import { toPublicSignal, toAdminSignal } from './redeem-signal.js';
+import { ensureVoteSchema, loadSignals, resetSignals, deleteVotesFor } from './redeemVotes.mjs';
 
 export const STATUSES = ['active', 'scheduled', 'expired'];
 export const EA_REDEEM_URL = 'https://redeem.fcm.ea.com/';
@@ -60,6 +62,8 @@ export function ensureRedeemSchema(db) {
         db.prepare('CREATE INDEX IF NOT EXISTS idx_redeem_status_release ON redeem_codes(status, release_date DESC)'),
         db.prepare('CREATE TABLE IF NOT EXISTS redeem_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)'),
       ]);
+      // Community votes ("Worked" / "Didn't work") live beside the codes. See redeemVotes.mjs.
+      await ensureVoteSchema(db);
 
       const seeded = await db.prepare("SELECT value FROM redeem_meta WHERE key='seeded'").first();
       if (!seeded) {
@@ -218,7 +222,7 @@ export function effectiveStatus(row, today = todayISO()) {
 
 const maskCode = (code) => code.slice(0, 1) + '•'.repeat(Math.max(code.length - 1, 3));
 
-function toAdminCode(row, today) {
+function toAdminCode(row, today, signal) {
   return {
     code: row.code,
     reward: row.reward,
@@ -232,10 +236,12 @@ function toAdminCode(row, today) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     updatedBy: row.updated_by,
+    // The evidence behind any player-report flag. Admin decides; this only informs.
+    community: toAdminSignal(signal),
   };
 }
 
-function toPublicCode(row, today) {
+function toPublicCode(row, today, signal) {
   const status = effectiveStatus(row, today);
   const scheduled = status === 'scheduled';
   return {
@@ -249,6 +255,8 @@ function toPublicCode(row, today) {
     region: row.region,
     lastVerified: row.last_verified || null,
     notes: row.notes || '',
+    // Player reports only exist for live codes. Votes never change `status`, only this overlay.
+    ...(status === 'active' ? { community: toPublicSignal(signal) } : {}),
   };
 }
 
@@ -256,9 +264,10 @@ export function summarize(codes, today = todayISO()) {
   const soon = new Date(`${today}T00:00:00Z`);
   soon.setUTCDate(soon.getUTCDate() + 2);
   const soonISO = soon.toISOString().slice(0, 10);
-  const out = { total: codes.length, active: 0, scheduled: 0, expired: 0, expiringSoon: 0, autoExpired: 0 };
+  const out = { total: codes.length, active: 0, scheduled: 0, expired: 0, expiringSoon: 0, autoExpired: 0, flagged: 0 };
   for (const c of codes) {
     out[c.status] += 1;
+    if (c.status === 'active' && c.community && c.community.state !== 'ok') out.flagged += 1;
     if (c.status === 'active' && c.expiryDate && c.expiryDate <= soonISO) out.expiringSoon += 1;
     if (c.storedStatus === 'active' && c.status === 'expired') out.autoExpired += 1;
   }
@@ -275,7 +284,8 @@ export async function listAdminCodes(db) {
   await ensureRedeemSchema(db);
   const today = todayISO();
   const { results } = await db.prepare(`SELECT * FROM redeem_codes ${ORDER}`).all();
-  const codes = (results || []).map((row) => toAdminCode(row, today));
+  const signals = await loadSignals(db);
+  const codes = (results || []).map((row) => toAdminCode(row, today, signals.get(row.code)));
   return { codes, stats: summarize(codes, today), serverDate: today };
 }
 
@@ -284,13 +294,17 @@ export async function publicPayload(db) {
   const today = todayISO();
   const { results } = await db.prepare(`SELECT * FROM redeem_codes ${ORDER}`).all();
   const rows = results || [];
-  const codes = rows.map((row) => toPublicCode(row, today));
+  const signals = await loadSignals(db);
+  const codes = rows.map((row) => toPublicCode(row, today, signals.get(row.code)));
   const updatedAt = rows.reduce((max, r) => (r.updated_at > max ? r.updated_at : max), '');
+  // Changes whenever a report moves a counter, so caches and ETags notice.
+  const signalsAt = [...signals.values()].reduce((max, r) => (r.updated_at > max ? r.updated_at : max), '');
   return {
     codes,
     stats: summarize(codes, today),
     serverDate: today,
     updatedAt: updatedAt || null,
+    signalsAt: signalsAt || null,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -365,11 +379,18 @@ export async function saveCode(db, input, actor) {
       code.code, code.reward, code.status, code.releaseDate, code.expiryDate, code.region, code.lastVerified, code.notes, now, actor, original,
     ).run();
     if (!moved.meta?.changes) throw new RedeemError(`${original} no longer exists.`, 404);
+    // Reports were about the old code text. A renamed code starts with a clean slate.
+    await deleteVotesFor(db, [original]);
     return { action: 'renamed', code: code.code };
   }
 
-  const existing = await db.prepare('SELECT 1 AS x FROM redeem_codes WHERE code=?').bind(code.code).first();
+  const existing = await db.prepare('SELECT status, last_verified FROM redeem_codes WHERE code=?').bind(code.code).first();
   await upsertStatement(db, code, actor, now).run();
+  // Admin outranks the crowd: an admin who re-verifies a live code (new last-verified date, or
+  // bringing it back to active) wipes the earlier player reports. A notes-only edit does not.
+  const reverified = Boolean(existing) && code.status === 'active'
+    && (existing.status !== 'active' || existing.last_verified !== code.lastVerified);
+  if (reverified) await resetSignals(db, [code.code], actor);
   return { action: existing ? 'updated' : 'created', code: code.code };
 }
 
@@ -399,6 +420,8 @@ export async function bulkCreate(db, items, actor) {
   const existing = new Set((results || []).map((r) => r.code));
   const now = new Date().toISOString();
   await db.batch(normalized.map((c) => upsertStatement(db, c, actor, now)));
+  // Re-submitting a code that already exists counts as the admin vouching for it again.
+  await resetSignals(db, normalized.filter((c) => existing.has(c.code) && c.status === 'active').map((c) => c.code), actor);
   return { created: normalized.length - existing.size, updated: existing.size };
 }
 
@@ -434,6 +457,10 @@ export async function bulkAction(db, action, codes, actor) {
 
   const results = await db.batch(statements);
   const changed = results.reduce((sum, r) => sum + (r.meta?.changes || 0), 0);
+  // Admin decisions settle the question: start the player-report evidence from zero (or, for a
+  // delete, remove it). Votes cast before this moment never count again.
+  if (action === 'delete') await deleteVotesFor(db, list);
+  else await resetSignals(db, list, actor);
   return { changed };
 }
 
@@ -441,6 +468,7 @@ export async function deleteCode(db, code) {
   await ensureRedeemSchema(db);
   const result = await db.prepare('DELETE FROM redeem_codes WHERE code=?').bind(String(code).trim().toUpperCase()).run();
   if (!result.meta?.changes) throw new RedeemError('That code no longer exists.', 404);
+  await deleteVotesFor(db, [code]);
   return { deleted: 1 };
 }
 
@@ -469,7 +497,7 @@ export const redeemFaq = (locale = 'en') => namespace(locale, 'redeem').faq.item
 export const REDEEM_FAQ = redeemFaq('en');
 
 export function redeemJsonLd(codes, origin = 'https://fcmobiletools.online', dateModified, locale = 'en') {
-  const active = codes.filter((c) => c.status === 'active' && !c.masked);
+  const active = codes.filter((c) => c.status === 'active' && !c.masked && c.community?.state !== 'possibly_expired');
   const m = namespace(locale, 'redeem').meta;
   const pageUrl = `${origin}${pathForLocale('/redeem-codes/', locale)}`;
   // Link home in the same language only once a translated home page exists.
