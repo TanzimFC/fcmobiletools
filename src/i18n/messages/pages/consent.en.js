@@ -5,7 +5,7 @@ export default {
   policy: 'Read our privacy policy',
   manage: 'Privacy choices',
   continue: 'Continue',
-  basic: 'Use basic ads',
+  basic: 'Continue with basic settings',
   settingsTitle: 'Your privacy choices',
   settingsLead: 'Choose whether optional ad-related storage and eligible third-party ad requests can run. Site promotions remain visible either way.',
   closeAria: 'Close privacy settings',
