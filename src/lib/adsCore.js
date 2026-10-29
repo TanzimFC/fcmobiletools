@@ -182,7 +182,6 @@ export function defaultSettings() {
     minParagraphsForMid: 6,
     dismissDays: 7,
     clickQuietDays: 14,
-    calmAfterDismissals: 2,
     exploreRate: 0.1,
     adFreeForPremium: true,
     graceViews: 1,
@@ -200,7 +199,7 @@ export function normalizeSettings(input = {}) {
   };
   const needsDensityMigration = Number(input.policyVersion || 0) < 2;
   const out = {
-    enabled: input.enabled !== false,
+    enabled: needsDensityMigration ? true : input.enabled !== false,
     houseAds: input.houseAds !== false,
     sponsorAds: input.sponsorAds !== false,
     policyVersion: 2,
@@ -209,7 +208,6 @@ export function normalizeSettings(input = {}) {
     minParagraphsForMid: Math.round(num(input.minParagraphsForMid, 4, 30, base.minParagraphsForMid)),
     dismissDays: Math.round(num(input.dismissDays, 1, 90, base.dismissDays)),
     clickQuietDays: Math.round(num(input.clickQuietDays, 1, 90, base.clickQuietDays)),
-    calmAfterDismissals: Math.round(num(input.calmAfterDismissals, 1, 5, base.calmAfterDismissals)),
     exploreRate: num(input.exploreRate, 0, 0.5, base.exploreRate),
     adFreeForPremium: input.adFreeForPremium !== false,
     graceViews: Math.round(num(input.graceViews, 0, 5, base.graceViews)),
