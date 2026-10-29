@@ -69,7 +69,7 @@ No Google ad script loads while AdSense is off. Third-party requests remain sepa
 ## What protects visitors
 
 * Pages are blocked by default. Only the pages listed in `src/config/adSlots.js` can show ads. Account, giveaway, rewards, legal, notification, advertise and admin pages never do.
-* Ads are inserted only below the visible screen, so the page never jumps while someone reads.
+* Inline placements are inserted below the visible screen to avoid interrupting reading. The clearly labelled desktop tool rail can be visible alongside the first screen, with its space reserved to prevent content shifts.
 * At most 3 ads per page (4 on long articles), subject to available and eligible placements.
 * Every ad has a hide button. Hidden ads stay hidden for 7 days. Hiding one promotion does not switch off other promotions or sitewide ads.
 * A visitor who clicked an ad does not see it again for 14 days.
