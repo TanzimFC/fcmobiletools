@@ -12,8 +12,9 @@ export const AD_SLOTS = [
   { id: 'list-mid', label: 'Lists, inside the feed', pageTypes: ['list'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Blog index, redeem codes and events pages. Placed after the fourth item or at mid page.' },
   { id: 'article-mid', label: 'Article, mid read', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed between paragraphs, only in articles with at least six paragraphs.' },
   { id: 'article-end', label: 'Article, after the last paragraph', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'auto', note: 'Placed right after the article body.' },
+  { id: 'page-mid', label: 'Pages, between sections', pageTypes: ['page'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed around the middle of a long public information page.' },
   { id: 'tool-sidebar', label: 'Tools, desktop side rail', pageTypes: ['tool'], devices: ['desktop'], adsense: 'auto', note: 'A compact promotion in the desktop side rail. Hidden on narrow screens.' },
-  { id: 'tool-result', label: 'Tools, under the results', pageTypes: ['tool'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed under a marked results area, or at mid page when none is marked.' },
+  { id: 'tool-result', label: 'Tools, under the results', pageTypes: ['tool'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed under tool results when available, otherwise after the main tool.' },
   { id: 'page-end', label: 'Page end, above the footer', pageTypes: ['home', 'list', 'tool', 'page'], devices: ['mobile', 'desktop'], adsense: 'auto', note: 'Placed at the very end of the content, above the footer.' }
 ];
 
@@ -24,7 +25,8 @@ export const PAGE_TYPES = ['home', 'list', 'article', 'tool', 'page'];
 export const NEVER_PREFIXES = [
   '/admin', '/api', '/account', '/profile', '/settings', '/creator', '/giveaways', '/rewards',
   '/missions', '/achievements', '/leaderboard', '/surveys', '/legal', '/notifications',
-  '/advertise', '/trivia', '/fc-mobile-27', '/host-a-tournament', '/match-center'
+  '/advertise', '/trivia', '/fc-mobile-27', '/host-a-tournament', '/match-center',
+  '/football-centre/rewards', '/football-centre/settings', '/football-centre/history'
 ];
 
 const TOOL_PATHS = [
