@@ -12,6 +12,7 @@ export const AD_SLOTS = [
   { id: 'list-mid', label: 'Lists, inside the feed', pageTypes: ['list'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Blog index, redeem codes and events pages. Placed after the fourth item or at mid page.' },
   { id: 'article-mid', label: 'Article, mid read', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed between paragraphs, only in articles with at least six paragraphs.' },
   { id: 'article-end', label: 'Article, after the last paragraph', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'auto', note: 'Placed right after the article body.' },
+  { id: 'tool-sidebar', label: 'Tools, desktop side rail', pageTypes: ['tool'], devices: ['desktop'], adsense: 'auto', note: 'A compact promotion in the desktop side rail. Hidden on narrow screens.' },
   { id: 'tool-result', label: 'Tools, under the results', pageTypes: ['tool'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed under a marked results area, or at mid page when none is marked.' },
   { id: 'page-end', label: 'Page end, above the footer', pageTypes: ['home', 'list', 'tool', 'page'], devices: ['mobile', 'desktop'], adsense: 'auto', note: 'Placed at the very end of the content, above the footer.' }
 ];
@@ -28,9 +29,10 @@ export const NEVER_PREFIXES = [
 
 const TOOL_PATHS = [
   '/training-calculator', '/rank-up-calculator', '/team-ovr', '/investment-calculator',
-  '/shards-counter', '/gauntlet-planner', '/captain-tracker'
+  '/shards-counter', '/gauntlet-planner', '/captain-tracker', '/player/playstyle-finder'
 ];
-const LIST_PATHS = ['/redeem-codes', '/events', '/blog'];
+const LIST_PATHS = ['/redeem-codes', '/events', '/blog', '/leagues'];
+const PAGE_PATHS = ['/player/playstyle'];
 
 const clean = (path) => {
   const text = String(path || '/').split('?')[0].split('#')[0];
@@ -49,7 +51,7 @@ export function pageTypeFor(path) {
     return 'article';
   }
   if (LIST_PATHS.includes(p)) return 'list';
-  if (p === '/football-centre' || p.startsWith('/football-centre/')) return 'page';
+  if (PAGE_PATHS.includes(p) || p === '/football-centre' || p.startsWith('/football-centre/')) return 'page';
   return 'none';
 }
 
