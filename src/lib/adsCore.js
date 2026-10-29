@@ -399,7 +399,6 @@ export function publicSettings(settings) {
     minParagraphsForMid: settings.minParagraphsForMid,
     dismissDays: settings.dismissDays,
     clickQuietDays: settings.clickQuietDays,
-    calmAfterDismissals: settings.calmAfterDismissals,
     exploreRate: settings.exploreRate,
     adFreeForPremium: settings.adFreeForPremium,
     graceViews: settings.graceViews,
