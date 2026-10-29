@@ -107,7 +107,7 @@ export const FOOTBALL_CENTRE_CONTENT = {
     "videoEmbedUrl": "https://www.youtube.com/embed/KvgulT3RtFE",
     "videoWatchUrl": "https://www.youtube.com/watch?v=KvgulT3RtFE",
     "videoTitle": "TOTW release update",
-    "videoBody": "This video contains information about the expected timing of the TOTW release. The content shown may not be in the game yet.",
+    "videoBody": "Watch the latest Team of the Week update and release timing discussion. TOTW is shown as unavailable until the content is actually in the game.",
     "videoWarning": "Do not treat timing as a confirmed in-game release until the content is actually available.",
     "videos": [
       {
