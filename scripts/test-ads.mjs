@@ -23,8 +23,14 @@ await test('page types', () => {
   assert.equal(pageTypeFor('/blog/category/news/'), 'list');
   assert.equal(pageTypeFor('/redeem-codes/'), 'list');
   assert.equal(pageTypeFor('/team-ovr'), 'tool');
+  assert.equal(pageTypeFor('/player/playstyle-finder/'), 'tool');
+  assert.equal(pageTypeFor('/player/playstyle/'), 'page');
+  assert.equal(pageTypeFor('/leagues/'), 'list');
   for (const p of ['/giveaways/x/', '/account', '/admin/', '/api/ads/config', '/fc-mobile-27/', '/unknown-page', '/advertise/']) assert.equal(pageTypeFor(p), 'none', p);
   assert.ok(slotsForPageType('article').some((s) => s.id === 'article-mid'));
+  const sidebar = slotsForPageType('tool').find((s) => s.id === 'tool-sidebar');
+  assert.ok(sidebar, 'tools have a desktop side-rail slot');
+  assert.deepEqual(sidebar.devices, ['desktop']);
 });
 await test('copy rules reject em dashes, html, bad links, unknown tokens', () => {
   throwsAds(() => validateCreative({ ...base, headline: 'Big news \u2014 read it' }), /em dash/);
@@ -93,9 +99,17 @@ await test('learning needs evidence and stays bounded', () => {
 });
 await test('page budget and network gate', () => {
   const s = defaultSettings();
-  assert.equal(pageBudget(s, { pageType: 'list' }), 2);
-  assert.equal(pageBudget(s, { pageType: 'article', words: 2000 }), 3);
+  assert.equal(pageBudget(s, { pageType: 'list' }), 3);
+  assert.equal(pageBudget(s, { pageType: 'article', words: 2000 }), 4);
   assert.equal(pageBudget({ ...s, enabled: false }, { pageType: 'list' }), 0);
+  const migrated = normalizeSettings({ enabled: false, maxPerPage: 2, maxPerLongArticle: 3 });
+  assert.equal(migrated.enabled, true, 'the new sitewide promotion policy re-enables legacy-disabled ads');
+  assert.equal(migrated.maxPerPage, 3);
+  assert.equal(migrated.maxPerLongArticle, 4);
+  assert.equal(migrated.policyVersion, 2);
+  const ownerTuned = normalizeSettings({ ...defaultSettings(), maxPerPage: 1, maxPerLongArticle: 2 });
+  assert.equal(ownerTuned.maxPerPage, 1, 'post-migration settings remain owner-tunable');
+  assert.equal(ownerTuned.maxPerLongArticle, 2);
   const on = normalizeSettings({ ...s, adsense: { enabled: true, publisherId: 'ca-pub-2527295119501596', share: 100 }, slots: { 'page-end': { enabled: true, unitId: '1234567890' } } });
   const gate = { slot: 'page-end', consent: true, words: 800, viewsThisSession: 2, adFree: false };
   assert.equal(networkAllowed(on, gate), true);
