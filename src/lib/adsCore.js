@@ -209,7 +209,7 @@ export function normalizeSettings(input = {}) {
     dismissDays: Math.round(num(input.dismissDays, 1, 90, base.dismissDays)),
     clickQuietDays: Math.round(num(input.clickQuietDays, 1, 90, base.clickQuietDays)),
     exploreRate: num(input.exploreRate, 0, 0.5, base.exploreRate),
-    adFreeForPremium: input.adFreeForPremium !== false,
+    adFreeForPremium: needsDensityMigration ? true : input.adFreeForPremium !== false,
     graceViews: Math.round(num(input.graceViews, 0, 5, base.graceViews)),
     minWords: Math.round(num(input.minWords, 0, 3000, base.minWords)),
     slots: {},
