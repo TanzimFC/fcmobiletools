@@ -176,8 +176,9 @@ export function defaultSettings() {
     enabled: true,
     houseAds: true,
     sponsorAds: true,
-    maxPerPage: 2,
-    maxPerLongArticle: 3,
+    policyVersion: 2,
+    maxPerPage: 3,
+    maxPerLongArticle: 4,
     minParagraphsForMid: 6,
     dismissDays: 7,
     clickQuietDays: 14,
@@ -197,12 +198,14 @@ export function normalizeSettings(input = {}) {
     const n = Number(value);
     return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
   };
+  const needsDensityMigration = Number(input.policyVersion || 0) < 2;
   const out = {
     enabled: input.enabled !== false,
     houseAds: input.houseAds !== false,
     sponsorAds: input.sponsorAds !== false,
-    maxPerPage: Math.round(num(input.maxPerPage, 0, 4, base.maxPerPage)),
-    maxPerLongArticle: Math.round(num(input.maxPerLongArticle, 0, 5, base.maxPerLongArticle)),
+    policyVersion: 2,
+    maxPerPage: Math.max(needsDensityMigration ? 3 : 0, Math.round(num(input.maxPerPage, 0, 4, base.maxPerPage))),
+    maxPerLongArticle: Math.max(needsDensityMigration ? 4 : 0, Math.round(num(input.maxPerLongArticle, 0, 5, base.maxPerLongArticle))),
     minParagraphsForMid: Math.round(num(input.minParagraphsForMid, 4, 30, base.minParagraphsForMid)),
     dismissDays: Math.round(num(input.dismissDays, 1, 90, base.dismissDays)),
     clickQuietDays: Math.round(num(input.clickQuietDays, 1, 90, base.clickQuietDays)),
