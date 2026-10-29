@@ -34,7 +34,7 @@ const TOOL_PATHS = [
   '/shards-counter', '/gauntlet-planner', '/captain-tracker', '/player/playstyle-finder'
 ];
 const LIST_PATHS = ['/redeem-codes', '/events', '/blog', '/leagues'];
-const PAGE_PATHS = ['/player/playstyle'];
+const PAGE_PATHS = ['/player/playstyle', '/tournaments', '/tournaments/samples'];
 
 const clean = (path) => {
   const text = String(path || '/').split('?')[0].split('#')[0];
