@@ -50,7 +50,7 @@ async function boot() {
   const shownIds = [];
   let shown = 0;
   const events = createEvents(pageType);
-  const nextOrder = ['tool-sidebar', 'article-mid', 'home-mid', 'list-mid', 'tool-result', 'article-end', 'page-end'];
+  const nextOrder = ['tool-sidebar', 'article-mid', 'home-mid', 'page-mid', 'list-mid', 'tool-result', 'article-end', 'page-end'];
   const plan = slotsForPageType(pageType)
     .filter((slot) => settings.slots?.[slot.id]?.enabled !== false && slot.devices.includes(device))
     .sort((a, b) => nextOrder.indexOf(a.id) - nextOrder.indexOf(b.id));
@@ -144,7 +144,7 @@ async function boot() {
 
   // Artwork sets live at /assets/ads/<name>-wide|card|square.svg and contain no text.
   const ART_SET = /^\/assets\/ads\/([a-z0-9-]+)$/;
-  const SLOT_SIZE = { 'home-mid': 'hero', 'article-end': 'hero', 'list-mid': 'compact', 'article-mid': 'compact', 'tool-result': 'compact', 'tool-sidebar': 'sidebar', 'page-end': 'strip' };
+  const SLOT_SIZE = { 'home-mid': 'hero', 'article-end': 'hero', 'list-mid': 'compact', 'article-mid': 'compact', 'page-mid': 'compact', 'tool-result': 'compact', 'tool-sidebar': 'sidebar', 'page-end': 'strip' };
   const ART_FILES = { hero: ['wide', 'card', 1200, 400, 800, 450], compact: ['square', 'card', 400, 400, 800, 450], sidebar: ['square', 'square', 400, 400, 400, 400], strip: ['wide', 'square', 1200, 400, 400, 400] };
   function artPicture(name, size) {
     const [wide, small, ww, wh, sw, sh] = ART_FILES[size] || ART_FILES.compact;
@@ -310,8 +310,21 @@ function findAnchor(slotId, settings) {
   if (slotId === 'tool-result') {
     const tool = content.querySelector('main, [data-tool-root]');
     if (!tool) return null;
-    const results = tool.querySelector('[data-ad-results], [data-results], #results, #result, .results, .result-panel');
+    const results = [...tool.querySelectorAll('[data-ad-results], [data-results], #results, #result, .results, .result-panel')]
+      .find((node) => !node.hidden && node.offsetHeight > 0);
     return { anchor: results || tool, context: 'section' };
+  }
+
+  if (slotId === 'page-mid') {
+    const sections = [...content.querySelectorAll('section')].filter((section) => !section.parentElement.closest('section') && section.offsetHeight > 120);
+    if (sections.length < 3) return null;
+    const total = sections.reduce((sum, section) => sum + section.offsetHeight, 0);
+    let run = 0;
+    for (let i = 0; i < sections.length; i += 1) {
+      run += sections[i].offsetHeight;
+      if (i >= 1 && run >= total * 0.45) return { anchor: sections[i], context: 'section' };
+    }
+    return null;
   }
 
   if (slotId === 'article-mid' || slotId === 'article-end') {
