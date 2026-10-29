@@ -234,7 +234,7 @@ const pageSchema = {
     <div id="content" data-ad-page-type="tool">
       <div class="fcmt-content-layout">
         <div class="fcmt-content-main"><slot /></div>
-        <aside class="fcmt-tool-ad-rail" data-ad-anchor="tool-sidebar" aria-label="Advertisement">
+        <aside class="fcmt-tool-ad-rail" data-ad-anchor="tool-sidebar" aria-label="Advertisement" hidden>
           <div class="fcmt-tool-ad-fallback" data-ad-placeholder>
             <span>ADVERTISEMENT</span>
             <h2>Promote your brand</h2>
@@ -418,8 +418,11 @@ const pageSchema = {
     .fcmt-tool-ad-fallback a{display:inline-flex;align-items:center;min-height:38px;margin-top:14px;padding:0 12px;border:1px solid rgba(76,201,255,.3);border-radius:10px;background:rgba(76,201,255,.1);color:#a9e8ff;font:800 11.5px/1 var(--font-body);text-decoration:none}
     @media(min-width:1280px){
       #content[data-ad-page-type="tool"] .fcmt-content-layout{width:min(1560px,100%);margin:0 auto;box-sizing:border-box;padding:0 20px;display:grid;grid-template-columns:minmax(0,1fr) 248px;gap:24px;align-items:start}
+      #content[data-ad-page-type="tool"] .fcmt-content-layout--ads-off{display:block;padding-inline:0}
       .fcmt-content-main{min-width:0}
-      .fcmt-content-main>main,.fcmt-content-main>.wrap{width:100%;max-width:none;box-sizing:border-box;margin-inline:0}
+      .fcmt-content-main>main,.fcmt-content-main>.wrap{width:100%;box-sizing:border-box;margin-inline:0}
+      #content[data-ad-page-type="tool"] .fcmt-content-layout--ads-off .fcmt-content-main>main,
+      #content[data-ad-page-type="tool"] .fcmt-content-layout--ads-off .fcmt-content-main>.wrap{width:auto!important;margin-inline:auto!important}
       .fcmt-tool-ad-rail{display:block;position:sticky;top:104px;align-self:start;margin-top:44px}
     }
     .legacy-app-host .nav,.legacy-app-host nav.nav{display:none!important}
