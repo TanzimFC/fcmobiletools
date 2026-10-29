@@ -66,6 +66,23 @@ async function boot() {
   const shownIds = [];
   let shown = 0;
   const events = createEvents(pageType);
+  window.addEventListener('fcmobiletools:consent-updated', (event) => {
+    if (event.detail?.advertising !== false) return;
+    document.querySelectorAll('.fcmt-ad-slot[data-ad-network="1"]').forEach((host) => {
+      const slotId = host.dataset.adSlot;
+      host.removeAttribute('data-ad-network');
+      host.replaceChildren();
+      const fallback = chooseCreative(config.creatives, makeContext(slotId), readState(), settings);
+      if (fallback) renderCreative(host, fallback, slotId);
+      else {
+        host.remove();
+        if (slotId === 'tool-sidebar') {
+          const placeholder = toolRail?.querySelector('[data-ad-placeholder]');
+          if (placeholder) placeholder.hidden = false;
+        }
+      }
+    });
+  });
   const nextOrder = ['tool-sidebar', 'article-mid', 'home-mid', 'page-mid', 'list-mid', 'tool-result', 'article-end', 'page-end'];
   const plan = slotsForPageType(pageType)
     .filter((slot) => settings.slots?.[slot.id]?.enabled !== false && slot.devices.includes(device))
@@ -112,8 +129,10 @@ async function boot() {
     if (!pick && !useNetwork) return false;
     const host = makeHost(item);
     if (useNetwork) {
+      host.dataset.adNetwork = '1';
       renderNetwork(host, item.slot, settings, events, () => {
         // Nothing came back from the network: swap in our own ad if one qualifies.
+        host.removeAttribute('data-ad-network');
         const fallback = chooseCreative(creatives, makeContext(item.slot.id), readState(), settings);
         host.replaceChildren();
         if (fallback) renderCreative(host, fallback, item.slot.id);
