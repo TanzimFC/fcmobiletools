@@ -28,16 +28,32 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   const debug = params.get('adsdebug') === '1' || safeGet(localStorage, 'fcmt:ads:debug') === '1';
   const pageType = root.dataset.pageType;
+  const toolRail = document.querySelector('[data-ad-anchor="tool-sidebar"]');
+  const setToolRail = (enabled) => {
+    if (!toolRail) return;
+    const layout = toolRail.closest('.fcmt-content-layout');
+    const placeholder = toolRail.querySelector('[data-ad-placeholder]');
+    toolRail.hidden = !enabled;
+    if (layout) layout.classList.toggle('fcmt-content-layout--ads-off', !enabled);
+    if (placeholder) placeholder.hidden = !enabled;
+  };
   const locale = COPY[root.dataset.locale] ? root.dataset.locale : 'en';
   const t = COPY[locale];
   const englishPath = (window.FCMT_I18N?.englishPath?.() || location.pathname).replace(/\/+$/, '') || '/';
 
   const config = await loadConfig();
-  if (!config || !config.settings?.enabled) return log(debug, 'Ads are switched off.');
+  if (!config || !config.settings?.enabled) {
+    setToolRail(false);
+    return log(debug, 'Ads are switched off.');
+  }
   const settings = config.settings;
   const views = bumpPageViews();
   const adFree = () => settings.adFreeForPremium && window.FCMT_ADFREE === true;
-  if (adFree()) return log(debug, 'Ad free visitor.');
+  if (adFree()) {
+    setToolRail(false);
+    return log(debug, 'Ad free visitor.');
+  }
+  setToolRail(true);
 
   const content = document.getElementById('content');
   const words = countWords(content);
