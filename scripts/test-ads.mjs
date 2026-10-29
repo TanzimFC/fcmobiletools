@@ -111,6 +111,7 @@ await test('page budget and network gate', () => {
   assert.equal(migrated.maxPerLongArticle, 4);
   assert.equal(migrated.policyVersion, 2);
   assert.equal(migrated.adsense.enabled, false, 'legacy third-party ads remain off during migration');
+  assert.equal(migrated.adFreeForPremium, true, 'future premium accounts remain eligible for an ad-free experience');
   const ownerTuned = normalizeSettings({ ...defaultSettings(), maxPerPage: 1, maxPerLongArticle: 2 });
   assert.equal(ownerTuned.maxPerPage, 1, 'post-migration settings remain owner-tunable');
   assert.equal(ownerTuned.maxPerLongArticle, 2);
