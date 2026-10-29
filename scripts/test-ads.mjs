@@ -29,7 +29,9 @@ await test('page types', () => {
   assert.equal(pageTypeFor('/tournaments/'), 'page');
   assert.equal(pageTypeFor('/tournaments/samples/'), 'page');
   for (const p of ['/giveaways/x/', '/account', '/admin/', '/api/ads/config', '/fc-mobile-27/', '/unknown-page', '/advertise/', '/football-centre/rewards/', '/football-centre/settings/', '/football-centre/history/']) assert.equal(pageTypeFor(p), 'none', p);
+  assert.ok(slotsForPageType('article').some((s) => s.id === 'article-early'));
   assert.ok(slotsForPageType('article').some((s) => s.id === 'article-mid'));
+  assert.ok(slotsForPageType('article').some((s) => s.id === 'page-end'));
   assert.ok(slotsForPageType('page').some((s) => s.id === 'page-mid'));
   const sidebar = slotsForPageType('tool').find((s) => s.id === 'tool-sidebar');
   assert.ok(sidebar, 'tools have a desktop side-rail slot');
