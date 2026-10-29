@@ -450,7 +450,7 @@ html body .toast{border-radius:16px;font-size:13.5px}
   <div class="ns-split">
     <div class="ns-card"><h2>Google AdSense</h2>
       <div class="ns-note warn" style="margin-bottom:14px">Keep this off until Google approves the site. While it is off, no Google script loads and your own ads fill every slot.</div>
-      <div class="ad-switchrow"><div><b>Use AdSense when approved</b><p>Ads show only for visitors who agreed to advertising in the cookie banner, on pages with enough content, and never on the first page of a visit.</p></div><label class="ns-toggle"><input type="checkbox" id="adsenseOn"><span></span></label></div>
+      <div class="ad-switchrow"><div><b>Use AdSense when approved</b><p>AdSense is separate from house and sponsor promotions. It needs approval, a configured unit, sufficient content, a prior page view and the visitor’s optional ad choice where required.</p></div><label class="ns-toggle"><input type="checkbox" id="adsenseOn"><span></span></label></div>
       <div class="ns-field ns-mt"><span>Publisher ID <em>from your AdSense account</em></span><input id="adsensePub" class="ns-input" placeholder="ca-pub-1234567890123456"></div>
       <div class="ns-field"><span>How often the network goes first <em id="adShareVal"></em></span><input id="adsenseShare" type="range" min="0" max="100" step="5"></div>
       <p class="ns-muted" style="font-size:12px;margin:0 0 14px">At 100 percent, AdSense gets every slot it has a unit for, and your own ads only fill gaps when it has nothing. Lower it if you want your promos (alerts, giveaways) to keep growing your subscribers.</p>
@@ -524,7 +524,7 @@ html body .toast{border-radius:16px;font-size:13.5px}
 'use strict';
 var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 var S={data:null,editing:null,filter:'all',pv:'desktop'};
-var SLOT_LABELS={'home-mid':'Home page, between sections','list-mid':'Lists, inside the feed','article-mid':'Article, mid read','article-end':'Article, after the last paragraph','tool-result':'Tools, under the results','page-end':'Page end, above the footer'};
+var SLOT_LABELS={'home-mid':'Home page, between sections','list-mid':'Lists, inside the feed','article-mid':'Article, mid read','article-end':'Article, after the last paragraph','tool-sidebar':'Tools, desktop side rail','tool-result':'Tools, under the results','page-end':'Page end, above the footer'};
 var SLOT_PAGES={'home-mid':'home','list-mid':'list','article-mid':'article','article-end':'article','tool-result':'tool','page-end':'list'};
 var PAGE_TYPES=[['home','Home'],['list','Lists'],['article','Articles'],['tool','Tools'],['page','Other pages']];
 var LOCALES=[['en','English'],['id','Indonesian'],['pt-BR','Portuguese (BR)'],['bn','Bangla']];
@@ -534,16 +534,16 @@ var TOKENS=['codes.active','codes.expiringSoon','giveaway.title','giveaway.prize
 var RULES=[
  ['houseAds','switch','Show house ads','Your own promos: alerts, giveaways, premium, advertise here.'],
  ['sponsorAds','switch','Show sponsor ads','Paid placements. They always go ahead of everything else.'],
- ['maxPerPage','number','Most ads on one page','0 to 4. Two is a calm default.',0,4],
- ['maxPerLongArticle','number','Most ads on a long article','Applies to articles over about 1500 words.',0,5],
+ ['maxPerPage','number','Most ads on one page','0 to 4. Three is the current default, spaced around the content.',0,4],
+ ['maxPerLongArticle','number','Most ads on a long article','Up to four by default, spaced between useful content.',0,5],
  ['minParagraphsForMid','number','Shortest article that gets a mid read ad','Counted in paragraphs.',4,30],
  ['dismissDays','number','Days an ad stays hidden after a visitor hides it','1 to 90.',1,90],
  ['clickQuietDays','number','Days before a clicked ad shows again to the same visitor','1 to 90.',1,90],
- ['calmAfterDismissals','number','Hides in one visit before ads go quiet','After this many hides, that visitor sees no more ads on this visit.',1,5],
+
  ['exploreRate','percent','How often to test unproven ads','Share of picks that ignore past click rates so new ads get a fair look.',0,50],
  ['graceViews','number','Pages a visitor sees before the network may show ads','Your own ads are not held back by this.',0,5],
  ['minWords','number','Words a page needs before the network may show ads','Thin pages are better left to your own promos.',0,3000],
- ['adFreeForPremium','switch','Premium visitors see no ads','Ready for when premium exists. It takes effect once the site marks a visitor as premium.']
+
 ];
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -627,7 +627,7 @@ function renderAdsense(){
   $('#adsenseOn').checked=a.enabled;$('#adsensePub').value=a.publisherId;$('#adsenseShare').value=a.share;$('#adShareVal').textContent=a.share+'%';
   $('#adUnits').innerHTML=S.data.slots.map(function(id){return '<div class="ad-unit"><label for="unit-'+id+'">'+esc(SLOT_LABELS[id]||id)+'</label><input class="ns-input" id="unit-'+id+'" data-unit="'+id+'" inputmode="numeric" placeholder="Ad unit ID, digits only" value="'+esc((s.slots[id]||{}).unitId||'')+'"></div>'}).join('');
   var withUnit=S.data.slots.filter(function(id){return (s.slots[id]||{}).unitId}).length;
-  var items=[['ok','ads.txt is in the site files with your publisher ID.'],['ok','The AdSense account meta tag is on every page.'],['ok','Visitors choose advertising in the cookie banner, and AdSense never loads without it.'],['ok','Pages with little content get no network ads, and no ad sits above the first screen.'],[withUnit?'ok':'warn',withUnit?withUnit+' of '+S.data.slots.length+' slots have an ad unit ID.':'No ad unit IDs yet. Create them in AdSense after approval.'],[a.enabled?'ok':'warn',a.enabled?'AdSense is switched on.':'AdSense is off. Turn it on only after Google approves the site.']];
+  var items=[['warn','Before personalized Google ads are served in the EEA, UK or Switzerland, configure a Google-certified CMP with IAB TCF.'],['ok','ads.txt is in the site files with your publisher ID.'],['ok','The AdSense account meta tag is on every page.'],['ok','House and sponsor promotions display regardless of optional ad-related storage choices.'],['ok','Network requests are gated by approval, page quality, configured units and the visitor choice.'],[withUnit?'ok':'warn',withUnit?withUnit+' of '+S.data.slots.length+' slots have an ad unit ID.':'No ad unit IDs yet. Create them in AdSense after approval.'],[a.enabled?'ok':'warn',a.enabled?'AdSense is switched on.':'AdSense is off. Turn it on only after Google approves the site.']];
   $('#adReady').innerHTML=items.map(function(i){return '<li class="'+i[0]+'">'+(i[0]==='ok'?'✓':'•')+' <span>'+esc(i[1])+'</span></li>'}).join('');
   var n=S.data.stats.byCreative.filter(function(r){return r.key==='adsense'})[0];
   $('#adNetStats').innerHTML=n?'<div class="ad-bar" style="grid-template-columns:150px 1fr"><span>Requests</span><span>'+num(n.nreq)+'</span></div><div class="ad-bar" style="grid-template-columns:150px 1fr"><span>Filled</span><span>'+num(n.nfill)+' ('+pct(n.nfill||0,n.nreq||0)+')</span></div><div class="ad-bar" style="grid-template-columns:150px 1fr"><span>Empty, filled by your ads</span><span>'+num(n.nempty)+'</span></div>':'<div class="ns-empty">No network requests yet.</div>';
