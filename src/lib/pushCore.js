@@ -64,7 +64,7 @@ export function bitsToTopics(bits) {
 const SUBSCRIPTION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isSubscriptionId = (value) => typeof value === 'string' && SUBSCRIPTION_ID.test(value.trim());
 
-export const SOURCES = Object.freeze(['redeem_page', 'redeem_copy', 'bell', 'sheet', 'notifications_page', 'events_page', 'article', 'studio', 'other']);
+export const SOURCES = Object.freeze(['redeem_page', 'redeem_copy', 'bell', 'sheet', 'notifications_page', 'events_page', 'article', 'studio', 'house_ad', 'other']);
 export const normalizeSource = (value) => (SOURCES.includes(value) ? value : 'other');
 
 export const FUNNEL_EVENTS = Object.freeze(['shown', 'accepted', 'dismissed', 'blocked', 'enabled', 'paused']);

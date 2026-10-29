@@ -74,7 +74,8 @@ export default defineConfig({
         '/achievements/',
         '/leaderboard/',
         '/rewards/',
-        '/surveys/'
+        '/surveys/',
+        '/advertise/report/'
       ].includes(withTrailingSlash(englishPath)) && !redirectPaths.has(pathname);
     }
   })],

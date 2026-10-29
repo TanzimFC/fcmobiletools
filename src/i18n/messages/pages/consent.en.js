@@ -16,7 +16,7 @@ export default {
   analyticsText: 'Google Analytics is disabled. No Google Analytics tag is loaded.',
   disabled: 'Disabled',
   advertising: 'Advertising',
-  advertisingText: 'Allows Monetag ads on eligible public pages and helps fund free tools and giveaways.',
+  advertisingText: 'Allows ads from partners such as Google AdSense and lets us remember how often you have seen an ad. Our own promos work without this.',
   on: 'On',
   off: 'Off',
   cookiePolicy: 'Cookie policy',

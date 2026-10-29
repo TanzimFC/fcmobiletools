@@ -15,7 +15,7 @@ export default {
   analyticsText: 'O Google Analytics está desativado. Nenhuma tag do Google Analytics é carregada.',
   disabled: 'Desativado',
   advertising: 'Publicidade',
-  advertisingText: 'Permite anúncios da Monetag em páginas públicas elegíveis e ajuda a financiar ferramentas e sorteios gratuitos.',
+  advertisingText: 'Permite anúncios de parceiros como o Google AdSense e nos ajuda a lembrar quantas vezes você viu um anúncio. As promoções do próprio site funcionam sem isso.',
   on: 'Ligado',
   off: 'Desligado',
   cookiePolicy: 'Política de cookies',

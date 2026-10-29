@@ -1,0 +1,196 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { AD_SLOTS } from '../../config/adSlots.js';
+const placements = AD_SLOTS.map((slot) => slot.label);
+---
+<BaseLayout
+  title="Advertise on FC Mobile Tools"
+  description="Put your FC Mobile channel, Discord server or app in front of players who check redeem codes, events and guides. Clear placements, honest reports."
+>
+  <PageHero title="Advertise on FC Mobile Tools" lede="Put your channel, server or app in front of FC Mobile players while they check codes, events and guides.">
+    <a slot="actions" class="sys-btn sys-btn--primary" href="#ask">Ask about a placement</a>
+  </PageHero>
+
+  <div class="sys-wrap adv">
+    <section class="adv-grid" aria-label="What advertisers get">
+      <div class="adv-card">
+        <h2>Plain placements</h2>
+        <p>Your ad is a single card with a headline, a line of text and a button. It sits between content, is labelled Sponsored, and never covers the page or opens a popup.</p>
+      </div>
+      <div class="adv-card">
+        <h2>Your own report</h2>
+        <p>Every campaign gets a private link with views, clicks and click rate for each day. The numbers come from our own counters, not an estimate.</p>
+      </div>
+      <div class="adv-card">
+        <h2>Visitors stay in control</h2>
+        <p>People can hide any ad, and the site eases off for anyone who does. Fewer annoyed visitors means more attention for ads that stay.</p>
+      </div>
+    </section>
+
+    <section class="adv-section">
+      <h2>Where ads can appear</h2>
+      <ul class="adv-list">
+        {placements.map((label) => <li>{label}</li>)}
+      </ul>
+      <p class="adv-muted">Ads only run on pages with real content: guides, tools, redeem codes and events. They never run on sign in, account, giveaway entry or prize claim pages.</p>
+    </section>
+
+    <section class="adv-section adv-two">
+      <div>
+        <h2>Good fits</h2>
+        <ul class="adv-list">
+          <li>FC Mobile creators and streamers</li>
+          <li>Communities, leagues and Discord servers</li>
+          <li>Tools and apps for mobile football players</li>
+          <li>Gaming gear, merch and esports events</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Not accepted</h2>
+        <ul class="adv-list">
+          <li>Account selling, boosting, hacks or coin generators</li>
+          <li>Gambling, betting and adult content</li>
+          <li>Anything that looks like it comes from EA or FC Mobile</li>
+          <li>Misleading claims, malware or sites that ask for game logins</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="adv-section">
+      <h2>How it works</h2>
+      <ol class="adv-steps">
+        <li><b>Tell us what you want to promote.</b> Use the form below.</li>
+        <li><b>We reply on Discord or email.</b> We say whether it fits and what it would cost.</li>
+        <li><b>You approve the wording and link.</b> Nothing runs without your sign off.</li>
+        <li><b>You get a private report link</b> that updates as your ad runs.</li>
+      </ol>
+    </section>
+
+    <section class="adv-section" id="ask" aria-labelledby="ask-h">
+      <h2 id="ask-h">Ask about a placement</h2>
+      <form id="advForm" class="adv-form" novalidate>
+        <div class="adv-row">
+          <label>Brand or channel name<input name="brand" maxlength="80" required autocomplete="organization" /></label>
+          <label>Your name (optional)<input name="contactName" maxlength="80" autocomplete="name" /></label>
+        </div>
+        <div class="adv-row">
+          <label>Best way to reach you
+            <select name="contactMethod">
+              <option value="discord">Discord</option>
+              <option value="email">Email</option>
+              <option value="instagram">Instagram</option>
+              <option value="youtube">YouTube</option>
+              <option value="other">Something else</option>
+            </select>
+          </label>
+          <label>Your handle or address<input name="contactValue" maxlength="120" required /></label>
+        </div>
+        <div class="adv-row">
+          <label>Website or channel link (optional)<input name="website" maxlength="300" inputmode="url" placeholder="https://" /></label>
+          <label>What are you promoting?
+            <select name="category">
+              <option value="creator">A creator or channel</option>
+              <option value="community">A community or Discord server</option>
+              <option value="app-or-tool">An app or tool</option>
+              <option value="merch">Gear or merch</option>
+              <option value="esports">An esports event</option>
+              <option value="other">Something else</option>
+            </select>
+          </label>
+        </div>
+        <div class="adv-row">
+          <label>Rough budget (optional)
+            <select name="budget">
+              <option value="">Not sure yet</option>
+              <option>Under $25</option>
+              <option>$25 to $100</option>
+              <option>$100 to $300</option>
+              <option>More than $300</option>
+            </select>
+          </label>
+          <label>When would you like to start?
+            <select name="startPref">
+              <option value="">No rush</option>
+              <option>As soon as possible</option>
+              <option>In the next two weeks</option>
+              <option>Next month</option>
+              <option>Just asking for now</option>
+            </select>
+          </label>
+        </div>
+        <label>Tell us about it
+          <textarea name="message" rows="5" maxlength="1200" required placeholder="What you want to promote, who it is for, and anything you already have in mind."></textarea>
+        </label>
+        <div class="adv-trap" aria-hidden="true"><label>Leave this empty<input name="company_site" tabindex="-1" autocomplete="off" /></label></div>
+        <p id="advStatus" class="adv-status" role="status" aria-live="polite"></p>
+        <button type="submit" class="sys-btn sys-btn--primary" id="advSubmit">Send</button>
+      </form>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .adv { padding-block: 8px 72px; display: grid; gap: 44px; }
+  .adv h2 { margin: 0 0 10px; font-family: var(--font-display); font-size: clamp(20px, 2.6vw, 26px); letter-spacing: -0.01em; }
+  .adv p { margin: 0; color: var(--muted-strong); line-height: 1.6; max-width: 66ch; }
+  .adv-muted { color: var(--muted) !important; margin-top: 14px !important; font-size: 14.5px; }
+  .adv-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .adv-card { padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+  .adv-card h2 { font-size: 18px; }
+  .adv-list { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--muted-strong); line-height: 1.5; }
+  .adv-two { display: grid; gap: 28px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adv-steps { margin: 0; padding-left: 22px; display: grid; gap: 10px; color: var(--muted-strong); line-height: 1.55; }
+  .adv-steps b { color: var(--text); }
+  .adv-form { display: grid; gap: 16px; max-width: 760px; }
+  .adv-row { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adv-form label { display: grid; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--muted-strong); }
+  .adv-form input, .adv-form select, .adv-form textarea {
+    width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+    background: var(--surface); color: var(--text); font: 400 15px var(--font-body);
+  }
+  .adv-form textarea { resize: vertical; min-height: 120px; }
+  .adv-form :focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .adv-trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .adv-status { min-height: 22px; font-size: 14px; }
+  .adv-status[data-tone="bad"] { color: var(--danger); }
+  .adv-status[data-tone="good"] { color: var(--success); }
+  #advSubmit { justify-self: start; }
+  #advSubmit[disabled] { opacity: 0.6; }
+  @media (max-width: 760px) {
+    .adv-grid, .adv-two, .adv-row { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+
+<script>
+  const form = document.getElementById('advForm') as HTMLFormElement | null;
+  if (form) {
+    const status = document.getElementById('advStatus') as HTMLElement;
+    const button = document.getElementById('advSubmit') as HTMLButtonElement;
+    const openedAt = Date.now();
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      status.dataset.tone = '';
+      status.textContent = 'Sending...';
+      button.disabled = true;
+      try {
+        const response = await fetch('/api/ads/inquiry', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ ...data, elapsed: Date.now() - openedAt })
+        });
+        const out = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(out.error || 'That did not go through. Please try again.');
+        form.reset();
+        status.dataset.tone = 'good';
+        status.textContent = 'Thank you. We have your message (reference ' + out.ref + ') and will reply on the contact you gave.';
+      } catch (error) {
+        status.dataset.tone = 'bad';
+        status.textContent = (error as Error).message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+</script>

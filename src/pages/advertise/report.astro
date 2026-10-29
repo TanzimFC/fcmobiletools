@@ -1,0 +1,90 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+---
+<BaseLayout
+  title="Campaign report"
+  description="Private campaign report for FC Mobile Tools advertisers."
+  robots="noindex,nofollow,noarchive"
+  googlebot="noindex,nofollow,noarchive"
+  noAds
+>
+  <PageHero title="Campaign report" lede="Views, clicks and click rate for your campaign. Updated as your ad runs." id="report-title" />
+  <div class="sys-wrap rep" id="rep">
+    <p class="rep-note" id="repNote">Loading your report...</p>
+    <div id="repBody" hidden>
+      <h2 id="repName"></h2>
+      <p class="rep-dates" id="repDates"></p>
+      <div class="rep-kpis">
+        <div><small>Views</small><strong id="kViews">0</strong></div>
+        <div><small>Clicks</small><strong id="kClicks">0</strong></div>
+        <div><small>Click rate</small><strong id="kCtr">0%</strong></div>
+      </div>
+      <h3>By day</h3>
+      <div class="rep-chart" id="repChart" role="img" aria-label="Views per day"></div>
+      <div class="rep-table-wrap">
+        <table class="rep-table">
+          <thead><tr><th>Day</th><th>Views</th><th>Clicks</th><th>Click rate</th></tr></thead>
+          <tbody id="repRows"></tbody>
+        </table>
+      </div>
+      <p class="rep-foot">A view counts when at least half of your ad has been on screen for one second. Counts are our own, with bots left out.</p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .rep { padding-block: 8px 72px; display: grid; gap: 18px; }
+  .rep h2 { margin: 0; font-family: var(--font-display); font-size: 24px; }
+  .rep h3 { margin: 8px 0 0; font-size: 15px; color: var(--muted-strong); }
+  .rep-note, .rep-dates, .rep-foot { margin: 0; color: var(--muted); font-size: 14px; }
+  .rep-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; max-width: 640px; margin: 14px 0; }
+  .rep-kpis div { padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+  .rep-kpis small { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .rep-kpis strong { font: 700 28px var(--font-display); }
+  .rep-chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); overflow-x: auto; }
+  .rep-chart i { flex: 1 0 6px; min-width: 6px; background: var(--primary); border-radius: 2px 2px 0 0; }
+  .rep-table-wrap { overflow-x: auto; }
+  .rep-table { width: 100%; max-width: 640px; border-collapse: collapse; font-size: 14px; }
+  .rep-table th, .rep-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  .rep-table th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+
+<script>
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const note = document.getElementById('repNote') as HTMLElement;
+  const body = document.getElementById('repBody') as HTMLElement;
+  const pct = (n: number) => (n * 100).toFixed(n >= 0.1 ? 1 : 2) + '%';
+  (async () => {
+    if (!token) { note.textContent = 'This link is missing its code. Use the full link we sent you.'; return; }
+    try {
+      const response = await fetch('/api/ads/report?t=' + encodeURIComponent(token), { cache: 'no-store' });
+      if (!response.ok) { note.textContent = 'We could not find that report. Check the link we sent you.'; return; }
+      const r = await response.json();
+      (document.getElementById('repName') as HTMLElement).textContent = r.campaign.name;
+      const from = r.campaign.startsAt ? r.campaign.startsAt.slice(0, 10) : 'now';
+      const to = r.campaign.endsAt ? r.campaign.endsAt.slice(0, 10) : 'no end date';
+      (document.getElementById('repDates') as HTMLElement).textContent = 'Runs ' + from + ' to ' + to + '. Status: ' + r.campaign.status + '.';
+      (document.getElementById('kViews') as HTMLElement).textContent = r.totals.views.toLocaleString();
+      (document.getElementById('kClicks') as HTMLElement).textContent = r.totals.clicks.toLocaleString();
+      (document.getElementById('kCtr') as HTMLElement).textContent = pct(r.totals.ctr);
+      const max = Math.max(1, ...r.days.map((d: any) => d.views));
+      const chart = document.getElementById('repChart') as HTMLElement;
+      for (const d of r.days) {
+        const bar = document.createElement('i');
+        bar.style.height = Math.max(3, Math.round((d.views / max) * 100)) + '%';
+        bar.title = d.day + ': ' + d.views + ' views';
+        chart.append(bar);
+      }
+      const rows = document.getElementById('repRows') as HTMLElement;
+      for (const d of [...r.days].reverse()) {
+        const tr = document.createElement('tr');
+        for (const text of [d.day, d.views.toLocaleString(), d.clicks.toLocaleString(), d.views ? pct(d.clicks / d.views) : '0%']) {
+          const td = document.createElement('td'); td.textContent = text; tr.append(td);
+        }
+        rows.append(tr);
+      }
+      note.hidden = true; body.hidden = false;
+    } catch { note.textContent = 'The report could not load. Please try again in a minute.'; }
+  })();
+</script>

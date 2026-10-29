@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#071018"><title>Ads Studio | FCMOBILETOOLS Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root{color-scheme:dark;--ns-bg:#071018;--ns-card:#0d1a25;--ns-card2:#112130;--ns-line:rgba(255,255,255,.09);--ns-text:#f5f8fb;--ns-muted:#8fa4b5;--ns-cyan:#4cc9ff;--ns-green:#47d16c;--ns-amber:#ffbd59;--ns-red:#ff8f86;--ns-violet:#9a8cff;--ns-display:'Space Grotesk',sans-serif;--ns-body:Inter,system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(800px 480px at 4% -10%,#4cc9ff18,transparent 65%),radial-gradient(700px 480px at 100% 0,#9a8cff0c,transparent 60%),var(--ns-bg);color:var(--ns-text);font:14px/1.6 var(--ns-body)}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ns-cyan);outline-offset:2px}
+.ns-shell{width:min(1240px,100%);margin:auto;padding:26px clamp(14px,3vw,36px) 90px}
+.ns-back{color:#a5b8c7;text-decoration:none;font-weight:700;font-size:12px}
+.ns-top{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin:26px 0 18px}
+.ns-eyebrow{color:var(--ns-cyan);font-size:10px;font-weight:800;letter-spacing:.2em}
+.ns-top h1{font:700 clamp(30px,4.5vw,48px)/1 var(--ns-display);letter-spacing:-.05em;margin:10px 0 8px}
+.ns-top p{margin:0;color:var(--ns-muted);max-width:640px}
+.ns-chips{display:flex;gap:8px;flex-wrap:wrap}
+.ns-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--ns-line);border-radius:99px;background:#ffffff08;color:#c3d3df;font-size:11.5px;font-weight:800}
+.ns-dot{width:8px;height:8px;border-radius:50%;background:#6b7d8c;flex:0 0 8px}
+.ns-dot.ok{background:var(--ns-green);box-shadow:0 0 10px #47d16c99}.ns-dot.bad{background:var(--ns-red);box-shadow:0 0 10px #ff8f8699}.ns-dot.warn{background:var(--ns-amber)}
+.ns-tabs{display:flex;gap:4px;overflow-x:auto;padding:5px;border:1px solid var(--ns-line);border-radius:16px;background:#0a1620;margin-bottom:18px;scrollbar-width:none;position:sticky;top:8px;z-index:20;backdrop-filter:blur(14px)}
+.ns-tabs::-webkit-scrollbar{display:none}
+.ns-tab{flex:1 0 auto;min-height:42px;padding:0 18px;border:0;border-radius:12px;background:transparent;color:#9fb2c1;font-weight:800;font-size:12.5px;white-space:nowrap}
+.ns-tab:hover{color:#fff;background:#ffffff08}
+.ns-tab[aria-selected="true"]{color:#04121b;background:linear-gradient(135deg,#a4eaff,#4cc9ff)}
+.ns-view[hidden]{display:none}
+.ns-card{border:1px solid var(--ns-line);border-radius:20px;background:linear-gradient(150deg,#122333d9,#0b1721f5);box-shadow:0 24px 60px #0002;padding:20px}
+.ns-card h2{font:700 18px var(--ns-display);letter-spacing:-.02em;margin:0}
+.ns-card h3{font:700 14px var(--ns-display);margin:0}
+.ns-sub{color:var(--ns-muted);font-size:12.5px;margin:5px 0 16px}
+.ns-grid{display:grid;gap:14px}.ns-g2{grid-template-columns:repeat(2,minmax(0,1fr))}.ns-g3{grid-template-columns:repeat(3,minmax(0,1fr))}.ns-g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ns-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:14px;align-items:start}
+.ns-kpi small{display:block;color:var(--ns-muted);font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.ns-kpi strong{display:block;margin:6px 0 2px;font:700 30px var(--ns-display);letter-spacing:-.03em}
+.ns-kpi span{color:#7892a5;font-size:11.5px}
+.ns-field{display:grid;gap:6px;margin-bottom:14px}
+.ns-field>span,.ns-label{font-size:11px;font-weight:800;color:#c8d5df;display:flex;justify-content:space-between;gap:8px}
+.ns-field>span em{font-style:normal;color:#6f879a;font-weight:700}
+.ns-field input,.ns-field select,.ns-field textarea,.ns-input{width:100%;min-width:0;border:1px solid #263b4b;border-radius:12px;background:#07121b;padding:11px 12px}
+.ns-field textarea{min-height:92px;resize:vertical}
+.ns-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ns-btn{min-height:42px;padding:0 16px;border:1px solid #294252;border-radius:12px;background:#122330;color:#d9e8f2;font-size:12.5px;font-weight:800;transition:transform .12s,border-color .15s}
+.ns-btn:hover:not(:disabled){border-color:#4cc9ff66}.ns-btn:active:not(:disabled){transform:scale(.98)}
+.ns-btn.primary{background:linear-gradient(135deg,#a4eaff,#4cc9ff);border-color:#8be1ff;color:#03121b}
+.ns-btn.danger{border-color:#ff8f8655;color:#ffb3ac}
+.ns-btn.small{min-height:34px;padding:0 12px;font-size:11.5px;border-radius:10px}
+.ns-btn:disabled{opacity:.5;cursor:wait}
+.ns-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ns-note{padding:11px 13px;border:1px solid #294252;border-radius:12px;background:#08151e;color:var(--ns-muted);font-size:12px}
+.ns-note.warn{border-color:#ffbd5955;background:#ffbd590d;color:#ffd9a0}.ns-note.bad{border-color:#ff8f8655;background:#ff8f860d;color:#ffb8b1}.ns-note.good{border-color:#47d16c55;background:#47d16c0d;color:#9be8b3}
+.ns-list{display:grid;gap:8px}
+.ns-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--ns-line);border-radius:14px;background:#ffffff05}
+.ns-item b{font-size:13px}.ns-item p{margin:2px 0 0;color:var(--ns-muted);font-size:12px}
+.ns-bar{display:grid;grid-template-columns:132px 1fr 46px;align-items:center;gap:10px;font-size:12px;margin:8px 0}
+.ns-bar i{display:block;height:9px;border-radius:9px;background:#ffffff0d;overflow:hidden}.ns-bar i b{display:block;height:100%;background:linear-gradient(90deg,#4cc9ff,#9a8cff);border-radius:9px}
+.ns-bar em{font-style:normal;text-align:right;font-weight:800}
+.ns-spark{width:100%;height:84px}
+.ns-templates{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;margin:0 -2px 8px;scrollbar-width:thin}
+.ns-tpl{flex:0 0 auto;padding:10px 14px;border:1px solid #263b4b;border-radius:13px;background:#091722;color:#c7d7e3;font-size:12px;font-weight:800;text-align:left}
+.ns-tpl:hover{border-color:#4cc9ff77;color:#fff}
+.ns-checks{display:grid;gap:6px;margin:0;padding:0;list-style:none;font-size:12px}
+.ns-checks li{display:flex;gap:8px;align-items:flex-start;color:#a9bccb}
+.ns-checks li.bad{color:#ffb8b1}.ns-checks li.warn{color:#ffd9a0}.ns-checks li.ok{color:#9be8b3}
+.ns-pvtabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.ns-pvtab{padding:6px 12px;border:1px solid var(--ns-line);border-radius:99px;background:transparent;color:#9fb2c1;font-size:11px;font-weight:800}
+.ns-pvtab[aria-pressed="true"]{background:#4cc9ff1a;border-color:#4cc9ff66;color:#bdeeff}
+.ns-pv{padding:14px;border-radius:18px;background:#e9eef2;color:#111a21}
+.ns-pv .app{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;color:#59666f;letter-spacing:.02em}
+.ns-pv .app img{width:16px;height:16px;border-radius:4px}
+.ns-pv b{display:block;margin-top:7px;font-size:14px;line-height:1.3}.ns-pv p{margin:4px 0 0;font-size:12.5px;line-height:1.45;color:#2b3944;overflow-wrap:anywhere}
+.ns-pv .hero{margin-top:10px;width:100%;max-height:150px;object-fit:cover;border-radius:10px}
+.ns-pv.win{background:#202a33;color:#fff;border-radius:8px}.ns-pv.win .app{color:#9db0be}.ns-pv.win p{color:#c9d6df}
+.ns-pv.ios{background:rgba(235,240,245,.92);border-radius:22px}
+.ns-pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:800;background:#4cc9ff14;color:#9de7ff}
+.ns-pill.sent{background:#47d16c1a;color:#8ce9a8}.ns-pill.failed{background:#ff8f8620;color:#ffb3ac}.ns-pill.scheduled{background:#ffbd5920;color:#ffd08a}.ns-pill.cancelled,.ns-pill.sending{background:#ffffff12;color:#b5c3cf}.ns-pill.test{background:#9a8cff22;color:#c4bbff}
+.ns-camp{display:grid;gap:7px;padding:15px 0;border-bottom:1px solid var(--ns-line)}.ns-camp:last-child{border-bottom:0}
+.ns-camp .meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:#7f98aa;font-size:11px}
+.ns-camp p{margin:0;color:#9db0bf;font-size:12.5px;overflow-wrap:anywhere}
+.ns-stats{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:#a9bccb}.ns-stats b{color:#fff}
+.ns-toggle{position:relative;display:inline-block;width:46px;height:26px;flex:0 0 46px}
+.ns-toggle input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+.ns-toggle span{position:absolute;inset:0;border:1px solid #ffffff22;border-radius:99px;background:#192836;transition:.2s}
+.ns-toggle span::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#7d8d9c;transition:.2s}
+.ns-toggle input:checked+span{background:#4cc9ff40;border-color:#4cc9ff88}.ns-toggle input:checked+span::after{transform:translateX(20px);background:#9be4ff}
+.ns-toggle input:focus-visible+span{outline:2px solid var(--ns-cyan);outline-offset:3px}
+.ns-auto{padding:16px;border:1px solid var(--ns-line);border-radius:16px;background:#ffffff05}
+.ns-auto-head{display:flex;gap:14px;align-items:center}.ns-auto-head>div{flex:1;min-width:0}
+.ns-auto-head p{margin:2px 0 0;color:var(--ns-muted);font-size:12px}
+.ns-auto-body{margin-top:14px;padding-top:14px;border-top:1px solid var(--ns-line)}
+.ns-vars{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}.ns-vars button{padding:3px 9px;border:1px dashed #4cc9ff55;border-radius:8px;background:transparent;color:#9de7ff;font-size:11px;font-weight:700}
+.ns-group{margin:22px 0 4px;color:var(--ns-cyan);font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.ns-table{width:100%;border-collapse:collapse;font-size:12.5px}.ns-table th{padding:8px 6px;text-align:left;color:#7f98aa;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--ns-line)}.ns-table td{padding:10px 6px;border-bottom:1px solid #ffffff0a}.ns-table td.n{text-align:right;font-variant-numeric:tabular-nums}
+.ns-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:#02070bcc}.ns-modal[hidden]{display:none}
+.ns-modal>div{width:min(520px,100%);max-height:92vh;overflow:auto;padding:22px;border:1px solid #2a4254;border-radius:22px;background:#0c1823;box-shadow:0 40px 100px #000a}
+.ns-sum{display:grid;grid-template-columns:86px 1fr;gap:8px 12px;margin:14px 0;font-size:12.5px}.ns-sum dt{color:#7f98aa;font-weight:700}.ns-sum dd{margin:0;overflow-wrap:anywhere}
+.ns-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);z-index:120;max-width:min(92vw,520px);padding:12px 18px;border-radius:14px;background:#0f2434;border:1px solid #4cc9ff55;color:#e7f6ff;font-weight:700;font-size:12.5px;opacity:0;pointer-events:none;transition:.22s}
+.ns-toast.on{opacity:1;transform:translateX(-50%)}.ns-toast.bad{border-color:#ff8f8688;background:#2a1315;color:#ffd0cb}.ns-toast.good{border-color:#47d16c77}
+.ns-empty{padding:26px 10px;text-align:center;color:#7f98aa;font-size:12.5px}
+.ns-muted{color:var(--ns-muted)}.ns-mt{margin-top:14px}
+.ns-check{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:#c5d4df}.ns-check input{margin-top:3px;accent-color:var(--ns-cyan)}
+@media(max-width:980px){.ns-split{grid-template-columns:1fr}.ns-g4{grid-template-columns:repeat(2,minmax(0,1fr))}.ns-g3{grid-template-columns:1fr}}
+@media(max-width:560px){.ns-g2,.ns-row{grid-template-columns:1fr}.ns-bar{grid-template-columns:104px 1fr 40px}.ns-card{padding:16px}.ns-kpi strong{font-size:25px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+/* live ad preview, same rules as the site */
+.fcmt-ad-slot {
+  margin: clamp(28px, 5vw, 48px) auto;
+  max-width: var(--content-width, 1160px);
+  padding-inline: clamp(16px, 4vw, 32px);
+  box-sizing: border-box;
+}
+.fcmt-ad-slot[data-context="inline"] { max-width: none; padding-inline: 0; margin: 28px 0; }
+
+.fcmt-ad {
+  --ad-accent: var(--primary, #4cc9ff);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px 18px;
+  align-items: center;
+  padding: 16px 18px 16px 22px;
+  background: var(--surface, #0e141b);
+  border: 1px solid var(--line, #1f2933);
+  border-radius: var(--r-md, 12px);
+  color: var(--text, #edf2f6);
+  overflow: hidden;
+  animation: fcmt-ad-in 0.28s ease-out both;
+}
+.fcmt-ad::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--ad-accent); }
+.fcmt-ad[data-accent="gold"] { --ad-accent: var(--reward, #f5c451); }
+.fcmt-ad[data-accent="green"] { --ad-accent: var(--success, #47d16c); }
+.fcmt-ad[data-accent="violet"] { --ad-accent: #9a8cff; }
+.fcmt-ad[data-accent="red"] { --ad-accent: var(--danger, #ff7070); }
+.fcmt-ad[data-has-media="1"] { grid-template-columns: 88px minmax(0, 1fr); }
+
+.fcmt-ad-media { width: 88px; height: 88px; border-radius: var(--r-sm, 8px); background: var(--surface2, #141c25); overflow: hidden; }
+.fcmt-ad-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.fcmt-ad-main { min-width: 0; display: grid; gap: 6px; }
+.fcmt-ad-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 22px; }
+.fcmt-ad-badge { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted, #93a1b0); }
+.fcmt-ad-x {
+  width: 28px; height: 28px; margin: -4px -6px -4px 0; display: grid; place-items: center;
+  border: 0; border-radius: 8px; background: transparent; color: var(--muted, #93a1b0); cursor: pointer; font-size: 18px; line-height: 1;
+}
+.fcmt-ad-x:hover { background: var(--surface3, #1a2430); color: var(--text, #edf2f6); }
+.fcmt-ad-title { margin: 0; font-family: var(--font-display, system-ui, sans-serif); font-weight: 700; font-size: clamp(17px, 2.2vw, 20px); line-height: 1.25; letter-spacing: -0.01em; }
+.fcmt-ad-body { margin: 0; color: var(--muted-strong, #c3cdd7); font-size: 14.5px; line-height: 1.5; max-width: 62ch; }
+.fcmt-ad-actions { margin-top: 6px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fcmt-ad-cta {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 18px;
+  border: 0; border-radius: var(--r-sm, 8px); background: var(--primary, #4cc9ff); color: var(--primary-ink, #04131c);
+  font: 700 14px/1 var(--font-body, system-ui, sans-serif); text-decoration: none; cursor: pointer;
+}
+.fcmt-ad-cta:hover { background: var(--primary-hover, #7ad9ff); }
+.fcmt-ad-cta[disabled] { opacity: 0.7; cursor: default; }
+.fcmt-ad-note { font-size: 13px; color: var(--muted, #93a1b0); }
+.fcmt-ad :focus-visible, .fcmt-ad-undo:focus-visible { outline: 2px solid var(--primary, #4cc9ff); outline-offset: 2px; }
+
+.fcmt-ad-gone {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px dashed var(--line-strong, #2d3a48);
+  border-radius: var(--r-md, 12px); color: var(--muted, #93a1b0); font-size: 13.5px;
+}
+.fcmt-ad-undo { border: 0; background: none; color: var(--primary, #4cc9ff); font: 700 13.5px var(--font-body, system-ui, sans-serif); cursor: pointer; padding: 4px 2px; }
+
+.fcmt-ad-net { min-height: 0; }
+.fcmt-ad-net-label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim, #66748a); }
+.fcmt-ad-net ins { display: block; }
+
+.fcmt-ad-slot[data-debug="1"] { outline: 1px dashed #f5c451; outline-offset: 4px; }
+
+@media (min-width: 720px) {
+  .fcmt-ad { grid-template-columns: minmax(0, 1fr) auto; padding: 18px 22px 18px 26px; }
+  .fcmt-ad[data-has-media="1"] { grid-template-columns: 112px minmax(0, 1fr) auto; }
+  .fcmt-ad-media { width: 112px; height: 112px; }
+  .fcmt-ad-actions { margin-top: 0; align-self: center; }
+  .fcmt-ad[data-has-media="1"] .fcmt-ad-meta { grid-column: auto; }
+}
+@media (max-width: 719px) {
+  .fcmt-ad[data-has-media="1"] .fcmt-ad-actions { grid-column: 1 / -1; }
+}
+@keyframes fcmt-ad-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fcmt-ad { animation: none; } }
+
+.ad-pvbox.is-mobile .fcmt-ad{grid-template-columns:minmax(0,1fr)}
+.ad-pvbox.is-mobile .fcmt-ad[data-has-media="1"]{grid-template-columns:88px minmax(0,1fr)}
+.ad-pvbox.is-mobile .fcmt-ad-actions{margin-top:6px}
+.ad-pvbox{--primary:#4cc9ff;--primary-ink:#04131c;--primary-hover:#7ad9ff;--surface:#0e141b;--surface2:#141c25;--surface3:#1a2430;--line:#1f2933;--text:#edf2f6;--muted:#93a1b0;--muted-strong:#c3cdd7;--reward:#f5c451;--success:#47d16c;--danger:#ff7070}
+.ad-list{display:grid;gap:12px}
+.ad-item{display:grid;gap:10px;padding:16px;border:1px solid var(--ns-line);border-radius:16px;background:#ffffff05}
+.ad-item-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.ad-item h3{font-size:15px;margin:0}
+.ad-item p{margin:0;color:#9db0bf;font-size:12.5px;overflow-wrap:anywhere}
+.ad-item .meta{display:flex;gap:14px;flex-wrap:wrap;color:#7f98aa;font-size:11.5px}
+.ad-item .meta b{color:#e8f2f9}
+.ns-pill.active{background:#47d16c1a;color:#8ce9a8}.ns-pill.paused,.ns-pill.draft{background:#ffbd5920;color:#ffd08a}.ns-pill.ended{background:#ffffff12;color:#a9bccb}
+.ns-pill.house{background:#4cc9ff14;color:#9de7ff}.ns-pill.sponsor{background:#9a8cff22;color:#cfc7ff}
+.ad-bar{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;font-size:12px;margin:7px 0}
+.ad-bar i{display:block;height:8px;border-radius:99px;background:#4cc9ff;min-width:2px}
+.ad-bar span:last-child{text-align:right;color:#a9bccb}
+.ad-mix{display:flex;height:14px;border-radius:99px;overflow:hidden;background:#ffffff10;margin:10px 0}
+.ad-mix i{display:block;height:100%}
+.ad-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:#a9bccb}
+.ad-legend b{color:#fff}
+.ad-insight{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--ns-line);font-size:12.5px;color:#c5d4df}
+.ad-insight:last-child{border-bottom:0}
+.ad-insight i{flex:0 0 8px;height:8px;border-radius:50%;margin-top:6px;background:#4cc9ff}
+.ad-insight.good i{background:#47d16c}.ad-insight.warn i{background:#ffbd59}
+.ad-checks{display:flex;gap:8px 14px;flex-wrap:wrap}
+.ad-modal-wide>div{width:min(980px,100%)!important}
+.ad-edit{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:20px}
+.ad-sticky{position:sticky;top:0;align-self:start}
+.ad-pvbox{padding:18px;border-radius:16px;background:#0a1219;border:1px solid var(--ns-line)}
+.ad-pvbox .fcmt-ad{animation:none}
+.ad-fieldset{border:1px solid var(--ns-line);border-radius:14px;padding:14px;margin:0 0 14px}
+.ad-fieldset legend{padding:0 8px;color:#9de7ff;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.ad-checkrow{display:flex;gap:8px 16px;flex-wrap:wrap}
+.ad-check{display:flex;gap:7px;align-items:center;font-size:12.5px;color:#c5d4df}
+.ad-check input{accent-color:var(--ns-cyan)}
+.ad-inq{display:grid;gap:8px;padding:16px 0;border-bottom:1px solid var(--ns-line)}
+.ad-inq:last-child{border-bottom:0}
+.ad-inq-msg{margin:0;padding:10px 12px;border-radius:12px;background:#ffffff06;color:#c5d4df;font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ad-unit{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;margin-bottom:10px}
+.ad-unit label{font-size:12px;color:#c8d5df;font-weight:700}
+.ad-switchrow{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--ns-line)}
+.ad-switchrow:last-child{border-bottom:0}
+.ad-switchrow p{margin:2px 0 0;color:var(--ns-muted);font-size:12px}
+.ad-switchrow b{font-size:13px}
+.ad-why{margin-top:10px;font-size:12.5px;color:#c5d4df}
+.ad-why ul{margin:6px 0 0;padding-left:18px}
+@media(max-width:900px){.ad-edit{grid-template-columns:1fr}.ad-sticky{position:static}.ad-unit{grid-template-columns:1fr}.ad-bar{grid-template-columns:100px 1fr 70px}}
+
+</style><!--premium-admin:start--><style id="premium-admin-ui">
+/* FCMOBILETOOLS Admin — premium layer.
+   Source of truth. Injected into every admin page by scripts/inject-admin-premium.mjs
+   (idempotent; run it again after editing this file). */
+:root{
+  --pa-cyan:#4cc9ff;--pa-cyan2:#9fe6ff;--pa-violet:#9a8cff;--pa-gold:#f6c453;--pa-good:#4ee0a0;--pa-bad:#ff8f86;
+  --pa-line:rgba(255,255,255,.075);--pa-line2:rgba(255,255,255,.15);
+  --pa-glass:linear-gradient(165deg,rgba(24,40,58,.6),rgba(9,17,26,.82));
+  --pa-hi:inset 0 1px 0 rgba(255,255,255,.06);
+  --pa-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 28px 56px -30px rgba(0,0,0,.8);
+  --pa-ease:cubic-bezier(.22,1,.36,1);
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --display:'Space Grotesk','Inter',system-ui,sans-serif;
+  --mono:'Inter',system-ui,sans-serif;
+}
+html body{font-size:14.5px;background:
+  radial-gradient(900px 520px at 4% -8%,rgba(76,201,255,.13),transparent 60%),
+  radial-gradient(760px 500px at 100% 0,rgba(154,140,255,.08),transparent 58%),#060d14}
+::selection{background:rgba(76,201,255,.28)}
+*{scrollbar-width:thin;scrollbar-color:#27465a transparent}
+*::-webkit-scrollbar{width:9px;height:9px}*::-webkit-scrollbar-thumb{background:#27465a;border-radius:9px}
+
+/* ---------- Layout ---------- */
+html body .layout{grid-template-columns:276px 1fr}
+html body .side{display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:22px 16px 16px;overflow:hidden;
+  border-right:1px solid var(--pa-line);background:linear-gradient(180deg,rgba(10,19,29,.94),rgba(6,12,19,.96));backdrop-filter:blur(24px)}
+html body .brand{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:2px 8px 18px;border-bottom:1px solid var(--pa-line)}
+html body .brand-logo{width:150px;height:auto;flex:0 0 auto}
+html body .brand-logo img{width:100%;height:auto}
+html body .brand>div b{display:block;font:700 15px/1.2 var(--display);letter-spacing:-.02em;color:#f5f8fb}
+html body .brand>div small{display:block;margin-top:2px;color:#6f879a;font-size:12px}
+html body .side-card{display:flex;flex-direction:column;gap:2px;margin:16px 0 8px;padding:13px 14px;border:1px solid rgba(76,201,255,.2);border-radius:16px;
+  background:radial-gradient(220px 90px at 0 0,rgba(76,201,255,.14),transparent 70%),var(--pa-glass);box-shadow:var(--pa-hi)}
+html body .side-card span{color:#6fb8d8;font:700 10.5px var(--sans);letter-spacing:.16em}
+html body .side-card strong{font:700 14px var(--display);color:#f5f8fb}
+html body .side-card p{margin:2px 0 0;color:#7f97a8;font-size:12px;line-height:1.45}
+html body .navlabel{display:none}
+
+/* Nav */
+html body .nav{flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;padding:4px 2px 12px;margin:0}
+html body .nav-group{padding:16px 12px 6px;color:#5a7385;font:800 10.5px var(--sans);letter-spacing:.18em;text-transform:uppercase}
+html body .nav button,html body .nav a.nav-external,html body .nav a{
+  position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:42px;padding:9px 12px;border:1px solid transparent;border-radius:12px;
+  background:transparent;color:#8aa2b4;font:600 14px var(--sans);text-align:left;text-decoration:none;cursor:pointer;transition:all .2s var(--pa-ease)}
+html body .nav button:before,html body .nav a.nav-external:before{display:none!important;content:none!important}
+html body .nav .ni{flex:0 0 auto;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;color:#6f9bb4;background:rgba(255,255,255,.035);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);transition:.2s var(--pa-ease)}
+html body .nav .ni svg{width:16px;height:16px}
+html body .nav button:hover,html body .nav a.nav-external:hover{background:rgba(255,255,255,.045);color:#f5f8fb;transform:translateX(2px)}
+html body .nav button:hover .ni,html body .nav a.nav-external:hover .ni{color:var(--pa-cyan);background:rgba(76,201,255,.1)}
+html body .nav button.active{color:#fff;border-color:rgba(76,201,255,.3);background:linear-gradient(90deg,rgba(76,201,255,.2),rgba(76,201,255,.04));box-shadow:var(--pa-hi),0 12px 26px -16px rgba(76,201,255,.7)}
+html body .nav button.active:after{content:"";position:absolute;left:-17px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--pa-cyan);box-shadow:0 0 14px var(--pa-cyan)}
+html body .nav button.active .ni{color:#04131c;background:linear-gradient(145deg,#b6ecff,#4cc9ff);box-shadow:0 8px 16px -6px rgba(76,201,255,.7)}
+html body .nav-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;font:800 11px/20px var(--sans)}
+
+html body .side-session{margin-top:auto;padding-top:12px;border-top:1px solid var(--pa-line)}
+html body .out{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:42px;border:1px solid rgba(255,143,134,.28);border-radius:12px;background:rgba(255,143,134,.06);color:#ffb1aa;font:700 13.5px var(--sans);cursor:pointer;transition:.2s}
+html body .out:hover{background:rgba(255,143,134,.14);border-color:rgba(255,143,134,.5);color:#fff}
+html body .side-toggle{border-radius:12px;border:1px solid var(--pa-line2);background:rgba(10,19,29,.9);box-shadow:var(--pa-hi),0 10px 24px -10px #000}
+
+/* ---------- Top bar ---------- */
+html body .main{min-width:0}
+html body .top{position:sticky;top:0;z-index:30;height:84px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,3vw,36px);
+  border-bottom:1px solid var(--pa-line);background:rgba(6,12,19,.78);backdrop-filter:blur(22px) saturate(160%)}
+html body .crumb{color:#6f879a;font:700 11.5px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+html body .crumb span{color:var(--pa-cyan)}
+html body .top h1,html body #title{margin:2px 0 0;font:700 clamp(22px,2.4vw,28px)/1.1 var(--display);letter-spacing:-.04em}
+html body .state{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border:1px solid var(--pa-line2);border-radius:999px;background:rgba(255,255,255,.04);color:#a8bccb;font:600 12.5px var(--sans)}
+html body .state .dot,html body .dot{width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 4px rgba(78,224,160,.14)}
+html body .top-signout{padding:9px 16px;border:1px solid var(--pa-line2);border-radius:12px;background:rgba(255,255,255,.04);color:#d8e6f0;font:700 13px var(--sans);cursor:pointer;transition:.2s}
+html body .top-signout:hover{border-color:rgba(255,143,134,.5);color:#ffb1aa}
+html body .body{padding:clamp(20px,3vw,36px)}
+
+/* ---------- Surfaces ---------- */
+html body .card,html body .section,html body .overview-panel,html body .quick,html body .club,html body .media,html body .code,html body .match,
+html body .ad-setting-card,html body .inspector-card{border:1px solid var(--pa-line);border-radius:22px;background:var(--pa-glass);box-shadow:var(--pa-shadow);backdrop-filter:blur(14px)}
+html body .section{padding:clamp(18px,2vw,26px)}
+html body .head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+html body .head h3,html body .section h3{margin:0;font:700 19px/1.2 var(--display);letter-spacing:-.03em}
+html body .head p,html body .section .head p{margin:4px 0 0;color:#7f97a8;font-size:13.5px}
+
+/* Overview */
+html body .overview-hero{margin-bottom:24px}
+html body .overview-hero h2{font:700 clamp(32px,4vw,48px)/1.02 var(--display);letter-spacing:-.055em;background:linear-gradient(180deg,#fff 35%,#a9c6d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+html body .overview-hero p{margin-top:8px;color:#8aa2b4;font-size:15px}
+html body .eyebrow{display:inline-flex;align-items:center;gap:9px;color:var(--pa-cyan);font:800 11.5px var(--sans);letter-spacing:.18em}
+html body .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--pa-cyan);box-shadow:0 0 0 4px rgba(76,201,255,.15),0 0 12px var(--pa-cyan)}
+html body .admin-overview-grid{gap:14px}
+html body .overview-stat{position:relative;overflow:hidden;min-height:156px;padding:20px;border:1px solid var(--pa-line);border-radius:22px;background:var(--pa-glass);box-shadow:var(--pa-shadow);transition:all .3s var(--pa-ease)}
+html body .overview-stat:before{content:"";position:absolute;left:20px;right:20px;top:0;height:2px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,var(--c,var(--pa-cyan)),transparent)}
+html body .overview-stat:nth-child(2){--c:var(--pa-gold)}html body .overview-stat:nth-child(3){--c:var(--pa-violet)}html body .overview-stat:nth-child(4){--c:var(--pa-good)}html body .overview-stat:nth-child(5){--c:#ff9a57}
+html body .overview-stat:hover{transform:translateY(-4px);border-color:rgba(76,201,255,.32);box-shadow:var(--pa-shadow),0 30px 50px -28px rgba(76,201,255,.45)}
+html body .overview-stat small{color:#6f879a;font:800 11px var(--sans);letter-spacing:.16em}
+html body .overview-stat strong{margin:12px 0 6px;font:700 clamp(24px,2.3vw,32px)/1.05 var(--display);letter-spacing:-.045em}
+html body .overview-stat span{color:#8aa2b4;font-size:13px}
+html body .overview-stat em{color:var(--c,var(--pa-cyan));font:700 12.5px var(--sans)}
+html body .overview-panel{padding:22px}
+html body .overview-panel-head span{color:#6f879a;font:800 11px var(--sans);letter-spacing:.16em}
+html body .overview-panel-head h3{margin-top:6px;font:700 20px var(--display);letter-spacing:-.03em}
+html body .overview-action{border:1px solid var(--pa-line);border-radius:16px;background:rgba(255,255,255,.03);padding:15px 16px}
+html body .overview-action:hover{border-color:rgba(76,201,255,.4);background:rgba(76,201,255,.07);transform:translateX(3px)}
+html body .overview-action b{font:700 14.5px var(--sans)}html body .overview-action small{font-size:12.5px;color:#7f97a8}
+html body .overview-action em{color:var(--pa-cyan);font:700 12.5px var(--sans)}
+html body .recent-item{padding:10px;border-radius:14px}
+html body .recent-item b{font:700 14px var(--sans)}html body .recent-item small{font:600 12px var(--sans);color:#6f879a;margin-top:4px}
+html body .recent-item em{color:var(--pa-cyan);font:700 12.5px var(--sans)}
+html body .recent-thumb{width:84px;height:56px;border-radius:12px;background:linear-gradient(145deg,#12263a,#0b1823);color:#5f91a5}
+html body .recent-thumb img{width:84px;height:56px}
+
+/* ---------- Buttons ---------- */
+html body .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border:1px solid var(--pa-line2);border-radius:12px;
+  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));color:#e6f1f8;font:700 13.5px var(--sans);text-decoration:none;cursor:pointer;box-shadow:var(--pa-hi);transition:all .2s var(--pa-ease)}
+html body .btn:hover{transform:translateY(-1px);border-color:rgba(76,201,255,.55);background:linear-gradient(180deg,rgba(76,201,255,.16),rgba(76,201,255,.05));color:#fff}
+html body .btn.primary{border:0;color:#04131c;font-weight:800;background:linear-gradient(180deg,#b6ecff,#5ccfff 48%,#2eb4ee);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,70,110,.25),0 14px 28px -12px rgba(76,201,255,.65),0 0 0 1px rgba(110,216,255,.55)}
+html body .btn.primary:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 20px 34px -12px rgba(76,201,255,.8),0 0 0 1px rgba(150,228,255,.8)}
+html body .btn.danger,html body .btn.bad{border-color:rgba(255,143,134,.4);color:#ffb1aa;background:rgba(255,143,134,.07)}
+html body .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+html body .overview-hero-actions a.btn{text-decoration:none}
+
+/* ---------- Forms ---------- */
+html body .input,html body input:not([type=checkbox]):not([type=radio]):not([type=file]),html body select,html body textarea{
+  border:1px solid var(--pa-line2);border-radius:12px;background:rgba(3,8,13,.7);color:#f1f8fd;font:500 14px var(--sans);box-shadow:inset 0 2px 6px rgba(0,0,0,.35);transition:.2s}
+html body .input,html body input:not([type=checkbox]):not([type=radio]):not([type=file]),html body select{min-height:42px;padding:0 13px}
+html body textarea{padding:12px 13px;line-height:1.6}
+html body .input:focus,html body input:focus,html body select:focus,html body textarea:focus{outline:none;border-color:rgba(76,201,255,.75);box-shadow:inset 0 2px 6px rgba(0,0,0,.35),0 0 0 4px rgba(76,201,255,.14)}
+html body ::placeholder{color:#587083}
+html body .field>span,html body label>span{color:#b9cddb;font:700 12.5px var(--sans);letter-spacing:.01em}
+
+/* ---------- Tables & lists ---------- */
+html body table{width:100%;border-collapse:separate;border-spacing:0}
+html body th{padding:12px 14px;text-align:left;color:#6f879a;font:800 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--pa-line)}
+html body td{padding:14px;border-bottom:1px solid var(--pa-line);color:#dbe8f0;font-size:14px}
+html body tr:hover td{background:rgba(76,201,255,.035)}
+html body .account-admin-row,html body .article-admin-row,html body .inbox-item,html body .revision-row{border:1px solid var(--pa-line);border-radius:16px;background:rgba(255,255,255,.03);transition:all .2s var(--pa-ease)}
+html body .account-admin-row:hover,html body .article-admin-row:hover{border-color:rgba(76,201,255,.4);background:rgba(76,201,255,.06);transform:translateY(-1px)}
+html body .account-admin-row b{font:700 14.5px var(--sans)}html body .account-admin-row small{font:600 12.5px var(--sans);color:#7f97a8}
+html body .account-admin-avatar{border-radius:50%}
+
+/* ---------- Pills / badges ---------- */
+html body .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--pa-line2);background:rgba(255,255,255,.05);color:#b9cddb;font:800 11px var(--sans);letter-spacing:.06em;text-transform:uppercase}
+html body .pill.active,html body .pill.published,html body .pill.live{border-color:rgba(78,224,160,.45);background:rgba(78,224,160,.12);color:#9ff0c9}
+html body .pill.review,html body .pill.scheduled,html body .pill.pending{border-color:rgba(246,196,83,.45);background:rgba(246,196,83,.1);color:#ffe29a}
+html body .pill.expired,html body .pill.rejected,html body .pill.frozen{border-color:rgba(255,143,134,.45);background:rgba(255,143,134,.1);color:#ffc0ba}
+
+/* ---------- Modal / toast ---------- */
+html body .modal{backdrop-filter:blur(10px);background:rgba(2,6,10,.7)}
+html body .dialog{border:1px solid var(--pa-line2);border-radius:24px;background:linear-gradient(165deg,#12202f,#09121b);box-shadow:0 60px 120px -30px #000}
+html body .toast{border-radius:16px;font-size:13.5px}
+
+@media(max-width:800px){
+  html body .layout{display:block}
+  html body .side{position:static;height:auto;padding:14px 14px 10px;flex-direction:column}
+  html body .side-card,html body .nav-group{display:none}
+  html body #mobileAdminMenu,html body #adminNav{position:absolute;left:12px;right:12px;top:58px;z-index:80;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:9px;border:1px solid rgba(76,201,255,.24);border-radius:15px;background:rgba(7,16,24,.98);box-shadow:0 22px 70px rgba(0,0,0,.52);backdrop-filter:blur(18px);max-height:min(60vh,430px);overflow:auto}
+  html body.mobile-menu-open #mobileAdminMenu,html body.mobile-menu-open #adminNav{display:grid;overflow:auto}
+  html body #mobileAdminMenu .ni,html body #adminNav .ni{display:none}
+  html body #mobileAdminMenu button,html body #mobileAdminMenu a.nav-external,html body #adminNav button,html body #adminNav a.nav-external{width:100%;min-width:0;min-height:43px;padding:10px 11px;text-align:left;border-radius:10px;font-size:12px}
+  html body #mobileAdminMenu button:before,html body #mobileAdminMenu a.nav-external:before,html body #adminNav button:before,html body #adminNav a.nav-external:before{display:none}
+  html body #mobileAdminMenu button.active:after,html body #adminNav button.active:after{display:none}
+  html body .top{height:72px}
+}
+@media(prefers-reduced-motion:reduce){html body *{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style><!--premium-admin:end--></head>
+<body><main class="ns-shell">
+<a class="ns-back" href="/admin/">← Back to Admin Workspace</a>
+<header class="ns-top">
+  <div><div class="ns-eyebrow">FCMOBILETOOLS / GROWTH</div><h1>Ads Studio</h1><p>Every ad slot fills itself in this order: a paying sponsor first, then the ad network, then your own promos. If nothing fits, the slot takes no space.</p></div>
+  <div class="ns-chips"><span class="ns-chip"><i class="ns-dot" id="adMasterDot"></i><span id="adMasterText">Loading</span></span><span class="ns-chip" id="adNetChip">AdSense off</span><span class="ns-chip" id="adInqChip" hidden></span></div>
+</header>
+
+<nav class="ns-tabs" role="tablist" aria-label="Ads sections">
+  <button class="ns-tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+  <button class="ns-tab" role="tab" data-tab="ads" aria-selected="false">Ads</button>
+  <button class="ns-tab" role="tab" data-tab="advertisers" aria-selected="false">Advertisers</button>
+  <button class="ns-tab" role="tab" data-tab="rules" aria-selected="false">Slots and rules</button>
+  <button class="ns-tab" role="tab" data-tab="adsense" aria-selected="false">AdSense</button>
+</nav>
+<div id="adFatal" class="ns-note bad" hidden></div>
+
+<section class="ns-view" id="view-overview">
+  <div class="ns-actions" style="margin-bottom:14px;align-items:center"><span class="ns-muted">Period</span>
+    <select id="adDays" class="ns-input" style="width:auto"><option value="7">Last 7 days</option><option value="14" selected>Last 14 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></div>
+  <div class="ns-grid ns-g4" id="adKpis"></div>
+  <div class="ns-split ns-mt">
+    <div class="ns-grid">
+      <div class="ns-card"><h2>Views and clicks per day</h2><p class="ns-sub" id="adSparkSub"></p><svg class="ns-spark" id="adSpark" viewBox="0 0 300 84" preserveAspectRatio="none" role="img" aria-label="Views per day"></svg></div>
+      <div class="ns-card"><h2>Your ads, ranked</h2><p class="ns-sub">Click rate is clicks divided by views. The weight column shows how much the engine currently favours each ad. It learns from clicks once an ad has 200 views.</p><div style="overflow-x:auto"><table class="ns-table" id="adRank"></table></div></div>
+      <div class="ns-card"><h2>By slot and page type</h2><p class="ns-sub">Where ads are seen and clicked.</p><div id="adWhere"></div></div>
+    </div>
+    <div class="ns-grid">
+      <div class="ns-card"><h2>What the engine noticed</h2><div id="adInsights"></div></div>
+      <div class="ns-card"><h2>Who is filling your slots</h2><p class="ns-sub">Share of views in this period.</p><div class="ad-mix" id="adMix"></div><div class="ad-legend" id="adMixLegend"></div></div>
+      <div class="ns-card"><h2>Live facts used in ad text</h2><p class="ns-sub">Ads can include these automatically, for example {codes.active}.</p><div id="adLive"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ns-view" id="view-ads" hidden>
+  <div class="ns-actions" style="justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div class="ns-actions"><select id="adFilter" class="ns-input" style="width:auto"><option value="all">All ads</option><option value="active">Active</option><option value="draft">Drafts</option><option value="paused">Paused</option><option value="ended">Ended</option><option value="sponsor">Sponsors</option><option value="house">House ads</option></select></div>
+    <div class="ns-actions"><button class="ns-btn" id="adNewSponsor" type="button">New sponsor ad</button><button class="ns-btn primary" id="adNewHouse" type="button">New house ad</button></div>
+  </div>
+  <div class="ad-list" id="adList"></div>
+</section>
+
+<section class="ns-view" id="view-advertisers" hidden>
+  <div class="ns-card"><h2>People who asked to advertise</h2><p class="ns-sub">These come from the form on <a href="/advertise/" target="_blank" rel="noopener" style="color:#9de7ff">/advertise/</a>. Reply on the contact they gave, then turn a good one into a draft sponsor ad.</p><div id="adInq"></div></div>
+</section>
+
+<section class="ns-view" id="view-rules" hidden>
+  <div class="ns-split">
+    <div class="ns-card"><h2>Slots</h2><p class="ns-sub">Turn a placement off and no ad will appear there.</p><div id="adSlotRows"></div></div>
+    <div class="ns-card"><h2>Rules that protect visitors</h2><p class="ns-sub">Keep these gentle. Happy visitors come back, and that is where long term revenue comes from.</p>
+      <div id="adRuleRows"></div>
+      <div class="ns-actions ns-mt"><button class="ns-btn primary" id="adSaveRules" type="button">Save rules</button></div></div>
+  </div>
+</section>
+
+<section class="ns-view" id="view-adsense" hidden>
+  <div class="ns-split">
+    <div class="ns-card"><h2>Google AdSense</h2>
+      <div class="ns-note warn" style="margin-bottom:14px">Keep this off until Google approves the site. While it is off, no Google script loads and your own ads fill every slot.</div>
+      <div class="ad-switchrow"><div><b>Use AdSense when approved</b><p>Ads show only for visitors who agreed to advertising in the cookie banner, on pages with enough content, and never on the first page of a visit.</p></div><label class="ns-toggle"><input type="checkbox" id="adsenseOn"><span></span></label></div>
+      <div class="ns-field ns-mt"><span>Publisher ID <em>from your AdSense account</em></span><input id="adsensePub" class="ns-input" placeholder="ca-pub-1234567890123456"></div>
+      <div class="ns-field"><span>How often the network goes first <em id="adShareVal"></em></span><input id="adsenseShare" type="range" min="0" max="100" step="5"></div>
+      <p class="ns-muted" style="font-size:12px;margin:0 0 14px">At 100 percent, AdSense gets every slot it has a unit for, and your own ads only fill gaps when it has nothing. Lower it if you want your promos (alerts, giveaways) to keep growing your subscribers.</p>
+      <h3 style="margin:16px 0 10px">Ad unit IDs</h3>
+      <p class="ns-muted" style="font-size:12px;margin:0 0 12px">Create one display ad unit per slot in AdSense (Ads, By ad unit, Display ads), then paste each numeric ID here. A slot with no ID never shows AdSense.</p>
+      <div id="adUnits"></div>
+      <div class="ns-actions ns-mt"><button class="ns-btn primary" id="adSaveSense" type="button">Save AdSense settings</button></div>
+    </div>
+    <div class="ns-card"><h2>Before you switch it on</h2><ul class="ns-checks" id="adReady"></ul>
+      <h3 style="margin:18px 0 8px">Network results</h3><p class="ns-sub">Last period, from our own counters.</p><div id="adNetStats"></div></div>
+  </div>
+</section>
+
+<div class="ns-modal ad-modal-wide" id="adModal" hidden><div role="dialog" aria-modal="true" aria-labelledby="adModalTitle">
+  <div class="ns-actions" style="justify-content:space-between;align-items:center;margin-bottom:14px"><h2 id="adModalTitle">Ad</h2><button class="ns-btn small" id="adClose" type="button">Close</button></div>
+  <div class="ad-edit">
+    <form id="adForm" autocomplete="off">
+      <fieldset class="ad-fieldset"><legend>What people see</legend>
+        <div class="ns-row"><div class="ns-field"><span>Type</span><select id="fKind" class="ns-input"><option value="house">House ad (our own promo)</option><option value="sponsor">Sponsor (paid)</option></select></div>
+        <div class="ns-field"><span>Status</span><select id="fStatus" class="ns-input"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="ended">Ended</option></select></div></div>
+        <div class="ns-field"><span>Internal name <em>only you see this</em></span><input id="fName" class="ns-input" maxlength="80"></div>
+        <div class="ns-field" id="fSponsorWrap" hidden><span>Sponsor name</span><input id="fSponsor" class="ns-input" maxlength="60"></div>
+        <div class="ns-field"><span>Headline <em id="cHead"></em></span><input id="fHead" class="ns-input" maxlength="70"></div>
+        <div class="ns-field"><span>Text <em id="cBody"></em></span><textarea id="fBody" class="ns-input" maxlength="170" rows="3"></textarea></div>
+        <div class="ns-vars" id="fVars"></div>
+        <div class="ns-row"><div class="ns-field"><span>Button label</span><input id="fCta" class="ns-input" maxlength="26"></div><div class="ns-field"><span>Small label above the headline</span><input id="fBadge" class="ns-input" maxlength="28" placeholder="From FC Mobile Tools"></div></div>
+        <div class="ns-row"><div class="ns-field"><span>Accent colour</span><select id="fAccent" class="ns-input"></select></div><div class="ns-field"><span>Image link <em>optional, Cloudinary</em></span><input id="fImage" class="ns-input" placeholder="https://res.cloudinary.com/..."></div></div>
+      </fieldset>
+      <fieldset class="ad-fieldset"><legend>What the button does</legend>
+        <div class="ns-row"><div class="ns-field"><span>Action</span><select id="fAction" class="ns-input"><option value="link">Open a link</option><option value="push">Turn on an alert topic</option></select></div>
+        <div class="ns-field" id="fUrlWrap"><span>Link <em>https:// or a path like /redeem-codes/</em></span><input id="fUrl" class="ns-input"></div>
+        <div class="ns-field" id="fTopicWrap" hidden><span>Alert topic</span><select id="fTopic" class="ns-input"></select></div></div>
+      </fieldset>
+      <fieldset class="ad-fieldset"><legend>Where and to whom</legend>
+        <div class="ns-label" style="margin-bottom:6px">Slots <span class="ns-muted">none ticked means all slots</span></div><div class="ad-checkrow" id="fSlots"></div>
+        <div class="ns-label" style="margin:14px 0 6px">Page types <span class="ns-muted">none ticked means all</span></div><div class="ad-checkrow" id="fPageTypes"></div>
+        <div class="ns-label" style="margin:14px 0 6px">Languages <span class="ns-muted">none ticked means all</span></div><div class="ad-checkrow" id="fLocales"></div>
+        <div class="ns-label" style="margin:14px 0 6px">Devices <span class="ns-muted">none ticked means both</span></div><div class="ad-checkrow" id="fDevices"></div>
+        <div class="ns-row ns-mt"><div class="ns-field"><span>Only on these pages <em>one path per line</em></span><textarea id="fInclude" class="ns-input" rows="2" placeholder="/blog/some-article"></textarea></div><div class="ns-field"><span>Never on these pages</span><textarea id="fExclude" class="ns-input" rows="2" placeholder="/redeem-codes"></textarea></div></div>
+        <label class="ad-check"><input type="checkbox" id="fHidePush"> Hide from visitors who already have alerts on</label>
+        <label class="ad-check" style="margin-top:8px"><input type="checkbox" id="fHideIn"> Hide from signed in visitors</label>
+        <div class="ns-field ns-mt"><span>Only run when</span><select id="fNeeds" class="ns-input"><option value="">Always</option><option value="giveaway">A giveaway is live</option><option value="codes">At least one redeem code is active</option></select></div>
+      </fieldset>
+      <fieldset class="ad-fieldset"><legend>Schedule and limits</legend>
+        <div class="ns-row"><div class="ns-field"><span>Starts <em>optional</em></span><input id="fStart" type="datetime-local" class="ns-input"></div><div class="ns-field"><span>Ends <em>optional</em></span><input id="fEnd" type="datetime-local" class="ns-input"></div></div>
+        <div class="ns-row"><div class="ns-field"><span>Weight <em>higher shows more often, 1 to 1000</em></span><input id="fWeight" type="number" min="1" max="1000" class="ns-input"></div><div class="ns-field"><span>Most times one visitor sees it per day</span><input id="fPerUser" type="number" min="1" max="20" class="ns-input"></div></div>
+        <div class="ns-row"><div class="ns-field"><span>Daily view limit <em>optional</em></span><input id="fDaily" type="number" min="1" class="ns-input"></div><div class="ns-field"><span>Total view limit <em>optional</em></span><input id="fTotal" type="number" min="1" class="ns-input"></div></div>
+        <div class="ns-field"><span>Note to yourself</span><textarea id="fNote" class="ns-input" rows="2" maxlength="300"></textarea></div>
+      </fieldset>
+      <div class="ns-note bad" id="adFormErr" hidden></div>
+      <div class="ns-actions"><button class="ns-btn primary" id="adSave" type="submit">Save ad</button><button class="ns-btn" id="adDup" type="button">Duplicate</button><button class="ns-btn" id="adToggle" type="button">Pause</button><button class="ns-btn danger" id="adDel" type="button">Delete</button></div>
+    </form>
+    <div class="ad-sticky">
+      <div class="ns-label" style="margin-bottom:8px">Preview <span class="ns-muted">how it looks on the site</span></div>
+      <div class="ns-pvtabs"><button class="ns-pvtab" data-pv="desktop" aria-pressed="true" type="button">Desktop</button><button class="ns-pvtab" data-pv="mobile" aria-pressed="false" type="button">Phone</button></div>
+      <div class="ad-pvbox" id="adPv" style="max-width:100%"></div>
+      <div id="adReportBox" class="ns-mt" hidden><div class="ns-label" style="margin-bottom:6px">Sponsor report link</div><input id="adReportLink" class="ns-input" readonly><div class="ns-actions ns-mt"><button class="ns-btn small" id="adCopyReport" type="button">Copy link</button></div></div>
+      <div class="ns-card ns-mt" style="padding:14px"><h3>Why is it not showing?</h3><p class="ns-sub" style="margin:4px 0 10px">Pick a situation and see what blocks this ad.</p>
+        <div class="ns-row"><select id="xSlot" class="ns-input"></select><select id="xPage" class="ns-input"></select></div>
+        <div class="ns-row ns-mt" style="margin-top:8px"><select id="xLocale" class="ns-input"><option value="en">English</option><option value="id">Indonesian</option><option value="pt-BR">Portuguese (BR)</option><option value="bn">Bangla</option></select><select id="xDevice" class="ns-input"><option value="desktop">Desktop</option><option value="mobile">Phone</option></select></div>
+        <div class="ns-actions ns-mt"><button class="ns-btn small" id="xRun" type="button">Check</button></div><div class="ad-why" id="xOut"></div></div>
+    </div>
+  </div>
+</div></div>
+
+<div class="ns-toast" id="adToast" role="status" aria-live="polite"></div>
+</main>
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var S={data:null,editing:null,filter:'all',pv:'desktop'};
+var SLOT_LABELS={'home-mid':'Home page, between sections','list-mid':'Lists, inside the feed','article-mid':'Article, mid read','article-end':'Article, after the last paragraph','tool-result':'Tools, under the results','page-end':'Page end, above the footer'};
+var SLOT_PAGES={'home-mid':'home','list-mid':'list','article-mid':'article','article-end':'article','tool-result':'tool','page-end':'list'};
+var PAGE_TYPES=[['home','Home'],['list','Lists'],['article','Articles'],['tool','Tools'],['page','Other pages']];
+var LOCALES=[['en','English'],['id','Indonesian'],['pt-BR','Portuguese (BR)'],['bn','Bangla']];
+var TOPIC_LABELS={redeem_codes:'Redeem codes',live_events:'Live events',daily_reset:'Daily reset',division_rivals:'Division Rivals reset',giveaways:'Giveaways',site_updates:'New tools and guides'};
+var ACCENT_LABELS={cyan:'Cyan',gold:'Gold',green:'Green',violet:'Violet',red:'Red'};
+var TOKENS=['codes.active','codes.expiringSoon','giveaway.title','giveaway.prize','giveaway.timeLeft'];
+var RULES=[
+ ['houseAds','switch','Show house ads','Your own promos: alerts, giveaways, premium, advertise here.'],
+ ['sponsorAds','switch','Show sponsor ads','Paid placements. They always go ahead of everything else.'],
+ ['maxPerPage','number','Most ads on one page','0 to 4. Two is a calm default.',0,4],
+ ['maxPerLongArticle','number','Most ads on a long article','Applies to articles over about 1500 words.',0,5],
+ ['minParagraphsForMid','number','Shortest article that gets a mid read ad','Counted in paragraphs.',4,30],
+ ['dismissDays','number','Days an ad stays hidden after a visitor hides it','1 to 90.',1,90],
+ ['clickQuietDays','number','Days before a clicked ad shows again to the same visitor','1 to 90.',1,90],
+ ['calmAfterDismissals','number','Hides in one visit before ads go quiet','After this many hides, that visitor sees no more ads on this visit.',1,5],
+ ['exploreRate','percent','How often to test unproven ads','Share of picks that ignore past click rates so new ads get a fair look.',0,50],
+ ['graceViews','number','Pages a visitor sees before the network may show ads','Your own ads are not held back by this.',0,5],
+ ['minWords','number','Words a page needs before the network may show ads','Thin pages are better left to your own promos.',0,3000],
+ ['adFreeForPremium','switch','Premium visitors see no ads','Ready for when premium exists. It takes effect once the site marks a visitor as premium.']
+];
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function num(n){return Number(n||0).toLocaleString('en-US')}
+function pct(n,d){return d?((n/d)*100).toFixed(d>0&&n/d<0.1?2:1)+'%':'0%'}
+var tt;function toast(msg,tone){var t=$('#adToast');t.textContent=msg;t.className='ns-toast on '+(tone||'');clearTimeout(tt);tt=setTimeout(function(){t.className='ns-toast '+(tone||'')},3400)}
+function api(path,method,body){return fetch('/api/ads-studio'+path,{method:method||'GET',credentials:'same-origin',cache:'no-store',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){if(!r.ok)throw new Error(j.error||('Request failed ('+r.status+')'));return j})})}
+
+function showTab(name){if(!$('#view-'+name))name='overview';$$('.ns-tab').forEach(function(t){t.setAttribute('aria-selected',String(t.dataset.tab===name))});$$('.ns-view').forEach(function(v){v.hidden=v.id!=='view-'+name});try{history.replaceState(null,'','#'+name)}catch(e){}}
+$$('.ns-tab').forEach(function(t){t.addEventListener('click',function(){showTab(t.dataset.tab)})});
+
+function load(){var days=$('#adDays').value;return api('/overview?days='+days).then(function(d){S.data=d;render()}).catch(function(e){var f=$('#adFatal');f.hidden=false;f.textContent='Could not load Ads Studio: '+e.message+'. Sign in to the admin workspace again if this keeps happening.'})}
+
+function render(){renderChips();renderOverview();renderAds();renderInquiries();renderRules();renderAdsense()}
+
+function renderChips(){var s=S.data.settings;$('#adMasterDot').className='ns-dot '+(s.enabled?'ok':'bad');$('#adMasterText').textContent=s.enabled?'Ads are on':'Ads are switched off';$('#adNetChip').textContent=s.adsense.enabled?'AdSense on':'AdSense off';var n=S.data.inquiries.filter(function(i){return i.status==='new'}).length;var c=$('#adInqChip');c.hidden=!n;c.textContent=n+(n===1?' new advertiser':' new advertisers')}
+
+function renderOverview(){
+  var d=S.data,t=d.stats.totals,views=t.view||0,clicks=t.click||0;
+  $('#adKpis').innerHTML=[['Views',num(views),'Counted after 1 second on screen'],['Clicks',num(clicks),'On any ad'],['Click rate',pct(clicks,views),'Clicks divided by views'],['Alerts turned on',num(t.conv||0),'People who tapped an alert ad and said yes']].map(function(k){return '<div class="ns-card ns-kpi"><small>'+k[0]+'</small><strong>'+k[1]+'</strong><span>'+k[2]+'</span></div>'}).join('');
+  var series=d.stats.days,max=Math.max.apply(null,series.map(function(p){return p.views}).concat([1])),w=300,h=84,step=w/Math.max(1,series.length-1);
+  var pts=series.map(function(p,i){return [Math.round(i*step),Math.round(h-8-(p.views/max)*(h-18))]});
+  var line=pts.map(function(p,i){return (i?'L':'M')+p[0]+' '+p[1]}).join(' ');
+  var cpts=series.map(function(p,i){return [Math.round(i*step),Math.round(h-8-(p.clicks/max)*(h-18))]});
+  var cline=cpts.map(function(p,i){return (i?'L':'M')+p[0]+' '+p[1]}).join(' ');
+  $('#adSpark').innerHTML='<path d="'+line+'" fill="none" stroke="#4cc9ff" stroke-width="2" vector-effect="non-scaling-stroke"/><path d="'+cline+'" fill="none" stroke="#f6c453" stroke-width="2" vector-effect="non-scaling-stroke"/>';
+  $('#adSparkSub').textContent='Blue is views, gold is clicks. Busiest day: '+num(max)+' views.';
+  var byId={};d.creatives.forEach(function(c){byId[c.id]=c});
+  var rows=d.stats.byCreative.filter(function(r){return r.key!=='adsense'}).sort(function(a,b){return (b.view||0)-(a.view||0)});
+  $('#adRank').innerHTML='<thead><tr><th>Ad</th><th>Views</th><th>Clicks</th><th>Rate</th><th>Weight</th></tr></thead><tbody>'+(rows.length?rows.map(function(r){var c=byId[r.key]||{};return '<tr><td>'+esc(c.name||r.key)+'<br><span class="ns-muted">'+esc(c.kind||'')+'</span></td><td>'+num(r.view)+'</td><td>'+num(r.click)+'</td><td>'+pct(r.click||0,r.view||0)+'</td><td>x'+(c.learned==null?1:c.learned)+'</td></tr>'}).join(''):'<tr><td colspan="5" class="ns-empty">No views yet. Open your site, scroll down a page and come back.</td></tr>')+'</tbody>';
+  function bars(list,label){var m=Math.max.apply(null,list.map(function(r){return r.view||0}).concat([1]));return list.sort(function(a,b){return (b.view||0)-(a.view||0)}).map(function(r){return '<div class="ad-bar"><span>'+esc(label(r.key))+'</span><span><i style="width:'+Math.max(2,Math.round(((r.view||0)/m)*100))+'%"></i></span><span>'+num(r.view)+' · '+pct(r.click||0,r.view||0)+'</span></div>'}).join('')}
+  var slotRows=d.stats.bySlot.filter(function(r){return r.view}),pageRows=d.stats.byPage.filter(function(r){return r.view});
+  $('#adWhere').innerHTML=(slotRows.length?'<div class="ns-label">Slots</div>'+bars(slotRows,function(k){return SLOT_LABELS[k]||k})+'<div class="ns-label" style="margin-top:14px">Page types</div>'+bars(pageRows,function(k){return k}):'<div class="ns-empty">Nothing recorded yet.</div>');
+  $('#adInsights').innerHTML=d.insights.length?d.insights.map(function(i){return '<div class="ad-insight '+i.tone+'"><i></i><span>'+esc(i.text)+'</span></div>'}).join(''):'<div class="ns-empty">Nothing to flag. Check back once ads have run for a few days.</div>';
+  var mix=d.mix,tot=Math.max(1,mix.house+mix.sponsor+mix.network);
+  $('#adMix').innerHTML='<i style="width:'+(mix.house/tot*100)+'%;background:#4cc9ff"></i><i style="width:'+(mix.sponsor/tot*100)+'%;background:#9a8cff"></i><i style="width:'+(mix.network/tot*100)+'%;background:#47d16c"></i>';
+  $('#adMixLegend').innerHTML='<span>House <b>'+num(mix.house)+'</b></span><span>Sponsors <b>'+num(mix.sponsor)+'</b></span><span>AdSense <b>'+num(mix.network)+'</b></span>';
+  var live=d.live||{};
+  $('#adLive').innerHTML='<div class="ad-bar" style="grid-template-columns:150px 1fr"><span>Active codes</span><span>'+(live.codes?live.codes.active+' ('+live.codes.expiringSoon+' expiring soon)':'unavailable')+'</span></div><div class="ad-bar" style="grid-template-columns:150px 1fr"><span>Live giveaway</span><span>'+(live.giveaway?esc(live.giveaway.title)+', '+esc(live.giveaway.prize)+', '+esc(live.giveaway.timeLeft):'none running')+'</span></div>';
+}
+
+function statFor(id){var r=S.data.stats.byCreative.filter(function(x){return x.key===id})[0]||{};return {view:r.view||0,click:r.click||0,dismiss:r.dismiss||0,conv:r.conv||0}}
+function sample(text){var l=S.data.live||{};var map={'codes.active':l.codes?l.codes.active:4,'codes.expiringSoon':l.codes?l.codes.expiringSoon:1,'giveaway.title':l.giveaway?l.giveaway.title:'Example giveaway','giveaway.prize':l.giveaway?l.giveaway.prize:'1,000 FC Points','giveaway.timeLeft':l.giveaway?l.giveaway.timeLeft:'2 days left'};return String(text||'').replace(/\{([^}]+)\}/g,function(m,k){return map[k]!=null?map[k]:m})}
+
+function renderAds(){
+  var f=S.filter,list=S.data.creatives.filter(function(c){return f==='all'||c.status===f||c.kind===f});
+  var order={active:0,draft:1,paused:2,ended:3};list.sort(function(a,b){return (order[a.status]-order[b.status])||(b.updatedAt>a.updatedAt?1:-1)});
+  $('#adList').innerHTML=list.length?list.map(function(c){var s=statFor(c.id);var when=c.endsAt?' · ends '+c.endsAt.slice(0,10):'';return '<div class="ad-item"><div class="ad-item-top"><div><h3>'+esc(c.name)+'</h3></div><div class="ns-actions"><span class="ns-pill '+c.kind+'">'+(c.kind==='sponsor'?'Sponsor':'House')+'</span><span class="ns-pill '+c.status+'">'+c.status+'</span></div></div><p><b>'+esc(sample(c.headline))+'</b>'+(c.body?' '+esc(sample(c.body)):'')+'</p><div class="meta"><span>Views <b>'+num(s.view)+'</b></span><span>Clicks <b>'+num(s.click)+'</b></span><span>Rate <b>'+pct(s.click,s.view)+'</b></span><span>Weight <b>'+c.weight+'</b> x'+c.learned+'</span>'+(c.targeting&&c.targeting.locales&&c.targeting.locales.length?'<span>Language <b>'+esc(c.targeting.locales.join(', '))+'</b></span>':'')+'<span>'+esc(when.replace(/^ · /,''))+'</span></div>'+(c.note?'<p class="ns-muted">'+esc(c.note)+'</p>':'')+'<div class="ns-actions"><button class="ns-btn small" data-edit="'+esc(c.id)+'" type="button">Edit</button><button class="ns-btn small" data-flip="'+esc(c.id)+'" data-to="'+(c.status==='active'?'paused':'active')+'" type="button">'+(c.status==='active'?'Pause':'Switch on')+'</button></div></div>'}).join(''):'<div class="ns-empty">No ads match this filter.</div>';
+  $$('[data-edit]').forEach(function(b){b.addEventListener('click',function(){openEditor(b.dataset.edit)})});
+  $$('[data-flip]').forEach(function(b){b.addEventListener('click',function(){api('/creatives/'+b.dataset.flip+'/status','POST',{status:b.dataset.to}).then(function(){toast(b.dataset.to==='active'?'Ad is live (visitors see it within a minute).':'Ad paused.','good');load()}).catch(function(e){toast(e.message,'bad')})})});
+}
+$('#adFilter').addEventListener('change',function(){S.filter=this.value;renderAds()});
+$('#adDays').addEventListener('change',load);
+
+function renderInquiries(){
+  var list=S.data.inquiries,names={new:'New',contacted:'Contacted',accepted:'Accepted',declined:'Declined',spam:'Spam'};
+  $('#adInq').innerHTML=list.length?list.map(function(i){return '<div class="ad-inq"><div class="ad-item-top"><div><h3>'+esc(i.brand)+'</h3><div class="ns-muted" style="font-size:11.5px">'+esc(i.category)+' · '+esc(i.createdAt.slice(0,10))+(i.budget?' · budget '+esc(i.budget):'')+(i.startPref?' · '+esc(i.startPref):'')+'</div></div><span class="ns-pill '+(i.status==='new'?'scheduled':i.status==='accepted'?'sent':'cancelled')+'">'+names[i.status]+'</span></div><div class="ns-muted" style="font-size:12.5px">Contact on <b style="color:#fff">'+esc(i.contactMethod)+'</b>: <b style="color:#fff">'+esc(i.contactValue)+'</b>'+(i.contactName?' ('+esc(i.contactName)+')':'')+(i.website?' · <a href="'+esc(i.website)+'" target="_blank" rel="noopener noreferrer" style="color:#9de7ff">'+esc(i.website)+'</a>':'')+'</div><p class="ad-inq-msg">'+esc(i.message)+'</p><div class="ns-row"><select class="ns-input" data-iq-status="'+esc(i.id)+'">'+Object.keys(names).map(function(k){return '<option value="'+k+'"'+(k===i.status?' selected':'')+'>'+names[k]+'</option>'}).join('')+'</select><input class="ns-input" data-iq-note="'+esc(i.id)+'" maxlength="600" placeholder="Note to yourself" value="'+esc(i.ownerNote)+'"></div><div class="ns-actions"><button class="ns-btn small" data-iq-save="'+esc(i.id)+'" type="button">Save</button>'+(i.creativeId?'<button class="ns-btn small" data-edit-ad="'+esc(i.creativeId)+'" type="button">Open the ad</button>':'<button class="ns-btn small primary" data-iq-make="'+esc(i.id)+'" type="button">Create a draft sponsor ad</button>')+'</div></div>'}).join(''):'<div class="ns-empty">No one has asked yet. Once the site has some traffic, share the advertise page with creators and communities you like.</div>';
+  $$('[data-iq-save]').forEach(function(b){b.addEventListener('click',function(){var id=b.dataset.iqSave;api('/inquiries/'+id,'POST',{status:$('[data-iq-status="'+id+'"]').value,note:$('[data-iq-note="'+id+'"]').value}).then(function(){toast('Saved.','good');load()}).catch(function(e){toast(e.message,'bad')})})});
+  $$('[data-iq-make]').forEach(function(b){b.addEventListener('click',function(){api('/inquiries/'+b.dataset.iqMake+'/campaign','POST',{}).then(function(r){toast('Draft created. Finish the wording, then switch it on.','good');return load().then(function(){showTab('ads');openEditor(r.id)})}).catch(function(e){toast(e.message,'bad')})})});
+  $$('[data-edit-ad]').forEach(function(b){b.addEventListener('click',function(){showTab('ads');openEditor(b.dataset.editAd)})});
+}
+
+function renderRules(){
+  var s=S.data.settings;
+  $('#adSlotRows').innerHTML=S.data.slots.map(function(id){var on=s.slots[id]&&s.slots[id].enabled!==false;return '<div class="ad-switchrow"><div><b>'+esc(SLOT_LABELS[id]||id)+'</b><p>'+esc(id)+'</p></div><label class="ns-toggle"><input type="checkbox" data-slot-on="'+id+'"'+(on?' checked':'')+'><span></span></label></div>'}).join('')+'<div class="ad-switchrow"><div><b>All ads on the site</b><p>The master switch. Off means no ad of any kind appears anywhere.</p></div><label class="ns-toggle"><input type="checkbox" id="adMaster"'+(s.enabled?' checked':'')+'><span></span></label></div>';
+  $('#adRuleRows').innerHTML=RULES.map(function(r){var key=r[0],type=r[1],val=s[key];if(type==='switch')return '<div class="ad-switchrow"><div><b>'+r[2]+'</b><p>'+r[3]+'</p></div><label class="ns-toggle"><input type="checkbox" data-rule="'+key+'"'+(val?' checked':'')+'><span></span></label></div>';var shown=type==='percent'?Math.round(val*100):val;return '<div class="ad-switchrow"><div><b>'+r[2]+'</b><p>'+r[3]+'</p></div><input class="ns-input" style="width:90px" type="number" min="'+r[4]+'" max="'+r[5]+'" data-rule="'+key+'" value="'+shown+'"></div>'}).join('');
+}
+function collectSettings(){
+  var s=JSON.parse(JSON.stringify(S.data.settings));
+  s.enabled=$('#adMaster').checked;
+  $$('[data-slot-on]').forEach(function(i){s.slots[i.dataset.slotOn]=Object.assign({},s.slots[i.dataset.slotOn],{enabled:i.checked})});
+  RULES.forEach(function(r){var el=$('[data-rule="'+r[0]+'"]');if(!el)return;if(r[1]==='switch')s[r[0]]=el.checked;else if(r[1]==='percent')s[r[0]]=Number(el.value)/100;else s[r[0]]=Number(el.value)});
+  return s;
+}
+function saveSettings(s,msg){return api('/settings','PUT',s).then(function(){toast(msg||'Saved. Visitors get the change within a minute.','good');return load()}).catch(function(e){toast(e.message,'bad')})}
+$('#adSaveRules').addEventListener('click',function(){saveSettings(collectSettings())});
+document.addEventListener('change',function(e){if(e.target&&(e.target.id==='adMaster'||e.target.dataset.slotOn)){saveSettings(collectSettings())}});
+
+function renderAdsense(){
+  var s=S.data.settings,a=s.adsense;
+  $('#adsenseOn').checked=a.enabled;$('#adsensePub').value=a.publisherId;$('#adsenseShare').value=a.share;$('#adShareVal').textContent=a.share+'%';
+  $('#adUnits').innerHTML=S.data.slots.map(function(id){return '<div class="ad-unit"><label for="unit-'+id+'">'+esc(SLOT_LABELS[id]||id)+'</label><input class="ns-input" id="unit-'+id+'" data-unit="'+id+'" inputmode="numeric" placeholder="Ad unit ID, digits only" value="'+esc((s.slots[id]||{}).unitId||'')+'"></div>'}).join('');
+  var withUnit=S.data.slots.filter(function(id){return (s.slots[id]||{}).unitId}).length;
+  var items=[['ok','ads.txt is in the site files with your publisher ID.'],['ok','The AdSense account meta tag is on every page.'],['ok','Visitors choose advertising in the cookie banner, and AdSense never loads without it.'],['ok','Pages with little content get no network ads, and no ad sits above the first screen.'],[withUnit?'ok':'warn',withUnit?withUnit+' of '+S.data.slots.length+' slots have an ad unit ID.':'No ad unit IDs yet. Create them in AdSense after approval.'],[a.enabled?'ok':'warn',a.enabled?'AdSense is switched on.':'AdSense is off. Turn it on only after Google approves the site.']];
+  $('#adReady').innerHTML=items.map(function(i){return '<li class="'+i[0]+'">'+(i[0]==='ok'?'✓':'•')+' <span>'+esc(i[1])+'</span></li>'}).join('');
+  var n=S.data.stats.byCreative.filter(function(r){return r.key==='adsense'})[0];
+  $('#adNetStats').innerHTML=n?'<div class="ad-bar" style="grid-template-columns:150px 1fr"><span>Requests</span><span>'+num(n.nreq)+'</span></div><div class="ad-bar" style="grid-template-columns:150px 1fr"><span>Filled</span><span>'+num(n.nfill)+' ('+pct(n.nfill||0,n.nreq||0)+')</span></div><div class="ad-bar" style="grid-template-columns:150px 1fr"><span>Empty, filled by your ads</span><span>'+num(n.nempty)+'</span></div>':'<div class="ns-empty">No network requests yet.</div>';
+}
+$('#adsenseShare').addEventListener('input',function(){$('#adShareVal').textContent=this.value+'%'});
+$('#adSaveSense').addEventListener('click',function(){
+  var s=collectSettings();s.adsense={enabled:$('#adsenseOn').checked,publisherId:$('#adsensePub').value.trim(),share:Number($('#adsenseShare').value)};
+  $$('[data-unit]').forEach(function(i){s.slots[i.dataset.unit]=Object.assign({},s.slots[i.dataset.unit],{unitId:i.value.trim()})});
+  saveSettings(s,'AdSense settings saved.');
+});
+
+/* editor */
+function checks(host,items,picked,name){$(host).innerHTML=items.map(function(i){return '<label class="ad-check"><input type="checkbox" name="'+name+'" value="'+esc(i[0])+'"'+(picked.indexOf(i[0])>=0?' checked':'')+'> '+esc(i[1])+'</label>'}).join('')}
+function picked(name){return $$('input[name="'+name+'"]:checked').map(function(i){return i.value})}
+function toLocal(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d))return '';var p=function(n){return String(n).padStart(2,'0')};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())}
+function fromLocal(v){return v?new Date(v).toISOString():null}
+function blank(kind){return {id:'',kind:kind,status:'draft',name:'',headline:'',body:'',cta:'',badge:'',sponsorName:'',url:'',imageUrl:'',accent:kind==='sponsor'?'violet':'cyan',action:{type:'link',topic:''},slots:[],targeting:{pageTypes:[],locales:kind==='sponsor'?[]:['en'],devices:[],pathsInclude:[],pathsExclude:[],hideIfPush:false,hideIfSignedIn:false,needs:''},weight:kind==='sponsor'?200:100,caps:{perUserDay:3,dailyImpressions:null,totalImpressions:null},startsAt:null,endsAt:null,note:''}}
+function openEditor(id,kind){
+  var c=id?S.data.creatives.filter(function(x){return x.id===id})[0]:blank(kind||'house');if(!c){toast('That ad no longer exists.','bad');return}
+  S.editing=c;var t=c.targeting||{};
+  $('#adModalTitle').textContent=id?'Edit ad':'New '+(c.kind==='sponsor'?'sponsor':'house')+' ad';
+  $('#fKind').value=c.kind;$('#fStatus').value=c.status;$('#fName').value=c.name;$('#fSponsor').value=c.sponsorName||'';$('#fHead').value=c.headline;$('#fBody').value=c.body;$('#fCta').value=c.cta;$('#fBadge').value=c.badge||'';
+  $('#fAccent').innerHTML=Object.keys(ACCENT_LABELS).map(function(k){return '<option value="'+k+'">'+ACCENT_LABELS[k]+'</option>'}).join('');$('#fAccent').value=c.accent;
+  $('#fImage').value=c.imageUrl||'';$('#fAction').value=c.action.type;$('#fUrl').value=c.url||'';
+  $('#fTopic').innerHTML=S.data.topics.map(function(k){return '<option value="'+k+'">'+esc(TOPIC_LABELS[k]||k)+'</option>'}).join('');$('#fTopic').value=c.action.topic||S.data.topics[0];
+  checks('#fSlots',S.data.slots.map(function(s){return [s,SLOT_LABELS[s]||s]}),c.slots||[],'slots');checks('#fPageTypes',PAGE_TYPES,t.pageTypes||[],'pageTypes');checks('#fLocales',LOCALES,t.locales||[],'locales');checks('#fDevices',[['desktop','Desktop'],['mobile','Phone']],t.devices||[],'devices');
+  $('#fInclude').value=(t.pathsInclude||[]).join('\n');$('#fExclude').value=(t.pathsExclude||[]).join('\n');$('#fHidePush').checked=!!t.hideIfPush;$('#fHideIn').checked=!!t.hideIfSignedIn;$('#fNeeds').value=t.needs||'';
+  $('#fStart').value=toLocal(c.startsAt);$('#fEnd').value=toLocal(c.endsAt);$('#fWeight').value=c.weight;$('#fPerUser').value=(c.caps||{}).perUserDay||3;$('#fDaily').value=(c.caps||{}).dailyImpressions||'';$('#fTotal').value=(c.caps||{}).totalImpressions||'';$('#fNote').value=c.note||'';
+  $('#fVars').innerHTML='<span class="ns-muted" style="font-size:11px;align-self:center">Insert live value:</span>'+TOKENS.map(function(k){return '<button type="button" data-tok="'+k+'">{'+k+'}</button>'}).join('');
+  $('#adDup').hidden=!id;$('#adDel').hidden=!id;$('#adToggle').hidden=!id;if(id)$('#adToggle').textContent=c.status==='active'?'Pause':'Switch on';
+  $('#xSlot').innerHTML=S.data.slots.map(function(s){return '<option value="'+s+'">'+esc(SLOT_LABELS[s]||s)+'</option>'}).join('');$('#xPage').innerHTML=PAGE_TYPES.map(function(p){return '<option value="'+p[0]+'">'+p[1]+' pages</option>'}).join('');$('#xOut').textContent='';
+  var link=$('#adReportBox');if(id&&c.kind==='sponsor'&&c.reportToken){link.hidden=false;$('#adReportLink').value=location.origin+'/advertise/report/?t='+c.reportToken}else link.hidden=true;
+  $('#adFormErr').hidden=true;sync();$('#adModal').hidden=false;
+}
+function readForm(){
+  var kind=$('#fKind').value,isPush=$('#fAction').value==='push';
+  return {kind:kind,status:$('#fStatus').value,name:$('#fName').value,sponsorName:$('#fSponsor').value,headline:$('#fHead').value,body:$('#fBody').value,cta:$('#fCta').value,badge:$('#fBadge').value,accent:$('#fAccent').value,imageUrl:$('#fImage').value,
+    action:{type:isPush?'push':'link',topic:isPush?$('#fTopic').value:''},url:isPush?'':$('#fUrl').value,slots:picked('slots'),
+    targeting:{pageTypes:picked('pageTypes'),locales:picked('locales'),devices:picked('devices'),pathsInclude:$('#fInclude').value.split(/\n+/).map(function(x){return x.trim()}).filter(Boolean),pathsExclude:$('#fExclude').value.split(/\n+/).map(function(x){return x.trim()}).filter(Boolean),hideIfPush:$('#fHidePush').checked,hideIfSignedIn:$('#fHideIn').checked,needs:$('#fNeeds').value},
+    weight:Number($('#fWeight').value)||100,caps:{perUserDay:Number($('#fPerUser').value)||3,dailyImpressions:$('#fDaily').value||null,totalImpressions:$('#fTotal').value||null},startsAt:fromLocal($('#fStart').value),endsAt:fromLocal($('#fEnd').value),note:$('#fNote').value};
+}
+function sync(){
+  var f=readForm();
+  $('#fSponsorWrap').hidden=f.kind!=='sponsor';$('#fUrlWrap').hidden=f.action.type==='push';$('#fTopicWrap').hidden=f.action.type!=='push';
+  $('#cHead').textContent=$('#fHead').value.length+'/70';$('#cBody').textContent=$('#fBody').value.length+'/170';
+  var badge=f.badge||(f.kind==='sponsor'?'Sponsored':'From FC Mobile Tools');if(f.kind==='sponsor'&&f.sponsorName)badge+=' · '+f.sponsorName;
+  var img=f.imageUrl&&/^https:/.test(f.imageUrl)?'<div class="fcmt-ad-media"><img alt="" src="'+esc(f.imageUrl)+'" width="112" height="112"></div>':'';
+  $('#adPv').style.maxWidth=S.pv==='mobile'?'360px':'100%';
+  $('#adPv').innerHTML='<aside class="fcmt-ad" data-accent="'+esc(f.accent)+'"'+(img?' data-has-media="1"':'')+'>'+img+'<div class="fcmt-ad-main"><div class="fcmt-ad-meta"><span class="fcmt-ad-badge">'+esc(badge)+'</span><button class="fcmt-ad-x" type="button" tabindex="-1">×</button></div><p class="fcmt-ad-title">'+esc(sample(f.headline)||'Your headline')+'</p>'+(f.body?'<p class="fcmt-ad-body">'+esc(sample(f.body))+'</p>':'')+'</div><div class="fcmt-ad-actions"><span class="fcmt-ad-cta">'+esc(sample(f.cta)||'Button')+'</span></div></aside>';
+  if(S.pv==='mobile')$('#adPv').classList.add('is-mobile');else $('#adPv').classList.remove('is-mobile');
+}
+$('#adForm').addEventListener('input',sync);$('#adForm').addEventListener('change',sync);
+$('#fVars').addEventListener('click',function(e){var k=e.target.dataset&&e.target.dataset.tok;if(!k)return;var el=document.activeElement&&(document.activeElement.id==='fBody'||document.activeElement.id==='fHead'||document.activeElement.id==='fCta')?document.activeElement:$('#fBody');el.value+='{'+k+'}';sync()});
+$$('.ns-pvtab').forEach(function(b){b.addEventListener('click',function(){S.pv=b.dataset.pv;$$('.ns-pvtab').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});sync()})});
+$('#adClose').addEventListener('click',function(){$('#adModal').hidden=true});
+$('#adModal').addEventListener('click',function(e){if(e.target===this)this.hidden=true});
+$('#adNewHouse').addEventListener('click',function(){openEditor(null,'house')});$('#adNewSponsor').addEventListener('click',function(){openEditor(null,'sponsor')});
+$('#adForm').addEventListener('submit',function(e){
+  e.preventDefault();var c=S.editing,btn=$('#adSave');btn.disabled=true;$('#adFormErr').hidden=true;
+  api(c.id?'/creatives/'+c.id:'/creatives',c.id?'PUT':'POST',readForm()).then(function(){toast('Ad saved. Visitors get it within a minute.','good');$('#adModal').hidden=true;return load()}).catch(function(err){var b=$('#adFormErr');b.hidden=false;b.textContent=err.message;b.scrollIntoView({block:'nearest'})}).then(function(){btn.disabled=false});
+});
+$('#adDup').addEventListener('click',function(){api('/creatives/'+S.editing.id+'/duplicate','POST',{}).then(function(r){toast('Copy saved as a draft.','good');$('#adModal').hidden=true;return load().then(function(){openEditor(r.id)})}).catch(function(e){toast(e.message,'bad')})});
+$('#adToggle').addEventListener('click',function(){var to=S.editing.status==='active'?'paused':'active';api('/creatives/'+S.editing.id+'/status','POST',{status:to}).then(function(){toast(to==='active'?'Ad is live.':'Ad paused.','good');$('#adModal').hidden=true;load()}).catch(function(e){toast(e.message,'bad')})});
+$('#adDel').addEventListener('click',function(){if(!confirm('Delete this ad and its numbers? This cannot be undone.'))return;api('/creatives/'+S.editing.id,'DELETE').then(function(){toast('Deleted.','good');$('#adModal').hidden=true;load()}).catch(function(e){toast(e.message,'bad')})});
+$('#adCopyReport').addEventListener('click',function(){var el=$('#adReportLink');el.select();try{navigator.clipboard.writeText(el.value).then(function(){toast('Report link copied.','good')},function(){document.execCommand('copy');toast('Report link copied.','good')})}catch(e){document.execCommand('copy');toast('Report link copied.','good')}});
+$('#xRun').addEventListener('click',function(){
+  if(!S.editing.id){$('#xOut').textContent='Save the ad first.';return}
+  api('/explain','POST',{id:S.editing.id,slot:$('#xSlot').value,pageType:$('#xPage').value,locale:$('#xLocale').value,device:$('#xDevice').value,path:'/'}).then(function(r){$('#xOut').innerHTML=r.eligible?'<span style="color:#9be8b3">This ad can show there.</span>':'<span style="color:#ffd9a0">Not showing there because:</span><ul>'+r.reasons.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>'}).catch(function(e){$('#xOut').textContent=e.message})
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')$('#adModal').hidden=true});
+
+showTab((location.hash||'#overview').slice(1));
+load();
+})();
+</script>
+</body></html>

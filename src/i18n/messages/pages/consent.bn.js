@@ -15,7 +15,7 @@ export default {
   analyticsText: 'Google Analytics বন্ধ আছে। কোনো Google Analytics ট্যাগ লোড হয় না।',
   disabled: 'বন্ধ',
   advertising: 'বিজ্ঞাপন',
-  advertisingText: 'উপযুক্ত পাবলিক পেজে Monetag বিজ্ঞাপন দেখানোর অনুমতি দেয় এবং বিনামূল্যের টুল ও গিভঅ্যাওয়ের খরচ জোগাতে সাহায্য করে।',
+  advertisingText: 'Google AdSense-এর মতো অংশীদারদের বিজ্ঞাপন দেখানোর অনুমতি দেয় এবং আপনি কতবার একটি বিজ্ঞাপন দেখেছেন তা মনে রাখতে সাহায্য করে। এই সাইটের নিজস্ব প্রোমো এই অনুমতি ছাড়াই চলে।',
   on: 'চালু',
   off: 'বন্ধ',
   cookiePolicy: 'কুকি নীতি',

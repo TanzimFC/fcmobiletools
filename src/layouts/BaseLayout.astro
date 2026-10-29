@@ -1,7 +1,6 @@
 ---
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
-import SiteAds from '../components/SiteAds.astro';
 import ConsentBanner from '../components/ConsentBanner.astro';
 import PushUi from '../components/PushUi.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
@@ -10,6 +9,8 @@ import '@fontsource-variable/instrument-sans/index.css';
 import '../../styles.css';
 import '../styles/luxe.css';
 import '../styles/system.css';
+import AdSlots from '../components/AdSlots.astro';
+import { pageTypeFor } from '../config/adSlots.js';
 import bengaliTypography from '../i18n/typography-bn.css?raw';
 import { LOCALES, DEFAULT_LOCALE, LANGUAGE_STORAGE_KEY, getLocaleFromPath, stripLocale, alternatesFor, availableLocales, pathForLocale, localizedPagesFor, translator } from '../i18n/index.js';
 
@@ -26,7 +27,7 @@ export interface Props {
   googlebot?: string;
   /** Override the canonical URL (path or absolute). Used by pages that point at a moved target. */
   canonical?: string;
-  /** Skip the AdSense loader. Used on pages where people submit data or claim prizes. */
+  /** Never show ads on this page. Used where people submit data or claim prizes. */
   noAds?: boolean;
 }
 
@@ -76,10 +77,9 @@ const i18nClient = {
   pages: localizedPagesFor(locale)
 };
 const isGiveawayArea = canonical.pathname === '/giveaways' || canonical.pathname.startsWith('/giveaways/');
-// AdSense is not requested while the account is still under review. Enable the
-// build-time flag only after approval, to avoid loading an unapproved third-party
-// script across nearly every route.
-const loadAdSense = false; // All advertising is intentionally disabled site-wide.
+// Ads are decided by the ads engine in the browser (src/scripts/ads-engine.js). AdSense is loaded
+// there, only after approval is switched on in Ads Studio and the visitor has agreed to advertising.
+const adPageType = noAds ? 'none' : pageTypeFor(englishPath);
 
 const siteSchema = {
   '@context': 'https://schema.org',
@@ -173,8 +173,6 @@ const pageSchema = {
   <meta name="robots" content={robots} />
   <meta name="googlebot" content={googlebot} />
   <meta name="google-adsense-account" content="ca-pub-2527295119501596" />
-  <meta name="monetag" content="fed8440c1793db6fc9c269dd743260bb" />
-  {loadAdSense && <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2527295119501596" crossorigin="anonymous"></script>}
   <link rel="canonical" href={canonical} />
   {alternates.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />)}
   <link rel="icon" type="image/png" href="/assets/images/favicon.png" />
@@ -227,13 +225,13 @@ const pageSchema = {
   </> : <script type="application/ld+json" set:html={JSON.stringify(pageSchema)}></script>}
 
   <slot name="head" />
-  <SiteAds />
 </head>
 <body>
   <a class="skip-link" href="#content">{tr('common.skipToContent')}</a>
   <Navbar />
   <Breadcrumb />
   <div id="content"><slot /></div>
+  <AdSlots pageType={adPageType} locale={locale} />
   <Footer />
   <ConsentBanner />
   <PushUi />

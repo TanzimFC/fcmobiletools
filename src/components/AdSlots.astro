@@ -1,0 +1,15 @@
+---
+// Mounts the ads engine on pages that are allowed to show ads (see src/config/adSlots.js).
+// On every other page nothing is rendered and the engine code is never downloaded.
+interface Props { pageType: string; locale: string }
+const { pageType, locale } = Astro.props;
+const live = pageType !== 'none';
+---
+{live && <div id="fcmtAdsRoot" data-page-type={pageType} data-locale={locale} hidden></div>}
+<script>
+  if (document.getElementById('fcmtAdsRoot')) {
+    const start = () => { import('../scripts/ads-engine.js'); };
+    if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 3500 });
+    else window.setTimeout(start, 1800);
+  }
+</script>

@@ -15,7 +15,7 @@ export default {
   analyticsText: 'Google Analytics dinonaktifkan. Tidak ada tag Google Analytics yang dimuat.',
   disabled: 'Nonaktif',
   advertising: 'Iklan',
-  advertisingText: 'Mengizinkan iklan Monetag di halaman publik yang memenuhi syarat dan membantu mendanai alat serta giveaway gratis.',
+  advertisingText: 'Mengizinkan iklan dari mitra seperti Google AdSense dan membantu kami mengingat seberapa sering Anda melihat sebuah iklan. Promo dari situs ini sendiri tetap berjalan tanpa izin ini.',
   on: 'Aktif',
   off: 'Nonaktif',
   cookiePolicy: 'Kebijakan cookie',
