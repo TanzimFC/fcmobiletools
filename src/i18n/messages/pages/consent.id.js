@@ -4,7 +4,7 @@ export default {
   policy: 'Baca kebijakan privasi kami',
   manage: 'Pilihan privasi',
   continue: 'Lanjutkan',
-  basic: 'Gunakan iklan dasar',
+  basic: 'Lanjutkan dengan pengaturan dasar',
   settingsTitle: 'Pilihan privasi Anda',
   settingsLead: 'Pilih apakah penyimpanan iklan opsional dan permintaan iklan pihak ketiga boleh berjalan. Promosi situs tetap terlihat dalam kedua pilihan.',
   closeAria: 'Tutup pengaturan privasi',
