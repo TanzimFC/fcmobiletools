@@ -79,7 +79,7 @@ No Google ad script loads while AdSense is off. Third-party requests remain sepa
 
 ## Privacy
 
-Counts are totals per ad, slot and day. They are not tied to a person. What a visitor hid or clicked is stored on their device because it is their choice. Ad frequency is remembered across visits only when optional ad-related storage is enabled; otherwise that count lasts for the current visit. Turning off optional storage does not hide the site's own promotions or sponsor placements. The cookie policy describes this.
+Counts are totals per ad, slot and day. They are not tied to a person. Without optional ad-related storage, hide, click and frequency preferences last for the current visit only; with it enabled, those preferences can persist across visits. Turning off optional storage does not hide the site's own promotions or sponsor placements. The cookie policy describes this.
 
 ## Premium
 
