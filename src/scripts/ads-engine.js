@@ -307,6 +307,13 @@ function findAnchor(slotId, settings) {
   const marked = document.querySelector('[data-ad-anchor="' + slotId + '"]');
   if (marked) return { anchor: marked, context: 'section' };
 
+  if (slotId === 'tool-result') {
+    const tool = content.querySelector('main, [data-tool-root]');
+    if (!tool) return null;
+    const results = tool.querySelector('[data-ad-results], [data-results], #results, #result, .results, .result-panel');
+    return { anchor: results || tool, context: 'section' };
+  }
+
   if (slotId === 'article-mid' || slotId === 'article-end') {
     const prose = document.querySelector('#blProse, .bl-prose, [data-ad-prose]');
     if (!prose) return null;
