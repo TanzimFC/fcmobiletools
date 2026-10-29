@@ -83,7 +83,7 @@ async function boot() {
       }
     });
   });
-  const nextOrder = ['tool-sidebar', 'article-mid', 'home-mid', 'page-mid', 'list-mid', 'tool-result', 'article-end', 'page-end'];
+  const nextOrder = ['tool-sidebar', 'article-early', 'article-mid', 'home-mid', 'page-mid', 'list-mid', 'tool-result', 'article-end', 'page-end'];
   const plan = slotsForPageType(pageType)
     .filter((slot) => settings.slots?.[slot.id]?.enabled !== false && slot.devices.includes(device))
     .sort((a, b) => nextOrder.indexOf(a.id) - nextOrder.indexOf(b.id));
@@ -179,7 +179,7 @@ async function boot() {
 
   // Artwork sets live at /assets/ads/<name>-wide|card|square.svg and contain no text.
   const ART_SET = /^\/assets\/ads\/([a-z0-9-]+)$/;
-  const SLOT_SIZE = { 'home-mid': 'hero', 'article-end': 'hero', 'list-mid': 'compact', 'article-mid': 'compact', 'page-mid': 'compact', 'tool-result': 'compact', 'tool-sidebar': 'sidebar', 'page-end': 'strip' };
+  const SLOT_SIZE = { 'home-mid': 'hero', 'article-end': 'hero', 'list-mid': 'compact', 'article-early': 'compact', 'article-mid': 'compact', 'page-mid': 'compact', 'tool-result': 'compact', 'tool-sidebar': 'sidebar', 'page-end': 'strip' };
   const ART_FILES = { hero: ['wide', 'card', 1200, 400, 800, 450], compact: ['square', 'card', 400, 400, 800, 450], sidebar: ['square', 'square', 400, 400, 400, 400], strip: ['wide', 'square', 1200, 400, 400, 400] };
   function artPicture(name, size) {
     const [wide, small, ww, wh, sw, sh] = ART_FILES[size] || ART_FILES.compact;
@@ -362,11 +362,17 @@ function findAnchor(slotId, settings) {
     return null;
   }
 
-  if (slotId === 'article-mid' || slotId === 'article-end') {
+  if (slotId === 'article-early' || slotId === 'article-mid' || slotId === 'article-end') {
     const prose = document.querySelector('#blProse, .bl-prose, [data-ad-prose]');
     if (!prose) return null;
     if (slotId === 'article-end') return { anchor: prose, context: 'section' };
     const paras = [...prose.querySelectorAll(':scope > p')].filter((p) => p.textContent.trim().length > 60);
+    if (slotId === 'article-early') {
+      // Only add the fourth placement to long reads, and keep enough paragraphs between in-read ads.
+      if (paras.length < 12 || (countWords(prose) < 1500 && paras.length < 18)) return null;
+      const earlyIndex = Math.max(3, Math.round(paras.length * 0.25));
+      return { anchor: paras[Math.min(earlyIndex, paras.length - 2) - 1], context: 'inline' };
+    }
     if (paras.length < settings.minParagraphsForMid) return null;
     const index = Math.max(3, Math.round(paras.length * 0.4));
     return { anchor: paras[Math.min(index, paras.length - 2) - 1], context: 'inline' };
