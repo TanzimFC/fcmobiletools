@@ -50,6 +50,7 @@ export function ensureAdsSchema(db) {
         creative_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`);
       await run('CREATE INDEX IF NOT EXISTS idx_ads_inquiries_status ON ads_inquiries(status, created_at)');
       await seedStarterAds(db);
+      await applyStarterArt(db);
     })().catch((error) => { schemaPromise = null; throw error; });
   }
   return schemaPromise;
@@ -128,6 +129,52 @@ const STARTERS = [
     note: 'Draft. Point the link at your real premium page, then switch this ad on.', targeting: {}
   }
 ];
+
+// Artwork for the starter ads, and house ads that point at our own tools. Applied once to every database,
+// new or existing. Existing ads are only touched when they have no image yet, so edits are never overwritten.
+const ART = (name) => '/assets/ads/' + name;
+const STARTER_ART = {
+  'Redeem alerts, version A': ART('redeem-codes'),
+  'Redeem alerts, version B': ART('alerts'),
+  'Live code count': ART('redeem-codes'),
+  'Giveaway live': ART('giveaways'),
+  'Giveaway alerts': ART('giveaway-trophy'),
+  'Advertise here': ART('advertise'),
+  'Redeem alerts, Bahasa Indonesia': ART('alerts'),
+  'Redeem alerts, Portugues (BR)': ART('alerts'),
+  'Redeem alerts, Bangla': ART('alerts'),
+  'Premium': ART('premium')
+};
+const toolAd = (name, art, accent, headline, body, cta, path, extra = {}) => ({
+  name, status: 'active', kind: 'house', accent, weight: 60, imageUrl: ART(art), headline, body, cta,
+  url: path + '/', action: { type: 'link' }, targeting: { pathsExclude: [path], pageTypes: ['home', 'list', 'article', 'tool', 'page'], ...extra }
+});
+const TOOL_ADS = [
+  toolAd('Tool: Team OVR', 'team-ovr', 'cyan', 'What is your squad really rated?', 'Enter Base OVR, Rank and Team Badges, then see the cheapest upgrades to reach your target rating.', 'Open Team OVR', '/team-ovr'),
+  toolAd('Tool: Training calculator', 'training', 'green', 'Know the cost before you train', 'See the XP, cards and Coins for Levels 0 to 30, and what a Training Transfer gives after the 10% fee.', 'Open the calculator', '/training-calculator'),
+  toolAd('Tool: Rank up calculator', 'rank-up', 'gold', 'How many Rank Up Points do you need?', 'Pick Base OVR, current rank and target rank to see live RP totals, step costs and your OVR after.', 'Plan my rank up', '/rank-up-calculator'),
+  toolAd('Tool: Star Shards counter', 'shards', 'violet', 'Track your Star Shards', 'Count your Star Shards and see how far you are from your target.', 'Open the counter', '/shards-counter'),
+  toolAd('Tool: Gauntlet planner', 'gauntlet', 'cyan', 'Plan your Gauntlet run', 'Rotate your squad, respect appearance limits and keep every lineup and result in one place.', 'Open the planner', '/gauntlet-planner'),
+  toolAd('Tool: Investment calculator', 'investment', 'green', 'Work out the profit before you sell', 'Enter buy price, quantity and sale price to see profit after market tax, break-even and ROI.', 'Open the calculator', '/investment-calculator'),
+  toolAd('Tool: Events hub', 'events', 'cyan', 'Never miss a reset or event', 'Live events and daily resets in one place, with alerts you can switch on.', 'See live events', '/events'),
+  toolAd('Tool: Football Centre', 'football-centre', 'green', 'Follow Showdown and event progress', 'Results and event progress in one place.', 'Open Football Centre', '/football-centre')
+];
+
+async function applyStarterArt(db) {
+  const done = await db.prepare("SELECT value FROM ads_settings WHERE key = 'art1'").first();
+  if (done) return;
+  for (const [name, image] of Object.entries(STARTER_ART)) {
+    await db.prepare("UPDATE ads_creatives SET image_url = ?2, updated_at = ?3 WHERE name = ?1 AND kind = 'house' AND image_url = ''").bind(name, image, nowIso()).run();
+  }
+  for (const item of TOOL_ADS) {
+    const exists = await db.prepare('SELECT id FROM ads_creatives WHERE name = ?1').bind(item.name).first();
+    if (exists) continue;
+    const targeting = { ...item.targeting };
+    if (!targeting.locales) targeting.locales = ['en'];
+    await insertCreative(db, validateCreative({ ...item, targeting }));
+  }
+  await db.prepare("INSERT OR REPLACE INTO ads_settings (key, value, updated_at) VALUES ('art1', '1', ?1)").bind(nowIso()).run();
+}
 
 async function seedStarterAds(db) {
   const done = await db.prepare("SELECT value FROM ads_settings WHERE key = 'seeded'").first();

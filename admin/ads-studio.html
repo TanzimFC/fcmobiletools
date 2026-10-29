@@ -477,7 +477,8 @@ html body .toast{border-radius:16px;font-size:13.5px}
         <div class="ns-field"><span>Text <em id="cBody"></em></span><textarea id="fBody" class="ns-input" maxlength="170" rows="3"></textarea></div>
         <div class="ns-vars" id="fVars"></div>
         <div class="ns-row"><div class="ns-field"><span>Button label</span><input id="fCta" class="ns-input" maxlength="26"></div><div class="ns-field"><span>Small label above the headline</span><input id="fBadge" class="ns-input" maxlength="28" placeholder="From FC Mobile Tools"></div></div>
-        <div class="ns-row"><div class="ns-field"><span>Accent colour</span><select id="fAccent" class="ns-input"></select></div><div class="ns-field"><span>Image link <em>optional, Cloudinary</em></span><input id="fImage" class="ns-input" placeholder="https://res.cloudinary.com/..."></div></div>
+        <div class="ns-row"><div class="ns-field"><span>Accent colour</span><select id="fAccent" class="ns-input"></select></div><div class="ns-field"><span>Artwork <em>pictures made for the site</em></span><select id="fArt" class="ns-input"></select></div></div>
+        <div class="ns-row"><div class="ns-field" style="grid-column:1/-1"><span>Image link <em>filled in by Artwork, or paste your own (Cloudinary)</em></span><input id="fImage" class="ns-input" placeholder="https://res.cloudinary.com/..."></div></div>
       </fieldset>
       <fieldset class="ad-fieldset"><legend>What the button does</legend>
         <div class="ns-row"><div class="ns-field"><span>Action</span><select id="fAction" class="ns-input"><option value="link">Open a link</option><option value="push">Turn on an alert topic</option></select></div>
@@ -505,7 +506,7 @@ html body .toast{border-radius:16px;font-size:13.5px}
     </form>
     <div class="ad-sticky">
       <div class="ns-label" style="margin-bottom:8px">Preview <span class="ns-muted">how it looks on the site</span></div>
-      <div class="ns-pvtabs"><button class="ns-pvtab" data-pv="desktop" aria-pressed="true" type="button">Desktop</button><button class="ns-pvtab" data-pv="mobile" aria-pressed="false" type="button">Phone</button></div>
+      <div class="ns-pvtabs"><select id="pvSize" class="ns-pvtab" aria-label="Preview size" style="padding:6px 10px"><option value="hero">Big banner</option><option value="compact">In feed</option><option value="strip">Slim strip</option></select><button class="ns-pvtab" data-pv="desktop" aria-pressed="true" type="button">Desktop</button><button class="ns-pvtab" data-pv="mobile" aria-pressed="false" type="button">Phone</button></div>
       <div class="ad-pvbox" id="adPv" style="max-width:100%"></div>
       <div id="adReportBox" class="ns-mt" hidden><div class="ns-label" style="margin-bottom:6px">Sponsor report link</div><input id="adReportLink" class="ns-input" readonly><div class="ns-actions ns-mt"><button class="ns-btn small" id="adCopyReport" type="button">Copy link</button></div></div>
       <div class="ns-card ns-mt" style="padding:14px"><h3>Why is it not showing?</h3><p class="ns-sub" style="margin:4px 0 10px">Pick a situation and see what blocks this ad.</p>
@@ -650,7 +651,7 @@ function openEditor(id,kind){
   $('#adModalTitle').textContent=id?'Edit ad':'New '+(c.kind==='sponsor'?'sponsor':'house')+' ad';
   $('#fKind').value=c.kind;$('#fStatus').value=c.status;$('#fName').value=c.name;$('#fSponsor').value=c.sponsorName||'';$('#fHead').value=c.headline;$('#fBody').value=c.body;$('#fCta').value=c.cta;$('#fBadge').value=c.badge||'';
   $('#fAccent').innerHTML=Object.keys(ACCENT_LABELS).map(function(k){return '<option value="'+k+'">'+ACCENT_LABELS[k]+'</option>'}).join('');$('#fAccent').value=c.accent;
-  $('#fImage').value=c.imageUrl||'';$('#fAction').value=c.action.type;$('#fUrl').value=c.url||'';
+  $('#fImage').value=c.imageUrl||'';syncArtSelect();$('#pvSize').value=sizeForSlots(c.slots);$('#fAction').value=c.action.type;$('#fUrl').value=c.url||'';
   $('#fTopic').innerHTML=S.data.topics.map(function(k){return '<option value="'+k+'">'+esc(TOPIC_LABELS[k]||k)+'</option>'}).join('');$('#fTopic').value=c.action.topic||S.data.topics[0];
   checks('#fSlots',S.data.slots.map(function(s){return [s,SLOT_LABELS[s]||s]}),c.slots||[],'slots');checks('#fPageTypes',PAGE_TYPES,t.pageTypes||[],'pageTypes');checks('#fLocales',LOCALES,t.locales||[],'locales');checks('#fDevices',[['desktop','Desktop'],['mobile','Phone']],t.devices||[],'devices');
   $('#fInclude').value=(t.pathsInclude||[]).join('\n');$('#fExclude').value=(t.pathsExclude||[]).join('\n');$('#fHidePush').checked=!!t.hideIfPush;$('#fHideIn').checked=!!t.hideIfSignedIn;$('#fNeeds').value=t.needs||'';
@@ -668,11 +669,38 @@ function readForm(){
     targeting:{pageTypes:picked('pageTypes'),locales:picked('locales'),devices:picked('devices'),pathsInclude:$('#fInclude').value.split(/\n+/).map(function(x){return x.trim()}).filter(Boolean),pathsExclude:$('#fExclude').value.split(/\n+/).map(function(x){return x.trim()}).filter(Boolean),hideIfPush:$('#fHidePush').checked,hideIfSignedIn:$('#fHideIn').checked,needs:$('#fNeeds').value},
     weight:Number($('#fWeight').value)||100,caps:{perUserDay:Number($('#fPerUser').value)||3,dailyImpressions:$('#fDaily').value||null,totalImpressions:$('#fTotal').value||null},startsAt:fromLocal($('#fStart').value),endsAt:fromLocal($('#fEnd').value),note:$('#fNote').value};
 }
+
+/* artwork library */
+var ART_SLOT_SIZE={'home-mid':'hero','article-end':'hero','list-mid':'compact','article-mid':'compact','tool-result':'compact','page-end':'strip'};
+var ART_RE=/^\/assets\/ads\/([a-z0-9-]+)$/;
+var ART_LIST=[];
+function sizeForSlots(slots){return ART_SLOT_SIZE[(slots||[])[0]]||'hero'}
+function pretty(slug){return slug.replace(/-/g,' ').replace(/^./,function(m){return m.toUpperCase()})}
+function syncArtSelect(){var v=$('#fImage').value,m=ART_RE.exec(v);$('#fArt').value=m?v:(v?'custom':'')}
+fetch('/assets/ads/index.json',{cache:'no-store'}).then(function(r){return r.json()}).then(function(list){
+  ART_LIST=list;$('#fArt').innerHTML='<option value="">No picture</option>'+list.map(function(a){return '<option value="/assets/ads/'+a.slug+'">'+esc(pretty(a.slug))+'</option>'}).join('')+'<option value="custom" disabled>Custom link</option>';syncArtSelect();
+}).catch(function(){$('#fArt').innerHTML='<option value="">Artwork list unavailable</option>'});
+$('#fArt').addEventListener('change',function(){if(this.value!=='custom')$('#fImage').value=this.value;sync()});
+$('#fImage').addEventListener('input',syncArtSelect);
+$('#pvSize').addEventListener('change',sync);
+function artMarkup(f,badge,size){
+  var name=ART_RE.exec(f.imageUrl)[1],files={hero:['wide','card'],compact:['square','card'],strip:['wide','square']}[size];
+  return '<aside class="fcmt-ad fcmt-ad--art" data-accent="'+esc(f.accent)+'" data-size="'+size+'"><picture class="fcmt-ad-art"><source media="(min-width: 720px)" srcset="/assets/ads/'+name+'-'+files[0]+'.svg"><img src="/assets/ads/'+name+'-'+files[1]+'.svg" alt=""></picture><button class="fcmt-ad-x" type="button" tabindex="-1">×</button><div class="fcmt-ad-main"><div class="fcmt-ad-meta"><span class="fcmt-ad-badge">'+esc(badge)+'</span></div><p class="fcmt-ad-title">'+esc(sample(f.headline)||'Your headline')+'</p>'+(f.body?'<p class="fcmt-ad-body">'+esc(sample(f.body))+'</p>':'')+'<div class="fcmt-ad-actions"><span class="fcmt-ad-cta">'+esc(sample(f.cta)||'Button')+'</span></div></div></aside>';
+}
+function artPreview(f,badge){
+  var mobile=S.pv==='mobile',vw=mobile?390:740,box=$('#adPv');box.style.maxWidth='100%';box.classList.remove('is-mobile');
+  var frame=document.createElement('iframe');frame.title='Ad preview';frame.style.cssText='border:0;width:'+vw+'px;height:300px;transform-origin:0 0;background:#0b1118;border-radius:12px;display:block';
+  frame.srcdoc='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/assets/ads-preview.css"><style>html,body{margin:0;background:#0b1118;font-family:system-ui,sans-serif;color:#edf2f6}body{padding:14px}</style></head><body>'+artMarkup(f,badge,$('#pvSize').value)+'</body></html>';
+  var wrap=document.createElement('div');wrap.style.cssText='overflow:hidden;width:100%';wrap.append(frame);box.replaceChildren(wrap);
+  frame.addEventListener('load',function(){var h=frame.contentDocument.body.scrollHeight+4,k=Math.min(1,wrap.clientWidth/vw);frame.style.height=h+'px';frame.style.transform='scale('+k+')';wrap.style.height=Math.ceil(h*k)+'px'});
+}
 function sync(){
   var f=readForm();
   $('#fSponsorWrap').hidden=f.kind!=='sponsor';$('#fUrlWrap').hidden=f.action.type==='push';$('#fTopicWrap').hidden=f.action.type!=='push';
   $('#cHead').textContent=$('#fHead').value.length+'/70';$('#cBody').textContent=$('#fBody').value.length+'/170';
   var badge=f.badge||(f.kind==='sponsor'?'Sponsored':'From FC Mobile Tools');if(f.kind==='sponsor'&&f.sponsorName)badge+=' · '+f.sponsorName;
+  $('#pvSize').hidden=!ART_RE.test(f.imageUrl);
+  if(ART_RE.test(f.imageUrl)){artPreview(f,badge);return}
   var img=f.imageUrl&&/^https:/.test(f.imageUrl)?'<div class="fcmt-ad-media"><img alt="" src="'+esc(f.imageUrl)+'" width="112" height="112"></div>':'';
   $('#adPv').style.maxWidth=S.pv==='mobile'?'360px':'100%';
   $('#adPv').innerHTML='<aside class="fcmt-ad" data-accent="'+esc(f.accent)+'"'+(img?' data-has-media="1"':'')+'>'+img+'<div class="fcmt-ad-main"><div class="fcmt-ad-meta"><span class="fcmt-ad-badge">'+esc(badge)+'</span><button class="fcmt-ad-x" type="button" tabindex="-1">×</button></div><p class="fcmt-ad-title">'+esc(sample(f.headline)||'Your headline')+'</p>'+(f.body?'<p class="fcmt-ad-body">'+esc(sample(f.body))+'</p>':'')+'</div><div class="fcmt-ad-actions"><span class="fcmt-ad-cta">'+esc(sample(f.cta)||'Button')+'</span></div></aside>';

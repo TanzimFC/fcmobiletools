@@ -108,6 +108,33 @@ await test('page budget and network gate', () => {
 });
 
 /* ---------------------------- Worker on SQLite ---------------------------- */
+
+console.log('\nArtwork');
+const { existsSync, readFileSync } = await import('node:fs');
+const root = new URL('..', import.meta.url).pathname;
+await test('image paths: art sets and site assets pass, traversal fails', () => {
+  const ok = validateCreative({ ...base, imageUrl: '/assets/ads/redeem-codes' });
+  assert.equal(ok.imageUrl, '/assets/ads/redeem-codes');
+  throwsAds(() => validateCreative({ ...base, imageUrl: '/assets/../secret' }), /not valid/);
+  throwsAds(() => validateCreative({ ...base, imageUrl: '/assets/ads/a b' }), /not valid/);
+  throwsAds(() => validateCreative({ ...base, imageUrl: '/etc/passwd' }), /Cloudinary/);
+});
+await test('every artwork set has wide, card and square files, with no text inside', () => {
+  const sets = JSON.parse(readFileSync(root + 'public/assets/ads/index.json', 'utf8'));
+  assert.ok(sets.length >= 14);
+  for (const { slug } of sets) for (const size of ['wide', 'card', 'square']) {
+    const file = root + 'public/assets/ads/' + slug + '-' + size + '.svg';
+    assert.ok(existsSync(file), 'missing ' + file);
+    const svg = readFileSync(file, 'utf8');
+    assert.ok(!/<text|<script|<image|href=/i.test(svg), slug + '-' + size + ' must be pure shapes');
+    assert.ok(svg.length < 40000, slug + '-' + size + ' is too heavy');
+  }
+});
+await test('the studio preview stylesheet matches the site stylesheet', () => {
+  assert.equal(readFileSync(root + 'public/assets/ads-preview.css', 'utf8'), readFileSync(root + 'src/styles/ads.css', 'utf8'),
+    'run: cp src/styles/ads.css public/assets/ads-preview.css');
+});
+
 const sqliteModule = await import('node:sqlite').catch(() => null);
 if (!sqliteModule) {
   console.log('\nWorker route tests skipped: this Node version has no node:sqlite (needs Node 22.5 or newer).');
@@ -258,6 +285,28 @@ await test('hourly job ends finished campaigns and learns from clicks', async ()
   assert.equal(row.status, 'ended');
   assert.ok(row.learned > 1, 'a strong click rate raises the weight, got ' + row.learned);
   assert.ok((await db.prepare('SELECT learned FROM ads_creatives WHERE id = ?1').bind(dull).first()).learned < 1, 'a weak one is turned down');
+});
+
+await test('starter ads and tool promos carry artwork that exists, and run once', async () => {
+  const config = await (await pub('GET', '/api/ads/config')).json();
+  const withArt = config.creatives.filter((c) => c.img);
+  assert.ok(withArt.length >= 15, 'expected art on starters and tool promos, got ' + withArt.length);
+  for (const c of withArt) {
+    const name = c.img.replace('/assets/ads/', '');
+    for (const size of ['wide', 'card', 'square']) assert.ok(existsSync(root + 'public/assets/ads/' + name + '-' + size + '.svg'), c.headline + ' points at missing art ' + name);
+  }
+  const tools = config.creatives.filter((c) => /Team OVR|Training|Rank Up|Gauntlet|Star Shards/i.test(c.headline + ' ' + c.cta));
+  assert.ok(tools.length >= 4);
+  assert.ok(tools.every((c) => c.targeting.pathsExclude.length === 1 && c.targeting.locales.includes('en')));
+  const names = await db.prepare('SELECT name, COUNT(*) n FROM ads_creatives GROUP BY name HAVING n > 1').all();
+  assert.equal(names.results.length, 0, 'no ad is created twice');
+});
+await test('a tool promo never shows on its own tool page', async () => {
+  const config = await (await pub('GET', '/api/ads/config')).json();
+  const team = config.creatives.find((c) => /Team OVR/.test(c.cta));
+  const here = { slot: 'tool-result', pageType: 'tool', path: '/team-ovr', locale: 'en', device: 'mobile', signedIn: false, pushOn: false, topics: {}, now: Date.now(), shownIds: [] };
+  assert.match(blockers({ ...team, learned: 1 }, here, {}).join(), /excluded/);
+  assert.deepEqual(blockers({ ...team, learned: 1 }, { ...here, path: '/training-calculator' }, {}), []);
 });
 
 console.log('\n' + passed + ' ads tests passed');

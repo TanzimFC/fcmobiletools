@@ -131,6 +131,25 @@ async function boot() {
     return host;
   }
 
+  // Artwork sets live at /assets/ads/<name>-wide|card|square.svg and contain no text.
+  const ART_SET = /^\/assets\/ads\/([a-z0-9-]+)$/;
+  const SLOT_SIZE = { 'home-mid': 'hero', 'article-end': 'hero', 'list-mid': 'compact', 'article-mid': 'compact', 'tool-result': 'compact', 'page-end': 'strip' };
+  const ART_FILES = { hero: ['wide', 'card', 1200, 400, 800, 450], compact: ['square', 'card', 400, 400, 800, 450], strip: ['wide', 'square', 1200, 400, 400, 400] };
+  function artPicture(name, size) {
+    const [wide, small, ww, wh, sw, sh] = ART_FILES[size] || ART_FILES.compact;
+    const picture = document.createElement('picture');
+    picture.className = 'fcmt-ad-art';
+    const source = document.createElement('source');
+    source.media = '(min-width: 720px)';
+    source.srcset = '/assets/ads/' + name + '-' + wide + '.svg';
+    const img = document.createElement('img');
+    img.src = '/assets/ads/' + name + '-' + small + '.svg';
+    img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.width = sw; img.height = sh;
+    img.addEventListener('error', () => { picture.closest('.fcmt-ad')?.classList.remove('fcmt-ad--art'); picture.remove(); });
+    picture.append(source, img);
+    return picture;
+  }
+
   function renderCreative(host, c, slotId) {
     shownIds.push(c.id);
     const aside = document.createElement('aside');
@@ -139,8 +158,13 @@ async function boot() {
     aside.dataset.kind = c.kind;
     aside.setAttribute('aria-label', c.kind === 'sponsor' ? 'Sponsored' : 'Promotion');
     const saveData = navigator.connection?.saveData === true;
-    const hasMedia = Boolean(c.img) && !saveData;
-    if (hasMedia) {
+    const art = saveData ? null : ART_SET.exec(c.img || '');
+    const hasMedia = Boolean(c.img) && !saveData && !art;
+    if (art) {
+      aside.classList.add('fcmt-ad--art');
+      aside.dataset.size = SLOT_SIZE[slotId] || 'compact';
+      aside.append(artPicture(art[1], aside.dataset.size));
+    } else if (hasMedia) {
       aside.dataset.hasMedia = '1';
       const media = el('div', 'fcmt-ad-media');
       const img = document.createElement('img');
@@ -154,7 +178,7 @@ async function boot() {
     badge.textContent = c.kind === 'sponsor' && c.sponsor ? (c.badge || 'Sponsored') + ' · ' + c.sponsor : c.badge;
     const close = el('button', 'fcmt-ad-x');
     close.type = 'button'; close.setAttribute('aria-label', t.hide); close.title = t.hide; close.textContent = '\u00d7';
-    meta.append(badge, close);
+    if (art) { meta.append(badge); aside.append(close); } else meta.append(badge, close);
     const title = el('p', 'fcmt-ad-title'); title.textContent = c.headline;
     main.append(meta, title);
     if (c.body) { const body = el('p', 'fcmt-ad-body'); body.textContent = c.body; main.append(body); }
@@ -167,7 +191,8 @@ async function boot() {
       if (/^https?:/i.test(c.url)) { cta.target = '_blank'; cta.rel = (c.kind === 'sponsor' ? 'sponsored nofollow ' : '') + 'noopener'; }
     }
     actions.append(cta);
-    aside.append(main, actions);
+    if (art) { main.append(actions); aside.append(main); } else aside.append(main, actions);
+    if (art && c.kind === 'house' && c.action?.type !== 'push') aside.dataset.whole = '1';
     host.replaceChildren(aside);
 
     watchView(aside, c, slotId);
@@ -177,6 +202,8 @@ async function boot() {
       if (c.action?.type === 'push') handlePush(c, cta, actions, slotId);
     });
     close.addEventListener('click', () => dismiss(host, aside, c, slotId));
+    // Our own promos are tappable all over; the button stays the real link for keyboards and screen readers.
+    if (aside.dataset.whole === '1') aside.addEventListener('click', (event) => { if (!event.target.closest('.fcmt-ad-x, .fcmt-ad-cta')) cta.click(); });
   }
 
   function handlePush(c, cta, actions, slotId) {

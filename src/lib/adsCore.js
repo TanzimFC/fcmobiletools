@@ -60,7 +60,10 @@ export function cleanUrl(value, label = 'Link') {
 export function cleanImage(value) {
   const text = flat(value, LIMITS.url + 1);
   if (!text) return '';
-  if (text.startsWith('/assets/')) return text;
+  if (text.startsWith('/assets/')) {
+    if (!/^\/assets\/[a-z0-9/_.-]+$/i.test(text) || text.includes('..') || text.includes('//')) throw new AdsError('That image path is not valid.');
+    return text;
+  }
   let parsed;
   try { parsed = new URL(text); } catch { throw new AdsError('Image must be an https link from Cloudinary or this site.'); }
   if (parsed.protocol !== 'https:' || !IMAGE_HOSTS.includes(parsed.hostname)) throw new AdsError('Image must be hosted on Cloudinary or fcmobiletools.online.');
