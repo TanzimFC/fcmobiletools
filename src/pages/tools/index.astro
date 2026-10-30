@@ -1,0 +1,150 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const description = 'Find free FC Mobile tools for squad ratings, training, rank ups, market planning, live events, redeem codes and rewards. FCMOBILETOOLS brings the calculators, planners and trackers together.';
+const site = 'https://fcmobiletools.online';
+
+const groups = [
+  {
+    title: 'Squad building and upgrades',
+    intro: 'Plan your team and understand the cost of each upgrade before you spend coins or resources.',
+    items: [
+      { name: 'Team OVR Calculator', category: 'Squad planning', href: '/team-ovr/', text: 'See how player ratings and rank upgrades affect your squad OVR.' },
+      { name: 'PlayStyle Guide', category: 'Player roles', href: '/player/playstyle/', text: 'Understand FC Mobile PlayStyles and how they shape player behaviour.' },
+      { name: 'PlayStyle Finder', category: 'Player roles', href: '/player/playstyle-finder/', text: 'Find the PlayStyles that fit the way you play.' },
+      { name: 'Training Calculator', category: 'Training', href: '/training-calculator/', text: 'Plan Training XP and the materials needed to reach a target level.' },
+      { name: 'Rank Up Calculator', category: 'Rank ups', href: '/rank-up-calculator/', text: 'Estimate Rank Up Points for the upgrade you have planned.' },
+      { name: 'Investment Calculator', category: 'Market planning', href: '/investment-calculator/', text: 'Work out market tax, selling proceeds, profit and break-even prices.' },
+      { name: 'Gauntlet Planner', category: 'Event planning', href: '/gauntlet-planner/', text: 'Organise player rotations for Gauntlet Mode.' },
+      { name: 'Shards Counter', category: 'Star Shards', href: '/shards-counter/', text: 'Track Star Shards and measure progress toward a reward.' }
+    ]
+  },
+  {
+    title: 'Live events, codes and game resources',
+    intro: 'Check what is happening in FC Mobile and find the information you need for current content.',
+    items: [
+      { name: 'FC Mobile Events', category: 'Live events', href: '/events/', text: 'Follow event dates, live content and countdowns in one place.' },
+      { name: 'Redeem Codes', category: 'Rewards', href: '/redeem-codes/', text: 'Check code status, rewards, regions and expiry information.' },
+      { name: 'Football Centre', category: 'Match centre', href: '/football-centre/', text: 'Follow Football Centre results, analysis and event progress.' },
+      { name: 'Captain OVR Tracker', category: 'Objectives', href: '/captain-tracker/', text: 'Track Captain OVR objectives and matchday progress.' },
+      { name: 'Trivia Answers', category: 'Answers', href: '/trivia/', text: 'Find answers for A Nation’s Story and Extra Time questions.' },
+      { name: 'FC Mobile 27 Guide', category: 'Season guide', href: '/fc-mobile-27/', text: 'Read the Season 27 feature guide and current game coverage.' }
+    ]
+  }
+];
+
+const allItems = groups.flatMap((group) => group.items);
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  '@id': site + '/tools/#webpage',
+  url: site + '/tools/',
+  name: 'FC Mobile Tools & Calculators',
+  description,
+  isPartOf: { '@id': site + '/#website' },
+  mainEntity: {
+    '@type': 'ItemList',
+    name: 'FC Mobile tools and resources',
+    numberOfItems: allItems.length,
+    itemListElement: allItems.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      url: site + item.href
+    }))
+  }
+};
+---
+
+<BaseLayout title="FC Mobile Tools & Calculators" description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+
+  <main class="tools-directory">
+    <section class="directory-hero" aria-labelledby="directory-title">
+      <div class="directory-wrap">
+        <p class="directory-eyebrow">FCMOBILETOOLS / TOOL DIRECTORY</p>
+        <h1 id="directory-title">FC Mobile Tools for Squad Building, Training and Events</h1>
+        <p class="directory-lede">Free FC Mobile calculators, planners, trackers and game resources. Choose a tool for your squad, upgrades, live events or rewards.</p>
+        <div class="directory-actions">
+          <a class="directory-button directory-button--primary" href="#squad-tools">Explore squad tools</a>
+          <a class="directory-button" href="/events/">See live events</a>
+        </div>
+        <p class="directory-count">{allItems.length} FC Mobile tools and resources in one directory</p>
+      </div>
+    </section>
+
+    <div class="directory-wrap directory-content">
+      {groups.map((group, index) => (
+        <section class="directory-group" id={index === 0 ? 'squad-tools' : 'live-tools'} aria-labelledby={index === 0 ? 'squad-tools-title' : 'live-tools-title'}>
+          <header class="directory-heading">
+            <div>
+              <p class="directory-eyebrow">{index === 0 ? 'PLAN YOUR SQUAD' : 'FOLLOW THE GAME'}</p>
+              <h2 id={index === 0 ? 'squad-tools-title' : 'live-tools-title'}>{group.title}</h2>
+            </div>
+            <p>{group.intro}</p>
+          </header>
+          <div class="directory-grid">
+            {group.items.map((item) => (
+              <article class="directory-card">
+                <span class="directory-category">{item.category}</span>
+                <h3><a href={item.href}>{item.name}</a></h3>
+                <p>{item.text}</p>
+                <a class="directory-open" href={item.href}>Open tool <span aria-hidden="true">↗</span></a>
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <section class="directory-about" aria-labelledby="directory-about-title">
+        <div>
+          <p class="directory-eyebrow">ABOUT FCMOBILETOOLS</p>
+          <h2 id="directory-about-title">A practical toolkit for FC Mobile players</h2>
+        </div>
+        <div class="directory-about-copy">
+          <p>FCMOBILETOOLS brings useful FC Mobile tools into one place. Use the calculators to plan squad ratings, training and rank ups. Use the trackers to follow events, Star Shards and objectives. Check redeem codes and answer guides when new content arrives.</p>
+          <p>The site is an independent, fan-made resource. It is not affiliated with or endorsed by EA SPORTS or FC Mobile. Tools and guides are updated as the game changes.</p>
+          <a href="/about/">Learn about FCMOBILETOOLS <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .tools-directory{color:var(--text);background:var(--bg)}
+  .directory-wrap{width:min(1160px,calc(100% - 40px));margin-inline:auto}
+  .directory-hero{position:relative;isolation:isolate;overflow:hidden;padding:clamp(76px,10vw,132px) 0 72px;border-bottom:1px solid var(--line);background:radial-gradient(ellipse at 78% 15%,rgba(76,201,255,.17),transparent 38%),linear-gradient(145deg,#0b1d2a,#071018 68%)}
+  .directory-hero::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,rgba(7,16,24,.3),transparent 75%);pointer-events:none}
+  .directory-eyebrow{margin:0 0 15px;color:var(--primary);font:800 11px/1.3 var(--font-body);letter-spacing:.15em;text-transform:uppercase}
+  .directory-hero h1{max-width:900px;margin:0;font:700 clamp(38px,6.2vw,76px)/.99 var(--font-display);letter-spacing:-.055em;color:#f5f8fb}
+  .directory-lede{max-width:710px;margin:22px 0 0;color:var(--muted-strong);font:500 clamp(16px,1.8vw,19px)/1.65 var(--font-body)}
+  .directory-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+  .directory-button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 17px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:rgba(255,255,255,.035);color:var(--text);font:700 13px/1 var(--font-body);text-decoration:none;transition:border-color .18s,background .18s}
+  .directory-button:hover{border-color:var(--primary);background:var(--surface2)}
+  .directory-button--primary{border-color:var(--primary);background:var(--primary);color:#061018}
+  .directory-button--primary:hover{background:var(--primary-hover);border-color:var(--primary-hover)}
+  .directory-count{margin:24px 0 0;color:var(--dim);font:600 12px/1.5 var(--font-body)}
+  .directory-content{padding-top:64px;padding-bottom:clamp(70px,9vw,110px)}
+  .directory-group+.directory-group{margin-top:68px}
+  .directory-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.7fr);gap:28px;align-items:end;margin-bottom:24px}
+  .directory-heading .directory-eyebrow{margin-bottom:8px}
+  .directory-heading h2,.directory-about h2{margin:0;font:700 clamp(26px,3.5vw,38px)/1.08 var(--font-display);letter-spacing:-.04em}
+  .directory-heading>p{max-width:470px;margin:0;color:var(--muted);font:500 15px/1.65 var(--font-body)}
+  .directory-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+  .directory-card{display:flex;flex-direction:column;min-height:208px;padding:21px;border:1px solid var(--line);border-radius:var(--r-lg);background:linear-gradient(155deg,rgba(22,37,54,.84),rgba(10,21,31,.94));transition:transform .18s,border-color .18s}
+  .directory-card:hover{transform:translateY(-3px);border-color:rgba(76,201,255,.42)}
+  .directory-category{color:var(--primary);font:700 10px/1.4 var(--font-body);letter-spacing:.08em;text-transform:uppercase}
+  .directory-card h3{margin:13px 0 7px;font:700 19px/1.25 var(--font-display);letter-spacing:-.02em}
+  .directory-card h3 a{color:var(--text);text-decoration:none}
+  .directory-card h3 a:hover{color:var(--primary)}
+  .directory-card p{margin:0 0 20px;color:var(--muted);font:500 13px/1.6 var(--font-body)}
+  .directory-open{display:inline-flex;align-items:center;gap:8px;margin-top:auto;color:var(--primary);font:700 12px/1.4 var(--font-body);text-decoration:none}
+  .directory-open:hover{color:var(--primary-hover)}
+  .directory-about{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:42px;margin-top:76px;padding:clamp(24px,4vw,42px);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface)}
+  .directory-about .directory-eyebrow{margin-bottom:9px}
+  .directory-about-copy p{margin:0 0 14px;color:var(--muted);font:500 14px/1.7 var(--font-body)}
+  .directory-about-copy a{display:inline-flex;gap:8px;margin-top:4px;color:var(--primary);font:700 13px/1.4 var(--font-body);text-decoration:none}
+  @media(max-width:900px){.directory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.directory-heading{grid-template-columns:1fr;gap:12px}.directory-about{grid-template-columns:1fr;gap:18px}}
+  @media(max-width:560px){.directory-wrap{width:calc(100% - 28px)}.directory-grid{grid-template-columns:1fr}.directory-content{padding-top:46px}.directory-group+.directory-group{margin-top:50px}.directory-card{min-height:0}.directory-actions{align-items:stretch;flex-direction:column}.directory-button{width:100%}}
+</style>
