@@ -6,9 +6,11 @@
  * page is complete before any JavaScript runs.
  */
 const { e } = Astro.props;
-const pill = { live: 'Live', upcoming: 'Upcoming', ended: 'Ended' };
+const pill = { live: 'Live', upcoming: e.confidence === 'community' ? 'Expected' : 'Upcoming', ended: 'Ended' };
 ---
 <article
+  id={'event-' + e.id}
+  data-confidence={e.confidence || ''}
   class="ev"
   data-ev
   data-id={e.id}

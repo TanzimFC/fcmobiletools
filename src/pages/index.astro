@@ -28,31 +28,83 @@ const dayMonth = (value) => {
 const [resetH, resetM] = String(FC.schedule?.dailyResetUtc || '01:00').split(':').map((n) => Number(n) || 0);
 const resetLabel = `${String(resetH).padStart(2, '0')}:${String(resetM).padStart(2, '0')} UTC`;
 
-// Event radar: live event + upcoming events + next Division Rivals reset, all from the site's own data.
+// Keep the homepage, Events hub and admin overrides on the same event catalog.
+const normalizeEventTitle = (value) => String(value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const homepageCatalog = (Array.isArray(FC.eventsCatalog) ? FC.eventsCatalog : []).map((event) => ({ ...event }));
+const homepageOverrides = [
+  FC.eventCountdown?.enabled ? FC.eventCountdown : null,
+  FC.secondaryEvent?.enabled ? FC.secondaryEvent : null,
+  ...(Array.isArray(FC.upcomingEvents) ? FC.upcomingEvents : [])
+].filter((event) => event?.title && event.startUtc);
+
+for (const override of homepageOverrides) {
+  const match = homepageCatalog.find((event) =>
+    normalizeEventTitle(event.title) === normalizeEventTitle(override.title) ||
+    (override.id && event.id === override.id)
+  );
+  if (match) {
+    match.startUtc = override.startUtc || match.startUtc;
+    if (override.endUtc) match.endUtc = override.endUtc;
+    if (override.banner) match.banner = override.banner;
+  } else {
+    homepageCatalog.push({
+      id: override.id || normalizeEventTitle(override.title),
+      tier: 'side',
+      title: override.title,
+      kicker: 'FC Mobile event',
+      startUtc: override.startUtc,
+      endUtc: override.endUtc || '',
+      summary: override.subtitle || 'Event details will be updated as they are confirmed in-game.',
+      banner: override.banner || '',
+      accent: '#4cc9ff',
+      highlights: [],
+      href: '/events/',
+      confidence: 'guide'
+    });
+  }
+}
+
+const homepageEvents = homepageCatalog
+  .map((event) => {
+    const start = Date.parse(event.startUtc);
+    const end = event.endUtc ? Date.parse(event.endUtc) : NaN;
+    const unconfirmed = event.confidence === 'community';
+    const state = unconfirmed ? 'upcoming' : start > buildTime ? 'upcoming' : Number.isFinite(end) && end <= buildTime ? 'ended' : 'live';
+    return { ...event, start, end, state };
+  })
+  .filter((event) => Number.isFinite(event.start) && event.state !== 'ended')
+  .sort((a, b) => {
+    const rank = (event) => event.state === 'upcoming' ? 2 : event.tier === 'main' ? 0 : 1;
+    return rank(a) - rank(b) || (a.state === 'upcoming'
+      ? a.start - b.start
+      : (Number.isFinite(a.end) ? a.end : Number.POSITIVE_INFINITY) - (Number.isFinite(b.end) ? b.end : Number.POSITIVE_INFINITY));
+  })
+  .slice(0, 4);
+
+// The event radar follows the same active catalog and drops expired legacy entries.
 const radar = [];
-const pushEvent = (e, kind) => {
-  if (!e?.title || !e.startUtc) return;
-  const start = Date.parse(e.startUtc);
-  if (Number.isNaN(start)) return;
-  if (radar.some((r) => r.title.toLowerCase() === e.title.toLowerCase())) return;
-  radar.push({ title: e.title, start, kind, label: e.accent || '' });
+const pushEvent = (event, kind) => {
+  if (!event?.title || !event.startUtc) return;
+  const start = Date.parse(event.startUtc);
+  const end = event.endUtc ? Date.parse(event.endUtc) : NaN;
+  if (!Number.isFinite(start) || (Number.isFinite(end) && end <= buildTime)) return;
+  if (radar.some((row) => row.title.toLowerCase() === event.title.toLowerCase())) return;
+  radar.push({ title: event.title, start, kind, label: event.accent || '', confidence: event.confidence || '' });
 };
-if (FC.eventCountdown?.enabled) pushEvent(FC.eventCountdown, 'event');
-if (FC.secondaryEvent?.enabled) pushEvent(FC.secondaryEvent, 'event');
-(FC.upcomingEvents ?? []).forEach((e) => pushEvent(e, 'event'));
+homepageCatalog.forEach((event) => pushEvent(event, 'event'));
 if (FC.divisionRivalsReset?.enabled) {
   const anchor = Date.parse(FC.divisionRivalsReset.anchorUtc);
   const cycle = (FC.divisionRivalsReset.cycleDays || 28) * 864e5;
   if (!Number.isNaN(anchor)) {
     let next = anchor;
     while (next <= buildTime) next += cycle;
-    radar.push({ title: 'Division Rivals reset', start: next, kind: 'reset', label: '' });
+    radar.push({ title: 'Division Rivals reset', start: next, kind: 'reset', label: '', confidence: '' });
   }
 }
 radar.sort((a, b) => {
-  const al = a.start <= buildTime ? 0 : 1;
-  const bl = b.start <= buildTime ? 0 : 1;
-  return al - bl || a.start - b.start;
+  const liveA = a.start <= buildTime && a.confidence !== 'community' ? 0 : 1;
+  const liveB = b.start <= buildTime && b.confidence !== 'community' ? 0 : 1;
+  return liveA - liveB || a.start - b.start;
 });
 const radarRows = radar.slice(0, 5);
 
@@ -63,9 +115,10 @@ const seasonHref = launchPost ? launchPost.href : '/fc-mobile-27';
 // Display strings (kept out of the template so the markup stays simple)
 // Filled in after the rows are decorated below.
 radarRows.forEach((r) => {
-  r.isLive = r.start <= buildTime;
-  r.sub = r.isLive ? 'Since ' + dayMonth(r.start) : dayMonth(r.start);
-  r.initial = r.isLive ? 'Live' : dayMonth(r.start);
+  r.isExpected = r.confidence === 'community';
+  r.isLive = r.start <= buildTime && !r.isExpected;
+  r.sub = r.isExpected ? 'Expected · ' + dayMonth(r.start) : r.isLive ? 'Since ' + dayMonth(r.start) : dayMonth(r.start);
+  r.initial = r.isExpected ? 'Expected' : r.isLive ? 'Live' : dayMonth(r.start);
 });
 const liveNow = radarRows.find((r) => r.isLive && r.kind === 'event');
 const liveLine = liveNow ? `Live now: ${liveNow.title}` : 'FC Mobile 27 season';
@@ -210,7 +263,7 @@ const jsonLd = {
             <ul class="hx-radar__list">
               {radarRows.slice(0, 4).map((r) => (
                 <li>
-                  <a href="/events" class:list={['hx-row', r.isLive && 'is-live']} data-hx-ts={r.start} data-hx-kind={r.kind}>
+                  <a href="/events" class:list={['hx-row', r.isLive && 'is-live']} data-hx-ts={r.start} data-hx-kind={r.kind} data-hx-confidence={r.confidence}>
                     <span class="hx-row__dot" aria-hidden="true"></span>
                     <span class="hx-row__main">
                       <b>{r.title}</b>
@@ -240,6 +293,43 @@ const jsonLd = {
         </div>
       </div>
     </section>
+
+    {homepageEvents.length > 0 && (
+      <section class="hx-section hx-events" id="current-events" aria-labelledby="hx-events-h">
+        <div class="hx-wrap">
+          <header class="hx-section__head hx-section__head--row">
+            <div>
+              <h2 id="hx-events-h">FC Mobile 27 events to play now</h2>
+              <p>See what is live, what is coming next and where to check event rewards before spending your resources.</p>
+            </div>
+            <a class="hx-textlink hx-textlink--lg" href="/events/">Open the full event tracker <span set:html={svg('arrow')} /></a>
+          </header>
+          <div class="hx-events__grid">
+            {homepageEvents.map((event) => (
+              <a class="hx-event-card" href={'/events/#event-' + event.id} style={'--hx-event-accent:' + (event.accent || '#4cc9ff')}>
+                <span class="hx-event-card__media">
+                  {event.banner
+                    ? <img src={event.banner} alt={event.title + ' FC Mobile 27 event banner'} width="800" height="450" loading="lazy" decoding="async" />
+                    : <span class="hx-event-card__fallback">FC MOBILE 27</span>}
+                  <span class="hx-event-card__status" data-state={event.state} data-confidence={event.confidence || ''}>
+                    {event.confidence === 'community' ? 'Expected' : event.state === 'live' ? 'Live now' : 'Upcoming'}
+                  </span>
+                </span>
+                <span class="hx-event-card__copy">
+                  <small>{event.kicker || 'FC Mobile event'}</small>
+                  <b>{event.title}</b>
+                  <span class="hx-event-card__summary">{event.summary}</span>
+                  <span class="hx-event-card__dates">
+                    {dayMonth(event.startUtc)}{event.endUtc ? ' – ' + dayMonth(event.endUtc) : ''}
+                  </span>
+                  <em>Event details <span aria-hidden="true">↗</span></em>
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
 
     <!-- Beginner path -->
     <section class="hx-section" id="start" aria-labelledby="hx-start-h">
@@ -483,10 +573,16 @@ const jsonLd = {
     for (const r of rows) {
       if (!r.out) continue;
       if (r.ts <= now) {
-        r.row.classList.add('is-live');
-        const day = Math.floor((now - r.ts) / DAY) + 1;
-        r.out.textContent = r.row.dataset.hxKind === 'reset' ? 'Now' : `Live, day ${day}`;
+        if (r.row.dataset.hxConfidence === 'community') {
+          r.row.classList.remove('is-live');
+          r.out.textContent = 'Awaiting confirmation';
+        } else {
+          r.row.classList.add('is-live');
+          const day = Math.floor((now - r.ts) / DAY) + 1;
+          r.out.textContent = r.row.dataset.hxKind === 'reset' ? 'Now' : `Live, day ${day}`;
+        }
       } else {
+        r.row.classList.remove('is-live');
         r.out.textContent = fmtLeft(r.ts - now);
       }
     }
@@ -639,6 +735,28 @@ const jsonLd = {
   .hx-section__head--row { display: flex; align-items: end; justify-content: space-between; gap: 20px; max-width: none; }
   .hx-section__head--row h2 { margin: 0; }
 
+  /* Live and upcoming event cards */
+  .hx-events { padding-top: clamp(52px, 7vw, 82px); }
+  .hx-events__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .hx-event-card { min-width: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-lg); background: linear-gradient(160deg, rgba(255,255,255,.045), rgba(255,255,255,.012)), var(--surface); color: inherit; text-decoration: none; transition: transform .3s var(--hx-ease), border-color .25s, box-shadow .3s; }
+  .hx-event-card:hover { transform: translateY(-5px); border-color: color-mix(in srgb, var(--hx-event-accent) 48%, var(--line)); box-shadow: 0 24px 56px -34px color-mix(in srgb, var(--hx-event-accent) 30%, transparent); }
+  .hx-event-card__media { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: #09131d; }
+  .hx-event-card__media::after { content: ''; position: absolute; inset: 35% 0 0; background: linear-gradient(180deg, transparent, rgba(4,10,16,.66)); pointer-events: none; }
+  .hx-event-card__media img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .65s var(--hx-ease); }
+  .hx-event-card:hover .hx-event-card__media img { transform: scale(1.045); }
+  .hx-event-card__fallback { display: grid; place-items: center; height: 100%; color: var(--dim); font: 800 13px var(--font-display); letter-spacing: .16em; }
+  .hx-event-card__status { position: absolute; z-index: 1; top: 12px; left: 12px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.17); border-radius: 999px; background: rgba(5,12,18,.78); color: #dce9ef; font: 800 10px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; backdrop-filter: blur(10px); }
+  .hx-event-card__status[data-state='live']:not([data-confidence='community']) { color: #9af0be; border-color: rgba(71,209,108,.35); }
+  .hx-event-card__status[data-confidence='community'] { color: #f0d69a; border-color: rgba(240,214,154,.35); }
+  .hx-event-card__copy { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 9px; padding: 18px; }
+  .hx-event-card__copy > small { color: var(--hx-event-accent); font: 800 10px/1.35 var(--font-body); letter-spacing: .1em; text-transform: uppercase; }
+  .hx-event-card__copy > b { color: var(--text); font: 700 21px/1.15 var(--font-display); letter-spacing: -.035em; }
+  .hx-event-card__summary { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 13px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+  .hx-event-card__dates { margin-top: auto; padding-top: 5px; color: var(--muted-strong); font-size: 12px; font-weight: 700; }
+  .hx-event-card__copy em { display: flex; align-items: center; gap: 7px; margin-top: 5px; color: var(--hx-event-accent); font: 700 12px/1 var(--font-body); font-style: normal; }
+  .hx-event-card__copy em span { transition: transform .2s; }
+  .hx-event-card:hover .hx-event-card__copy em span { transform: translate(2px,-2px); }
+
   /* Beginner path */
   .hx-start { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .hx-start a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 22px 24px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); color: inherit; text-decoration: none; transition: border-color .15s, background .15s; }
@@ -720,6 +838,7 @@ const jsonLd = {
 
   /* Responsive */
   @media (max-width: 960px) {
+    .hx-events__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .hx-board__grid { grid-template-columns: 1fr; }
     .hx-cell + .hx-cell { border-left: 0; border-top: 1px solid var(--line); }
     .hx-groups { grid-template-columns: 1fr; gap: 36px; }
@@ -737,4 +856,12 @@ const jsonLd = {
     .hx-item { grid-template-columns: 96px minmax(0, 1fr); }
     .hx-board { margin-top: -56px; }
   }
-</style>
+  @media (max-width: 520px) {
+    .hx-events__grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hx-event-card, .hx-event-card__media img, .hx-event-card__copy em span { transition: none; }
+    .hx-event-card:hover { transform: none; }
+    .hx-event-card:hover .hx-event-card__media img { transform: none; }
+  }
+  </style>

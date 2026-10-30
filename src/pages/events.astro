@@ -166,34 +166,34 @@ const alwaysOn = [
 ];
 
 const desc =
-  'Live FC Mobile events and resets: Ballon d’Or, Unbreakable and CONMEBOL Libertadores countdowns, upcoming Draft drops, Division Rivals and daily reset timers, plus every recently ended event.';
+  'Track FC Mobile 27 live and upcoming events, event dates, player Drafts, rewards and countdowns. Follow Ballon d’Or and Scream Team, check expected Street Stars and Rivals dates, and plan around daily and Division Rivals resets.';
 const toSchema = (e) => ({
   '@type': 'Event',
   name: 'FC Mobile ' + e.title,
   description: e.summary,
   startDate: e.startUtc,
   ...(e.hasEnd ? { endDate: e.endUtc } : {}),
-  eventStatus: 'https://schema.org/EventScheduled',
+  eventStatus: `https://schema.org/${e.state === 'live' ? 'EventInProgress' : e.state === 'ended' ? 'EventCompleted' : 'EventScheduled'}`,
   eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
   location: { '@type': 'VirtualLocation', url: 'https://fcmobiletools.online/events/' }
 });
 const pageSchema = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
-  name: 'FC Mobile Events & Reset Hub',
+  name: 'FC Mobile 27 Live Events, Dates & Reset Tracker',
   description: desc,
   url: new URL(Astro.url.pathname, Astro.site ?? 'https://fcmobiletools.online').href,
   publisher: { '@type': 'Organization', name: 'FCMOBILETOOLS' },
   mainEntity: {
     '@type': 'ItemList',
-    itemListElement: events.filter((e) => e.state !== 'ended').map((e, i) => ({ '@type': 'ListItem', position: i + 1, item: toSchema(e) }))
+    itemListElement: events.filter((e) => e.state !== 'ended' && e.confidence !== 'community').map((e, i) => ({ '@type': 'ListItem', position: i + 1, item: toSchema(e) }))
   }
 };
 
 const heroPct = hero?.hasEnd ? hero.pct : 0;
 const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?.state === 'upcoming' ? parts(hero.start - now) : { d: 0, h: 0, m: 0, s: 0 };
 ---
-<BaseLayout title="FC Mobile Events & Reset Hub" description={desc}>
+<BaseLayout title="FC Mobile Events & Live Event Tracker" description={desc} image={hero?.banner || undefined} modifiedTime={new Date(now).toISOString()}>
   <script type="application/ld+json" set:html={JSON.stringify(pageSchema)} />
 
   <main class="hub" style={hero ? '--hero:' + hero.accent : ''}>
@@ -203,8 +203,8 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       <!-- ====================================================== PAGE HEAD -->
       <header class="head">
         <div>
-          <p class="eyebrow"><i class="dot"></i> FC Mobile 27 · Event hub</p>
-          <h1>Events &amp; resets</h1>
+          <p class="eyebrow"><i class="dot"></i> FC Mobile 27 · live event tracker</p>
+          <h1>FC Mobile 27 Events &amp; Reset Tracker</h1>
         </div>
         <div class="head-meta">
           <span class="chip"><i class="dot"></i><span id="syncLabel">Live clock</span></span>
@@ -214,6 +214,12 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
           </span>
         </div>
       </header>
+
+      <p class="hub-intro">
+        Track FC Mobile 27 live events, upcoming event dates, player Drafts, reward paths and countdowns in one place.
+        Follow Ballon d’Or and Scream Team, check expected Street Stars and Rivals dates, and use the daily and Division Rivals
+        reset timers to plan your progress. Community estimates are labelled until they are confirmed in-game.
+      </p>
 
       <!-- ============================================================ HERO -->
       {hero && (
@@ -227,8 +233,10 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
           data-start={hero.startUtc}
           data-end={hero.endUtc || ''}
           data-state={hero.state}
+          data-confidence={hero.confidence || ''}
           aria-labelledby="hero-title"
         >
+          <span id={'event-' + hero.id} class="event-anchor" aria-hidden="true"></span>
           {hero.banner && (
             <img
               class="hero-img"
@@ -248,7 +256,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
 
           <div class="hero-body">
             <div class="hero-top">
-              <span class="state" data-pill><i></i><span data-pill-text>{hero.state === 'live' ? 'Live now' : hero.state === 'upcoming' ? 'Starting soon' : 'Ended'}</span></span>
+              <span class="state" data-pill><i></i><span data-pill-text>{hero.confidence === 'community' ? 'Expected' : hero.state === 'live' ? 'Live now' : hero.state === 'upcoming' ? 'Starting soon' : 'Ended'}</span></span>
               <span class="hero-kicker">{hero.kicker}</span>
             </div>
 
@@ -365,7 +373,8 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
             <li
               class={'tl' + (t.kind === 'end' ? ' tl--end' : '') + (nextDrop && t === nextDrop ? ' is-next' : '')}
               data-utc={t.utc}
-              hidden={t.ms <= now}
+              data-confidence={t.confidence || ''}
+              hidden={t.ms <= now && t.confidence !== 'community'}
               style={'--acc:' + (accentOf[t.event] || '#62d9ff')}
             >
               <div class="tl-date">
@@ -384,7 +393,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
             </li>
           ))}
         </ol>
-        <p class="empty" id="timelineEmpty" hidden={timeline.some((t) => t.ms > now)}>No more scheduled drops. New ones appear here as soon as they’re announced.</p>
+        <p class="empty" id="timelineEmpty" hidden={timeline.some((t) => t.ms > now || t.confidence === 'community')}>No more scheduled drops. New ones appear here as soon as they’re announced.</p>
       </section>
 
       <!-- ============================================================ RESETS -->
@@ -488,6 +497,55 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
         </div>
       </section>
 
+      <section class="section event-guide" id="event-guide" aria-labelledby="event-guide-h">
+        <div class="sec-head">
+          <div><p class="eyebrow">FC Mobile event guide</p><h2 id="event-guide-h">FC Mobile 27 event dates, rewards and updates</h2></div>
+        </div>
+        <div class="event-guide__body">
+          <p>
+            This FC Mobile events tracker brings the main campaigns, side events and reset information together.
+            Use the live cards for current event status, the timeline for upcoming Draft drops, and the reset panel
+            to check when daily activities refresh. Event dates are shown in your local timezone where available.
+          </p>
+          <div class="event-guide__cols">
+            <article>
+              <h3>Ballon d’Or · 22 October to 19 November</h3>
+              <p>
+                The four-week Ballon d’Or campaign features nominee objectives, themed matches and player exchanges.
+                The event also has weekly Draft releases, so check the timeline and in-game chapter before spending tokens.
+              </p>
+            </article>
+            <article>
+              <h3>Scream Team · 29 October to 12 November</h3>
+              <p>
+                Scream Team is the Halloween side event in FC Mobile 27. Complete daily quests and the Scream Team Challenge,
+                then use eligible Festive Draft Vouchers in its two weekly Draft pools. Rewards include Rank Up Points,
+                Stellar: Scorpio Tokens and Star Shards.
+              </p>
+            </article>
+            <article>
+              <h3>Street Stars · expected 12 November</h3>
+              <p>
+                A community-shared calendar points to 12 November for Street Stars. EA has not confirmed the date,
+                event duration, chapters, player pool or rewards. Treat this as an estimate until the content appears in-game.
+              </p>
+            </article>
+            <article>
+              <h3>Rivals · expected main-event window on 19 November</h3>
+              <p>
+                Rivals is listed here as the expected next main-event window after Ballon d’Or. Its final title,
+                format, chapters, player pool and rewards are not confirmed. This tracker will distinguish confirmed
+                details from early community information as updates become available.
+              </p>
+            </article>
+          </div>
+          <p class="event-guide__note">
+            FCMOBILETOOLS is an independent fan resource, not an EA SPORTS product. In-game event screens and official
+            EA announcements take priority over community calendars and predicted dates.
+          </p>
+        </div>
+      </section>
+
       <p class="fine">
         Events switch over at the daily reset (01:00 UTC). Dates and rewards come from in-game calendars, EA announcements and
         community guides, and can change. Unreleased Draft pools are community leaks, not confirmed.
@@ -569,12 +627,13 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       const end = endRaw ? Date.parse(endRaw) : NaN;
       if (!Number.isFinite(start)) return;
       const hasEnd = Number.isFinite(end);
-      const state = now < start ? 'upcoming' : hasEnd && now >= end ? 'ended' : 'live';
+      const unconfirmed = el.getAttribute('data-confidence') === 'community';
+      const state = unconfirmed ? 'upcoming' : now < start ? 'upcoming' : hasEnd && now >= end ? 'ended' : 'live';
       const isHero = el.hasAttribute('data-hero');
       if (el.getAttribute('data-state') !== state) {
         el.setAttribute('data-state', state);
         const pill = el.querySelector('[data-pill-text]');
-        if (pill) pill.textContent = (isHero ? HERO_PILL : PILL)[state];
+        if (pill) pill.textContent = unconfirmed ? 'Expected' : (isHero ? HERO_PILL : PILL)[state];
         if (!isHero && buckets[state] && el.parentElement !== buckets[state]) {
           // keep each bucket sorted the way the server sorts it
           const kids = [...buckets[state].children];
@@ -590,7 +649,7 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       const day = el.querySelector('[data-day]');
       const bar = el.querySelector('[data-bar]');
       let lab = 'Ends in', txt = hasEnd ? clock(end - now) : 'Ongoing', dtxt = '';
-      if (state === 'upcoming') { lab = 'Starts in'; txt = clock(start - now); dtxt = UTCDAY.format(start); }
+      if (state === 'upcoming') { lab = unconfirmed ? 'Expected' : 'Starts in'; txt = unconfirmed && start <= now ? 'Awaiting confirmation' : clock(start - now); dtxt = UTCDAY.format(start); }
       else if (state === 'ended') { lab = 'Ended'; txt = F.day.format(end); dtxt = total ? total + '-day event' : ''; }
       else { dtxt = hasEnd ? 'Day ' + Math.min(total, Math.floor((now - start) / DAY) + 1) + ' of ' + total : 'No end date'; }
       if (label) label.textContent = lab;
@@ -616,12 +675,13 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       let first = null;
       rows.forEach((r) => {
         const ms = Date.parse(r.getAttribute('data-utc'));
-        const past = ms <= now;
+        const expected = r.getAttribute('data-confidence') === 'community';
+        const past = ms <= now && !expected;
         if (r.hidden !== past) r.hidden = past;
         r.classList.remove('is-next');
         if (!past && !first) first = r;
         const c = r.querySelector('[data-tl-count]');
-        if (c && !past) c.textContent = clock(ms - now);
+        if (c && !past) c.textContent = expected && ms <= now ? 'Awaiting confirmation' : clock(ms - now);
       });
       if (first) {
         first.classList.add('is-next');
@@ -715,6 +775,15 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
   </script>
 
   <style>
+    .event-anchor { display: block; position: relative; top: -110px; height: 0; visibility: hidden; }
+    .hub-intro { max-width: 82ch; margin: 18px 0 28px; color: #a7bbc6; font-size: 15px; line-height: 1.8; }
+    .event-guide__body { padding: clamp(20px, 3vw, 32px); border: 1px solid rgba(255,255,255,.08); border-radius: var(--r-lg); background: linear-gradient(155deg, rgba(76,201,255,.055), rgba(255,255,255,.012) 48%), #0a131c; }
+    .event-guide__body > p { max-width: 82ch; color: #a7bbc6; font-size: 14px; line-height: 1.75; }
+    .event-guide__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+    .event-guide__cols article { min-width: 0; padding: 20px; border: 1px solid rgba(255,255,255,.075); border-radius: var(--r-md); background: rgba(255,255,255,.025); }
+    .event-guide__cols h3 { margin: 0 0 9px; color: #eef7fb; font: 700 18px/1.25 var(--display); letter-spacing: -.025em; }
+    .event-guide__cols p { margin: 0; color: #9db3bd; font-size: 13px; line-height: 1.7; }
+    .event-guide__note { margin: 22px 0 0; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.08); color: #7f96a2 !important; font-size: 12px !important; }
     .hub {
       --bg: #05090f;
       --ink: #f2fbff;
@@ -1254,6 +1323,10 @@ const hp = hero?.hasEnd && hero.state === 'live' ? parts(hero.end - now) : hero?
       .evergreen li > a, .evergreen li > div { padding: 12px; gap: 10px; }
       .eg-i { width: 32px; height: 32px; }
       .tools { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 760px) {
+      .event-guide__cols { grid-template-columns: 1fr; }
+      .event-guide__body { padding: 18px; }
     }
     @media (max-width: 420px) {
       .evergreen { grid-template-columns: 1fr; }

@@ -634,6 +634,64 @@ export const FOOTBALL_CENTRE_CONTENT = {
       "confidence": "guide"
     },
     {
+      "id": "scream-team",
+      "tier": "side",
+      "title": "Scream Team",
+      "kicker": "Halloween side event · 14 days",
+      "startUtc": "2026-10-29T01:00:00.000Z",
+      "endUtc": "2026-11-12T01:00:00.000Z",
+      "summary": "Take on the Halloween-themed Scream Team Challenge, complete daily quests and use Festive Draft Vouchers across two weekly player Draft pools. Rewards include Rank Up Points, Stellar: Scorpio Tokens and Star Shards.",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1793367754/fc-mobile-tools/symqqitvzentms9c1jzq.webp",
+      "accent": "#9b8cff",
+      "highlights": [
+        "Two weekly Scream Team Draft pools",
+        "Daily quests and the Scream Team Challenge",
+        "Challenge mode unlocks 30 October",
+        "Rank Up Points, Scorpio Tokens and Star Shards"
+      ],
+      "href": "https://www.fifamobileguide.com/scream-team-27",
+      "hrefLabel": "Scream Team event guide",
+      "guide": "https://www.fifamobileguide.com/scream-team-27",
+      "guideLabel": "Rewards and Draft pools",
+      "confidence": "guide"
+    },
+    {
+      "id": "street-stars",
+      "tier": "side",
+      "title": "Street Stars",
+      "kicker": "Upcoming side event · expected 12 Nov",
+      "startUtc": "2026-11-12T01:00:00.000Z",
+      "summary": "Street Stars appears on a community-shared event calendar for 12 November 2026. EA has not confirmed its event format, duration, player pool or rewards, so treat the date as an estimate until the event appears in-game.",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1793368279/fc-mobile-tools/pabqvet939f4hm8pmvvk.png",
+      "accent": "#e5bd73",
+      "highlights": [
+        "Community calendar estimate · 12 November 2026",
+        "Event format and duration not confirmed",
+        "Player pool and rewards pending in-game details"
+      ],
+      "href": "/events/",
+      "hrefLabel": "Track Street Stars updates",
+      "confidence": "community"
+    },
+    {
+      "id": "rivals-main-event",
+      "tier": "main",
+      "title": "Rivals",
+      "kicker": "Main event · expected 19 Nov",
+      "startUtc": "2026-11-19T01:00:00.000Z",
+      "summary": "The next Rivals main-event window is expected around 19 November 2026. EA has not confirmed the final event details, chapters, player pool or rewards. This listing will be updated when the event is visible in-game.",
+      "banner": "https://res.cloudinary.com/b0qikv7n/image/upload/v1793368846/fc-mobile-tools/bvlhwxxdzkz6ozbsftgj.png",
+      "accent": "#62d9ff",
+      "highlights": [
+        "Expected main-event window · 19 November 2026",
+        "Chapters and event format not confirmed",
+        "Player pool and rewards pending in-game details"
+      ],
+      "href": "/events/",
+      "hrefLabel": "Follow main-event updates",
+      "confidence": "community"
+    },
+    {
       "id": "unbreakable",
       "slot": "secondary",
       "tier": "side",
@@ -815,12 +873,28 @@ export const FOOTBALL_CENTRE_CONTENT = {
       "confidence": "community"
     },
     {
+      "utc": "2026-11-12T01:00:00.000Z",
+      "event": "street-stars",
+      "label": "Street Stars expected to begin",
+      "detail": "Community calendar estimate only; event timing and details still need in-game confirmation.",
+      "kind": "event",
+      "confidence": "community"
+    },
+    {
       "utc": "2026-11-19T01:00:00.000Z",
       "event": "ballon-dor",
       "label": "Ballon d’Or ends · Division Rivals reset",
       "detail": "Both land on the same reset.",
       "kind": "end",
       "confidence": "guide"
+    },
+    {
+      "utc": "2026-11-19T01:00:00.000Z",
+      "event": "rivals-main-event",
+      "label": "Rivals main event expected",
+      "detail": "Expected main-event window only; EA has not confirmed the event format, player pool or rewards.",
+      "kind": "event",
+      "confidence": "community"
     }
   ]
 };
