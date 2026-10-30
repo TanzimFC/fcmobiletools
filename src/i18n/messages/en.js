@@ -107,6 +107,7 @@ export default {
       analysis: 'Analysis',
       reviews: 'Reviews',
       about: 'About',
+      changelog: 'Changelog',
       privacy: 'Privacy',
       terms: 'Terms',
       disclaimer: 'Disclaimer',

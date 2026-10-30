@@ -107,6 +107,7 @@ export default {
       analysis: 'Analisis',
       reviews: 'Ulasan',
       about: 'Tentang',
+      changelog: 'Catatan perubahan',
       privacy: 'Privasi',
       terms: 'Ketentuan',
       disclaimer: 'Disklaimer',

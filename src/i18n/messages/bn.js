@@ -107,6 +107,7 @@ export default {
       analysis: 'বিশ্লেষণ',
       reviews: 'রিভিউ',
       about: 'পরিচিতি',
+      changelog: 'পরিবর্তনের তালিকা',
       privacy: 'গোপনীয়তা',
       terms: 'শর্তাবলি',
       disclaimer: 'দাবিত্যাগ',

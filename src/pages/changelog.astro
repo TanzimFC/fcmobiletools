@@ -1,0 +1,204 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import changelogRaw from '../../CHANGELOG.md?raw';
+import { parseChangelog, groupByMonth, countByKind, formatRange, formatLongDate, KINDS } from '../lib/changelog.js';
+
+// CHANGELOG.md is the single source. Edit that file and this page updates on the next build.
+const log = parseChangelog(changelogRaw);
+const months = groupByMonth(log.releases);
+const counts = countByKind(log.releases);
+const latest = log.releases[0];
+const totalItems = counts.new + counts.improved + counts.fixed;
+const kindLabel = Object.fromEntries(KINDS.map((k) => [k.id, k.label]));
+
+const ICONS = {
+  new: '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>',
+  improved: '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>',
+  fixed: '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg>'
+};
+---
+<BaseLayout
+  title="Changelog"
+  description="Every update to FCMOBILETOOLS, listed by date: new tools, improvements and fixes for FC Mobile players."
+>
+  <PageHero
+    title="Changelog"
+    lede={log.intro || 'Updates to the tools and features available on FCMOBILETOOLS, written for the people who use the site.'}
+    status={latest ? `Last updated ${formatLongDate(latest.end)}` : undefined}
+  />
+
+  <main class="sys-wrap cl" id="changelog">
+    {months.length === 0 ? (
+      <p class="cl-empty">No updates have been published yet. Check back soon.</p>
+    ) : (
+      <>
+        <div class="cl-bar" data-cl-bar hidden>
+          <div class="cl-chips" role="group" aria-label="Filter updates by type">
+            <button type="button" class="cl-chip" data-filter="all" aria-pressed="true">All <span class="num">{totalItems}</span></button>
+            {KINDS.map((k) => counts[k.id] > 0 && (
+              <button type="button" class="cl-chip" data-filter={k.id} aria-pressed="false">
+                <span class={`cl-chip__icon cl-chip__icon--${k.id}`} set:html={ICONS[k.id]} />{k.label} <span class="num">{counts[k.id]}</span>
+              </button>
+            ))}
+          </div>
+          <p class="cl-status" role="status" aria-live="polite" data-cl-status></p>
+        </div>
+
+        {months.map((month) => (
+          <section class="cl-month" aria-labelledby={`month-${month.key}`} data-cl-month>
+            <h2 class="cl-month__title" id={`month-${month.key}`}>{month.label}</h2>
+            <ol class="cl-list">
+              {month.releases.map((release) => {
+                const isLatest = release === latest;
+                return (
+                  <li class:list={['cl-entry', isLatest && 'cl-entry--latest']} id={release.id} data-cl-entry>
+                    <header class="cl-entry__head">
+                      <h3 class="cl-entry__date">
+                        <a href={`#${release.id}`}><time datetime={release.end}>{formatRange(release.start, release.end)}</time></a>
+                      </h3>
+                      {isLatest && <span class="cl-tag">Latest</span>}
+                    </header>
+                    {release.summary && <p class="cl-entry__summary">{release.summary}</p>}
+                    {release.groups.map((group) => (
+                      <section class="cl-group" data-kind={group.kind}>
+                        <h4 class={`cl-kind cl-kind--${group.kind}`}>
+                          <span set:html={ICONS[group.kind]} />{kindLabel[group.kind]}
+                        </h4>
+                        <ul class="cl-items">
+                          {group.items.map((item) => (
+                            <li>
+                              {item.title && <strong>{item.title}</strong>}
+                              <span>{item.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    ))}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ))}
+      </>
+    )}
+
+    <aside class="cl-foot" aria-label="About this changelog">
+      {log.note && <p>{log.note}</p>}
+      <p>Found something broken, or want to suggest a change? <a class="sys-link" href="/legal/contact">Get in touch</a>.</p>
+    </aside>
+  </main>
+</BaseLayout>
+
+<style>
+  .cl { padding-block: 8px 72px; }
+  .cl [hidden] { display: none !important; }
+
+  /* ---- Filter bar ---- */
+  .cl-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding-bottom: 28px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .cl-bar[hidden] { display: none; }
+  .cl-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cl-chip {
+    display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 16px;
+    border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; color: var(--muted-strong);
+    font: 600 14px/1 var(--font-body); cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .cl-chip:hover { background: var(--surface2); color: var(--text); }
+  .cl-chip[aria-pressed='true'] { background: rgba(76, 201, 255, 0.12); border-color: var(--primary); color: var(--text); }
+  .cl-chip .num { color: var(--dim); font-weight: 500; }
+  .cl-chip[aria-pressed='true'] .num { color: var(--muted-strong); }
+  .cl-chip__icon { display: inline-flex; }
+  .cl-chip__icon--new { color: var(--primary); }
+  .cl-chip__icon--improved { color: var(--muted-strong); }
+  .cl-chip__icon--fixed { color: var(--success); }
+  .cl-status { margin: 0; font-size: 14px; color: var(--muted); min-height: 1.4em; }
+
+  /* ---- Month blocks: label on the left, releases on the right ---- */
+  .cl-month { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 0 40px; padding-top: 44px; }
+  .cl-month__title {
+    position: sticky; top: 108px; align-self: start; margin: 4px 0 0;
+    font-size: 15px; font-weight: 600; font-stretch: 100%; letter-spacing: 0; color: var(--muted);
+  }
+  .cl-list { list-style: none; margin: 0; padding: 0 0 0 30px; position: relative; display: grid; gap: 44px; max-width: 760px; }
+  .cl-list::before { content: ''; position: absolute; left: 5px; top: 10px; bottom: 6px; width: 1px; background: linear-gradient(to bottom, var(--line-strong), var(--line) 85%, transparent); }
+
+  /* ---- One release ---- */
+  .cl-entry { position: relative; scroll-margin-top: 112px; }
+  .cl-entry::before {
+    content: ''; position: absolute; left: -30px; top: 9px; width: 11px; height: 11px; box-sizing: border-box;
+    border-radius: 50%; background: var(--bg); border: 2px solid var(--line-strong);
+  }
+  .cl-entry__head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .cl-entry__date { margin: 0; font-size: clamp(20px, 2.4vw, 24px); font-stretch: 106%; letter-spacing: -0.02em; }
+  .cl-entry__date a { color: var(--text); text-decoration: none; }
+  .cl-entry__date a:hover { color: var(--primary); }
+  .cl-entry__date time { font-variant-numeric: tabular-nums; }
+  .cl-tag { padding: 3px 10px; border: 1px solid var(--primary); border-radius: 999px; color: var(--primary); font: 600 12px/1.3 var(--font-body); }
+  .cl-entry__summary { margin: 0 0 22px; max-width: 58ch; color: var(--muted-strong); font-size: 17px; line-height: 1.5; }
+
+  /* The newest release stands out with a raised panel and a filled dot. */
+  .cl-entry--latest { padding: 24px 26px 28px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); }
+  .cl-entry--latest::before { left: -31px; top: 33px; background: var(--primary); border-color: var(--primary); box-shadow: 0 0 0 4px rgba(76, 201, 255, 0.16); }
+
+  /* ---- Groups and items ---- */
+  .cl-group + .cl-group { margin-top: 24px; }
+  .cl-kind { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font: 600 14px/1 var(--font-body); font-stretch: 100%; letter-spacing: 0; }
+  .cl-kind--new { color: var(--primary); }
+  .cl-kind--improved { color: var(--muted-strong); }
+  .cl-kind--fixed { color: var(--success); }
+  .cl-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .cl-items li { display: grid; gap: 2px; padding-left: 24px; max-width: 64ch; line-height: 1.55; }
+  .cl-items strong { color: var(--text); font-weight: 600; }
+  .cl-items span { color: var(--muted-strong); font-size: 15.5px; }
+
+  .cl-empty { padding: 48px 0; color: var(--muted); }
+  .cl-foot { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
+  .cl-foot p { margin: 0; max-width: 64ch; color: var(--muted); font-size: 14.5px; line-height: 1.6; }
+
+  @media (max-width: 860px) {
+    .cl-month { grid-template-columns: minmax(0, 1fr); gap: 18px 0; padding-top: 36px; }
+    .cl-month__title { position: static; margin: 0; font-size: 14px; }
+    .cl-list { padding-left: 24px; }
+    .cl-entry::before { left: -24px; }
+    .cl-entry--latest { padding: 20px 18px 24px; }
+    .cl-entry--latest::before { left: -25px; top: 29px; }
+  }
+</style>
+
+<script>
+  // Type filter. The bar stays hidden until this runs, so without JavaScript everything is shown.
+  const bar = document.querySelector<HTMLElement>('[data-cl-bar]');
+  if (bar) {
+    bar.hidden = false;
+    const chips = Array.from(bar.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const status = bar.querySelector<HTMLElement>('[data-cl-status]');
+    const entries = Array.from(document.querySelectorAll<HTMLElement>('[data-cl-entry]'));
+    const monthBlocks = Array.from(document.querySelectorAll<HTMLElement>('[data-cl-month]'));
+    const names: Record<string, [string, string]> = { new: ['new item', 'new items'], improved: ['improvement', 'improvements'], fixed: ['fix', 'fixes'] };
+
+    const apply = (kind: string) => {
+      chips.forEach((chip) => chip.setAttribute('aria-pressed', String(chip.dataset.filter === kind)));
+      let shownEntries = 0;
+      let shownItems = 0;
+      entries.forEach((entry) => {
+        let any = false;
+        entry.querySelectorAll<HTMLElement>('[data-kind]').forEach((group) => {
+          const show = kind === 'all' || group.dataset.kind === kind;
+          group.hidden = !show;
+          if (show) { any = true; shownItems += group.querySelectorAll('li').length; }
+        });
+        entry.hidden = !any;
+        if (any) shownEntries += 1;
+      });
+      monthBlocks.forEach((block) => { block.hidden = !block.querySelector('[data-cl-entry]:not([hidden])'); });
+      if (status) {
+        status.textContent = kind === 'all'
+          ? ''
+          : `${shownItems} ${names[kind][shownItems === 1 ? 0 : 1]} across ${shownEntries} update${shownEntries === 1 ? '' : 's'}`;
+      }
+    };
+
+    chips.forEach((chip) => chip.addEventListener('click', () => apply(chip.dataset.filter || 'all')));
+  }
+</script>

@@ -1,40 +1,284 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import changelogRaw from '../../../CHANGELOG.md?raw';
+import { parseChangelog, formatRange } from '../../lib/changelog.js';
+
+const PATREON_URL = 'https://www.patreon.com/TanzimFC';
+const latest = parseChangelog(changelogRaw).releases[0];
+
+// Commits per day from the idea (12 August) to 29 October 2026, taken from the project history.
+// Days that are missing had no commits. This is a snapshot of the first 79 days, so it does not change.
+const COMMITS = {
+  '2026-08-16': 34, '2026-08-17': 10, '2026-08-20': 3, '2026-08-21': 57, '2026-08-23': 18, '2026-08-24': 7, '2026-08-25': 24, '2026-08-26': 6,
+  '2026-09-11': 171, '2026-09-12': 156, '2026-09-13': 6, '2026-09-15': 4, '2026-09-16': 316, '2026-09-17': 162, '2026-09-18': 175, '2026-09-19': 79,
+  '2026-09-23': 33, '2026-09-24': 16, '2026-09-25': 50, '2026-09-26': 27, '2026-09-27': 105, '2026-09-28': 49, '2026-09-29': 81, '2026-09-30': 150,
+  '2026-10-01': 73, '2026-10-02': 15, '2026-10-03': 29, '2026-10-04': 99, '2026-10-06': 130, '2026-10-07': 91, '2026-10-08': 63, '2026-10-09': 135,
+  '2026-10-10': 65, '2026-10-11': 47, '2026-10-12': 55, '2026-10-13': 69, '2026-10-14': 9, '2026-10-15': 48, '2026-10-16': 13, '2026-10-17': 9,
+  '2026-10-18': 16, '2026-10-19': 31, '2026-10-20': 41, '2026-10-21': 3, '2026-10-22': 1, '2026-10-23': 19, '2026-10-24': 13, '2026-10-25': 6,
+  '2026-10-26': 29, '2026-10-27': 8, '2026-10-29': 3
+};
+const FIRST_DAY = Date.UTC(2026, 7, 12);
+const DAY_COUNT = 79; // 12 August to 29 October
+const peak = Math.max(...Object.values(COMMITS));
+const bars = Array.from({ length: DAY_COUNT }, (_, i) => {
+  const key = new Date(FIRST_DAY + i * 86400000).toISOString().slice(0, 10);
+  const count = COMMITS[key] || 0;
+  // Square-root scale so a quiet day is still visible next to the busiest one.
+  return { count, h: count ? Math.sqrt(count / peak) : 0 };
+});
 ---
 <BaseLayout
   title="About FCMOBILETOOLS"
-  description="Learn about FCMOBILETOOLS, an independent fan-made FC Mobile resource created by TanzimFC."
+  description="The story of FCMOBILETOOLS, an independent fan-made FC Mobile resource created by TanzimFC and shaped by community feedback."
 >
-  <article class="wrap legal-page">
-    <p class="eyebrow">ABOUT</p>
-    <h1>About FCMOBILETOOLS</h1>
-    <p class="legal-lead">Last updated: October 9, 2026</p>
+  <PageHero
+    title="About FC Mobile Tools"
+    lede="An independent FC Mobile site that started with one video and keeps growing with the people who use it."
+  >
+    <a slot="actions" class="sys-btn sys-btn--primary" href="/changelog/">See what's new</a>
+    <a slot="actions" class="sys-btn" href={PATREON_URL} target="_blank" rel="noopener noreferrer">Support on Patreon<span class="ab-sr"> (opens in a new tab)</span></a>
+    <Fragment slot="aside">
+      <dl class="ab-facts">
+        <div><dt>The idea</dt><dd><time datetime="2026-08-12">12 August 2026</time></dd></div>
+        <div><dt>Public launch</dt><dd><time datetime="2026-08-16">16 August 2026</time></dd></div>
+        <div><dt>Built by</dt><dd>TanzimFC</dd></div>
+        <div><dt>Status</dt><dd>Independent fan project</dd></div>
+      </dl>
+    </Fragment>
+  </PageHero>
 
-    <section>
-      <h2>What this site is</h2>
-      <p>FCMOBILETOOLS is an independent fan-made website created by TanzimFC for people who play EA SPORTS FC Mobile. It brings together calculators, event information, redeem-code updates, guides, player analysis, community features and tournament pages.</p>
-      <p>The aim is to make useful FC Mobile information easier to find and practical tools easier to use.</p>
+  <main class="sys-wrap ab">
+    <section class="ab-story" aria-labelledby="story-h">
+      <h2 id="story-h">How it started</h2>
+      <ol class="ab-timeline">
+        <li class="ab-step">
+          <span class="ab-step__dot" aria-hidden="true"></span>
+          <div class="ab-step__when"><time datetime="2026-08-12">12 August 2026</time></div>
+          <div class="ab-step__body">
+            <h3>A video, and a gap</h3>
+            <p>TanzimFC was making a video about Football Centre when it hit him how few tools exist for FC Mobile players. The Football Centre page was the one thing he had in hand, so he started a website around it and gave it a simple home page.</p>
+          </div>
+        </li>
+
+        <li class="ab-step">
+          <span class="ab-step__dot" aria-hidden="true"></span>
+          <div class="ab-step__when"><time datetime="2026-08-16">16 August 2026</time></div>
+          <div class="ab-step__body">
+            <h3>Open to the public</h3>
+            <p>Four days later the site went live for public use. Over the next ten days Football Centre took shape, a creator page appeared, and the first country-themed trivia quizzes went up.</p>
+          </div>
+        </li>
+
+        <li class="ab-step ab-step--quiet">
+          <span class="ab-step__dot" aria-hidden="true"></span>
+          <div class="ab-step__when">27 Aug to 10 Sep</div>
+          <div class="ab-step__body">
+            <h3>Quiet</h3>
+            <p>Then it stopped. For more than two weeks nothing new went up, and it would have been easy to leave it there.</p>
+          </div>
+        </li>
+
+        <li class="ab-step ab-step--turn">
+          <span class="ab-step__dot" aria-hidden="true"></span>
+          <div class="ab-step__when"><time datetime="2026-09-11">11 September 2026</time></div>
+          <div class="ab-step__body">
+            <h3>Back, with a new site</h3>
+            <p>TanzimFC came back and rebuilt the site with a new layout and clearer navigation, then started shipping the tools players need. Within a week the Training, Rank Up and Team OVR calculators, the Redeem Codes archive and A Nation's Story trivia were all live. The Events &amp; Reset hub and the Gauntlet Mode Planner followed before the month was out.</p>
+          </div>
+        </li>
+
+        <li class="ab-step ab-step--chart">
+          <div class="ab-step__when" aria-hidden="true"></div>
+          <div class="ab-step__body">
+            <figure class="ab-pulse">
+              <div
+                class="ab-pulse__bars"
+                role="img"
+                aria-label="Bar chart of daily work on the site from 12 August to 29 October 2026. Work begins on 16 August, stops from 27 August to 10 September, then picks up on 11 September and continues almost every day through October."
+              >
+                {bars.map((bar) => <span class="ab-bar" data-empty={bar.count === 0 ? '' : undefined} style={`--h:${bar.h.toFixed(3)}`}></span>)}
+              </div>
+              <div class="ab-pulse__axis" aria-hidden="true">
+                <span class="is-start">12 Aug</span>
+                <span class="is-quiet">Quiet</span>
+                <span class="is-turn">11 Sep</span>
+                <span class="is-end">29 Oct</span>
+              </div>
+              <figcaption>One bar for each day since the idea. Height shows how many changes were committed to the site that day.</figcaption>
+            </figure>
+          </div>
+        </li>
+
+        <li class="ab-step">
+          <span class="ab-step__dot" aria-hidden="true"></span>
+          <div class="ab-step__when"><time datetime="2026-10">October 2026</time></div>
+          <div class="ab-step__body">
+            <h3>Players start coming</h3>
+            <p>Then players started coming. October brought profiles, quests and rewards, community votes, giveaways and redeem-code alerts. Parts of the site are now available in English, Bengali, Indonesian and Brazilian Portuguese.</p>
+          </div>
+        </li>
+
+        <li class="ab-step ab-step--now">
+          <span class="ab-step__dot" aria-hidden="true"></span>
+          <div class="ab-step__when">Today</div>
+          <div class="ab-step__body">
+            <h3>Built with the community</h3>
+            <p>TanzimFC takes feedback regularly and talks problems through with the community, then works on solving them. If something is broken, missing or confusing, <a class="sys-link" href="/legal/contact">tell him</a>.</p>
+            {latest && (
+              <a class="ab-latest" href={`/changelog/#${latest.id}`}>
+                <b>Latest update, {formatRange(latest.start, latest.end)}</b>
+                <span>{latest.summary || 'See what changed in the most recent release.'}</span>
+                <u>Read the changelog</u>
+              </a>
+            )}
+          </div>
+        </li>
+      </ol>
     </section>
 
-    <section>
-      <h2>What you can use</h2>
-      <p>The site includes public tools and articles, along with optional account features such as quests, XP, Tokens, surveys, achievements, leaderboards and community participation. Features can change over time. Most public information and calculators can be used without an account.</p>
+    <section class="ab-support" aria-labelledby="support-h">
+      <div>
+        <h2 id="support-h">Support the project</h2>
+        <p>FCMOBILETOOLS is independent and free to use. If it has saved you time, you can help keep it going on Patreon.</p>
+      </div>
+      <a class="sys-btn sys-btn--primary" href={PATREON_URL} target="_blank" rel="noopener noreferrer">Support on Patreon<span class="ab-sr"> (opens in a new tab)</span></a>
     </section>
 
-    <section>
-      <h2>Independent fan project</h2>
-      <p>FCMOBILETOOLS is not affiliated with, endorsed by, sponsored by or officially connected to Electronic Arts, EA SPORTS or FC Mobile. Their names, marks and game-related materials belong to their respective owners.</p>
-    </section>
+    <section class="ab-notes" aria-labelledby="notes-h">
+      <h2 id="notes-h">Good to know</h2>
 
-    <section>
-      <h2>Accuracy and updates</h2>
-      <p>Game information changes. We aim to keep articles and tools useful, but events, player details, redeem codes, predictions and other information can become outdated or may need correction. Reports, leaks and analysis are not official EA announcements unless clearly identified and supported as such.</p>
-      <p>Calculator results and community predictions are estimates, not guarantees of what will happen in the game.</p>
-    </section>
+      <div class="ab-note">
+        <h3>What this site is</h3>
+        <div>
+          <p>FCMOBILETOOLS is an independent fan-made website created by TanzimFC for people who play EA SPORTS FC Mobile. It brings together calculators, event information, redeem-code updates, guides, player analysis, community features and tournament pages.</p>
+          <p>The aim is to make useful FC Mobile information easier to find and practical tools easier to use.</p>
+        </div>
+      </div>
 
-    <section>
-      <h2>Contact</h2>
-      <p>To report an error, ask a question or raise a copyright or privacy concern, use the official links on our <a href="/legal/contact">Contact page</a>.</p>
+      <div class="ab-note">
+        <h3>What you can use</h3>
+        <p>The site includes public tools and articles, along with optional account features such as quests, XP, Tokens, surveys, achievements, leaderboards and community participation. Features can change over time. Most public information and calculators can be used without an account.</p>
+      </div>
+
+      <div class="ab-note">
+        <h3>Independent fan project</h3>
+        <p>FCMOBILETOOLS is not affiliated with, endorsed by, sponsored by or officially connected to Electronic Arts, EA SPORTS or FC Mobile. Their names, marks and game-related materials belong to their respective owners.</p>
+      </div>
+
+      <div class="ab-note">
+        <h3>Accuracy and updates</h3>
+        <div>
+          <p>Game information changes. We aim to keep articles and tools useful, but events, player details, redeem codes, predictions and other information can become outdated or may need correction. Reports, leaks and analysis are not official EA announcements unless clearly identified and supported as such.</p>
+          <p>Calculator results and community predictions are estimates, not guarantees of what will happen in the game.</p>
+        </div>
+      </div>
+
+      <div class="ab-note">
+        <h3>Contact</h3>
+        <p>To report an error, ask a question or raise a copyright or privacy concern, use the official links on our <a href="/legal/contact">Contact page</a>.</p>
+      </div>
+
+      <p class="ab-updated">Page last updated October 29, 2026</p>
     </section>
-  </article>
+  </main>
 </BaseLayout>
+
+<style>
+  .ab { padding-block: 8px 80px; }
+  .ab-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---- Facts beside the hero ---- */
+  .ab-facts { margin: 0; padding: 4px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+  .ab-facts div { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .ab-facts div:first-child { border-top: 0; }
+  .ab-facts dt { color: var(--muted); font-size: 14px; }
+  .ab-facts dd { margin: 0; color: var(--text); font-size: 15.5px; font-weight: 600; }
+  .ab-facts time { font-variant-numeric: tabular-nums; }
+
+  /* ---- Story timeline: dates on the left, a rail, then the chapter ---- */
+  .ab-story { max-width: 920px; padding-top: clamp(36px, 5vw, 64px); }
+  .ab-story > h2 { margin: 0 0 40px; }
+  .ab-timeline { --when: 168px; list-style: none; margin: 0; padding: 0; }
+  .ab-step { position: relative; display: grid; grid-template-columns: var(--when) minmax(0, 1fr); padding-bottom: 44px; }
+  .ab-step:last-child { padding-bottom: 0; }
+  .ab-step::before { content: ''; position: absolute; left: var(--when); top: 0; bottom: 0; width: 1px; background: var(--line-strong); }
+  .ab-step:first-child::before { top: 12px; }
+  .ab-step:last-child::before { bottom: auto; height: 12px; }
+  .ab-step__dot {
+    position: absolute; left: calc(var(--when) - 5px); top: 7px; width: 11px; height: 11px; box-sizing: border-box;
+    border-radius: 50%; background: var(--bg); border: 2px solid var(--line-strong); z-index: 1;
+  }
+  .ab-step__when { padding: 3px 30px 0 0; text-align: right; color: var(--muted); font-size: 14.5px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+  .ab-step__body { padding-left: 32px; min-width: 0; }
+  .ab-step h3 { margin: 0 0 8px; font-size: clamp(19px, 2vw, 22px); }
+  .ab-step p { margin: 0; max-width: 58ch; color: var(--muted-strong); font-size: 16.5px; line-height: 1.65; }
+
+  /* The pause: a dashed rail and a hollow dot, so the gap is visible in the structure itself. */
+  .ab-step--quiet::before { background: repeating-linear-gradient(to bottom, var(--line-strong) 0 5px, transparent 5px 10px); }
+  .ab-step--quiet .ab-step__dot { border-color: var(--dim); }
+  .ab-step--quiet h3, .ab-step--quiet p { color: var(--muted); }
+  /* The comeback and today carry the accent. */
+  .ab-step--turn .ab-step__dot { background: var(--primary); border-color: var(--primary); }
+  .ab-step--now .ab-step__dot { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 0 4px rgba(76, 201, 255, 0.16); }
+
+  /* ---- Activity chart ---- */
+  .ab-pulse { margin: 0; }
+  .ab-pulse__bars { display: grid; grid-template-columns: repeat(79, minmax(0, 1fr)); gap: 2px; align-items: end; height: 104px; border-bottom: 1px solid var(--line-strong); }
+  .ab-bar { display: block; height: calc(var(--h) * 100%); min-height: 2px; background: var(--primary); border-radius: 1px 1px 0 0; opacity: 0.92; }
+  .ab-bar[data-empty] { height: 2px; background: var(--line-strong); opacity: 1; }
+  .ab-pulse__axis { position: relative; height: 22px; margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ab-pulse__axis span { position: absolute; top: 0; white-space: nowrap; }
+  .ab-pulse__axis .is-start { left: 0; }
+  .ab-pulse__axis .is-quiet { left: calc(22.5 / 79 * 100%); transform: translateX(-50%); color: var(--dim); }
+  .ab-pulse__axis .is-turn { left: calc(30 / 79 * 100%); color: var(--primary); }
+  .ab-pulse__axis .is-end { right: 0; }
+  .ab-pulse figcaption { margin-top: 6px; max-width: 58ch; color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+  /* ---- Link to the newest changelog entry ---- */
+  .ab-latest {
+    display: grid; gap: 4px; max-width: 58ch; margin-top: 20px; padding: 16px 18px; text-decoration: none;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ab-latest:hover { background: var(--surface2); border-color: var(--line-strong); }
+  .ab-latest b { color: var(--muted); font-size: 13.5px; font-weight: 600; }
+  .ab-latest span { color: var(--text); line-height: 1.5; }
+  .ab-latest u { color: var(--primary); font-size: 14.5px; font-weight: 600; text-decoration: none; }
+  .ab-latest:hover u { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ---- Support ---- */
+  .ab-support {
+    display: flex; align-items: center; justify-content: space-between; gap: 24px 40px; max-width: 920px;
+    margin-top: clamp(48px, 7vw, 84px); padding: 28px 32px; background: var(--surface2);
+    border: 1px solid var(--line-strong); border-radius: var(--r-lg);
+  }
+  .ab-support h2 { margin: 0 0 8px; font-size: clamp(22px, 2.6vw, 28px); }
+  .ab-support p { margin: 0; max-width: 52ch; color: var(--muted-strong); line-height: 1.6; }
+  .ab-support .sys-btn { flex: none; }
+
+  /* ---- Good to know ---- */
+  .ab-notes { max-width: 920px; margin-top: clamp(56px, 8vw, 96px); }
+  .ab-notes > h2 { margin: 0 0 20px; }
+  .ab-note { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 8px 40px; padding: 24px 0; border-top: 1px solid var(--line); }
+  .ab-note h3 { margin: 0; font-size: 17px; font-stretch: 100%; letter-spacing: -0.01em; }
+  .ab-note p { margin: 0; max-width: 64ch; color: var(--muted-strong); line-height: 1.7; }
+  .ab-note p + p { margin-top: 12px; }
+  .ab-note a { color: var(--primary); text-underline-offset: 3px; }
+  .ab-updated { margin: 0; padding-top: 20px; border-top: 1px solid var(--line); color: var(--dim); font-size: 13.5px; }
+
+  @media (max-width: 760px) {
+    .ab-facts div { grid-template-columns: 104px minmax(0, 1fr); }
+    .ab-story > h2 { margin-bottom: 28px; }
+    .ab-step { display: block; padding-left: 24px; }
+    .ab-step::before { left: 0; }
+    .ab-step__dot { left: -5px; }
+    .ab-step__when { padding: 2px 0 6px; text-align: left; }
+    .ab-step--chart .ab-step__when { display: none; }
+    .ab-step__body { padding-left: 0; }
+    .ab-pulse__bars { height: 80px; gap: 1px; }
+    .ab-support { flex-direction: column; align-items: stretch; padding: 22px; }
+    .ab-support .sys-btn { width: 100%; }
+    .ab-note { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 20px 0; }
+  }
+</style>

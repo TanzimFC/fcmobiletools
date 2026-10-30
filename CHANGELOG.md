@@ -4,6 +4,8 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 
 ## 27–29 October 2026
 
+Sponsored placements arrive, with clear labels and firm limits on where ads can appear.
+
 ### 🚀 New
 - **Advertise on FCMOBILETOOLS:** Creators, Discord communities, and tool makers can now enquire about sponsored placements on the site.
 - **Custom promotional artwork:** Site promotions now have artwork designed for different spaces, from wide banners to compact cards.
@@ -15,6 +17,8 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 
 ## 24–26 October 2026
 
+Browser alerts, so new redeem codes find you instead of the other way round.
+
 ### 🚀 New
 - **Browser alerts:** Sign up for website notifications, including alerts about new redeem codes.
 - **Redeem-code alerts:** Get notified when new codes are published, so you don't have to keep checking the page.
@@ -24,6 +28,8 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 - **Redeem Codes:** Preserved code information more reliably when a refresh fails.
 
 ## 20–23 October 2026
+
+Giveaways get a clearer entry flow, proof uploads and a better winner reveal.
 
 ### 🚀 New
 - **Giveaway entry and proof uploads:** A clearer way to enter giveaways and submit the required proof.
@@ -35,6 +41,8 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 - **Browsing experience:** Temporarily turned off ads across the site while reviewing page performance and the overall experience.
 
 ## 6–15 October 2026
+
+Profiles, quests and rewards, plus community votes and reports with screenshots.
 
 ### 🚀 New
 - **Member profiles:** Set up a profile and keep track of your activity.
@@ -48,6 +56,8 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 - **Community reviews:** Better feedback when a submission needs attention.
 
 ## 26–30 September 2026
+
+The Gauntlet Mode Planner joins the toolkit, and the Team OVR Calculator and event times get sharper.
 
 ### 🚀 New
 - **Gauntlet Mode Planner:** A dedicated tool to help plan your Gauntlet Mode progress.
@@ -65,8 +75,9 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 
 ## 18–23 September 2026
 
+Event schedules and reset times move into one hub, with better countdowns.
+
 ### 🚀 New
-- **Shards Counter:** Track your FC Mobile shards with a dedicated tool.
 - **Events & Reset hub:** Find event schedules and reset information together in one place.
 
 ### ✨ Improvements
@@ -79,6 +90,8 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 - Fixed content display issues across Football Centre sections.
 
 ## 12–17 September 2026
+
+Five tools in one week: the Training, Rank Up and Team OVR calculators, the Redeem Codes archive and A Nation's Story.
 
 ### 🚀 New
 - **A Nation's Story:** Play country-based trivia challenges with dedicated nation pages and day-by-day questions.
@@ -98,6 +111,8 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 
 ## 11 September 2026
 
+A redesign of the whole site, with a new layout and clearer navigation.
+
 ### ✨ Improvements
 - **Website redesign:** Refreshed the main site layout and navigation to make tools, guides, and updates easier to browse.
 - **Football Centre:** Improved access to its dashboard, matches, analysis, history, settings, and Team of the Week sections.
@@ -108,6 +123,8 @@ Updates to the tools and features available on FCMOBILETOOLS, written for the pe
 - Added clearer handling for pages that can't be found.
 
 ## 16–26 August 2026
+
+The first public version: Football Centre, a creator page and early trivia quizzes.
 
 ### 🚀 New
 - **Football Centre:** Early versions of the FC Mobile progress and event-tracking tool.
