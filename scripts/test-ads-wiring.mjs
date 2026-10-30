@@ -38,7 +38,7 @@ assert.match(
   /if\(await authenticated\(request,env\)\) return env\.ASSETS\.fetch\(request\);/,
   'private admin assets, including Ads Studio, must remain behind owner authentication'
 );
-assert.match(adsWorker, /if \(\!\(await authenticated\(request, env\)\)\) return json\(\{ error: 'Owner sign in required\.' \}, 401\)/);
+assert.ok(adsWorker.includes("if (!(await authenticated(request, env))) return json({ error: 'Owner sign in required.' }, 401);"), 'Ads Studio API must enforce owner authentication');
 assert.match(studio, /fetch\('\/api\/ads-studio/);
 assert.match(layout, /<AdSlots pageType=\{adPageType\} locale=\{locale\} \/>/);
 assert.match(adSlotsComponent, /import\('\.\.\/scripts\/ads-engine\.js'\)/);
