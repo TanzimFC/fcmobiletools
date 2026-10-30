@@ -77,8 +77,8 @@ const i18nClient = {
   pages: localizedPagesFor(locale)
 };
 const isGiveawayArea = canonical.pathname === '/giveaways' || canonical.pathname.startsWith('/giveaways/');
-// Ads are decided by the ads engine in the browser (src/scripts/ads-engine.js). AdSense is loaded
-// there, only after approval is switched on in Ads Studio and the visitor has agreed to advertising.
+// House and sponsor promotions are independent of optional ad-storage choices.
+// AdSense remains disabled until approved and is separately gated by its settings and consent rules.
 const adPageType = noAds ? 'none' : pageTypeFor(englishPath);
 
 const siteSchema = {
@@ -230,7 +230,21 @@ const pageSchema = {
   <a class="skip-link" href="#content">{tr('common.skipToContent')}</a>
   <Navbar />
   <Breadcrumb />
-  <div id="content"><slot /></div>
+  {adPageType === 'tool' ? (
+    <div id="content" data-ad-page-type="tool">
+      <div class="fcmt-content-layout">
+        <div class="fcmt-content-main"><slot /></div>
+        <aside class="fcmt-tool-ad-rail" data-ad-anchor="tool-sidebar" aria-label="Advertisement" hidden>
+          <div class="fcmt-tool-ad-fallback" data-ad-placeholder>
+            <span>ADVERTISEMENT</span>
+            <h2>Promote your brand</h2>
+            <p>Reach FC Mobile players while they use free tools.</p>
+            <a href="/advertise/">Advertising options</a>
+          </div>
+        </aside>
+      </div>
+    </div>
+  ) : <div id="content"><slot /></div>}
   <AdSlots pageType={adPageType} locale={locale} />
   <Footer />
   <ConsentBanner />
@@ -394,6 +408,24 @@ const pageSchema = {
     }
     .skip-link:focus{transform:translateY(0)}
     #content{scroll-margin-top:96px}
+    .fcmt-content-main{min-width:0}
+    .fcmt-tool-ad-rail{display:none;min-width:0}
+    .fcmt-tool-ad-rail[hidden]{display:none!important}
+    .fcmt-tool-ad-fallback{padding:18px;border:1px solid rgba(76,201,255,.22);border-radius:18px;background:linear-gradient(160deg,#102334,#08131c);box-shadow:0 18px 44px -32px rgba(76,201,255,.55);color:#f5f8fb}
+    .fcmt-tool-ad-fallback[hidden]{display:none!important}
+    .fcmt-tool-ad-fallback>span{display:inline-block;color:#8fa4b5;font:800 9px/1.4 var(--font-body);letter-spacing:.16em}
+    .fcmt-tool-ad-fallback h2{margin:12px 0 7px;font:800 20px/1.15 var(--font-display);letter-spacing:-.03em}
+    .fcmt-tool-ad-fallback p{margin:0;color:#a7b4c3;font:500 12.5px/1.6 var(--font-body)}
+    .fcmt-tool-ad-fallback a{display:inline-flex;align-items:center;min-height:38px;margin-top:14px;padding:0 12px;border:1px solid rgba(76,201,255,.3);border-radius:10px;background:rgba(76,201,255,.1);color:#a9e8ff;font:800 11.5px/1 var(--font-body);text-decoration:none}
+    @media(min-width:1280px){
+      #content[data-ad-page-type="tool"] .fcmt-content-layout{width:min(1560px,100%);margin:0 auto;box-sizing:border-box;padding:0 20px;display:grid;grid-template-columns:minmax(0,1fr) 248px;gap:24px;align-items:start}
+      #content[data-ad-page-type="tool"] .fcmt-content-layout--ads-off{display:block;padding-inline:0}
+      .fcmt-content-main{min-width:0}
+      .fcmt-content-main>main,.fcmt-content-main>.wrap{width:100%;box-sizing:border-box;margin-inline:0}
+      #content[data-ad-page-type="tool"] .fcmt-content-layout--ads-off .fcmt-content-main>main,
+      #content[data-ad-page-type="tool"] .fcmt-content-layout--ads-off .fcmt-content-main>.wrap{width:auto!important;margin-inline:auto!important}
+      .fcmt-tool-ad-rail{display:block;position:sticky;top:104px;align-self:start;margin-top:44px}
+    }
     .legacy-app-host .nav,.legacy-app-host nav.nav{display:none!important}
     .legacy-app-host{isolation:isolate}
   </style>

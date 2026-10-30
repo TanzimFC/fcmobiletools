@@ -176,12 +176,12 @@ export function defaultSettings() {
     enabled: true,
     houseAds: true,
     sponsorAds: true,
-    maxPerPage: 2,
-    maxPerLongArticle: 3,
+    policyVersion: 2,
+    maxPerPage: 3,
+    maxPerLongArticle: 4,
     minParagraphsForMid: 6,
     dismissDays: 7,
     clickQuietDays: 14,
-    calmAfterDismissals: 2,
     exploreRate: 0.1,
     adFreeForPremium: true,
     graceViews: 1,
@@ -197,18 +197,19 @@ export function normalizeSettings(input = {}) {
     const n = Number(value);
     return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
   };
+  const needsDensityMigration = Number(input.policyVersion || 0) < 2;
   const out = {
-    enabled: input.enabled !== false,
+    enabled: needsDensityMigration ? true : input.enabled !== false,
     houseAds: input.houseAds !== false,
     sponsorAds: input.sponsorAds !== false,
-    maxPerPage: Math.round(num(input.maxPerPage, 0, 4, base.maxPerPage)),
-    maxPerLongArticle: Math.round(num(input.maxPerLongArticle, 0, 5, base.maxPerLongArticle)),
+    policyVersion: 2,
+    maxPerPage: Math.max(needsDensityMigration ? 3 : 0, Math.round(num(input.maxPerPage, 0, 4, base.maxPerPage))),
+    maxPerLongArticle: Math.max(needsDensityMigration ? 4 : 0, Math.round(num(input.maxPerLongArticle, 0, 5, base.maxPerLongArticle))),
     minParagraphsForMid: Math.round(num(input.minParagraphsForMid, 4, 30, base.minParagraphsForMid)),
     dismissDays: Math.round(num(input.dismissDays, 1, 90, base.dismissDays)),
     clickQuietDays: Math.round(num(input.clickQuietDays, 1, 90, base.clickQuietDays)),
-    calmAfterDismissals: Math.round(num(input.calmAfterDismissals, 1, 5, base.calmAfterDismissals)),
     exploreRate: num(input.exploreRate, 0, 0.5, base.exploreRate),
-    adFreeForPremium: input.adFreeForPremium !== false,
+    adFreeForPremium: needsDensityMigration ? true : input.adFreeForPremium !== false,
     graceViews: Math.round(num(input.graceViews, 0, 5, base.graceViews)),
     minWords: Math.round(num(input.minWords, 0, 3000, base.minWords)),
     slots: {},
@@ -223,7 +224,7 @@ export function normalizeSettings(input = {}) {
   const a = input.adsense || {};
   const publisherId = flat(a.publisherId || base.adsense.publisherId, 40);
   if (!/^ca-pub-\d{10,20}$/.test(publisherId)) throw new AdsError('The AdSense publisher ID looks like ca-pub-1234567890123456.');
-  out.adsense = { enabled: a.enabled === true, publisherId, share: Math.round(num(a.share, 0, 100, 100)) };
+  out.adsense = { enabled: needsDensityMigration ? false : a.enabled === true, publisherId, share: Math.round(num(a.share, 0, 100, 100)) };
   return out;
 }
 
@@ -398,7 +399,6 @@ export function publicSettings(settings) {
     minParagraphsForMid: settings.minParagraphsForMid,
     dismissDays: settings.dismissDays,
     clickQuietDays: settings.clickQuietDays,
-    calmAfterDismissals: settings.calmAfterDismissals,
     exploreRate: settings.exploreRate,
     adFreeForPremium: settings.adFreeForPremium,
     graceViews: settings.graceViews,

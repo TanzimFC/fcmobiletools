@@ -11,9 +11,9 @@ Sponsored placements arrive, with clear labels and firm limits on where ads can 
 - **Custom promotional artwork:** Site promotions now have artwork designed for different spaces, from wide banners to compact cards.
 
 ### ✨ Improvements
-- **Ad presentation:** Sponsored cards have clearer labels and layouts that adapt to phones and desktop screens.
-- **Page experience:** Ads are limited to selected content pages. They don't cover the page or open pop-ups, and stay off account and giveaway entry pages.
-- **Privacy choices:** Updated the advertising explanations in English, Bengali, Indonesian, and Brazilian Portuguese so visitors can see what their choice allows.
+- **Ad presentation:** Sponsored cards have clearer labels and layouts that adapt to phones and desktop screens, including square cards in a reserved side rail on wide tool pages.
+- **Public-page coverage:** Added placements across more supported tools and information pages. Ads stay out of account, giveaway, rewards, settings, and other sensitive flows.
+- **Privacy choices:** The banner now explains that site promotions remain visible, while optional ad-related storage and eligible third-party requests follow the visitor's choice. The updated copy is available in English, Bengali, Indonesian, and Brazilian Portuguese.
 
 ## 24–26 October 2026
 

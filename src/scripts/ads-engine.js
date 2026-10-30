@@ -2,11 +2,12 @@
 //
 // Order of play for each slot:
 //   1. A paid sponsor ad that matches the page, if one exists.
-//   2. The ad network (AdSense), only when it is switched on, the visitor agreed to advertising,
-//      the page has enough content and the slot has an ad unit. If the network has nothing, step 3 fills in.
-//   3. A house ad (our own promos), picked by weight and by what has worked.
-//   4. Nothing. An empty slot takes no space.
-// Ads are inserted only below the visible screen, so they never push the page around while someone reads.
+//   2. The ad network (AdSense), only when approved, enabled, consented where required,
+//      and the page has enough content plus a configured ad unit.
+//   3. A house ad (our own promos), picked by weight and recent performance.
+//   4. Nothing. The ad system never blocks access to the tool or page.
+// House and sponsor promotions do not depend on consent to optional ad storage or third-party requests.
+// Inline ads load below the fold; the desktop tool rail has reserved space to avoid layout shifts.
 import css from '../styles/ads.css?inline';
 import { AD_SLOTS, slotsForPageType } from '../config/adSlots.js';
 import { chooseCreative, blockers, pageBudget, networkAllowed } from '../lib/adsCore.js';
@@ -14,30 +15,45 @@ import { chooseCreative, blockers, pageBudget, networkAllowed } from '../lib/ads
 const root = document.getElementById('fcmtAdsRoot');
 
 const COPY = {
-  en: { hide: 'Hide this promotion', hidden: 'Hidden for {n} days.', undo: 'Undo', network: 'Advertisement', done: 'Done. You will get these alerts.', busy: 'One moment' },
-  id: { hide: 'Sembunyikan promosi ini', hidden: 'Disembunyikan selama {n} hari.', undo: 'Urungkan', network: 'Iklan', done: 'Selesai. Anda akan menerima notifikasi ini.', busy: 'Sebentar' },
-  'pt-BR': { hide: 'Ocultar esta promoção', hidden: 'Oculto por {n} dias.', undo: 'Desfazer', network: 'Publicidade', done: 'Pronto. Você receberá esses alertas.', busy: 'Um momento' },
-  bn: { hide: 'এই প্রচার লুকান', hidden: '{n} দিনের জন্য লুকানো হয়েছে।', undo: 'ফিরিয়ে আনুন', network: 'বিজ্ঞাপন', done: 'হয়েছে। আপনি এই অ্যালার্টগুলো পাবেন।', busy: 'একটু অপেক্ষা করুন' }
+  en: { hide: 'Hide this promotion', hidden: 'Hidden for {n} days.', hiddenSession: 'Hidden for this visit. It may appear again next time.', undo: 'Undo', network: 'Advertisement', done: 'Done. You will get these alerts.', busy: 'One moment' },
+  id: { hide: 'Sembunyikan promosi ini', hidden: 'Disembunyikan selama {n} hari.', hiddenSession: 'Disembunyikan selama kunjungan ini. Promosi dapat muncul lagi saat Anda kembali.', undo: 'Urungkan', network: 'Iklan', done: 'Selesai. Anda akan menerima notifikasi ini.', busy: 'Sebentar' },
+  'pt-BR': { hide: 'Ocultar esta promoção', hidden: 'Oculto por {n} dias.', hiddenSession: 'Oculto nesta visita. A promoção pode aparecer novamente na próxima visita.', undo: 'Desfazer', network: 'Publicidade', done: 'Pronto. Você receberá esses alertas.', busy: 'Um momento' },
+  bn: { hide: 'এই প্রচার লুকান', hidden: '{n} দিনের জন্য লুকানো হয়েছে।', hiddenSession: 'এই ভিজিটে লুকানো হয়েছে। পরেরবার আবার দেখা যেতে পারে।', undo: 'ফিরিয়ে আনুন', network: 'বিজ্ঞাপন', done: 'হয়েছে। আপনি এই অ্যালার্টগুলো পাবেন।', busy: 'একটু অপেক্ষা করুন' }
 };
 
-const KEYS = { state: 'fcmt:ads:state:v1', views: 'fcmt:ads:views:v1', config: 'fcmt:ads:config:v1', pv: 'fcmt:ads:pv:v1', calm: 'fcmt:ads:calm:v1' };
+const KEYS = { state: 'fcmt:ads:state:v1', views: 'fcmt:ads:views:v1', config: 'fcmt:ads:config:v1', pv: 'fcmt:ads:pv:v1' };
 const DAY = 86400000;
 
 async function boot() {
   const params = new URLSearchParams(location.search);
   const debug = params.get('adsdebug') === '1' || safeGet(localStorage, 'fcmt:ads:debug') === '1';
   const pageType = root.dataset.pageType;
+  const toolRail = document.querySelector('[data-ad-anchor="tool-sidebar"]');
+  const setToolRail = (enabled) => {
+    if (!toolRail) return;
+    const layout = toolRail.closest('.fcmt-content-layout');
+    const placeholder = toolRail.querySelector('[data-ad-placeholder]');
+    toolRail.hidden = !enabled;
+    if (layout) layout.classList.toggle('fcmt-content-layout--ads-off', !enabled);
+    if (placeholder) placeholder.hidden = !enabled;
+  };
   const locale = COPY[root.dataset.locale] ? root.dataset.locale : 'en';
   const t = COPY[locale];
   const englishPath = (window.FCMT_I18N?.englishPath?.() || location.pathname).replace(/\/+$/, '') || '/';
 
   const config = await loadConfig();
-  if (!config || !config.settings?.enabled) return log(debug, 'Ads are switched off.');
+  if (!config || !config.settings?.enabled) {
+    setToolRail(false);
+    return log(debug, 'Ads are switched off.');
+  }
   const settings = config.settings;
   const views = bumpPageViews();
   const adFree = () => settings.adFreeForPremium && window.FCMT_ADFREE === true;
-  if (adFree()) return log(debug, 'Ad free visitor.');
-  if (safeGet(sessionStorage, KEYS.calm) === '1' && !debug) return log(debug, 'Calm mode after dismissals.');
+  if (adFree()) {
+    setToolRail(false);
+    return log(debug, 'Ad free visitor.');
+  }
+  setToolRail(true);
 
   const content = document.getElementById('content');
   const words = countWords(content);
@@ -50,7 +66,24 @@ async function boot() {
   const shownIds = [];
   let shown = 0;
   const events = createEvents(pageType);
-  const nextOrder = ['article-mid', 'home-mid', 'list-mid', 'tool-result', 'article-end', 'page-end'];
+  window.addEventListener('fcmobiletools:consent-updated', (event) => {
+    if (event.detail?.advertising !== false) return;
+    document.querySelectorAll('.fcmt-ad-slot[data-ad-network="1"]').forEach((host) => {
+      const slotId = host.dataset.adSlot;
+      host.removeAttribute('data-ad-network');
+      host.replaceChildren();
+      const fallback = chooseCreative(config.creatives, makeContext(slotId), readState(), settings);
+      if (fallback) renderCreative(host, fallback, slotId);
+      else {
+        host.remove();
+        if (slotId === 'tool-sidebar') {
+          const placeholder = toolRail?.querySelector('[data-ad-placeholder]');
+          if (placeholder) placeholder.hidden = false;
+        }
+      }
+    });
+  });
+  const nextOrder = ['tool-sidebar', 'article-early', 'article-mid', 'home-mid', 'page-mid', 'list-mid', 'tool-result', 'article-end', 'page-end'];
   const plan = slotsForPageType(pageType)
     .filter((slot) => settings.slots?.[slot.id]?.enabled !== false && slot.devices.includes(device))
     .sort((a, b) => nextOrder.indexOf(a.id) - nextOrder.indexOf(b.id));
@@ -72,8 +105,7 @@ async function boot() {
       if (shown >= budget) continue;
       const rect = entry.target.getBoundingClientRect();
       // Never insert something that would shove content the visitor can already see.
-      if (!debug && rect.bottom <= window.innerHeight + 8) { log(debug, item.slot.id + ': anchor already on screen, skipped'); continue; }
-      if (safeGet(sessionStorage, KEYS.calm) === '1' && !debug) continue;
+      if (!debug && item.slot.id !== 'tool-sidebar' && rect.bottom <= window.innerHeight + 8) { log(debug, item.slot.id + ': anchor already on screen, skipped'); continue; }
       if (fill(item)) shown += 1;
     }
   }, { rootMargin: '0px 0px 700px 0px', threshold: 0 });
@@ -97,12 +129,20 @@ async function boot() {
     if (!pick && !useNetwork) return false;
     const host = makeHost(item);
     if (useNetwork) {
+      host.dataset.adNetwork = '1';
       renderNetwork(host, item.slot, settings, events, () => {
         // Nothing came back from the network: swap in our own ad if one qualifies.
+        host.removeAttribute('data-ad-network');
         const fallback = chooseCreative(creatives, makeContext(item.slot.id), readState(), settings);
         host.replaceChildren();
         if (fallback) renderCreative(host, fallback, item.slot.id);
-        else host.remove();
+        else {
+          host.remove();
+          if (item.slot.id === 'tool-sidebar') {
+            const placeholder = item.anchor.querySelector('[data-ad-placeholder]');
+            if (placeholder) placeholder.hidden = false;
+          }
+        }
       });
       return true;
     }
@@ -127,14 +167,20 @@ async function boot() {
     host.dataset.context = item.context;
     if (debug) host.dataset.debug = '1';
     if (item.context === 'list') { host.style.gridColumn = '1 / -1'; host.style.flex = '0 0 100%'; }
-    item.anchor.insertAdjacentElement('afterend', host);
+    if (item.slot.id === 'tool-sidebar') {
+      const placeholder = item.anchor.querySelector('[data-ad-placeholder]');
+      if (placeholder) placeholder.hidden = true;
+      item.anchor.append(host);
+    } else {
+      item.anchor.insertAdjacentElement('afterend', host);
+    }
     return host;
   }
 
   // Artwork sets live at /assets/ads/<name>-wide|card|square.svg and contain no text.
   const ART_SET = /^\/assets\/ads\/([a-z0-9-]+)$/;
-  const SLOT_SIZE = { 'home-mid': 'hero', 'article-end': 'hero', 'list-mid': 'compact', 'article-mid': 'compact', 'tool-result': 'compact', 'page-end': 'strip' };
-  const ART_FILES = { hero: ['wide', 'card', 1200, 400, 800, 450], compact: ['square', 'card', 400, 400, 800, 450], strip: ['wide', 'square', 1200, 400, 400, 400] };
+  const SLOT_SIZE = { 'home-mid': 'hero', 'article-end': 'hero', 'list-mid': 'compact', 'article-early': 'compact', 'article-mid': 'compact', 'page-mid': 'compact', 'tool-result': 'compact', 'tool-sidebar': 'sidebar', 'page-end': 'strip' };
+  const ART_FILES = { hero: ['wide', 'card', 1200, 400, 800, 450], compact: ['square', 'card', 400, 400, 800, 450], sidebar: ['square', 'square', 400, 400, 400, 400], strip: ['wide', 'square', 1200, 400, 400, 400] };
   function artPicture(name, size) {
     const [wide, small, ww, wh, sw, sh] = ART_FILES[size] || ART_FILES.compact;
     const picture = document.createElement('picture');
@@ -234,19 +280,23 @@ async function boot() {
     markDismissed(c.id);
     const days = settings.dismissDays;
     const note = el('div', 'fcmt-ad-gone');
-    const text = el('span'); text.textContent = t.hidden.replace('{n}', String(days));
+    const text = el('span'); text.textContent = hasAdvertisingConsent() ? t.hidden.replace('{n}', String(days)) : t.hiddenSession;
     const undo = el('button', 'fcmt-ad-undo'); undo.type = 'button'; undo.textContent = t.undo;
     note.append(text, undo);
     host.replaceChildren(note);
-    const timer = window.setTimeout(() => host.remove(), 6000);
+    const timer = window.setTimeout(() => {
+      host.remove();
+      if (slotId === 'tool-sidebar') {
+        const placeholder = document.querySelector('[data-ad-anchor="tool-sidebar"] [data-ad-placeholder]');
+        if (placeholder) placeholder.hidden = false;
+      }
+    }, 6000);
     undo.addEventListener('click', () => {
       window.clearTimeout(timer);
       unmarkDismissed(c.id);
       host.replaceChildren(aside);
     });
-    const count = Number(safeGet(sessionStorage, 'fcmt:ads:dismissals') || 0) + 1;
-    safeSet(sessionStorage, 'fcmt:ads:dismissals', String(count));
-    if (count >= settings.calmAfterDismissals) safeSet(sessionStorage, KEYS.calm, '1');
+
   }
 
   function watchView(node, c, slotId) {
@@ -277,7 +327,7 @@ async function boot() {
   window.FCMT_ADS = {
     debug: (on = true) => { safeSet(localStorage, 'fcmt:ads:debug', on ? '1' : '0'); location.reload(); },
     setAdFree: (on = true) => { window.FCMT_ADFREE = Boolean(on); },
-    resetMe: () => { for (const k of Object.values(KEYS)) { safeRemove(localStorage, k); safeRemove(sessionStorage, k); } safeRemove(sessionStorage, 'fcmt:ads:dismissals'); location.reload(); }
+    resetMe: () => { for (const k of Object.values(KEYS)) { safeRemove(localStorage, k); safeRemove(sessionStorage, k); } safeRemove(sessionStorage, 'fcmt:ads:calm:v1'); safeRemove(sessionStorage, 'fcmt:ads:dismissals'); location.reload(); }
   };
 }
 
@@ -292,11 +342,37 @@ function findAnchor(slotId, settings) {
   const marked = document.querySelector('[data-ad-anchor="' + slotId + '"]');
   if (marked) return { anchor: marked, context: 'section' };
 
-  if (slotId === 'article-mid' || slotId === 'article-end') {
+  if (slotId === 'tool-result') {
+    const tool = content.querySelector('main, [data-tool-root]');
+    if (!tool) return null;
+    const results = [...tool.querySelectorAll('[data-ad-results], [data-results], #results, #result, .results, .result-panel')]
+      .find((node) => !node.hidden && node.offsetHeight > 0);
+    return { anchor: results || tool, context: 'section' };
+  }
+
+  if (slotId === 'page-mid') {
+    const sections = [...content.querySelectorAll('section')].filter((section) => !section.parentElement.closest('section') && section.offsetHeight > 120);
+    if (sections.length < 3) return null;
+    const total = sections.reduce((sum, section) => sum + section.offsetHeight, 0);
+    let run = 0;
+    for (let i = 0; i < sections.length; i += 1) {
+      run += sections[i].offsetHeight;
+      if (i >= 1 && run >= total * 0.45) return { anchor: sections[i], context: 'section' };
+    }
+    return null;
+  }
+
+  if (slotId === 'article-early' || slotId === 'article-mid' || slotId === 'article-end') {
     const prose = document.querySelector('#blProse, .bl-prose, [data-ad-prose]');
     if (!prose) return null;
     if (slotId === 'article-end') return { anchor: prose, context: 'section' };
     const paras = [...prose.querySelectorAll(':scope > p')].filter((p) => p.textContent.trim().length > 60);
+    if (slotId === 'article-early') {
+      // Only add the fourth placement to long reads, and keep enough paragraphs between in-read ads.
+      if (paras.length < 12 || (countWords(prose) < 1500 && paras.length < 18)) return null;
+      const earlyIndex = Math.max(3, Math.round(paras.length * 0.25));
+      return { anchor: paras[Math.min(earlyIndex, paras.length - 2) - 1], context: 'inline' };
+    }
     if (paras.length < settings.minParagraphsForMid) return null;
     const index = Math.max(3, Math.round(paras.length * 0.4));
     return { anchor: paras[Math.min(index, paras.length - 2) - 1], context: 'inline' };
@@ -408,9 +484,9 @@ function createEvents(pageType) {
 // Counting how often they saw an ad is stored on the device only with advertising consent.
 
 function readState() {
-  const persistent = parseJson(safeGet(localStorage, KEYS.state), {});
-  const today = new Date().toDateString();
   const store = hasAdvertisingConsent() ? localStorage : sessionStorage;
+  const persistent = parseJson(safeGet(store, KEYS.state), {});
+  const today = new Date().toDateString();
   const counted = parseJson(safeGet(store, KEYS.views), {});
   return {
     clickedAt: persistent.clickedAt || {},
@@ -419,12 +495,13 @@ function readState() {
   };
 }
 function writePersistent(mutate) {
-  const state = parseJson(safeGet(localStorage, KEYS.state), {});
+  const store = hasAdvertisingConsent() ? localStorage : sessionStorage;
+  const state = parseJson(safeGet(store, KEYS.state), {});
   state.clickedAt = state.clickedAt || {}; state.dismissedAt = state.dismissedAt || {};
   mutate(state);
   const cutoff = Date.now() - 100 * DAY;
   for (const map of [state.clickedAt, state.dismissedAt]) for (const id of Object.keys(map)) if (map[id] < cutoff) delete map[id];
-  safeSet(localStorage, KEYS.state, JSON.stringify(state));
+  safeSet(store, KEYS.state, JSON.stringify(state));
 }
 const markClicked = (id) => writePersistent((s) => { s.clickedAt[id] = Date.now(); });
 const markDismissed = (id) => writePersistent((s) => { s.dismissedAt[id] = Date.now(); });
@@ -464,7 +541,7 @@ function hasAdvertisingConsent() {
   if (!row) return false;
   try {
     const choice = JSON.parse(decodeURIComponent(row.slice('fcmobiletools_consent='.length)));
-    return choice?.version === '1' && choice?.advertising === true;
+    return choice?.version === '2' && choice?.advertising === true;
   } catch { return false; }
 }
 

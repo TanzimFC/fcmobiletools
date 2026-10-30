@@ -4,7 +4,7 @@ import { getLocaleFromPath, namespace } from '../i18n/index.js';
 const C = namespace(getLocaleFromPath(Astro.url.pathname), 'consent');
 ---
 
-<div class="fcmt-consent" id="fcmtConsent" hidden data-consent-version="1">
+<div class="fcmt-consent" id="fcmtConsent" hidden data-consent-version="2">
   <div class="fcmt-consent-card" role="dialog" aria-labelledby="fcmtConsentTitle" aria-describedby="fcmtConsentText">
     <div class="fcmt-consent-glow" aria-hidden="true"></div>
 
@@ -22,9 +22,8 @@ const C = namespace(getLocaleFromPath(Astro.url.pathname), 'consent');
     </div>
 
     <div class="fcmt-consent-actions fcmt-r" style="--i:3">
-      <button type="button" class="fcmt-consent-btn ghost" data-consent="reject">{C.reject}</button>
       <button type="button" class="fcmt-consent-btn secondary" data-consent="manage">{C.manage}</button>
-      <button type="button" class="fcmt-consent-btn primary" data-consent="accept"><span>{C.accept}</span></button>
+      <button type="button" class="fcmt-consent-btn primary" data-consent="basic"><span>{C.continue}</span></button>
     </div>
   </div>
 </div>
@@ -75,7 +74,7 @@ const C = namespace(getLocaleFromPath(Astro.url.pathname), 'consent');
     <div class="fcmt-settings-foot fcmt-r" style="--i:3">
       <a href="/legal/cookie-policy#privacy-choices">{C.cookiePolicy}</a>
       <div>
-        <button type="button" class="fcmt-consent-btn ghost" data-consent="reject">{C.rejectAll}</button>
+        <button type="button" class="fcmt-consent-btn ghost" data-consent="basic">{C.basic}</button>
         <button type="button" class="fcmt-consent-btn primary" data-consent="save"><span>{C.save}</span></button>
       </div>
     </div>
@@ -225,7 +224,7 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
 
   const panel = modal.querySelector('.fcmt-consent-settings');
   const COOKIE = 'fcmobiletools_consent';
-  const VERSION = '1';
+  const VERSION = '2';
   const maxAge = 60 * 60 * 24 * 180;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const OUT = reduced ? 0 : 360;
@@ -243,7 +242,7 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
       analytics: !!value.analytics,
       advertising: !!value.advertising,
       ts: new Date().toISOString()
-    })) + '; Max-Age=' + maxAge + '; Path=/; SameSite=Lax';
+    })) + '; Max-Age=' + maxAge + '; Path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
   };
 
   const showBanner = () => {
@@ -281,7 +280,8 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
   };
 
   const apply = (choice) => {
-    // Analytics is permanently disabled; advertising consent remains visitor-controlled.
+    // Analytics remains disabled. This choice controls optional ad-related storage and eligible
+    // third-party requests, not house promotions or sponsor placements.
     const safeChoice = { analytics: false, advertising: !!choice.advertising };
     writeCookie(safeChoice);
     hideBanner();
@@ -289,12 +289,11 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
     window.dispatchEvent(new CustomEvent('fcmobiletools:consent-updated', { detail: safeChoice }));
   };
 
-  banner.querySelector('[data-consent="accept"]')?.addEventListener('click', () => apply({ analytics: true, advertising: true }));
-  banner.querySelector('[data-consent="reject"]')?.addEventListener('click', () => apply({ analytics: false, advertising: false }));
+  banner.querySelector('[data-consent="basic"]')?.addEventListener('click', () => apply({ analytics: false, advertising: false }));
   banner.querySelector('[data-consent="manage"]')?.addEventListener('click', openModal);
 
   modal.querySelectorAll('[data-consent-close]').forEach((el) => el.addEventListener('click', () => closeModal()));
-  modal.querySelector('[data-consent="reject"]')?.addEventListener('click', () => apply({ analytics: false, advertising: false }));
+  modal.querySelector('[data-consent="basic"]')?.addEventListener('click', () => apply({ analytics: false, advertising: false }));
   modal.querySelector('[data-consent="save"]')?.addEventListener('click', () => apply({
     analytics: false,
     advertising: document.getElementById('fcmtAdvertising').checked
@@ -320,7 +319,7 @@ html.fcmt-consent-lock,html.fcmt-consent-lock body{overflow:hidden!important}
 
   const existing = readCookie();
   if (existing?.version === VERSION) {
-    updateGoogleConsent(existing);
+    // A saved choice is already applied. No analytics tag is enabled by this banner.
   } else {
     // Small delay so the banner arrives after the page has settled
     window.setTimeout(showBanner, reduced ? 0 : 700);
