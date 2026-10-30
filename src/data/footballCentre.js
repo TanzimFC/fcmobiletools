@@ -649,8 +649,8 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "Challenge mode unlocks 30 October",
         "Rank Up Points, Scorpio Tokens and Star Shards"
       ],
-      "href": "https://www.fifamobileguide.com/scream-team-27",
-      "hrefLabel": "Scream Team event guide",
+      "href": "/events/#event-guide",
+      "hrefLabel": "Event details",
       "guide": "https://www.fifamobileguide.com/scream-team-27",
       "guideLabel": "Rewards and Draft pools",
       "confidence": "guide"
@@ -669,8 +669,8 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "Event format and duration not confirmed",
         "Player pool and rewards pending in-game details"
       ],
-      "href": "/events/",
-      "hrefLabel": "Track Street Stars updates",
+      "href": "/events/#event-guide",
+      "hrefLabel": "Event details",
       "confidence": "community"
     },
     {
@@ -687,8 +687,8 @@ export const FOOTBALL_CENTRE_CONTENT = {
         "Chapters and event format not confirmed",
         "Player pool and rewards pending in-game details"
       ],
-      "href": "/events/",
-      "hrefLabel": "Follow main-event updates",
+      "href": "/events/#event-guide",
+      "hrefLabel": "Event details",
       "confidence": "community"
     },
     {
