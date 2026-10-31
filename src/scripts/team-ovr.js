@@ -18,6 +18,7 @@ import {
   serializeSquad,
   summarizeSquad,
 } from '../lib/teamOvr.js';
+import { drawSquadCard, canvasToBlob } from '../lib/teamOvrExport.js';
 
 const root = document.getElementById('tovr');
 
@@ -591,6 +592,45 @@ if (root) {
     }
     try { await navigator.clipboard.writeText(url); toast('Link copied to clipboard'); }
     catch { window.prompt('Copy your squad link:', url); }
+  });
+
+
+  /* ---------------------------------------------------------------- export as image (runs in the browser only) */
+  const exportBtn = $('export-image');
+  exportBtn?.addEventListener('click', async () => {
+    if (!lastSummary?.count) { toast('Add some players before saving'); return; }
+    const label = $('export-label');
+    exportBtn.disabled = true;
+    label.textContent = 'Preparing…';
+    try {
+      if (document.fonts?.load) {
+        await Promise.all([
+          document.fonts.load('800 40px "Archivo Variable"'),
+          document.fonts.load('700 20px "Instrument Sans Variable"'),
+        ]).catch(() => {});
+      }
+      const canvas = drawSquadCard({ formation: state.formation, starters: state.starters, bench: state.bench, summary: lastSummary });
+      const blob = await canvasToBlob(canvas);
+      const file = new File([blob], `fc-mobile-team-ovr-${lastSummary.teamOVR ?? 'squad'}.png`, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] }) && window.matchMedia('(pointer: coarse)').matches) {
+        try { await navigator.share({ files: [file], title: 'My FC Mobile Team OVR' }); return; }
+        catch (error) { if (error?.name === 'AbortError') return; }
+      }
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = file.name;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 4000);
+      toast('Squad image saved');
+    } catch {
+      toast('Could not create the image in this browser');
+    } finally {
+      exportBtn.disabled = false;
+      label.textContent = 'Save image';
+    }
   });
 
   let resetTimer = 0;

@@ -68,32 +68,141 @@ export function calculateTeamOVR({ players = [], selectedBadges = [], requiredCo
 export const MAX_BENCH_SIZE = MAX_SQUAD_SIZE - STARTING_XI_SIZE;
 export const MAX_TEAM_OVR = BASE_OVR_MAX + RANK_MAX + MAX_BADGE_SLOTS;
 
-/** Formation layouts. Purely cosmetic: Team OVR does not depend on position. */
-export const FORMATIONS = [
+/**
+ * Formation layouts. Purely cosmetic: Team OVR does not depend on position.
+ * Share links store the id, so existing ids (433, 442, 4231, 352, 532) must never change.
+ */
+const GK = ['GK', 50, 91];
+const BACK4 = [['LB', 14, 70], ['CB', 38, 73], ['CB', 62, 73], ['RB', 86, 70]];
+const BACK3 = [['CB', 24, 72], ['CB', 50, 75], ['CB', 76, 72]];
+const BACK5 = [['LWB', 9, 64], ['CB', 29, 73], ['CB', 50, 75], ['CB', 71, 73], ['RWB', 91, 64]];
+const at = (y, ...cells) => cells.map(([pos, x]) => [pos, x, y]);
+
+const RAW_FORMATIONS = [
+  // Back four
   { id: '433', label: '4-3-3', slots: [
-    ['GK', 50, 91], ['LB', 14, 70], ['CB', 38, 73], ['CB', 62, 73], ['RB', 86, 70],
+    GK, ...BACK4,
     ['CM', 28, 51], ['CM', 50, 55], ['CM', 72, 51], ['LW', 16, 22], ['ST', 50, 15], ['RW', 84, 22],
   ] },
+  { id: '433h', label: '4-3-3 (Holding)', slots: [
+    GK, ...BACK4, ...at(60, ['CDM', 50]), ...at(48, ['CM', 28], ['CM', 72]),
+    ...at(22, ['LW', 16], ['RW', 84]), ...at(15, ['ST', 50]),
+  ] },
+  { id: '433a', label: '4-3-3 (Attack)', slots: [
+    GK, ...BACK4, ...at(54, ['CM', 28], ['CM', 72]), ...at(38, ['CAM', 50]),
+    ...at(22, ['LW', 16], ['RW', 84]), ...at(15, ['ST', 50]),
+  ] },
+  { id: '433d', label: '4-3-3 (Defend)', slots: [
+    GK, ...BACK4, ...at(58, ['CDM', 30], ['CDM', 70]), ...at(46, ['CM', 50]),
+    ...at(22, ['LW', 16], ['RW', 84]), ...at(15, ['ST', 50]),
+  ] },
   { id: '442', label: '4-4-2', slots: [
-    ['GK', 50, 91], ['LB', 14, 70], ['CB', 38, 73], ['CB', 62, 73], ['RB', 86, 70],
+    GK, ...BACK4,
     ['LM', 14, 48], ['CM', 38, 52], ['CM', 62, 52], ['RM', 86, 48], ['ST', 36, 19], ['ST', 64, 19],
   ] },
+  { id: '442h', label: '4-4-2 (Holding)', slots: [
+    GK, ...BACK4, ...at(58, ['CDM', 38], ['CDM', 62]), ...at(42, ['LM', 14], ['RM', 86]),
+    ...at(18, ['ST', 36], ['ST', 64]),
+  ] },
   { id: '4231', label: '4-2-3-1', slots: [
-    ['GK', 50, 91], ['LB', 14, 70], ['CB', 38, 73], ['CB', 62, 73], ['RB', 86, 70],
+    GK, ...BACK4,
     ['CDM', 36, 57], ['CDM', 64, 57], ['LM', 16, 36], ['CAM', 50, 38], ['RM', 84, 36], ['ST', 50, 15],
   ] },
+  { id: '4231n', label: '4-2-3-1 (Narrow)', slots: [
+    GK, ...BACK4, ...at(58, ['CDM', 36], ['CDM', 64]), ...at(37, ['CAM', 26], ['CAM', 50], ['CAM', 74]),
+    ...at(15, ['ST', 50]),
+  ] },
+  { id: '41212', label: '4-1-2-1-2 (Narrow)', slots: [
+    GK, ...BACK4, ...at(58, ['CDM', 50]), ...at(50, ['CM', 30], ['CM', 70]), ...at(35, ['CAM', 50]),
+    ...at(17, ['ST', 38], ['ST', 62]),
+  ] },
+  { id: '41212w', label: '4-1-2-1-2 (Wide)', slots: [
+    GK, ...BACK4, ...at(58, ['CDM', 50]), ...at(48, ['LM', 12], ['RM', 88]), ...at(35, ['CAM', 50]),
+    ...at(17, ['ST', 38], ['ST', 62]),
+  ] },
+  { id: '4132', label: '4-1-3-2', slots: [
+    GK, ...BACK4, ...at(58, ['CDM', 50]), ...at(43, ['LM', 14], ['CM', 50], ['RM', 86]),
+    ...at(18, ['ST', 36], ['ST', 64]),
+  ] },
+  { id: '4141', label: '4-1-4-1', slots: [
+    GK, ...BACK4, ...at(58, ['CDM', 50]), ...at(44, ['LM', 14], ['CM', 38], ['CM', 62], ['RM', 86]),
+    ...at(16, ['ST', 50]),
+  ] },
+  { id: '4222', label: '4-2-2-2', slots: [
+    GK, ...BACK4, ...at(58, ['CDM', 36], ['CDM', 64]), ...at(36, ['CAM', 28], ['CAM', 72]),
+    ...at(17, ['ST', 38], ['ST', 62]),
+  ] },
+  { id: '424', label: '4-2-4', slots: [
+    GK, ...BACK4, ...at(54, ['CM', 38], ['CM', 62]), ...at(20, ['LW', 14], ['ST', 38], ['ST', 62], ['RW', 86]),
+  ] },
+  { id: '4312', label: '4-3-1-2', slots: [
+    GK, ...BACK4, ...at(54, ['CM', 28], ['CM', 50], ['CM', 72]), ...at(36, ['CAM', 50]),
+    ...at(17, ['ST', 36], ['ST', 64]),
+  ] },
+  { id: '4321', label: '4-3-2-1', slots: [
+    GK, ...BACK4, ...at(55, ['CM', 28], ['CM', 50], ['CM', 72]), ...at(34, ['CAM', 32], ['CAM', 68]),
+    ...at(15, ['ST', 50]),
+  ] },
+  { id: '4411', label: '4-4-1-1', slots: [
+    GK, ...BACK4, ...at(52, ['LM', 14], ['CM', 38], ['CM', 62], ['RM', 86]), ...at(33, ['CF', 50]),
+    ...at(15, ['ST', 50]),
+  ] },
+  { id: '451', label: '4-5-1', slots: [
+    GK, ...BACK4, ...at(48, ['LM', 12], ['CM', 31], ['CM', 50], ['CM', 69], ['RM', 88]), ...at(16, ['ST', 50]),
+  ] },
+  { id: '451a', label: '4-5-1 (Attack)', slots: [
+    GK, ...BACK4, ...at(54, ['CM', 34], ['CM', 66]), ...at(38, ['LM', 12], ['CAM', 50], ['RM', 88]),
+    ...at(16, ['ST', 50]),
+  ] },
+  // Back three
   { id: '352', label: '3-5-2', slots: [
-    ['GK', 50, 91], ['CB', 24, 72], ['CB', 50, 75], ['CB', 76, 72],
+    GK, ...BACK3,
     ['LWB', 9, 51], ['CM', 31, 55], ['CAM', 50, 39], ['CM', 69, 55], ['RWB', 91, 51], ['ST', 36, 18], ['ST', 64, 18],
   ] },
+  { id: '3142', label: '3-1-4-2', slots: [
+    GK, ...BACK3, ...at(61, ['CDM', 50]), ...at(44, ['LM', 12], ['CM', 37], ['CM', 63], ['RM', 88]),
+    ...at(18, ['ST', 36], ['ST', 64]),
+  ] },
+  { id: '3412', label: '3-4-1-2', slots: [
+    GK, ...BACK3, ...at(53, ['LM', 12], ['CM', 38], ['CM', 62], ['RM', 88]), ...at(35, ['CAM', 50]),
+    ...at(17, ['ST', 36], ['ST', 64]),
+  ] },
+  { id: '3421', label: '3-4-2-1', slots: [
+    GK, ...BACK3, ...at(55, ['LM', 12], ['CM', 38], ['CM', 62], ['RM', 88]), ...at(33, ['CAM', 32], ['CAM', 68]),
+    ...at(15, ['ST', 50]),
+  ] },
+  { id: '343', label: '3-4-3', slots: [
+    GK, ...BACK3, ...at(54, ['LM', 12], ['CM', 38], ['CM', 62], ['RM', 88]),
+    ...at(21, ['LW', 18], ['ST', 50], ['RW', 82]),
+  ] },
+  // Back five
   { id: '532', label: '5-3-2', slots: [
-    ['GK', 50, 91], ['LWB', 9, 64], ['CB', 29, 73], ['CB', 50, 75], ['CB', 71, 73], ['RWB', 91, 64],
+    GK, ...BACK5,
     ['CM', 28, 50], ['CM', 50, 46], ['CM', 72, 50], ['ST', 37, 18], ['ST', 63, 18],
   ] },
-].map((formation) => ({
+  { id: '5212', label: '5-2-1-2', slots: [
+    GK, ...BACK5, ...at(52, ['CM', 36], ['CM', 64]), ...at(35, ['CAM', 50]), ...at(17, ['ST', 38], ['ST', 62]),
+  ] },
+  { id: '523', label: '5-2-3', slots: [
+    GK, ...BACK5, ...at(50, ['CM', 38], ['CM', 62]), ...at(21, ['LW', 16], ['ST', 50], ['RW', 84]),
+  ] },
+  { id: '541', label: '5-4-1', slots: [
+    GK, ...BACK5, ...at(48, ['LM', 12], ['CM', 38], ['CM', 62], ['RM', 88]), ...at(17, ['ST', 50]),
+  ] },
+];
+
+const BACK_LINE_NAMES = { 3: 'Back three', 4: 'Back four', 5: 'Back five' };
+
+export const FORMATIONS = RAW_FORMATIONS.map((formation) => ({
   ...formation,
+  group: BACK_LINE_NAMES[Number(formation.label[0])] ?? 'Other',
   slots: formation.slots.map(([pos, x, y]) => ({ pos, x, y })),
 }));
+
+/** Formations grouped by back line, in display order, for the picker. */
+export const FORMATION_GROUPS = Object.values(BACK_LINE_NAMES)
+  .map((name) => ({ name, formations: FORMATIONS.filter((formation) => formation.group === name) }))
+  .filter((group) => group.formations.length);
 
 export const DEFAULT_FORMATION = '433';
 

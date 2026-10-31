@@ -2,6 +2,34 @@
 
 Updates to the tools and features available on FCMOBILETOOLS, written for the people who use the site.
 
+## 31 October 2026
+
+A full redesign. The site looks premium again, is easier to find your way around, and Team OVR finally has every formation.
+
+### 🚀 New
+- **Start here:** New to FC Mobile or the site? Tell us what you want to do (get free rewards, see what is live, improve your squad, make coins, find an answer, or play with others) and we open the right page first, with a short plain-English glossary for words like OVR, Rank Up and Reset.
+- **All formations in Team OVR:** Choose from 28 formations, grouped by back line (three, four or five at the back), including the Holding, Attack, Defend, Narrow and Wide versions. Squads you shared before still open exactly as they were.
+- **Save your squad as an image:** Team OVR can now turn your squad into a shareable picture with your rating, formation, pitch and bench. It is made on your device, so nothing is uploaded. On phones it opens your share menu.
+- **A new Tools page:** Every tool now has an icon, a one-line explanation and a note on whether you need to enter numbers. Search them, or filter by what you want to do.
+- **A redesigned homepage:** A new look with a quick start for newcomers, a tools showcase that previews the Team OVR pitch, and shortcuts to the tools people use most.
+- **Pick up where you left off:** The homepage remembers the tools you used last and puts them one tap away. This stays in your own browser and is never sent anywhere.
+- **More ad sizes:** Promotions now come in square, medium rectangle and slim banner shapes as well as the wide and compact cards, so they fit the space instead of every page getting the same box.
+
+### ✨ Improvements
+- **The premium look is back:** Cards, buttons, menus and headings have depth, light and smooth hover effects again, and pages ease in as you scroll. It is built to stay smooth, so the lag fixes from earlier updates are kept.
+- **A tidier menu:** One account button instead of two, a two-column Tools menu, no more promo cards crowding every dropdown, and the bar no longer changes width as you scroll.
+- **A calmer privacy banner:** It is now a small card on phones and a slim bar on desktop, written in plain words, and it stays out of the way of the menu and the bottom tabs. Your choices work exactly as before.
+- **Ads line up:** Every promotion now sits on the same edge as the page content, on phones and desktops, with even spacing above and below.
+- **Smoother page changes:** Moving between pages now fades instead of flashing, in browsers that support it.
+- **A better footer:** Larger, easier-to-read links, Discord, YouTube and X buttons, and quick links to Start here and All tools.
+- **Page headers:** Tool and guide pages share a richer header with a subtle glow.
+
+### 🐛 Fixes
+- **Menu clutter:** Fixed the account button appearing twice in the top bar.
+- **Dropdown position:** Fixed the Tools menu opening partly off the screen.
+- **Banner overlap:** Fixed the privacy banner covering the open menu on phones.
+- **Ad alignment:** Fixed ads sitting a few pixels off the page content on pages with their own layout, such as Football Centre.
+
 ## 27–29 October 2026
 
 Sponsored placements arrive, with clear labels and firm limits on where ads can appear.

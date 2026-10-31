@@ -5,6 +5,8 @@ import { REDEEM_CODES } from '../data/redeemCodes.js';
 import { summarizeRedeemPayload } from '../lib/redeem-summary.js';
 import { safeScriptJson } from '../lib/redeem.js';
 import { FOOTBALL_CENTRE_CONTENT as FC } from '../data/footballCentre.js';
+import { TOOLS, GOALS, ACCENTS, iconSvg } from '../data/siteTools.js';
+import { getFormation } from '../lib/teamOvr.js';
 
 /* ───────────────────────── data ───────────────────────── */
 const posts = await getPosts();
@@ -148,31 +150,20 @@ const svg = (name, extra = '') =>
   `<svg class="hx-i ${extra}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICON[name]}</svg>`;
 
 /* ───────────────────────── tools ───────────────────────── */
-const GROUPS = [
-  { id: 'squad', title: 'Build your squad', note: 'Work out what an upgrade costs before you spend anything.' },
-  { id: 'earn', title: 'Earn and track', note: 'Keep an eye on coins, shards and event progress.' },
-  { id: 'live', title: 'Stay up to date', note: 'What is live in the game right now.' },
-];
-const tools = [
-  { group: 'squad', href: '/team-ovr', name: 'Team OVR Calculator', text: 'See your squad rating and what the next point costs.' },
-  { group: 'squad', href: '/training-calculator', name: 'Training Calculator', text: 'Plan the XP and fodder to reach a training level.' },
-  { group: 'squad', href: '/rank-up-calculator', name: 'Rank Up Calculator', text: 'Compare Rank Up costs with the OVR you gain.' },
-  { group: 'squad', href: '/gauntlet-planner', name: 'Gauntlet Planner', text: 'Plan player rotations for Gauntlet Mode.' },
-  { group: 'earn', href: '/investment-calculator', name: 'Investment Calculator', text: 'Work out market tax, profit and break-even prices.' },
-  { group: 'earn', href: '/shards-counter', name: 'Shards Counter', text: 'Track Star Shards toward the reward you want.' },
-  { group: 'earn', href: '/football-centre', name: 'Football Centre', text: 'Showdown results and event progress in one place.' },
-  { group: 'live', href: '/redeem-codes', name: 'Redeem Codes', text: 'Every code with its reward, region and status.' },
-  { group: 'live', href: '/trivia/', name: 'Trivia answers', text: 'Search any Season Recap or A Nation\'s Story question.' },
-  { group: 'live', href: '/fc-mobile-27', name: 'FC Mobile 27 hub', text: 'Season 27 features, install guide and coverage.' },
-];
+// Shared catalogue: the homepage, /tools and /start all read src/data/siteTools.js.
+const tools = TOOLS;
+const byId = (id) => TOOLS.find((t) => t.id === id);
 
-// The beginner path: four things people actually come here to do.
-const START = [
-  { href: '/redeem-codes', title: 'Get a free redeem code', text: 'Copy the newest working code and redeem it in the game.' },
-  { href: '/events', title: 'See what is live in the game', text: 'Event dates, the daily reset and countdowns.' },
-  { href: '/team-ovr', title: 'Plan an upgrade for my squad', text: 'Start with the Team OVR calculator, then move on to training.' },
-  { href: '/giveaways', title: 'Win a free reward', text: 'Free to enter. Every winner is checked by a person.' },
-];
+// Bento grid: Team OVR leads, the next four are the most visited, the rest fill the grid.
+const bentoTools = ['codes', 'events', 'training', 'rank-up', 'investment', 'shards', 'gauntlet'].map(byId);
+
+// An example squad for the Team OVR tile. It is an illustration, and is labelled as one.
+const demoSlots = getFormation('433').slots;
+const demoOvr = [86, 84, 88, 85, 87, 89, 86, 90, 88, 91, 92];
+const demoAvg = Math.round(demoOvr.reduce((a, b) => a + b, 0) / demoOvr.length);
+
+// The beginner path: the first four goals. /start has all six plus a glossary.
+const startGoals = GOALS.slice(0, 4);
 
 /* ───────────────────────── FAQ (single source for page + JSON-LD) ───────────────────────── */
 const faqs = [
@@ -219,16 +210,26 @@ const jsonLd = {
 
       <div class="hx-wrap hx-hero__inner">
         <p class="hx-status"><span class="hx-dot" aria-hidden="true"></span>{liveLine}</p>
-        <h1 id="hx-h1" class="hx-h1">FC Mobile Tools for Squad Building, Events and Upgrades</h1>
+        <h1 id="hx-h1" class="hx-h1"><span class="fx-text">FC Mobile Tools for Squad Building, Events and Upgrades</span></h1>
         <p class="hx-sub">Free FC Mobile tools for squad planning, training, rank ups, live events, redeem codes and more.</p>
 
         <div class="hx-actions">
           <a class="hx-btn hx-btn--primary" href="/redeem-codes"><span>Get today's redeem code</span><span set:html={svg('arrow')} /></a>
           <a class="hx-btn hx-btn--ghost" href="/events"><span>See live events</span></a>
+          <a class="hx-btn hx-btn--quiet" href="/start/"><span>New here? Start here</span></a>
         </div>
 
+        <ul class="hx-jump" aria-label="Popular tools">
+          <li><a href="/team-ovr/"><span set:html={iconSvg('ovr')} />Team OVR</a></li>
+          <li><a href="/training-calculator/"><span set:html={iconSvg('training')} />Training</a></li>
+          <li><a href="/rank-up-calculator/"><span set:html={iconSvg('rank')} />Rank Up</a></li>
+          <li><a href="/investment-calculator/"><span set:html={iconSvg('investment')} />Investment</a></li>
+          <li><a href="/trivia/"><span set:html={iconSvg('trivia')} />Trivia</a></li>
+        </ul>
+
         <ul class="hx-proof" aria-label="Site at a glance">
-          <li><b>{tools.length}</b> tools</li>
+          <li><b>{tools.length}</b> free tools</li>
+          <li>No account needed</li>
           <li><b>{posts.length}</b> guides and updates</li>
           <li data-fcmt-code-proof>Checking code status</li>
         </ul>
@@ -334,49 +335,86 @@ const jsonLd = {
     <!-- Beginner path -->
     <section class="hx-section" id="start" aria-labelledby="hx-start-h">
       <div class="hx-wrap">
-        <header class="hx-section__head">
-          <h2 id="hx-start-h">New here? Start with what you want to do</h2>
-          <p>Pick one. Each page explains itself on the first screen, and you can come back for the rest.</p>
+        <header class="hx-section__head hx-section__head--row">
+          <div>
+            <h2 id="hx-start-h">New here? Start with what you want to do</h2>
+            <p>Pick a goal. Each one opens the right page first, and you can come back for the rest.</p>
+          </div>
+          <a class="hx-textlink hx-textlink--lg" href="/start/">See all paths <span set:html={svg('arrow')} /></a>
         </header>
-        <ol class="hx-start">
-          {START.map((s, i) => (
-            <li>
-              <a href={s.href}>
-                <span class="hx-start__n" aria-hidden="true">{i + 1}</span>
-                <span class="hx-start__text"><b>{s.title}</b><small>{s.text}</small></span>
-                <span class="hx-start__go" aria-hidden="true" set:html={svg('arrow')} />
-              </a>
-            </li>
+        <div class="hx-recent" data-recent-tools hidden>
+          <span class="hx-recent__label">Pick up where you left off</span>
+          <div class="hx-recent__list" data-recent-list></div>
+        </div>
+        <div class="hx-goals" data-rv-group>
+          {startGoals.map((g) => (
+            <a class="hx-goal" href={g.first.href} style={`--ac:${ACCENTS[g.accent]}`}>
+              <span class="hx-goal__ico" set:html={iconSvg(g.icon)}></span>
+              <b>{g.title}</b>
+              <small>{g.lead}</small>
+              <span class="hx-goal__go">{g.first.label}<span set:html={svg('arrow')} /></span>
+            </a>
           ))}
-        </ol>
+        </div>
       </div>
     </section>
 
-    <!-- All tools, grouped by purpose -->
+    <!-- Tools showcase -->
     <section class="hx-section hx-section--tight" id="tools" aria-labelledby="hx-tools-h">
       <div class="hx-wrap">
         <header class="hx-section__head hx-section__head--row">
-          <h2 id="hx-tools-h">FC Mobile tools, grouped by what they help you do</h2>
-          <a class="hx-textlink hx-textlink--lg" href="/tools/">Browse all tools <span set:html={svg('arrow')} /></a>
+          <div>
+            <h2 id="hx-tools-h">Free FC Mobile tools</h2>
+            <p>Calculators that show the cost of an upgrade before you spend, and trackers for what is live.</p>
+          </div>
+          <a class="hx-textlink hx-textlink--lg" href="/tools/">Browse all {tools.length} tools <span set:html={svg('arrow')} /></a>
         </header>
-        <div class="hx-groups">
-          {GROUPS.map((g) => (
-            <section class="hx-group" aria-labelledby={`hx-g-${g.id}`}>
-              <h3 id={`hx-g-${g.id}`}>{g.title}</h3>
-              <p>{g.note}</p>
-              <ul>
-                {tools.filter((t) => t.group === g.id).map((t) => (
-                  <li>
-                    <a href={t.href}>
-                      <b>{t.name}</b>
-                      <small>{t.text}</small>
-                      <span class="hx-group__go" aria-hidden="true" set:html={svg('arrow')} />
-                    </a>
-                  </li>
+
+        <div class="hx-bento" data-rv-group>
+          <a class="hx-tile hx-tile--hero" href="/team-ovr/" style={`--ac:${ACCENTS.cyan}`}>
+            <span class="hx-tile__copy">
+              <span class="hx-tag">Popular</span>
+              <b>Team OVR Calculator</b>
+              <small>Enter your squad, choose from 28 formations and see your Team OVR with the cheapest way to gain the next point. Save it as an image.</small>
+              <span class="hx-tile__go">Open calculator <span set:html={svg('arrow')} /></span>
+            </span>
+            <span class="hx-pitch" aria-hidden="true">
+              <svg viewBox="0 0 100 140" preserveAspectRatio="none">
+                <g fill="none" stroke="currentColor" stroke-width=".9" opacity=".45">
+                  <rect x="4" y="4" width="92" height="132" rx="2"/><path d="M4 70h92"/><circle cx="50" cy="70" r="11"/>
+                  <rect x="24" y="4" width="52" height="19"/><rect x="24" y="117" width="52" height="19"/>
+                </g>
+                {demoSlots.map((slot, i) => (
+                  <g transform={`translate(${slot.x} ${slot.y * 0.98 + 1})`}>
+                    <rect x="-7.4" y="-8" width="14.8" height="16" rx="3" class="hx-pitch__chip" data-hi={demoOvr[i] >= 90 ? '1' : '0'} />
+                    <text y="2.6" text-anchor="middle" class="hx-pitch__num">{demoOvr[i]}</text>
+                  </g>
                 ))}
-              </ul>
-            </section>
+              </svg>
+              <span class="hx-pitch__cap">Example squad · Team OVR <b>{demoAvg}</b></span>
+            </span>
+          </a>
+          {bentoTools.slice(0, 4).map((t) => (
+            <a class="hx-tile" href={t.href} style={`--ac:${ACCENTS[t.accent]}`}>
+              <span class="hx-tile__ico" set:html={iconSvg(t.icon)}></span>
+              <b>{t.name}</b>
+              <small>{t.short}</small>
+              <span class="hx-tile__arrow" set:html={svg('arrow')}></span>
+            </a>
           ))}
+          {bentoTools.slice(4).map((t) => (
+            <a class="hx-tile" href={t.href} style={`--ac:${ACCENTS[t.accent]}`}>
+              <span class="hx-tile__ico" set:html={iconSvg(t.icon)}></span>
+              <b>{t.name}</b>
+              <small>{t.short}</small>
+              <span class="hx-tile__arrow" set:html={svg('arrow')}></span>
+            </a>
+          ))}
+          <a class="hx-tile hx-tile--all" href="/tools/">
+            <b>See every tool</b>
+            <small>{tools.length} tools in {new Set(tools.map((t) => t.group)).size} groups, with search.</small>
+            <span class="hx-tile__go">Browse all <span set:html={svg('arrow')} /></span>
+          </a>
         </div>
       </div>
     </section>
@@ -863,5 +901,131 @@ const jsonLd = {
     .hx-event-card, .hx-event-card__media img, .hx-event-card__copy em span { transition: none; }
     .hx-event-card:hover { transform: none; }
     .hx-event-card:hover .hx-event-card__media img { transform: none; }
+  }
+  
+  /* ===================== v3 premium layer ===================== */
+
+  /* Hero: one-time entrance, then still. transform + opacity only. */
+  .hx-h1 { font-size: clamp(38px, 5.4vw, 74px); max-width: 13em; line-height: 1; }
+  .hx-hero__inner > * { animation: hx-rise .8s var(--ease) both; }
+  .hx-hero__inner > :nth-child(1) { animation-delay: .04s; }
+  .hx-hero__inner > :nth-child(2) { animation-delay: .12s; }
+  .hx-hero__inner > :nth-child(3) { animation-delay: .2s; }
+  .hx-hero__inner > :nth-child(4) { animation-delay: .28s; }
+  .hx-hero__inner > :nth-child(5) { animation-delay: .36s; }
+  .hx-hero__inner > :nth-child(6) { animation-delay: .44s; }
+  .hx-hero__img img { animation: hx-settle 1.8s var(--ease) both; }
+  @keyframes hx-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes hx-settle { from { transform: scale(1.05); } to { transform: none; } }
+  .hx-dot { background: var(--pitch); box-shadow: 0 0 0 4px rgba(61, 220, 151, .18); }
+  .hx-status { padding: 8px 14px 8px 12px; border: 1px solid rgba(61, 220, 151, .3); border-radius: 999px; background: rgba(61, 220, 151, .09); color: #c9f6df; }
+  .hx-btn { transition: transform .25s var(--ease), background .2s, border-color .2s, box-shadow .3s var(--ease); }
+  .hx-btn:hover { transform: translateY(-2px); }
+  .hx-btn--quiet { border-color: transparent; background: transparent; color: var(--muted-strong); text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .25); text-underline-offset: 5px; padding-inline: 10px; }
+  .hx-btn--quiet:hover { background: transparent; color: var(--text); text-decoration-color: var(--primary); }
+  .hx-jump { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; padding: 0; list-style: none; }
+  .hx-jump a { display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px 9px 11px; border: 1px solid var(--line-soft); border-radius: 999px; background: rgba(8, 18, 28, .62); color: var(--muted-strong); font: 600 13.5px/1 var(--font-body); text-decoration: none; transition: transform .25s var(--ease), border-color .2s, background .2s, color .2s; }
+  .hx-jump a:hover { transform: translateY(-2px); border-color: rgba(76, 201, 255, .5); background: rgba(76, 201, 255, .1); color: #fff; }
+  .hx-jump svg { width: 16px; height: 16px; color: var(--primary); }
+  .hx-proof li + li::before { content: "·"; margin-right: 24px; color: var(--dim); }
+
+  /* Live board: scoreboard clock, glowing progress, depth */
+  .hx-board__grid { border-color: var(--line-hi); background: linear-gradient(165deg, rgba(23, 44, 66, .95), rgba(9, 20, 31, .98)); box-shadow: var(--card-edge), 0 44px 90px -44px rgba(0, 0, 0, .95), 0 0 90px -54px rgba(76, 201, 255, .7); }
+  .hx-cell + .hx-cell { border-left-color: var(--line-soft); }
+  .hx-clock { gap: 6px; }
+  .hx-clock span { display: inline-grid; place-items: center; min-width: 1.55em; padding: .1em .18em; border: 1px solid var(--line-soft); border-radius: 12px; background: rgba(255, 255, 255, .05); box-shadow: inset 0 -12px 18px -14px rgba(0, 0, 0, .7); }
+  .hx-clock i { color: var(--primary); opacity: .7; }
+  .hx-bar { height: 5px; background: rgba(255, 255, 255, .07); }
+  .hx-bar span { background: linear-gradient(90deg, var(--primary), var(--pitch)); box-shadow: 0 0 14px rgba(76, 201, 255, .5); }
+  .hx-row { transition: transform .25s var(--ease); }
+  .hx-row:hover { transform: translateX(3px); }
+  .hx-row.is-live .hx-row__dot { background: var(--pitch); box-shadow: 0 0 0 4px rgba(61, 220, 151, .16); }
+  .hx-code { background: radial-gradient(120% 100% at 0% 0%, rgba(245, 196, 81, .09), transparent 60%); }
+  .hx-copy { border-color: rgba(245, 196, 81, .4); background: rgba(245, 196, 81, .06); transition: border-color .2s, transform .25s var(--ease), background .2s; }
+  .hx-copy:hover { border-color: var(--reward); background: rgba(245, 196, 81, .11); transform: translateY(-1px); }
+
+  /* Section rhythm */
+  .hx-section__head h2 { position: relative; padding-top: 18px; }
+  .hx-section__head h2::before { content: ""; position: absolute; left: 0; top: 0; width: 44px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, var(--primary), var(--pitch)); }
+
+  /* Beginner goals */
+  .hx-recent { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 18px; }
+  .hx-recent[hidden] { display: none; }
+  .hx-recent__label { color: var(--muted); font: 600 14px/1 var(--font-body); }
+  .hx-recent__list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hx-recent__list a { display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px 7px 8px; border: 1px solid var(--line-soft); border-radius: 999px; background: rgba(255, 255, 255, .03); color: var(--text); font: 600 14px/1 var(--font-body); text-decoration: none; transition: transform .25s var(--ease), border-color .2s, background .2s; }
+  .hx-recent__list a:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--ac) 55%, transparent); background: color-mix(in srgb, var(--ac) 10%, transparent); }
+  .hx-recent__ico { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: var(--ac); background: color-mix(in srgb, var(--ac) 16%, transparent); }
+  .hx-recent__ico svg { width: 14px; height: 14px; }
+  .hx-goals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .hx-goal { position: relative; display: flex; flex-direction: column; gap: 8px; min-height: 236px; padding: 22px; border: 1px solid var(--line-soft); border-radius: var(--r-lg); overflow: hidden; color: inherit; text-decoration: none; background: radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--ac) 16%, transparent), transparent 62%), var(--card-fill); box-shadow: var(--card-edge), var(--shadow-sm); transition: transform .35s var(--ease), border-color .25s, box-shadow .35s var(--ease); }
+  .hx-goal:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--ac) 55%, transparent); box-shadow: var(--card-edge), var(--shadow-md), 0 0 54px -28px var(--ac); }
+  .hx-goal__ico { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 13px; color: var(--ac); background: color-mix(in srgb, var(--ac) 15%, transparent); border: 1px solid color-mix(in srgb, var(--ac) 32%, transparent); }
+  .hx-goal__ico svg { width: 23px; height: 23px; }
+  .hx-goal b { margin-top: 10px; font: 700 19px/1.2 var(--font-display); letter-spacing: -.02em; }
+  .hx-goal small { color: var(--muted); font: 500 14px/1.5 var(--font-body); }
+  .hx-goal__go { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 10px; color: var(--ac); font: 700 13.5px/1.25 var(--font-body); }
+  .hx-goal__go .hx-i { width: 15px; height: 15px; transition: transform .3s var(--ease); }
+  .hx-goal:hover .hx-goal__go .hx-i { transform: translate(3px, -3px); }
+
+  /* Tools bento */
+  .hx-bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(170px, auto); gap: 14px; }
+  .hx-tile { position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 20px; border: 1px solid var(--line-soft); border-radius: var(--r-lg); overflow: hidden; color: inherit; text-decoration: none; background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--ac, #4cc9ff) 13%, transparent), transparent 62%), var(--card-fill); box-shadow: var(--card-edge), var(--shadow-sm); transition: transform .35s var(--ease), border-color .25s, box-shadow .35s var(--ease); }
+  .hx-tile:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--ac, #4cc9ff) 55%, transparent); box-shadow: var(--card-edge), var(--shadow-md), 0 0 54px -28px var(--ac, #4cc9ff); }
+  .hx-tile__ico { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 10px; border-radius: 12px; color: var(--ac); background: color-mix(in srgb, var(--ac) 15%, transparent); border: 1px solid color-mix(in srgb, var(--ac) 32%, transparent); transition: transform .35s var(--ease); }
+  .hx-tile__ico svg { width: 22px; height: 22px; }
+  .hx-tile:hover .hx-tile__ico { transform: scale(1.08) rotate(-4deg); }
+  .hx-tile b { font: 700 17px/1.25 var(--font-display); letter-spacing: -.015em; }
+  .hx-tile small { color: var(--muted); font: 500 14px/1.45 var(--font-body); }
+  .hx-tile__arrow { position: absolute; top: 18px; right: 18px; color: var(--dim); transition: color .2s, transform .3s var(--ease); }
+  .hx-tile__arrow .hx-i, .hx-tile__go .hx-i { width: 18px; height: 18px; }
+  .hx-tile:hover .hx-tile__arrow { color: var(--ac); transform: translate(3px, -3px); }
+  .hx-tile__go { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 12px; color: var(--ac, var(--primary)); font: 700 14px/1 var(--font-body); }
+  .hx-tag { align-self: flex-start; padding: 4px 9px; border: 1px solid rgba(245, 196, 81, .3); border-radius: 999px; background: rgba(245, 196, 81, .14); color: #ffe29a; font: 700 11.5px/1 var(--font-body); }
+  .hx-tile--hero { grid-column: span 2; grid-row: span 2; flex-direction: row; gap: 14px; padding: 26px; background: radial-gradient(90% 70% at 100% 100%, rgba(61, 220, 151, .16), transparent 62%), radial-gradient(120% 90% at 0% 0%, rgba(76, 201, 255, .18), transparent 60%), var(--card-fill); }
+  .hx-tile__copy { display: flex; flex: 1 1 48%; flex-direction: column; gap: 10px; min-width: 0; }
+  .hx-tile--hero b { font-size: clamp(24px, 2.6vw, 32px); line-height: 1.1; letter-spacing: -.03em; }
+  .hx-tile--hero small { font-size: 15px; }
+  .hx-pitch { position: relative; flex: 0 0 46%; align-self: center; aspect-ratio: 5 / 7; max-height: 100%; margin: 0; border-radius: 14px; overflow: hidden; color: rgba(210, 255, 232, .8); background: repeating-linear-gradient(180deg, #0f4a33 0 9.09%, #0c4230 9.09% 18.18%); box-shadow: inset 0 0 0 1px rgba(94, 214, 160, .25); }
+  .hx-pitch svg { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform .8s var(--ease); }
+  .hx-tile--hero:hover .hx-pitch svg { transform: scale(1.03); }
+  .hx-pitch__chip { fill: #1d4d6e; stroke: rgba(155, 231, 255, .55); stroke-width: .6; }
+  .hx-pitch__chip[data-hi='1'] { fill: #9a6516; stroke: rgba(255, 236, 170, .85); }
+  .hx-pitch__num { fill: #eaf6ff; font: 700 6.2px var(--font-display); }
+  .hx-pitch__cap { position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 7px 10px; border-radius: 8px; background: rgba(4, 12, 18, .78); color: #cfe3ee; font: 600 12px/1.3 var(--font-body); text-align: center; }
+  .hx-pitch__cap b { color: #ffe29a; }
+  .hx-tile--all { justify-content: center; border-style: dashed; border-color: var(--line-hi); background: rgba(255, 255, 255, .02); box-shadow: none; }
+  .hx-tile--all b { font-size: 19px; }
+
+  /* Cards further down the page */
+  .hx-season, .hx-cta, .hx-feature, .hx-item { border: 1px solid var(--line-soft); background: var(--card-fill); box-shadow: var(--card-edge), var(--shadow-sm); }
+  .hx-season, .hx-cta { border-radius: var(--r-lg); }
+  .hx-feature, .hx-item { transition: transform .3s var(--ease), border-color .25s, box-shadow .3s var(--ease); }
+  .hx-feature:hover, .hx-item:hover { transform: translateY(-3px); border-color: rgba(76, 201, 255, .35); box-shadow: var(--card-edge), var(--shadow-md); }
+  .hx-news { gap: 20px; }
+  .hx-feature { gap: 14px; padding: 14px 14px 22px; border-radius: var(--r-lg); }
+  .hx-feature__body { padding: 0 8px; }
+  .hx-list { display: grid; gap: 12px; }
+  .hx-item { padding: 12px; border-radius: var(--r-md); align-items: center; }
+  .hx-list li:first-child .hx-item { padding-top: 12px; }
+  .hx-faq__list details { border-radius: var(--r-md); transition: border-color .2s, background .2s; }
+  .hx-faq__list details[open] { border-color: rgba(76, 201, 255, .3); background: rgba(76, 201, 255, .04); }
+
+  @media (max-width: 1100px) {
+    .hx-goals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hx-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hx-tile--hero { grid-column: 1 / -1; grid-row: auto; }
+  }
+  @media (max-width: 700px) {
+    .hx-hero__inner > * { animation-duration: .6s; }
+    .hx-jump { flex-wrap: nowrap; overflow-x: auto; margin-inline: -20px; padding: 0 20px 4px; scrollbar-width: none; }
+    .hx-jump::-webkit-scrollbar { display: none; }
+    .hx-jump a { flex: none; }
+    .hx-proof li + li::before { margin-right: 14px; }
+    .hx-goals, .hx-bento { grid-template-columns: 1fr; }
+    .hx-goal { min-height: 0; }
+    .hx-tile--hero { flex-direction: column; padding: 22px; }
+    .hx-pitch { flex-basis: auto; width: min(100%, 300px); align-self: center; margin: 4px 0 0; }
+    .hx-clock span { min-width: 1.4em; }
   }
   </style>

@@ -1,9 +1,9 @@
 // Cookie banner and settings. Site promotions are always shown on supported pages.
 export default {
-  title: 'Ads help keep tools free',
-  text: 'Ads and site promotions help cover hosting and development. They appear by default on supported pages. Privacy choices control optional ad-related storage and eligible third-party ads, not our own promotions. Ad-free Premium is not available yet.',
+  title: 'Ads keep these tools free',
+  text: 'Ads and our own promotions pay for hosting and new tools. You choose whether optional ad storage and third-party ads are allowed. Our own promotions always show.',
   policy: 'Read our privacy policy',
-  manage: 'Privacy choices',
+  manage: 'Choose settings',
   continue: 'Continue',
   basic: 'Continue with basic settings',
   settingsTitle: 'Your privacy choices',

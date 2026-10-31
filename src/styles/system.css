@@ -1,37 +1,45 @@
 /* ==========================================================================
-   FCMOBILETOOLS design system
-   Loaded last in BaseLayout, so it wins over styles.css, luxe.css and every
-   per-page <style> block that uses a plain class selector.
+   FCMOBILETOOLS design system (v3, "matchday")
 
-   Rules of the house
-   1. Three radii only: 8 (controls), 12 (cards), 18 (large panels). Pills are 999.
-   2. One accent: cyan. Gold is reserved for rewards and giveaways.
-   3. Surfaces are flat with a hairline. Glow is for the live state only.
-   4. Headlines are sentence case, never gradient, never one-word-highlighted.
-   5. Every inner page starts with the same breadcrumb, then the same hero.
+   Look: deep navy stadium night, cyan as the brand light, pitch-mint for live
+   and positive states, gold only for rewards. Surfaces have depth (soft
+   gradient, inner highlight, hairline edge) and lift on hover.
 
-   Section A defines the system. Section B ("legacy normalizer") flattens old
-   per-page styling so every page matches while pages are migrated one by one.
-   Delete a rule in B once nothing needs it.
+   Performance rules (these are why the old effects were removed, so keep them):
+   1. Animate transform and opacity only. Never animate blur, filter or layout.
+   2. No fixed full-screen layers, no mix-blend-mode, no film grain.
+   3. backdrop-filter only on small, short-lived surfaces (menus, dialogs).
+   4. Looping motion pauses when it is off screen (see src/scripts/fx.js) and is
+      removed entirely for prefers-reduced-motion.
+   5. Scroll reveals run once, 14px at most, and never hide content if JS fails.
+
+   Loaded last in BaseLayout. Section B polishes common class names that older
+   pages share, without !important, so a page can still override on purpose.
    ========================================================================== */
 
 /* ---------- A. Tokens ---------- */
 :root {
   /* colour */
-  --bg: #080c11;
-  --surface: #0e141b;
-  --surface2: #141c25;
-  --surface3: #1a2430;
-  --border: #1f2933;
-  --line: #1f2933;
-  --line-strong: #2d3a48;
-  --text: #edf2f6;
-  --muted: #93a1b0;
-  --muted-strong: #c3cdd7;
-  --dim: #66748a;
+  --bg: #060f18;
+  --bg-raise: #09151f;
+  --surface: #0c1824;
+  --surface2: #112133;
+  --surface3: #172c42;
+  --border: #1b2d40;
+  --line: #1b2d40;
+  --line-strong: #2a4058;
+  --line-soft: rgba(255, 255, 255, 0.07);
+  --line-hi: rgba(255, 255, 255, 0.16);
+  --text: #f1f6fa;
+  --muted: #9bacbd;
+  --muted-strong: #cbd7e2;
+  --dim: #6b7f94;
   --primary: #4cc9ff;
   --primary-hover: #7ad9ff;
-  --primary-ink: #04131c;
+  --primary-ink: #03131c;
+  --primary-soft: rgba(76, 201, 255, 0.12);
+  --pitch: #3ddc97;
+  --violet: #9a8cff;
   --reward: #f5c451;
   --success: #47d16c;
   --danger: #ff7070;
@@ -45,7 +53,7 @@
   --mono: var(--font-body);
   --tv-serif: var(--font-display);
 
-  /* shape */
+  /* shape: three radii, pills are 999 */
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 18px;
@@ -56,38 +64,57 @@
   --r-m: var(--r-md);
   --r-l: var(--r-lg);
 
-  /* depth: one level, used only for things that float */
-  --shadow-sm: none;
-  --shadow-md: 0 18px 48px -18px rgba(0, 0, 0, 0.7);
+  /* depth */
+  --card-fill: linear-gradient(165deg, rgba(23, 44, 66, 0.72), rgba(10, 22, 34, 0.92));
+  --card-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-sm: 0 10px 28px -18px rgba(0, 0, 0, 0.7);
+  --shadow-md: 0 24px 60px -24px rgba(0, 0, 0, 0.75);
+  --glow: 0 18px 46px -18px rgba(76, 201, 255, 0.55);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* layout */
   --content-width: 1160px;
   --section-y: clamp(56px, 8vw, 96px);
 }
 
+/* Atmosphere: static gradients only (no fixed layer, no animation, no blur). */
 html { background: var(--bg); }
 html body {
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 560px at 8% -10%, rgba(76, 201, 255, 0.13), transparent 62%),
+    radial-gradient(900px 520px at 100% 2%, rgba(154, 140, 255, 0.08), transparent 64%),
+    linear-gradient(180deg, #08141f 0%, var(--bg) 520px, var(--bg) 100%);
+  background-repeat: no-repeat;
   color: var(--text);
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;
   font-optical-sizing: auto;
 }
+::selection { background: rgba(76, 201, 255, 0.3); color: #fff; }
 
 /* ---------- A. Type ---------- */
 html body :is(h1, h2, h3, h4) {
   font-family: var(--font-display);
   font-weight: 700;
-  font-stretch: 106%;
+  font-stretch: 108%;
   text-transform: none;
   text-wrap: balance;
 }
-html body :is(h1) { font-size: clamp(34px, 5.2vw, 60px); line-height: 1.04; letter-spacing: -0.03em; }
-html body :is(h2) { font-size: clamp(26px, 3.4vw, 38px); line-height: 1.12; letter-spacing: -0.025em; }
-html body :is(h3) { font-size: clamp(19px, 2vw, 24px); line-height: 1.2; letter-spacing: -0.015em; }
+html body :is(h1) { font-size: clamp(34px, 5.2vw, 60px); line-height: 1.03; letter-spacing: -0.035em; }
+html body :is(h2) { font-size: clamp(26px, 3.4vw, 38px); line-height: 1.1; letter-spacing: -0.028em; }
+html body :is(h3) { font-size: clamp(19px, 2vw, 24px); line-height: 1.2; letter-spacing: -0.018em; }
 html body :is(p, li) { text-wrap: pretty; }
 html body :is(.num, [data-tabular], time, .clock) { font-variant-numeric: tabular-nums; }
+
+/* Opt-in headline light: gradient text for a hero headline only, never forced. */
+.fx-text {
+  background: linear-gradient(100deg, #ffffff 10%, #bfeeff 48%, #7ad9ff 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
 
 /* ---------- A. Shared primitives ---------- */
 .sys-wrap { width: min(var(--content-width), calc(100% - 40px)); margin-inline: auto; }
@@ -115,7 +142,10 @@ html body .site-crumbs + #content :is(main) > :is(section, header, div, article)
 html body :is(.crumbs, .breadcrumbs, .bl-crumbs, .tv-crumbs, .rk-crumbs, .psf-crumbs, .ps-crumbs, .lp-crumb, .acc-crumbs) { display: none !important; }
 
 /* Page hero: used by <PageHero>. Same left edge, scale and spacing everywhere. */
-.page-head { padding: clamp(28px, 5vw, 56px) 0 clamp(28px, 4vw, 44px); }
+.page-head { position: relative; padding: clamp(28px, 5vw, 56px) 0 clamp(28px, 4vw, 44px); }
+.page-head::before { content: ''; position: absolute; inset: 0 0 auto; height: 100%; pointer-events: none; opacity: .55;
+  background: radial-gradient(520px 240px at 85% 0%, rgba(76, 201, 255, .12), transparent 70%), radial-gradient(420px 220px at 100% 80%, rgba(61, 220, 151, .08), transparent 70%); }
+.page-head > * { position: relative; }
 .page-head__grid { display: grid; gap: 28px 56px; align-items: end; grid-template-columns: minmax(0, 1fr); }
 .page-head--aside .page-head__grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
 .page-head h1 { margin: 0 0 14px; max-width: 18ch; }
@@ -129,131 +159,105 @@ html body :is(.crumbs, .breadcrumbs, .bl-crumbs, .tv-crumbs, .rk-crumbs, .psf-cr
 .sys-btn, html body :is(.premium-button) {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; padding: 0 18px; border-radius: var(--r-md);
-  font: 600 15px/1 var(--font-body); letter-spacing: 0; text-transform: none;
-  border: 1px solid var(--line-strong); background: transparent; color: var(--text);
-  cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font: 600 15px/1 var(--font-body); letter-spacing: 0; text-transform: none; text-decoration: none;
+  border: 1px solid var(--line-hi); background: rgba(255, 255, 255, 0.03); color: var(--text);
+  cursor: pointer; transition: transform 0.25s var(--ease), background 0.2s, border-color 0.2s, box-shadow 0.3s var(--ease);
 }
-.sys-btn:hover, html body .premium-button:hover { background: var(--surface2); border-color: #3a4a5b; transform: none; box-shadow: none; }
+.sys-btn:hover, html body .premium-button:hover { background: rgba(76, 201, 255, 0.09); border-color: rgba(76, 201, 255, 0.45); transform: translateY(-2px); }
+.sys-btn:active, html body .premium-button:active { transform: translateY(0) scale(0.98); transition-duration: 0.08s; }
 .sys-btn--primary, html body .premium-button.primary {
-  background: var(--primary); border-color: var(--primary); color: var(--primary-ink);
-  background-image: none; box-shadow: none;
+  background: linear-gradient(135deg, #9be8ff, #4cc9ff 55%, #2fb0ea); border-color: rgba(255, 255, 255, 0.35); color: var(--primary-ink);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 12px 30px -12px rgba(76, 201, 255, 0.6);
 }
-.sys-btn--primary:hover, html body .premium-button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+.sys-btn--primary:hover, html body .premium-button.primary:hover { background: linear-gradient(135deg, #b8f0ff, #6bd4ff 55%, #3dbcf5); border-color: rgba(255, 255, 255, 0.5); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset, 0 20px 40px -12px rgba(76, 201, 255, 0.8); }
 
 .sys-link { color: var(--primary); font-weight: 600; text-underline-offset: 3px; }
 .sys-link:hover { text-decoration: underline; }
 
-/* ---------- B. Legacy normalizer ----------
-   Old pages hard-code their own heroes, glows and labels. These rules make them
-   look like one product without touching their markup. `html body` raises
-   specificity above plain page selectors. */
+/* ---------- B. Shared polish ----------
+   Common class names used across older pages. No !important: a page can still
+   override these when it needs to. `html body` lifts them above plain selectors. */
 
-/* B1. No gradient or one-word-accent headlines, anywhere */
-html body :is(h1, h2, h3) :is(span, em, i, b, strong, mark),
-html body :is(.lx-gradient-text, .hx-grad, .grad, .gradient-text, [class*='grad-text']) {
-  background: none !important;
-  -webkit-background-clip: border-box !important;
-  background-clip: border-box !important;
-  -webkit-text-fill-color: currentColor !important;
-  color: inherit !important;
-  font-style: normal !important;
-  font-weight: inherit !important;
-  font-family: inherit !important;
-  text-shadow: none !important;
-}
-
-/* B2. Eyebrows and kickers: one quiet style, not pills or tracked caps */
-html body :is([class*='eyebrow'], [class*='kicker']):not(svg, path) {
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-  font: 500 14px/1.4 var(--font-body) !important;
-  color: var(--muted) !important;
-  background: none !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-}
-
-/* B3. Surfaces: flat, hairline, no lift, no gradient edge */
+/* B1. Cards: soft gradient fill, hairline edge, inner highlight, lift on hover. */
 html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card) {
-  background: var(--surface) !important;
-  background-image: none !important;
-  border: 1px solid var(--line) !important;
-  border-radius: var(--r-md) !important;
-  box-shadow: none !important;
+  background: var(--card-fill);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--card-edge), var(--shadow-sm);
+  transition: transform 0.35s var(--ease), border-color 0.25s, box-shadow 0.35s var(--ease);
 }
-html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card):hover {
-  transform: none !important;
-  border-color: var(--line-strong) !important;
-  box-shadow: none !important;
-}
-html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card)::before,
-html body :is(.premium-card, .result-card, .card, .panel, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card, .table-card)::after {
-  content: none !important;
+@media (hover: hover) {
+  html body :is(.premium-card, .result-card, .guide-card, .feature-card, .insight-card, .tv-card, .match-card, .lp-card, .rx-card, .tx-card, .third-card):hover {
+    transform: translateY(-3px);
+    border-color: rgba(76, 201, 255, 0.32);
+    box-shadow: var(--card-edge), var(--shadow-md), 0 0 50px -30px rgba(76, 201, 255, 0.6);
+  }
 }
 
-/* B4. Buttons: flat solid primary, no living gradient or glow */
-html body :is(.btn-primary, .submit-btn, .lg-btn.primary, .tv-btn.primary, .hx-btn.primary, .hx-btn--primary) {
-  background: var(--primary) !important;
-  background-image: none !important;
-  color: var(--primary-ink) !important;
-  border-color: var(--primary) !important;
-  box-shadow: none !important;
+/* B2. Primary buttons used by older pages: same lit-cyan treatment as .sys-btn--primary. */
+html body :is(.btn-primary, .submit-btn, .lg-btn.primary, .tv-btn.primary, .hx-btn--primary) {
+  background: linear-gradient(135deg, #9be8ff, #4cc9ff 55%, #2fb0ea);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: var(--primary-ink);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 12px 30px -12px rgba(76, 201, 255, 0.6);
+  transition: transform 0.25s var(--ease), box-shadow 0.3s var(--ease), filter 0.2s;
 }
-html body :is(.btn-primary, .submit-btn, .lg-btn.primary, .tv-btn.primary, .hx-btn.primary, .hx-btn--primary):hover {
-  background: var(--primary-hover) !important;
-  box-shadow: none !important;
-  transform: none !important;
-}
-
-
-/* B4b. One primary button colour on every page. Pages used to pick their own
-   (gold on Trivia and Giveaways, mint on Leagues, gradient on Redeem Codes). */
-html body :is([class*='btn-primary'], [class*='btn--primary'], [class*='btn-gold'], .hb-primary, .tp-btn:not(.ghost), .tv-btn:not(.ghost, .secondary), .gw-btn-gold, .rx-btn-primary, .lg-btn-primary) {
-  background: var(--primary) !important;
-  background-image: none !important;
-  border-color: var(--primary) !important;
-  color: var(--primary-ink) !important;
-  box-shadow: none !important;
-  text-shadow: none !important;
-  animation: none !important;
-}
-html body :is([class*='btn-primary'], [class*='btn--primary'], [class*='btn-gold'], .hb-primary, .tp-btn:not(.ghost), .tv-btn:not(.ghost, .secondary), .gw-btn-gold, .rx-btn-primary, .lg-btn-primary):hover {
-  background: var(--primary-hover) !important;
-  border-color: var(--primary-hover) !important;
-  transform: none !important;
+html body :is(.btn-primary, .submit-btn, .lg-btn.primary, .tv-btn.primary, .hx-btn--primary):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset, 0 20px 40px -12px rgba(76, 201, 255, 0.8);
+  filter: saturate(1.1);
 }
 
-/* B5. Remove decoration that reads as generated: cursor light, scroll glow */
-html body :is(.lx-cursor, .lx-glow, .lx-aurora) { display: none !important; }
-.lx-progress { box-shadow: none !important; background: var(--primary) !important; height: 2px !important; }
-
-/* B6. Inputs */
+/* B3. Inputs */
 html body :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range']) {
   border-radius: var(--r-sm);
-  background: var(--surface);
+  background: rgba(7, 17, 27, 0.7);
   border: 1px solid var(--line-strong);
+  transition: border-color 0.2s, box-shadow 0.25s var(--ease), background 0.2s;
 }
 html body :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range']):focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(76, 201, 255, 0.16);
+  box-shadow: 0 0 0 4px rgba(76, 201, 255, 0.14);
+  outline: none;
 }
 
-/* B7. Consent banner: a compact card in the corner instead of a wall across the first screen */
-html body .fcmt-consent { left: auto !important; right: 20px !important; bottom: 20px !important; width: min(400px, calc(100vw - 24px)) !important; }
-html body .fcmt-consent-card {
-  width: 100%; margin: 0; flex-direction: column; align-items: stretch; gap: 14px; padding: 18px;
-  border-radius: var(--r-lg); background: var(--surface2); backdrop-filter: none; -webkit-backdrop-filter: none;
-  box-shadow: var(--shadow-md), 0 0 0 1px var(--line-strong);
+/* B4. Section headings get a quiet pitch-line rule, so long pages have rhythm. */
+.sys-rule { position: relative; padding-top: 18px; }
+.sys-rule::before {
+  content: ''; position: absolute; left: 0; top: 0; width: 44px; height: 3px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--pitch));
 }
-html body .fcmt-consent-glow, html body .fcmt-consent-icon { display: none !important; }
-html body .fcmt-consent-copy h2 { font-size: 17px; margin: 0 0 6px; letter-spacing: -0.01em; }
-html body .fcmt-consent-copy p { font-size: 14px; line-height: 1.5; margin: 0; color: var(--muted); }
-html body .fcmt-consent-actions { flex-wrap: wrap; justify-content: stretch; }
-html body .fcmt-consent-btn { flex: 1 1 auto; border-radius: var(--r-sm); font: 600 14px/1 var(--font-body); }
-html body .fcmt-consent-btn.primary { order: -1; flex-basis: 100%; background: var(--primary); border-color: var(--primary); color: var(--primary-ink); box-shadow: none; }
-@media (max-width: 600px) { html body .fcmt-consent { right: 12px !important; left: 12px !important; bottom: 12px !important; width: auto !important; } }
+
+/* B5. Chips and status dots shared by new components */
+.sys-chip {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid rgba(76, 201, 255, 0.25); background: var(--primary-soft); color: #bdeeff;
+  font: 600 13px/1 var(--font-body);
+}
+.sys-chip--live { border-color: rgba(61, 220, 151, 0.35); background: rgba(61, 220, 151, 0.1); color: #a8f3cf; }
+.sys-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pitch); box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.5); }
+.fx-on .sys-dot { animation: sys-pulse 2.4s ease-out infinite; }
+@keyframes sys-pulse { 0% { box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.5); } 70%, 100% { box-shadow: 0 0 0 8px rgba(61, 220, 151, 0); } }
+
+/* B6. Scroll reveal. The hidden state only exists once fx.js has run, and only for
+   elements that start below the fold, so nothing flashes and nothing stays hidden. */
+html.fx-on .rv { opacity: 0; transform: translateY(14px); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); transition-delay: calc(var(--rv-i, 0) * 55ms); }
+html.fx-on .rv.rv-in { opacity: 1; transform: none; }
+
+/* The navbar already draws a reading-progress line, so the second one from luxe.js is hidden. */
+.lx-progress { display: none; }
+
+/* B6b. Smooth page-to-page crossfade (native View Transitions: no JavaScript, ignored where unsupported).
+   The navbar keeps its own layer so it stays put while the page behind it fades. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; animation-timing-function: var(--ease); }
+  .fcmt-bar { view-transition-name: fcmt-bar; }
+  ::view-transition-group(fcmt-bar) { animation-duration: 0s; }
+}
+
+/* B7. Looping motion is paused off screen by fx.js */
+.fx-paused, .fx-paused * { animation-play-state: paused !important; }
 
 /* B8. Motion: respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {

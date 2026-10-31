@@ -1,39 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { TOOLS, TOOL_GROUPS, LEVEL_LABEL, ACCENTS, iconSvg } from '../../data/siteTools.js';
 
 const description = 'Find free FC Mobile tools for squad ratings, training, rank ups, market planning, live events, redeem codes and rewards. FCMOBILETOOLS brings the calculators, planners and trackers together.';
 const site = 'https://fcmobiletools.online';
 
-const groups = [
-  {
-    title: 'Squad building and upgrades',
-    intro: 'Plan your team and understand the cost of each upgrade before you spend coins or resources.',
-    items: [
-      { name: 'Team OVR Calculator', category: 'Squad planning', href: '/team-ovr/', text: 'See how player ratings and rank upgrades affect your squad OVR.' },
-      { name: 'PlayStyle Guide', category: 'Player roles', href: '/player/playstyle/', text: 'Understand FC Mobile PlayStyles and how they shape player behaviour.' },
-      { name: 'PlayStyle Finder', category: 'Player roles', href: '/player/playstyle-finder/', text: 'Find the PlayStyles that fit the way you play.' },
-      { name: 'Training Calculator', category: 'Training', href: '/training-calculator/', text: 'Plan Training XP and the materials needed to reach a target level.' },
-      { name: 'Rank Up Calculator', category: 'Rank ups', href: '/rank-up-calculator/', text: 'Estimate Rank Up Points for the upgrade you have planned.' },
-      { name: 'Investment Calculator', category: 'Market planning', href: '/investment-calculator/', text: 'Work out market tax, selling proceeds, profit and break-even prices.' },
-      { name: 'Gauntlet Planner', category: 'Event planning', href: '/gauntlet-planner/', text: 'Organise player rotations for Gauntlet Mode.' },
-      { name: 'Shards Counter', category: 'Star Shards', href: '/shards-counter/', text: 'Track Star Shards and measure progress toward a reward.' }
-    ]
-  },
-  {
-    title: 'Live events, codes and game resources',
-    intro: 'Check what is happening in FC Mobile and find the information you need for current content.',
-    items: [
-      { name: 'FC Mobile Events', category: 'Live events', href: '/events/', text: 'Follow event dates, live content and countdowns in one place.' },
-      { name: 'Redeem Codes', category: 'Rewards', href: '/redeem-codes/', text: 'Check code status, rewards, regions and expiry information.' },
-      { name: 'Football Centre', category: 'Match centre', href: '/football-centre/', text: 'Follow Football Centre results, analysis and event progress.' },
-      { name: 'Captain OVR Tracker', category: 'Objectives', href: '/captain-tracker/', text: 'Track Captain OVR objectives and matchday progress.' },
-      { name: 'Trivia Answers', category: 'Answers', href: '/trivia/', text: 'Find answers for A Nation’s Story and Extra Time questions.' },
-      { name: 'FC Mobile 27 Guide', category: 'Season guide', href: '/fc-mobile-27/', text: 'Read the Season 27 feature guide and current game coverage.' }
-    ]
-  }
-];
+const featured = ['team-ovr', 'codes', 'events'].map((id) => TOOLS.find((t) => t.id === id));
+const groups = TOOL_GROUPS.map((g) => ({ ...g, items: TOOLS.filter((t) => t.group === g.id) }));
 
-const allItems = groups.flatMap((group) => group.items);
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
@@ -45,8 +19,8 @@ const schema = {
   mainEntity: {
     '@type': 'ItemList',
     name: 'FC Mobile tools and resources',
-    numberOfItems: allItems.length,
-    itemListElement: allItems.map((item, index) => ({
+    numberOfItems: TOOLS.length,
+    itemListElement: TOOLS.map((item, index) => ({
       '@type': 'ListItem',
       position: index + 1,
       name: item.name,
@@ -59,92 +33,200 @@ const schema = {
 <BaseLayout title="FC Mobile Tools & Calculators" description={description}>
   <script type="application/ld+json" set:html={JSON.stringify(schema)} />
 
-  <main class="tools-directory">
-    <section class="directory-hero" aria-labelledby="directory-title">
-      <div class="directory-wrap">
-        <p class="directory-eyebrow">FCMOBILETOOLS / TOOL DIRECTORY</p>
-        <h1 id="directory-title">FC Mobile Tools for Squad Building, Training and Events</h1>
-        <p class="directory-lede">Free FC Mobile calculators, planners, trackers and game resources. Choose a tool for your squad, upgrades, live events or rewards.</p>
-        <div class="directory-actions">
-          <a class="directory-button directory-button--primary" href="#squad-tools">Explore squad tools</a>
-          <a class="directory-button" href="/events/">See live events</a>
+  <main class="tl">
+    <header class="tl-hero">
+      <div class="tl-wrap">
+        <p class="sys-chip"><span class="sys-dot"></span>{TOOLS.length} free tools</p>
+        <h1>Every FC Mobile tool, in one place.</h1>
+        <p class="tl-lede">Calculators to plan upgrades, trackers for what is live, and guides when you get stuck. Free, no sign-up needed.</p>
+
+        <div class="tl-search" role="search">
+          <span set:html={iconSvg('search')}></span>
+          <input id="tl-q" type="search" placeholder="Search tools, e.g. codes, training, OVR" autocomplete="off" aria-label="Search tools" />
+          <kbd aria-hidden="true">/</kbd>
         </div>
-        <p class="directory-count">{allItems.length} FC Mobile tools and resources in one directory</p>
+
+        <div class="tl-chips" id="tl-chips" role="group" aria-label="Filter tools">
+          <button type="button" class="on" data-f="all">All</button>
+          {TOOL_GROUPS.map((g) => <button type="button" data-f={g.id}>{g.title}</button>)}
+        </div>
+      </div>
+    </header>
+
+    <section class="tl-wrap tl-start" aria-label="New here?">
+      <a class="tl-start-card" href="/start/">
+        <span class="tl-start-ico" set:html={iconSvg('home')}></span>
+        <span class="tl-start-text">
+          <strong>New to FCMOBILETOOLS?</strong>
+          <small>Tell us what you want to do and we will point you to the right page.</small>
+        </span>
+        <span class="tl-start-go">Start here <span set:html={iconSvg('right')}></span></span>
+      </a>
+    </section>
+
+    <section class="tl-wrap tl-featured" aria-labelledby="tl-feat" data-rv-group>
+      <h2 id="tl-feat" class="tl-h">Most used</h2>
+      <div class="tl-feat-grid">
+        {featured.map((t, i) => (
+          <a class={`tl-feat tl-feat--${t.accent}`} href={t.href} style={`--ac:${ACCENTS[t.accent]}`}>
+            <span class="tl-feat-ico" set:html={iconSvg(t.icon)}></span>
+            <span class="tl-tag">{t.tag}</span>
+            <strong>{t.name}</strong>
+            <p>{t.text}</p>
+            <span class="tl-go">Open <span set:html={iconSvg('right')}></span></span>
+          </a>
+        ))}
       </div>
     </section>
 
-    <div class="directory-wrap directory-content">
-      {groups.map((group, index) => (
-        <section class="directory-group" id={index === 0 ? 'squad-tools' : 'live-tools'} aria-labelledby={index === 0 ? 'squad-tools-title' : 'live-tools-title'}>
-          <header class="directory-heading">
-            <div>
-              <p class="directory-eyebrow">{index === 0 ? 'PLAN YOUR SQUAD' : 'FOLLOW THE GAME'}</p>
-              <h2 id={index === 0 ? 'squad-tools-title' : 'live-tools-title'}>{group.title}</h2>
-            </div>
-            <p>{group.intro}</p>
-          </header>
-          <div class="directory-grid">
-            {group.items.map((item) => (
-              <article class="directory-card">
-                <span class="directory-category">{item.category}</span>
-                <h3><a href={item.href}>{item.name}</a></h3>
-                <p>{item.text}</p>
-                <a class="directory-open" href={item.href}>Open tool <span aria-hidden="true">↗</span></a>
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
-
-      <section class="directory-about" aria-labelledby="directory-about-title">
-        <div>
-          <p class="directory-eyebrow">ABOUT FCMOBILETOOLS</p>
-          <h2 id="directory-about-title">A practical toolkit for FC Mobile players</h2>
+    {groups.map((g) => (
+      <section class="tl-wrap tl-group" data-group={g.id} aria-labelledby={`tl-${g.id}`}>
+        <div class="tl-group-head">
+          <h2 id={`tl-${g.id}`} class="tl-h">{g.title}</h2>
+          <p>{g.note}</p>
         </div>
-        <div class="directory-about-copy">
-          <p>FCMOBILETOOLS brings useful FC Mobile tools into one place. Use the calculators to plan squad ratings, training and rank ups. Use the trackers to follow events, Star Shards and objectives. Check redeem codes and answer guides when new content arrives.</p>
-          <p>The site is an independent, fan-made resource. It is not affiliated with or endorsed by EA SPORTS or FC Mobile. Tools and guides are updated as the game changes.</p>
-          <a href="/creator/">Meet the creator behind FCMOBILETOOLS <span aria-hidden="true">↗</span></a>
+        <div class="tl-grid" data-rv-group>
+          {g.items.map((t) => (
+            <a class="tl-card" href={t.href} data-name={`${t.name} ${t.short} ${t.text}`.toLowerCase()} style={`--ac:${ACCENTS[t.accent]}`}>
+              <span class="tl-ico" set:html={iconSvg(t.icon)}></span>
+              <span class="tl-body">
+                <span class="tl-title"><strong>{t.name}</strong>{t.tag && <em class="tl-tag">{t.tag}</em>}</span>
+                <span class="tl-short">{t.short}</span>
+                <span class="tl-level">{LEVEL_LABEL[t.level]}</span>
+              </span>
+              <span class="tl-arrow" set:html={iconSvg('arrow')}></span>
+            </a>
+          ))}
         </div>
       </section>
-    </div>
+    ))}
+
+    <p class="tl-wrap tl-empty" id="tl-empty" hidden>No tool matches that search. Try a shorter word like “codes” or “OVR”.</p>
   </main>
 </BaseLayout>
 
-<style>
-  .tools-directory{color:var(--text);background:var(--bg)}
-  .directory-wrap{width:min(1160px,calc(100% - 40px));margin-inline:auto}
-  .directory-hero{position:relative;isolation:isolate;overflow:hidden;padding:clamp(76px,10vw,132px) 0 72px;border-bottom:1px solid var(--line);background:radial-gradient(ellipse at 78% 15%,rgba(76,201,255,.17),transparent 38%),linear-gradient(145deg,#0b1d2a,#071018 68%)}
-  .directory-hero::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,rgba(7,16,24,.3),transparent 75%);pointer-events:none}
-  .directory-eyebrow{margin:0 0 15px;color:var(--primary);font:800 11px/1.3 var(--font-body);letter-spacing:.15em;text-transform:uppercase}
-  .directory-hero h1{max-width:900px;margin:0;font:700 clamp(38px,6.2vw,76px)/.99 var(--font-display);letter-spacing:-.055em;color:#f5f8fb}
-  .directory-lede{max-width:710px;margin:22px 0 0;color:var(--muted-strong);font:500 clamp(16px,1.8vw,19px)/1.65 var(--font-body)}
-  .directory-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
-  .directory-button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 17px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:rgba(255,255,255,.035);color:var(--text);font:700 13px/1 var(--font-body);text-decoration:none;transition:border-color .18s,background .18s}
-  .directory-button:hover{border-color:var(--primary);background:var(--surface2)}
-  .directory-button--primary{border-color:var(--primary);background:var(--primary);color:#061018}
-  .directory-button--primary:hover{background:var(--primary-hover);border-color:var(--primary-hover)}
-  .directory-count{margin:24px 0 0;color:var(--dim);font:600 12px/1.5 var(--font-body)}
-  .directory-content{padding-top:64px;padding-bottom:clamp(70px,9vw,110px)}
-  .directory-group+.directory-group{margin-top:68px}
-  .directory-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.7fr);gap:28px;align-items:end;margin-bottom:24px}
-  .directory-heading .directory-eyebrow{margin-bottom:8px}
-  .directory-heading h2,.directory-about h2{margin:0;font:700 clamp(26px,3.5vw,38px)/1.08 var(--font-display);letter-spacing:-.04em}
-  .directory-heading>p{max-width:470px;margin:0;color:var(--muted);font:500 15px/1.65 var(--font-body)}
-  .directory-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
-  .directory-card{display:flex;flex-direction:column;min-height:208px;padding:21px;border:1px solid var(--line);border-radius:var(--r-lg);background:linear-gradient(155deg,rgba(22,37,54,.84),rgba(10,21,31,.94));transition:transform .18s,border-color .18s}
-  .directory-card:hover{transform:translateY(-3px);border-color:rgba(76,201,255,.42)}
-  .directory-category{color:var(--primary);font:700 10px/1.4 var(--font-body);letter-spacing:.08em;text-transform:uppercase}
-  .directory-card h3{margin:13px 0 7px;font:700 19px/1.25 var(--font-display);letter-spacing:-.02em}
-  .directory-card h3 a{color:var(--text);text-decoration:none}
-  .directory-card h3 a:hover{color:var(--primary)}
-  .directory-card p{margin:0 0 20px;color:var(--muted);font:500 13px/1.6 var(--font-body)}
-  .directory-open{display:inline-flex;align-items:center;gap:8px;margin-top:auto;color:var(--primary);font:700 12px/1.4 var(--font-body);text-decoration:none}
-  .directory-open:hover{color:var(--primary-hover)}
-  .directory-about{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:42px;margin-top:76px;padding:clamp(24px,4vw,42px);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface)}
-  .directory-about .directory-eyebrow{margin-bottom:9px}
-  .directory-about-copy p{margin:0 0 14px;color:var(--muted);font:500 14px/1.7 var(--font-body)}
-  .directory-about-copy a{display:inline-flex;gap:8px;margin-top:4px;color:var(--primary);font:700 13px/1.4 var(--font-body);text-decoration:none}
-  @media(max-width:900px){.directory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.directory-heading{grid-template-columns:1fr;gap:12px}.directory-about{grid-template-columns:1fr;gap:18px}}
-  @media(max-width:560px){.directory-wrap{width:calc(100% - 28px)}.directory-grid{grid-template-columns:1fr}.directory-content{padding-top:46px}.directory-group+.directory-group{margin-top:50px}.directory-card{min-height:0}.directory-actions{align-items:stretch;flex-direction:column}.directory-button{width:100%}}
+<style is:global>
+  .tl{padding-bottom:40px}
+  .tl-wrap{width:min(var(--content-width),calc(100% - 40px));margin-inline:auto}
+  .tl-hero{position:relative;padding:clamp(28px,5vw,60px) 0 clamp(24px,3vw,36px);overflow:hidden}
+  /* Pitch-line motif: static SVG, no animation */
+  .tl-hero::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background:
+      radial-gradient(520px 260px at 82% 10%,rgba(61,220,151,.1),transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='360' viewBox='0 0 520 360' fill='none' stroke='%234cc9ff' stroke-opacity='.11' stroke-width='1.4'%3E%3Crect x='20' y='20' width='480' height='320' rx='8'/%3E%3Cpath d='M260 20v320'/%3E%3Ccircle cx='260' cy='180' r='48'/%3E%3Crect x='20' y='110' width='72' height='140'/%3E%3Crect x='428' y='110' width='72' height='140'/%3E%3C/svg%3E") no-repeat right -60px top 10px / 520px;
+    -webkit-mask-image:linear-gradient(90deg,transparent 30%,#000 80%);mask-image:linear-gradient(90deg,transparent 30%,#000 80%)}
+  .tl-hero .tl-wrap{position:relative}
+  .tl-hero h1{margin:16px 0 14px;max-width:16ch}
+  .tl-lede{margin:0;max-width:54ch;color:var(--muted);font-size:clamp(16px,1.6vw,18px)}
+  .tl-search{display:flex;align-items:center;gap:12px;max-width:560px;height:56px;margin-top:26px;padding:0 14px 0 18px;border:1px solid var(--line-hi);border-radius:var(--r-lg);background:rgba(8,18,28,.8);color:var(--muted);transition:border-color .2s,box-shadow .25s var(--ease)}
+  .tl-search:focus-within{border-color:var(--primary);box-shadow:0 0 0 4px rgba(76,201,255,.14),var(--glow)}
+  .tl-search svg{width:20px;height:20px;flex:none}
+  .tl-search input{flex:1;min-width:0;height:100%;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--text);font:500 16px/1 var(--font-body);outline:0}
+  .tl-search input::placeholder{color:var(--dim)}
+  .tl-search kbd{display:inline-grid;place-items:center;min-width:24px;height:24px;border:1px solid var(--line-hi);border-radius:6px;background:rgba(255,255,255,.05);color:var(--muted);font:700 12px/1 var(--font-body)}
+  .tl-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .tl-chips button{min-height:40px;padding:0 16px;border:1px solid var(--line-soft);border-radius:999px;background:rgba(255,255,255,.03);color:var(--muted-strong);font:600 14px/1 var(--font-body);cursor:pointer;transition:background .2s,border-color .2s,color .2s,transform .2s var(--ease)}
+  .tl-chips button:hover{border-color:rgba(76,201,255,.4);color:var(--text);transform:translateY(-1px)}
+  .tl-chips button.on{background:var(--primary-soft);border-color:rgba(76,201,255,.5);color:#d6f4ff}
+
+  .tl-start{margin-top:8px}
+  .tl-start-card{display:flex;align-items:center;gap:16px;padding:16px 20px;border:1px solid rgba(61,220,151,.28);border-radius:var(--r-lg);background:linear-gradient(100deg,rgba(61,220,151,.12),rgba(76,201,255,.06));color:var(--text);text-decoration:none;transition:transform .3s var(--ease),border-color .2s,box-shadow .3s var(--ease)}
+  .tl-start-card:hover{transform:translateY(-2px);border-color:rgba(61,220,151,.55);box-shadow:0 20px 44px -22px rgba(61,220,151,.5)}
+  .tl-start-ico{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:var(--r-md);background:rgba(61,220,151,.15);color:var(--pitch)}
+  .tl-start-ico svg{width:22px;height:22px}
+  .tl-start-text{flex:1;min-width:0}
+  .tl-start-text strong{display:block;font:700 16px/1.3 var(--font-display)}
+  .tl-start-text small{display:block;margin-top:3px;color:var(--muted);font:500 14px/1.4 var(--font-body)}
+  .tl-start-go{display:inline-flex;align-items:center;gap:6px;color:var(--pitch);font:700 14px/1 var(--font-body);white-space:nowrap}
+  .tl-start-go svg{width:16px;height:16px}
+
+  .tl-h{margin:0;font-size:clamp(22px,2.6vw,28px)}
+  .tl-featured{margin-top:clamp(36px,5vw,56px)}
+  .tl-feat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px}
+  .tl-feat{position:relative;display:flex;flex-direction:column;gap:8px;min-height:230px;padding:22px;border:1px solid var(--line-soft);border-radius:var(--r-lg);overflow:hidden;color:var(--text);text-decoration:none;
+    background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--ac) 20%,transparent),transparent 60%),var(--card-fill);box-shadow:var(--card-edge),var(--shadow-sm);transition:transform .35s var(--ease),border-color .25s,box-shadow .35s var(--ease)}
+  .tl-feat:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--ac) 55%,transparent);box-shadow:var(--card-edge),var(--shadow-md),0 0 60px -28px var(--ac)}
+  .tl-feat-ico{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;color:var(--ac);background:color-mix(in srgb,var(--ac) 16%,transparent);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent)}
+  .tl-feat-ico svg{width:24px;height:24px}
+  .tl-feat .tl-tag{position:absolute;top:22px;right:22px}
+  .tl-feat strong{margin-top:10px;font:700 21px/1.2 var(--font-display);letter-spacing:-.02em}
+  .tl-feat p{margin:0;color:var(--muted);font:500 14.5px/1.5 var(--font-body)}
+  .tl-go{display:inline-flex;align-items:center;gap:6px;margin-top:auto;color:var(--ac);font:700 14px/1 var(--font-body)}
+  .tl-go svg{width:16px;height:16px;transition:transform .3s var(--ease)}
+  .tl-feat:hover .tl-go svg{transform:translateX(4px)}
+  .tl-tag{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:rgba(245,196,81,.14);border:1px solid rgba(245,196,81,.3);color:#ffe29a;font:700 11.5px/1 var(--font-body);font-style:normal}
+
+  .tl-group{margin-top:clamp(36px,5vw,60px)}
+  .tl-group-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;margin-bottom:18px}
+  .tl-group-head p{margin:0;color:var(--muted);font-size:15px}
+  .tl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .tl-card{position:relative;display:flex;align-items:flex-start;gap:16px;padding:18px;border:1px solid var(--line-soft);border-radius:var(--r-lg);background:var(--card-fill);box-shadow:var(--card-edge);color:var(--text);text-decoration:none;transition:transform .3s var(--ease),border-color .25s,box-shadow .3s var(--ease)}
+  .tl-card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--ac) 50%,transparent);box-shadow:var(--card-edge),var(--shadow-md),0 0 44px -26px var(--ac)}
+  .tl-ico{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:13px;color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent);border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);transition:transform .35s var(--ease)}
+  .tl-ico svg{width:22px;height:22px}
+  .tl-card:hover .tl-ico{transform:scale(1.07) rotate(-3deg)}
+  .tl-body{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+  .tl-title{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+  .tl-title strong{font:700 16.5px/1.25 var(--font-display);letter-spacing:-.01em}
+  .tl-short{color:var(--muted-strong);font:500 14.5px/1.45 var(--font-body)}
+  .tl-level{color:var(--dim);font:500 13px/1.3 var(--font-body)}
+  .tl-arrow{flex:none;color:var(--dim);transition:color .2s,transform .3s var(--ease)}
+  .tl-arrow svg{width:18px;height:18px}
+  .tl-card:hover .tl-arrow{color:var(--ac);transform:translate(2px,-2px)}
+  .tl-empty{margin-top:40px;padding:28px;border:1px dashed var(--line-strong);border-radius:var(--r-lg);color:var(--muted);text-align:center}
+  .tl-group[hidden],.tl-card[hidden],.tl-featured[hidden]{display:none}
+
+  @media(max-width:900px){.tl-feat-grid{grid-template-columns:1fr}.tl-feat{min-height:0}}
+  @media(max-width:640px){
+    .tl-wrap{width:calc(100% - 32px)}
+    .tl-grid{grid-template-columns:1fr}
+    .tl-start-card{flex-wrap:wrap}
+    .tl-start-go{width:100%;justify-content:flex-end}
+    .tl-chips{flex-wrap:nowrap;overflow-x:auto;margin-inline:-16px;padding:0 16px 4px;scrollbar-width:none}
+    .tl-chips::-webkit-scrollbar{display:none}
+    .tl-chips button{flex:none}
+    .tl-search kbd{display:none}
+  }
 </style>
+
+<script>
+  const q = document.getElementById('tl-q') as HTMLInputElement | null;
+  const chips = document.getElementById('tl-chips');
+  const empty = document.getElementById('tl-empty');
+  const featured = document.querySelector<HTMLElement>('.tl-featured');
+  let filter = 'all';
+
+  function apply() {
+    const term = (q?.value || '').trim().toLowerCase();
+    let shown = 0;
+    document.querySelectorAll<HTMLElement>('.tl-group').forEach((group) => {
+      const inGroup = filter === 'all' || group.dataset.group === filter;
+      let any = 0;
+      group.querySelectorAll<HTMLElement>('.tl-card').forEach((card) => {
+        const hit = inGroup && (!term || (card.dataset.name || '').includes(term));
+        card.hidden = !hit;
+        if (hit) any += 1;
+      });
+      group.hidden = any === 0;
+      shown += any;
+    });
+    if (featured) featured.hidden = filter !== 'all' || Boolean(term);
+    if (empty) empty.hidden = shown !== 0;
+  }
+
+  q?.addEventListener('input', apply);
+  chips?.addEventListener('click', (event) => {
+    const btn = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-f]');
+    if (!btn) return;
+    filter = btn.dataset.f || 'all';
+    chips.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn));
+    apply();
+  });
+  // "/" focuses search, like the site-wide palette
+  document.addEventListener('keydown', (event) => {
+    const t = event.target as HTMLElement;
+    if (event.key !== '/' || /input|textarea|select/i.test(t?.tagName || '')) return;
+    event.preventDefault();
+    q?.focus();
+  });
+</script>

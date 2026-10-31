@@ -18,10 +18,17 @@ const link = (key) => tr(`footer.links.${key}`);
       </a>
       <p>{tr('footer.brand')}</p>
       <span class="fcmt-footer-note">{tr('footer.note')}</span>
+      <div class="fcmt-footer-social" aria-label="Follow FCMOBILETOOLS">
+        <a href="https://discord.gg/nRzsqCurUb" target="_blank" rel="noopener" aria-label="Discord"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7c3-1.2 7-1.2 10 0 1.8 2.6 2.7 5.4 2.9 8.6-1.4 1-2.7 1.5-4 1.9l-.9-1.5c.6-.2 1.1-.5 1.6-.9-3.4 1.4-7.8 1.4-11.2 0 .5.4 1 .7 1.6.9l-.9 1.5c-1.3-.4-2.6-.9-4-1.9C4.3 12.4 5.2 9.6 7 7z"/><circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/></svg></a>
+        <a href="https://www.youtube.com/@tanzimfc" target="_blank" rel="noopener" aria-label="YouTube"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 8.5a3 3 0 0 0-2.1-2.1C18 6 12 6 12 6s-6 0-7.9.4A3 3 0 0 0 2 8.5C1.7 9.7 1.6 10.8 1.6 12s.1 2.3.4 3.5a3 3 0 0 0 2.1 2.1C6 18 12 18 12 18s6 0 7.9-.4a3 3 0 0 0 2.1-2.1c.3-1.2.4-2.3.4-3.5s-.1-2.3-.4-3.5z"/><path d="m10 9 5 3-5 3z"/></svg></a>
+        <a href="https://x.com/TanzimFC" target="_blank" rel="noopener" aria-label="X"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 4l16 16M20 4 4 20"/></svg></a>
+      </div>
     </div>
 
     <nav class="fcmt-footer-col" aria-label={tr('footer.aria.tools')}>
       <b>{tr('footer.cols.tools')}</b>
+      <a href="/start/" class="fcmt-footer-hi">Start here</a>
+      <a href="/tools/">All tools</a>
       <a href={href('/team-ovr')}>{navItem('team-ovr')}</a>
       <a href={href('/training-calculator')}>{navItem('training')}</a>
       <a href={href('/rank-up-calculator')}>{navItem('rank')}</a>
@@ -70,19 +77,24 @@ const link = (key) => tr(`footer.links.${key}`);
 </footer>
 
 <style>
-.fcmt-footer{position:relative;margin-top:76px;padding:72px 0 24px;background:linear-gradient(180deg,#0a131d,#071018);border-top:1px solid rgba(255,255,255,.07);overflow:hidden}
-.fcmt-footer-glow{position:absolute;width:620px;height:300px;left:50%;top:-190px;transform:translateX(-50%);background:rgba(76,201,255,.12);filter:blur(90px);pointer-events:none}
-.fcmt-footer-grid{position:relative;z-index:1;display:grid;grid-template-columns:2fr repeat(4,1fr);gap:34px}
-.fcmt-footer-logo{display:flex;width:280px;height:74px}.fcmt-footer-logo img{width:100%;height:100%;object-fit:contain;object-position:left center;filter:drop-shadow(0 9px 22px rgba(0,0,0,.26))}
-.fcmt-footer-brand p{max-width:390px;margin:19px 0;color:var(--muted);font:500 13px/1.75 var(--font-body)}
-.fcmt-footer-note{display:inline-flex;padding:9px 12px;border:1px solid rgba(255,255,255,.08);border-radius:999px;background:rgba(15,26,38,.82);color:#8192a2;font:600 11px/1.2 var(--font-body)}
-.fcmt-footer-col b{display:block;margin:4px 0 15px;color:var(--primary);font:800 10px/1 var(--font-body);letter-spacing:.15em}
-.fcmt-footer-col a{display:block;width:max-content;max-width:100%;margin-bottom:10px;color:#b3c0cc;font:600 12px/1.35 var(--font-body);transition:color .16s ease,transform .16s ease}.fcmt-footer-col a:hover{color:var(--text);transform:translateX(3px)}
+.fcmt-footer{position:relative;margin-top:clamp(56px,8vw,96px);padding:72px 0 24px;background:radial-gradient(900px 260px at 50% -120px,rgba(76,201,255,.13),transparent 70%),linear-gradient(180deg,#0a1a28,#060f18);border-top:1px solid var(--line-soft);overflow:hidden}
+.fcmt-footer::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(76,201,255,.5),rgba(61,220,151,.4),transparent)}
+.fcmt-footer-glow{display:none}
+.fcmt-footer-grid{position:relative;z-index:1;display:grid;grid-template-columns:2fr repeat(4,1fr);gap:36px}
+.fcmt-footer-logo{display:flex;width:240px;height:64px}.fcmt-footer-logo img{width:100%;height:100%;object-fit:contain;object-position:left center}
+.fcmt-footer-brand p{max-width:380px;margin:18px 0 16px;color:var(--muted);font:500 14.5px/1.65 var(--font-body)}
+.fcmt-footer-note{display:inline-flex;padding:8px 13px;border:1px solid var(--line-soft);border-radius:999px;background:rgba(255,255,255,.03);color:var(--muted);font:600 12.5px/1.2 var(--font-body)}
+.fcmt-footer-social{display:flex;gap:8px;margin-top:18px}
+.fcmt-footer-social a{display:grid;place-items:center;width:42px;height:42px;border:1px solid var(--line-soft);border-radius:var(--r-md);background:rgba(255,255,255,.03);color:var(--muted-strong);transition:transform .25s var(--ease),border-color .2s,color .2s,background .2s}
+.fcmt-footer-social a:hover{transform:translateY(-2px);border-color:rgba(76,201,255,.5);color:#fff;background:var(--primary-soft)}
+.fcmt-footer-col b{display:block;margin:4px 0 14px;color:var(--text);font:700 14px/1 var(--font-display);letter-spacing:-.01em}
+.fcmt-footer-col a{display:block;width:max-content;max-width:100%;margin-bottom:11px;color:var(--muted);font:500 14px/1.35 var(--font-body);transition:color .16s ease,transform .2s var(--ease)}.fcmt-footer-col a:hover{color:var(--text);transform:translateX(3px)}
+.fcmt-footer-col a.fcmt-footer-hi{color:var(--pitch);font-weight:700}
 .fcmt-footer-col a[data-privacy-choices]{color:var(--primary)}
 .fcmt-footer-col a[data-privacy-choices]:hover{color:#c9f4ff}
-.fcmt-footer-bottom{position:relative;z-index:1;display:flex;justify-content:space-between;gap:18px;margin-top:44px;padding-top:22px;border-top:1px solid rgba(255,255,255,.07);color:#738596;font:600 11px/1.4 var(--font-body)}
+.fcmt-footer-bottom{position:relative;z-index:1;display:flex;justify-content:space-between;gap:18px;margin-top:44px;padding-top:22px;border-top:1px solid var(--line-soft);color:var(--dim);font:500 13px/1.4 var(--font-body)}
 @media(max-width:980px){.fcmt-footer-grid{grid-template-columns:1.6fr repeat(3,1fr)}.fcmt-footer-brand{grid-column:1/-1}}
-@media(max-width:700px){.fcmt-footer-grid{grid-template-columns:1fr 1fr;gap:28px 22px}.fcmt-footer-brand{grid-column:1/-1}.fcmt-footer-logo{width:246px;height:66px}.fcmt-footer-bottom{flex-direction:column}}
+@media(max-width:700px){.fcmt-footer-grid{grid-template-columns:1fr 1fr;gap:28px 22px}.fcmt-footer-brand{grid-column:1/-1}.fcmt-footer-logo{width:210px;height:56px}.fcmt-footer-bottom{flex-direction:column}}
 @media(max-width:460px){.fcmt-footer-grid{grid-template-columns:1fr}.fcmt-footer-col a{width:auto}.fcmt-footer{padding-top:58px}}
 </style>
 

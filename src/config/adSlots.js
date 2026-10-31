@@ -8,16 +8,27 @@
 // The engine reads this file in the browser and in the Worker, so keep it plain data.
 
 export const AD_SLOTS = [
-  { id: 'home-mid', label: 'Home page, between sections', pageTypes: ['home'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed after roughly the middle of the home page.' },
-  { id: 'list-mid', label: 'Lists, inside the feed', pageTypes: ['list'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Blog index, redeem codes and events pages. Placed after the fourth item or at mid page.' },
-  { id: 'article-early', label: 'Article, early read', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'An additional in-read card on long articles with enough paragraphs.' },
-  { id: 'article-mid', label: 'Article, mid read', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed between paragraphs, only in articles with at least six paragraphs.' },
-  { id: 'article-end', label: 'Article, after the last paragraph', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'auto', note: 'Placed right after the article body.' },
-  { id: 'page-mid', label: 'Pages, between sections', pageTypes: ['page'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed around the middle of a long public information page.' },
-  { id: 'tool-sidebar', label: 'Tools, desktop side rail', pageTypes: ['tool'], devices: ['desktop'], adsense: 'auto', note: 'A compact promotion in the desktop side rail. Hidden on narrow screens.' },
-  { id: 'tool-result', label: 'Tools, under the results', pageTypes: ['tool'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed under tool results when available, otherwise after the main tool.' },
-  { id: 'page-end', label: 'Page end, above the footer', pageTypes: ['home', 'list', 'article', 'tool', 'page'], devices: ['mobile', 'desktop'], adsense: 'auto', note: 'Placed at the very end of the content, above the footer.' }
+  { id: 'home-mid', size: 'hero', label: 'Home page, between sections', pageTypes: ['home'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed after roughly the middle of the home page.' },
+  { id: 'list-mid', size: 'compact', label: 'Lists, inside the feed', pageTypes: ['list'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Blog index, redeem codes and events pages. Placed after the fourth item or at mid page.' },
+  { id: 'article-early', size: 'square', label: 'Article, early read', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'An additional in-read card on long articles with enough paragraphs.' },
+  { id: 'article-mid', size: 'rectangle', label: 'Article, mid read', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed between paragraphs, only in articles with at least six paragraphs.' },
+  { id: 'article-end', size: 'hero', label: 'Article, after the last paragraph', pageTypes: ['article'], devices: ['mobile', 'desktop'], adsense: 'auto', note: 'Placed right after the article body.' },
+  { id: 'page-mid', size: 'banner', label: 'Pages, between sections', pageTypes: ['page'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed around the middle of a long public information page.' },
+  { id: 'tool-sidebar', size: 'sidebar', label: 'Tools, desktop side rail', pageTypes: ['tool'], devices: ['desktop'], adsense: 'auto', note: 'A compact promotion in the desktop side rail. Hidden on narrow screens.' },
+  { id: 'tool-result', size: 'compact', label: 'Tools, under the results', pageTypes: ['tool'], devices: ['mobile', 'desktop'], adsense: 'fluid', note: 'Placed under tool results when available, otherwise after the main tool.' },
+  { id: 'page-end', size: 'strip', label: 'Page end, above the footer', pageTypes: ['home', 'list', 'article', 'tool', 'page'], devices: ['mobile', 'desktop'], adsense: 'auto', note: 'Placed at the very end of the content, above the footer.' }
 ];
+
+// Creative sizes the engine can draw. Each one has a fixed shape so ads line up across the site:
+//   hero       wide billboard, text over the artwork (970 x 250 feel)
+//   compact    picture beside the text, full column width
+//   strip      slim wide row above the footer
+//   banner     one-line leaderboard (728 x 90 feel), compact on phones
+//   square     1:1 card, 336px wide, centred (300 x 300 feel)
+//   rectangle  6:5 card, 336px wide, centred (300 x 250 feel)
+//   sidebar    1:1 card in the desktop tool rail
+export const AD_SIZES = ['hero', 'compact', 'strip', 'banner', 'square', 'rectangle', 'sidebar'];
+export const SLOT_SIZES = Object.fromEntries(AD_SLOTS.map((slot) => [slot.id, slot.size]));
 
 export const SLOT_IDS = AD_SLOTS.map((slot) => slot.id);
 export const PAGE_TYPES = ['home', 'list', 'article', 'tool', 'page'];

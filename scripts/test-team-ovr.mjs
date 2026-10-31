@@ -9,6 +9,7 @@ import {
   getBadgeTeamOVRBonus,
   isPlayerFilled,
   FORMATIONS,
+  getFormation,
   MAX_TEAM_OVR,
   STARTING_XI_SIZE,
   deserializeSquad,
@@ -189,5 +190,12 @@ check(() => FORMATIONS.forEach((f) => {
   assert.equal(f.slots.filter((s) => s.pos === 'GK').length, 1);
   f.slots.forEach((s) => assert.ok(s.x >= 6 && s.x <= 94 && s.y >= 8 && s.y <= 94));
 }));
+
+// All in-game formations are offered, ids are unique and share links keep working.
+check(() => assert.ok(FORMATIONS.length >= 25, 'offers the full formation list'));
+check(() => assert.equal(new Set(FORMATIONS.map((f) => f.id)).size, FORMATIONS.length));
+check(() => ['433', '442', '4231', '352', '532'].forEach((id) => assert.equal(getFormation(id).id, id)));
+check(() => ['343', '3412', '41212', '424', '541'].forEach((id) => assert.equal(getFormation(id).id, id)));
+check(() => assert.equal(deserializeSquad(serializeSquad({ formation: '3421' })).formation, '3421'));
 
 console.log(`Team OVR tests passed: 21 original scenarios + ${v2} v2 scenarios.`);

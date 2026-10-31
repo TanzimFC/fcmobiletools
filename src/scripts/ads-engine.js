@@ -9,7 +9,7 @@
 // House and sponsor promotions do not depend on consent to optional ad storage or third-party requests.
 // Inline ads load below the fold; the desktop tool rail has reserved space to avoid layout shifts.
 import css from '../styles/ads.css?inline';
-import { AD_SLOTS, slotsForPageType } from '../config/adSlots.js';
+import { AD_SLOTS, SLOT_SIZES, slotsForPageType } from '../config/adSlots.js';
 import { chooseCreative, blockers, pageBudget, networkAllowed } from '../lib/adsCore.js';
 
 const root = document.getElementById('fcmtAdsRoot');
@@ -165,6 +165,7 @@ async function boot() {
     host.className = 'fcmt-ad-slot';
     host.dataset.adSlot = item.slot.id;
     host.dataset.context = item.context;
+    host.dataset.size = item.slot.size || SLOT_SIZES[item.slot.id] || 'compact';
     if (debug) host.dataset.debug = '1';
     if (item.context === 'list') { host.style.gridColumn = '1 / -1'; host.style.flex = '0 0 100%'; }
     if (item.slot.id === 'tool-sidebar') {
@@ -173,14 +174,75 @@ async function boot() {
       item.anchor.append(host);
     } else {
       item.anchor.insertAdjacentElement('afterend', host);
+      alignHost(host, item);
     }
     return host;
   }
 
+  // Line every ad up with the page's own content edge. Pages use different wrappers (some are
+  // 1160px wide, tool pages sit in a narrower column), so measure instead of guessing a width.
+  const WRAP = '.hx-wrap, .sys-wrap, .directory-wrap, .wrap, [class$="-wrap"], [class*="container"]';
+  const aligned = new Set();
+
+  // The page's real content edge: the widest container around the main heading that is still
+  // narrower than the screen. Works on any page without knowing its class names.
+  function pageEdge() {
+    const heading = document.querySelector('#content h1, main h1, h1');
+    if (!heading) return null;
+    let node = heading;
+    let best = null;
+    while (node.parentElement && node.parentElement !== document.body) {
+      const parent = node.parentElement;
+      if (parent.matches('#content, main, .fcmt-content-layout')) break;
+      const width = parent.getBoundingClientRect().width;
+      if (width >= innerWidth - 8) break;
+      if (width >= 240) best = parent;
+      node = parent;
+    }
+    return best;
+  }
+
+  function alignHost(host, item) {
+    if (item.context === 'list' || item.context === 'inline') return;
+    const apply = () => {
+      if (!host.isConnected) return;
+      const parent = host.parentElement;
+      if (!parent) return;
+      const anchor = item.anchor;
+      let ref = anchor.matches?.(WRAP) ? anchor : (anchor.querySelector?.(WRAP) || null);
+      if (!ref && anchor.getBoundingClientRect().width < innerWidth - 8) ref = anchor;
+      if (!ref) ref = pageEdge();
+      if (!ref) return;
+      const a = ref.getBoundingClientRect();
+      const p = parent.getBoundingClientRect();
+      if (a.width < 240) return;
+      host.style.width = Math.round(a.width) + 'px';
+      host.style.maxWidth = '100%';
+      host.style.marginInline = Math.max(0, Math.round(a.left - p.left)) + 'px 0';
+      host.dataset.aligned = '1';
+    };
+    apply();
+    aligned.add(apply);
+  }
+  let alignFrame = 0;
+  addEventListener('resize', () => {
+    cancelAnimationFrame(alignFrame);
+    alignFrame = requestAnimationFrame(() => aligned.forEach((fn) => fn()));
+  }, { passive: true });
+
   // Artwork sets live at /assets/ads/<name>-wide|card|square.svg and contain no text.
   const ART_SET = /^\/assets\/ads\/([a-z0-9-]+)$/;
-  const SLOT_SIZE = { 'home-mid': 'hero', 'article-end': 'hero', 'list-mid': 'compact', 'article-early': 'compact', 'article-mid': 'compact', 'page-mid': 'compact', 'tool-result': 'compact', 'tool-sidebar': 'sidebar', 'page-end': 'strip' };
-  const ART_FILES = { hero: ['wide', 'card', 1200, 400, 800, 450], compact: ['square', 'card', 400, 400, 800, 450], sidebar: ['square', 'square', 400, 400, 400, 400], strip: ['wide', 'square', 1200, 400, 400, 400] };
+  const SLOT_SIZE = SLOT_SIZES;
+  // [artwork on wide screens, artwork on phones, then width and height of each]
+  const ART_FILES = {
+    hero: ['wide', 'card', 1200, 400, 800, 450],
+    compact: ['square', 'card', 400, 400, 800, 450],
+    sidebar: ['square', 'square', 400, 400, 400, 400],
+    strip: ['wide', 'square', 1200, 400, 400, 400],
+    banner: ['wide', 'square', 1200, 400, 400, 400],
+    square: ['square', 'square', 400, 400, 400, 400],
+    rectangle: ['card', 'card', 800, 450, 800, 450]
+  };
   function artPicture(name, size) {
     const [wide, small, ww, wh, sw, sh] = ART_FILES[size] || ART_FILES.compact;
     const picture = document.createElement('picture');

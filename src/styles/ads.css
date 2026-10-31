@@ -1,11 +1,16 @@
+/* Every ad sits on the same grid as the page: one width formula, one vertical rhythm.
+   The engine replaces the width with the measured width of the page's own content wrapper
+   (data-aligned="1"), so ads line up even on pages with a narrower column. */
 .fcmt-ad-slot {
-  margin: clamp(28px, 5vw, 48px) auto;
-  max-width: var(--content-width, 1160px);
-  padding-inline: clamp(16px, 4vw, 32px);
+  width: min(var(--content-width, 1160px), calc(100% - 40px));
+  margin: clamp(32px, 5vw, 56px) auto;
   box-sizing: border-box;
+  clear: both;
 }
-.fcmt-ad-slot[data-context="inline"] { max-width: none; padding-inline: 0; margin: 28px 0; }
-.fcmt-ad-slot[data-context="list"] { max-width: none; padding-inline: 0; margin: 8px 0; }
+.fcmt-ad-slot[data-context="inline"] { width: auto; margin: 32px 0; }
+.fcmt-ad-slot[data-context="list"] { width: auto; margin: 8px 0; }
+.fcmt-tool-ad-rail .fcmt-ad-slot { width: auto; margin: 0; }
+@media (max-width: 719px) { .fcmt-ad-slot { width: calc(100% - 32px); } .fcmt-ad-slot[data-aligned="1"] { max-width: 100%; } }
 
 .fcmt-ad {
   --ad-accent: var(--primary, #4cc9ff);
@@ -184,4 +189,55 @@
   .fcmt-ad--art[data-size="sidebar"] .fcmt-ad-art { position: relative; inset: auto; aspect-ratio: 1 / 1; width: 100%; height: auto; min-height: 0; }
   .fcmt-ad--art[data-size="sidebar"] .fcmt-ad-art img { object-position: center; }
   .fcmt-ad--art[data-size="sidebar"] .fcmt-ad-main { max-width: none; padding: 14px; }
+}
+
+
+/* ------------------------------------------------------------------ */
+/* More sizes, so ads fit the space instead of every space fitting one */
+/*   square     1:1 card, 336px wide, centred                          */
+/*   rectangle  6:5 card, 336px wide, centred                          */
+/*   banner     slim one-line leaderboard                              */
+/* ------------------------------------------------------------------ */
+.fcmt-ad--art[data-size="square"],
+.fcmt-ad--art[data-size="rectangle"] { width: 100%; max-width: 340px; margin-inline: auto; }
+.fcmt-ad--art[data-size="square"] .fcmt-ad-art { aspect-ratio: 1 / 1; }
+.fcmt-ad--art[data-size="rectangle"] .fcmt-ad-art { aspect-ratio: 6 / 5; }
+.fcmt-ad--art[data-size="square"] .fcmt-ad-main,
+.fcmt-ad--art[data-size="rectangle"] .fcmt-ad-main { padding: 14px 16px 16px; gap: 6px; align-content: start; }
+.fcmt-ad--art[data-size="square"] .fcmt-ad-title,
+.fcmt-ad--art[data-size="square"] .fcmt-ad-body,
+.fcmt-ad--art[data-size="rectangle"] .fcmt-ad-title,
+.fcmt-ad--art[data-size="rectangle"] .fcmt-ad-body { margin: 0; }
+.fcmt-ad--art[data-size="square"] .fcmt-ad-actions,
+.fcmt-ad--art[data-size="rectangle"] .fcmt-ad-actions { margin-top: 8px; }
+.fcmt-ad--art[data-size="square"] .fcmt-ad-title,
+.fcmt-ad--art[data-size="rectangle"] .fcmt-ad-title { font-size: 19px; }
+.fcmt-ad--art[data-size="square"] .fcmt-ad-body,
+.fcmt-ad--art[data-size="rectangle"] .fcmt-ad-body {
+  display: -webkit-box; overflow: hidden; font-size: 13.5px; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
+.fcmt-ad--art[data-size="square"] .fcmt-ad-cta,
+.fcmt-ad--art[data-size="rectangle"] .fcmt-ad-cta { width: 100%; min-height: 42px; }
+
+/* Banner: phones show a slim picture-and-text row like the strip; desktop is one tidy line. */
+.fcmt-ad--art[data-size="banner"] { display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; }
+.fcmt-ad--art[data-size="banner"] .fcmt-ad-art { width: 84px; height: 100%; min-height: 96px; }
+.fcmt-ad--art[data-size="banner"] .fcmt-ad-main { padding: 12px 40px 12px 14px; gap: 4px; }
+.fcmt-ad--art[data-size="banner"] .fcmt-ad-title { font-size: 16px; }
+.fcmt-ad--art[data-size="banner"] .fcmt-ad-body,
+.fcmt-ad--art[data-size="banner"] .fcmt-ad-badge { display: none; }
+.fcmt-ad--art[data-size="banner"] .fcmt-ad-actions { margin-top: 4px; }
+.fcmt-ad--art[data-size="banner"] .fcmt-ad-cta { min-height: 36px; padding: 0 14px; font-size: 13px; }
+@media (min-width: 720px) {
+  .fcmt-ad--art[data-size="banner"] { grid-template-columns: 190px minmax(0, 1fr); min-height: 104px; }
+  .fcmt-ad--art[data-size="banner"] .fcmt-ad-art { width: 190px; min-height: 104px; }
+  .fcmt-ad--art[data-size="banner"] .fcmt-ad-main {
+    grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 24px; row-gap: 2px;
+    align-items: center; padding: 14px 56px 14px 24px;
+  }
+  .fcmt-ad--art[data-size="banner"] .fcmt-ad-meta { grid-column: 1; grid-row: 1; }
+  .fcmt-ad--art[data-size="banner"] .fcmt-ad-badge { display: inline-flex; }
+  .fcmt-ad--art[data-size="banner"] .fcmt-ad-title { grid-column: 1; grid-row: 2; font-size: 19px; }
+  .fcmt-ad--art[data-size="banner"] .fcmt-ad-actions { grid-column: 2; grid-row: 1 / 3; margin: 0; align-self: center; }
+  .fcmt-ad--art[data-size="banner"] .fcmt-ad-cta { min-height: 42px; padding: 0 20px; font-size: 14px; }
 }

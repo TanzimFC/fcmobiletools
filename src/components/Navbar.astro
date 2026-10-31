@@ -15,6 +15,7 @@ const cta = { label: tr('nav.update.label'), href: '/fc-mobile-27', meta: tr('na
 
 const navGroups = [
   { id: 'tools', label: tr('nav.groups.tools'), links: [
+    { id: 'start', label: 'Start here', meta: 'New to FC Mobile? Pick what you want to do', href: '/start', icon: 'home' },
     { id: 'all-tools', label: 'All FC Mobile tools', meta: 'Browse the complete tool directory', href: '/tools', icon: 'articles' },
     item('team-ovr', '/team-ovr', 'ovr'),
     item('playstyle', '/player/playstyle', 'playstyle'),
@@ -105,8 +106,6 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
     <nav class="fcmt-nav" id="fcmtNav" aria-label={tr('common.primaryNav')}>
       <span class="fcmt-glide" id="fcmtGlide" aria-hidden="true"></span>
 
-      <a class:list={['fcmt-link', { active: isActive('/') }]} href={href('/')} aria-current={isActive('/') ? 'page' : undefined}>{tr('common.home')}</a>
-
       {navGroups.map((g) => (
         <div class="fcmt-group" data-group={g.id}>
           <button class:list={['fcmt-link', 'fcmt-trigger', { active: groupActive(g) }]} type="button" aria-haspopup="true" aria-expanded="false" aria-controls={`fcmt-mega-${g.id}`}>
@@ -114,60 +113,41 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
             <svg class="fcmt-chev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
 
-          <div class="fcmt-mega" id={`fcmt-mega-${g.id}`} role="group" aria-label={g.label}>
-            <div class="fcmt-mega-card">
+          <div class="fcmt-mega" id={`fcmt-mega-${g.id}`} data-wide={g.links.length > 6 ? "true" : "false"} role="group" aria-label={g.label}>
+            <div class="fcmt-mega-card" data-cols={g.links.length > 6 ? '2' : '1'}>
+              <p class="fcmt-eyebrow">{g.label}</p>
               <div class="fcmt-mega-list">
-                <p class="fcmt-eyebrow">{g.label}</p>
                 {g.links.map((l) => (
                   <a class:list={['fcmt-item', { active: isActive(l.href) }]} href={href(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}>
                     <span class="fcmt-ico" set:html={ico(l.icon)}></span>
                     <span class="fcmt-item-text"><strong>{l.label}</strong><small>{l.meta}</small></span>
-                    <span class="fcmt-go" set:html={ico('arrow', 14, 2.2)}></span>
                   </a>
                 ))}
               </div>
-
-              <a class="fcmt-feature" href={href(cta.href)}>
-                <img class="fcmt-feature-art" src={cta.image} alt="" width="520" height="300" loading="lazy" decoding="async" />
-                <span class="fcmt-feature-glow" aria-hidden="true"></span>
-                <span class="fcmt-feature-tag"><i></i>{tr('common.mostPopular')}</span>
-                <strong>{cta.label}</strong>
-                <small>{cta.blurb}</small>
-                <span class="fcmt-feature-cta">{tr('common.openPage')} <span set:html={ico('arrow', 14, 2.4)}></span></span>
+              <a class="fcmt-mega-foot" href={href(cta.href)}>
+                <span><b>{cta.label}</b><small>{cta.meta}</small></span>
+                <span set:html={ico('arrow', 14, 2.4)}></span>
               </a>
             </div>
           </div>
         </div>
       ))}
 
-      <a class:list={['fcmt-link', 'fcmt-gw', { active: current.startsWith('/giveaways') }]} href={href('/giveaways/')} aria-current={current.startsWith('/giveaways') ? 'page' : undefined}><span class="fcmt-gw-ico" set:html={ico('gift', 15, 2)}></span>{tr('nav.items.giveaways.label')}<em class="fcmt-gw-tag">{tr('common.free')}</em></a>
+      <a class:list={['fcmt-link', 'fcmt-gw', { active: current.startsWith('/giveaways') }]} href={href('/giveaways/')} aria-current={current.startsWith('/giveaways') ? 'page' : undefined}>{tr('nav.items.giveaways.label')}<em class="fcmt-gw-tag">{tr('common.free')}</em></a>
       <a class:list={['fcmt-link', { active: current.startsWith('/blog') }]} href={href('/blog')} aria-current={current.startsWith('/blog') ? 'page' : undefined}>{articlesItem.label}</a>
     </nav>
 
     <!-- Actions -->
     <div class="fcmt-actions">
-      <a class="fcmt-account" id="fcmtNavAccount" href={href('/profile/')} aria-label={tr('common.openProfileAria')}>
-        <span class="fcmt-acc-avatar" id="fcmtNavAvatar" aria-hidden="true">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>
-        </span>
-        <span class="fcmt-acc-meta">
-          <strong id="fcmtNavName">{tr('common.account')}</strong>
-          <small id="fcmtNavLevel" hidden>Lv. 1</small>
-        </span>
-      </a>
-
-      <LanguageSwitcher variant="bar" />
-
-      <button class="fcmt-bell" id="fcPushBell" type="button" aria-label={tr('push.bell.aria')} title={tr('push.bell.title')} aria-haspopup="dialog" aria-expanded="false" data-state="idle">
-        <span set:html={ico('bell', 18, 2)}></span><i class="fcmt-bell-dot" aria-hidden="true"></i>
-      </button>
-
       <button class="fcmt-search" id="fcmtSearchBtn" type="button" aria-label={tr('common.search')} aria-haspopup="dialog">
         <span class="fcmt-search-icon" set:html={ico('search', 17, 2)}></span>
         <span class="fcmt-search-txt">{tr('common.searchPlaceholder')}</span>
         <kbd>/</kbd>
       </button>
-
+      <button class="fcmt-bell" id="fcPushBell" type="button" aria-label={tr('push.bell.aria')} title={tr('push.bell.title')} aria-haspopup="dialog" aria-expanded="false" data-state="idle">
+        <span set:html={ico('bell', 18, 2)}></span><i class="fcmt-bell-dot" aria-hidden="true"></i>
+      </button>
+      <LanguageSwitcher variant="bar" />
       <div class="fcmt-acc-wrap" id="fcmtAccWrap">
       <a class:list={['fcmt-cta', 'fcmt-account-cta', { active: isActive('/profile/') || isActive('/account/') }]} id="fcmtNavAccountCta" href={href('/account/')} aria-label={tr('common.signInAria')}>
         <span class="fcmt-account-cta-avatar" id="fcmtNavAccountCtaAvatar" aria-hidden="true">
@@ -404,80 +384,43 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
   /* Close sheet if resized to desktop */
   addEventListener('resize', () => { if (innerWidth > 980 && sheet.classList.contains('open')) closeSheet(false); moveGlide(null); });
 
-  /* ---------- Compact Account Identity Indicator ---------- */
+  /* ---------- Account button: one place that says who you are ---------- */
+  const personIcon = (size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>`;
+  const setAvatar = (node, identity, initials) => {
+    if (!node) return;
+    if (identity?.avatarUrl && /^https?:\/\//i.test(identity.avatarUrl)) {
+      node.textContent = '';
+      const img = document.createElement('img');
+      img.src = identity.avatarUrl; img.alt = '';
+      node.appendChild(img);
+    } else node.textContent = initials;
+  };
   const syncNavIdentity = () => {
-    const navBtn = $('fcmtNavAccount');
-    const navAvatar = $('fcmtNavAvatar');
-    const navName = $('fcmtNavName');
-    const ctaBtn = $('fcmtNavAccountCta');
-    const ctaAvatar = $('fcmtNavAccountCtaAvatar');
-    const ctaText = $('fcmtNavAccountCtaText');
-    const navLevel = $('fcmtNavLevel');
-    const sheetName = $('fcmtSheetName');
-    const sheetMeta = $('fcmtSheetMeta');
-    const sheetAccount = $('fcmtSheetAccount');
-    const sheetAvatar = $('fcmtSheetAvatar');
-    if (!navBtn || !navName) return;
+    const ctaBtn = $('fcmtNavAccountCta'), ctaAvatar = $('fcmtNavAccountCtaAvatar'), ctaText = $('fcmtNavAccountCtaText');
+    const sheetName = $('fcmtSheetName'), sheetMeta = $('fcmtSheetMeta'), sheetAccount = $('fcmtSheetAccount'), sheetAvatar = $('fcmtSheetAvatar');
+    if (!ctaBtn) return;
     try {
-      // This flag reflects Supabase's validated session, not merely the presence
-      // of a possibly stale localStorage entry.
+      // Reflects Supabase's validated session, not merely a possibly stale localStorage entry.
       const hasAuth = window.__FCMT_AUTHENTICATED === true;
       const raw = localStorage.getItem('fcmobiletools-identity-cache-v1');
       const identity = raw ? JSON.parse(raw) : null;
+      ctaBtn.classList.toggle('is-authenticated', hasAuth);
       if (hasAuth && identity && identity.username) {
         const display = String(identity.displayName || identity.username).slice(0, 16);
         const lv = Math.max(1, Number(identity.level) || 1);
         const initials = display.slice(0, 2).toUpperCase();
-        navBtn.classList.add('is-authenticated');
-        if (ctaBtn) {
-          ctaBtn.href = N.profileHref;
-          ctaBtn.setAttribute('aria-label', N.openProfileAria);
-        }
+        ctaBtn.href = N.profileHref;
+        ctaBtn.setAttribute('aria-label', N.openProfileAria);
         if (ctaText) ctaText.textContent = display;
-        if (ctaAvatar) {
-          if (identity.avatarUrl && /^https?:\/\//i.test(identity.avatarUrl)) {
-            ctaAvatar.innerHTML = '';
-            const img = document.createElement('img');
-            img.src = identity.avatarUrl;
-            img.alt = '';
-            ctaAvatar.appendChild(img);
-          } else {
-            ctaAvatar.textContent = initials;
-          }
-        }
-        navBtn.href = N.profileHref;
-        navName.textContent = display;
-        if (navLevel) {
-          navLevel.textContent = N.levelShort.replace('{n}', lv);
-          navLevel.hidden = false;
-        }
-        if (navAvatar) {
-          if (identity.avatarUrl && /^https?:\/\//i.test(identity.avatarUrl)) {
-            navAvatar.innerHTML = '';
-            const img = document.createElement('img');
-            img.src = identity.avatarUrl;
-            img.alt = '';
-            navAvatar.appendChild(img);
-          } else {
-            navAvatar.textContent = initials;
-          }
-        }
-        if (sheetName) sheetName.textContent = display + ' · ' + N.levelLong.replace('{n}', lv);
-        if (sheetMeta) sheetMeta.textContent = '@' + identity.username + ' · ' + Number(identity.xp || 0).toLocaleString() + ' XP';
+        setAvatar(ctaAvatar, identity, initials);
         if (sheetAccount) sheetAccount.href = N.profileHref;
         if (sheetAvatar) sheetAvatar.textContent = initials;
+        if (sheetName) sheetName.textContent = display + ' · ' + N.levelLong.replace('{n}', lv);
+        if (sheetMeta) sheetMeta.textContent = '@' + identity.username + ' · ' + Number(identity.xp || 0).toLocaleString() + ' XP';
       } else if (hasAuth) {
-        // A user can have a valid session while profile details are still loading.
-        // Never show a sign-in CTA for that authenticated state.
-        navBtn.classList.add('is-authenticated');
-        navBtn.href = N.profileHref;
-        navName.textContent = N.myProfile;
-        if (navLevel) navLevel.hidden = true;
-        if (navAvatar) navAvatar.textContent = 'FC';
-        if (ctaBtn) {
-          ctaBtn.href = '/profile/';
-          ctaBtn.setAttribute('aria-label', 'Open your FCMobiletools profile');
-        }
+        // Valid session while profile details are still loading: never show a sign-in prompt.
+        ctaBtn.href = N.profileHref;
+        ctaBtn.setAttribute('aria-label', N.openProfileAria);
         if (ctaText) ctaText.textContent = N.myProfile;
         if (ctaAvatar) ctaAvatar.textContent = 'FC';
         if (sheetAccount) sheetAccount.href = N.profileHref;
@@ -485,21 +428,12 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
         if (sheetName) sheetName.textContent = N.myAccount;
         if (sheetMeta) sheetMeta.textContent = N.profileMeta;
       } else {
-        navBtn.classList.remove('is-authenticated');
-        navBtn.href = N.accountHref;
-        navName.textContent = N.account;
-        if (navLevel) navLevel.hidden = true;
-        if (navAvatar) navAvatar.textContent = 'FC';
-        if (ctaBtn) {
-          ctaBtn.href = N.accountHref;
-          ctaBtn.setAttribute('aria-label', N.signInAria);
-        }
+        ctaBtn.href = N.accountHref;
+        ctaBtn.setAttribute('aria-label', N.signInAria);
         if (ctaText) ctaText.textContent = N.login;
-        if (ctaAvatar) {
-          ctaAvatar.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>';
-        }
+        if (ctaAvatar) ctaAvatar.innerHTML = personIcon(15);
         if (sheetAccount) sheetAccount.href = N.accountHref;
-        if (sheetAvatar) sheetAvatar.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>';
+        if (sheetAvatar) sheetAvatar.innerHTML = personIcon(18);
         if (sheetName) sheetName.textContent = N.accountProfile;
         if (sheetMeta) sheetMeta.textContent = N.accountMeta;
       }
@@ -582,8 +516,7 @@ const ico = (name, size = 18, sw = 1.8) => `<svg width="${size}" height="${size}
 /* Kill horizontal overflow at the source (fixes the empty strip on the right) */
 html,body{max-width:100%;overflow-x:clip}
 html.fcmt-lock{overflow:hidden}
-.fcmt-account{display:none;align-items:center;gap:8px;height:38px;padding:0 12px 0 8px;border:1px solid rgba(76,201,255,.18);border-radius:var(--r-md);background:rgba(76,201,255,.05);color:#dce9f2;text-decoration:none;font:700 12.5px/1 var(--font-body);transition:border-color .18s ease,background .18s ease,transform .18s ease}.fcmt-account:hover{border-color:rgba(76,201,255,.4);color:#fff;background:rgba(76,201,255,.1);transform:translateY(-1px)}.fcmt-acc-avatar{width:24px;height:24px;border-radius:var(--r-sm);display:grid;place-items:center;background:rgba(76,201,255,.14);color:var(--primary);font:800 10px/1 var(--font-display);overflow:hidden;flex:0 0 24px}.fcmt-account.is-authenticated .fcmt-acc-avatar{background:linear-gradient(135deg,#9fe6ff,#4cc9ff);color:#04131c}.fcmt-acc-avatar img{width:100%;height:100%;object-fit:cover}.fcmt-account-cta .fcmt-account-cta-avatar{width:24px;height:24px;border-radius:var(--r-sm);display:grid;place-items:center;background:rgba(3,19,28,.12);color:#03131c;font:800 10px/1 var(--font-display);overflow:hidden;flex:0 0 24px}.fcmt-account-cta .fcmt-account-cta-avatar img{width:100%;height:100%;object-fit:cover}.fcmt-account-cta .fcmt-account-cta-avatar svg{display:block}.fcmt-acc-meta{display:flex;align-items:center;gap:6px;white-space:nowrap}.fcmt-acc-meta strong{font-weight:750;font-size:12.5px;color:#f5f8fb}.fcmt-acc-meta small{padding:3px 6px;border-radius:var(--r-sm);background:rgba(76,201,255,.14);border:1px solid rgba(76,201,255,.25);color:#8ce2ff;font:800 10px/1 var(--font-body)}.fcmt-account-wide{margin-top:8px}.fcmt-account-wide .fcmt-ico{color:var(--primary)}@media(max-width:980px){.fcmt-account{display:inline-flex;order:4}}
-@media(max-width:640px){.fcmt-account{padding:0 8px}.fcmt-acc-meta{display:none}}
+.fcmt-account-cta .fcmt-account-cta-avatar{width:24px;height:24px;border-radius:var(--r-sm);display:grid;place-items:center;background:rgba(3,19,28,.12);color:#03131c;font:800 10px/1 var(--font-display);overflow:hidden;flex:0 0 24px}.fcmt-account-cta .fcmt-account-cta-avatar img{width:100%;height:100%;object-fit:cover}.fcmt-account-cta .fcmt-account-cta-avatar svg{display:block}.fcmt-account-wide{margin-top:8px}.fcmt-account-wide .fcmt-ico{color:var(--primary)}
 </style>
 
 <style>
@@ -593,16 +526,15 @@ html.fcmt-lock{overflow:hidden}
 /* ================= Floating island ================= */
 .fcmt{position:sticky;top:0;z-index:1200;height:0;pointer-events:none;padding-top:env(safe-area-inset-top,0)}
 .fcmt-bar{
-  pointer-events:auto;position:relative;margin:14px auto 0;width:max-content;max-width:calc(100% - 32px);height:64px;
+  pointer-events:auto;position:relative;margin:12px auto 0;width:min(1240px,calc(100% - 32px));height:64px;
   display:flex;align-items:center;gap:18px;padding:0 10px 0 12px;border-radius:var(--r-lg);
-  background:linear-gradient(180deg,rgba(20,34,49,.72),rgba(11,21,31,.66));
+  background:linear-gradient(180deg,rgba(17,31,46,.96),rgba(9,19,29,.96));
   border:1px solid rgba(255,255,255,.085);
-  backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);
-  box-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 -1px 0 rgba(0,0,0,.25) inset,0 18px 50px -12px rgba(0,0,0,.55);
-  transition:width .4s cubic-bezier(.2,.8,.2,1),margin .4s cubic-bezier(.2,.8,.2,1),height .3s ease,background .3s ease,border-color .3s ease,box-shadow .3s ease;
+    box-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 -1px 0 rgba(0,0,0,.25) inset,0 18px 50px -12px rgba(0,0,0,.55);
+  transition:margin .3s cubic-bezier(.2,.8,.2,1),height .3s ease,background .3s ease,border-color .3s ease,box-shadow .3s ease;
 }
 .fcmt-bar::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(120deg,rgba(76,201,255,.38),rgba(255,255,255,0) 32%,rgba(255,255,255,0) 68%,rgba(76,201,255,.22));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.55}
-.fcmt[data-scrolled="true"] .fcmt-bar{width:max-content;max-width:calc(100% - 40px);height:58px;margin-top:10px;background:linear-gradient(180deg,rgba(14,25,37,.9),rgba(8,16,24,.86));border-color:rgba(255,255,255,.1);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 24px 60px -14px rgba(0,0,0,.7)}
+.fcmt[data-scrolled="true"] .fcmt-bar{height:58px;margin-top:8px;background:linear-gradient(180deg,rgba(14,25,37,.9),rgba(8,16,24,.86));border-color:rgba(255,255,255,.1);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 24px 60px -14px rgba(0,0,0,.7)}
 
 /* ================= Brand ================= */
 .fcmt-brand{display:flex;align-items:center;justify-content:flex-start;flex:0 0 auto;text-decoration:none;border-radius:var(--r-md);padding:4px 7px;transition:background .2s ease}
@@ -619,13 +551,9 @@ html.fcmt-lock{overflow:hidden}
 .fcmt[data-scrolled="true"] .fcmt-link.active::after{bottom:-9px}
 .fcmt-gw{color:#ffe29a}
 .fcmt-gw:hover{color:#fff}
-.fcmt-gw-ico{display:inline-flex;color:#f6c453;animation:fcmtGwBob 2.6s ease-in-out infinite}
-.fcmt-gw-tag{font-style:normal;padding:3px 7px;border-radius:999px;background:linear-gradient(180deg,#ffe7a6,#f6c453);color:#2a1d00;font:800 9.5px/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase;box-shadow:0 0 0 0 rgba(246,196,83,.55);animation:fcmtGwPulse 2.4s ease-out infinite}
+.fcmt-gw-tag{font-style:normal;padding:3px 7px;border-radius:999px;background:linear-gradient(180deg,#ffe7a6,#f6c453);color:#2a1d00;font:800 9.5px/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase;}
 .fcmt-gw-wide{border-color:rgba(246,196,83,.35)!important;background:linear-gradient(135deg,rgba(246,196,83,.12),rgba(154,140,255,.07))!important}
 .fcmt-gw-wide .fcmt-ico{color:#f6c453}
-@keyframes fcmtGwBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-2px) rotate(-6deg)}}
-@keyframes fcmtGwPulse{0%{box-shadow:0 0 0 0 rgba(246,196,83,.55)}70%,100%{box-shadow:0 0 0 8px rgba(246,196,83,0)}}
-@media (prefers-reduced-motion:reduce){.fcmt-gw-ico,.fcmt-gw-tag{animation:none}}
 .fcmt-chev{color:var(--muted-strong);transition:transform .25s cubic-bezier(.2,.8,.2,1),color .2s}
 .fcmt-group{position:relative}
 .fcmt-group.open .fcmt-chev{transform:rotate(180deg);color:var(--primary)}
@@ -656,11 +584,8 @@ html.fcmt-lock{overflow:hidden}
 .fcmt-feature:hover,.fcmt-hero:active{transform:translateY(-2px);border-color:rgba(76,201,255,.45);box-shadow:0 20px 40px -14px rgba(76,201,255,.3)}
 .fcmt-feature-art{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.82;filter:saturate(.95) contrast(1.02)}
 .fcmt-feature::after,.fcmt-hero::after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(5,12,18,.05) 0%,rgba(5,12,18,.18) 26%,rgba(5,12,18,.88) 100%);pointer-events:none}
-.fcmt-feature-glow{position:absolute;z-index:-1;top:-40%;right:-30%;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(76,201,255,.5),transparent 65%);filter:blur(10px);animation:fcmt-drift 7s ease-in-out infinite alternate}
-@keyframes fcmt-drift{to{transform:translate(-16px,18px) scale(1.15)}}
 .fcmt-feature-tag{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;padding:5px 10px;border-radius:99px;background:rgba(4,18,27,.6);border:1px solid rgba(76,201,255,.28);color:var(--primary);font:800 9.5px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase}
-.fcmt-feature-tag i{width:6px;height:6px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 0 rgba(76,201,255,.6);animation:fcmt-ping 1.8s infinite}
-@keyframes fcmt-ping{70%{box-shadow:0 0 0 8px rgba(76,201,255,0)}100%{box-shadow:0 0 0 0 rgba(76,201,255,0)}}
+.fcmt-feature-tag i{width:6px;height:6px;border-radius:50%;background:var(--primary)}
 .fcmt-feature strong,.fcmt-hero strong{margin-top:auto;font:800 17px/1.15 var(--font-body);letter-spacing:-.015em}
 .fcmt-feature small,.fcmt-hero small{font:500 12px/1.4 var(--font-body);color:#93a5b6}
 .fcmt-feature-cta{display:inline-flex;align-items:center;gap:6px;margin-top:6px;color:var(--primary);font:800 12px/1 var(--font-body)}
@@ -673,9 +598,8 @@ html.fcmt-lock{overflow:hidden}
 .fcmt-bell[hidden]{display:none}
 .fcmt-bell-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:transparent}
 .fcmt-bell[data-state="invite"]{color:#8fe3ff;border-color:rgba(76,201,255,.35)}
-.fcmt-bell[data-state="invite"] .fcmt-bell-dot{background:#4cc9ff;box-shadow:0 0 0 0 rgba(76,201,255,.6);animation:fcmt-bell-pulse 2.2s ease-out infinite}
+.fcmt-bell[data-state="invite"] .fcmt-bell-dot{background:#4cc9ff;box-shadow:0 0 0 3px rgba(76,201,255,.22)}
 .fcmt-bell[data-state="on"] .fcmt-bell-dot{background:#47d16c;box-shadow:0 0 8px rgba(71,209,108,.7)}
-@keyframes fcmt-bell-pulse{0%{box-shadow:0 0 0 0 rgba(76,201,255,.6)}70%,100%{box-shadow:0 0 0 9px rgba(76,201,255,0)}}
 .fcmt-search{display:inline-flex;align-items:center;gap:10px;width:222px;height:42px;padding:0 9px 0 13px;border:1px solid rgba(255,255,255,.09);border-radius:var(--r-md);background:rgba(255,255,255,.035);color:var(--muted);font:600 12px/1 var(--font-body);cursor:pointer;transition:width .25s ease,color .2s ease,background .2s ease,border-color .2s ease,box-shadow .2s ease}
 .fcmt-search:hover{color:var(--text);background:rgba(255,255,255,.06);border-color:rgba(76,201,255,.3);box-shadow:0 8px 24px rgba(0,0,0,.16)}
 .fcmt-search-icon{display:grid;place-items:center;flex:0 0 auto;color:var(--muted-strong)}
@@ -683,13 +607,9 @@ html.fcmt-lock{overflow:hidden}
 kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:var(--muted-strong);font:700 11px/1 var(--font-body)}
 
 .fcmt-cta{position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:10px;height:42px;padding:0 18px 0 15px;border-radius:var(--r-md);overflow:hidden;color:#03131c;text-decoration:none;font:800 13px/1 var(--font-body);letter-spacing:-.005em;background:linear-gradient(180deg,#8fe3ff,#4cc9ff 55%,#35b3ec);box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 10px 26px -6px rgba(76,201,255,.65);transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
-.fcmt-cta::after{content:"";position:absolute;z-index:-1;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:fcmt-sheen 4.5s ease-in-out infinite}
-@keyframes fcmt-sheen{0%,55%{left:-60%}100%{left:130%}}
 .fcmt-cta:hover{transform:translateY(-1px);box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 16px 34px -6px rgba(76,201,255,.8)}
 .fcmt-cta:active{transform:scale(.97)}
 .fcmt-pulse{position:relative;width:8px;height:8px;border-radius:50%;background:#04202f}
-.fcmt-pulse::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px solid rgba(4,32,47,.55);animation:fcmt-ring 1.8s ease-out infinite}
-@keyframes fcmt-ring{from{transform:scale(.5);opacity:1}to{transform:scale(1.5);opacity:0}}
 
 .fcmt-burger,.fcmt-x{display:none;place-items:center;width:44px;height:44px;border:1px solid rgba(255,255,255,.1);border-radius:var(--r-md);background:rgba(255,255,255,.045);color:var(--text);cursor:pointer;transition:.2s;-webkit-tap-highlight-color:transparent}
 .fcmt-burger:active,.fcmt-x:active{transform:scale(.93)}
@@ -795,6 +715,29 @@ kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 
 }
 @media(max-width:380px){.fcmt-logo-img{height:44px;max-width:140px}.fcmt-sheet .fcmt-logo-img{height:44px;max-width:142px}.fcmt-sec-grid{gap:6px}.fcmt-tile{padding:12px}}
 
+
+/* ================= v3: tidier desktop bar, two-column menus, one account button ================= */
+.fcmt-link{padding:0 13px}
+.fcmt-mega-card{display:block;width:min(400px,calc(100vw - 48px));padding:8px}
+.fcmt-mega-card[data-cols="2"]{width:min(700px,calc(100vw - 48px))}
+.fcmt-mega-card[data-cols="2"] .fcmt-mega-list{display:grid;grid-template-columns:1fr 1fr;gap:2px 6px}
+.fcmt-mega-card .fcmt-eyebrow{padding:10px 12px 6px;color:var(--dim);font:600 12.5px/1 var(--font-body);letter-spacing:0;text-transform:none}
+.fcmt-mega-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 4px 2px;padding:12px 14px;border:1px solid rgba(76,201,255,.2);border-radius:var(--r-md);background:linear-gradient(135deg,rgba(76,201,255,.12),rgba(154,140,255,.07));color:var(--primary);text-decoration:none;transition:border-color .2s,transform .25s var(--lx-ease,ease)}
+.fcmt-mega-foot:hover{border-color:rgba(76,201,255,.5);transform:translateY(-1px)}
+.fcmt-mega-foot b{display:block;color:var(--text);font:700 13.5px/1.2 var(--font-body)}
+.fcmt-mega-foot small{display:block;margin-top:3px;color:var(--muted);font:500 12px/1.25 var(--font-body)}
+.fcmt-item-text small{color:var(--dim)}
+.fcmt-search{width:176px}
+.fcmt-cta.is-authenticated .fcmt-cta-chev{display:none}
+@media(min-width:1280px){.fcmt-search{width:210px}}
+@media(max-width:1120px){.fcmt-search{width:42px;padding:0;justify-content:center}.fcmt-search-txt,.fcmt-search kbd{display:none}}
+@media(max-width:980px){:root{--dock-h:84px}}
+
+
+/* Wide two-column Tools menu opens from its own left edge so it can never leave the screen; opaque so the page behind never shows through. */
+.fcmt-mega[data-wide="true"]{left:0;transform:translate(0,8px) scale(.985);transform-origin:top left}
+.fcmt-group.open .fcmt-mega[data-wide="true"]{transform:none}
+.fcmt-mega-card{background:linear-gradient(180deg,#14283b,#0a1520)}
 @media(prefers-reduced-motion:reduce){
   .fcmt *,.fcmt-sheet,.fcmt-sheet *,.fcmt-pal,.fcmt-pal *,.fcmt-dock,.fcmt-dock *{animation:none!important;transition-duration:.01ms!important;transition-delay:0s!important}
 }
@@ -807,16 +750,13 @@ kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 
 .fcmt-progress{position:absolute;left:22px;right:22px;bottom:-1px;height:2px;border-radius:99px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .3s}
 .fcmt[data-scrolled="true"] .fcmt-progress{opacity:1}
 .fcmt-progress i{display:block;width:100%;height:100%;transform-origin:left center;transform:scaleX(var(--fcmt-p,0));background:linear-gradient(90deg,rgba(76,201,255,0),#4cc9ff 30%,#9a8cff);box-shadow:0 0 12px rgba(76,201,255,.7)}
-/* Slow light sweep across the top edge of the bar */
-.fcmt-bar::after{content:"";position:absolute;left:0;right:0;top:0;height:1px;border-radius:inherit;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55) 50%,transparent);background-size:42% 100%;background-repeat:no-repeat;background-position:-60% 0;animation:fcmtSheen 9s ease-in-out 1.5s infinite;opacity:.7}
-@keyframes fcmtSheen{0%,70%{background-position:-60% 0}100%{background-position:160% 0}}
 /* Cursor spotlight on menu items */
 .fcmt-item,.fcmt-tile,.fcmt-wide{--mx:50%;--my:50%;overflow:hidden}
 .fcmt-item::before,.fcmt-tile::before,.fcmt-wide::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;background:radial-gradient(180px circle at var(--mx) var(--my),rgba(76,201,255,.16),rgba(76,201,255,0) 70%);transition:opacity .25s}
 .fcmt-item:hover::before,.fcmt-tile:hover::before,.fcmt-wide:hover::before{opacity:1}
 .fcmt-item>*,.fcmt-tile>*,.fcmt-wide>*{position:relative}
 /* Richer bar surface and search */
-.fcmt-bar{background:linear-gradient(180deg,rgba(22,37,54,.78),rgba(10,20,30,.7)),radial-gradient(120% 220% at 50% -80%,rgba(76,201,255,.12),transparent 60%)}
+.fcmt-bar{background:radial-gradient(120% 220% at 50% -80%,rgba(76,201,255,.14),transparent 60%),linear-gradient(180deg,#14283b,#0a1520)}
 .fcmt-search{transition:border-color .2s,background .2s,box-shadow .2s,transform .2s cubic-bezier(.2,.8,.2,1)}
 .fcmt-search:hover{border-color:rgba(76,201,255,.38);box-shadow:0 10px 28px -12px rgba(76,201,255,.5);transform:translateY(-1px)}
 .fcmt-cta{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s,filter .2s}
@@ -824,7 +764,7 @@ kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 
 /* Account card in the mobile menu */
 .fcmt-account-wide{position:relative;border-color:rgba(76,201,255,.28)!important;background:radial-gradient(120% 140% at 0% 0%,rgba(76,201,255,.2),rgba(76,201,255,.05) 55%,rgba(8,16,24,.5))!important}
 .fcmt-account-wide #fcmtSheetAvatar{border-radius:50%;box-shadow:0 0 0 2px rgba(76,201,255,.35),0 0 22px rgba(76,201,255,.3)}
-@media(prefers-reduced-motion:reduce){.fcmt-bar::after{animation:none}.fcmt-progress i{transition:none}}
+@media(prefers-reduced-motion:reduce){.fcmt-progress i{transition:none}}
 </style>
 
 <script is:inline>
